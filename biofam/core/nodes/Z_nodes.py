@@ -2,6 +2,7 @@ from __future__ import division
 import numpy.ma as ma
 import numpy as np
 import scipy as s
+from copy import deepcopy
 
 # Import manually defined functions
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node

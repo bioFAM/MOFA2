@@ -14,7 +14,7 @@ import warnings
 from scipy.stats import bernoulli, norm, gamma, uniform, poisson, binom
 from random import sample
 
-from .utils import sigmoid
+from biofam.core.utils import sigmoid
 
 
 class Simulate(object):
@@ -78,7 +78,7 @@ class Simulate(object):
             # Partially vectorised
             for k in range(self.K):
                 S[m][:,k] = bernoulli.rvs(p=theta[m][:,k], size=self.D[m])
-            
+
             # Unvectorised
             # for d in range(self.D[m]):
             #     for k in range(self.K):
@@ -113,7 +113,7 @@ class Simulate(object):
         return [ s.zeros(self.D[m]) for m in range(self.M) ]
 
     def generateData(self, W, Z, Tau, Mu, likelihood, missingness=0.0, missing_view=False):
-        """ Initialisation of observations 
+        """ Initialisation of observations
 
         PARAMETERS
         ----------
