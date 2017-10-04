@@ -1,0 +1,30 @@
+# Resilio Sync
+.sync
+
+# MAC
+*Icon*
+.DS_Store
+
+# Rstudio projects
+Rproj*
+
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.pyc
+*.egg-info/
+.installed.cfg
+*.egg
+.Rproj.user
