@@ -1,0 +1,3 @@
+THIS NEEDS TO BE MODIFIED AS FOLLOWS:
+(1) GENERAL .sh SCRIPTS?
+(2) Simulate vs real data
