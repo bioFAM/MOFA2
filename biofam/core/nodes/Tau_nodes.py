@@ -2,6 +2,8 @@
 from __future__ import division
 import numpy.ma as ma
 import numpy as np
+import scipy as s
+import scipy.special as special
 
 from mofa.core.utils import dotd
 

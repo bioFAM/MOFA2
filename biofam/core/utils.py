@@ -64,3 +64,9 @@ def ddot(d, mtx, left=True):
 
 def lambdafn(X):
     return np.tanh(X/2.)/(4.*X)
+
+def nans(shape, dtype=float):
+    """ Method to create an array filled with missing values """
+    a = np.empty(shape, dtype)
+    a.fill(np.nan)
+    return a

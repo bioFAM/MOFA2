@@ -9,11 +9,11 @@ import h5py
 
 
 def removeIncompleteSamples(data):
-    """ Method to remove samples with missing views 
+    """ Method to remove samples with missing views
 
     PARAMETERS
     ----------
-    data: list  
+    data: list
     """
     print("Removing incomplete samples...")
 
@@ -36,9 +36,9 @@ def removeIncompleteSamples(data):
     return data_filt
 
 def maskData(data, data_opts):
-    """ Method to mask values of the data, 
+    """ Method to mask values of the data,
     It is mainly to test missing values and to evaluate imputation
-    
+
     PARAMETERS
     ----------
     data_opts: dic
@@ -76,13 +76,13 @@ def maskData(data, data_opts):
 
 def loadData(data_opts, verbose=True):
     """ Method to load the data
-    
+
     PARAMETERS
     ----------
     data_opts: dic
     verbose: boolean
     """
-    
+
     print ("\n")
     print ("#"*18)
     print ("## Loading data ##")
@@ -103,7 +103,7 @@ def loadData(data_opts, verbose=True):
         print("Loaded %s with dim (%d,%d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
 
         # Removing features with no variance
-        var = Y[m].std(axis=0) 
+        var = Y[m].std(axis=0)
         if np.any(var==0.):
             print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
             Y[m].drop(Y[m].columns[np.where(var==0.)], axis=1, inplace=True)
@@ -127,15 +127,9 @@ def loadData(data_opts, verbose=True):
 
     return Y
 
-def nans(shape, dtype=float):
-    """ Method to create an array filled with missing values """
-    a = np.empty(shape, dtype)
-    a.fill(np.nan)
-    return a
-
 def corr(A,B):
-    """ Method to efficiently compute correlation coefficients between two matrices 
-    
+    """ Method to efficiently compute correlation coefficients between two matrices
+
     PARMETERS
     ---------
     A: np array
@@ -155,14 +149,14 @@ def corr(A,B):
 
 def saveParameters(model, hdf5, view_names=None):
     """ Method to save the parameters of the model in an hdf5 file
-    
+
     PARAMETERS
     ----------
     model: a BayesNet instance
-    hdf5: 
+    hdf5:
     view_names
     """
-    
+
     # Get nodes from the model
     nodes = model.getNodes()
 
@@ -207,11 +201,11 @@ def saveParameters(model, hdf5, view_names=None):
 
 def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
     """ Method to save the expectations of the model in an hdf5 file
-    
+
     PARAMETERS
     ----------
     model: a BayesNet instance
-    hdf5: 
+    hdf5:
     view_names
     only_first_moments
     """
@@ -243,7 +237,7 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
                 view_subgrp = node_subgrp.create_group(tmp)
 
                 # Loop through the expectations
-                if only_first_moments: 
+                if only_first_moments:
                     if node == "SW":
                         expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["ES"], 'EW':expectations[m]["EW"]}
                     else:
@@ -265,11 +259,11 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
 
 def saveTrainingStats(model, hdf5):
     """ Method to save the training statistics in an hdf5 file
-    
+
     PARAMETERS
     ----------
     model: a BayesNet instance
-    hdf5: 
+    hdf5:
     """
     stats = model.getTrainingStats()
     stats_grp = hdf5.create_group("training_stats")
@@ -280,11 +274,11 @@ def saveTrainingStats(model, hdf5):
 
 def saveTrainingOpts(opts, hdf5):
     """ Method to save the training options in an hdf5 file
-    
+
     PARAMETERS
     ----------
     opts:
-    hdf5: 
+    hdf5:
     """
     # Remove dictionaries from the options
     for k,v in opts.copy().items():
@@ -299,11 +293,11 @@ def saveTrainingOpts(opts, hdf5):
 
 def saveModelOpts(opts, hdf5):
     """ Method to save the model options in an hdf5 file
-    
+
     PARAMETERS
     ----------
     opts:
-    hdf5: 
+    hdf5:
     """
     opts_interest = ["learnIntercept","schedule","likelihood"]
     opts = dict((k, opts[k]) for k in opts_interest)
@@ -314,11 +308,11 @@ def saveModelOpts(opts, hdf5):
 
 def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_names=None):
     """ Method to save the training data in an hdf5 file
-    
+
     PARAMETERS
     ----------
     model: a BayesNet instance
-    hdf5: 
+    hdf5:
     view_names
     sample_names
     feature_names
@@ -335,7 +329,7 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
 
 def saveModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
     """ Method to save the model in an hdf5 file
-    
+
     PARAMETERS
     ----------
     """

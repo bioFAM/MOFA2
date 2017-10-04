@@ -2,6 +2,8 @@
 from __future__ import division
 import numpy.ma as ma
 import numpy as np
+import scipy as s
+import scipy.special as special
 
 # Import manually defined functions
 from .variational_nodes import Constant_Variational_Node, Beta_Unobserved_Variational_Node
@@ -42,7 +44,7 @@ class Theta_Node(Beta_Unobserved_Variational_Node):
         # Perform updates
         Qa = self.Ppar['a'] + tmp1
         Qb = self.Ppar['b'] + S.shape[0]-tmp1
-        
+
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
 

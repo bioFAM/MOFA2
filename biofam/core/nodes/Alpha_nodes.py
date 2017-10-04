@@ -2,6 +2,8 @@
 from __future__ import division
 import numpy.ma as ma
 import numpy as np
+import scipy as s
+import scipy.special as special
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
@@ -45,4 +47,3 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         lb_q = (Qa*s.log(Qb)).sum() - special.gammaln(Qa).sum() + ((Qa-1.)*QlnE).sum() - (Qb*QE).sum()
 
         return lb_p - lb_q
-
