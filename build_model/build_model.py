@@ -9,8 +9,8 @@ import pandas as pd
 import numpy as np
 #from joblib import Parallel, delayed
 
+from biofam.core.BayesNet import *
 from .init_nodes import *
-from .BayesNet import BayesNet
 from .utils import *
 
 def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, verbose=False):

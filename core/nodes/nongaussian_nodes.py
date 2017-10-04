@@ -19,9 +19,8 @@ import scipy as s
 import numpy.ma as ma
 
 from .variational_nodes import Unobserved_Variational_Node
-from .nodes import Node
-from .utils import sigmoid, lambdafn
-
+from .basic_nodes import Node
+from mofa.core.utils import sigmoid, lambdafn
 
 
 ##############################

@@ -14,7 +14,7 @@ import scipy as s
 import pandas as pd
 import sys
 
-from biofam.nodes.variational_nodes import Variational_Node
+from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import corr, nans
 
 

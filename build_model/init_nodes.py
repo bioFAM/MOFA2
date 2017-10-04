@@ -25,15 +25,15 @@ import sklearn.decomposition
 
 
 # Define which nodes to import
-from biofam.nodes.basic_nodes import *
-from biofam.nodes.multiview_nodes import *
-from biofam.nodes.nongaussian_nodes import *
-from biofam.nodes.Y_nodes import Y_Node
-from biofam.nodes.Z_nodes import Z_Node, MuZ_Node
-from biofam.nodes.W_nodes import SW_Node
-from biofam.nodes.Alpha_nodes import AlphaW_Node_mk
-from biofam.nodes.Tau_nodes import Tau_Node
-from biofam.nodes.Theta_nodes import Theta_Node, Theta_Constant_Node
+from biofam.core.nodes.basic_nodes import *
+from biofam.core.nodes.multiview_nodes import *
+from biofam.core.nodes.nongaussian_nodes import *
+from biofam.core.nodes.Y_nodes import Y_Node
+from biofam.core.nodes.Z_nodes import Z_Node, MuZ_Node
+from biofam.core.nodes.W_nodes import SW_Node
+from biofam.core.nodes.Alpha_nodes import AlphaW_Node_mk
+from biofam.core.nodes.Tau_nodes import Tau_Node
+from biofam.core.nodes.Theta_nodes import Theta_Node, Theta_Constant_Node
 
 
 class initModel(object):

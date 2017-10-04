@@ -3,7 +3,7 @@ from __future__ import division
 import numpy.ma as ma
 import numpy as np
 
-from .utils import dotd
+from mofa.core.utils import dotd
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node

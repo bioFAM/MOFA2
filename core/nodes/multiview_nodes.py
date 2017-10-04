@@ -18,7 +18,6 @@ import scipy as s
 from .basic_nodes import Node
 from .variational_nodes import Variational_Node
 
-
 class Multiview_Node(Node):
     """General class for a multiview node"""
     def __init__(self, M, *nodes):
