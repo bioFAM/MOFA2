@@ -95,7 +95,7 @@ class BayesNet(object):
                 # If there is an intercept term, regress it out, as it greatly decreases the fraction of variance explained by the other factors
                 # (THIS IS NOT IDEAL...)
                 if s.all(Z[:,0]==1.):
-                    Ypred_m_intercept = s.outer(Z[:,0], W[m][:,0].T) 
+                    Ypred_m_intercept = s.outer(Z[:,0], W[m][:,0].T)
                     Ypred_m_intercept[mask] = 0. # DO WE NEED TO DO THIS???
                     Ypred_m -= Ypred_m_intercept
                     all_r2[:,0] = 1.
@@ -169,7 +169,7 @@ class BayesNet(object):
         nodes = list(self.getVariationalNodes().keys())
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         activeK = nans((self.options['maxiter']))
-        
+
         # Start training
         for i in range(self.options['maxiter']):
             t = time();
@@ -245,7 +245,7 @@ class BayesNet(object):
 
     def getExpectations(self, only_first_moments=False, *nodes):
         """Method to collect all expectations of a given set of nodes (all by default)
-        
+
         PARAMETERS
         ----------
         only_first_moments: bool
