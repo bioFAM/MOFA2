@@ -95,25 +95,37 @@ class BayesNet(object):
                 # If there is an intercept term, regress it out, as it greatly decreases the fraction of variance explained by the other factors
                 # (THIS IS NOT IDEAL...)
                 if s.all(Z[:,0]==1.):
-                    Ypred_m_intercept = s.outer(Z[:,0], W[m][:,0].T)
-                    Ypred_m_intercept[mask] = 0. # DO WE NEED TO DO THIS???
-                    Ypred_m -= Ypred_m_intercept
+                    # calculate the total R2
+                    SS = ((Y[m] - Y[m].mean())**2.).sum()
+                    Res = ((Ypred_m - Y[m])**2.).sum()
+                    R2_tot = 1. - Res/SS
+
+                    # intercept_m = s.outer(Z[:,0], W[m][:,0].T)
+                    # intercept_m[mask] = 0. # DO WE NEED TO DO THIS???
+                    # Ypred_m -= intercept_m
+
                     all_r2[:,0] = 1.
-                    SS = (Ypred_m**2.).sum()
                     for k in range(1,self.dim['K']):
-                        Ypred_mk = s.outer(Z[:,k], W[m][:,k])
-                        Ypred_mk[mask] = 0.
-                        Res = ((Ypred_m - Ypred_mk)**2.).sum()
-                        all_r2[m,k] = 1. - Res/SS
+                        # adding the intercept to the predictions with factor k
+                        Ypred_mk = s.outer(Z[:,k], W[m][:,k]) + s.outer(Z[:,0], W[m][:,0])
+                        Ypred_mk[mask] = 0.  # should not be necessary anymore as we do masked data - this ?
+                        Res = ((Y[m] - Ypred_mk)**2.).sum()
+                        R2_k = 1. - Res/SS
+                        all_r2[m,k] = R2_k/R2_tot
                 # No intercept term
                 else:
-                    import pdb; pdb.set_trace()
-                    SS = (Ypred_m**2.).sum()
+                    # import pdb; pdb.set_trace()
+                    # calculate the total R2
+                    SS = ((Y[m] - Y[m].mean())**2.).sum()
+                    Res = ((Ypred_m - Y[m])**2.).sum()
+                    R2_tot = 1. - Res/SS
+
                     for k in range(self.dim['K']):
                         Ypred_mk = s.outer(Z[:,k], W[m][:,k])
                         Ypred_mk[mask] = 0.
-                        Res = ((Ypred_m - Ypred_mk)**2.).sum()
-                        all_r2[m,k] = 1. - Res/SS
+                        Res = ((Y[m] - Ypred_mk)**2.).sum()
+                        R2_k = 1. - Res/SS
+                        all_r2[m,k] = R2_k/R2_tot
 
             if by_r2 is not None:
                 drop_dic["by_r2"] = s.where( (all_r2>by_r2).sum(axis=0) == 0)[0]
