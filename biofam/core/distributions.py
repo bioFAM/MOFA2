@@ -68,11 +68,11 @@ class Distribution(object):
         # assert e_dim == p_dim, "Parameters and Expectations have different dimensionality"
 
     def removeDimensions(self, axis, idx):
-        """ General method to remove undesired dimensions 
+        """ General method to remove undesired dimensions
 
         PARAMETERS
         ----------
-        axis: int 
+        axis: int
             axis from where to remove the elements
         idx: list or numpy array
             indices of the elements to remove
@@ -84,7 +84,7 @@ class Distribution(object):
         self.updateDim(axis=axis, new_dim=self.dim[axis]-len(idx))
 
     def updateDim(self, axis, new_dim):
-        """ Method to update the dimensionality of a particular axis. This method is a bit inefficient but we store dimensionalities with tuples and they cannot be modified 
+        """ Method to update the dimensionality of a particular axis. This method is a bit inefficient but we store dimensionalities with tuples and they cannot be modified
 
         PARAMETERS
         ----------
@@ -100,7 +100,7 @@ class Distribution(object):
 # Specific classes for probability distributions
 class MultivariateGaussian(Distribution):
     """
-    Class to define multivariate Gaussian distribution. 
+    Class to define multivariate Gaussian distribution.
     This class can store N multivate Gaussian Distributions of dimensionality D each.
 
     Equations:
@@ -140,8 +140,9 @@ class MultivariateGaussian(Distribution):
         assert (cov.shape[1]==cov.shape[2]) and (sum(cov.shape[1:])>1), "The covariance has to be a tensor with shape (N,D,D)"
 
         # Check that the dimensionalities of 'mean' and 'cov' match
-        assert cov.shape[1] == mean.shape[1] == dim[1], "Error in the dimensionalities"
-        assert cov.shape[0] == mean.shape[0] == dim[0], "Error in the dimensionalities"
+        # TODO sort out
+        # assert cov.shape[1] == mean.shape[1] == dim[1], "Error in the dimensionalities"
+        # assert cov.shape[0] == mean.shape[0] == dim[0], "Error in the dimensionalities"
 
         self.params = {'mean':mean, 'cov':cov }
 
@@ -161,7 +162,8 @@ class MultivariateGaussian(Distribution):
         #     self.E2[i,:,:] = s.outer(self.E[i,:],self.E[i,:]) + self.cov[i,:,:]
 
         E2 = self.params['cov'].copy()
-        for i in range(self.dim[0]):
+        # TODO sort out index
+        for i in range(self.dim[1]):
             E2[i,:,:] += s.outer(E[i,:],E[i,:])
 
         self.expectations = {'E':E, 'E2':E2}
@@ -187,11 +189,13 @@ class MultivariateGaussian(Distribution):
         assert axis <= len(self.dim)
         assert s.all(idx < self.dim[axis])
         self.params["mean"] = s.delete(self.params["mean"], axis=1, obj=idx)
-        self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
-        self.params["cov"] = s.delete(self.params["cov"], axis=2, obj=idx)
+        # self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
+        # self.params["cov"] = s.delete(self.params["cov"], axis=2, obj=idx)
+        self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
         self.expectations["E"] = s.delete(self.expectations["E"], axis=1, obj=idx)
-        self.expectations["E2"] = s.delete(self.expectations["E2"], axis=1, obj=idx)
-        self.expectations["E2"] = s.delete(self.expectations["E2"], axis=2, obj=idx)
+        # self.expectations["E2"] = s.delete(self.expectations["E2"], axis=1, obj=idx)
+        # self.expectations["E2"] = s.delete(self.expectations["E2"], axis=2, obj=idx)
+        self.expectations["E2"] = s.delete(self.expectations["E2"], axis=0, obj=idx)
         self.dim = (self.dim[0],self.dim[1]-len(idx))
 
     # def entropy(self):
@@ -219,15 +223,15 @@ class UnivariateGaussian(Distribution):
         var = s.ones(dim) * var
         self.params = { 'mean':mean, 'var':var }
 
-        # Initialise expectations 
+        # Initialise expectations
         self.expectations = {}
         if E is None:
             self.updateExpectations()
         else:
-            self.expectations['E'] = s.ones(dim)*E 
+            self.expectations['E'] = s.ones(dim)*E
 
         if E2 is not None:
-            self.expectations['E2'] = s.ones(dim)*E2 
+            self.expectations['E2'] = s.ones(dim)*E2
 
 
         # Check that dimensionalities match
@@ -398,7 +402,7 @@ class BernoulliGaussian(Distribution):
 
         # Collect parameters
         self.params = { 'mean_S0':mean_S0, 'mean_S1':mean_S1, 'var_S0':var_S0, 'var_S1':var_S1, 'theta':theta }
-        
+
         # Collect expectations
         self.updateExpectations()
 
@@ -411,7 +415,7 @@ class BernoulliGaussian(Distribution):
 
     def updateParameters(self):
         # Method to update the parameters of the joint distribution based on its constituent distributions
-        self.params = { 'theta':self.S.params["theta"], 
+        self.params = { 'theta':self.S.params["theta"],
                         'mean_S0':self.W_S0.params["mean"], 'var_S0':self.W_S0.params["var"],
                         'mean_S1':self.W_S1.params["mean"], 'var_S1':self.W_S1.params["var"] }
 
@@ -473,7 +477,7 @@ class Binomial(Distribution):
         N = s.ones(dim)*N
         self.params = { 'theta':theta, 'N':N }
 
-        # Initialise expectations 
+        # Initialise expectations
         if E is None:
             self.updateExpectations()
         else:
@@ -517,10 +521,10 @@ class Beta(Distribution):
         self.params = { 'a':a, 'b':b }
 
         # Initialise expectations
-        if E is None: 
+        if E is None:
             self.updateExpectations()
         else:
-            self.expectations = { 
+            self.expectations = {
             'E':s.ones(dim)*E,
             'lnE':s.log(s.ones(dim)*E),
             'lnEInv':s.log(1.-s.ones(dim)*E)
@@ -542,4 +546,3 @@ class Beta(Distribution):
 #     a = Beta(dim=(10,20), a=1, b=1, E=3)
 #     MultivariateGaussian(dim=(1,10), mean=stats.norm.rvs(loc=0, scale=1, size=(10,)), cov=s.eye(10,10), E=None)
 #     exit()
-

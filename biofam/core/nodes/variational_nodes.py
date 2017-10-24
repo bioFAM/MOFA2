@@ -3,14 +3,14 @@ from __future__ import division
 import scipy as s
 
 from .basic_nodes import *
-from mofa.core.distributions import *
+from biofam.core.distributions import *
 
 
 """
 This module is used to define nodes that are infered using the variational bayes framework.
 
 All variational nodes share the property of having a lower bound associated with it.
-We divide variational nodes into Constant and Unobserved. 
+We divide variational nodes into Constant and Unobserved.
 The constant variational nodes are fixed and have no parameters or expectations
 The unobserved variational nodes are learnt and have an associated P and Q distribution with corresponding expectations and parameters
 """
@@ -120,7 +120,7 @@ class MultivariateGaussian_Unobserved_Variational_Node(Unobserved_Variational_No
         # qcov (nd array): the covariance parameter of the Q distribution
         # qE (nd array): the initial first moment of the Q distribution
         Unobserved_Variational_Node.__init__(self, dim)
-        
+
         # Initialise the P and Q distributions
         self.P = MultivariateGaussian(dim=dim, mean=pmean, cov=pcov)
         self.Q = MultivariateGaussian(dim=dim, mean=qmean, cov=qcov, E=qE)

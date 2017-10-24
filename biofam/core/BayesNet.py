@@ -107,6 +107,7 @@ class BayesNet(object):
                         all_r2[m,k] = 1. - Res/SS
                 # No intercept term
                 else:
+                    import pdb; pdb.set_trace()
                     SS = (Ypred_m**2.).sum()
                     for k in range(self.dim['K']):
                         Ypred_mk = s.outer(Z[:,k], W[m][:,k])
