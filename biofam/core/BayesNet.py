@@ -163,7 +163,7 @@ class BayesNet(object):
         #         drop_dic["by_cor"] = [ s.random.choice(drop_dic["by_cor"]) ]
 
         # Drop the factors
-        drop = s.unique(s.concatenate(drop_dic.values()))
+        drop = s.unique(s.concatenate(list(drop_dic.values())))
         if len(drop) > 0:
             for node in self.nodes.keys():
                 self.nodes[node].removeFactors(drop)
