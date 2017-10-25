@@ -21,7 +21,6 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
 
     def updateParameters(self):
-
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation().copy()
         tmp = self.markov_blanket["SW"].getExpectations()
@@ -60,3 +59,15 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
+
+    def calculateELBO(self):
+        # Collect parameters and expectations from current node
+        P,Q = self.P.getParameters(), self.Q.getParameters()
+        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
+        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
+
+        # Do the calculations
+        lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
+        lb_q = s.sum(Qa*s.log(Qb)) + s.sum((Qa-1.)*QlnE) - s.sum(Qb*QE) - s.sum(special.gammaln(Qa))
+
+        return lb_p - lb_q
