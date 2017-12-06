@@ -9,11 +9,11 @@ def entry_point():
 
   banner = """
   ###########################################################
-  ###                 __  __  ___  _____ _                ### 
-  ###                |  \/  |/ _ \|  ___/ \               ### 
-  ###                | |\/| | | | | |_ / _ \              ### 
-  ###                | |  | | |_| |  _/ ___ \             ### 
-  ###                |_|  |_|\___/|_|/_/   \_\            ### 
+  ###                 __  __  ___  _____ _                ###
+  ###                |  \/  |/ _ \|  ___/ \               ###
+  ###                | |\/| | | | | |_ / _ \              ###
+  ###                | |  | | |_| |  _/ ___ \             ###
+  ###                |_|  |_|\___/|_|/_/   \_\            ###
   ###                                                     ###
   ########################################################### """
 
@@ -264,7 +264,7 @@ def entry_point():
         model_opts["initTheta"]["b"][m][k] = s.nan
 
   # Weights
-  model_opts["initSW"] = { 
+  model_opts["initSW"] = {
     'Theta':[ model_opts['initTheta']['E'][m] for m in range(M)],
     'mean_S0':[s.zeros((D[m],K)) for m in range(M)],
     'var_S0':[s.nan*s.ones((D[m],K)) for m in range(M)],
@@ -301,7 +301,7 @@ def entry_point():
 
   if model_opts["learnIntercept"]:
     for m in range(M):
-      
+
       # Weights
       if args.likelihoods[m]=="gaussian":
         model_opts["initSW"]["mean_S1"][m][:,0] = data[m].mean(axis=0)
