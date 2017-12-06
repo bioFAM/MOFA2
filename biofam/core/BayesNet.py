@@ -17,9 +17,59 @@ import sys
 from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import nans
 
-
-
 class BayesNet(object):
+    def __init__(self, dim, nodes):
+        self.dim = dim
+        self.nodes = nodes
+
+    def getParameters(self, *nodes):
+        """Method to collect all parameters of a given set of nodes (all by default)
+
+        PARAMETERS
+        ----------
+        nodes: iterable
+            name of the nodes
+        """
+
+        if len(nodes) == 0: nodes = self.nodes.keys()
+        params = {}
+        for node in nodes:
+            tmp = self.nodes[node].getParameters()
+            if tmp != None: params[node] = tmp
+        return params
+
+    def getExpectations(self, only_first_moments=False, *nodes):
+        """Method to collect all expectations of a given set of nodes (all by default)
+
+        PARAMETERS
+        ----------
+        only_first_moments: bool
+            get only first moments?
+        nodes: list
+            name of the nodes
+        """
+
+        if len(nodes) == 0: nodes = self.nodes.keys()
+        expectations = {}
+        for node in nodes:
+            if only_first_moments:
+                tmp = self.nodes[node].getExpectation()
+            else:
+                tmp = self.nodes[node].getExpectations()
+            expectations[node] = tmp
+        return expectations
+
+    def getNodes(self):
+        """ Method to return all nodes """
+        return self.nodes
+
+    def simulate(self):
+        # check whether Y is in the nodes
+        assert 'Y' in self.nodes, "Define a Y node before simulating"
+        Y.sample('P')
+
+
+class BayesNetVB(BayesNet):
     def __init__(self, dim, nodes, schedule, options, trial=1):
         """ Initialisation of a Bayesian network
 
@@ -239,47 +289,6 @@ class BayesNet(object):
         # Finish by collecting the training statistics
         self.train_stats = { 'activeK':activeK, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
-
-    def getParameters(self, *nodes):
-        """Method to collect all parameters of a given set of nodes (all by default)
-
-        PARAMETERS
-        ----------
-        nodes: iterable
-            name of the nodes
-        """
-
-        if len(nodes) == 0: nodes = self.nodes.keys()
-        params = {}
-        for node in nodes:
-            tmp = self.nodes[node].getParameters()
-            if tmp != None: params[node] = tmp
-        return params
-
-    def getExpectations(self, only_first_moments=False, *nodes):
-        """Method to collect all expectations of a given set of nodes (all by default)
-
-        PARAMETERS
-        ----------
-        only_first_moments: bool
-            get only first moments?
-        nodes: list
-            name of the nodes
-        """
-
-        if len(nodes) == 0: nodes = self.nodes.keys()
-        expectations = {}
-        for node in nodes:
-            if only_first_moments:
-                tmp = self.nodes[node].getExpectation()
-            else:
-                tmp = self.nodes[node].getExpectations()
-            expectations[node] = tmp
-        return expectations
-
-    def getNodes(self):
-        """ Method to return all nodes """
-        return self.nodes
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """
