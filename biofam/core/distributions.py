@@ -198,10 +198,15 @@ class MultivariateGaussian(Distribution):
         self.expectations["E2"] = s.delete(self.expectations["E2"], axis=0, obj=idx)
         self.dim = (self.dim[0],self.dim[1]-len(idx))
 
+    def sample(self):
+        return s.random.multivariate_normal(self.params['mean'], self.params['cov'])
+
     # def entropy(self):
         # CHECK THIs Is CORRECT
         # tmp = sum( [ logdet(self.cov[i,:,:]) for i in range(self.dim[0]) ] )
         # return ( 0.5*(tmp + (self.dim[0]*self.dim[1])*(1+s.log(2*pi)) ).sum() )
+
+
 class UnivariateGaussian(Distribution):
     """
     Class to define univariate Gaussian distributions
@@ -256,6 +261,11 @@ class UnivariateGaussian(Distribution):
 
     def entropy(self):
         return s.sum( 0.5*s.log(self.params['var']) + 0.5*(1+s.log(2*s.pi)) )
+
+    def sample(self):
+        return s.random.normal(self.params['mean'], np.sqrt(self.params['var']))
+
+
 class Gamma(Distribution):
     """
     Class to define Gamma distributions
@@ -298,6 +308,13 @@ class Gamma(Distribution):
     def loglik(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
         return s.sum( -s.log(special.gamma(self.params['a'])) + self.params['a']*s.log(self.params['b']) * (self.params['a']-1)*s.log(x) -self.params['b']*x )
+
+    def sample(self, n=1):
+        k = self.params['a']
+        theta = 1./self.params['b']  # using shape/scale parametrisation
+        return s.random.gamma(k, theta)
+
+
 class Poisson(Distribution):
     """
     Class to define Poisson distributions.
@@ -344,6 +361,8 @@ class Poisson(Distribution):
         x = x.flatten()
         # return s.log( s.prod (stats.poisson.pmf(x,theta) ))
         return s.sum( x*s.log(theta) - theta - s.log(s.misc.factorial(x)) )
+
+
 class Bernoulli(Distribution):
     """
     Class to define Bernoulli distributions
@@ -378,6 +397,11 @@ class Bernoulli(Distribution):
     def loglik(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
         return s.sum( x*self.params['theta'] + (1-x)*(1-self.params['theta']) )
+
+    def sample(self):
+        return s.random.binomial(1, self.params['theta'])
+
+
 class BernoulliGaussian(Distribution):
     """
     Class to define a Bernoulli-Gaussian distributions (for more information see Titsias and Gredilla, 2014)
@@ -459,6 +483,8 @@ class BernoulliGaussian(Distribution):
         dim = list(self.dim)
         dim[axis] = new_dim
         self.dim = tuple(dim)
+
+
 class Binomial(Distribution):
     """
     Class to define Binomial distributions
@@ -502,6 +528,11 @@ class Binomial(Distribution):
         assert x.dtype == int, "x has to be an integer array"
         # print s.sum (stats.binom.logpmf(x, self.params["N"], self.theta) )
         return s.sum( s.log(special.binom(self.params["N"],x)) + x*s.log(self.params["theta"]) + (self.params["N"]-x)*s.log(1-self.params["theta"]) )
+
+    def sample(self):
+        return s.random.binomial(self.params['N'], self.params['theta'])
+
+
 class Beta(Distribution):
     """
     Class to define Beta distributions
@@ -541,6 +572,11 @@ class Beta(Distribution):
         lnEInv = special.digamma(b) - special.digamma(a+b) # expectation of ln(1-X)
         lnEInv[s.isinf(lnEInv)] = -s.inf # there is a numerical error in lnEInv if E=1
         self.expectations = { 'E':E, 'lnE':lnE, 'lnEInv':lnEInv }
+
+    def sample(self, n=1):
+        a = self.params['a']
+        b = self.params['b']
+        return s.random.beta(a, b)
 
 # if __name__ == "__main__":
 #     a = Beta(dim=(10,20), a=1, b=1, E=3)

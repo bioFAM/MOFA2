@@ -18,9 +18,33 @@ from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import nans
 
 class BayesNet(object):
-    def __init__(self, dim, nodes):
+    def __init__(self, dim, nodes, schedule, options, trial=1):
+        """ Initialisation of a Bayesian network
+
+        PARAMETERS
+        ----------
+        dim: dict
+            keyworded dimensionalities, ex. {'N'=10, 'M'=3, ...}
+        nodes: dict
+            dictionary with all nodes where the keys are the name of the node and the values are instances the 'Node' class
+        schedule: iterable
+            list or tuple with the names of the nodes to be updated in the given order. Nodes not present in schedule will not be updated
+        options: dict
+            training options, such as maximum number of iterations, training options, etc.
+        trial: int
+            this is an auxiliary variable for parallelised running of multiple trials
+        """
+
         self.dim = dim
         self.nodes = nodes
+
+        self.schedule = schedule
+        self.options = options
+        self.trial = trial
+
+        # Training and simulations flag
+        self.trained = False
+        self.simulated = False
 
     def getParameters(self, *nodes):
         """Method to collect all parameters of a given set of nodes (all by default)
@@ -63,38 +87,22 @@ class BayesNet(object):
         """ Method to return all nodes """
         return self.nodes
 
-    def simulate(self):
-        # check whether Y is in the nodes
-        assert 'Y' in self.nodes, "Define a Y node before simulating"
-        Y.sample('P')
+    def simulate(self, dist='P'):
+        self.nodes['SW'].sample(dist)
+        self.nodes['Z'].sample(dist)
+        self.nodes['Tau'].sample(dist)
+        self.nodes['Y'].sample(dist)
 
+        self.simulated = True
 
-class BayesNetVB(BayesNet):
-    def __init__(self, dim, nodes, schedule, options, trial=1):
-        """ Initialisation of a Bayesian network
+    def sampleData(self):
+        if ~self.simulated:
+            self.simulate()
+        return self.nodes['Y'].sample(dist='P')
 
-        PARAMETERS
-        ----------
-        dim: dict
-            keyworded dimensionalities, ex. {'N'=10, 'M'=3, ...}
-        nodes: dict
-            dictionary with all nodes where the keys are the name of the node and the values are instances the 'Node' class
-        schedule: iterable
-            list or tuple with the names of the nodes to be updated in the given order. Nodes not present in schedule will not be updated
-        options: dict
-            training options, such as maximum number of iterations, training options, etc.
-        trial: int
-            this is an auxiliary variable for parallelised running of multiple trials
-        """
-
-        self.dim = dim
-        self.nodes = nodes
-        self.schedule = schedule
-        self.options = options
-        self.trial = trial
-
-        # Training flag
-        self.trained = False
+    def saveData(self):
+        # TODO some function here to save simulated data
+        pass
 
     def removeInactiveFactors(self, by_norm=None, by_pvar=None, by_cor=None, by_r2=None):
         """Method to remove inactive factors

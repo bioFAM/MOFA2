@@ -1,5 +1,5 @@
 """
-Module with functions to build and initialise the model 
+Module with functions to build and initialise the model
 """
 
 import scipy as s
@@ -10,12 +10,12 @@ import numpy as np
 #from joblib import Parallel, delayed
 
 from biofam.core.BayesNet import *
-from .init_nodes import *
-from .utils import *
+from init_nodes import *
+from utils import *
 
-def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, verbose=False):
+def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, verbose=False, NetType='Sampler'):
     """Method to run a single trial of a MOFA model
-    data: 
+    data:
     data_opts
     model_opts:
     train_opts:
@@ -142,8 +142,11 @@ def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, 
     print ("#"*45)
     print ("\n")
     sleep(1)
-    
-    net.iterate()
+
+    if NetType == 'VB':
+        net.iterate()
+    if NetType == 'Sampler':
+        net.simulate()
 
     return net
 
@@ -153,7 +156,7 @@ def runMultipleTrials(data, data_opts, model_opts, train_opts, keep_best_run, se
 
     PARAMETERS
     -----
-    data: 
+    data:
     data_opts
     model_opts:
     train_opts:
@@ -193,7 +196,7 @@ def runMultipleTrials(data, data_opts, model_opts, train_opts, keep_best_run, se
     ##################
     ## Save results ##
     ##################
-    
+
     sample_names = data[0].index.tolist()
     feature_names = [  data[m].columns.values.tolist() for m in range(len(data)) ]
     for t in range(len(save_models)):

@@ -3,7 +3,7 @@ import pandas as pd
 import scipy as s
 from time import sleep
 
-from .build_model import *
+from build_model import *
 
 def entry_point():
 
@@ -13,7 +13,7 @@ def entry_point():
   ###                |  \/  |/ _ \|  ___/ \               ###
   ###                | |\/| | | | | |_ / _ \              ###
   ###                | |  | | |_| |  _/ ___ \             ###
-  ###                |_|  |_|\___/|_|/_/   \_\            ###
+  ###                |_|  |_|\___/|_|/_/   \_\ (biofam)   ###
   ###                                                     ###
   ########################################################### """
 
@@ -218,8 +218,10 @@ def entry_point():
   model_opts["priorZ"]['var'] = s.ones((K,))*1.
 
   # Weights
-  model_opts["priorSW"] = { 'Theta':[s.nan]*M, 'mean_S0':[s.nan]*M, 'var_S0':[s.nan]*M, 'mean_S1':[s.nan]*M, 'var_S1':[s.nan]*M } # Not required
-  model_opts["priorAlphaW"] = { 'a':[s.ones(K)*1e-14]*M, 'b':[s.ones(K)*1e-14]*M }
+  model_opts["priorSW"] = { 'Theta':[s.nan]*M, 'mean_S0':[0.]*M, 'var_S0':[s.nan]*M, 'mean_S1':[0.]*M, 'var_S1':[s.nan]*M } # Not required
+  model_opts["priorAlphaW"] = { 'a':[s.ones(K)*1.]*M, 'b':[s.ones(K)*1.]*M }  # TODO distinguish cases
+
+
 
   # Theta
   model_opts["priorTheta"] = { 'a':[s.ones(K,) for m in range(M)], 'b':[s.ones(K,) for m in range(M)] }
@@ -230,7 +232,7 @@ def entry_point():
         model_opts["priorTheta"]["b"][m][k] = s.nan
 
   # Tau
-  model_opts["priorTau"] = { 'a':[s.ones(D[m])*1e-14 for m in range(M)], 'b':[s.ones(D[m])*1e-14 for m in range(M)] }
+  model_opts["priorTau"] = { 'a':[s.ones(D[m])*1. for m in range(M)], 'b':[s.ones(D[m])*1. for m in range(M)] }  # TODO distinguish cases
 
 
   ##############################################
@@ -360,3 +362,6 @@ def entry_point():
   # Go!
   # runSingleTrial(data, data_opts, model_opts, train_opts, seed=None)
   runMultipleTrials(data, data_opts, model_opts, train_opts, keep_best_run, args.seed)
+
+if __name__ == '__main__':
+  entry_point()

@@ -1,5 +1,5 @@
 """
-Module to define multi-view nodes. 
+Module to define multi-view nodes.
 A multi-view node is simply a node that is defined for several views. For example, the weights W or the data Y, but not the latent variables Z.
 
 Types of multi-view nodes:
@@ -36,8 +36,8 @@ class Multiview_Node(Node):
     def addMarkovBlanket(self, **kwargs):
         """Method to define the Markov blanket"""
         # assert len(kwargs.values()) == len(self.activeM), "The markov blanket of a multiview node should be a dictionary where the key is the name of the node and the value is a list of nodes of length M"
-        for k,v in kwargs.items(): 
-            for m in self.activeM: 
+        for k,v in kwargs.items():
+            for m in self.activeM:
                 if hasattr(self.nodes[m], 'markov_blanket'):
                     if k in self.nodes[m].markov_blanket.keys():
                         print("Error: " + str(k) + " is already in the markov blanket of " + str(self.nodes[m]))
@@ -52,7 +52,7 @@ class Multiview_Node(Node):
     def getMarkovBlanket(self):
         print("Error: Multiview nodes do not have a markov blanket, use the single-view nodes")
         exit()
-        
+
     def removeFactors(self,idx):
         """Method to remove factors from the node
 
@@ -66,7 +66,7 @@ class Multiview_Node(Node):
     def getNodes(self):
         """Method to get the nodes"""
         return self.nodes
-        
+
     def getExpectation(self):
         """Method to get the first moments (expectation)"""
         return [ self.nodes[m].getExpectation() for m in self.activeM ]
@@ -92,6 +92,11 @@ class Multiview_Node(Node):
         assert s.all(m in self.activeM), "Trying to update the dimensionality of a node that doesnt exist in a view"
         M = self.activeM if m is None else m
         for m in M: self.nodes[m].updateDim(axis,new_dim)
+
+    def sample(self, dist):
+        # TODO should we np.array() it ? better data type BUT problem of space efficiency ?
+        self.samp = [self.nodes[m].sample(dist) for m in self.activeM]
+        return self.samp
 
 class Multiview_Variational_Node(Multiview_Node, Variational_Node):
     """General class for multiview variational nodes."""
@@ -144,4 +149,3 @@ class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):
             if isinstance(self.nodes[m],Variational_Node):
                 lb += self.nodes[m].calculateELBO()
         return lb
-

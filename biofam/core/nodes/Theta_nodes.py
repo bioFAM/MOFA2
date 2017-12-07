@@ -66,6 +66,7 @@ class Theta_Node(Beta_Unobserved_Variational_Node):
         lb_q[np.isnan(lb_q)] = 0
 
         return lb_p.sum() - lb_q.sum()
+    
 
 class Theta_Constant_Node(Constant_Variational_Node):
     """

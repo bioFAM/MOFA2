@@ -39,3 +39,18 @@ class Y_Node(Constant_Variational_Node):
         tau_exp = self.markov_blanket["Tau"].getExpectations()
         lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"],tauQ_param["b"]-tauP_param["b"])
         return lik
+
+    def sample(self, dist='P'):
+        # Y does NOT call sample recursively but relies on previous calls
+        Z_samp = self.markov_blanket['Z'].samp
+        W_samp = self.markov_blanket['SW'].samp
+        Tau_samp = self.markov_blanket['Tau'].samp
+
+        mu = Z_samp.dot(W_samp.transpose())
+        if Tau_samp.shape != mu.shape:
+            Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
+        var =1./Tau_samp
+
+        self.samp = s.random.normal(mu, var)
+        return self.samp
+    

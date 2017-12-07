@@ -8,7 +8,7 @@
 
 
 # Input files as plain text format
-inFolder="/Users/ricard/mofa/mofa/run/test_data"
+inFolder="test_data/"
 inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt")
 
 # Options for the input files
@@ -17,7 +17,7 @@ header_rows=0 # set to 1 if the files contain row names
 header_cols=0 # set to 1 if the files contain column names
 
 # Output file path, please use the .hdf5 extension
-outFile=( "/Users/ricard/MOFA/MOFA/test/test.hdf5" )
+outFile=( "/tmp/test.hdf5" )
 
 # Data options
 center_features=0   # center the features to zero-mean? (not necessary as long as learnMean=1)
@@ -42,25 +42,25 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 
 # Define the initial number of factors and how inactive factors are dropped during training.
 # The model automatically removes inactive factors during training if they explain a fraction of variance smaller than 'dropR2'
-# Recommendation: 
+# Recommendation:
 # (1) If you remove inactive factors (dropR2>0), then the initial number of factors should be large enough
 # (2) If you want to get the most strong drivers of variation then we recommend dropR2 to be at least 0.05 (5%), but if you want to capture more subtle sources of variation you should decrease it to 0.01 (1%) or 0.03 (3%)
 factors=20   # initial number of facotrs
 startDrop=1  # initial iteration to start shutting down factors
-freqDrop=1 	 # frequency of checking for shutting down factors 
+freqDrop=1 	 # frequency of checking for shutting down factors
 dropR2=0.00  # threshold on fractionof variance explained
 
-# Define hyperparameters for the feature-wise spike-and-slab sparsity prior 
+# Define hyperparameters for the feature-wise spike-and-slab sparsity prior
 learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
 initTheta=( 1 1 1 ) 	# initial value of sparsity levels (1 corresponds to a dense model, 0.5 corresponds to factors ); each element of the vector corresponds to a view
 startSparsity=250 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
 
 # Learn an intercept term (feature-wise means)?
-# Recommendation: always leave it active. If all your views are gaussian you can set this to 0 and center the features, it does not matter. 
+# Recommendation: always leave it active. If all your views are gaussian you can set this to 0 and center the features, it does not matter.
 # But for non-gaussian views we noticed that this is very useful, so set it to 1
 learnIntercept=1
 
-# Random seed 
+# Random seed
 seed=0 # if 0, the seed is automatically generated using the current time
 
 
@@ -69,7 +69,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='mofa
+cmd='python ../build_model/entry_point.py
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile
@@ -96,4 +96,3 @@ if [[ $nostop -eq 1 ]]; then cmd="$cmd --nostop"; fi
 if [[ $learnIntercept -eq 1 ]]; then cmd="$cmd --learnIntercept"; fi
 
 eval $cmd
-
