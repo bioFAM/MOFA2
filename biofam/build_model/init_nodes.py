@@ -29,11 +29,11 @@ from biofam.core.nodes.basic_nodes import *
 from biofam.core.nodes.multiview_nodes import *
 from biofam.core.nodes.nongaussian_nodes import *
 from biofam.core.nodes.Y_nodes import Y_Node
-from biofam.core.nodes.Z_nodes import Z_Node, MuZ_Node
+from biofam.core.nodes.Z_nodes import Z_Node
 from biofam.core.nodes.W_nodes import SW_Node
 from biofam.core.nodes.Alpha_nodes import AlphaW_Node_mk
 from biofam.core.nodes.Tau_nodes import Tau_Node
-from biofam.core.nodes.Theta_nodes import Theta_Node, Theta_Constant_Node
+from biofam.core.nodes.Theta_nodes import Theta_Node
 
 
 class initModel(object):
@@ -57,10 +57,7 @@ class initModel(object):
 
         self.nodes = {}
 
-        # Set the seed
-        s.random.seed(seed)
-
-    def initZ(self, pmean, pvar, qmean, qvar, qE=None, qE2=None, covariates=None, scale_covariates=None):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None, scale_covariates=None):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -76,7 +73,17 @@ class initModel(object):
         scale_covariates: 
         """
 
-        # Initialise mean of the Q distribution
+        ## Initialise prior distribution (P) ##
+
+        pmean = s.ones((self.N,self.K))*pmean  # mean
+        pvar  s.ones((K;))*pvar                # variance
+
+        ## Initialise variational distribution (Q) ##
+
+        # variance
+        qvar = s.ones((self.N,self.K))*qvar
+
+        # mean
         if qmean is not None:
             if isinstance(qmean,str):
                 if qmean == "random": # Random initialisation of latent variables
@@ -93,7 +100,7 @@ class initModel(object):
                     qmean = pca.components_.T
 
             elif isinstance(qmean,s.ndarray):
-                assert qmean.shape == (self.N,self.K)
+                assert qmean.shape == (self.N,self.K), "Wrong shape for the expectation of the Q distribution of Z"
 
             elif isinstance(qmean,(int,float)):
                 qmean = s.ones((self.N,self.K)) * qmean
@@ -106,53 +113,54 @@ class initModel(object):
         if covariates is not None:
             assert scale_covariates != None, "If you use covariates also define data_opts['scale_covariates']"
 
-            # Select indices for covaraites
+            # Select indices for covariates
             idx_covariates = s.array(range(covariates.shape[1]))
 
             # Center and scale the covariates to match the prior distribution N(0,1)
-            # to-do: this needs to be improved to take the particular mean and var into account
-            # covariates[scale_covariates] = (covariates - covariates.mean(axis=0)) / covariates.std(axis=0)
             scale_covariates = s.array(scale_covariates)
             covariates[:,scale_covariates] = (covariates[:,scale_covariates] - s.nanmean(covariates[:,scale_covariates], axis=0)) / s.nanstd(covariates[:,scale_covariates], axis=0)
 
             # Set to zero the missing values in the covariates
             covariates[s.isnan(covariates)] = 0.
             qmean[:,idx_covariates] = covariates
+
+            # Remove prior and variational distributions from the covariates
+            pvar[,idx_covariates] = s.nan
+            qvar[,idx_covariates] = s.nan  # MAYBE SET IT TO 0
+
         else:
             idx_covariates = None
 
-
         # Initialise the node
-        # self.Z = Constant_Node(dim=(self.N,self.K), value=qmean)
-        self.Z = Z_Node(dim=(self.N,self.K),
-                        pmean=s.ones((self.N,self.K))*pmean,
-                        pvar=s.ones((self.K,))*pvar,
-                        qmean=s.ones((self.N,self.K))*qmean,
-                        qvar=s.ones((self.N,self.K))*qvar,
-                        qE=qE, qE2=qE2,
-                        idx_covariates=idx_covariates)
-        self.nodes["Z"] = self.Z
+        self.nodes["Z"] = Z_Node(dim=(self.N,self.K), pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2, idx_covariates=idx_covariates)
 
-    def initSW(self, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES):
-        """Method to initialise the spike-slab variable (product of bernoulli and gaussian variables)
+    def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1., qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1., qEW_S0=0., qEW_S1=0., qES=1.):
+        """Method to initialise the spike-slab variable (reparametrised as the product of bernoulli and gaussian variables)
 
         PARAMETERS
         ----------
         """
+
         SW_list = [None]*self.M
         for m in range(self.M):
 
-           # Initialise first moment
+            ## Initialise prior distribution (P) ##
+
+            ## Initialise variational distribution (Q) ##
             if isinstance(qmean_S1[m],str):
-                if qmean_S1[m] == "random":
+
+                if qmean_S1[m] == "random": # random
                     qmean_S1[m] = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
                 else:
                     print("%s initialisation not implemented for SW" % qmean_S1[m])
                     exit()
+
             elif isinstance(qmean_S1[m],s.ndarray):
                 assert qmean_S1[m].shape == (self.D[m],self.K), "Wrong dimensionality"
+
             elif isinstance(qmean_S1[m],(int,float)):
-                qmean_S1[m] = s.ones((self.D[m],self.K)) * qmean_S1[m]
+                qmean_S1[m] = s.ones((self.D[m],self.K)) * qmean_S1
+
             else:
                 print("Wrong initialisation for SW")
                 exit()
@@ -160,28 +168,26 @@ class initModel(object):
             SW_list[m] = SW_Node(
                 dim=(self.D[m],self.K),
 
-                ptheta=ptheta[m],
-                pmean_S0=pmean_S0[m],
-                pvar_S0=pvar_S0[m],
-                pmean_S1=pmean_S1[m],
-                pvar_S1=pvar_S1[m],
+                ptheta=ptheta,
+                pmean_S0=pmean_S0,
+                pvar_S0=pvar_S0,
+                pmean_S1=pmean_S1,
+                pvar_S1=pvar_S1,
 
-                qtheta=qtheta[m],
-                qmean_S0=qmean_S0[m],
-                qvar_S0=qvar_S0[m],
-                qmean_S1=qmean_S1[m],
-                qvar_S1=qvar_S1[m],
+                qtheta=qtheta,
+                qmean_S0=qmean_S0,
+                qvar_S0=qvar_S0,
+                qmean_S1=qmean_S1,
+                qvar_S1=qvar_S1,
 
-                qES=qES[m],
-                qEW_S0=qEW_S0[m],
-                qEW_S1=qEW_S1[m],
-                )
+                qES=qES,
+                qEW_S0=qEW_S0,
+                qEW_S1=qEW_S1,
+            )
 
-        self.SW = Multiview_Variational_Node(self.M, *SW_list)
-        self.nodes["SW"] = self.SW
+        self.nodes["SW"] = Multiview_Variational_Node(self.M, *SW_list)
 
-    def initAlphaW_mk(self, pa, pb, qa, qb, qE):
-
+    def initAlphaW_mk(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1.):
         """Method to initialise the precision of the group-wise ARD prior
 
         PARAMETERS
@@ -198,28 +204,31 @@ class initModel(object):
         
         alpha_list = [None]*self.M
         for m in range(self.M):
-            alpha_list[m] = AlphaW_Node_mk(dim=(self.K,), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
-            # alpha_list[m] = Constant_Node(dim=(self.K,), value=qE[m])
-            # alpha_list[m].factors_axis = 0
-        self.AlphaW = Multiview_Variational_Node(self.M, *alpha_list)
-        # self.AlphaW = Multiview_Constant_Node(self.M, *alpha_list)
-        self.nodes["AlphaW"] = self.AlphaW
+            alpha_list[m] = AlphaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+        self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initTau(self, pa, pb, qa, qb, qE):
-        # Method to initialise the precision of the noise
-        # Inputs:
-        #  pa (float): 'a' parameter of the prior distribution
-        #  pb (float): 'b' parameter of the prior distribution
-        #  qb (float): initialisation of the 'b' parameter of the variational distribution
-        #  qE (float): initial expectation of the variational distribution
+    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1.):
+        """Method to initialise the precision of the noise
+
+        PARAMETERS
+        ----------
+         pa: float 
+            'a' parameter of the prior distribution
+         pb :float
+            'b' parameter of the prior distribution
+         qb: float
+            initialisation of the 'b' parameter of the variational distribution
+         qE: float
+            initial expectation of the variational distribution
+        """
+
         tau_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m] == "poisson":
                 tmp = 0.25 + 0.17*s.amax(self.data[m],axis=0)
                 tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
             elif self.lik[m] == "bernoulli":
-                # tmp = s.ones(self.D[m])*0.25
-                # tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
+                # tau_list[m] = Constant_Node(dim=(self.D[m],), value=s.ones(self.D[m])*0.25)
                 # tau_list[m] = Tau_Jaakkola(dim=(self.D[m],), value=0.25)
                 tau_list[m] = Tau_Jaakkola(dim=((self.N,self.D[m])), value=1.)
             elif self.lik[m] == "binomial":
@@ -227,13 +236,12 @@ class initModel(object):
                 tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
             elif self.lik[m] == "gaussian":
                 tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
-            elif self.lik[m] == "warp":
-                tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
-        self.Tau = Multiview_Mixed_Node(self.M,*tau_list)
-        self.nodes["Tau"] = self.Tau
+            # elif self.lik[m] == "warp":
+            #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
+        self.nodes["Tau"] = Multiview_Mixed_Node(self.M,*tau_list)
 
     def initY(self):
-        # Method to initialise the observed data
+        """Method to initialise the observations"""
         Y_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m]=="gaussian":
@@ -246,75 +254,114 @@ class initModel(object):
                 # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
                 Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
                 # Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
-            elif self.lik[m]=="warp":
-                print "Not implemented"
-                exit()
-                # Y_list[m] = Warped_PseudoY_Node(dim=(self.N,self.D[m]), obs=self.data[m], func_type='tanh', I=3, E=None)
-                # Y_list[m] = Warped_PseudoY_Node(dim=(self.N,self.D[m]), obs=self.data[m], func_type='logistic', I=1, E=None)
+            # elif self.lik[m]=="warp":
+            #     print "Not implemented"
+            #     exit()
+            #     Y_list[m] = Warped_PseudoY_Node(dim=(self.N,self.D[m]), obs=self.data[m], func_type='tanh', I=3, E=None)
+            #     Y_list[m] = Warped_PseudoY_Node(dim=(self.N,self.D[m]), obs=self.data[m], func_type='logistic', I=1, E=None)
         self.Y = Multiview_Mixed_Node(self.M, *Y_list)
         self.nodes["Y"] = self.Y
 
-    def initThetaMixed(self, pa, pb, qa, qb, qE, learnTheta):
-        # Method to initialie a general theta node
-        # Inputs:
-        #  pa (float): 'a' parameter of the prior distribution
-        #  pb (float): 'b' parameter of the prior distribution
-        #  qb (float): initialisation of the 'b' parameter of the variational distribution
-        #  qE (float): initial expectation of the variational distribution
-        #  learnTheta (binary): list with binary matrices with dim (D[m],K)
+    def initThetaLearn(self, pa=1., pb=1., qa=1., qb=1., qE=1.):
+        """Method to initialise the sparsity parameter of the spike and slab weights
+
+        PARAMETERS
+        ----------
+         pa: float 
+            'a' parameter of the prior distribution
+         pb :float
+            'b' parameter of the prior distribution
+         qb: float
+            initialisation of the 'b' parameter of the variational distribution
+         qE: float
+            initial expectation of the variational distribution
+        """
+        Theta_list = [None] * self.M
+        for m in range(self.M):
+            Theta_list[m] = Theta_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+        self.nodes["Theta"] = Multiview_Variational_Node(self.M, *Theta_list)
+
+    def initThetaMixed(self, pa=1., pb=1., qa=1., qb=1., qE=1., idx):
+        """Method to initialise the sparsity parameter of the spike and slab weights
+        In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
+        in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
+
+        PARAMETERS
+        ----------
+         pa: float 
+            'a' parameter of the prior distribution
+         pb :float
+            'b' parameter of the prior distribution
+         qb: float
+            initialisation of the 'b' parameter of the variational distribution
+         qE: (...)
+        idx:list with binary matrices with dim (D[m],K)
+
+        """
+
+        # Do some sanity checks on the arguments
+        if isinstance(qE,list): 
+            assert len(qE) == self.M, "Wrong dimensionality"
+            for m in range(self.M):
+                if isinstance(qE[m],(int,float)):
+                    qE[m] = s.ones((self.D[m],self.K)) * qE[m]
+                elif isinstance(qE[m],s.ndarray):
+                    assert qE[m].shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
+                else:
+                    print("Wrong initialisation for Theta"); exit()
+        elif isinstance(qE,s.ndarray):
+            assert qE.shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
+            tmp = [ qE for m in xrange(self.M)]
+            qE = tmp # IS THIS REQUIRED????
+
+
+        elif isinstance(qE,(int,float)):
+            tmp = [ s.ones((self.D[m],self.K)) * qE for m in xrange(self.M)]
+            qE = tmp # IS THIS REQUIRED????
+
+        else:
+            print("Wrong initialisation for Theta"); exit()
+
 
         Theta_list = [None] * self.M
         for m in range(self.M):
             
             # Initialise constant node
-            Kconst = learnTheta[m]==0
+            Kconst = idx[m]==0
             if Kconst.sum() == 0:
                 ConstThetaNode = None
             else:
-                # ConstThetaNode = Theta_Constant_Node(dim=(self.D[m],s.sum(Kconst),), value=s.repeat(qE[m][:,Kconst][None,:], self.D[m], 0), N_cells=1.)
                 ConstThetaNode = Theta_Constant_Node(dim=(self.D[m],s.sum(Kconst),), value=qE[m][:,Kconst], N_cells=1)
                 Theta_list[m] = ConstThetaNode
 
             # Initialise non-constant node
-            Klearn = learnTheta[m]==1
+            Klearn = idx[m]==1
             if Klearn.sum() == 0:
                 LearnThetaNode = None
             else:
-                # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED. IT IS UGLY AS HELL
-                LearnThetaNode = Theta_Node(dim=(s.sum(Klearn),), pa=pa[m][Klearn], pb=pb[m][Klearn], qa=qa[m][Klearn], qb=qb[m][Klearn], qE=qE[m][0,Klearn])
+                # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED, THIS IS UGLY
+                LearnThetaNode = Theta_Node(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[m][0,Klearn])
                 Theta_list[m] = LearnThetaNode
 
             # Initialise mixed node
             if (ConstThetaNode is not None) and (LearnThetaNode is not None):
-                Theta_list[m] = Mixed_Theta_Nodes(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=learnTheta[m])
+                Theta_list[m] = Mixed_Theta_Nodes(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=idx[m])
 
         self.Theta = Multiview_Mixed_Node(self.M, *Theta_list)
         self.nodes["Theta"] = self.Theta
 
-    def initThetaLearn(self, pa, pb, qa, qb, qE):
-        # Method to initialise the theta node
-        Theta_list = [None] * self.M
-        for m in range(self.M):
-            Theta_list[m] = Theta_Node(dim=(self.K,), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m][0,:])
-        self.Theta = Multiview_Variational_Node(self.M, *Theta_list)
-        self.nodes["Theta"] = self.Theta
+    def initThetaConst(self, value=1.):
+        """Method to initialise a constant sparsity parameter of the spike and slab weights
 
-    def initThetaConst(self, value):
-        # Method to initialise a constant theta node
+        PARAMETERS
+        ----------
+         value: ndarray
+        """
         Theta_list = [None] * self.M
         for m in range(self.M):
-            Theta_list[m] = Theta_Constant_Node(dim=(self.D[m],self.K,), value=value[m], N_cells=1.)
+            Theta_list[m] = Theta_Constant_Node(dim=(self.D[m],self.K,), value=s.ones((self.D[m],self.K))*pmean, N_cells=1.)
         self.Theta = Multiview_Constant_Node(self.M, *Theta_list)
         self.nodes["Theta"] = self.Theta
-
-    def initMuZ(self, clusters=None, pmean=0, pvar=1, qmean=0, qvar=1, qE=None):
-        if clusters is None:
-            print "Not implemented"
-            exit()
-            clusters = s.zeros(self.N, int)
-        self.MuZ = MuZ_Node(pmean, pvar, qmean, qvar, clusters, self.K)
-        # self.Clusters = Constant_Node(pmean, pvar, qmean, qvar, clusters, self.K)
-        self.nodes['MuZ'] = self.MuZ
 
     def initExpectations(self, *nodes):
         # Method to initialise the expectations of some nodes

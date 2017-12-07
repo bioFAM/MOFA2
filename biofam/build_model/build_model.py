@@ -13,47 +13,15 @@ from biofam.core.BayesNet import *
 from .init_nodes import *
 from .utils import *
 
-def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, verbose=False):
+def build_model(data, model_opts):
     """Method to run a single trial of a MOFA model
     data: 
-    data_opts
     model_opts:
     train_opts:
-    seed:
-    trial:
-    verbose:
 
     PARAMETERS
     ----------
     """
-
-    # set the seed
-    if seed is None or seed==0:
-        seed = int(round(time()*1000)%1e6)
-    s.random.seed(seed)
-
-
-    ###########################
-    ## Perform sanity checks ##
-    ###########################
-
-    # Create output directory
-    if not os.path.isdir(os.path.dirname(data_opts["outfile"])):
-        print("Output directory does not exist, creating it...")
-        os.makedirs(os.path.dirname(data_opts["outfile"]))
-
-    ####################
-    ## Parse the data ##
-    ####################
-
-    # Mask
-    if 'maskAtRandom' in data_opts or 'maskNSamples' in data_opts:
-        if any(data_opts['maskAtRandom']) or any(data_opts['maskNSamples']):
-            data = maskData(data, data_opts)
-
-    ######################
-    ## Define the model ##
-    ######################
 
     print ("\n")
     print ("#"*24)
@@ -66,57 +34,80 @@ def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, 
     M = len(data)
     N = data[0].shape[0]
     D = s.asarray([ data[m].shape[1] for m in range(M) ])
-    K = model_opts["k"]
+    K = model_opts["K"]
 
     dim = {'M':M, 'N':N, 'D':D, 'K':K }
 
-    ## Define and initialise the nodes ##
+    ###########################
+    ## Do some sanity checks ##
+    ###########################
 
+    if model_opts["learnIntercept"]:
+        dim["K"] += 1
+        if model_opts['covariates'] is not None:
+            model_opts['covariates'] = s.insert(model_opts['covariates'], obj=0, values=1, axis=1)
+            model_opts['scale_covariates'].insert(0,False)
+        else:
+            model_opts['covariates'] = s.ones((dim["N"],1))
+            model_opts['scale_covariates'] = [False]
+
+    #####################################
+    ## Define and initialise the nodes ##
+    #####################################
+
+    # Initialise the model
     init = initModel(dim, data, model_opts["likelihood"], seed=seed)
 
     # Latent variables
-    init.initZ(pmean=model_opts["priorZ"]["mean"], pvar=model_opts["priorZ"]["var"],
-               qmean=model_opts["initZ"]["mean"], qvar=model_opts["initZ"]["var"], qE=model_opts["initZ"]["E"], qE2=model_opts["initZ"]["E2"],
-               covariates=data_opts['covariates'], scale_covariates=data_opts['scale_covariates'])
+    pmean = 0.; pvar = 1.; qmean = "random"; qvar = 1.
+    init.initZ(pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'], scale_covariates=model_opts['scale_covariates'])
 
-    # Sparse weights
-    init.initSW(ptheta=model_opts["priorSW"]["Theta"], pmean_S0=model_opts["priorSW"]["mean_S0"], pvar_S0=model_opts["priorSW"]["var_S0"], pmean_S1=model_opts["priorSW"]["mean_S1"], pvar_S1=model_opts["priorSW"]["var_S1"],
-                qtheta=model_opts["initSW"]["Theta"], qmean_S0=model_opts["initSW"]["mean_S0"], qvar_S0=model_opts["initSW"]["var_S0"], qmean_S1=model_opts["initSW"]["mean_S1"], qvar_S1=model_opts["initSW"]["var_S1"],
-                qEW_S0=model_opts["initSW"]["EW_S0"], qEW_S1=model_opts["initSW"]["EW_S1"], qES=model_opts["initSW"]["ES"])
+    # Weights
+    priorSW_mean_S0=0.; priorSW_meanS1=0.; priorSW_varS0=1.; priorSW_varS1=1.; priorSW_theta=1.; 
+    initSW_meanS0=0.; initSW_meanS1=0.; initSW_varS0=1.; initSW_varS1=1;, initSW_theta=1.;
+    initSW_qEW_S0=0.; initSW_qEW_S1=0.; initSW_qES=1.;
+    
+    # TO-DOOOOOOOOOO: fIX LEARN INTERCEPT
+    # if model_opts["learnIntercept"]:
+    # for m in range(M):
+    #     if model_opts["likelihood"][m]=="gaussian":
+    #         initSW_meanS1[m][:,0] = data[m].mean(axis=0)
+    #         initSW_varS1[m][:,0] = 1e-5
+    #         initSW_theta[m][:,0] = 1.
+
+    init.initSW(self, pmean_S0=priorSW_mean_S0, pmean_S1=priorSW_meanS1, pvar_S0=priorSW_varS0, pvar_S1=priorSW_varS1, ptheta=priorSW_theta, 
+        qmean_S0=initSW_meanS0, qmean_S1=initSW_meanS1, qvar_S0=initSW_varS0, qvar_S1=initSW_varS1, qtheta=initSW_theta, 
+        qEW_S0=initSW_qEW_S0, qEW_S1=initSW_qEW_S1, qES=initSW_qES)
+    
 
     # ARD on weights
-    init.initAlphaW_mk(pa=model_opts["priorAlphaW"]['a'], pb=model_opts["priorAlphaW"]['b'],
-                       qa=model_opts["initAlphaW"]['a'], qb=model_opts["initAlphaW"]['b'], qE=model_opts["initAlphaW"]['E'])
+    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
+    init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
 
     # Precision of noise
-    init.initTau(pa=model_opts["priorTau"]['a'], pb=model_opts["priorTau"]['b'],
-                 qa=model_opts["initTau"]['a'], qb=model_opts["initTau"]['b'], qE=model_opts["initTau"]['E'])
+    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
+    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
 
     # Sparsity on the weights
-    if len(s.unique(model_opts['learnTheta'])) == 1:
-
-        # All are infered
-        if s.unique(model_opts['learnTheta'])==1.:
-            # init.initThetaLearn(pa=model_opts["priorTheta"]['a'], pb=model_opts["priorTheta"]['b'],
-            #     qa=model_opts["initTheta"]['a'],  qb=model_opts["initTheta"]['b'], qE=model_opts["initTheta"]['E'])
-            init.initThetaMixed(pa=model_opts["priorTheta"]['a'], pb=model_opts["priorTheta"]['b'],
-                qa=model_opts["initTheta"]['a'],  qb=model_opts["initTheta"]['b'], qE=model_opts["initTheta"]['E'],
-                learnTheta=model_opts['learnTheta'])
-
-        # None are infered
-        elif s.unique(model_opts['learnTheta'])==0.:
-            init.initThetaConst(value=model_opts["initTheta"]['E'])
-
-    # Some are infered
-    else:
-        init.initThetaMixed(pa=model_opts["priorTheta"]['a'], pb=model_opts["priorTheta"]['b'],
-            qa=model_opts["initTheta"]['a'],  qb=model_opts["initTheta"]['b'], qE=model_opts["initTheta"]['E'],
-            learnTheta=model_opts['learnTheta'])
+    learnTheta = [ s.ones((self.D[m],self.K)) for m in xrange(self.M) ]
+    priorTheta_a = 1.
+    priorTheta_b = 1.
+    initTheta_a = 1.
+    initTheta_b = 1.
+    initTheta_E = 1.
+    # TO-DOOOOOOOOOO
+    # if model_opts["learnIntercept"]:
+    #     for m in range(M): 
+    #     learnTheta[m][:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means 
+    init.initThetaMixed(pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a,  qb=initTheta_b, qE=initTheta_E, learnTheta=learnTheta)
 
     # Observed data
     init.initY()
 
-    # Define the markov blanket of each node
+    ############################################
+    ## Define the markov blanket of each node ##
+    ############################################
+
     nodes = init.getNodes()
     nodes["Z"].addMarkovBlanket(SW=nodes["SW"], Tau=nodes["Tau"], Y=nodes["Y"])
     nodes["Theta"].addMarkovBlanket(SW=nodes["SW"])
@@ -125,12 +116,22 @@ def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, 
     nodes["Y"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Tau=nodes["Tau"])
     nodes["Tau"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Y=nodes["Y"])
 
-    ##################################
-    ## Add the nodes to the network ##
-    ##################################
+    #################################
+    ## Initialise Bayesian Network ##
+    #################################
 
-    # Initialise Bayesian Network
-    net = BayesNet(dim=dim, trial=trial, schedule=model_opts["schedule"], nodes=init.getNodes(), options=train_opts)
+    net = BayesNet(dim=dim, nodes=init.getNodes())
+
+    return net
+
+
+def train_model(bayesnet, train_opts):
+
+    # QC on the Bayesian Network
+    assert type(bayesnet)==BayesNet, "'bayesnet' has to be a BayesNet class"
+
+    # Define training options
+    bayesnet.setTrainOptions(train_opts)
 
     ####################
     ## Start training ##
@@ -138,65 +139,20 @@ def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, 
 
     print ("\n")
     print ("#"*45)
-    print ("## Running trial number %d with seed %d ##" % (trial,seed))
+    print ("## Training the model with seed %d ##" % (train_opts['seed']))
     print ("#"*45)
     print ("\n")
     sleep(1)
-    
-    net.iterate()
 
-    return net
-
-def runMultipleTrials(data, data_opts, model_opts, train_opts, keep_best_run, seed=None, verbose=True):
-
-    """Method to run multiple trials of a MOFA model
-
-    PARAMETERS
-    -----
-    data: 
-    data_opts
-    model_opts:
-    train_opts:
-    seed:
-    trial:
-    verbose:
-    """
-    # trained_models = Parallel(n_jobs=train_opts['cores'], backend="threading")(
-    # trained_models = Parallel(n_jobs=train_opts['cores'])(
-    #     delayed(runSingleTrial)(data,data_opts,model_opts,train_opts,seed,i) for i in range(1,train_opts['trials']+1))
-    trained_models = [ runSingleTrial(data,data_opts,model_opts,train_opts,seed,i) for i in range(1,train_opts['trials']+1) ]
+    bayesnet.iterate()
 
     print("\n")
     print("#"*43)
-    print("## Training finished, processing results ##")
+    print("## Training finished ##")
     print("#"*43)
     print("\n")
 
-    #####################
-    ## Process results ##
-    #####################
-
-    # Select the trial with the best lower bound or keep all models
-    if train_opts['trials'] > 1:
-        if keep_best_run:
-            lb = map(lambda x: x.getTrainingStats()["elbo"][-1], trained_models)
-            save_models = [ trials[s.argmax(lb)] ]
-            outfiles = [ data_opts['outfile'] ]
-        else:
-            save_models = trained_models
-            tmp = os.path.splitext(data_opts['outfile'])
-            outfiles = [ tmp[0]+"_"+str(t)+tmp[1]for t in range(train_opts['trials']) ]
-    else:
-        save_models = trained_models
-        outfiles = [ data_opts['outfile'] ]
-
-    ##################
-    ## Save results ##
-    ##################
+    return (bayesnet)
     
-    sample_names = data[0].index.tolist()
-    feature_names = [  data[m].columns.values.tolist() for m in range(len(data)) ]
-    for t in range(len(save_models)):
-        print("Saving model %d in %s...\n" % (t,outfiles[t]))
-        saveModel(save_models[t], outfile=outfiles[t], view_names=data_opts['view_names'],
-            sample_names=sample_names, feature_names=feature_names, train_opts=train_opts, model_opts=model_opts)
+    
+
