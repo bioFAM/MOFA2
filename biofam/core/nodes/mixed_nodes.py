@@ -4,7 +4,7 @@ from .variational_nodes import Variational_Node
 from .basic_nodes import Constant_Node
 
 """
-This module defines nodes that are a mix of variational and constant. 
+This module defines nodes that are a mix of variational and constant.
 Examples:
 - For some factors the spike and slab sparsity parameter (theta) is fixed, whereas for others is learnt.
 - For some factors the weights can be made sparse whereas for others we might not want to do any sparsity (i.e. mean or covariates)
@@ -28,7 +28,7 @@ class Mixed_Theta_Nodes(Variational_Node, Constant_Node):
         self.D = ConstTheta.dim[0]
 
         self.idx = idx
-        
+
     def addMarkovBlanket(self, **kargs):
         # SHOULD WE ALSO ADD MARKOV BLANKET FOR CONSTHTETA???
         self.learnTheta.addMarkovBlanket(**kargs)
@@ -76,3 +76,17 @@ class Mixed_Theta_Nodes(Variational_Node, Constant_Node):
             self.idx = self.idx[s.arange(self.K)!=i]
             self.K -= 1
 
+    def sample(self, dist='P'):
+        # sample from constant and learnt nodes
+        const_samp = self.constTheta.sample().copy()
+        learn_samp = self.learnTheta.sample().copy()
+        learn_samp = s.repeat(learn_samp[None,:], self.D, 0)
+
+        # concatenate and reorder
+        samp = s.concatenate((const_samp, learn_samp), axis=1)
+        idx = s.concatenate((s.nonzero(1-self.idx)[0],s.where(self.idx)[0]), axis=0)
+        samp = samp[:,idx]
+
+        # save and return
+        self.samp = samp
+        return self.samp

@@ -3,7 +3,7 @@ import pandas as pd
 import scipy as s
 from time import sleep
 
-from .build_model import *
+from build_model import *
 
 def entry_point():
 
@@ -65,13 +65,6 @@ def entry_point():
         data_opts['rownames'] = 0
     else:
         data_opts['rownames'] = None
-
-    if args.header_cols:
-        data_opts['colnames'] = 0
-    else:
-        data_opts['colnames'] = None
-
-
 
     #####################
     ## Data processing ##
@@ -189,3 +182,8 @@ def entry_point():
     print("Saving model in %s...\n" % data_opts['outfile'])
     saveModel(model=trained_model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts, 
         view_names=data_opts['view_names'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
+
+
+if __name__ == '__main__':
+  entry_point()
+  

@@ -25,6 +25,7 @@ import sklearn.decomposition
 
 
 # Define which nodes to import
+# TODO clean the import: make use of the __init__ file in the nodes dir
 from biofam.core.nodes.basic_nodes import *
 from biofam.core.nodes.multiview_nodes import *
 from biofam.core.nodes.nongaussian_nodes import *
@@ -33,7 +34,8 @@ from biofam.core.nodes.Z_nodes import Z_Node
 from biofam.core.nodes.W_nodes import SW_Node
 from biofam.core.nodes.Alpha_nodes import AlphaW_Node_mk
 from biofam.core.nodes.Tau_nodes import Tau_Node
-from biofam.core.nodes.Theta_nodes import Theta_Node
+from biofam.core.nodes.Theta_nodes import Theta_Node, Theta_Constant_Node
+from biofam.core.nodes.mixed_nodes import *
 
 
 class initModel(object):
@@ -43,9 +45,9 @@ class initModel(object):
         ----------
          dim: dictionary
             keyworded dimensionalities: N for the number of samples, M for the number of views, K for the number of latent variables, D for the number of features per view (a list)
-         data: list of ndarrays of length M: 
+         data: list of ndarrays of length M:
             observed data
-         lik: list of strings 
+         lik: list of strings
             likelihood for each view
         """
         self.data = data
@@ -70,7 +72,7 @@ class initModel(object):
         qE2
         covariates: nd array
             matrix of covariates with dimensions (nsamples,ncovariates)
-        scale_covariates: 
+        scale_covariates:
         """
 
         ## Initialise prior distribution (P) ##
@@ -192,7 +194,7 @@ class initModel(object):
 
         PARAMETERS
         ----------
-         pa: float 
+         pa: float
             'a' parameter of the prior distribution
          pb :float
             'b' parameter of the prior distribution
@@ -201,7 +203,7 @@ class initModel(object):
          qE: float
             initial expectation of the variational distribution
         """
-        
+
         alpha_list = [None]*self.M
         for m in range(self.M):
             alpha_list[m] = AlphaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
@@ -325,7 +327,7 @@ class initModel(object):
 
         Theta_list = [None] * self.M
         for m in range(self.M):
-            
+
             # Initialise constant node
             Kconst = idx[m]==0
             if Kconst.sum() == 0:

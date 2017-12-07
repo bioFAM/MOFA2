@@ -118,6 +118,24 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         return lb_p-lb_q
 
+    def sample(self, dist='P'):
+        if "Mu" in self.markov_blanket:
+            print('Not implemented')
+            exit(1)
+        if "Alpha" in self.markov_blanket:
+            print("Not implemented")  # TODO where is the AlphaZ node ?
+            exit(1)
+
+        p_mean = self.P.params['mean']
+        p_var = self.P.params['var']
+
+        # simulating and handling covariates
+        self.samp = s.random.normal(p_mean, np.sqrt(p_var))
+        self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
+
+        return self.samp
+
+
 class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
     """ """
     def __init__(self, pmean, pvar, qmean, qvar, clusters, n_Z, cluster_dic=None, qE=None, qE2=None):

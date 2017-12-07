@@ -78,6 +78,7 @@ class Node(object):
         dim[axis] = new_dim
         self.dim = tuple(dim)
 
+
 class Constant_Node(Node):
     """ General class for a constant node in a Bayesian network
     Constant nodes do not have expectations or parameters but just values.
@@ -108,3 +109,7 @@ class Constant_Node(Node):
         if axis is not None:
             self.value = s.delete(self.value, idx, axis)
             self.updateDim(axis=axis, new_dim=self.dim[axis]-len(idx))
+
+    def sample(self, distrib='P'):
+        self.samp = self.value
+        return self.samp

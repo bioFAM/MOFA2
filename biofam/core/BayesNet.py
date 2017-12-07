@@ -17,8 +17,6 @@ import sys
 from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import nans
 
-
-
 class BayesNet(object):
     def __init__(self, dim, nodes, schedule, options, trial=1):
         """ Initialisation of a Bayesian network
@@ -39,12 +37,72 @@ class BayesNet(object):
 
         self.dim = dim
         self.nodes = nodes
+
         self.schedule = schedule
         self.options = options
         self.trial = trial
 
-        # Training flag
+        # Training and simulations flag
         self.trained = False
+        self.simulated = False
+
+    def getParameters(self, *nodes):
+        """Method to collect all parameters of a given set of nodes (all by default)
+
+        PARAMETERS
+        ----------
+        nodes: iterable
+            name of the nodes
+        """
+
+        if len(nodes) == 0: nodes = self.nodes.keys()
+        params = {}
+        for node in nodes:
+            tmp = self.nodes[node].getParameters()
+            if tmp != None: params[node] = tmp
+        return params
+
+    def getExpectations(self, only_first_moments=False, *nodes):
+        """Method to collect all expectations of a given set of nodes (all by default)
+
+        PARAMETERS
+        ----------
+        only_first_moments: bool
+            get only first moments?
+        nodes: list
+            name of the nodes
+        """
+
+        if len(nodes) == 0: nodes = self.nodes.keys()
+        expectations = {}
+        for node in nodes:
+            if only_first_moments:
+                tmp = self.nodes[node].getExpectation()
+            else:
+                tmp = self.nodes[node].getExpectations()
+            expectations[node] = tmp
+        return expectations
+
+    def getNodes(self):
+        """ Method to return all nodes """
+        return self.nodes
+
+    def simulate(self, dist='P'):
+        self.nodes['SW'].sample(dist)
+        self.nodes['Z'].sample(dist)
+        self.nodes['Tau'].sample(dist)
+        self.nodes['Y'].sample(dist)
+
+        self.simulated = True
+
+    def sampleData(self):
+        if ~self.simulated:
+            self.simulate()
+        return self.nodes['Y'].sample(dist='P')
+
+    def saveData(self):
+        # TODO some function here to save simulated data
+        pass
 
     def removeInactiveFactors(self, by_norm=None, by_pvar=None, by_cor=None, by_r2=None):
         """Method to remove inactive factors
@@ -239,47 +297,6 @@ class BayesNet(object):
         # Finish by collecting the training statistics
         self.train_stats = { 'activeK':activeK, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
-
-    def getParameters(self, *nodes):
-        """Method to collect all parameters of a given set of nodes (all by default)
-
-        PARAMETERS
-        ----------
-        nodes: iterable
-            name of the nodes
-        """
-
-        if len(nodes) == 0: nodes = self.nodes.keys()
-        params = {}
-        for node in nodes:
-            tmp = self.nodes[node].getParameters()
-            if tmp != None: params[node] = tmp
-        return params
-
-    def getExpectations(self, only_first_moments=False, *nodes):
-        """Method to collect all expectations of a given set of nodes (all by default)
-
-        PARAMETERS
-        ----------
-        only_first_moments: bool
-            get only first moments?
-        nodes: list
-            name of the nodes
-        """
-
-        if len(nodes) == 0: nodes = self.nodes.keys()
-        expectations = {}
-        for node in nodes:
-            if only_first_moments:
-                tmp = self.nodes[node].getExpectation()
-            else:
-                tmp = self.nodes[node].getExpectations()
-            expectations[node] = tmp
-        return expectations
-
-    def getNodes(self):
-        """ Method to return all nodes """
-        return self.nodes
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """

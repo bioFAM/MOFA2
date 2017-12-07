@@ -1,5 +1,5 @@
 """
-Module with functions to build and initialise the model 
+Module with functions to build and initialise the model
 """
 
 import scipy as s
@@ -10,12 +10,19 @@ import numpy as np
 #from joblib import Parallel, delayed
 
 from biofam.core.BayesNet import *
-from .init_nodes import *
-from .utils import *
+from init_nodes import *
+from utils import *
 
+<<<<<<< HEAD
 def build_model(data, model_opts):
     """Method to run a single trial of a MOFA model
     data: 
+=======
+def runSingleTrial(data, data_opts, model_opts, train_opts, seed=None, trial=1, verbose=False, NetType='Sampler'):
+    """Method to run a single trial of a MOFA model
+    data:
+    data_opts
+>>>>>>> d0c0d1e1275991f7bcc5f30147dc58b6c6dbb4e3
     model_opts:
     train_opts:
 
@@ -143,8 +150,37 @@ def train_model(bayesnet, train_opts):
     print ("#"*45)
     print ("\n")
     sleep(1)
+<<<<<<< HEAD
 
     bayesnet.iterate()
+=======
+
+    if NetType == 'VB':
+        net.iterate()
+    if NetType == 'Sampler':
+        net.simulate()
+
+    return net
+
+def runMultipleTrials(data, data_opts, model_opts, train_opts, keep_best_run, seed=None, verbose=True):
+
+    """Method to run multiple trials of a MOFA model
+
+    PARAMETERS
+    -----
+    data:
+    data_opts
+    model_opts:
+    train_opts:
+    seed:
+    trial:
+    verbose:
+    """
+    # trained_models = Parallel(n_jobs=train_opts['cores'], backend="threading")(
+    # trained_models = Parallel(n_jobs=train_opts['cores'])(
+    #     delayed(runSingleTrial)(data,data_opts,model_opts,train_opts,seed,i) for i in range(1,train_opts['trials']+1))
+    trained_models = [ runSingleTrial(data,data_opts,model_opts,train_opts,seed,i) for i in range(1,train_opts['trials']+1) ]
+>>>>>>> d0c0d1e1275991f7bcc5f30147dc58b6c6dbb4e3
 
     print("\n")
     print("#"*43)
@@ -152,7 +188,38 @@ def train_model(bayesnet, train_opts):
     print("#"*43)
     print("\n")
 
+<<<<<<< HEAD
     return (bayesnet)
     
     
 
+=======
+    #####################
+    ## Process results ##
+    #####################
+
+    # Select the trial with the best lower bound or keep all models
+    if train_opts['trials'] > 1:
+        if keep_best_run:
+            lb = map(lambda x: x.getTrainingStats()["elbo"][-1], trained_models)
+            save_models = [ trials[s.argmax(lb)] ]
+            outfiles = [ data_opts['outfile'] ]
+        else:
+            save_models = trained_models
+            tmp = os.path.splitext(data_opts['outfile'])
+            outfiles = [ tmp[0]+"_"+str(t)+tmp[1]for t in range(train_opts['trials']) ]
+    else:
+        save_models = trained_models
+        outfiles = [ data_opts['outfile'] ]
+
+    ##################
+    ## Save results ##
+    ##################
+
+    sample_names = data[0].index.tolist()
+    feature_names = [  data[m].columns.values.tolist() for m in range(len(data)) ]
+    for t in range(len(save_models)):
+        print("Saving model %d in %s...\n" % (t,outfiles[t]))
+        saveModel(save_models[t], outfile=outfiles[t], view_names=data_opts['view_names'],
+            sample_names=sample_names, feature_names=feature_names, train_opts=train_opts, model_opts=model_opts)
+>>>>>>> d0c0d1e1275991f7bcc5f30147dc58b6c6dbb4e3

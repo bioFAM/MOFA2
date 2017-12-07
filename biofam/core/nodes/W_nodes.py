@@ -118,3 +118,25 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_s = s.sum(lb_ps) - s.sum(lb_qs)
 
         return lb_w + lb_s
+
+    def sample(self, dist='P'):
+        # get necessary parameters
+        mu_w_hat = self.P.getParameters()['mean_S1']
+        mu_w_hat = s.ones(self.dim) * mu_w_hat
+
+        theta = self.markov_blanket['Theta'].sample()
+        if theta.shape != mu_w_hat.shape:
+            theta = s.repeat(theta[None,:],mu_w_hat.shape[0],0)
+
+        alpha = self.markov_blanket['Alpha'].sample()
+        if alpha.shape[0] == 1:
+            alpha = s.repeat(alpha[:], self.dim[1], axis=0)
+        if alpha.shape != mu_w_hat.shape:
+            alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
+
+        # simulate
+        bernoulli_s = s.random.binomial(1, theta)
+        w_hat = s.random.normal(mu_w_hat, np.sqrt(1./alpha))
+
+        self.samp = bernoulli_s * w_hat
+        return self.samp
