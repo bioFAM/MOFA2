@@ -18,7 +18,7 @@ from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import nans
 
 class BayesNet(object):
-    def __init__(self, dim, nodes, schedule, options, trial=1):
+    def __init__(self, dim, nodes, trial=1):#, schedule, options, trial=1):
         """ Initialisation of a Bayesian network
 
         PARAMETERS
@@ -37,14 +37,15 @@ class BayesNet(object):
 
         self.dim = dim
         self.nodes = nodes
-
-        self.schedule = schedule
-        self.options = options
+        self.options = None  # TODO rename to train_options everywhere
         self.trial = trial
 
         # Training and simulations flag
         self.trained = False
         self.simulated = False
+
+    def setTrainOptions(self, train_opts):
+        self.options = train_opts
 
     def getParameters(self, *nodes):
         """Method to collect all parameters of a given set of nodes (all by default)
@@ -252,7 +253,7 @@ class BayesNet(object):
                 activeK[i] = self.dim["K"]
 
             # Update node by node, with E and M step merged
-            for node in self.schedule:
+            for node in self.options['schedule']:
                 # print "Node: " + str(node)
                 # t = time()
                 if node=="Theta" and i<self.options['startSparsity']:

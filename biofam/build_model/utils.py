@@ -288,7 +288,7 @@ def saveTrainingOpts(opts, hdf5):
             opts.pop(k)
 
     # Create HDF5 data set
-    hdf5.create_dataset("training_opts", data=np.array(list(opts.values()), dtype=np.float))
+    hdf5.create_dataset("training_opts", data=np.array(opts.values()))
     hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
 def saveModelOpts(opts, hdf5):
@@ -299,7 +299,8 @@ def saveModelOpts(opts, hdf5):
     opts:
     hdf5:
     """
-    opts_interest = ["learnIntercept","schedule","likelihood"]
+    # opts_interest = ["learnIntercept","schedule","likelihood"]
+    opts_interest = ["learnIntercept","likelihood"]
     opts = dict((k, opts[k]) for k in opts_interest)
     grp = hdf5.create_group('model_opts')
     for k,v in opts.items():

@@ -37,7 +37,7 @@ iter=5000 # we recommend to set this to a large enough value (>1000)
 
 # Convergence criterion
 # Recommendation: a 'tolerance' of 0.01 is quite strict and can take a bit of time, for initial testing we recommend increasing it to 0.1
-tolerance=0.01 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
+tolerance=1000 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
 nostop=0       # if nostop=1 the training will complete all iterations even if the convergence criterion is met
 
 # Define the initial number of factors and how inactive factors are dropped during training.
@@ -48,17 +48,17 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 factors=20   # initial number of facotrs
 startDrop=1  # initial iteration to start shutting down factors
 freqDrop=1 	 # frequency of checking for shutting down factors
-dropR2=0.00  # threshold on fractionof variance explained
+dropR2=0.01  # threshold on fractionof variance explained
 
 # Define hyperparameters for the feature-wise spike-and-slab sparsity prior
-learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
-initTheta=( 1 1 1 ) 	# initial value of sparsity levels (1 corresponds to a dense model, 0.5 corresponds to factors ); each element of the vector corresponds to a view
+# learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
+# initTheta=( 1 1 1 ) 	# initial value of sparsity levels (1 corresponds to a dense model, 0.5 corresponds to factors ); each element of the vector corresponds to a view
 startSparsity=250 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
 
 # Learn an intercept term (feature-wise means)?
 # Recommendation: always leave it active. If all your views are gaussian you can set this to 0 and center the features, it does not matter.
 # But for non-gaussian views we noticed that this is very useful, so set it to 1
-learnIntercept=1
+learnIntercept=0
 
 # Random seed
 seed=0 # if 0, the seed is automatically generated using the current time
@@ -77,8 +77,6 @@ cmd='python ../build_model/entry_point.py
 	--views ${views[@]}
 	--iter $iter
 	--tolerance $tolerance
-	--learnTheta ${learnTheta[@]}
-	--initTheta ${initTheta[@]}
 	--startSparsity ${startSparsity[@]}
 	--factors $factors
 	--startDrop $startDrop

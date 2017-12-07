@@ -66,6 +66,11 @@ def entry_point():
     else:
         data_opts['rownames'] = None
 
+    if args.header_cols:
+        data_opts['colnames'] = 0
+    else:
+        data_opts['colnames'] = None
+
     #####################
     ## Data processing ##
     #####################
@@ -113,9 +118,11 @@ def entry_point():
     #####################
     ## Load covariates ##
     #####################
+    model_opts = {}
+    model_opts['learnIntercept'] = args.learnIntercept
 
     if args.covariatesFile is not None:
-        model_opts['covariates'] = pd.read_csv(, delimiter=" ", header=None).as_matrix()
+        model_opts['covariates'] = pd.read_csv(args.covariatesFile, delimiter=" ", header=None).as_matrix()
         print("Loaded covariates from " + args.covariatesFile + "with shape " + str(model_opts['covariates'].shape) + "...")
         model_opts['scale_covariates'] = 1
         args.factors += model_opts['covariates'].shape[1]
@@ -128,7 +135,7 @@ def entry_point():
     ## Define the model options ##
     ##############################
 
-    model_opts = {}
+
 
     # Define initial number of latent factors
     model_opts['K'] = args.factors
@@ -137,10 +144,6 @@ def entry_point():
     model_opts['likelihood'] = args.likelihoods
     assert M==len(model_opts['likelihood']), "Please specify one likelihood for each view"
     assert set(model_opts['likelihood']).issubset(set(["gaussian","bernoulli","poisson"]))
-
-    # Define schedule of updates
-    model_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" )
-
 
     #################################
     ## Define the training options ##
@@ -156,6 +159,7 @@ def entry_point():
     train_opts['tolerance'] = args.tolerance              # Tolerance level for convergence
     train_opts['forceiter'] = args.nostop                 # Do no stop even when convergence criteria is met
     train_opts['startSparsity'] = args.startSparsity      # Iteration to activate spike and slab sparsity
+    train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" ) # Define schedule of updates
     if args.seed is None or args.seed==0:                 # Seed for the random number generator
         train_opts['seed'] = int(round(time()*1000)%1e6)
         s.random.seed(train_opts['seed'])
@@ -167,8 +171,8 @@ def entry_point():
 
     untrained_model = build_model(data, model_opts)
 
-    exit()
-    
+    # exit()
+
     #####################
     ## Train the model ##
     #####################
@@ -180,10 +184,10 @@ def entry_point():
     ################
 
     print("Saving model in %s...\n" % data_opts['outfile'])
-    saveModel(model=trained_model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts, 
+    train_opts['schedule'] = '_'.join(train_opts['schedule'])
+    saveModel(model=trained_model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts,
         view_names=data_opts['view_names'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
 
 
 if __name__ == '__main__':
   entry_point()
-  

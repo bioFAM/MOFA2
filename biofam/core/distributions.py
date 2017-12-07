@@ -425,7 +425,11 @@ class BernoulliGaussian(Distribution):
         self.W_S1 = UnivariateGaussian(dim=dim, mean=mean_S1, var=var_S1, E=EW_S1)
 
         # Collect parameters
-        self.params = { 'mean_S0':mean_S0, 'mean_S1':mean_S1, 'var_S0':var_S0, 'var_S1':var_S1, 'theta':theta }
+        self.params = { 'mean_S0':self.W_S0.params['mean'],
+                        'mean_S1':self.W_S1.params['mean'],
+                        'var_S0':self.W_S0.params['var'],
+                        'var_S1':self.W_S1.params['var'],
+                        'theta':self.S.params['theta'] }
 
         # Collect expectations
         self.updateExpectations()

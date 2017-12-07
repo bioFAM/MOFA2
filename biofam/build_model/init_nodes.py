@@ -78,7 +78,7 @@ class initModel(object):
         ## Initialise prior distribution (P) ##
 
         pmean = s.ones((self.N,self.K))*pmean  # mean
-        pvar  s.ones((K;))*pvar                # variance
+        pvar = s.ones((self.K,))*pvar                # variance
 
         ## Initialise variational distribution (Q) ##
 
@@ -127,8 +127,8 @@ class initModel(object):
             qmean[:,idx_covariates] = covariates
 
             # Remove prior and variational distributions from the covariates
-            pvar[,idx_covariates] = s.nan
-            qvar[,idx_covariates] = s.nan  # MAYBE SET IT TO 0
+            pvar[:,idx_covariates] = s.nan
+            qvar[:,idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
         else:
             idx_covariates = None
@@ -142,30 +142,30 @@ class initModel(object):
         PARAMETERS
         ----------
         """
-
+        qmean_S1
         SW_list = [None]*self.M
         for m in range(self.M):
 
             ## Initialise prior distribution (P) ##
 
             ## Initialise variational distribution (Q) ##
-            if isinstance(qmean_S1[m],str):
+            if isinstance(qmean_S1,str):
 
-                if qmean_S1[m] == "random": # random
-                    qmean_S1[m] = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
+                if qmean_S1 == "random": # random
+                    qmean_S1 = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
                 else:
-                    print("%s initialisation not implemented for SW" % qmean_S1[m])
+                    print("%s initialisation not implemented for SW" % qmean_S1)
                     exit()
 
-            elif isinstance(qmean_S1[m],s.ndarray):
-                assert qmean_S1[m].shape == (self.D[m],self.K), "Wrong dimensionality"
+            elif isinstance(qmean_S1,s.ndarray):
+                assert qmean_S1.shape == (self.D[m],self.K), "Wrong dimensionality"
 
-            elif isinstance(qmean_S1[m],(int,float)):
-                qmean_S1[m] = s.ones((self.D[m],self.K)) * qmean_S1
+            elif isinstance(qmean_S1,(int,float)):
+                qmean_S1 = s.ones((self.D[m],self.K)) * qmean_S1
 
             else:
                 print("Wrong initialisation for SW")
-                exit()
+                exit(1)
 
             SW_list[m] = SW_Node(
                 dim=(self.D[m],self.K),
@@ -214,7 +214,7 @@ class initModel(object):
 
         PARAMETERS
         ----------
-         pa: float 
+         pa: float
             'a' parameter of the prior distribution
          pb :float
             'b' parameter of the prior distribution
@@ -237,7 +237,7 @@ class initModel(object):
                 tmp = 0.25*s.amax(self.data["tot"][m],axis=0)
                 tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
             elif self.lik[m] == "gaussian":
-                tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
+                tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
             # elif self.lik[m] == "warp":
             #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M,*tau_list)
@@ -269,7 +269,7 @@ class initModel(object):
 
         PARAMETERS
         ----------
-         pa: float 
+         pa: float
             'a' parameter of the prior distribution
          pb :float
             'b' parameter of the prior distribution
@@ -283,14 +283,14 @@ class initModel(object):
             Theta_list[m] = Theta_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.nodes["Theta"] = Multiview_Variational_Node(self.M, *Theta_list)
 
-    def initThetaMixed(self, pa=1., pb=1., qa=1., qb=1., qE=1., idx):
+    def initThetaMixed(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
         """Method to initialise the sparsity parameter of the spike and slab weights
         In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
         in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
 
         PARAMETERS
         ----------
-         pa: float 
+         pa: float
             'a' parameter of the prior distribution
          pb :float
             'b' parameter of the prior distribution
@@ -302,7 +302,7 @@ class initModel(object):
         """
 
         # Do some sanity checks on the arguments
-        if isinstance(qE,list): 
+        if isinstance(qE,list):
             assert len(qE) == self.M, "Wrong dimensionality"
             for m in range(self.M):
                 if isinstance(qE[m],(int,float)):
