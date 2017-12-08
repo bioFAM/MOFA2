@@ -163,8 +163,9 @@ class MultivariateGaussian(Distribution):
 
         E2 = self.params['cov'].copy()
         # TODO sort out index
+        # import pdb; pdb.set_trace()
         for i in range(self.dim[1]):
-            E2[i,:,:] += s.outer(E[i,:],E[i,:])
+            E2[i,:,:] += s.outer(E[:,i],E[:,i])
 
         self.expectations = {'E':E, 'E2':E2}
 
