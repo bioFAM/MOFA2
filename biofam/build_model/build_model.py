@@ -1,5 +1,5 @@
 """
-Module with functions to build and initialise the model
+Module to build and initialise a bioFAM model
 """
 
 import scipy as s
@@ -10,19 +10,12 @@ import numpy as np
 #from joblib import Parallel, delayed
 
 from biofam.core.BayesNet import *
-from init_nodes import *
+from init_model import *
 from utils import *
 
 
 def build_model(data, model_opts):
-    """Method to run a single trial of a MOFA model
-    data:
-    model_opts:
-    train_opts:
-
-    PARAMETERS
-    ----------
-    """
+    """Method to build a bioFAM model"""
 
     print ("\n")
     print ("#"*24)
@@ -36,13 +29,13 @@ def build_model(data, model_opts):
     N = data[0].shape[0]
     D = s.asarray([ data[m].shape[1] for m in range(M) ])
     K = model_opts["K"]
-
     dim = {'M':M, 'N':N, 'D':D, 'K':K }
 
     ###########################
     ## Do some sanity checks ##
     ###########################
 
+    # If learnIntercept is True, add one extra factor as a covariate with constant 1s
     if model_opts["learnIntercept"]:
         dim["K"] += 1
         if model_opts['covariates'] is not None:
@@ -59,11 +52,11 @@ def build_model(data, model_opts):
     # Initialise the model
     init = initModel(dim, data, model_opts["likelihood"])
 
-    # Latent variables
+    # Initialise latent variables
     pmean = 0.; pvar = 1.; qmean = "random"; qvar = 1.
     init.initZ(pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'], scale_covariates=model_opts['scale_covariates'])
 
-    # Weights
+    # Initialise weights
     priorSW_mean_S0=0.; priorSW_meanS1=0.; priorSW_varS0=1.; priorSW_varS1=1.; priorSW_theta=1.;
     initSW_meanS0=0.; initSW_meanS1=0.; initSW_varS0=1.; initSW_varS1=1; initSW_theta=1.;
     initSW_qEW_S0=0.; initSW_qEW_S1=0.; initSW_qES=1.;
@@ -81,15 +74,15 @@ def build_model(data, model_opts):
         qEW_S0=initSW_qEW_S0, qEW_S1=initSW_qEW_S1, qES=initSW_qES)
 
 
-    # ARD on weights
+    # Initialise ARD on weights
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
     init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
 
-    # Precision of noise
+    # Initialise precision of noise
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
     init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
 
-    # Sparsity on the weights
+    # Initialise sparsity on the weights
     learnTheta = [ s.ones((D[m],K)) for m in xrange(M) ]
     priorTheta_a = 1.
     priorTheta_b = 1.
@@ -129,33 +122,3 @@ def build_model(data, model_opts):
 
     return net
 
-
-def train_model(bayesnet, train_opts):
-
-    # QC on the Bayesian Network
-    assert type(bayesnet)==BayesNet, "'bayesnet' has to be a BayesNet class"
-
-    # Define training options
-    bayesnet.setTrainOptions(train_opts)
-
-    ####################
-    ## Start training ##
-    ####################
-
-    print ("\n")
-    print ("#"*45)
-    print ("## Training the model with seed %d ##" % (train_opts['seed']))
-    print ("#"*45)
-    print ("\n")
-    sleep(1)
-
-    bayesnet.iterate()
-
-
-    print("\n")
-    print("#"*43)
-    print("## Training finished ##")
-    print("#"*43)
-    print("\n")
-
-    return (bayesnet)

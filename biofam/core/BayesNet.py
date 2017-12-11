@@ -3,8 +3,6 @@
 This module is used to define the class containing the entire Bayesian Network,
 and the corresponding attributes/methods to train the model, set algorithmic options, calculate lower bound, etc.
 
-To-do:
-- default values for schedule and options
 """
 
 from __future__ import division
@@ -18,7 +16,7 @@ from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import nans
 
 class BayesNet(object):
-    def __init__(self, dim, nodes, trial=1):#, schedule, options, trial=1):
+    def __init__(self, dim, nodes):
         """ Initialisation of a Bayesian network
 
         PARAMETERS
@@ -27,24 +25,18 @@ class BayesNet(object):
             keyworded dimensionalities, ex. {'N'=10, 'M'=3, ...}
         nodes: dict
             dictionary with all nodes where the keys are the name of the node and the values are instances the 'Node' class
-        schedule: iterable
-            list or tuple with the names of the nodes to be updated in the given order. Nodes not present in schedule will not be updated
-        options: dict
-            training options, such as maximum number of iterations, training options, etc.
-        trial: int
-            this is an auxiliary variable for parallelised running of multiple trials
         """
 
         self.dim = dim
         self.nodes = nodes
         self.options = None  # TODO rename to train_options everywhere
-        self.trial = trial
 
         # Training and simulations flag
         self.trained = False
         self.simulated = False
 
     def setTrainOptions(self, train_opts):
+        """ set method to define training options """
         self.options = train_opts
 
     def getParameters(self, *nodes):
@@ -89,6 +81,7 @@ class BayesNet(object):
         return self.nodes
 
     def simulate(self, dist='P'):
+        """ Method to simulate from the generative model """
         self.nodes['SW'].sample(dist)
         self.nodes['Z'].sample(dist)
         self.nodes['Tau'].sample(dist)
@@ -97,6 +90,7 @@ class BayesNet(object):
         self.simulated = True
 
     def sampleData(self):
+        """ ADD TEXT """
         if ~self.simulated:
             self.simulate()
         return self.nodes['Y'].sample(dist='P')
@@ -267,7 +261,7 @@ class BayesNet(object):
 
                 # Print first iteration
                 if i==0:
-                    print("Trial %d, Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (self.trial, time()-t,elbo.iloc[i]["total"], (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
+                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time()-t,elbo.iloc[i]["total"], (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -276,7 +270,7 @@ class BayesNet(object):
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
-                    print("Trial %d, Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (self.trial, i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
+                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
                     if delta_elbo<0: print("Warning, lower bound is decreasing..."); print('\a')
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")

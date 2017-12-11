@@ -13,7 +13,8 @@ def removeIncompleteSamples(data):
 
     PARAMETERS
     ----------
-    data: list
+    data: list of ndarrays
+        list of length M with ndarrays with the observed data of dimensionality (N,Dm)
     """
     print("Removing incomplete samples...")
 
@@ -37,11 +38,15 @@ def removeIncompleteSamples(data):
 
 def maskData(data, data_opts):
     """ Method to mask values of the data,
-    It is mainly to test missing values and to evaluate imputation
+    It is mainly used to generate missing values and evaluate imputation
 
     PARAMETERS
     ----------
-    data_opts: dic
+    data: list of ndarrays
+        list of length M with ndarrays with the observed data of dimensionality (N,Dm)
+    data_opts: dictionary 
+        data_opts['maskAtRandom']
+        data_opts['maskNSamples']
     """
     print("Masking data with the following options:")
     print("at random:")

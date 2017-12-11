@@ -1,21 +1,6 @@
 
 """
-Module to initalise the nodes
-
-Z:
-    MuZ:
-
-SW:
-    Alpha:
-
-Tau:
-
-Y:
-
-Theta:
-    ThetaConst
-    ThetaLearn
-    ThetaMixed
+Module to initalise a bioFAM model
 """
 
 import scipy as s
@@ -39,15 +24,15 @@ from biofam.core.nodes.mixed_nodes import *
 
 
 class initModel(object):
-    def __init__(self, dim, data, lik, seed=None):
+    def __init__(self, dim, data, lik):
         """
         PARAMETERS
         ----------
          dim: dictionary
             keyworded dimensionalities: N for the number of samples, M for the number of views, K for the number of latent variables, D for the number of features per view (a list)
-         data: list of ndarrays of length M:
+         data: list of length M with ndarrays of dimensionality (N,Dm):
             observed data
-         lik: list of strings
+         lik: list of length M with strings
             likelihood for each view
         """
         self.data = data
@@ -64,21 +49,25 @@ class initModel(object):
 
         PARAMETERS
         ----------
-        pmean:
-        pvar:
-        qmean
-        qvar
-        qE
-        qE2
-        covariates: nd array
-            matrix of covariates with dimensions (nsamples,ncovariates)
-        scale_covariates:
+        pmean: mean of the prior distribution
+        pvar: variance of the prior distribution
+        qmean: initial value of the mean of the variational distribution
+        qvar: initial value of the variance of the variational distribution
+        qE: initial value of the expectation of the variational distribution
+        qE2: initial value of the second moment of the variational distribution
+        covariates: covariates to be included as non-updated factors
+            None if no covariates are present, or a ndarray covariates with dimensions (N,Kcovariates)
+        scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
+            None if no covariates are present, or a ndarray with dimensions (Kcov,) indicating which covariates to scale
         """
 
         ## Initialise prior distribution (P) ##
 
-        pmean = s.ones((self.N,self.K))*pmean  # mean
-        pvar = s.ones((self.K,))*pvar                # variance
+        # mean
+        pmean = s.ones((self.N,self.K))*pmean  
+
+        # variance
+        pvar = s.ones((self.K,))*pvar          
 
         ## Initialise variational distribution (Q) ##
 
@@ -88,15 +77,19 @@ class initModel(object):
         # mean
         if qmean is not None:
             if isinstance(qmean,str):
-                if qmean == "random": # Random initialisation of latent variables
+
+                # Random initialisation
+                if qmean == "random": 
                     qmean = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.K))
 
-                elif qmean == "orthogonal": # Latent variables are initialised randomly but ensuring orthogonality
+                # Random and orthogonal initialisation
+                elif qmean == "orthogonal": 
                     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
                     pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.N,9999)).T)
                     qmean = pca.components_.T
 
-                elif qmean == "pca": # Latent variables are initialised from PCA in the concatenated matrix
+                # PCA initialisation
+                elif qmean == "pca":
                     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
                     pca.fit(s.concatenate(self.data,axis=0).T)
                     qmean = pca.components_.T
@@ -141,6 +134,7 @@ class initModel(object):
 
         PARAMETERS
         ----------
+        (...)
         """
         qmean_S1
         SW_list = [None]*self.M
@@ -358,6 +352,7 @@ class initModel(object):
         PARAMETERS
         ----------
          value: ndarray
+            constant value from 0 to 1 to initialise the node, 0 corresponds to complete sparsity (all weights are zero) and 1 corresponds to no sparsity
         """
         Theta_list = [None] * self.M
         for m in range(self.M):
@@ -366,9 +361,10 @@ class initModel(object):
         self.nodes["Theta"] = self.Theta
 
     def initExpectations(self, *nodes):
-        # Method to initialise the expectations of some nodes
+        """ Method to initialise the expectations """
         for node in nodes:
             self.nodes[node].updateExpectations()
 
     def getNodes(self):
+        """ Get method to return the nodes"""
         return { k:v for (k,v) in self.nodes.items()}

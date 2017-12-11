@@ -3,7 +3,8 @@ import pandas as pd
 import scipy as s
 from time import sleep
 
-from build_model import *
+from build_model import build_model
+from train_model import train_model
 
 def entry_point():
 
@@ -118,6 +119,7 @@ def entry_point():
     #####################
     ## Load covariates ##
     #####################
+
     model_opts = {}
     model_opts['learnIntercept'] = args.learnIntercept
 
@@ -134,8 +136,6 @@ def entry_point():
     ##############################
     ## Define the model options ##
     ##############################
-
-
 
     # Define initial number of latent factors
     model_opts['K'] = args.factors
@@ -159,10 +159,10 @@ def entry_point():
     train_opts['tolerance'] = args.tolerance              # Tolerance level for convergence
     train_opts['forceiter'] = args.nostop                 # Do no stop even when convergence criteria is met
     train_opts['startSparsity'] = args.startSparsity      # Iteration to activate spike and slab sparsity
-    train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" ) # Define schedule of updates
     if args.seed is None or args.seed==0:                 # Seed for the random number generator
         train_opts['seed'] = int(round(time()*1000)%1e6)
         s.random.seed(train_opts['seed'])
+    train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" ) # Define schedule of updates
 
 
     #####################
@@ -170,8 +170,6 @@ def entry_point():
     #####################
 
     untrained_model = build_model(data, model_opts)
-
-    # exit()
 
     #####################
     ## Train the model ##

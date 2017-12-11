@@ -7,10 +7,6 @@ import numpy.ma as ma
 import os
 import h5py
 
-"""
-Module to define some useful util functions
-"""
-
 
 def dotd(A, B, out=None):
     """Diagonal of :math:`\mathrm A\mathrm B^\intercal`.
@@ -41,6 +37,7 @@ def logdet(X):
     # return 2*sum(np.log(np.diag(UC)))
 
 def sigmoid(X):
+    """ Method to compute sigmoid function """
     return np.divide(1.,1.+np.exp(-X))
     # return 1./(1.+np.exp(-X))
 
