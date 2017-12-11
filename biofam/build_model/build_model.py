@@ -14,6 +14,7 @@ from init_model import *
 from utils import *
 
 
+# TODO change to def build_model(model_opts, data=None):
 def build_model(data, model_opts):
     """Method to build a bioFAM model"""
 
@@ -25,9 +26,16 @@ def build_model(data, model_opts):
     sleep(1)
 
     # Define dimensionalities
-    M = len(data)
-    N = data[0].shape[0]
-    D = s.asarray([ data[m].shape[1] for m in range(M) ])
+    if data is None:
+        M = model_opts['M']
+        N = model_opts['N']
+        D = model_opts['D']
+        data = [np.ones([N, D[m]]) * np.nan for m in range(M)]
+    else:
+        M = len(data)
+        N = data[0].shape[0]
+        D = s.asarray([ data[m].shape[1] for m in range(M) ])
+
     K = model_opts["K"]
     dim = {'M':M, 'N':N, 'D':D, 'K':K }
 
@@ -75,10 +83,12 @@ def build_model(data, model_opts):
 
 
     # Initialise ARD on weights
+    # TODO do sth here for siulations
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
     init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
 
     # Initialise precision of noise
+    # TODO do sth here for siulations
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
     init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
 
@@ -121,4 +131,3 @@ def build_model(data, model_opts):
     net = BayesNet(dim=dim, nodes=init.getNodes())
 
     return net
-
