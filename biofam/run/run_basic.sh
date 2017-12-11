@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Basic script to run MOFA. For a more advanced template see run_advanced.sh
+# Basic script to run biofam. For a more advanced template see run_advanced.sh
 
 ###################
 ## START EDITING ##
@@ -41,7 +41,7 @@ dropR2=0.05
 ####################
 
 # Prepare command
-cmd='mofa
+cmd='python ../build_model/entry_point.py
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile

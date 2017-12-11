@@ -15,7 +15,7 @@ from utils import *
 
 
 def build_model(data, model_opts):
-    """Method to run a single trial of a MOFA model
+    """Method to run a single trial of a biofam model
     data:
     model_opts:
     train_opts:
