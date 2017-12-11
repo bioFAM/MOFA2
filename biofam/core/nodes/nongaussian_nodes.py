@@ -7,7 +7,7 @@ PseudoY: general class for pseudodata
         Poisson_PseudoY: Poisson likelihood
         Bernoulli_PseudoY: Bernoulli likelihood
         Binomial_PseudoY: Binomial likelihood (TO FINISH)
-    
+
     PseudoY_Jaakkola: NOT IMPLEMENTED
         Bernoulli_PseudoY_Jaakkola: bernoulli likelihood for Jaakkola approach (see REF)
         Tau_Jaakkola:
@@ -20,7 +20,7 @@ import numpy.ma as ma
 
 from .variational_nodes import Unobserved_Variational_Node
 from .basic_nodes import Node
-from mofa.core.utils import sigmoid, lambdafn
+from biofam.core.utils import sigmoid, lambdafn
 
 
 ##############################
@@ -178,7 +178,7 @@ class Poisson_PseudoY(PseudoY_Seeger):
         return lb
 class Bernoulli_PseudoY(PseudoY_Seeger):
     """
-    Class for a Bernoulli (0,1 data) pseudodata node 
+    Class for a Bernoulli (0,1 data) pseudodata node
     Likelihood:
         p(y|x) = (e^{yx}) / (1+e^x)  (1)
         f(x) = -log p(y|x) = log(1+e^x) - yx
@@ -217,7 +217,7 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
         return lik
 class Binomial_PseudoY(PseudoY_Seeger):
     """
-    Class for a Binomial pseudodata node 
+    Class for a Binomial pseudodata node
     Likelihood:
         p(x|N,theta) = p(x|N,theta) = binom(N,x) * theta**(x) * (1-theta)**(N-x)
         f(x) = -log p(x|N,theta) = -log(binom(N,x)) - x*theta - (N-x)*(1-theta)
@@ -277,7 +277,7 @@ class Binomial_PseudoY(PseudoY_Seeger):
 class Tau_Jaakkola(Node):
     """
     Local Parameter that needs to be optimised in the Jaakkola approach.
-    For more details see Supplementary Methods 
+    For more details see Supplementary Methods
     """
     def __init__(self, dim, value):
         Node.__init__(self, dim=dim)
@@ -347,4 +347,3 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         tmp = s.dot(Z,SW.T)
         lik = ma.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
         return lik
-

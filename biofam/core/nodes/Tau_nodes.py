@@ -5,7 +5,7 @@ import numpy as np
 import scipy as s
 import scipy.special as special
 
-from mofa.core.utils import dotd
+from biofam.core.utils import dotd
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node

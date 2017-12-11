@@ -18,7 +18,7 @@ import numpy.linalg as linalg
 import scipy.special as special
 import scipy.stats as stats
 
-from mofa.core.utils import *
+from biofam.core.utils import *
 
 
 # General class for probability distributions
