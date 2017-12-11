@@ -26,7 +26,6 @@ def train_model(bayesnet, train_opts):
     print ("## Training the model with seed %d ##" % (train_opts['seed']))
     print ("#"*45)
     print ("\n")
-    sleep(1)
 
     bayesnet.iterate()
 

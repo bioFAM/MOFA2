@@ -1,10 +1,11 @@
 import argparse
 import pandas as pd
 import scipy as s
-from time import sleep
+from time import time
 
 from build_model import build_model
 from train_model import train_model
+from utils import *
 
 def entry_point():
 
