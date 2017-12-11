@@ -336,7 +336,35 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
         if feature_names is not None:
             featuredata_grp.create_dataset(view, data=feature_names[m])
 
+def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None):
+    """ Method to save the training data in text files
+
+    PARAMETERS
+    ----------
+    model: a BayesNet instance
+    outDir
+    view_names
+    sample_names
+    feature_names
+    """
+    data = model.getTrainingData()
+    for m in range(len(data)):
+        view = view_names[m] if view_names is not None else 'view_' + str(m)
+        file_name = outDir + '/' + view
+        to_save = pd.DataFrame(data[m].data)
+        if feature_names is not None:
+            to_save.columns = feature_names
+        if sample_names is not None:
+            to_save.index = sample_names
+        to_save.to_csv(file_name)
+
 def overwriteExpectations(net):
+    """
+    methods to overwrite the expectations of the Q distributions with sampled
+    values in cases where we dont train the network but do only simulations
+
+    This enables saving the values more easily
+    """
     for node in net.nodes.keys():
         if isinstance(net.nodes[node], Multiview_Node):
             overwriteExpectationsMV(net.nodes[node])
@@ -348,6 +376,9 @@ def overwriteExpectations(net):
             net.nodes[node].ix = net.nodes[node].samp
 
 def overwriteExpectationsMV(MV):
+    """
+    specific overwrite functions for multiview nodes
+    """
     for node in MV.nodes:
         if isinstance(node, Unobserved_Variational_Node):
             node.Q.expectations["E"] = node.samp
@@ -369,9 +400,6 @@ def saveModel(model, outfile, train_opts, model_opts, view_names=None, sample_na
     """
     assert model.trained or model.simulated, "Model is not trained or simulated yet"
 
-    if not model.trained:
-        overwriteExpectations(model)
-
     if view_names is not None:
         assert len(np.unique(view_names)) == len(view_names), 'View names must be unique'
 
@@ -382,6 +410,11 @@ def saveModel(model, outfile, train_opts, model_opts, view_names=None, sample_na
 
     if sample_names is not None:
         assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
+
+    if not model.trained:
+        overwriteExpectations(model)
+        if 'outDir' in model_opts:
+            saveDataTxt(model, model_opts['outDir'], view_names, sample_names, feature_names)
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model,hdf5,view_names)
