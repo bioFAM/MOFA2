@@ -295,7 +295,15 @@ class BayesNet(object):
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """
-        return { k:v for k,v in self.nodes.items() if isinstance(v,Variational_Node) }
+        # TODO problem with dictionnary comprehension here 
+        to_ret = {}
+        for node in self.nodes.keys():
+            if isinstance(self.nodes[node],Variational_Node):
+                to_ret[node] =self.nodes[node]
+
+        return to_ret
+        # return { node:self.nodes[node] for node in self.nodes.keys() if isinstance(self.nodes[node],Variational_Node)}
+        # return { k:v for k,v in self.nodes.items() if isinstance(v,Variational_Node) }
 
     def getTrainingStats(self):
         """ Method to return training statistics """

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Advanced script to run MOFA. For a basic template see run_basic.sh
+# Advanced script to run biofam. For a basic template see run_basic.sh
 
 ###################
 ## START EDITING ##
