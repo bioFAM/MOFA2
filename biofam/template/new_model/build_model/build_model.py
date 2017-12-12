@@ -11,7 +11,7 @@ import numpy as np
 
 from biofam.core.BayesNet import *
 from init_model import *
-from utils import *
+from biofam.build_model.utils import *
 
 
 # TODO change to def build_model(model_opts, data=None):

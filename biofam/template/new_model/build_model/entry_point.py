@@ -4,8 +4,8 @@ import scipy as s
 from time import time
 
 from build_model import build_model
-from train_model import train_model
-from utils import *
+from biofam.build_model.train_model import train_model
+from biofam.build_model.utils import *
 
 def entry_point():
 
@@ -170,13 +170,13 @@ def entry_point():
     ## Build the model ##
     #####################
 
-    untrained_model = build_model(data, model_opts)
+    model = build_model(data, model_opts)
 
     #####################
     ## Train the model ##
     #####################
 
-    trained_model = train_model(untrained_model, train_opts)
+    train_model(model, train_opts)
 
     ################
     ## Save model ##
@@ -184,7 +184,7 @@ def entry_point():
 
     print("Saving model in %s...\n" % data_opts['outfile'])
     train_opts['schedule'] = '_'.join(train_opts['schedule'])
-    saveModel(model=trained_model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts,
+    saveTrainedModel(model=model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts,
         view_names=data_opts['view_names'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
 
 

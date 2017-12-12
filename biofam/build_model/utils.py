@@ -422,7 +422,7 @@ def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sa
 
     hdf5.close()
 
-def saveSimluatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
+def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
