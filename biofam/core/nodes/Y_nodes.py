@@ -53,4 +53,3 @@ class Y_Node(Constant_Variational_Node):
 
         self.samp = s.random.normal(mu, var)
         return self.samp
-    

@@ -35,3 +35,5 @@ def train_model(bayesnet, train_opts):
     print("## Training finished ##")
     print("#"*43)
     print("\n")
+
+    return (bayesnet)

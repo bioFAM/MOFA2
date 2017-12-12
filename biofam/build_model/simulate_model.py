@@ -1,5 +1,5 @@
 """
-Module to train a bioFAM model
+Module to simulate a bioFAM model
 """
 
 import scipy as s
@@ -9,13 +9,10 @@ import numpy as np
 from biofam.core.BayesNet import BayesNet
 
 
-def train_model(bayesnet, train_opts):
+def simulate_model(bayesnet):
 
     # QC on the Bayesian Network
     assert type(bayesnet)==BayesNet, "'bayesnet' has to be a BayesNet class"
-
-    # Define training options
-    bayesnet.setTrainOptions(train_opts)
 
     ####################
     ## Start training ##
@@ -23,15 +20,15 @@ def train_model(bayesnet, train_opts):
 
     print ("\n")
     print ("#"*45)
-    print ("## Training the model with seed %d ##" % (train_opts['seed']))
+    print ("## Simulating the model")
     print ("#"*45)
     print ("\n")
 
-    bayesnet.iterate()
+    bayesnet.simulate()
 
 
     print("\n")
     print("#"*43)
-    print("## Training finished ##")
+    print("## Simulation finished ##")
     print("#"*43)
     print("\n")

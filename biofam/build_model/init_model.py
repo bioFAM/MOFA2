@@ -8,19 +8,7 @@ import scipy.stats as stats
 from sys import path
 import sklearn.decomposition
 
-
-# Define which nodes to import
-# TODO clean the import: make use of the __init__ file in the nodes dir
-from biofam.core.nodes.basic_nodes import *
-from biofam.core.nodes.multiview_nodes import *
-from biofam.core.nodes.nongaussian_nodes import *
-from biofam.core.nodes.Y_nodes import Y_Node
-from biofam.core.nodes.Z_nodes import Z_Node
-from biofam.core.nodes.W_nodes import SW_Node
-from biofam.core.nodes.Alpha_nodes import AlphaW_Node_mk
-from biofam.core.nodes.Tau_nodes import Tau_Node
-from biofam.core.nodes.Theta_nodes import Theta_Node, Theta_Constant_Node
-from biofam.core.nodes.mixed_nodes import *
+from biofam.core.nodes import *
 
 
 class initModel(object):
@@ -64,10 +52,10 @@ class initModel(object):
         ## Initialise prior distribution (P) ##
 
         # mean
-        pmean = s.ones((self.N,self.K))*pmean  
+        pmean = s.ones((self.N,self.K))*pmean
 
         # variance
-        pvar = s.ones((self.K,))*pvar          
+        pvar = s.ones((self.K,))*pvar
 
         ## Initialise variational distribution (Q) ##
 
@@ -79,11 +67,11 @@ class initModel(object):
             if isinstance(qmean,str):
 
                 # Random initialisation
-                if qmean == "random": 
+                if qmean == "random":
                     qmean = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.K))
 
                 # Random and orthogonal initialisation
-                elif qmean == "orthogonal": 
+                elif qmean == "orthogonal":
                     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
                     pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.N,9999)).T)
                     qmean = pca.components_.T
