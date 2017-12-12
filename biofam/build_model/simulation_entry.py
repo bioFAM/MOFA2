@@ -93,7 +93,7 @@ def entry_point():
     ################
 
     print("Saving model in %s...\n" % args.outFile)
-    saveModel(model=model, outfile=args.outFile, train_opts=None, model_opts=model_opts)
+    saveSimluatedModel(model=model, outfile=args.outFile, train_opts=None, model_opts=model_opts)
 
 
 if __name__ == '__main__':

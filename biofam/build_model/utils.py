@@ -392,13 +392,13 @@ def overwriteExpectationsMV(MV):
             node.mask()
 
 
-def saveModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
+def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
     ----------
     """
-    assert model.trained or model.simulated, "Model is not trained or simulated yet"
+    assert model.trained, "Model is not trained yet"
 
     if view_names is not None:
         assert len(np.unique(view_names)) == len(view_names), 'View names must be unique'
@@ -411,19 +411,44 @@ def saveModel(model, outfile, train_opts, model_opts, view_names=None, sample_na
     if sample_names is not None:
         assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
-    if not model.trained:
-        overwriteExpectations(model)
-        if 'outDir' in model_opts:
-            saveDataTxt(model, model_opts['outDir'], view_names, sample_names, feature_names)
+    hdf5 = h5py.File(outfile,'w')
+    saveExpectations(model,hdf5,view_names)
+    saveParameters(model,hdf5,view_names)
+    saveModelOpts(model_opts,hdf5)
+    saveTrainingData(model, hdf5, view_names, sample_names, feature_names)
+    saveTrainingStats(model,hdf5)
+    saveTrainingOpts(train_opts,hdf5)
+
+    hdf5.close()
+
+def saveSimluatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
+    """ Method to save the model in an hdf5 file
+
+    PARAMETERS
+    ----------
+    """
+    assert model.simulated, "Model is not simulated yet"
+
+    if view_names is not None:
+        assert len(np.unique(view_names)) == len(view_names), 'View names must be unique'
+
+        # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
+        idx = sorted(range(len(view_names)), key=lambda k: view_names[k])
+        tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
+        model_opts["likelihood"] = tmp
+
+    if sample_names is not None:
+        assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
+
+
+    overwriteExpectations(model)
+    if 'outDir' in model_opts:
+        saveDataTxt(model, model_opts['outDir'], view_names, sample_names, feature_names)
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model,hdf5,view_names)
     saveParameters(model,hdf5,view_names)
     saveModelOpts(model_opts,hdf5)
     saveTrainingData(model, hdf5, view_names, sample_names, feature_names)
-
-    if model.trained:
-        saveTrainingStats(model,hdf5)
-        saveTrainingOpts(train_opts,hdf5)
 
     hdf5.close()

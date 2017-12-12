@@ -184,7 +184,7 @@ def entry_point():
 
     print("Saving model in %s...\n" % data_opts['outfile'])
     train_opts['schedule'] = '_'.join(train_opts['schedule'])
-    saveModel(model=model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts,
+    saveTrainedModel(model=model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts,
         view_names=data_opts['view_names'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
 
 
