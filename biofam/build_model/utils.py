@@ -328,8 +328,9 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
     data = model.getTrainingData()
     data_grp = hdf5.create_group("data")
     featuredata_grp = hdf5.create_group("features")
+    sampledata_grp = hdf5.create_group("samples")
     if sample_names is not None:
-        hdf5.create_dataset("samples", data=sample_names)
+        sampledata_grp.create_dataset("0", data=sample_names)
     for m in range(len(data)):
         view = view_names[m] if view_names is not None else str(m)
         data_grp.create_dataset(view, data=data[m].data.T)
