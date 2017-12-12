@@ -4,8 +4,8 @@ import scipy as s
 from time import time
 
 from build_model import build_model
-from train_model import train_model
-from utils import *
+from biofam.build_model.simulate_model import simulate_model
+from biofam.build_model.utils import *
 
 # TODO make it possible to input multidimensional D
 
@@ -93,7 +93,7 @@ def entry_point():
     ################
 
     print("Saving model in %s...\n" % args.outFile)
-    saveModel(model=model, outfile=args.outFile, train_opts=None, model_opts=model_opts)
+    saveSimulatedModel(model=model, outfile=args.outFile, train_opts=None, model_opts=model_opts)
 
 
 if __name__ == '__main__':
