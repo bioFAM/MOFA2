@@ -14,8 +14,7 @@ from init_model import *
 from utils import *
 
 
-# TODO change to def build_model(model_opts, data=None):
-def build_model(data, model_opts):
+def build_model(model_opts, data=None):
     """Method to build a bioFAM model"""
 
     print ("\n")

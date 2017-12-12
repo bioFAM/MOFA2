@@ -4,7 +4,7 @@ import scipy as s
 from time import time
 
 from build_model import build_model
-from train_model import train_model
+from simulate_model import simulate_model
 from utils import *
 
 # TODO make it possible to input multidimensional D
@@ -80,13 +80,13 @@ def entry_point():
     ## Build the model ##
     #####################
 
-    model = build_model(data, model_opts)
+    model = build_model(model_opts)
 
     #####################
     ## Simulate the model ##
     #####################
 
-    model.simulate()
+    simulate_model(model)
 
     ################
     ## Save model ##

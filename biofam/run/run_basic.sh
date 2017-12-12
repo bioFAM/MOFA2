@@ -30,7 +30,7 @@ iterations=5000
 
 # Define the initial number of factors and how inactive factors are dropped during training.
 # The model automatically removes inactive factors during training if they explain a fraction of variance smaller than 'dropR2'
-# Recommendation: 
+# Recommendation:
 # (1) If you remove inactive factors (dropR2>0), then the initial number of factors should be large enough
 # (2) If you want to get the most strong drivers of variation then we recommend dropR2 to be at least 0.05 (5%), but if you want to capture more subtle sources of variation you should decrease it to 0.01 (1%) or 0.03 (3%)
 factors=25
@@ -57,4 +57,3 @@ if [[ $header_cols -eq 1 ]]; then cmd="$cmd --header_cols"; fi
 
 # Run!
 eval $cmd
-
