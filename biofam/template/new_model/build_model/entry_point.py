@@ -170,7 +170,7 @@ def entry_point():
     ## Build the model ##
     #####################
 
-    model = build_model(data, model_opts)
+    model = build_model(model_opts, data)
 
     #####################
     ## Train the model ##
