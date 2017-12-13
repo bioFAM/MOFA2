@@ -10,12 +10,11 @@ import numpy as np
 #from joblib import Parallel, delayed
 
 from biofam.core.BayesNet import *
-from init_model import *
-from utils import *
+from init_model import initNewModel
+from biofam.build_model.utils import *
 
 
-# TODO change to def build_model(model_opts, data=None):
-def build_model(data, model_opts):
+def build_model(model_opts, data=None):
     """Method to build a bioFAM model"""
 
     print ("\n")
@@ -58,7 +57,7 @@ def build_model(data, model_opts):
     #####################################
 
     # Initialise the model
-    init = initModel(dim, data, model_opts["likelihood"])
+    init = initNewModel(dim, data, model_opts["likelihood"])
 
     # Initialise latent variables
     pmean = 0.; pvar = 1.; qmean = "random"; qvar = 1.
