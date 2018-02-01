@@ -1,6 +1,6 @@
 
 """
-Module to initalise a bioFAM model
+Module to initialise a bioFAM model
 """
 
 import scipy as s

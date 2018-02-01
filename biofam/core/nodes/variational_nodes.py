@@ -7,7 +7,7 @@ from biofam.core.distributions import *
 
 
 """
-This module is used to define nodes that are infered using the variational bayes framework.
+This module is used to define nodes that are inferred using the variational bayes framework.
 
 All variational nodes share the property of having a lower bound associated with it.
 We divide variational nodes into Constant and Unobserved.
