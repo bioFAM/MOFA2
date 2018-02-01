@@ -104,7 +104,8 @@ def loadData(data_opts, verbose=True):
 
         # Read file
         file = data_opts['input_files'][m]
-        Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
+        Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"],
+                           index_col=data_opts["rownames"], dtype=np.float32)
 
         # Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"])
         print("Loaded %s with dim (%d,%d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
@@ -295,8 +296,8 @@ def saveTrainingOpts(opts, hdf5):
             opts.pop(k)
 
     # Create HDF5 data set
-    hdf5.create_dataset("training_opts", data=np.array(opts.values()))
-    hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
+    hdf5.create_dataset("training_opts", data=np.asarray(opts.values(), dtype='S'))
+    hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys()), dtype='S')
 
 def saveModelOpts(opts, hdf5):
     """ Method to save the model options in an hdf5 file
@@ -311,8 +312,8 @@ def saveModelOpts(opts, hdf5):
     opts = dict((k, opts[k]) for k in opts_interest)
     grp = hdf5.create_group('model_opts')
     for k,v in opts.items():
-        grp.create_dataset(k, data=np.asarray(v).astype('S'))
-    grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
+        grp.create_dataset(k, data=np.asarray(v, dtype='S'))
+    grp[k].attrs['names'] = np.asarray(opts.keys(), dtype='S')
 
 def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_names=None):
     """ Method to save the training data in an hdf5 file
@@ -330,12 +331,12 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
     featuredata_grp = hdf5.create_group("features")
     sampledata_grp = hdf5.create_group("samples")
     if sample_names is not None:
-        sampledata_grp.create_dataset("0", data=sample_names)
+        sampledata_grp.create_dataset("0", data=np.asarray(sample_names, dtype='S'))
     for m in range(len(data)):
         view = view_names[m] if view_names is not None else str(m)
         data_grp.create_dataset(view, data=data[m].data.T)
         if feature_names is not None:
-            featuredata_grp.create_dataset(view, data=feature_names[m])
+            featuredata_grp.create_dataset(view, data=np.asarray(feature_names[m], dtype='S'))
 
 def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None):
     """ Method to save the training data in text files

@@ -2,10 +2,11 @@
 """
 Module to initalise a bioFAM model
 """
+from __future__ import absolute_import, division, print_function
+from builtins import *
 
-import scipy as s
 import scipy.stats as stats
-from sys import path
+import six
 import sklearn.decomposition
 
 from biofam.core.nodes import *
@@ -64,7 +65,7 @@ class initModel(object):
 
         # mean
         if qmean is not None:
-            if isinstance(qmean,str):
+            if isinstance(qmean, six.string_types):
 
                 # Random initialisation
                 if qmean == "random":
@@ -89,8 +90,7 @@ class initModel(object):
                 qmean = s.ones((self.N,self.K)) * qmean
 
             else:
-                print("Wrong initialisation for Z")
-                exit()
+                raise ValueError("Wrong initialisation for Z (qmean)")
 
         # Add covariates
         if covariates is not None:
@@ -131,7 +131,7 @@ class initModel(object):
             ## Initialise prior distribution (P) ##
 
             ## Initialise variational distribution (Q) ##
-            if isinstance(qmean_S1,str):
+            if isinstance(qmean_S1, six.string_types):
 
                 if qmean_S1 == "random": # random
                     qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
@@ -295,12 +295,12 @@ class initModel(object):
                     print("Wrong initialisation for Theta"); exit()
         elif isinstance(qE,s.ndarray):
             assert qE.shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
-            tmp = [ qE for m in xrange(self.M)]
+            tmp = [ qE for m in range(self.M)]
             qE = tmp # IS THIS REQUIRED????
 
 
         elif isinstance(qE,(int,float)):
-            tmp = [ s.ones((self.D[m],self.K)) * qE for m in xrange(self.M)]
+            tmp = [ s.ones((self.D[m],self.K)) * qE for m in range(self.M)]
             qE = tmp # IS THIS REQUIRED????
 
         else:
