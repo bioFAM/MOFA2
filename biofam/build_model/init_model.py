@@ -357,4 +357,3 @@ class initModel(object):
         """ Get method to return the nodes"""
         return self.nodes
         #return { k:v for (k,v) in self.nodes.items()}
-

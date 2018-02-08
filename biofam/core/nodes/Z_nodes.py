@@ -139,6 +139,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
     """ """
     def __init__(self, pmean, pvar, qmean, qvar, clusters, n_Z, cluster_dic=None, qE=None, qE2=None):
+        # For now clusters have to be integers from 0 to n_clusters
         # compute dim from numbers of clusters (n_clusters * Z)
         self.clusters = clusters
         self.N = len(self.clusters)

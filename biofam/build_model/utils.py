@@ -2,6 +2,7 @@ from __future__ import division
 from time import sleep
 
 import numpy as np
+import scipy as s
 import pandas as pd
 import numpy.ma as ma
 import os
@@ -119,6 +120,7 @@ def loadData(data_opts, verbose=True):
         if data_opts['center_features'][m]:
             print("Centering features for view " + str(m) + "...")
             Y[m] = (Y[m] - Y[m].mean(axis=0))
+
 
         # Scale the views to unit variance
         if data_opts['scale_views'][m]:
