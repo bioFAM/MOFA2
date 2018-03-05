@@ -8,6 +8,8 @@ from copy import deepcopy
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 
 
+
+
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
         super(Z_Node,self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
