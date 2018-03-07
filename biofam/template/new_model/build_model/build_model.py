@@ -17,11 +17,11 @@ from biofam.build_model.utils import *
 def build_model(model_opts, data=None):
     """Method to build a bioFAM model"""
 
-    print ("\n")
-    print ("#"*24)
-    print ("## Building the model ##")
-    print ("#"*24)
-    print ("\n")
+    print("\n")
+    print("#"*24)
+    print("## Building the model ##")
+    print("#"*24)
+    print("\n")
     sleep(1)
 
     # Define dimensionalities
@@ -92,7 +92,7 @@ def build_model(model_opts, data=None):
     init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
 
     # Initialise sparsity on the weights
-    learnTheta = [ s.ones((D[m],K)) for m in xrange(M) ]
+    learnTheta = [ s.ones((D[m], K)) for m in range(M) ]
     priorTheta_a = 1.
     priorTheta_b = 1.
     initTheta_a = 1.

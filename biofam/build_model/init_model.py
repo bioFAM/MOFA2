@@ -295,12 +295,12 @@ class initModel(object):
                     print("Wrong initialisation for Theta"); exit()
         elif isinstance(qE,s.ndarray):
             assert qE.shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
-            tmp = [ qE for m in xrange(self.M)]
+            tmp = [ qE for m in range(self.M)]
             qE = tmp # IS THIS REQUIRED????
 
 
         elif isinstance(qE,(int,float)):
-            tmp = [ s.ones((self.D[m],self.K)) * qE for m in xrange(self.M)]
+            tmp = [ s.ones((self.D[m],self.K)) * qE for m in range(self.M)]
             qE = tmp # IS THIS REQUIRED????
 
         else:
