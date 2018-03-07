@@ -22,7 +22,7 @@ class Theta_Node(Beta_Unobserved_Variational_Node):
 
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         # Beta_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        super(Theta_Node,self).__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.precompute()
 
     def precompute(self):
@@ -73,7 +73,7 @@ class Theta_Constant_Node(Constant_Variational_Node):
     Dimensions of Theta_Constant_Node should be (D[m], K)
     """
     def __init__(self, dim, value, N_cells=1):
-        super(Theta_Constant_Node, self).__init__(dim, value)
+        super().__init__(dim, value)
         self.N_cells = N_cells
         self.precompute()
 
