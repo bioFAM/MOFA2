@@ -295,7 +295,10 @@ def saveTrainingOpts(opts, hdf5):
             opts.pop(k)
 
     # Create HDF5 data set
-    hdf5.create_dataset("training_opts", data=np.array(opts.values()))
+    if 'schedule' in opts.keys():
+        del opts['schedule']
+    # For more info see the issue with UTF-8 strings in Python3 and h5py: https://github.com/h5py/h5py/issues/289
+    hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
     hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
 def saveModelOpts(opts, hdf5):
