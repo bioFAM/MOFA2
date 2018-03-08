@@ -21,13 +21,21 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
 
     def updateParameters(self):
+
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation().copy()
-        tmp = self.markov_blanket["SW"].getExpectations()
-        SW,SWW = tmp["E"], tmp["ESWW"]
-        Ztmp = self.markov_blanket["Z"].getExpectations()
-        Z,ZZ = Ztmp["E"],Ztmp["E2"]
         mask = ma.getmask(Y)
+
+        if "SW" in self.markov_blanket:
+            tmp = self.markov_blanket["SW"].getExpectations()
+            W, WW = tmp["E"], tmp["EBNN"]
+            Ztmp = self.markov_blanket["Z"].getExpectations()
+            Z, ZZ = Ztmp["E"],Ztmp["E2"]
+        else:
+            tmp = self.markov_blanket["W"].getExpectations()
+            W, WW = tmp["E"], tmp["E2"]
+            Ztmp = self.markov_blanket["TZ"].getExpectations()
+            Z, ZZ = Ztmp["E"], Ztmp["EBNN"]
 
         # Collect parameters from the P and Q distributions of this node
         P,Q = self.P.getParameters(), self.Q.getParameters()
@@ -41,14 +49,14 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
         # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
         term1 = s.square(Y).sum(axis=0)
 
-        # term2 = 2.*(Y*s.dot(Z,SW.T)).sum(axis=0).data
-        term2 = 2.*(Y*s.dot(Z,SW.T)).sum(axis=0) # save to modify
+        # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
+        term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0) # save to modify
 
-        term3 = ma.array(ZZ.dot(SWW.T), mask=mask).sum(axis=0)
+        term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=0)
 
-        SWZ = ma.array(SW.dot(Z.T), mask=mask.T)
+        WZ = ma.array(W.dot(Z.T), mask=mask.T)
 
-        term4 = dotd(SWZ, SWZ.T) - ma.array(s.dot(s.square(Z),s.square(SW).T), mask=mask).sum(axis=0)
+        term4 = dotd(WZ, WZ.T) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0) #ok
 
         tmp = term1 - term2 + term3 + term4
 

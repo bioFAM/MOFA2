@@ -82,7 +82,7 @@ class BayesNet(object):
 
     def simulate(self, dist='P'):
         """ Method to simulate from the generative model """
-        self.nodes['SW'].sample(dist)
+        self.nodes['W'].sample(dist)
         self.nodes['Z'].sample(dist)
         self.nodes['Tau'].sample(dist)
         self.nodes['Y'].sample(dist)
@@ -132,9 +132,14 @@ class BayesNet(object):
         #   Advantages: it takes into account both weights and latent variables, is based on how well the model fits the data
         #   Disadvantages: slow, doesnt work with non-gaussian data
         if by_r2 is not None:
-            Z = self.nodes['Z'].getExpectation()
             Y = self.nodes["Y"].getExpectation()
-            W = self.nodes["SW"].getExpectation()
+            if 'SW' in self.nodes:
+                W = self.nodes["SW"].getExpectation()
+                Z = self.nodes['Z'].getExpectation()
+            else:
+                W = self.nodes["W"].getExpectation()
+                Z = self.nodes['TZ'].getExpectation()
+
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
             for m in range(self.dim['M']):
 

@@ -27,6 +27,7 @@ def entry_point():
     p.add_argument( '--scale_covariates',  type=int, nargs='+', default=0,                      help='Scale covariates?' )
 
     # Model options
+    p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells) ' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
@@ -138,6 +139,9 @@ def entry_point():
     ## Define the model options ##
     ##############################
 
+    # Choose MOFA and transpose MOFA
+    model_opts["transpose"] = args.transpose
+
     # Define initial number of latent factors
     model_opts['K'] = args.factors
 
@@ -163,7 +167,16 @@ def entry_point():
     if args.seed is None or args.seed==0:                 # Seed for the random number generator
         train_opts['seed'] = int(round(time()*1000)%1e6)
         s.random.seed(train_opts['seed'])
-    train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" ) # Define schedule of updates
+
+    # Define schedule of updates
+    # Think to its importance ?
+
+    if model_opts['transpose']:
+        train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaW", "AlphaZ", "ThetaZ", "Tau" )
+    else:
+        train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )
+
+
 
 
     #####################

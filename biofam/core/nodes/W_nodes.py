@@ -6,6 +6,44 @@ import scipy as s
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
+from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
+
+class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
+   def __init__(self, dim, qmean, qcov, qE=None, qE2=None):
+       MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=dim, qmean=qmean, qcov=qcov, qE=qE)
+       self.precompute()
+
+   def precompute(self):
+       self.D = self.dim[0]
+       # self.K = self.dim[1]
+       self.factors_axis = 1
+
+   def updateParameters(self):
+       Z = self.markov_blanket["TZ"].getExpectation()
+       ZZ = (self.markov_blanket["TZ"].getExpectations()["EBNN"]).sum(axis=0)
+       alpha = self.markov_blanket["AlphaW"].getExpectation()
+       tau = (self.markov_blanket["Tau"].getExpectation())[:,None,None]
+       Y = self.markov_blanket["Y"].getExpectation()
+
+       Qcov = linalg.inv(tau*s.repeat(ZZ[None,:,:],self.D,0) + s.diag(alpha))
+       tmp1 = tau*Qcov #taken from granted ?
+       tmp2 = ma.dot(Y.T,Z).data
+       Qmean = (tmp1[:,:,:]*tmp2[:,None,:]).sum(axis=2)
+
+       # Save updated parameters of the Q distribution
+       self.Q.setParameters(mean=Qmean, cov=QCov)
+
+   def calculateELBO(self):
+
+       # Collect parameters and expectations
+       alpha = self.markov_blanket["AlphaW"].getExpectations()["E"]
+       logalpha = self.markov_blanket["AlphaW"].getExpectations()["lnE"]
+       Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
+
+       lb_p = self.D*s.sum(logalpha) - s.sum(Qexp['E2'] * s.diag(alpha)[None,:,:])
+       lb_q = -self.D*self.K - logdet(Qpar['cov']).sum()
+
+       return (lb_p - lb_q)/2
 
 class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
@@ -24,15 +62,15 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
         tau = self.markov_blanket["Tau"].getExpectation().copy()
         Y = self.markov_blanket["Y"].getExpectation().copy()
-        alpha = self.markov_blanket["Alpha"].getExpectation().copy()
-        thetatmp = self.markov_blanket['Theta'].getExpectations()
+        alpha = self.markov_blanket["AlphaW"].getExpectation().copy()
+        thetatmp = self.markov_blanket["ThetaW"].getExpectations()
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
         mask = ma.getmask(Y)
 
         # Collect parameters and expectations from P and Q distributions of this node
         SW = self.Q.getExpectations()["E"]
         Q = self.Q.getParameters()
-        Qmean_S1, Qvar_S1, Qtheta = Q['mean_S1'], Q['var_S1'], Q['theta']
+        Qmean_S1, Qvar_S1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
         # Check dimensions of Theta and and expand if necessary
         if theta_lnE.shape != Qmean_S1.shape:
@@ -85,19 +123,19 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_S0=s.zeros((self.D,self.dim[1])), var_S0=s.repeat(1./alpha[None,:],self.D,0), mean_S1=Qmean_S1, var_S1=Qvar_S1, theta=Qtheta )
+        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=s.repeat(1./alpha[None,:],self.D,0), mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
 
     def calculateELBO(self):
 
         # Collect parameters and expectations
         Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
-        S,WW = Qexp["ES"], Qexp["EWW"]
-        Qvar = Qpar['var_S1']
-        theta = self.markov_blanket['Theta'].getExpectations()
+        S,WW = Qexp["EB"], Qexp["ENN"]
+        Qvar = Qpar['var_B1']
+        theta = self.markov_blanket["ThetaW"].getExpectations()
 
         # Get ARD sparsity or prior variance
-        if "Alpha" in self.markov_blanket:
-            alpha = self.markov_blanket['Alpha'].getExpectations().copy()
+        if "AlphaW" in self.markov_blanket:
+            alpha = self.markov_blanket["AlphaW"].getExpectations().copy()
             if alpha["E"].shape[0] == 1:
                 alpha["E"] = s.repeat(alpha["E"][:], self.dim[1], axis=0)
                 alpha["lnE"] = s.repeat(alpha["lnE"][:], self.dim[1], axis=0)
@@ -108,6 +146,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Calculate ELBO for W
         lb_pw = (self.D*alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
         lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
+        # #NOT SURE ABOUT THE FORMULA for lb_qw (brackets of expectation propagating inside the log ?)
         lb_w = lb_pw - lb_qw
 
         # Calculate ELBO for S
@@ -121,14 +160,14 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
     def sample(self, dist='P'):
         # get necessary parameters
-        mu_w_hat = self.P.getParameters()['mean_S1']
+        mu_w_hat = self.P.getParameters()['mean_B1']
         mu_w_hat = s.ones(self.dim) * mu_w_hat
 
-        theta = self.markov_blanket['Theta'].sample()
+        theta = self.markov_blanket["ThetaW"].sample()
         if theta.shape != mu_w_hat.shape:
             theta = s.repeat(theta[None,:],mu_w_hat.shape[0],0)
 
-        alpha = self.markov_blanket['Alpha'].sample()
+        alpha = self.markov_blanket["AlphaW"].sample()
         if alpha.shape[0] == 1:
             alpha = s.repeat(alpha[:], self.dim[1], axis=0)
         if alpha.shape != mu_w_hat.shape:

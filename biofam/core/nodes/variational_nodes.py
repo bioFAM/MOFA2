@@ -169,8 +169,8 @@ class BernoulliGaussian_Unobserved_Variational_Node(Unobserved_Variational_Node)
     Multi-Task and Multiple Kernel Learning by Titsias and Gredilla)
     """
     def __init__(self, dim,
-        pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta,
-        qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
+        pmean_B0, pmean_B1, pvar_B0, pvar_B1, ptheta,
+        qmean_B0, qmean_B1, qvar_B0, qvar_B1, qtheta, qEN_B0=None, qEN_B1=None, qEB=None):
 	    # dim (2d tuple): dimensionality of the node
         # pmean (nd array): the mean parameter of the P distribution
         # pvar (nd array): the var parameter of the P distribution
@@ -179,10 +179,11 @@ class BernoulliGaussian_Unobserved_Variational_Node(Unobserved_Variational_Node)
         # qvar (nd array): the var parameter of the Q distribution
 	    # qtheta (nd array): the theta parameter of the Q distribution
         Unobserved_Variational_Node.__init__(self,dim)
+        Unobserved_Variational_Node.__init__(self,dim)
 
         # Initialise the P and Q distributions
-        self.P = BernoulliGaussian(dim=dim, theta=ptheta, mean_S0=pmean_S0, var_S0=pvar_S0, mean_S1=pmean_S1, var_S1=pvar_S1)
-        self.Q = BernoulliGaussian(dim=dim, theta=qtheta, mean_S0=qmean_S0, var_S0=qvar_S0, mean_S1=qmean_S1, var_S1=qvar_S1, EW_S0=qEW_S0, EW_S1=qEW_S1, ES=qES)
+        self.P = BernoulliGaussian(dim=dim, theta=ptheta, mean_B0=pmean_B0, var_B0=pvar_B0, mean_B1=pmean_B1, var_B1=pvar_B1)
+        self.Q = BernoulliGaussian(dim=dim, theta=qtheta, mean_B0=qmean_B0, var_B0=qvar_B0, mean_B1=qmean_B1, var_B1=qvar_B1, EN_B0=qEN_B0, EN_B1=qEN_B1, EB=qEB)
 
 class Beta_Unobserved_Variational_Node(Unobserved_Variational_Node):
     """

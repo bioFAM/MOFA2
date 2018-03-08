@@ -245,8 +245,8 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
 
                 # Loop through the expectations
                 if only_first_moments:
-                    if node == "SW":
-                        expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["ES"], 'EW':expectations[m]["EW"]}
+                    if (node == "W") or (node == "Z"):
+                        expectations[m] = {'E':expectations[m]["E"], 'EB':expectations[m]["EB"], 'EN':expectations[m]["EN"]}
                     else:
                         expectations[m] = {'E':expectations[m]["E"]}
 
