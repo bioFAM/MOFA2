@@ -16,7 +16,6 @@ from biofam.build_model.utils import *
 
 def build_model(model_opts, data=None):
     """Method to build a bioFAM model"""
-    # TODO : add option to choose between sparsity on latent or on weights :  TZ and W or Z and SW, but keep ARD prior on both Z and W
     # TODO : enable using covariance matrix for prior on W instead of spike and slab
 
     print ("\n")
