@@ -126,7 +126,7 @@ class Multiview_Constant_Node(Multiview_Node):
         Multiview_Node.__init__(self, M, *nodes)
 
     def getValues(self):
-        """Method to retun the values of the node"""
+        """Method to return the values of the node"""
         return [ self.nodes[m].getValue() for m in self.activeM ]
 
 class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):

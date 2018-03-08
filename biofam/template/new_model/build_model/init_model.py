@@ -1,6 +1,6 @@
 
 """
-Module to initalise the nodes in the new model
+Module to initialise the nodes in the new model
 """
 
 import scipy as s
