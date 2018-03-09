@@ -38,6 +38,10 @@ class BernoulliGaussian(Distribution):
         # Collect expectations
         self.updateExpectations()
 
+    def getParameters(self):
+        # Get function for parameters
+        return self.params
+
     def setParameters(self,**params):
         # Setter function for parameters
         self.B.setParameters(theta=params['theta'])

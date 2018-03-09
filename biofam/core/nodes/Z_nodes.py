@@ -9,7 +9,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 
 
-# TODO : CHECK THE COMPUTATIONS FOR TZ_Node (notably the sums over m)
+# TODO : check the computations for TZ_Node (the sums over m are maybe not at the right place)
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
@@ -44,13 +44,13 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
 
         # Collect parameters from the prior or expectations from the markov blanket
-        if "Mu" in self.markov_blanket:
-            Mu = self.markov_blanket['Mu'].getExpectation()
+        if "MuZ" in self.markov_blanket:
+            Mu = self.markov_blanket['MuZ'].getExpectation()
         else:
             Mu = self.P.getParameters()["mean"]
 
-        if "Alpha" in self.markov_blanket:
-            Alpha = self.markov_blanket['Alpha'].getExpectation()
+        if "AlphaZ" in self.markov_blanket:
+            Alpha = self.markov_blanket['AlphaZ'].getExpectation()
             Alpha = s.repeat(Alpha[None,:], self.N, axis=0)
         else:
             Alpha = 1./self.P.getParameters()["var"]
@@ -90,7 +90,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         QE, QE2 = Qexp['E'],Qexp['E2']
 
         if "MuZ" in self.markov_blanket:
-            PE, PE2 = self.markov_blanket['MuZ'].getExpectations()['E'], self.markov_blanket['Mu'].getExpectations()['E2']
+            PE, PE2 = self.markov_blanket['MuZ'].getExpectations()['E'], self.markov_blanket['MuZ'].getExpectations()['E2']
         else:
             PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.N,self.dim[1]))
 
@@ -122,15 +122,15 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         return lb_p-lb_q
 
     def sample(self, dist='P'):
-        if "Mu" in self.markov_blanket:
-            print('Not implemented')
-            exit(1)
-        if "Alpha" in self.markov_blanket:
-            print("Not implemented")  # TODO where is the AlphaZ node ?
-            exit(1)
-
-        p_mean = self.P.params['mean']
-        p_var = self.P.params['var']
+        if "MuZ" in self.markov_blanket:
+            p_mean = self.markov_blanket['MuZ'].sample()
+        else:
+            p_mean = self.P.params['mean']
+        if "AlphaZ" in self.markov_blanket:
+            alpha = self.markov_blanket['AlphaZ'].sample()
+            p_var = s.square(1./alpha)
+        else:
+            p_var = self.P.params['var']
 
         # simulating and handling covariates
         self.samp = s.random.normal(p_mean, np.sqrt(p_var))
@@ -332,13 +332,23 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
     def updateParameters(self):
         Ppar = self.P.getParameters()
-        Z = self.markov_blanket['Z'].Q.getExpectation()
+        if "TZ" in self.markov_blanket:
+            Z = self.markov_blanket['TZ'].Q.getExpectation()
+        else:
+            Z = self.markov_blanket['Z'].Q.getExpectation()
 
-        if "Alpha" in self.markov_blanket:
-            Alpha = self.markov_blanket['Alpha'].getExpectation().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
+        if "AlphaZ" in self.markov_blanket:
+            Alpha = self.markov_blanket['AlphaZ'].getExpectation().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
             Alpha = s.repeat(Alpha[None,:], self.N, axis=0)
         else:
-            Alpha = 1./self.markov_blanket['Z'].P.getParameters()["var"]
+            if "TZ" in self.markov_blanket:
+                print("Not implemented yet")
+                exit(1)
+                #ckeck this below :
+                #TZ_tmp=self.markov_blanket['TZ'].P.getParameters()
+                #Alpha = 1. / (s.square(TZ_tmp["theta"]*TZ_tmp["mean_B1"])+TZ_tmp["theta"]*TZ_tmp["var_B1"])
+            else:
+                Alpha = 1./self.markov_blanket['Z'].P.getParameters()["var"]
 
         Qmean, Qvar = self.Q.getParameters()['mean'], self.Q.getParameters()['var']
         ZTauMean = Z * Alpha

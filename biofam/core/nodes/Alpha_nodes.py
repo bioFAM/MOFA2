@@ -34,7 +34,6 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         Pa, Pb = P['a'], P['b']
 
         # Perform updates
-        # TODO : How select the right view of W for Alpha ? Do not understand ?
         Qa = Pa + 0.5*EWW.shape[0]
         Qb = Pb + 0.5*EWW.sum(axis=0)
 

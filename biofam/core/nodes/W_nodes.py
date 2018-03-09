@@ -8,6 +8,8 @@ import scipy as s
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
 
+#TODO : check the updates for W_node
+
 class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
    def __init__(self, dim, qmean, qcov, qE=None, qE2=None):
        MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=dim, qmean=qmean, qcov=qcov, qE=qE)
