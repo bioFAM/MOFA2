@@ -40,9 +40,11 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         if theta_lnEInv.shape != Qmean_S1.shape:
             theta_lnEInv = s.repeat(theta_lnEInv[None,:],Qmean_S1.shape[0],0)
 
+        # DEPRECATED: tau is expanded inside the node
         # Check dimensions of Tau and and expand if necessary
-        if tau.shape != Y.shape:
-            tau = s.repeat(tau[None,:], Y.shape[0], axis=0)
+        # if tau.shape != Y.shape:
+        #     tau = s.repeat(tau[None,:], Y.shape[0], axis=0)
+        
         # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Check dimensions of Alpha and and expand if necessary

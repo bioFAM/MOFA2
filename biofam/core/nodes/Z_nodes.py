@@ -54,8 +54,10 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
-            if tau[m].shape != Y[m].shape:
-                tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
+            # DEPRECATED: tau is expanded inside the node
+            # if tau[m].shape != Y[m].shape:
+            #     tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
+
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.

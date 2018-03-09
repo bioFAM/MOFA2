@@ -21,7 +21,7 @@ class Y_Node(Constant_Variational_Node):
         # Precompute some terms to speed up the calculations
         self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
         self.D = self.dim[1]
-        self.likconst = -0.5*s.sum(self.N)*s.log(2.*s.pi)
+        self.likconst = -0.5*s.sum(self.N * self.D)*s.log(2.*s.pi)
 
     def mask(self):
         # Mask the observations if they have missing values
@@ -37,7 +37,7 @@ class Y_Node(Constant_Variational_Node):
         tauQ_param = self.markov_blanket["Tau"].getParameters("Q")
         tauP_param = self.markov_blanket["Tau"].getParameters("P")
         tau_exp = self.markov_blanket["Tau"].getExpectations()
-        lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"],tauQ_param["b"]-tauP_param["b"])
+        lik = self.likconst + 0.5*s.sum(tau_exp["lnE"]) - s.sum(tau_exp["E"] * (tauQ_param["b"]-tauP_param["b"]))
         return lik
 
     def sample(self, dist='P'):
@@ -47,9 +47,10 @@ class Y_Node(Constant_Variational_Node):
         Tau_samp = self.markov_blanket['Tau'].samp
 
         mu = Z_samp.dot(W_samp.transpose())
-        if Tau_samp.shape != mu.shape:
-            Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
-        var =1./Tau_samp
+        # DEPRECATED (tau is expanded inside the node)
+        # if Tau_samp.shape != mu.shape:
+        #     Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
+        var = 1./Tau_samp
 
         self.samp = s.random.normal(mu, var)
         return self.samp

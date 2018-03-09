@@ -210,19 +210,19 @@ class initModel(object):
         for m in range(self.M):
             if self.lik[m] == "poisson":
                 tmp = 0.25 + 0.17*s.amax(self.data[m],axis=0)
-                tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
+                tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
             elif self.lik[m] == "bernoulli":
                 # tau_list[m] = Constant_Node(dim=(self.D[m],), value=s.ones(self.D[m])*0.25)
                 # tau_list[m] = Tau_Jaakkola(dim=(self.D[m],), value=0.25)
-                tau_list[m] = Tau_Jaakkola(dim=((self.N,self.D[m])), value=1.)
+                tau_list[m] = Tau_Jaakkola(dim=((self.N, self.D[m])), value=1.)
             elif self.lik[m] == "binomial":
                 tmp = 0.25*s.amax(self.data["tot"][m],axis=0)
-                tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
+                tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
             elif self.lik[m] == "gaussian":
-                tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+                tau_list[m] = Tau_Node(dim=(self.N, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
             # elif self.lik[m] == "warp":
             #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
-        self.nodes["Tau"] = Multiview_Mixed_Node(self.M,*tau_list)
+        self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
     def initY(self):
         """Method to initialise the observations"""
