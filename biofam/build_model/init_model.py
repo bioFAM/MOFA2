@@ -188,8 +188,12 @@ class initModel(object):
             # mean
             pmean = s.ones((self.D[m], self.K)) * pmean
 
-            # variance
-            pcov = s.ones((self.K,self.D[m],self.D[m])) * pcov
+            # covariance
+            if isinstance(pcov, (int, float)):
+                tmp = s.zeros((self.D[m],self.K,self.K))
+                for d in range(self.D[m]):
+                    tmp[d,:,:]=np.eye(self.K)*pcov
+                pcov=tmp
 
             ## Initialise variational distribution (Q) ##
 
@@ -208,9 +212,16 @@ class initModel(object):
                 print("Wrong initialisation for W")
                 exit()
 
-            #qcov
+            # covariance
 
-            qcov = s.ones((self.K,self.D[m],self.D[m]))*qcov
+            if isinstance(qcov, (int, float)):
+                tmp = s.zeros((self.D[m],self.K,self.K))
+                for d in range(self.D[m]):
+                    tmp[d,:,:]=np.eye(self.K)*qcov
+                qcov=tmp
+
+            # variance
+            # qvar = s.ones((self.N, self.D[m])) * qvar
 
             W_list[m] = W_Node(dim=(self.D[m], self.K),pmean=pmean,pcov=pcov,qmean=qmean, qcov=qcov)
 

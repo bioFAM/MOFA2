@@ -9,7 +9,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 
 
-# TODO : check the computations for TZ_Node (the sums over m are maybe not at the right place)
+# TODO : check new updateParameters for TZ_Node (the sums over m are maybe not at the right place)
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
@@ -150,6 +150,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
     def precompute(self):
         self.N = self.dim[0]
+        self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
@@ -167,6 +168,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Wtmp = [Wtmp_m.copy() for Wtmp_m in self.markov_blanket["W"].getExpectations()]
         W = [Wtmp_m["E"] for Wtmp_m in Wtmp]
         WW = [Wtmp_m["E2"] for Wtmp_m in Wtmp]
+
         tau = [tau_m.copy() for tau_m in self.markov_blanket["Tau"].getExpectation()]
         Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()]
         alpha = self.markov_blanket["AlphaZ"].getExpectation().copy()
@@ -216,12 +218,6 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
             term4_tmp1 = sum([s.dot(tau[m]*Y[m],W[m][:,k]) for m in range(M)]) # good to modify
             # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-
-            #A=(W[m][:,k]*W[m][:,s.arange(self.dim[1])!=k].T).T
-            #B=TZ[:,s.arange(self.dim[1])!=k].T
-            #print(np.shape(A))
-            #print(np.shape(B))
-            #print(np.shape((tau[m]*s.dot(A,B)).sum(axis=0)))
 
             term4_tmp2 = sum([(s.dot(tau[m],s.dot((W[m][:,k]*W[m][:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) )).sum(axis=0) for m in range(M)]) # good to modify
 

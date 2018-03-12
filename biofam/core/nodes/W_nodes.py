@@ -2,45 +2,46 @@ from __future__ import division
 import numpy.ma as ma
 import numpy as np
 import scipy as s
-from copy import deepcopy
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
+from biofam.core.utils import logdet
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 
-#TODO : check the updates for W_node
-
-'''
-class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
-    #TODO : ask to Damien the former code
-    pass
-'''
+#TODO : re-check new updateParameters and calculateELBO for W_node
 
 class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
    def __init__(self, dim, pmean, pcov, qmean, qcov, qE=None, qE2=None):
-       MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=dim,  pmean=pmean, pcov=pcov, qmean=qmean, qcov=qcov, qE=qE)
+       MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=(dim[1],dim[0]),  pmean=pmean, pcov=pcov, qmean=qmean, qcov=qcov, qE=qE)
+       #since we use the transpose version of multivariate_gaussian (each column of the W matrix is a multivariate gaussian)
        self.precompute()
 
    def precompute(self):
-       self.D = self.dim[0]
-       # self.K = self.dim[1]
+       self.D = self.dim[1]
+       self.K = self.dim[0]
        self.factors_axis = 1
 
    def updateParameters(self):
        Z = self.markov_blanket["TZ"].getExpectation()
-       ZZ = (self.markov_blanket["TZ"].getExpectations()["EBNN"]).sum(axis=0)
+       ZZ = self.markov_blanket["TZ"].getExpectations()["EXXT"]
        alpha = self.markov_blanket["AlphaW"].getExpectation()
-       tau = (self.markov_blanket["Tau"].getExpectation())[:,None,None]
+
+       #tau = (self.markov_blanket["Tau"].getExpectation())[:, None, None]
+       tau = (self.markov_blanket["Tau"].getExpectation())
        Y = self.markov_blanket["Y"].getExpectation()
 
-       Qcov = s.linalg.inv(tau*s.repeat(ZZ[None,:,:],self.D,0) + s.diag(alpha))
-       tmp1 = tau*Qcov #taken from granted ?
-       tmp2 = ma.dot(Y.T,Z).data
-       Qmean = (tmp1[:,:,:]*tmp2[:,None,:]).sum(axis=2)
+       #Qcov = s.linalg.inv(tau * s.repeat(ZZ[None, :, :], self.D, 0) + s.diag(alpha))
+       Qcov = np.zeros((self.D,self.K,self.K))
+
+       for d in range(self.D):
+           Qcov[d,:,:] = s.linalg.inv(tau[d] * np.sum(ZZ,axis=0) + s.diag(alpha))
+       tmp1 = s.repeat(s.repeat(tau[:,None,None],self.K,axis=1),self.K,axis=2) * Qcov
+       tmp2 = ma.dot(Y.T, Z).data
+       Qmean = (tmp1[:, :, :] * tmp2[:, None, :]).sum(axis=2)
 
        # Save updated parameters of the Q distribution
-       self.Q.setParameters(mean=Qmean, cov=QCov)
+       self.Q.setParameters(mean=Qmean, cov=Qcov)
 
    def calculateELBO(self):
 
@@ -49,7 +50,7 @@ class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
        logalpha = self.markov_blanket["AlphaW"].getExpectations()["lnE"]
        Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
 
-       lb_p = self.D*s.sum(logalpha) - s.sum(Qexp['E2'] * s.diag(alpha)[None,:,:])
+       lb_p = self.D*s.sum(logalpha) - s.sum(Qexp['EXXT'] * s.diag(alpha)[None,:,:])
        lb_q = -self.D*self.K - logdet(Qpar['cov']).sum()
 
        return (lb_p - lb_q)/2

@@ -35,7 +35,6 @@ class UnivariateGaussian(Distribution):
         if E2 is not None:
             self.expectations['E2'] = s.ones(dim)*E2
 
-
         # Check that dimensionalities match
         self.CheckDimensionalities()
 

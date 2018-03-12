@@ -28,14 +28,15 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
 
         if "SW" in self.markov_blanket:
             tmp = self.markov_blanket["SW"].getExpectations()
-            W, WW = tmp["E"], tmp["EBNN"]
+            W, WW = tmp["E"], tmp["EBNN"]  #"EBNN" is like "E2"
             Ztmp = self.markov_blanket["Z"].getExpectations()
             Z, ZZ = Ztmp["E"],Ztmp["E2"]
         else:
-            tmp = self.markov_blanket["W"].getExpectations()
-            W, WW = tmp["E"], tmp["E2"]
+            Wtmp = self.markov_blanket["W"].getExpectations()
+            W, WW = Wtmp["E"], Wtmp["E2"]
             Ztmp = self.markov_blanket["TZ"].getExpectations()
             Z, ZZ = Ztmp["E"], Ztmp["EBNN"]
+
 
         # Collect parameters from the P and Q distributions of this node
         P,Q = self.P.getParameters(), self.Q.getParameters()

@@ -5,13 +5,14 @@ from .basic_distributions import Distribution
 
 from biofam.core.utils import *
 
+# TODO : recheck for modif l.78 (E[:,i],E[:,i] before), for compute of the expectation of X*X^T, and remove a loop
 
 class MultivariateGaussian(Distribution):
     """
     Class to define multivariate Gaussian distribution.
-    This class can store N multivate Gaussian Distributions of dimensionality D each.
+    This class can store N multivariate Gaussian Distributions of dimensionality D each
 
-    Equations:
+    Equations :
     p(X|Mu,Sigma) = 1/(2pi)^{D/2} * 1/(|Sigma|^0.5) * exp( -0.5*(X-Mu)^{T} Sigma^{-1} (X-Mu) )
     log p(X|Mu,Sigma) = -D/2*log(2pi) - 0.5log(|Sigma|) - 0.5*(X-Mu)^{T} Sigma^{-1} (X-Mu)
     E[X] = Mu
@@ -62,20 +63,26 @@ class MultivariateGaussian(Distribution):
 
 
     def updateExpectations(self):
-        # Update first and second moments using current parameters
+        # Update first and second moments, and expectation of X*X^T, using current parameters
         E = self.params['mean']
 
         # self.E2 = s.empty( (self.dim[0],self.dim[1],self.dim[1]) )
         # for i in range(self.dim[0]):
         #     self.E2[i,:,:] = s.outer(self.E[i,:],self.E[i,:]) + self.cov[i,:,:]
 
-        E2 = self.params['cov'].copy()
+        EXXT = self.params['cov'].copy()
         # TODO sort out index
         # import pdb; pdb.set_trace()
         for i in range(self.dim[1]):
-            E2[i,:,:] += s.outer(E[:,i],E[:,i])
+            EXXT[i,:,:] += s.outer(E[i,:],E[i,:]) #modified : E[:,i],E[:,i] before
 
-        self.expectations = {'E':E, 'E2':E2}
+        # from the expectation of X*X.T to the expectation of X^2
+        # TODO : remove the loop below
+        E2 = np.zeros((self.dim[1], self.dim[0]))
+        for d in range(self.dim[0]):
+            E2[d, :] = np.diag(EXXT[d, :, :]).flatten()  # extracting the diagonal
+
+        self.expectations = {'E':E, 'EXXT':EXXT, 'E2':E2}
 
     def density(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
