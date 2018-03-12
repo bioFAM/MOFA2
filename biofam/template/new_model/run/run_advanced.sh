@@ -24,7 +24,7 @@ center_features=0   # center the features to zero-mean? (not necessary as long a
 scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose=0
+transpose=1
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )

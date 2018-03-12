@@ -13,6 +13,8 @@ from biofam.core.BayesNet import *
 from init_model import initNewModel
 from biofam.build_model.utils import *
 
+#TODO : change init of W in transpose model
+
 
 def build_model(model_opts, data=None):
     """Method to build a bioFAM model"""
@@ -90,7 +92,11 @@ def build_model(model_opts, data=None):
 
     #Initialise weights
     if model_opts['transpose']:
-        pass
+        pmean = 0.
+        pcov = 1. #to change
+        qmean = "random"
+        qcov = 1. #to change
+        init.initW(pmean=pmean,pcov=pcov,qmean=qmean, qcov=qcov)
     else:
         priorW_mean_S0 = 0.;
         priorW_meanS1 = 0.;
@@ -138,39 +144,42 @@ def build_model(model_opts, data=None):
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
     init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
 
-    # Initialise sparsity on the weights
-    learnTheta = [ s.ones((D[m],K)) for m in xrange(M) ]
-    priorTheta_a = 1.
-    priorTheta_b = 1.
-    initTheta_a = 1.
-    initTheta_b = 1.
-    initTheta_E = 1.
-    # TO-DOOOOOOOOOO
-    # if model_opts["learnIntercept"]:
-    #     for m in range(M):
-    #     learnTheta[m][:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
-    learnTheta_ix = [np.ones(K)]*M
-    if model_opts["learnIntercept"]:
-        for ix in learnTheta_ix:
-            ix[0] =0
-    init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a,  qb=initTheta_b, qE=initTheta_E)
+    if model_opts["transpose"]:
+        # Initialise sparsity on the factors
+        learnTheta = s.ones((1, K))
+        priorTheta_a = 1.
+        priorTheta_b = 1.
+        initTheta_a = 1.
+        initTheta_b = 1.
+        initTheta_E = 1.
+        # TO-DOOOOOOOOOO
+        # if model_opts["learnIntercept"]:
+        #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
+        learnTheta_ix = np.ones(K)
+        if model_opts["learnIntercept"]:
+            for ix in learnTheta_ix:
+                ix[0] = 0
+        init.initThetaMixedZ_k(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
+                               qE=initTheta_E)
 
-    # Initialise sparsity on the factors
-    learnTheta = s.ones((1, K))
-    priorTheta_a = 1.
-    priorTheta_b = 1.
-    initTheta_a = 1.
-    initTheta_b = 1.
-    initTheta_E = 1.
-    # TO-DOOOOOOOOOO
-    # if model_opts["learnIntercept"]:
-    #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
-    learnTheta_ix = np.ones(K)
-    if model_opts["learnIntercept"]:
-        for ix in learnTheta_ix:
-            ix[0] = 0
-    init.initThetaMixedZ_k(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
-                           qE=initTheta_E)
+    else:
+        # Initialise sparsity on the weights
+        learnTheta = [s.ones((D[m], K)) for m in xrange(M)]
+        priorTheta_a = 1.
+        priorTheta_b = 1.
+        initTheta_a = 1.
+        initTheta_b = 1.
+        initTheta_E = 1.
+        # TO-DOOOOOOOOOO
+        # if model_opts["learnIntercept"]:
+        #     for m in range(M):
+        #     learnTheta[m][:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
+        learnTheta_ix = [np.ones(K)] * M
+        if model_opts["learnIntercept"]:
+            for ix in learnTheta_ix:
+                ix[0] = 0
+        init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
+                                qE=initTheta_E)
 
     # Observed data
     init.initY()

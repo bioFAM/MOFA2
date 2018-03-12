@@ -10,6 +10,7 @@ import sklearn.decomposition
 
 from biofam.core.nodes import *
 
+#TODO : work on init_W
 
 class initModel(object):
     def __init__(self, dim, data, lik):
@@ -170,9 +171,51 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self):
-        #importer code de Damien
-        pass
+    def initW(self, pmean, pcov, qmean, qcov, qE=None, qE2=None):
+        """Method to initialise the weights
+        PARAMETERS
+        ----------
+        pmean: initial value of the mean of the prior distribution
+        pcov: initial value of the covariance of the prior distribution
+        qmean: initial value of the mean of the variational distribution
+        qcov: initial value of the covariance of the variational distribution
+        qE: initial value of the expectation of the variational distribution
+        qE2: initial value of the second moment of the variational distribution
+        """
+        W_list = [None] * self.M
+        for m in range(self.M):
+
+            # mean
+            pmean = s.ones((self.D[m], self.K)) * pmean
+
+            # variance
+            pcov = s.ones((self.K,self.D[m],self.D[m])) * pcov
+
+            ## Initialise variational distribution (Q) ##
+
+            # mean
+            if qmean=="random":
+                # Random initialisation
+                qmean = stats.norm.rvs(loc=0, scale=1, size=(self.D[m], self.K))
+
+            elif isinstance(qmean, s.ndarray):
+                assert qmean.shape == (self.D[m], self.K), "Wrong shape for the expectation of the Q distribution of Z"
+
+            elif isinstance(qmean, (int, float)):
+                qmean = s.ones((self.D[m],self.K)) * qmean
+
+            else:
+                print("Wrong initialisation for W")
+                exit()
+
+            #qcov
+
+            qcov = s.ones((self.K,self.D[m],self.D[m]))*qcov
+
+            W_list[m] = W_Node(dim=(self.D[m], self.K),pmean=pmean,pcov=pcov,qmean=qmean, qcov=qcov)
+
+        self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
+
 
     def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1., qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1., qEW_S0=0., qEW_S1=0., qES=1.):
         """Method to initialise the weights (spike and slab reparametrized as the product of bernoulli and gaussian variables)
@@ -498,6 +541,16 @@ class initModel(object):
             Theta_list[m] = ThetaW_Constant_Node_mk(dim=(self.D[m],self.K,), value=s.ones((self.D[m],self.K))*pmean, N_cells=1.)
         self.Theta = Multiview_Constant_Node(self.M, *Theta_list)
         self.nodes["ThetaW"] = self.Theta
+
+    def initSigma(self, X, n_diag=0):
+        dim = (self.K,)
+        self.Sigma = SigmaGrid_Node(dim, X, n_diag=n_diag)
+        self.nodes["Sigma"] = self.Sigma
+
+    def initSigmaBlock(self, X, clust, n_diag=0):
+        dim = (self.K,)
+        self.Sigma = BlockSigmaGrid_Node(dim, X, clust, n_diag=n_diag)
+        self.nodes["Sigma"] = self.Sigma
 
     def initExpectations(self, *nodes):
         """ Method to initialise the expectations """

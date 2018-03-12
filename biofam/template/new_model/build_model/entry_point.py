@@ -27,7 +27,8 @@ def entry_point():
     p.add_argument( '--scale_covariates',  type=int, nargs='+', default=0,                      help='Scale covariates?' )
 
     # Model options
-    p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells) ' )
+    p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
+    p.add_argument( '--covariance_samples',type=int, default=0,                                 help='Use a similarity measure between samples defined by the user, as a prior on factors ?' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
@@ -139,8 +140,11 @@ def entry_point():
     ## Define the model options ##
     ##############################
 
-    # Choose MOFA and transpose MOFA
-    model_opts["transpose"] = args.transpose
+    # Choose between MOFA (view = omic) and transpose MOFA (view = cells' population)
+    model_opts['transpose'] = args.transpose
+
+    # Choose or not to use a similarity measure between samples as a prior on factors
+    model_opts['covariance_samples'] = args.covariance_samples
 
     # Define initial number of latent factors
     model_opts['K'] = args.factors
@@ -170,14 +174,18 @@ def entry_point():
 
     # Define schedule of updates
     # Think to its importance ?
-
     if model_opts['transpose']:
-        train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaW", "AlphaZ", "ThetaZ", "Tau" )
+        if model_opts['covariance_samples']:
+            train_opts['schedule'] = ( "Y", "W", "TZ", "SigmaW", "AlphaZ", "ThetaZ", "Tau" )
+        else:
+            train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaW", "AlphaZ", "ThetaZ", "Tau" )
     else:
-        train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )
+        if model_opts['covariance_samples']:
+            train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
+        else:
+            train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )
 
-
-
+    print(model_opts['transpose'],train_opts["schedule"])
 
     #####################
     ## Build the model ##

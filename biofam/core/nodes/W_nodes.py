@@ -1,18 +1,25 @@
-
 from __future__ import division
 import numpy.ma as ma
 import numpy as np
 import scipy as s
+from copy import deepcopy
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
+from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 
 #TODO : check the updates for W_node
 
+'''
+class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
+    #TODO : ask to Damien the former code
+    pass
+'''
+
 class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
-   def __init__(self, dim, qmean, qcov, qE=None, qE2=None):
-       MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=dim, qmean=qmean, qcov=qcov, qE=qE)
+   def __init__(self, dim, pmean, pcov, qmean, qcov, qE=None, qE2=None):
+       MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=dim,  pmean=pmean, pcov=pcov, qmean=qmean, qcov=qcov, qE=qE)
        self.precompute()
 
    def precompute(self):
@@ -27,7 +34,7 @@ class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
        tau = (self.markov_blanket["Tau"].getExpectation())[:,None,None]
        Y = self.markov_blanket["Y"].getExpectation()
 
-       Qcov = linalg.inv(tau*s.repeat(ZZ[None,:,:],self.D,0) + s.diag(alpha))
+       Qcov = s.linalg.inv(tau*s.repeat(ZZ[None,:,:],self.D,0) + s.diag(alpha))
        tmp1 = tau*Qcov #taken from granted ?
        tmp2 = ma.dot(Y.T,Z).data
        Qmean = (tmp1[:,:,:]*tmp2[:,None,:]).sum(axis=2)
@@ -46,6 +53,7 @@ class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
        lb_q = -self.D*self.K - logdet(Qpar['cov']).sum()
 
        return (lb_p - lb_q)/2
+
 
 class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?

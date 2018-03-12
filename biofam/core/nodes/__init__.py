@@ -13,3 +13,4 @@ from .basic_nodes import *
 from .mixed_nodes import *
 from .nongaussian_nodes import *
 from .variational_nodes import *
+from .Sigma_nodes import SigmaGrid_Node, BlockSigmaGrid_Node
