@@ -8,7 +8,6 @@ from copy import deepcopy
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 
-
 # TODO : check new updateParameters for TZ_Node (the sums over m are maybe not at the right place)
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
@@ -75,7 +74,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             foo = s.zeros((self.N,))
             bar = s.zeros((self.N,))
             for m in range(M):
-                foo += np.dot(tau[m],SWtmp[m]["EBNN"][:,k])
+                foo += np.dot(tau[m],SWtmp[m]["E2"][:,k])
                 bar += np.dot(tau[m]*(Y[m] - s.dot( Qmean[:,s.arange(self.dim[1])!=k] , SWtmp[m]["E"][:,s.arange(self.dim[1])!=k].T )), SWtmp[m]["E"][:,k])
             Qvar[:,k] = 1./(Alpha[:,k]+foo)
             Qmean[:,k] = Qvar[:,k] * (  Alpha[:,k]*Mu[:,k] + bar )

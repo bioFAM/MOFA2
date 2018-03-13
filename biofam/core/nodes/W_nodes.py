@@ -9,17 +9,15 @@ from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
 from biofam.core.utils import logdet
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 
-#TODO : re-check new updateParameters and calculateELBO for W_node
-
 class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
    def __init__(self, dim, pmean, pcov, qmean, qcov, qE=None, qE2=None):
-       MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=(dim[1],dim[0]),  pmean=pmean, pcov=pcov, qmean=qmean, qcov=qcov, qE=qE)
+       MultivariateGaussian_Unobserved_Variational_Node.__init__(self, dim=(dim[0],dim[1]),  pmean=pmean, pcov=pcov, qmean=qmean, qcov=qcov, qE=qE)
        #since we use the transpose version of multivariate_gaussian (each column of the W matrix is a multivariate gaussian)
        self.precompute()
 
    def precompute(self):
-       self.D = self.dim[1]
-       self.K = self.dim[0]
+       self.D = self.dim[0]
+       self.K = self.dim[1]
        self.factors_axis = 1
 
    def updateParameters(self):
@@ -37,7 +35,7 @@ class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
        for d in range(self.D):
            Qcov[d,:,:] = s.linalg.inv(tau[d] * np.sum(ZZ,axis=0) + s.diag(alpha))
        tmp1 = s.repeat(s.repeat(tau[:,None,None],self.K,axis=1),self.K,axis=2) * Qcov
-       tmp2 = ma.dot(Y.T, Z).data
+       tmp2 = np.dot(Y.T, Z) #tmp2 = ma.dot(Y.T, Z).data
        Qmean = (tmp1[:, :, :] * tmp2[:, None, :]).sum(axis=2)
 
        # Save updated parameters of the Q distribution

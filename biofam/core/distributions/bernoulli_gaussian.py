@@ -5,8 +5,8 @@ from .univariate_gaussian import UnivariateGaussian
 
 from biofam.core.utils import *
 
-#TODO : re-check compute of the expectation of X*X^T, and remove a loop
-#TODO : check add l.103
+#TODO : remove a loop
+#TODO : check add l.96
 
 class BernoulliGaussian(Distribution):
     """
@@ -69,22 +69,19 @@ class BernoulliGaussian(Distribution):
         EB = self.B.getExpectation()
         EN = self.N_B1.getExpectation()
         E = EB * EN
-        EBNN = EB * (s.square(EN) + self.params["var_B1"])
-        # EBNN = self.params["theta"] * (self.params["mean_B1"]**2 + self.params["var_B1"])
+        E2 = EB * (s.square(EN) + self.params["var_B1"])
         ENN = EB*(s.square(EN)+self.params["var_B1"]) + (1-EB)*self.params["var_B0"]
-        # ENN = self.params["theta"]*(self.params["mean_B1"]**2+self.params["var_B1"]) + (1-self.params["theta"])*self.params["var_B0"]
 
         # Compute the expectation of X*X.T (where X=BN)
-        # TODO : remove this loop and check formula
+        # TODO : remove the loop below
         EXXT = np.zeros((self.dim[0], self.dim[1], self.dim[1]))
         for n in range(self.dim[0]):
             EXXT[n, :, :] = np.dot(E[n, :].T, E[n, :])
-            var = self.params["theta"][n,:]*ENN[n,:] - np.square(self.params["theta"][n,:]*EN[n,:])
-            EXXT[n, :, :] += s.diag(var)
+            var_n = E2[n,:] - np.square(E[n,:])
+            EXXT[n, :, :] += s.diag(var_n)
 
         # Collect expectations
-        #self.expectations = {'E':E, 'EB':EB, 'EN':EN, 'EBNN':EBNN, 'ENN':ENN}
-        self.expectations = {'E':E, 'EB':EB, 'EN':EN, 'EBNN':EBNN, 'ENN':ENN, 'EXXT':EXXT }
+        self.expectations = {'E':E, 'EB':EB, 'EN':EN, 'E2':E2, 'ENN':ENN, 'EXXT':EXXT }
 
     def removeDimensions(self, axis, idx):
         # Method to remove undesired dimensions

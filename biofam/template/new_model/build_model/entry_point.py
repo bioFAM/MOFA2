@@ -185,7 +185,7 @@ def entry_point():
         else:
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )
 
-    print(model_opts['transpose'],train_opts["schedule"])
+    print("schedule for train : ", model_opts['transpose'],train_opts["schedule"])
 
     #####################
     ## Build the model ##

@@ -5,7 +5,7 @@ from .basic_distributions import Distribution
 
 from biofam.core.utils import *
 
-# TODO : recheck for modif l.78 (E[:,i],E[:,i] before), for compute of the expectation of X*X^T, and remove a loop
+# TODO : remove a loop
 
 class MultivariateGaussian(Distribution):
     """
@@ -61,7 +61,6 @@ class MultivariateGaussian(Distribution):
         else:
             self.expectations = { 'E':E }
 
-
     def updateExpectations(self):
         # Update first and second moments, and expectation of X*X^T, using current parameters
         E = self.params['mean']
@@ -73,16 +72,16 @@ class MultivariateGaussian(Distribution):
         EXXT = self.params['cov'].copy()
         # TODO sort out index
         # import pdb; pdb.set_trace()
-        for i in range(self.dim[1]):
+        for i in range(self.dim[0]):
             EXXT[i,:,:] += s.outer(E[i,:],E[i,:]) #modified : E[:,i],E[:,i] before
 
         # from the expectation of X*X.T to the expectation of X^2
         # TODO : remove the loop below
-        E2 = np.zeros((self.dim[1], self.dim[0]))
-        for d in range(self.dim[0]):
-            E2[d, :] = np.diag(EXXT[d, :, :]).flatten()  # extracting the diagonal
+        E2 = np.zeros((self.dim[0], self.dim[1]))
+        for i in range(self.dim[0]):
+            E2[i, :] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
 
-        self.expectations = {'E':E, 'EXXT':EXXT, 'E2':E2}
+        self.expectations = {'E':E, 'E2':E2, 'EXXT':EXXT}
 
     def density(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
