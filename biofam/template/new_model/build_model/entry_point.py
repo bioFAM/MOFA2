@@ -27,7 +27,7 @@ def entry_point():
     p.add_argument( '--scale_covariates',  type=int, nargs='+', default=0,                      help='Scale covariates?' )
 
     # Model options
-    p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
+    p.add_argument( '--transpose',         type=int, default=1,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
     p.add_argument( '--covariance_samples',type=int, default=0,                                 help='Use a similarity measure between samples defined by the user, as a prior on factors ?' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')

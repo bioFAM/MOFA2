@@ -11,6 +11,7 @@ class MultivariateGaussian(Distribution):
     """
     Class to define multivariate Gaussian distribution.
     This class can store N multivariate Gaussian Distributions of dimensionality D each
+    (each line of the X matrix is a multivariate Gaussian)
 
     Equations :
     p(X|Mu,Sigma) = 1/(2pi)^{D/2} * 1/(|Sigma|^0.5) * exp( -0.5*(X-Mu)^{T} Sigma^{-1} (X-Mu) )

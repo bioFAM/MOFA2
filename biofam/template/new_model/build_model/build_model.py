@@ -92,11 +92,12 @@ def build_model(model_opts, data=None):
 
     #Initialise weights
     if model_opts['transpose']:
-        pmean = 0.
-        pcov = 1. #to change
-        qmean = "random"
-        qcov = 1. #to change
-        init.initW(pmean=pmean,pcov=pcov,qmean=qmean, qcov=qcov)
+        pmean = 0.;
+        pvar = 1.;
+        qmean = "random";
+        qvar = 1.
+        init.initW(pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
+                   scale_covariates=model_opts['scale_covariates'])
     else:
         priorW_mean_S0 = 0.;
         priorW_meanS1 = 0.;

@@ -171,59 +171,95 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean, pcov, qmean, qcov, qE=None, qE2=None):
+    def initW(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
+              scale_covariates=None):
         """Method to initialise the weights
         PARAMETERS
         ----------
-        pmean: initial value of the mean of the prior distribution
-        pcov: initial value of the covariance of the prior distribution
+        pmean: mean of the prior distribution
+        pvar: variance of the prior distribution
         qmean: initial value of the mean of the variational distribution
-        qcov: initial value of the covariance of the variational distribution
+        qvar: initial value of the variance of the variational distribution
         qE: initial value of the expectation of the variational distribution
         qE2: initial value of the second moment of the variational distribution
+        covariates: covariates to be included as non-updated weights
+            None if no covariates are present, or a ndarray covariates with dimensions (N,Kcovariates)
+        scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
+            None if no covariates are present, or a ndarray with dimensions (Kcov,) indicating which covariates to scale
         """
         W_list = [None] * self.M
         for m in range(self.M):
 
+            ## Initialise prior distribution (P) ##
+
             # mean
             pmean = s.ones((self.D[m], self.K)) * pmean
 
-            # covariance
-            if isinstance(pcov, (int, float)):
-                tmp = s.zeros((self.D[m],self.K,self.K))
-                for d in range(self.D[m]):
-                    tmp[d,:,:]=np.eye(self.K)*pcov
-                pcov=tmp
+            # variance
+            pvar = s.ones((self.K,)) * pvar
 
             ## Initialise variational distribution (Q) ##
 
+            # variance
+            qvar = s.ones((self.D[m], self.K)) * qvar
+
             # mean
-            if qmean=="random":
-                # Random initialisation
-                qmean = stats.norm.rvs(loc=0, scale=1, size=(self.D[m], self.K))
+            if qmean is not None:
+                if isinstance(qmean, str):
 
-            elif isinstance(qmean, s.ndarray):
-                assert qmean.shape == (self.D[m], self.K), "Wrong shape for the expectation of the Q distribution of Z"
+                    # Random initialisation
+                    if qmean == "random":
+                        qmean = stats.norm.rvs(loc=0, scale=1, size=(self.D[m], self.K))
 
-            elif isinstance(qmean, (int, float)):
-                qmean = s.ones((self.D[m],self.K)) * qmean
+                    # Random and orthogonal initialisation
+                    elif qmean == "orthogonal":
+                        pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
+                        pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.D[m], 9999)).T)
+                        qmean = pca.components_.T
+
+                    # PCA initialisation
+                    elif qmean == "pca":
+                        pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
+                        pca.fit(s.concatenate(self.data, axis=0).T)
+                        qmean = pca.components_.T
+
+                elif isinstance(qmean, s.ndarray):
+                    assert qmean.shape == (
+                    self.D[m], self.K), "Wrong shape for the expectation of the Q distribution of W"
+
+                elif isinstance(qmean, (int, float)):
+                    qmean = s.ones((self.D[m], self.K)) * qmean
+
+                else:
+                    print("Wrong initialisation for W")
+                    exit()
+
+            # Add covariates
+            if covariates is not None:
+                assert scale_covariates != None, "If you use covariates also define data_opts['scale_covariates']"
+
+                # Select indices for covariates
+                idx_covariates = s.array(range(covariates.shape[1]))
+
+                # Center and scale the covariates to match the prior distribution N(0,1)
+                scale_covariates = s.array(scale_covariates)
+                covariates[:, scale_covariates] = (covariates[:, scale_covariates] - s.nanmean(
+                    covariates[:, scale_covariates], axis=0)) / s.nanstd(covariates[:, scale_covariates], axis=0)
+
+                # Set to zero the missing values in the covariates
+                covariates[s.isnan(covariates)] = 0.
+                qmean[:, idx_covariates] = covariates
+
+                # Remove prior and variational distributions from the covariates
+                pvar[:, idx_covariates] = s.nan
+                qvar[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
             else:
-                print("Wrong initialisation for W")
-                exit()
+                idx_covariates = None
 
-            # covariance
-
-            if isinstance(qcov, (int, float)):
-                tmp = s.zeros((self.D[m],self.K,self.K))
-                for d in range(self.D[m]):
-                    tmp[d,:,:]=np.eye(self.K)*qcov
-                qcov=tmp
-
-            # variance
-            # qvar = s.ones((self.N, self.D[m])) * qvar
-
-            W_list[m] = W_Node(dim=(self.D[m], self.K),pmean=pmean,pcov=pcov,qmean=qmean, qcov=qcov)
+            # Initialise the node
+            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
+                               idx_covariates=idx_covariates)
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
