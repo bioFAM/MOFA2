@@ -18,7 +18,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
     def precompute(self):
         self.N = self.dim[0]
-        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+        self.lbconst = s.sum(self.P.params['a'][0,:]*s.log(self.P.params['b'][0,:]) - special.gammaln(self.P.params['a'][0,:]))
 
     def updateParameters(self):
         # Collect expectations from other nodes
@@ -62,9 +62,9 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node
-        P,Q = self.P.getParameters(), self.Q.getParameters()
-        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
-        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
+        P, Q = self.P.getParameters(), self.Q.getParameters()
+        Pa, Pb, Qa, Qb = P['a'][0,:], P['b'][0,:], Q['a'][0,:], Q['b'][0,:]
+        QE, QlnE = self.Q.expectations['E'][0,:], self.Q.expectations['lnE'][0,:]
 
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
@@ -80,7 +80,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
 
     def precompute(self):
         self.D = self.dim[1]
-        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+        self.lbconst = s.sum(self.P.params['a'][:,0]*s.log(self.P.params['b'][:,0]) - special.gammaln(self.P.params['a'][:,0]))
 
     def updateParameters(self):
         # Collect expectations from other nodes
@@ -121,12 +121,11 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
 
-    # TODO: modify ELBO accordingly
     def calculateELBO(self):
         # Collect parameters and expectations from current node
         P, Q = self.P.getParameters(), self.Q.getParameters()
-        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
-        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
+        Pa, Pb, Qa, Qb = P['a'][:,0], P['b'][:,0], Q['a'][:,0], Q['b'][:,0]
+        QE, QlnE = self.Q.expectations['E'][:,0], self.Q.expectations['lnE'][:,0]
 
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
@@ -135,4 +134,4 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         return lb_p - lb_q
 
 
-Tau_Node = TauD_Node
+Tau_Node = TauN_Node
