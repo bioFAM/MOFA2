@@ -1,18 +1,18 @@
 # bioFAM
 
-Biology Factor Analysis Models (bioFAM) is a flexible framework for biological data analysis. Relying on a flexible graphical model, bioFAM enables users to model different assumptions for their data. Example usage is applying bioFAM to the datasets with multiple data types for the same samples or to multiple groups of samples or cells with same observed features (e.g. genes expression values).
+Biology Factor Analysis Models (biofam) is a flexible framework for biological data analysis. Relying on a flexible graphical model, biofam enables users to model different assumptions for their data. Example usage is applying biofam to the datasets with multiple data types for the same samples or to multiple groups of samples or cells with same observed features (e.g. gene expression values).
 
 ## Getting Started
 
 ### Installing
 
-In order to install bioFAM, clone the repository
+In order to install biofam, clone the repository
 
 ```
-git clone https://github.com/biofam/bioFAM
+git clone git@github.com:bioFAM/biofam.git
 ```
 
-the navigate to the root directory of it and run
+then navigate to the root directory of biofam and run
 
 ```
 python setup.py install
