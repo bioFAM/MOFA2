@@ -10,7 +10,9 @@ import sklearn.decomposition
 
 from biofam.core.nodes import *
 
-#TODO : work on init_W
+#TODO : line 115 curious ?
+
+#TODO : create initMixedSigmaAlphaW_mk
 
 class initModel(object):
     def __init__(self, dim, data, lik):
@@ -33,13 +35,13 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
+    def initZ(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
               scale_covariates=None):
         """Method to initialise the latent variables
         PARAMETERS
         ----------
         pmean: mean of the prior distribution
-        pvar: variance of the prior distribution
+        pcov: covariance of the prior distribution
         qmean: initial value of the mean of the variational distribution
         qvar: initial value of the variance of the variational distribution
         qE: initial value of the expectation of the variational distribution
@@ -55,8 +57,9 @@ class initModel(object):
         # mean
         pmean = s.ones((self.N, self.K)) * pmean
 
-        # variance
-        pvar = s.ones((self.K,)) * pvar
+        # TODO add sanity check if not float (dim of the matrices)
+        if isinstance(pcov, (int, float)):
+            pcov = s.array([s.eye(self.N) * pcov for k in range(self.K)])  # variance
 
         ## Initialise variational distribution (Q) ##
 
@@ -110,14 +113,15 @@ class initModel(object):
             qmean[:, idx_covariates] = covariates
 
             # Remove prior and variational distributions from the covariates
-            pvar[:, idx_covariates] = s.nan
+            pcov[:, idx_covariates, idx_covariates] = s.nan
+            #pvar[:, idx_covariates] = s.nan
             qvar[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
         else:
             idx_covariates = None
 
         # Initialise the node
-        self.nodes["Z"] = Z_Node(dim=(self.N, self.K), pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
+        self.nodes["Z"] = Z_Node(dim=(self.N, self.K), pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
                              idx_covariates=idx_covariates)
 
     def initTZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0., qvar_T0=1.,
@@ -336,6 +340,18 @@ class initModel(object):
         """
         self.nodes["AlphaZ"] = AlphaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
+    def initSigmaZ_k(self, X, n_diag=0):
+        '''Method to initialise the covariance prior structure on Z'''
+        dim = (self.K,)
+        self.Sigma = SigmaGrid_Node(dim, X, n_diag=n_diag)
+        self.nodes["SigmaZ"] = self.Sigma
+
+    def initSigmaBlockZ_k(self, X, clust, n_diag=0):
+        '''Method to initialise the covariance prior structure on Z, for clusters assigned to samples'''
+        dim = (self.K,)
+        self.Sigma = BlockSigmaGrid_Node(dim, X, clust, n_diag=n_diag)
+        self.nodes["SigmaZ"] = self.Sigma
+
     def initAlphaW_mk(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1.):
         """Method to initialise the precision of the ARD prior on the weights
 
@@ -345,6 +361,8 @@ class initModel(object):
             'a' parameter of the prior distribution
          pb :float
             'b' parameter of the prior distribution
+         qa: float
+            initialisation of the 'b' parameter of the variational distribution
          qb: float
             initialisation of the 'b' parameter of the variational distribution
          qE: float
@@ -355,6 +373,38 @@ class initModel(object):
         for m in range(self.M):
             alpha_list[m] = AlphaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
+
+    def initMixedSigmaAlphaW_mk(self,view_has_covariance_prior,params_views):
+        '''Method to initialise the covariance prior structure or the Gamma variance on W for each view
+        For each view, we choose between a covariance prior structure or a Gamma variance.
+
+        PARAMETERS :
+        -----------
+        view_has_covariance_prior : list with for each view a boolean which takes value True if a covariance prior
+        structure is choosen (or False if Gamma variance choosen)
+
+        params_views : list with for each view the dict {pa ; pb ; qa ; qb; qE} of the Gamma variance
+        or the dict {X, clust, n_diag} of the covariance prior structure
+        '''
+
+        AlphaSigmaNodes = [None] * self.M
+
+        for m in range(len(M)):
+
+            params = params_views[m]
+
+            if view_has_covariance_prior[m]:
+                dim = (self.K,)
+                # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
+                if params['sigma_clust'] is None:
+                    AlphaSigmaNodes[m]=SigmaGrid_Node(dim,params['X'], n_diag = params['n_diag'])
+                else:
+                    AlphaSigmaNodes[m]=SigmaBlockW_k(dim,params['X'], clust = params['sigma_clust'], n_diag = params['n_diag'])
+
+            else:
+                AlphaSigmaNodes[m] = AlphaW_Node_mk(pa = params['pa'], pb = params['pb'], qa = params['qa'], qb = params['qb'], qE = params['qE'])
+
+        self.nodes = Basic_Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 
     def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1.):
         """Method to initialise the precision of the noise
@@ -588,16 +638,6 @@ class initModel(object):
             Theta_list[m] = ThetaW_Constant_Node_mk(dim=(self.D[m],self.K,), value=s.ones((self.D[m],self.K))*pmean, N_cells=1.)
         self.Theta = Multiview_Constant_Node(self.M, *Theta_list)
         self.nodes["ThetaW"] = self.Theta
-
-    def initSigma(self, X, n_diag=0):
-        dim = (self.K,)
-        self.Sigma = SigmaGrid_Node(dim, X, n_diag=n_diag)
-        self.nodes["Sigma"] = self.Sigma
-
-    def initSigmaBlock(self, X, clust, n_diag=0):
-        dim = (self.K,)
-        self.Sigma = BlockSigmaGrid_Node(dim, X, clust, n_diag=n_diag)
-        self.nodes["Sigma"] = self.Sigma
 
     def initExpectations(self, *nodes):
         """ Method to initialise the expectations """

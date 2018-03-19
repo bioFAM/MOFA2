@@ -6,15 +6,21 @@ from copy import deepcopy
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
-from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
+from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
 # imports for W multivariate gaussian
 from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
-from biofam.core.utils import logdet
+#from biofam.core.utils import logdet
 
-class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
-    def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
-        super(W_Node,self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+# TODO : same as the 3 TODO for Z (see lines 116 and 120)
+
+class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
+    def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
+        super(W_Node,self).__init__(dim=dim, axis_cov=0, pmean=pmean, pcov=cov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+
+        self.spatial = None
+        self.length_scales = None
+
         self.precompute()
 
         # Define indices for covariates
@@ -24,8 +30,30 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def precompute(self):
         # Precompute terms to speed up computation
         self.D = self.dim[0]
+        self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
+
+        if not("AlphaW" in self.markov_blanket):
+            p_cov = self.P.params["cov"]
+
+            self.p_cov_is_diag = [True for k in range(self.K)]
+            self.p_cov_inv = []
+            self.p_cov_inv_diag = []
+
+            for k in range(self.K):
+                tmp = p_cov[k,0,0]
+                assert (tmp == 1)
+                if p_cov[k] != np.eye(self.D): #computationally inefficient ?
+                    self.p_cov_is_diag[k] = False
+                    inv = np.linalg.inv(p_cov[k])
+                else:
+                    inv = np.eye(self.D)
+                self.p_cov_inv.append(inv)
+                self.p_cov_inv_diag.append(s.diag(inv))
+
+            self.p_cov_inv = np.array(self.p_cov_inv)
+            self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -45,7 +73,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         mask = ma.getmask(Y)
 
         # Collect parameters from the prior or expectations from the markov blanket
-        if "MuZ" in self.markov_blanket:
+        if "MuW" in self.markov_blanket:
             Mu = self.markov_blanket['MuW'].getExpectation()
         else:
             Mu = self.P.getParameters()["mean"]
@@ -54,7 +82,13 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Alpha = self.markov_blanket['AlphaW'].getExpectation()
             Alpha = s.repeat(Alpha[None,:], self.D, axis=0)
         else:
-            Alpha = 1./self.P.getParameters()["var"]
+            if "SigmaW" in self.markov_blanket:
+                Sigma = self.markov_blanket['SigmaW'].getExpectations()
+                p_cov_inv = Sigma['inv']
+                p_cov_inv_diag = Sigma['inv_diag']
+            else:
+                p_cov_inv = self.p_cov_inv
+                p_cov_inv_diag = self.p_cov_inv_diag
 
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         if tau.shape != Y.shape:
@@ -74,8 +108,17 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             bar = s.zeros((self.D,))
             foo += np.dot(TZtmp["E2"][:,k],tau)
             bar += np.dot(TZtmp["E"][:,k],tau*(Y - s.dot(TZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
-            Qvar[:,k] = 1./(Alpha[:,k]+foo)
-            Qmean[:,k] = Qvar[:,k] * (  Alpha[:,k]*Mu[:,k] + bar )
+            
+            if "AlphaW" in self.markov_blanket:
+                Qvar[:,k] = 1./(Alpha[:,k]+foo)
+                Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
+
+            else:
+                Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k, :])
+
+                tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] # * s.eye(self.D)
+                for d in range(self.D):
+                    Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:, k]))
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)

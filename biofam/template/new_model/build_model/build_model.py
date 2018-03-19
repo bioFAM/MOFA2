@@ -13,7 +13,7 @@ from biofam.core.BayesNet import *
 from init_model import initNewModel
 from biofam.build_model.utils import *
 
-#TODO : change init of W in transpose model
+#TODO : create initMixedSigmaAlphaW_mk
 
 
 def build_model(model_opts, data=None):
@@ -28,18 +28,98 @@ def build_model(model_opts, data=None):
     sleep(1)
 
     # Define dimensionalities
+
+    # TODO : not the right entry point for X and cluster files if transpose (multiple files)
+
     if data is None:
+
         M = model_opts['M']
         N = model_opts['N']
         D = model_opts['D']
+
+        if model_opts["transpose"]:
+            X = [None] * M
+            sigma_clust = [None] * M
+            view_has_covariance_prior = [True] * M
+
+            for m in range(M):
+                if model_opts['positions_samples_file'][m] is not None:
+                    X[m] = np.loadtxt(model_opts['positions_samples_file'][m])
+                else:
+                    X[m] = s.random.norm(0, 1, [D[m], 2])
+
+        else:
+            if model_opts['positions_samples_file'] is not None:
+                X = np.loadtxt(model_opts['positions_samples_file'])
+            else:
+                X = s.random.norm(0, 1, [N, 2])
+            sigma_clust = None
+
         data = [np.ones([N, D[m]]) * np.nan for m in range(M)]
+
     else:
+
         M = len(data)
         N = data[0].shape[0]
-        D = s.asarray([ data[m].shape[1] for m in range(M) ])
+        D = s.asarray([data[m].shape[1] for m in range(M)])
+
+        if model_opts["transpose"]:
+            X = [None] * M
+            sigma_clust = [None] * M
+            view_has_covariance_prior = [None] * M
+
+            # TODO change that, super dirty
+            for m in range(M):
+                if model_opts['positions_samples_file'][m] is not None:
+                    view_has_covariance_prior[m] = True
+                    try:
+                        X[m] = np.loadtxt(model_opts['positions_samples_file'], delimiter=',')
+                    except:
+                        X[m] = np.loadtxt(model_opts['positions_samples_file'], delimiter=' ')
+                else:
+                    view_has_covariance_prior[m] = False
+
+                # load sigma cluster if among arguments
+                if model_opts['sigma_cluster_file'][m] is not None:
+                    sigma_clust[m] = np.loadtxt(model_opts['sigma_cluster_file'])
+                else:
+                    pass
+
+            if model_opts['permute_samples'] == 1:
+                for m in range(M):
+                    perm = np.random.permutation(D[m])
+                    X[m]= X[m][perm, :]
+
+        else:
+            # TODO change that, super dirty
+            for m in range(M):
+                if model_opts['positions_samples_file'] is not None:
+                    try:
+                        X = np.loadtxt(model_opts['positions_samples_file'], delimiter=',')
+                    except:
+                        X = np.loadtxt(model_opts['positions_samples_file'], delimiter=' ')
+                else:
+                    pass
+
+                # load sigma cluster if among arguments
+                if model_opts['sigma_cluster_file'] is not None:
+                    sigma_clust = np.loadtxt(model_opts['sigma_cluster_file'])
+                else:
+                    pass
+
+            if model_opts['permute_samples'] == 1:
+                perm = np.random.permutation(N)
+                X = X[perm, :]
 
     K = model_opts["K"]
-    dim = {'M':M, 'N':N, 'D':D, 'K':K }
+
+    if 'spatialFact' in model_opts:
+        n_diag = model_opts['spatialFact'] * K
+    else:
+        n_diag = 0
+
+    dim = {'M': M, 'N': N, 'D': D, 'K': K}
+    print(dim)
 
     ###########################
     ## Do some sanity checks ##
@@ -84,10 +164,10 @@ def build_model(model_opts, data=None):
                     qEZ_T0=initZ_qEZ_T0, qEZ_T1=initZ_qEZ_T1, qET=initZ_qET)
     else:
         pmean = 0.;
-        pvar = 1.;
+        pcov = 1.;
         qmean = "random";
         qvar = 1.
-        init.initZ(pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
+        init.initZ(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
                    scale_covariates=model_opts['scale_covariates'])
 
     #Initialise weights
@@ -126,19 +206,39 @@ def build_model(model_opts, data=None):
             qEW_S0=initW_qEW_S0, qEW_S1=initW_qEW_S1, qES=initW_qES)
 
 
-    # Initialise ARD on weights
-    # TODO do sth here for siulations
-    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
-    init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
+    # Initialise ARD or covariance prior structure on W
 
-    # Initialise ARD on factors
-    # TODO do sth here for siulations
-    pa = 1e-14;
-    pb = 1e-14;
-    qa = 1.;
-    qb = 1.;
-    qE = 1.
-    init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
+    if model_opts['transpose']:
+        params = [None] * M
+        for m in range(m):
+            if view_has_covariance_prior[m]:
+                params[m]={'X':X[m],'sigma_clust':sigma_clust[m],'n_diag':n_diag}
+            else:
+                params[m]={'pa':1e-14, 'pb':1e-14, 'qa':1., 'qb':1., "qE":1.}
+
+        init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
+    else:
+        # TODO do sth here for siulations
+        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+        init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
+
+
+    # Initialise ARD or covariance prior structure on Z
+
+    if model_opts['transpose']:
+        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+        init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
+    else:
+        if model_opts['positions_samples_file'] is not None:
+            # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
+            if sigma_clust is None:
+                init.initSigmaZ_k(X, n_diag=n_diag)
+            else:
+                init.initSigmaBlockZ_k(X, clust=sigma_clust, n_diag=n_diag)
+        else:
+            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+            init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
+
 
     # Initialise precision of noise
     # TODO do sth here for siulations
@@ -195,21 +295,37 @@ def build_model(model_opts, data=None):
         nodes["AlphaZ"].addMarkovBlanket(TZ=nodes["TZ"])
         nodes["TZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],
                                      Tau=nodes["Tau"])
-        nodes["AlphaW"].addMarkovBlanket(W=nodes["W"])
-        nodes["W"].addMarkovBlanket(AlphaW=nodes["AlphaW"], Y=nodes["Y"], TZ=nodes["TZ"],
-                                    Tau=nodes["Tau"])
+
+        if model_opts["covariance_samples"]:
+            nodes["SigmaW"].addMarkovBlanket(W=nodes["W"])
+            nodes["W"].addMarkovBlanket(SigmaW=nodes["SigmaW"])
+        else:
+            nodes["AlphaW"].addMarkovBlanket(W=nodes["W"])
+            nodes["W"].addMarkovBlanket(AlphaW=nodes["AlphaW"])
+        nodes["W"].addMarkovBlanket(Y=nodes["Y"], TZ=nodes["TZ"], Tau=nodes["Tau"])
+
         nodes["Y"].addMarkovBlanket(TZ=nodes["TZ"], W=nodes["W"], Tau=nodes["Tau"])
         nodes["Tau"].addMarkovBlanket(TZ=nodes["TZ"], W=nodes["W"], Y=nodes["Y"])
+
     else:
-        nodes["AlphaZ"].addMarkovBlanket(Z=nodes["Z"])
-        nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], Y=nodes["Y"], SW=nodes["SW"],
-                                    Tau=nodes["Tau"])
+        if model_opts["covariance_samples"]:
+            nodes["SigmaZ"].addMarkovBlanket(Z=nodes["Z"])
+            nodes["Z"].addMarkovBlanket(SigmaZ=nodes["SigmaZ"])
+        else:
+            nodes["AlphaZ"].addMarkovBlanket(Z=nodes["Z"])
+            nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"])
+        nodes["Z"].addMarkovBlanket(Y=nodes["Y"], SW=nodes["SW"], Tau=nodes["Tau"])
+
         nodes["ThetaW"].addMarkovBlanket(SW=nodes["SW"])
         nodes["AlphaW"].addMarkovBlanket(SW=nodes["SW"])
         nodes["SW"].addMarkovBlanket(AlphaW=nodes["AlphaW"], ThetaW=nodes["ThetaW"], Y=nodes["Y"], Z=nodes["Z"],
                                      Tau=nodes["Tau"])
         nodes["Y"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Tau=nodes["Tau"])
         nodes["Tau"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Y=nodes["Y"])
+
+
+
+
 
 
     #################################

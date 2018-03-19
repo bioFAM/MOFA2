@@ -84,6 +84,7 @@ class BernoulliGaussian(Distribution):
         self.expectations = {'E':E, 'EB':EB, 'EN':EN, 'E2':E2, 'ENN':ENN, 'EXXT':EXXT }
 
     def removeDimensions(self, axis, idx):
+
         # Method to remove undesired dimensions
         # - axis (int): axis from where to remove the elements
         # - idx (numpy array): indices of the elements to remove

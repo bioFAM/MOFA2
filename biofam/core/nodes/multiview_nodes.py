@@ -18,6 +18,8 @@ import scipy as s
 from .basic_nodes import Node
 from .variational_nodes import Variational_Node
 
+#TODO : check add Basic_Multiview_Mixed_Node(Node,Multiview_Constant_Node)
+
 class Multiview_Node(Node):
     """General class for a multiview node"""
     def __init__(self, M, *nodes):
@@ -144,6 +146,25 @@ class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):
         """Method to calculate variational evidence lower bound
         The lower bound of a multiview node is the sum of the lower bound of its corresponding single view variational nodes
         """
+        lb = 0
+        for m in self.activeM:
+            if isinstance(self.nodes[m],Variational_Node):
+                lb += self.nodes[m].calculateELBO()
+        return lb
+
+class Basic_Multiview_Mixed_Node(Multiview_Node,Multiview_Variational_Node):
+    """General Class for multiview nodes that contain both variational and basic nodes"""
+    def __init__(self, M, *nodes):
+        # M: number of views
+        # nodes: list of M 'Node' instances
+        Multiview_Node.__init__(self, M, *nodes)
+
+    def update(self):
+        """Method to update values of the nodes"""
+        for m in self.activeM: self.nodes[m].update()
+
+    def calculateELBO(self):
+        """Method to calculate variational evidence lower bound """
         lb = 0
         for m in self.activeM:
             if isinstance(self.nodes[m],Variational_Node):

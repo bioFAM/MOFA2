@@ -7,6 +7,8 @@ from build_model import build_model
 from biofam.build_model.train_model import train_model
 from biofam.build_model.utils import *
 
+# TODO make covariance possible to input multidimensional D
+
 def entry_point():
 
     # Read arguments
@@ -27,12 +29,15 @@ def entry_point():
     p.add_argument( '--scale_covariates',  type=int, nargs='+', default=0,                      help='Scale covariates?' )
 
     # Model options
-    p.add_argument( '--transpose',         type=int, default=1,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
-    p.add_argument( '--covariance_samples',type=int, default=0,                                 help='Use a similarity measure between samples defined by the user, as a prior on factors ?' )
+    p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
     p.add_argument( '--learnIntercept',    action='store_true',                                 help='Learn the feature-wise mean?' )
+    p.add_argument( '--positions_samples_file', type=str, default=None,                         help='File with spatial domains positions of samples')
+    p.add_argument(' --fraction_spatial_factors',   type=float, default=0.,                     help='Initial percentage of non-spatial latent variables')
+    p.add_argument(' --permute_samples',   type=int, default=0,                                 help='Permute samples positions in the data')
+    p.add_argument(' --sigma_cluster_file', type=str, default=None,                             help='File with cluster indices for a block covariance matrix')
 
     # Training options
     p.add_argument( '--elbofreq',          type=int, default=1,                                 help='Frequency of computation of ELBO' )
@@ -143,8 +148,11 @@ def entry_point():
     # Choose between MOFA (view = omic) and transpose MOFA (view = cells' population)
     model_opts['transpose'] = args.transpose
 
-    # Choose or not to use a similarity measure between samples as a prior on factors
-    model_opts['covariance_samples'] = args.covariance_samples
+    # Use a covariance prior structure between samples per factor
+    model_opts['positions_samples_file'] = args.positions_samples_file
+    model_opts['fraction_spatial_factors'] = args.fraction_spatial_factors
+    model_opts['permute_samples'] = args.permute_samples
+    model_opts['sigma_cluster_file'] = args.sigma_cluster_file
 
     # Define initial number of latent factors
     model_opts['K'] = args.factors

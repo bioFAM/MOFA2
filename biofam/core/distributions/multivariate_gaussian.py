@@ -10,10 +10,13 @@ from biofam.core.utils import *
 class MultivariateGaussian(Distribution):
     """
     Class to define multivariate Gaussian distribution.
-    This class can store N multivariate Gaussian Distributions of dimensionality D each
-    (each line of the X matrix is a multivariate Gaussian)
+    This class can store:
+    - if axis_cov=1 : N multivariate Gaussian Distributions of dimensionality D each
+       (each line of the X matrix is a multivariate Gaussian)
+    - if axis_cov=0 : D multivariate Gaussian Distributions of dimensionality N each
+       (each column of the X matrix is a multivariate Gaussian)
 
-    Equations :
+    Equations (for axis_cov=1) :
     p(X|Mu,Sigma) = 1/(2pi)^{D/2} * 1/(|Sigma|^0.5) * exp( -0.5*(X-Mu)^{T} Sigma^{-1} (X-Mu) )
     log p(X|Mu,Sigma) = -D/2*log(2pi) - 0.5log(|Sigma|) - 0.5*(X-Mu)^{T} Sigma^{-1} (X-Mu)
     E[X] = Mu
@@ -21,14 +24,14 @@ class MultivariateGaussian(Distribution):
     cov[X] = Sigma
     H[X] = 0.5*log(|Sigma|) + D/2*(1+log(2pi))
 
-    Dimensionalities:
+    Dimensionalities :
     - X: (N,D)
     - Mu: (N,D)
-    - Sigma: (N,D,D)
+    - Sigma: (N,D,D) if axis_cov=1, (D,N,N) if axis_cov=0
     - E[X]: (N,D)
-    - E[X^2]: (N,D,D)
+    - E[X^2]: (N,D,D) if axis_cov=1, (D,N,N) if axis_cov=0
     """
-    def __init__(self, dim, mean, cov, E=None):
+    def __init__(self, dim, mean, cov, axis_cov=1, E=None):
         Distribution.__init__(self, dim)
 
         # Check dimensions are correct
@@ -46,14 +49,25 @@ class MultivariateGaussian(Distribution):
 
         # Initialise the covariance
         # If 'cov' is a matrix and not a tensor, broadcast it along the zeroth axis
-        if len(cov.shape) == 2: cov = s.repeat(cov[None,:,:],dim[0],0)
-        assert (cov.shape[1]==cov.shape[2]) and (sum(cov.shape[1:])>1), "The covariance has to be a tensor with shape (N,D,D)"
+        if len(cov.shape) == 2:
+            assert ((axis_cov == 0)or(axis_cov == 1)), "Error : axis_cov is the index of the dimension of the covariance matrix, either 0 or 1"
+            if axis_cov == 1 :
+                cov = s.repeat(cov[None,:,:], dim[0],0)
+            else:
+                cov = s.repeat(cov[None, :, :], dim[1], 0)
+
+        assert (cov.shape[1] == cov.shape[2]) and (sum(cov.shape[1:]) > 1), "The covariance has to be a tensor with shape (N,D,D) or (D,N,N)"
 
         # Check that the dimensionalities of 'mean' and 'cov' match
-        # TODO sort out
-        # assert cov.shape[1] == mean.shape[1] == dim[1], "Error in the dimensionalities"
-        # assert cov.shape[0] == mean.shape[0] == dim[0], "Error in the dimensionalities"
+        if axis_cov == 1:
+            assert (cov.shape[1] == cov.shape[2]) and (sum(cov.shape[1:]) > 1), "The covariance has to be a tensor with shape (N,D,D)"
+            assert cov.shape[1] == mean.shape[1] == dim[1], "The covariance has to be a tensor with shape (N,D,D)"
+            assert cov.shape[0] == mean.shape[0] == dim[0], "The covariance has to be a tensor with shape (N,D,D)"
+        else:
+            assert cov.shape[1] == mean.shape[0] == dim[0], "The covariance has to be a tensor with shape (D,N,N)"
+            assert cov.shape[0] == mean.shape[1] == dim[1], "The covariance has to be a tensor with shape (D,N,N)"
 
+        self.axis_cov = axis_cov
         self.params = {'mean':mean, 'cov':cov }
 
         # Initialise expectations
@@ -73,30 +87,48 @@ class MultivariateGaussian(Distribution):
         EXXT = self.params['cov'].copy()
         # TODO sort out index
         # import pdb; pdb.set_trace()
-        for i in range(self.dim[0]):
-            EXXT[i,:,:] += s.outer(E[i,:],E[i,:]) #modified : E[:,i],E[:,i] before
+
+        if self.axis_cov == 1:
+            for i in range(self.dim[0]):
+                EXXT[i,:,:] += s.outer(E[i,:],E[i,:])
+        else:
+            for i in range(self.dim[1]):
+                EXXT[i,:,:] += s.outer(E[:,i],E[:,i])
 
         # from the expectation of X*X.T to the expectation of X^2
-        # TODO : remove the loop below
+        # TODO : remove the loops below
         E2 = np.zeros((self.dim[0], self.dim[1]))
-        for i in range(self.dim[0]):
-            E2[i, :] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
+        if self.axis_cov == 1:
+            for i in range(self.dim[0]):
+                E2[i, :] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
+        else:
+            for i in range(self.dim[1]):
+                E2[:, i] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
 
         self.expectations = {'E':E, 'E2':E2, 'EXXT':EXXT}
 
-    def density(self, x):
-        assert x.shape == self.dim, "Problem with the dimensionalities"
-        return s.sum( stats.multivariate_normal.pdf(x, mean=self.params['mean'][n,:], cov=self.params['cov'][n,:,:]) )
+    #def density(self, x):
+    #    assert x.shape == self.dim, "Problem with the dimensionalities"
+    #    return s.sum( stats.multivariate_normal.pdf(x, mean=self.params['mean'][n,:], cov=self.params['cov'][n,:,:]) )
 
     def loglik(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
         l = 0.
-        D = self.dim[1]
-        for n in range(self.dim[0]):
-            qterm = (x[n,:]-self.params['mean'][n,:]).T.dot(linalg.det(self.params['cov'][n,:,:])).dot(x[n,:]-self.params['mean'][n,:])
-            l += -0.5*D*s.log(2*s.pi) - 0.5*s.log(linalg.det(self.params['cov'][n,:,:])) -0.5*qterm
+
+        if self.axis_cov == 1:
+            D = self.dim[1]
+            for n in range(self.dim[0]):
+                qterm = (x[n,:]-self.params['mean'][n,:]).T.dot(linalg.det(self.params['cov'][n,:,:])).dot(x[n,:]-self.params['mean'][n,:])
+                l += -0.5*D*s.log(2*s.pi) - 0.5*s.log(linalg.det(self.params['cov'][n,:,:])) -0.5*qterm
+            # return s.sum( s.log(stats.multivariate_normal.pdf(x, mean=self.mean[n,:], cov=self.cov[n,:,:])) )
+
+        else:
+            N = self.dim[0]
+            for d in range(self.dim[1]):
+                qterm = (x[:, d] - self.params['mean'][:, d]).T.dot(linalg.det(self.params['cov'][d, :, :])).dot(x[:, d] - self.params['mean'][:, d])
+                l += -0.5 * N * s.log(2 * s.pi) - 0.5 * s.log(linalg.det(self.params['cov'][d, :, :])) - 0.5 * qterm
+
         return l
-        # return s.sum( s.log(stats.multivariate_normal.pdf(x, mean=self.mean[n,:], cov=self.cov[n,:,:])) )
 
     def removeDimensions(self, axis, idx):
         # Method to remove undesired dimensions
@@ -105,14 +137,29 @@ class MultivariateGaussian(Distribution):
         assert axis <= len(self.dim)
         assert s.all(idx < self.dim[axis])
         self.params["mean"] = s.delete(self.params["mean"], axis=1, obj=idx)
-        # self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
-        # self.params["cov"] = s.delete(self.params["cov"], axis=2, obj=idx)
-        self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
-        self.expectations["E"] = s.delete(self.expectations["E"], axis=1, obj=idx)
-        # self.expectations["E2"] = s.delete(self.expectations["E2"], axis=1, obj=idx)
-        # self.expectations["E2"] = s.delete(self.expectations["E2"], axis=2, obj=idx)
-        self.expectations["E2"] = s.delete(self.expectations["E2"], axis=0, obj=idx)
-        self.dim = (self.dim[0],self.dim[1]-len(idx))
+
+        self.params["mean"] = s.delete(self.params["mean"], axis=axis, obj=idx)
+        self.expectations["E"] = s.delete(self.expectations["E"], axis=axis, obj=idx)
+        self.expectations["E2"] = s.delete(self.expectations["E2"], axis=axis, obj=idx)
+
+
+        if self.axis_cov == 1: #cov has shape (a,b,b) when mean has shape (a,b)
+            if axis == 0:
+                self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
+            else:
+                self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
+                self.params["cov"] = s.delete(self.params["cov"], axis=2, obj=idx)
+
+        else: #cov has shape (b,a,a) when mean has shape (a,b)
+            if axis == 0:
+                self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
+                self.params["cov"] = s.delete(self.params["cov"], axis=2, obj=idx)
+            else:
+                self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
+
+        dim = list(self.dim)
+        dim[axis] -= len(idx)
+        self.dim = tuple(dim)
 
     def sample(self):
         return s.random.multivariate_normal(self.params['mean'], self.params['cov'])

@@ -129,6 +129,23 @@ class MultivariateGaussian_Unobserved_Variational_Node(Unobserved_Variational_No
         self.P = MultivariateGaussian(dim=dim, mean=pmean, cov=pcov)
         self.Q = MultivariateGaussian(dim=dim, mean=qmean, cov=qcov, E=qE)
 
+class UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior(Unobserved_Variational_Node):
+    """
+    Abstract class for a variational node where P(.) is a multivariate Gaussian distribution
+    and Q(.) is univariate Gaussian distribution.
+    """
+    def __init__(self, dim, pmean, axis_cov, pcov, qmean, qvar, qE=None, qE2=None):
+	    # dim (2d tuple): dimensionality of the node
+	    # pmean (nd array): the mean parameter of the P distribution
+	    # qmean (nd array): the mean parameter of the Q distribution
+	    # pcov (nd array): the covariance parameter of the P distribution
+	    # qvar (nd array): the variance parameter of the Q distribution
+	    # qE (nd array): the initial first moment of the Q distribution
+        Unobserved_Variational_Node.__init__(self, dim)
+        # Initialise the P and Q distributions
+        self.P = MultivariateGaussian(dim=dim, axis_cov=axis_cov, mean=pmean, cov=pcov)
+        self.Q = UnivariateGaussian(dim=dim, mean=qmean, var=qvar, E=qE, E2=qE2)
+
 class Gamma_Unobserved_Variational_Node(Unobserved_Variational_Node):
     """
     Abstract class for a variational node where P(x) and Q(x) are both gamma distributions

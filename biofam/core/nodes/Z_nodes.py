@@ -5,25 +5,59 @@ import scipy as s
 from copy import deepcopy
 
 # Import manually defined functions
-from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
+from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# TODO : check new updateParameters for TZ_Node (the sums over m are maybe not at the right place)
+# TODO : check with Damien if it was an error from Z_spatial l.133
+# TODO : if yes, check computations ELBO for the case where there is not AlphaZ
+# TODO : remove loop l.136
 
-class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
-    def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
-        super(Z_Node,self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+#TODO : symmetrize intro of spatial for Z (from W)
+
+class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
+    def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
+        super(Z_Node,self).__init__(dim=dim, axis_cov=0, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+
+        self.spatial = None
+        self.length_scales = None
+
         self.precompute()
 
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
+    def add_characteristics(self, spatial=None, length_scales=None):
+        self.spatial = np.array(spatial)
+        self.length_scales = np.array(length_scales)
+
     def precompute(self):
         # Precompute terms to speed up computation
         self.N = self.dim[0]
+        self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
+
+        if not("AlphaZ" in self.markov_blanket):
+            p_cov = self.P.params["cov"]
+
+            self.p_cov_is_diag = [True for k in range(self.K)]
+            self.p_cov_inv = []
+            self.p_cov_inv_diag = []
+
+            for k in range(self.K):
+                tmp = p_cov[k,0,0]
+                assert (tmp == 1)
+                if p_cov[k] != np.eye(self.N): #computationally inefficient ?
+                    self.p_cov_is_diag[k] = False
+                    inv = np.linalg.inv(p_cov[k])
+                else:
+                    inv = np.eye(self.N)
+                self.p_cov_inv.append(inv)
+                self.p_cov_inv_diag.append(s.diag(inv))
+
+            self.p_cov_inv = np.array(self.p_cov_inv)
+            self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -32,6 +66,13 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
             latent_variables = latent_variables[~self.covariates]
         return latent_variables
+
+    def removeFactors(self, idx, axis=1):
+        super(Z_Node, self).removeFactors(idx, axis)
+        self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
+        self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
+        self.length_scales = s.delete(self.length_scales, obj=idx)
+        self.spatial = s.delete(self.spatial, obj=idx)
 
     def updateParameters(self):
 
@@ -43,6 +84,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
 
         # Collect parameters from the prior or expectations from the markov blanket
+
         if "MuZ" in self.markov_blanket:
             Mu = self.markov_blanket['MuZ'].getExpectation()
         else:
@@ -50,14 +92,21 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].getExpectation()
-            Alpha = s.repeat(Alpha[None,:], self.N, axis=0)
+            Alpha = s.repeat(Alpha[None, :], self.N, axis=0)
+
         else:
-            Alpha = 1./self.P.getParameters()["var"]
+            if "SigmaZ" in self.markov_blanket:
+                Sigma = self.markov_blanket['SigmaZ'].getExpectations()
+                p_cov_inv = Sigma['inv']
+                p_cov_inv_diag = Sigma['inv_diag']
+            else:
+                p_cov_inv = self.p_cov_inv
+                p_cov_inv_diag = self.p_cov_inv_diag
 
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
             if tau[m].shape != Y[m].shape:
-                tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
+               tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.
@@ -76,8 +125,18 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             for m in range(M):
                 foo += np.dot(tau[m],SWtmp[m]["E2"][:,k])
                 bar += np.dot(tau[m]*(Y[m] - s.dot( Qmean[:,s.arange(self.dim[1])!=k] , SWtmp[m]["E"][:,s.arange(self.dim[1])!=k].T )), SWtmp[m]["E"][:,k])
-            Qvar[:,k] = 1./(Alpha[:,k]+foo)
-            Qmean[:,k] = Qvar[:,k] * (  Alpha[:,k]*Mu[:,k] + bar )
+
+            if "AlphaZ" in self.markov_blanket:
+                Qvar[:,k] = 1./(Alpha[:,k]+foo)
+                Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
+
+            else:
+                Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k, :])
+
+                tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] # * s.eye(self.N)
+                for n in range(self.N):
+                    Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :],Mu[:, k]))
+                    #Qmean[n, k] = Qvar[n, k] * (bar[n] - tmp[n, :].dot(Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
@@ -94,29 +153,65 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.N,self.dim[1]))
 
         if "AlphaZ" in self.markov_blanket:
+
             Alpha = self.markov_blanket['AlphaZ'].getExpectations().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
             Alpha["E"] = s.repeat(Alpha["E"][None,:], self.N, axis=0)
             Alpha["lnE"] = s.repeat(Alpha["lnE"][None,:], self.N, axis=0)
+
+            Alpha = {'E': 1. / self.P.getParameters()["var"], 'lnE': s.log(1. / self.P.getParameters()["var"])}
+
+            # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
+            latent_variables = self.getLvIndex()
+            Alpha["E"], Alpha["lnE"] = Alpha["E"][:, latent_variables], Alpha["lnE"][:, latent_variables]
+            Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
+            PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
+            QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
+
+            # compute term from the exponential in the Gaussian
+            tmp1 = 0.5 * QE2 - PE * QE + 0.5 * PE2
+            tmp1 = -(tmp1 * Alpha['E']).sum()
+
+            # compute term from the precision factor in front of the Gaussian
+            tmp2 = 0.5 * Alpha["lnE"].sum()
+
+            lb_p = tmp1 + tmp2
+            # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
+            lb_q = -(s.log(Qvar).sum() + self.N * len(latent_variables)) / 2.
+
+
         else:
-            Alpha = { 'E':1./self.P.getParameters()["var"], 'lnE':s.log(1./self.P.getParameters()["var"]) }
 
-        # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
-        latent_variables = self.getLvIndex()
-        Alpha["E"], Alpha["lnE"] = Alpha["E"][:,latent_variables], Alpha["lnE"][:,latent_variables]
-        Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
-        PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
-        QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
+            if "SigmaZ" in self.markov_blanket:
+                Sigma = self.markov_blanket['SigmaZ'].getExpectations()
+                p_cov = Sigma['cov']
+                p_cov_inv = Sigma['inv']
+                p_cov_inv_diag = Sigma['inv_diag']
+            else:
+                p_cov = self.P.params['cov']
+                p_cov_inv = self.p_cov_inv
+                p_cov_inv_diag = self.p_cov_inv_diag
 
-        # compute term from the exponential in the Gaussian
-        tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2
-        tmp1 = -(tmp1 * Alpha['E']).sum()
+            # compute cross entropy term
+            tmp1 = 0
+            mat_tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.N)
+            tmp1 += QE[:, k].transpose().dot(mat_tmp).dot(QE[:, k])
+            tmp1 += p_cov_inv_diag[k, :].dot(QE2[:, k])
+            tmp1 = -.5 * tmp1
+            # tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2
+            # tmp1 = -(tmp1 * Alpha['E']).sum()
 
-        # compute term from the precision factor in front of the Gaussian
-        tmp2 = 0.5*Alpha["lnE"].sum()
+            # compute term from the precision factor in front of the Gaussian
+            tmp2 = 0  # constant here
+            # if self.n_iter> 4:
+            #     import pdb; pdb.set_trace()
+            tmp2 += np.linalg.slogdet(p_cov[k, :, :])[1]
+            tmp2 *= (-.5)
+            # tmp2 = 0.5*Alpha["lnE"].sum()
 
-        lb_p = tmp1 + tmp2
-        # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
-        lb_q = -(s.log(Qvar).sum() + self.N*len(latent_variables))/2.
+            lb_p = tmp1 + tmp2
+            # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
+            lb_q = -.5 * s.log(Qvar[:, k]).sum()
+            # import pdb; pdb.set_trace()
 
         return lb_p-lb_q
 
@@ -125,14 +220,20 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             p_mean = self.markov_blanket['MuZ'].sample()
         else:
             p_mean = self.P.params['mean']
+
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaZ'].sample()
             p_var = s.square(1./alpha)
+            p_cov = s.diag(p_var)
         else:
-            p_var = self.P.params['var']
+            if "SigmaZ" in self.markov_blanket:
+                Sigma = self.markov_blanket['SigmaZ'].sample()
+                p_cov = Sigma['cov']
+            else:
+                p_cov = self.P.params['cov']
 
         # simulating and handling covariates
-        self.samp = s.random.normal(p_mean, np.sqrt(p_var))
+        self.samp = s.random.normal(p_mean, p_cov)
         self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
 
         return self.samp
