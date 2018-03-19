@@ -6,13 +6,15 @@ from copy import deepcopy
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
+from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
 # imports for W multivariate gaussian
 from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
 #from biofam.core.utils import logdet
 
-# TODO : same as the 3 TODO for Z (see lines 116 and 120)
+# TODO : remove loop l.127
+# TODO : check issue with mask l.437, and ELBO formula muW
 
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
@@ -34,7 +36,9 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-        if not("AlphaW" in self.markov_blanket):
+        b = ("SigmaAlphaW" in self.markov_blanket) and (
+                self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
+        if not(b) :
             p_cov = self.P.params["cov"]
 
             self.p_cov_is_diag = [True for k in range(self.K)]
@@ -78,17 +82,17 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         else:
             Mu = self.P.getParameters()["mean"]
 
-        if "AlphaW" in self.markov_blanket:
-            Alpha = self.markov_blanket['AlphaW'].getExpectation()
-            Alpha = s.repeat(Alpha[None,:], self.D, axis=0)
-        else:
-            if "SigmaW" in self.markov_blanket:
-                Sigma = self.markov_blanket['SigmaW'].getExpectations()
+        if "SigmaAlphaW" in self.markov_blanket:
+            if self.markov_blanket["SigmaAlphaW"].__class__.__name__=="AlphaW_Node_mk":
+                Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation()
+                Alpha = s.repeat(Alpha[None,:], self.D, axis=0)
+            else:
+                Sigma = self.markov_blanket['SigmaAlphaW'].getExpectations()
                 p_cov_inv = Sigma['inv']
                 p_cov_inv_diag = Sigma['inv_diag']
-            else:
-                p_cov_inv = self.p_cov_inv
-                p_cov_inv_diag = self.p_cov_inv_diag
+        else:
+            p_cov_inv = self.p_cov_inv
+            p_cov_inv_diag = self.p_cov_inv_diag
 
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         if tau.shape != Y.shape:
@@ -108,8 +112,10 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             bar = s.zeros((self.D,))
             foo += np.dot(TZtmp["E2"][:,k],tau)
             bar += np.dot(TZtmp["E"][:,k],tau*(Y - s.dot(TZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
-            
-            if "AlphaW" in self.markov_blanket:
+
+            b = ("SigmaAlphaW" in self.markov_blanket) and (
+                    self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
+            if b:
                 Qvar[:,k] = 1./(Alpha[:,k]+foo)
                 Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
 
@@ -118,63 +124,120 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
                 tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] # * s.eye(self.D)
                 for d in range(self.D):
-                    Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:, k]))
+                    Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
 
-    def calculateELBO(self):
-        # Collect parameters and expectations of current node
-        Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
+    # TODO, problem here is that we need to make sure k is in the latent variables first
+    def calculateELBO_k_if_no_Alpha_node(self, k):
+        Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
         Qmean, Qvar = Qpar['mean'], Qpar['var']
-        QE, QE2 = Qexp['E'],Qexp['E2']
+        QE, QE2 = Qexp['E'], Qexp['E2']
 
-        if "MuW" in self.markov_blanket:
-            PE, PE2 = self.markov_blanket['MuW'].getExpectations()['E'], self.markov_blanket['MuW'].getExpectations()['E2']
+        if "AlphaSigmaW" in self.markov_blanket:
+            Sigma = self.markov_blanket['AlphaSigmaW'].getExpectations()
+            p_cov = Sigma['cov']
+            p_cov_inv = Sigma['inv']
+            p_cov_inv_diag = Sigma['inv_diag']
         else:
-            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.D,self.dim[1]))
+            p_cov = self.P.params['cov']
+            p_cov_inv = self.p_cov_inv
+            p_cov_inv_diag = self.p_cov_inv_diag
 
-        if "AlphaW" in self.markov_blanket:
-            Alpha = self.markov_blanket['AlphaW'].getExpectations().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
-            Alpha["E"] = s.repeat(Alpha["E"][None,:], self.D, axis=0)
-            Alpha["lnE"] = s.repeat(Alpha["lnE"][None,:], self.D, axis=0)
-        else:
-            Alpha = { 'E':1./self.P.getParameters()["var"], 'lnE':s.log(1./self.P.getParameters()["var"]) }
-
-        # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
-        latent_variables = self.getLvIndex()
-        Alpha["E"], Alpha["lnE"] = Alpha["E"][:,latent_variables], Alpha["lnE"][:,latent_variables]
-        Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
-        PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
-        QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
-
-        # compute term from the exponential in the Gaussian
-        tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2
-        tmp1 = -(tmp1 * Alpha['E']).sum()
+        # compute cross entropy term
+        tmp1 = 0
+        mat_tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.D)
+        tmp1 += QE[:, k].transpose().dot(mat_tmp).dot(QE[:, k])
+        tmp1 += p_cov_inv_diag[k, :].dot(QE2[:, k])
+        tmp1 = -.5 * tmp1
+        # tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2
+        # tmp1 = -(tmp1 * Alpha['E']).sum()
 
         # compute term from the precision factor in front of the Gaussian
-        tmp2 = 0.5*Alpha["lnE"].sum()
+        tmp2 = 0  # constant here
+        # if self.n_iter> 4:
+        #     import pdb; pdb.set_trace()
+        tmp2 += np.linalg.slogdet(p_cov[k, :, :])[1]
+        tmp2 *= (-.5)
+        # tmp2 = 0.5*Alpha["lnE"].sum()
 
         lb_p = tmp1 + tmp2
-        # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
-        lb_q = -(s.log(Qvar).sum() + self.D*len(latent_variables))/2.
+        # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
+        lb_q = -.5 * s.log(Qvar[:, k]).sum()
+        # import pdb; pdb.set_trace()
 
-        return lb_p-lb_q
+        return lb_p - lb_q
+
+    def calculateELBO(self):
+        b = ("SigmaAlphaW" in self.markov_blanket) and (
+                self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
+
+        if not(b):
+            latent_variables = self.getLvIndex()
+            elbo = 0
+            for k in latent_variables:
+                elbo += self.calculateELBO_k_if_no_Alpha_node(k)
+
+            elbo -= .5 * self.D * len(latent_variables)
+
+            return elbo
+
+        else:
+            # Collect parameters and expectations of current node
+            Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
+            Qmean, Qvar = Qpar['mean'], Qpar['var']
+            QE, QE2 = Qexp['E'],Qexp['E2']
+
+            if "MuW" in self.markov_blanket:
+                PE, PE2 = self.markov_blanket['MuW'].getExpectations()['E'], self.markov_blanket['MuW'].getExpectations()['E2']
+            else:
+                PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.D,self.dim[1]))
+
+            Alpha = self.markov_blanket['SigmaAlphaW'].getExpectations().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
+            Alpha["E"] = s.repeat(Alpha["E"][None,:], self.D, axis=0)
+            Alpha["lnE"] = s.repeat(Alpha["lnE"][None,:], self.D, axis=0)
+
+            # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
+            latent_variables = self.getLvIndex()
+            Alpha["E"], Alpha["lnE"] = Alpha["E"][:, latent_variables], Alpha["lnE"][:, latent_variables]
+            Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
+            PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
+            QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
+
+            # compute term from the exponential in the Gaussian
+            tmp1 = 0.5 * QE2 - PE * QE + 0.5 * PE2
+            tmp1 = -(tmp1 * Alpha['E']).sum()
+
+            # compute term from the precision factor in front of the Gaussian
+            tmp2 = 0.5 * Alpha["lnE"].sum()
+
+            lb_p = tmp1 + tmp2
+            # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
+            lb_q = -(s.log(Qvar).sum() + self.D * len(latent_variables)) / 2.
+
+            return lb_p-lb_q
 
     def sample(self, dist='P'):
         if "MuW" in self.markov_blanket:
             p_mean = self.markov_blanket['MuW'].sample()
         else:
             p_mean = self.P.params['mean']
-        if "AlphaW" in self.markov_blanket:
-            alpha = self.markov_blanket['AlphaW'].sample()
-            p_var = s.square(1./alpha)
-        else:
-            p_var = self.P.params['var']
 
-        # simulating and handling covariates
-        self.samp = s.random.normal(p_mean, np.sqrt(p_var))
-        self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
+        if "SigmaAlphaW" in self.markov_blanket:
+            if self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk":
+                alpha = self.markov_blanket['SigmaAlphaW'].sample()
+                p_var = s.square(1./alpha)
+                p_cov = s.diag(p_var)
+            else:
+                p_cov = self.markov_blanket['SigmaAlphaW'].sample()
+        else:
+            p_cov = self.P.params['cov']
+
+        # simulating
+        samp_tmp = [s.random.multivariate_normal(p_mean[:, i], p_cov[i, :, :]) for i in range(self.dim[1])]
+        # self.samp = s.array([tmp/tmp.std() for tmp in samp_tmp]).transpose()
+        self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
 
         return self.samp
 
@@ -312,3 +375,101 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         self.samp = bernoulli_s * w_hat
         return self.samp
+
+
+class MuW_Node(UnivariateGaussian_Unobserved_Variational_Node):
+    """ """
+
+    def __init__(self, pmean, pvar, qmean, qvar, clusters, n_W, cluster_dic=None, qE=None, qE2=None):
+        # compute dim from numbers of clusters (n_clusters * W)
+        self.clusters = clusters
+        self.D = len(self.clusters)
+        self.n_clusters = len(np.unique(clusters))
+        dim = (self.n_clusters, n_W)
+        self.factors_axis = 1
+        super(Cluster_Node_Gaussian, self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE,
+                                                    qE2=qE2)
+
+    def getExpectations(self):
+        # reshape the values to N_samples * N_factors and return
+        QExp = self.Q.getExpectations()
+        expanded_expectation = QExp['E'][self.clusters, :]
+        expanded_E2 = QExp['E2'][self.clusters, :]
+        # do we need to expand the variance as well -> not used I think
+        return {'E': expanded_expectation, 'E2': expanded_E2}
+
+    def updateParameters(self):
+        Ppar = self.P.getParameters()
+        W = self.markov_blanket['W'].Q.getExpectation()
+
+        if "SigmaAlphaW" in self.markov_blanket:
+            if self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk":
+                Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation().copy()  # Notice that this Alpha is the ARD prior on W, not on W.
+                Alpha = s.repeat(Alpha[None, :], self.D, axis=0)
+            else:
+                Sigma = self.markov_blanket['SigmaAlphaW'].getExpectation().copy()
+        else:
+            Sigma = self.markov_blanket['W'].P.getParameters()["cov"]
+
+        Qmean, Qvar = self.Q.getParameters()['mean'], self.Q.getParameters()['var']
+
+
+        b = ("SigmaAlphaW" in self.markov_blanket) and (
+                self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
+
+        # update of the variance
+
+        for c in range(self.n_clusters):
+            mask = (self.clusters == c)
+            if b:
+                tmp = (Alpha[mask, :]).sum(axis=0)
+            else:
+                tmp = np.matrix.trace(Sigma[:, mask, mask])
+            Qvar[c, :] = tmp
+        Qvar += 1. / Ppar['var']
+        Qvar = 1. / Qvar
+
+        # update of the mean
+
+        if b:
+            tmp = W * Alpha
+        else:
+            # TODO : check below issues with the mask
+            tmp = np.zeros(self.dim)
+            for k in range(self.dim[1]):
+                tmp[:, k] = np.dot(Sigma[k, :, :] - np.diag(Sigma[k, :, :]), W[:, k])
+
+        for c in range(self.n_clusters):
+            mask = (self.clusters == c)
+            tmp = (tmp[mask, :]).sum(axis=0)
+            Qmean[c, :] = tmp
+        Qmean = Qmean + Ppar['mean'] / Ppar['var']
+        Qmean *= Qvar
+
+        self.Q.setParameters(mean=Qmean, var=Qvar)
+
+    def calculateELBO(self):
+        PParam = self.P.getParameters()
+        PVar, Pmean = PParam['var'], PParam['mean']
+
+        QExp = self.Q.getExpectations()
+        QE2, QE = QExp['E2'], QExp['E']
+
+        Qvar = self.Q.getParameters()['var']
+
+        # Cluster terms corresponding to covariates should not intervene
+        # filtering the covariates out
+        latent_variables = self.markov_blanket['W'].getLvIndex()
+        PVar, Pmean = PVar[:, latent_variables], Pmean[:, latent_variables]
+        QE2, QE = QE2[:, latent_variables], QE[:, latent_variables]
+        Qvar = Qvar[:, latent_variables]
+
+        # minus cross entropy
+        tmp = -(0.5 * s.log(PVar)).sum()
+        tmp2 = - ((0.5 / PVar) * (QE2 - 2. * QE * Pmean + Pmean ** 2.)).sum()
+
+        # entropy of Q
+        tmp3 = 0.5 * (s.log(Qvar)).sum()
+        tmp3 += 0.5 * self.dim[0] * len(latent_variables)
+
+        return tmp + tmp2 + tmp3

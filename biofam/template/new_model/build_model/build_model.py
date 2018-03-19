@@ -13,9 +13,6 @@ from biofam.core.BayesNet import *
 from init_model import initNewModel
 from biofam.build_model.utils import *
 
-#TODO : create initMixedSigmaAlphaW_mk
-
-
 def build_model(model_opts, data=None):
     """Method to build a bioFAM model"""
     # TODO : enable using covariance matrix for prior on W instead of spike and slab
@@ -206,11 +203,11 @@ def build_model(model_opts, data=None):
             qEW_S0=initW_qEW_S0, qEW_S1=initW_qEW_S1, qES=initW_qES)
 
 
-    # Initialise ARD or covariance prior structure on W
+    # Initialise ARD or covariance prior structure on W for each view
 
     if model_opts['transpose']:
         params = [None] * M
-        for m in range(m):
+        for m in range(M):
             if view_has_covariance_prior[m]:
                 params[m]={'X':X[m],'sigma_clust':sigma_clust[m],'n_diag':n_diag}
             else:
@@ -229,7 +226,7 @@ def build_model(model_opts, data=None):
         pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
         init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
-        if model_opts['positions_samples_file'] is not None:
+        if model_opts['covariance_samples'] is not None:
             # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
             if sigma_clust is None:
                 init.initSigmaZ_k(X, n_diag=n_diag)
@@ -297,8 +294,8 @@ def build_model(model_opts, data=None):
                                      Tau=nodes["Tau"])
 
         if model_opts["covariance_samples"]:
-            nodes["SigmaW"].addMarkovBlanket(W=nodes["W"])
-            nodes["W"].addMarkovBlanket(SigmaW=nodes["SigmaW"])
+            nodes["SigmaAlphaW"].addMarkovBlanket(W=nodes["W"])
+            nodes["W"].addMarkovBlanket(SigmaAlphaW=nodes["SigmaAlphaW"])
         else:
             nodes["AlphaW"].addMarkovBlanket(W=nodes["W"])
             nodes["W"].addMarkovBlanket(AlphaW=nodes["AlphaW"])

@@ -34,6 +34,7 @@ def entry_point():
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
     p.add_argument( '--learnIntercept',    action='store_true',                                 help='Learn the feature-wise mean?' )
+    p.add_argument('--covariance_samples', type=int, default=0,                                 help='Use a similarity measure between samples defined by the user, as a prior on factors ?')
     p.add_argument( '--positions_samples_file', type=str, default=None,                         help='File with spatial domains positions of samples')
     p.add_argument(' --fraction_spatial_factors',   type=float, default=0.,                     help='Initial percentage of non-spatial latent variables')
     p.add_argument(' --permute_samples',   type=int, default=0,                                 help='Permute samples positions in the data')
@@ -149,6 +150,7 @@ def entry_point():
     model_opts['transpose'] = args.transpose
 
     # Use a covariance prior structure between samples per factor
+    model_opts['covariance_samples'] = args.covariance_samples
     model_opts['positions_samples_file'] = args.positions_samples_file
     model_opts['fraction_spatial_factors'] = args.fraction_spatial_factors
     model_opts['permute_samples'] = args.permute_samples
@@ -184,7 +186,7 @@ def entry_point():
     # Think to its importance ?
     if model_opts['transpose']:
         if model_opts['covariance_samples']:
-            train_opts['schedule'] = ( "Y", "W", "TZ", "SigmaW", "AlphaZ", "ThetaZ", "Tau" )
+            train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaSigmaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaW", "AlphaZ", "ThetaZ", "Tau" )
     else:
