@@ -9,19 +9,12 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# imports for W multivariate gaussian
-from .variational_nodes import MultivariateGaussian_Unobserved_Variational_Node
-#from biofam.core.utils import logdet
-
 # TODO : remove loop l.127
-# TODO : check issue with mask l.437, and ELBO formula muW
+# TODO : if we should ask the mask l.439 and ELBO formula muW
 
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
-        super(W_Node,self).__init__(dim=dim, axis_cov=0, pmean=pmean, pcov=cov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
-
-        self.spatial = None
-        self.length_scales = None
+        super(W_Node,self).__init__(dim=dim, axis_cov=0, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
 
         self.precompute()
 
@@ -36,28 +29,28 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-        b = ("SigmaAlphaW" in self.markov_blanket) and (
-                self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
-        if not(b) :
-            p_cov = self.P.params["cov"]
+        # TODO : tell at the init if AlphaW is in or out the markov blanket of W
+        #b = ("SigmaAlphaW" in self.markov_blanket) and (self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
+        #if not(b) :
+        p_cov = self.P.params["cov"]
 
-            self.p_cov_is_diag = [True for k in range(self.K)]
-            self.p_cov_inv = []
-            self.p_cov_inv_diag = []
+        self.p_cov_is_diag = [True for k in range(self.K)]
+        self.p_cov_inv = []
+        self.p_cov_inv_diag = []
 
-            for k in range(self.K):
-                tmp = p_cov[k,0,0]
-                assert (tmp == 1)
-                if p_cov[k] != np.eye(self.D): #computationally inefficient ?
-                    self.p_cov_is_diag[k] = False
-                    inv = np.linalg.inv(p_cov[k])
-                else:
-                    inv = np.eye(self.D)
-                self.p_cov_inv.append(inv)
-                self.p_cov_inv_diag.append(s.diag(inv))
+        for k in range(self.K):
+            tmp = p_cov[k,0,0]
+            assert (tmp != 0)
+            if np.all(p_cov[k]/tmp == np.eye(self.D)):
+                inv = 1 / tmp * np.eye(self.D)
+            else:
+                self.p_cov_is_diag[k] = False
+                inv = np.linalg.inv(p_cov[k])
+            self.p_cov_inv.append(inv)
+            self.p_cov_inv_diag.append(s.diag(inv))
 
-            self.p_cov_inv = np.array(self.p_cov_inv)
-            self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
+        self.p_cov_inv = np.array(self.p_cov_inv)
+        self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -66,6 +59,11 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
             latent_variables = latent_variables[~self.covariates]
         return latent_variables
+
+    def removeFactors(self, idx, axis=1):
+        super(W_Node, self).removeFactors(idx, axis)
+        self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
+        self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
     def updateParameters(self):
 
@@ -124,13 +122,14 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
                 tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] # * s.eye(self.D)
                 for d in range(self.D):
-                    Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])
+                    Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])) #-Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
-    def calculateELBO_k_if_no_Alpha_node(self, k):
+    def calculateELBO_k(self, k):
+        '''Compute the ELBO for factor k in absence of Alpha node in the markov blanket of W'''
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
         Qmean, Qvar = Qpar['mean'], Qpar['var']
         QE, QE2 = Qexp['E'], Qexp['E2']
@@ -177,7 +176,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             latent_variables = self.getLvIndex()
             elbo = 0
             for k in latent_variables:
-                elbo += self.calculateELBO_k_if_no_Alpha_node(k)
+                elbo += self.calculateELBO_k(k)
 
             elbo -= .5 * self.D * len(latent_variables)
 
@@ -434,7 +433,7 @@ class MuW_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if b:
             tmp = W * Alpha
         else:
-            # TODO : check below issues with the mask
+            # TODO : check below if we should ask the mask
             tmp = np.zeros(self.dim)
             for k in range(self.dim[1]):
                 tmp[:, k] = np.dot(Sigma[k, :, :] - np.diag(Sigma[k, :, :]), W[:, k])

@@ -26,6 +26,9 @@ scale_views=0 	    # scale the views to unit variance (not necessary as long as 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 transpose=0
 
+# Use a covariance prior structure between samples per factor (in at least one view, if transpose = True)
+covariance_samples=1
+
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )
 
@@ -40,7 +43,7 @@ iter=5000 # we recommend to set this to a large enough value (>1000)
 
 # Convergence criterion
 # Recommendation: a 'tolerance' of 0.01 is quite strict and can take a bit of time, for initial testing we recommend increasing it to 0.1
-tolerance=10 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
+tolerance=1000 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
 nostop=0       # if nostop=1 the training will complete all iterations even if the convergence criterion is met
 
 # Define the initial number of factors and how inactive factors are dropped during training.
@@ -73,10 +76,11 @@ seed=0 # if 0, the seed is automatically generated using the current time
 
 # Prepare command
 cmd='python ../build_model/entry_point.py
+    --transpose $transpose
+    --covariance_samples $covariance_samples
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile
-    --transpose $transpose
 	--likelihoods ${likelihoods[@]}
 	--views ${views[@]}
 	--iter $iter

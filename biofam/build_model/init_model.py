@@ -59,7 +59,7 @@ class initModel(object):
 
         # TODO add sanity check if not float (dim of the matrices)
         if isinstance(pcov, (int, float)):
-            pcov = s.array([s.eye(self.N) * pcov for k in range(self.K)])  # variance
+            pcov = s.array([s.eye(self.N) * pcov for k in range(self.K)])  # covariance
 
         ## Initialise variational distribution (Q) ##
 
@@ -175,7 +175,7 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
+    def initW(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
               scale_covariates=None):
         """Method to initialise the weights
         PARAMETERS
@@ -199,8 +199,9 @@ class initModel(object):
             # mean
             pmean = s.ones((self.D[m], self.K)) * pmean
 
-            # variance
-            pvar = s.ones((self.K,)) * pvar
+            # covariance
+            if isinstance(pcov, (int, float)):
+                pcov = s.array([s.eye(self.D[m]) * pcov for k in range(self.K)])
 
             ## Initialise variational distribution (Q) ##
 
@@ -255,14 +256,14 @@ class initModel(object):
                 qmean[:, idx_covariates] = covariates
 
                 # Remove prior and variational distributions from the covariates
-                pvar[:, idx_covariates] = s.nan
+                pcov[:, idx_covariates] = s.nan
                 qvar[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
             else:
                 idx_covariates = None
 
             # Initialise the node
-            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
+            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
                                idx_covariates=idx_covariates)
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
@@ -389,12 +390,12 @@ class initModel(object):
 
         AlphaSigmaNodes = [None] * self.M
 
-        for m in range(len(M)):
+        for m in range(self.M):
 
             params = params_views[m]
+            dim = (self.K,)
 
             if view_has_covariance_prior[m]:
-                dim = (self.K,)
                 # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
                 if params['sigma_clust'] is None:
                     AlphaSigmaNodes[m]=SigmaGrid_Node(dim,params['X'], n_diag = params['n_diag'])
@@ -402,7 +403,7 @@ class initModel(object):
                     AlphaSigmaNodes[m]=SigmaBlockW_k(dim,params['X'], clust = params['sigma_clust'], n_diag = params['n_diag'])
 
             else:
-                AlphaSigmaNodes[m] = AlphaW_Node_mk(pa = params['pa'], pb = params['pb'], qa = params['qa'], qb = params['qb'], qE = params['qE'])
+                AlphaSigmaNodes[m] = AlphaW_Node_mk(dim,pa = params['pa'], pb = params['pb'], qa = params['qa'], qb = params['qb'], qE = params['qE'])
 
         self.nodes["SigmaAlphaW"] = Basic_Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 

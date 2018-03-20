@@ -34,11 +34,11 @@ def entry_point():
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
     p.add_argument( '--learnIntercept',    action='store_true',                                 help='Learn the feature-wise mean?' )
-    p.add_argument('--covariance_samples', type=int, default=0,                                 help='Use a similarity measure between samples defined by the user, as a prior on factors ?')
+    p.add_argument( '--covariance_samples', type=int, default=0,                                help='Use a covariance prior structure between samples per factor (in at least one view if transpose=True)')
     p.add_argument( '--positions_samples_file', type=str, default=None,                         help='File with spatial domains positions of samples')
-    p.add_argument(' --fraction_spatial_factors',   type=float, default=0.,                     help='Initial percentage of non-spatial latent variables')
-    p.add_argument(' --permute_samples',   type=int, default=0,                                 help='Permute samples positions in the data')
-    p.add_argument(' --sigma_cluster_file', type=str, default=None,                             help='File with cluster indices for a block covariance matrix')
+    p.add_argument( '--fraction_spatial_factors',   type=float, default=0.,                    help='Initial percentage of non-spatial latent variables')
+    p.add_argument( '--permute_samples',   type=int, default=0,                                help='Permute samples positions in the data')
+    p.add_argument( '--sigma_cluster_file', type=str, default=None,                            help='File with cluster indices for a block covariance matrix')
 
     # Training options
     p.add_argument( '--elbofreq',          type=int, default=1,                                 help='Frequency of computation of ELBO' )
@@ -51,7 +51,6 @@ def entry_point():
     p.add_argument( '--nostop',            action='store_true',                                 help='Do not stop when convergence criterion is met' )
     p.add_argument( '--verbose',           action='store_true',                                 help='Use more detailed log messages?')
     p.add_argument( '--seed',              type=int, default=0 ,                                help='Random seed' )
-
 
     args = p.parse_args()
 
@@ -185,12 +184,14 @@ def entry_point():
     # Define schedule of updates
     # Think to its importance ?
     if model_opts['transpose']:
-        if model_opts['covariance_samples']:
-            train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaSigmaW", "AlphaZ", "ThetaZ", "Tau" )
+        #if model_opts['positions_samples_file'] is not None:
+        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
+            train_opts['schedule'] = ( "Y", "W", "TZ", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaW", "AlphaZ", "ThetaZ", "Tau" )
     else:
-        if model_opts['covariance_samples']:
+        #if model_opts['positions_samples_file'] is not None:
+        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )

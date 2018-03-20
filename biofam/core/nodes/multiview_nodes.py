@@ -111,6 +111,7 @@ class Multiview_Variational_Node(Multiview_Node, Variational_Node):
         for m in self.activeM:
             self.nodes[m].updateParameters()
             self.nodes[m].updateExpectations()
+
     def updateExpectations(self):
         """Method to update expectations using current estimates of the parameters"""
         for m in self.activeM: self.nodes[m].updateExpectations()
@@ -152,7 +153,7 @@ class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):
                 lb += self.nodes[m].calculateELBO()
         return lb
 
-class Basic_Multiview_Mixed_Node(Multiview_Node,Multiview_Variational_Node):
+class Basic_Multiview_Mixed_Node(Multiview_Variational_Node):
     """General Class for multiview nodes that contain both variational and basic nodes"""
     def __init__(self, M, *nodes):
         # M: number of views

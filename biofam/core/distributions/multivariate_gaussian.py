@@ -125,7 +125,7 @@ class MultivariateGaussian(Distribution):
         else:
             N = self.dim[0]
             for d in range(self.dim[1]):
-                qterm = (x[:, d] - self.params['mean'][:, d]).T.dot(linalg.det(self.params['cov'][d, :, :])).dot(x[:, d] - self.params['mean'][:, d])
+                qterm = (x[:, d] - self.params['mean'][:, d]).dot(linalg.det(self.params['cov'][d, :, :])).dot((x[:, d] - self.params['mean'][:, d]).T)
                 l += -0.5 * N * s.log(2 * s.pi) - 0.5 * s.log(linalg.det(self.params['cov'][d, :, :])) - 0.5 * qterm
 
         return l
@@ -136,12 +136,10 @@ class MultivariateGaussian(Distribution):
         # - idx (numpy array): indices of the elements to remove
         assert axis <= len(self.dim)
         assert s.all(idx < self.dim[axis])
-        self.params["mean"] = s.delete(self.params["mean"], axis=1, obj=idx)
 
         self.params["mean"] = s.delete(self.params["mean"], axis=axis, obj=idx)
         self.expectations["E"] = s.delete(self.expectations["E"], axis=axis, obj=idx)
         self.expectations["E2"] = s.delete(self.expectations["E2"], axis=axis, obj=idx)
-
 
         if self.axis_cov == 1: #cov has shape (a,b,b) when mean has shape (a,b)
             if axis == 0:
@@ -157,9 +155,7 @@ class MultivariateGaussian(Distribution):
             else:
                 self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
 
-        dim = list(self.dim)
-        dim[axis] -= len(idx)
-        self.dim = tuple(dim)
+        self.updateDim(axis=axis, new_dim=self.dim[axis] - len(idx))
 
     def sample(self):
         return s.random.multivariate_normal(self.params['mean'], self.params['cov'])

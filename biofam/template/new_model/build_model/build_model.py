@@ -15,7 +15,6 @@ from biofam.build_model.utils import *
 
 def build_model(model_opts, data=None):
     """Method to build a bioFAM model"""
-    # TODO : enable using covariance matrix for prior on W instead of spike and slab
 
     print ("\n")
     print ("#"*24)
@@ -35,22 +34,47 @@ def build_model(model_opts, data=None):
         D = model_opts['D']
 
         if model_opts["transpose"]:
-            X = [None] * M
-            sigma_clust = [None] * M
-            view_has_covariance_prior = [True] * M
 
-            for m in range(M):
-                if model_opts['positions_samples_file'][m] is not None:
-                    X[m] = np.loadtxt(model_opts['positions_samples_file'][m])
-                else:
-                    X[m] = s.random.norm(0, 1, [D[m], 2])
+            if model_opts['positions_samples_file'] is not None:
+
+                X = [None] * M
+                sigma_clust = [None] * M
+                view_has_covariance_prior = [None] * M
+
+                try:
+                    df = pd.read_csv(model_opts['positions_samples_file'], delimiter=',')
+                except:
+                    df = pd.read_csv(model_opts['positions_samples_file'], delimiter=' ')
+
+                for m in range(M):
+
+                    tmp = df.loc[N*m:N*(m+1),0:D[m]]
+
+                    if isinstance(tmp[0,0], (int, float)):
+                        view_has_covariance_prior[m] = True
+                        X[m] = np.array(tmp)
+
+                    else:
+                        view_has_covariance_prior[m] = False
+
+            else:
+                if model_opts["covariance_samples"]:
+                    X = [None] * M
+                    for m in range(M):
+                        X[m] = s.random.normal(0, 1, [D[m], 2])
+                    sigma_clust = [None] * M
+                    view_has_covariance_prior = [True] * M
 
         else:
+
             if model_opts['positions_samples_file'] is not None:
                 X = np.loadtxt(model_opts['positions_samples_file'])
+                sigma_clust = None
+
             else:
-                X = s.random.norm(0, 1, [N, 2])
-            sigma_clust = None
+                if model_opts["covariance_samples"]:
+                    X = s.random.normal(0, 1, [N, 2])
+                    sigma_clust = None
 
         data = [np.ones([N, D[m]]) * np.nan for m in range(M)]
 
@@ -61,52 +85,90 @@ def build_model(model_opts, data=None):
         D = s.asarray([data[m].shape[1] for m in range(M)])
 
         if model_opts["transpose"]:
-            X = [None] * M
-            sigma_clust = [None] * M
-            view_has_covariance_prior = [None] * M
 
-            # TODO change that, super dirty
-            for m in range(M):
-                if model_opts['positions_samples_file'][m] is not None:
-                    view_has_covariance_prior[m] = True
-                    try:
-                        X[m] = np.loadtxt(model_opts['positions_samples_file'], delimiter=',')
-                    except:
-                        X[m] = np.loadtxt(model_opts['positions_samples_file'], delimiter=' ')
-                else:
-                    view_has_covariance_prior[m] = False
+            if model_opts['positions_samples_file'] is not None:
 
-                # load sigma cluster if among arguments
-                if model_opts['sigma_cluster_file'][m] is not None:
-                    sigma_clust[m] = np.loadtxt(model_opts['sigma_cluster_file'])
-                else:
-                    pass
+                X = [None] * M
+                sigma_clust = [None] * M
+                view_has_covariance_prior = [None] * M
 
-            if model_opts['permute_samples'] == 1:
+                try:
+                    df = pd.read_csv(model_opts['positions_samples_file'], delimiter=',')
+                except:
+                    df = pd.read_csv(model_opts['positions_samples_file'], delimiter=' ')
+
                 for m in range(M):
-                    perm = np.random.permutation(D[m])
-                    X[m]= X[m][perm, :]
+
+                    tmp = df.loc[N*m:N*(m+1),0:D[m]]
+
+                    if isinstance(tmp[0,0], (int, float)):
+                        view_has_covariance_prior[m] = True
+                        X[m] = np.array(tmp)
+
+                        if model_opts['permute_samples'] == 1:
+                            perm = np.random.permutation(D[m])
+                            X[m] = X[m][perm, :]
+
+                    else:
+                        view_has_covariance_prior[m] = False
+
+                if model_opts['sigma_cluster_file'] is not None:
+                    try:
+                        df = pd.read_csv(model_opts['sigma_cluster_file'], delimiter=',')
+                    except:
+                        df = pd.read_csv(model_opts['sigma_cluster_file'], delimiter=' ')
+
+                    count = 0
+                    for m in range(M):
+                        tmp = df.loc[count:count+D[m]]
+                        count += D[m]
+                        if isinstance(tmp[0], (int,float)):
+                            sigma_clust[m] = np.array(tmp)
+
+            else:
+
+                # TODO : comment/decomment below (just for test)
+
+                if model_opts["covariance_samples"]:
+                    X = [None] * M
+                    for m in range(M):
+                        X[m] = s.random.normal(0, 1, [D[m], 2])
+                    sigma_clust = [None] * M
+                    view_has_covariance_prior = [True] * M
+
+                #if model_opts["covariance_samples"]:
+                #    print("No file given for positions of sample, will run without covariance prior structure")
+                #    model_opts["covariance_samples"] = 0
 
         else:
-            # TODO change that, super dirty
-            for m in range(M):
-                if model_opts['positions_samples_file'] is not None:
-                    try:
-                        X = np.loadtxt(model_opts['positions_samples_file'], delimiter=',')
-                    except:
-                        X = np.loadtxt(model_opts['positions_samples_file'], delimiter=' ')
-                else:
-                    pass
+
+            if model_opts['positions_samples_file'] is not None:
+                try:
+                    X = np.loadtxt(model_opts['positions_samples_file'], delimiter=',')
+                except:
+                    X = np.loadtxt(model_opts['positions_samples_file'], delimiter=' ')
+
+                if model_opts['permute_samples'] == 1:
+                    perm = np.random.permutation(N)
+                    X = X[perm, :]
 
                 # load sigma cluster if among arguments
                 if model_opts['sigma_cluster_file'] is not None:
                     sigma_clust = np.loadtxt(model_opts['sigma_cluster_file'])
                 else:
-                    pass
+                    sigma_clust = None
 
-            if model_opts['permute_samples'] == 1:
-                perm = np.random.permutation(N)
-                X = X[perm, :]
+            else:
+
+                # TODO : comment/decomment below (just for test)
+
+                if model_opts["covariance_samples"]:
+                    X = s.random.normal(0, 1, [N, 2])
+                    sigma_clust = None
+
+                # if model_opts["covariance_samples"]:
+                #    print("No file given for positions of sample, will run without covariance prior structure")
+                #    model_opts["covariance_samples"] = 0
 
     K = model_opts["K"]
 
@@ -170,10 +232,10 @@ def build_model(model_opts, data=None):
     #Initialise weights
     if model_opts['transpose']:
         pmean = 0.;
-        pvar = 1.;
+        pcov = 1.;
         qmean = "random";
         qvar = 1.
-        init.initW(pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
+        init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
                    scale_covariates=model_opts['scale_covariates'])
     else:
         priorW_mean_S0 = 0.;
@@ -206,14 +268,17 @@ def build_model(model_opts, data=None):
     # Initialise ARD or covariance prior structure on W for each view
 
     if model_opts['transpose']:
-        params = [None] * M
-        for m in range(M):
-            if view_has_covariance_prior[m]:
-                params[m]={'X':X[m],'sigma_clust':sigma_clust[m],'n_diag':n_diag}
-            else:
-                params[m]={'pa':1e-14, 'pb':1e-14, 'qa':1., 'qb':1., "qE":1.}
-
-        init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
+        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
+            params = [None] * M
+            for m in range(M):
+                if view_has_covariance_prior[m]:
+                    params[m]={'X':X[m],'sigma_clust':sigma_clust[m],'n_diag':n_diag}
+                else:
+                    params[m]={'pa':1e-14, 'pb':1e-14, 'qa':1., 'qb':1., 'qE':1.}
+            init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
+        else:
+            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+            init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
         # TODO do sth here for siulations
         pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
@@ -226,7 +291,7 @@ def build_model(model_opts, data=None):
         pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
         init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
-        if model_opts['covariance_samples'] is not None:
+        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
             # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
             if sigma_clust is None:
                 init.initSigmaZ_k(X, n_diag=n_diag)
@@ -293,7 +358,7 @@ def build_model(model_opts, data=None):
         nodes["TZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],
                                      Tau=nodes["Tau"])
 
-        if model_opts["covariance_samples"]:
+        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
             nodes["SigmaAlphaW"].addMarkovBlanket(W=nodes["W"])
             nodes["W"].addMarkovBlanket(SigmaAlphaW=nodes["SigmaAlphaW"])
         else:
@@ -305,7 +370,7 @@ def build_model(model_opts, data=None):
         nodes["Tau"].addMarkovBlanket(TZ=nodes["TZ"], W=nodes["W"], Y=nodes["Y"])
 
     else:
-        if model_opts["covariance_samples"]:
+        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
             nodes["SigmaZ"].addMarkovBlanket(Z=nodes["Z"])
             nodes["Z"].addMarkovBlanket(SigmaZ=nodes["SigmaZ"])
         else:

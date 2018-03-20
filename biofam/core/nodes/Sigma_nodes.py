@@ -17,7 +17,8 @@ class SigmaGrid_Node(Node):
         self.start_opt = start_opt
         self.n_grid = n_grid
         self.iter = 0
-        self.ix = np.zeros(dim[0])  # index of the grid values to use
+        self.ix = [0] * dim[0]
+        #self.ix = np.zeros(dim[0])  # index of the grid values to use
         self.spatial_sig = np.zeros(dim[0])
         self.precompute()
         self.compute_cov()

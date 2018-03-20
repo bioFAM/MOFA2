@@ -10,24 +10,17 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
 # TODO : remove loop l.136
-# TODO : check issue with mask l.470, and ELBO formula muZ
+# TODO : check if we should ask the mask l. 462, and ELBO formula muZ
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
         super(Z_Node,self).__init__(dim=dim, axis_cov=0, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
-
-        self.spatial = None
-        self.length_scales = None
 
         self.precompute()
 
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
-
-    def add_characteristics(self, spatial=None, length_scales=None):
-        self.spatial = np.array(spatial)
-        self.length_scales = np.array(length_scales)
 
     def precompute(self):
         # Precompute terms to speed up computation
@@ -36,26 +29,27 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-        if not("AlphaZ" in self.markov_blanket):
-            p_cov = self.P.params["cov"]
+        #TODO : tell at the init if AlphaZ is in or out the markov blanket of Z
+        #if not("AlphaZ" in self.markov_blanket):
+        p_cov = self.P.params["cov"]
 
-            self.p_cov_is_diag = [True for k in range(self.K)]
-            self.p_cov_inv = []
-            self.p_cov_inv_diag = []
+        self.p_cov_is_diag = [True for k in range(self.K)]
+        self.p_cov_inv = []
+        self.p_cov_inv_diag = []
 
-            for k in range(self.K):
-                tmp = p_cov[k,0,0]
-                assert (tmp == 1)
-                if p_cov[k] != np.eye(self.N): #computationally inefficient ?
-                    self.p_cov_is_diag[k] = False
-                    inv = np.linalg.inv(p_cov[k])
-                else:
-                    inv = np.eye(self.N)
-                self.p_cov_inv.append(inv)
-                self.p_cov_inv_diag.append(s.diag(inv))
+        for k in range(self.K):
+            tmp = p_cov[k,0,0]
+            assert (tmp != 0)
+            if np.all(p_cov[k]/tmp == np.eye(self.N)):
+                inv = 1 / tmp * np.eye(self.N)
+            else:
+                self.p_cov_is_diag[k] = False
+                inv = np.linalg.inv(p_cov[k])
+            self.p_cov_inv.append(inv)
+            self.p_cov_inv_diag.append(s.diag(inv))
 
-            self.p_cov_inv = np.array(self.p_cov_inv)
-            self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
+        self.p_cov_inv = np.array(self.p_cov_inv)
+        self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -69,8 +63,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         super(Z_Node, self).removeFactors(idx, axis)
         self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
         self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
-        self.length_scales = s.delete(self.length_scales, obj=idx)
-        self.spatial = s.delete(self.spatial, obj=idx)
 
     def updateParameters(self):
 
@@ -139,7 +131,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.Q.setParameters(mean=Qmean, var=Qvar)
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
-    def calculateELBO_k_if_no_Alpha_node(self, k):
+    def calculateELBO_k(self, k):
+        '''Compute the ELBO for factor k in absence of Alpha node in the markov blanket of Z'''
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
         Qmean, Qvar = Qpar['mean'], Qpar['var']
         QE, QE2 = Qexp['E'], Qexp['E2']
@@ -183,7 +176,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             latent_variables = self.getLvIndex()
             elbo = 0
             for k in latent_variables:
-                elbo += self.calculateELBO_k_if_no_Alpha_node(k)
+                elbo += self.calculateELBO_k(k)
 
             elbo -= .5 * self.N * len(latent_variables)
 
@@ -203,8 +196,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             Alpha = self.markov_blanket['AlphaZ'].getExpectations().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
             Alpha["E"] = s.repeat(Alpha["E"][None,:], self.N, axis=0)
             Alpha["lnE"] = s.repeat(Alpha["lnE"][None,:], self.N, axis=0)
-
-            Alpha = {'E': 1. / self.P.getParameters()["var"], 'lnE': s.log(1. / self.P.getParameters()["var"])}
 
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()
@@ -466,7 +457,7 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if "AlphaZ" in self.markov_blanket:
             tmp = Z * Alpha
         else:
-            #TODO : check below issues with the mask
+            #TODO : check if we should ask the mask l. 462
             tmp = np.zeros(self.dim)
             for k in range(self.dim[1]):
                 tmp[:,k] = np.dot(Sigma[k,:,:]-np.diag(Sigma[k,:,:]),Z[:,k])
