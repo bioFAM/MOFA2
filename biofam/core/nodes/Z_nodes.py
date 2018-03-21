@@ -33,7 +33,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         #if not("AlphaZ" in self.markov_blanket):
         p_cov = self.P.params["cov"]
 
-        self.p_cov_is_diag = [True for k in range(self.K)]
         self.p_cov_inv = []
         self.p_cov_inv_diag = []
 
@@ -43,7 +42,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             if np.all(p_cov[k]/tmp == np.eye(self.N)):
                 inv = 1 / tmp * np.eye(self.N)
             else:
-                self.p_cov_is_diag[k] = False
                 inv = np.linalg.inv(p_cov[k])
             self.p_cov_inv.append(inv)
             self.p_cov_inv_diag.append(s.diag(inv))
@@ -123,7 +121,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             else:
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k, :])
 
-                tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] # * s.eye(self.N)
+                tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.N)
                 for n in range(self.N):
                     Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :],Mu[:,k]-Qmean[:, k]))
 

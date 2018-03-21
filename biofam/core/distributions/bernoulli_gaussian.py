@@ -73,15 +73,18 @@ class BernoulliGaussian(Distribution):
         ENN = EB*(s.square(EN)+self.params["var_B1"]) + (1-EB)*self.params["var_B0"]
 
         # Compute the expectation of X*X.T (where X=BN)
+        # Work but not useful now !
         # TODO : remove the loop below
-        EXXT = np.zeros((self.dim[0], self.dim[1], self.dim[1]))
-        for n in range(self.dim[0]):
-            EXXT[n, :, :] = np.dot(E[n, :].T, E[n, :])
-            var_n = E2[n,:] - np.square(E[n,:])
-            EXXT[n, :, :] += s.diag(var_n)
+        #EXXT = np.zeros((self.dim[0], self.dim[1], self.dim[1]))
+        #for n in range(self.dim[0]):
+        #    EXXT[n, :, :] = np.dot(E[n, :].T, E[n, :])
+        #    var_n = E2[n,:] - np.square(E[n,:])
+        #    EXXT[n, :, :] += s.diag(var_n)
+        #
 
         # Collect expectations
-        self.expectations = {'E':E, 'EB':EB, 'EN':EN, 'E2':E2, 'ENN':ENN, 'EXXT':EXXT }
+        self.expectations = {'E': E, 'EB': EB, 'EN': EN, 'E2': E2, 'ENN': ENN}
+        #self.expectations = {'E':E, 'EB':EB, 'EN':EN, 'E2':E2, 'ENN':ENN, 'EXXT':EXXT }
 
     def removeDimensions(self, axis, idx):
 

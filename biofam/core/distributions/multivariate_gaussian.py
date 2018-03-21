@@ -95,6 +95,7 @@ class MultivariateGaussian(Distribution):
             for i in range(self.dim[1]):
                 EXXT[i,:,:] += s.outer(E[:,i],E[:,i])
 
+
         # from the expectation of X*X.T to the expectation of X^2
         # TODO : remove the loops below
         E2 = np.zeros((self.dim[0], self.dim[1]))

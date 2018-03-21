@@ -10,7 +10,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
 # TODO : remove loop l.127
-# TODO : if we should ask the mask l.439 and ELBO formula muW
+# TODO : check if we should ask the mask l.439 and ELBO formula muW
 
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
@@ -34,7 +34,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         #if not(b) :
         p_cov = self.P.params["cov"]
 
-        self.p_cov_is_diag = [True for k in range(self.K)]
         self.p_cov_inv = []
         self.p_cov_inv_diag = []
 
@@ -44,7 +43,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             if np.all(p_cov[k]/tmp == np.eye(self.D)):
                 inv = 1 / tmp * np.eye(self.D)
             else:
-                self.p_cov_is_diag[k] = False
                 inv = np.linalg.inv(p_cov[k])
             self.p_cov_inv.append(inv)
             self.p_cov_inv_diag.append(s.diag(inv))
@@ -120,7 +118,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             else:
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k, :])
 
-                tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] # * s.eye(self.D)
+                tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.D)
                 for d in range(self.D):
                     Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])) #-Qmean[:, k]))
 
