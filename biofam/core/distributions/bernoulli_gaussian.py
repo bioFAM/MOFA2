@@ -5,9 +5,6 @@ from .univariate_gaussian import UnivariateGaussian
 
 from biofam.core.utils import *
 
-#TODO : remove a loop
-#TODO : check add l.96
-
 class BernoulliGaussian(Distribution):
     """
     Class to define a Bernoulli-Gaussian distributions (for more information see Titsias and Gredilla, 2014)
@@ -97,6 +94,7 @@ class BernoulliGaussian(Distribution):
         self.N_B0.removeDimensions(axis,idx)
         self.N_B1.removeDimensions(axis,idx)
 
+        # TODO : check this add
         dim = list(self.dim)
         dim[1] -= len(idx)
         self.dim = tuple(dim)

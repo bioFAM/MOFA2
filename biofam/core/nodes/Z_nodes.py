@@ -9,45 +9,54 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# TODO : remove loop l.136
-# TODO : check if we should ask the mask l. 462, and ELBO formula muZ
+# TODO : remove loop l.126 (if possible)
+# TODO : check if we should ask the mask l. 462, and ELBO formula muZ (muZ not used for now)
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
-    def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
+    def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
         super(Z_Node,self).__init__(dim=dim, axis_cov=0, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
 
-        self.precompute()
+        self.precompute(precompute_pcovinv=precompute_pcovinv)
 
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self):
+    def precompute(self,precompute_pcovinv=True):
         # Precompute terms to speed up computation
         self.N = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-        #TODO : tell at the init if AlphaZ is in or out the markov blanket of Z
-        #if not("AlphaZ" in self.markov_blanket):
-        p_cov = self.P.params["cov"]
+        if precompute_pcovinv:
+            p_cov = self.P.params["cov"]
 
-        self.p_cov_inv = []
-        self.p_cov_inv_diag = []
+            self.p_cov_inv = []
+            self.p_cov_inv_diag = []
 
-        for k in range(self.K):
-            tmp = p_cov[k,0,0]
-            assert (tmp != 0)
-            if np.all(p_cov[k]/tmp == np.eye(self.N)):
-                inv = 1 / tmp * np.eye(self.N)
-            else:
-                inv = np.linalg.inv(p_cov[k])
-            self.p_cov_inv.append(inv)
-            self.p_cov_inv_diag.append(s.diag(inv))
+            for k in range(self.K):
+                tmp = p_cov[k,0,0]
+                if np.all(p_cov[k]/tmp == np.eye(self.N)):
+                    inv = 1 / tmp * np.eye(self.N)
+                    diag_inv = 1 / tmp * np.ones(self.N)
+                else:
+                    diagonal = np.diagonal(p_cov[k])
+                    if np.all(np.diag(diagonal) == p_cov[k]):
+                        diag_inv = 1. / diagonal
+                        inv = np.diag(diag_inv)
+                    else:
+                        inv = np.linalg.inv(p_cov[k])
+                        diag_inv = np.diagonal(inv)
+                self.p_cov_inv.append(inv)
+                self.p_cov_inv_diag.append(diag_inv)
 
-        self.p_cov_inv = np.array(self.p_cov_inv)
-        self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
+            self.p_cov_inv = np.array(self.p_cov_inv)
+            self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
+
+        else:
+            self.p_cov_inv = None
+            self.p_cov_inv_diag = None
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -59,8 +68,10 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
     def removeFactors(self, idx, axis=1):
         super(Z_Node, self).removeFactors(idx, axis)
-        self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
-        self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
+
+        if self.p_cov_inv is not None:
+            self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
+            self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
     def updateParameters(self):
 
@@ -494,3 +505,4 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
         tmp3 += 0.5 * self.dim[0] * len(latent_variables)
 
         return tmp + tmp2 + tmp3
+

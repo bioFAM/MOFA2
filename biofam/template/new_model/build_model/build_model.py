@@ -225,9 +225,11 @@ def build_model(model_opts, data=None):
         pmean = 0.;
         pcov = 1.;
         qmean = "random";
-        qvar = 1.
+        qvar = 1.;
+        precompute_pcovinv = (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']) #if "AlphaZ" not in init.nodes
         init.initZ(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
-                   scale_covariates=model_opts['scale_covariates'])
+                   scale_covariates=model_opts['scale_covariates'], precompute_pcovinv=precompute_pcovinv)
+
 
     #Initialise weights
     if model_opts['transpose']:
@@ -235,8 +237,12 @@ def build_model(model_opts, data=None):
         pcov = 1.;
         qmean = "random";
         qvar = 1.
+        if (model_opts['positions_samples_file'] is None) and not(model_opts['covariance_samples']):#if "AlphaW" in init.nodes
+            precompute_pcovinv = [False] * M
+        else:
+            precompute_pcovinv = view_has_covariance_prior
         init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
-                   scale_covariates=model_opts['scale_covariates'])
+                   scale_covariates=model_opts['scale_covariates'], precompute_pcovinv=precompute_pcovinv)
     else:
         priorW_mean_S0 = 0.;
         priorW_meanS1 = 0.;

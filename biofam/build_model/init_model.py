@@ -10,10 +10,6 @@ import sklearn.decomposition
 
 from biofam.core.nodes import *
 
-#TODO : line 115 curious ?
-
-#TODO : create initMixedSigmaAlphaW_mk
-
 class initModel(object):
     def __init__(self, dim, data, lik):
         """
@@ -36,7 +32,7 @@ class initModel(object):
         self.nodes = {}
 
     def initZ(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
-              scale_covariates=None):
+              scale_covariates=None, precompute_pcovinv=True):
         """Method to initialise the latent variables
         PARAMETERS
         ----------
@@ -50,6 +46,7 @@ class initModel(object):
             None if no covariates are present, or a ndarray covariates with dimensions (N,Kcovariates)
         scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
             None if no covariates are present, or a ndarray with dimensions (Kcov,) indicating which covariates to scale
+        precompute_pcovinv: precompute the inverse of the covariance matrice of the prior of Z
         """
 
         ## Initialise prior distribution (P) ##
@@ -122,7 +119,7 @@ class initModel(object):
 
         # Initialise the node
         self.nodes["Z"] = Z_Node(dim=(self.N, self.K), pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
-                             idx_covariates=idx_covariates)
+                             idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv)
 
     def initTZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0., qvar_T0=1.,
               qvar_T1=1., qtheta=1., qEZ_T0=0., qEZ_T1=0., qET=1.):
@@ -176,7 +173,7 @@ class initModel(object):
         )
 
     def initW(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
-              scale_covariates=None):
+              scale_covariates=None, precompute_pcovinv=None):
         """Method to initialise the weights
         PARAMETERS
         ----------
@@ -190,7 +187,12 @@ class initModel(object):
             None if no covariates are present, or a ndarray covariates with dimensions (N,Kcovariates)
         scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
             None if no covariates are present, or a ndarray with dimensions (Kcov,) indicating which covariates to scale
+        precompute_pcovinv: precompute the inverse of the covariance matrice of the prior of W
         """
+
+        if precompute_pcovinv is None:
+            precompute_pcovinv = [True] * self.M
+
         W_list = [None] * self.M
         for m in range(self.M):
 
@@ -264,7 +266,7 @@ class initModel(object):
 
             # Initialise the node
             W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
-                               idx_covariates=idx_covariates)
+                               idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv[m])
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
