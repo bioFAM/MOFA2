@@ -9,8 +9,8 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# TODO : remove loop l.126 (if possible)
-# TODO : check if we should ask the mask l. 462, and ELBO formula muZ (muZ not used for now)
+# TODO : remove loop l.137 (if possible)
+# TODO : check if we should ask the mask l. 472, and ELBO formula muZ (muZ not used for now)
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
@@ -265,14 +265,6 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-    def getLvIndex(self):
-        # Method to return the index of the latent variables (without covariates)
-        latent_variables = np.array(range(self.dim[1]))
-        if any(self.covariates):
-            # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
-            latent_variables = latent_variables[~self.covariates]
-        return latent_variables
-
     def updateParameters(self):
         # Collect expectations from other nodes
         # why .copy() ?
@@ -310,7 +302,6 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             alpha = s.repeat(alpha[:], self.dim[1], axis=0)
 
         # Mask matrices (excluding covariates from the list of latent variables)
-        latent_variables = self.getLvIndex()
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
         for m in range(M):
             Y[m] = Y[m].data
@@ -369,14 +360,6 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         else:
             print("Not implemented")
             exit()
-
-        # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
-        latent_variables = self.getLvIndex()
-        alpha["E"], alpha["lnE"] = alpha["E"][latent_variables], alpha["lnE"][latent_variables]
-        T, ZZ = T[:,latent_variables], ZZ[:,latent_variables]
-        Qvar = Qvar[:,latent_variables]
-        theta['lnE'] = theta['lnE'][latent_variables]
-        theta['lnEInv'] = theta['lnEInv'][latent_variables]
 
         # Calculate ELBO for Z
         lb_pz = (self.N*alpha["lnE"].sum() - s.sum(alpha["E"]*ZZ))/2.

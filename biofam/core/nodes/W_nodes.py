@@ -4,15 +4,13 @@ import numpy as np
 import scipy as s
 from copy import deepcopy
 
-# import time
-
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# TODO : remove loop l.123 if possible
-# TODO : check if we should ask the mask l.439 and ELBO formula muW (muW not used for now)
+# TODO : remove loop l.135 if possible
+# TODO : check if we should ask the mask l.455 and ELBO formula muW (muW not used for now)
 
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None,precompute_pcovinv=True):
@@ -134,11 +132,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k, :])
 
                 tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.D)
-                #tic = time.time()
                 for d in range(self.D):
                     Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])) #-Qmean[:, k]))
-                #tac = time.time()
-                #print("time", tac - tic)
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)

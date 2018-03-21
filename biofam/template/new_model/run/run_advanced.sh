@@ -27,7 +27,7 @@ scale_views=0 	    # scale the views to unit variance (not necessary as long as 
 transpose=1
 
 # Use a covariance prior structure between samples per factor (in at least one view, if transpose = True)
-covariance_samples=1
+covariance_samples=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )

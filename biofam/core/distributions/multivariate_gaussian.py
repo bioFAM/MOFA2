@@ -95,18 +95,18 @@ class MultivariateGaussian(Distribution):
             for i in range(self.dim[1]):
                 EXXT[i,:,:] += s.outer(E[:,i],E[:,i])
 
-
         # from the expectation of X*X.T to the expectation of X^2
-        # TODO : remove the loops below
-        E2 = np.zeros((self.dim[0], self.dim[1]))
-        if self.axis_cov == 1:
-            for i in range(self.dim[0]):
-                E2[i, :] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
-        else:
-            for i in range(self.dim[1]):
-                E2[:, i] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
+        # Work but not useful now !
+        #E2 = np.zeros((self.dim[0], self.dim[1]))
+        #if self.axis_cov == 1:
+        #    for i in range(self.dim[0]):
+        #        E2[i, :] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
+        #else:
+        #    for i in range(self.dim[1]):
+        #        E2[:, i] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
 
-        self.expectations = {'E':E, 'E2':E2, 'EXXT':EXXT}
+        self.expectations = {'E': E,  'EXXT': EXXT}
+        #self.expectations = {'E':E, 'E2':E2, 'EXXT':EXXT}
 
     #def density(self, x):
     #    assert x.shape == self.dim, "Problem with the dimensionalities"
@@ -140,7 +140,7 @@ class MultivariateGaussian(Distribution):
 
         self.params["mean"] = s.delete(self.params["mean"], axis=axis, obj=idx)
         self.expectations["E"] = s.delete(self.expectations["E"], axis=axis, obj=idx)
-        self.expectations["E2"] = s.delete(self.expectations["E2"], axis=axis, obj=idx)
+        #self.expectations["E2"] = s.delete(self.expectations["E2"], axis=axis, obj=idx)
 
         if self.axis_cov == 1: #cov has shape (a,b,b) when mean has shape (a,b)
             if axis == 0:

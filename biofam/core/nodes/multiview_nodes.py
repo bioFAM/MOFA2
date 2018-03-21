@@ -152,22 +152,3 @@ class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):
             if isinstance(self.nodes[m],Variational_Node):
                 lb += self.nodes[m].calculateELBO()
         return lb
-
-class Basic_Multiview_Mixed_Node(Multiview_Variational_Node):
-    """General Class for multiview nodes that contain both variational and basic nodes"""
-    def __init__(self, M, *nodes):
-        # M: number of views
-        # nodes: list of M 'Node' instances
-        Multiview_Node.__init__(self, M, *nodes)
-
-    def update(self):
-        """Method to update values of the nodes"""
-        for m in self.activeM: self.nodes[m].update()
-
-    def calculateELBO(self):
-        """Method to calculate variational evidence lower bound """
-        lb = 0
-        for m in self.activeM:
-            if isinstance(self.nodes[m],Variational_Node):
-                lb += self.nodes[m].calculateELBO()
-        return lb

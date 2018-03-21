@@ -269,14 +269,13 @@ class BayesNet(object):
             if (i+1) % self.options['elbofreq'] == 0:
                 elbo.iloc[i] = self.calculateELBO()
 
+                name_Z = "Z"
+                if "TZ" in self.nodes:
+                    name_Z = "TZ"
+
                 # Print first iteration
                 if i==0:
-                    if "TZ" in self.nodes:
-                        name_Z="TZ"
-                    else:
-                        name_Z="Z"
-
-                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time()-t,elbo.iloc[i]["total"], (~self.nodes[name_Z].covariates).sum(), self.nodes[name_Z].covariates.sum() ))
+                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time() - t, elbo.iloc[i]["total"], (~self.nodes[name_Z].covariates).sum(),self.nodes[name_Z].covariates.sum()))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -338,5 +337,6 @@ class BayesNet(object):
         elbo = pd.Series(s.zeros(len(nodes)+1), index=list(nodes)+["total"])
         for node in nodes:
             elbo[node] = float(self.nodes[node].calculateELBO())
+            print(node, elbo[node])
             elbo["total"] += elbo[node]
         return elbo
