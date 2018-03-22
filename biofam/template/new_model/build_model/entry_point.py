@@ -187,8 +187,7 @@ def entry_point():
         if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
             train_opts['schedule'] = ( "Y", "TZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
-            train_opts['schedule'] = ( "Y", "TZ", "W",  "AlphaW", "AlphaZ", "ThetaZ", "Tau")
-            #train_opts['schedule'] = ( "Y", "W", "TZ", "AlphaW", "AlphaZ", "ThetaZ", "Tau" )
+            train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaZ", "AlphaW", "ThetaZ", "Tau")
     else:
         if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )

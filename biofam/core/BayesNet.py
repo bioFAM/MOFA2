@@ -337,6 +337,6 @@ class BayesNet(object):
         elbo = pd.Series(s.zeros(len(nodes)+1), index=list(nodes)+["total"])
         for node in nodes:
             elbo[node] = float(self.nodes[node].calculateELBO())
-            print(node, elbo[node])
+            #print(node, elbo[node])
             elbo["total"] += elbo[node]
         return elbo

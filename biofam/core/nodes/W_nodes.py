@@ -65,8 +65,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             latent_variables = latent_variables[~self.covariates]
         return latent_variables
 
-    def removeFactors(self, idx, axis=1):
-        super(W_Node, self).removeFactors(idx, axis)
+    def removeFactors(self, idx):
+        super(W_Node, self).removeFactors(idx, axis=1)
         if self.p_cov_inv is not None:
             self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
             self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)

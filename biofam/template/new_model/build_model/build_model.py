@@ -136,8 +136,6 @@ def build_model(model_opts, data=None):
                     sigma_clust = [None] * M
                     view_has_covariance_prior = [True] * M
 
-                    print("positions samples randomly chosen (comment to remove)")
-
                 #if model_opts["covariance_samples"]:
                 #    print("No file given for positions of sample, will run without covariance prior structure")
                 #    model_opts["covariance_samples"] = 0
@@ -280,7 +278,6 @@ def build_model(model_opts, data=None):
             params = [None] * M
             for m in range(M):
                 if view_has_covariance_prior[m]:
-                    print("covariance matrix used (comment to remove)")
                     params[m]={'X':X[m],'sigma_clust':sigma_clust[m],'n_diag':n_diag}
                 else:
                     params[m]={'pa':1e-14, 'pb':1e-14, 'qa':1., 'qb':1., 'qE':1.}

@@ -278,7 +278,6 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         alpha = self.markov_blanket["AlphaZ"].getExpectation().copy()
         thetatmp = self.markov_blanket['ThetaZ'].getExpectations().copy()
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
-        mask = ma.getmask(Y)
 
         # Collect parameters and expectations from P and Q distributions of this node
         TZ = self.Q.getExpectations()["E"]
@@ -296,7 +295,6 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         for m in range(M):
             if tau[m].shape != Y[m].shape:
                 tau[m] = s.repeat(tau[m][None,:], Y[m].shape[0], axis=0)
-        # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Check dimensions of alpha and and expand if necessary
         if alpha.shape[0] == 1:
@@ -320,9 +318,9 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term3 = 0.5*s.log(sum([s.dot(tau[m],WW[m][:,k]) for m in range(M)]) + alpha[k]) # good to modify
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
             term4_tmp1 = sum([s.dot(tau[m]*Y[m],W[m][:,k]) for m in range(M)]) # good to modify
-            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
 
-            term4_tmp2 = sum([(s.dot(tau[m],s.dot((W[m][:,k]*W[m][:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) )).sum(axis=0) for m in range(M)]) # good to modify
+            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
+            term4_tmp2 = sum([(tau[m] * s.dot((W[m][:,k]*W[m][:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T).T ).sum(axis=1) for m in range(M)]) # good to modify
 
             term4_tmp3 = sum([ma.dot(tau[m],WW[m][:,k]) for m in range(M)]) + alpha[k]
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
