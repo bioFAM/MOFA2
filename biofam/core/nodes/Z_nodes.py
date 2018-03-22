@@ -14,7 +14,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
-        super(Z_Node,self).__init__(dim=dim, axis_cov=0, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+        super(Z_Node,self).__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
         self.precompute(precompute_pcovinv=precompute_pcovinv)
 
@@ -263,6 +263,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.N = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
+        
         self.factors_axis = 1
 
     def updateParameters(self):

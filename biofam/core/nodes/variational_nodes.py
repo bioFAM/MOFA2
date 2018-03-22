@@ -134,7 +134,7 @@ class UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_P
     Abstract class for a variational node where P(.) is a multivariate Gaussian distribution
     and Q(.) is univariate Gaussian distribution.
     """
-    def __init__(self, dim, pmean, axis_cov, pcov, qmean, qvar, qE=None, qE2=None):
+    def __init__(self, dim, pmean, pcov, qmean, qvar, axis_cov=0, qE=None, qE2=None):
 	    # dim (2d tuple): dimensionality of the node
 	    # pmean (nd array): the mean parameter of the P distribution
 	    # qmean (nd array): the mean parameter of the Q distribution
