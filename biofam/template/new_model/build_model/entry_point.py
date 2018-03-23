@@ -7,8 +7,6 @@ from build_model import build_model
 from biofam.build_model.train_model import train_model
 from biofam.build_model.utils import *
 
-# TODO make covariance possible to input multidimensional D
-
 def entry_point():
 
     # Read arguments
@@ -18,9 +16,12 @@ def entry_point():
     p.add_argument( '--inFiles',           type=str, nargs='+', required=True,                  help='Input data files (including extension)' )
     p.add_argument( '--outFile',           type=str, required=True,                             help='Output data file (hdf5 format)' )
     p.add_argument( '--delimiter',         type=str, default=" ",                               help='Delimiter for input files' )
-    p.add_argument( '--covariatesFile',    type=str, default=None,                              help='Input data file for covariates' )
     p.add_argument( '--header_cols',       action='store_true',                                 help='Do the input files contain column names?' )
     p.add_argument( '--header_rows',       action='store_true',                                 help='Do the input files contain row names?' )
+    p.add_argument( '--covariatesFiles',   type=str, nargs='+', default=None,                              help='Input data file for covariates')
+    p.add_argument( '--X_Files',           type=str, nargs='+', default=None,                              help='Use positions of samples for covariance prior structure per factor')
+    p.add_argument( '--sigmaClusterFiles', type=str, nargs='+', default=None,                              help='Use clusters assigned to samples for a block covariance prior structure per factor')
+    p.add_argument( '--permute_samples',   type=int, default=0,                                 help='Permute samples positions in the data')
 
     # Data options
     p.add_argument( '--center_features',   action="store_true",                                 help='Center the features to zero-mean?' )
@@ -34,11 +35,6 @@ def entry_point():
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
     p.add_argument( '--learnIntercept',    action='store_true',                                 help='Learn the feature-wise mean?' )
-    p.add_argument( '--covariance_samples', type=int, default=0,                                help='Use a covariance prior structure between samples per factor (in at least one view if transpose=True)')
-    p.add_argument( '--positions_samples_file', type=str, default=None,                         help='File with spatial domains positions of samples')
-    p.add_argument( '--fraction_spatial_factors',   type=float, default=0.,                    help='Initial percentage of non-spatial latent variables')
-    p.add_argument( '--permute_samples',   type=int, default=0,                                help='Permute samples positions in the data')
-    p.add_argument( '--sigma_cluster_file', type=str, default=None,                            help='File with cluster indices for a block covariance matrix')
 
     # Training options
     p.add_argument( '--elbofreq',          type=int, default=1,                                 help='Frequency of computation of ELBO' )
@@ -129,16 +125,34 @@ def entry_point():
     #####################
 
     model_opts = {}
+
+    if args.covariatesFiles is not None:
+        if args.transpose:
+            assert M == len(args.covariatesFiles), "Length of view names and covariates input files does not match"
+        else:
+            assert 1 == len(args.covariatesFiles), "Length of view names and covariates input files does not match"
+
     model_opts['learnIntercept'] = args.learnIntercept
 
-    if args.covariatesFile is not None:
-        model_opts['covariates'] = pd.read_csv(args.covariatesFile, delimiter=" ", header=None).as_matrix()
-        print("Loaded covariates from " + args.covariatesFile + "with shape " + str(model_opts['covariates'].shape) + "...")
+    # TODO : create a function loadDataCovariates in utils.py as loadData or loadDataX, and call it below
+    if args.covariatesFiles is not None:
+        model_opts['covariates'] = pd.read_csv(args.covariatesFiles, delimiter=" ", header=None).as_matrix()
+        print("Loaded covariates from " + args.covariatesFiles + "with shape " + str(model_opts['covariates'].shape) + "...")
         model_opts['scale_covariates'] = 1
         args.factors += model_opts['covariates'].shape[1]
     else:
         model_opts['scale_covariates'] = False
         model_opts['covariates'] = None
+
+    ##############################
+    ## Load X and cluster files ##
+    ##############################
+
+    data_opts['X_Files'] = args.X_Files
+    data_opts['sigmaClusterFiles'] = args.sigmaClusterFiles
+    data_opts['permute_samples'] = args.permute_samples
+
+    dataX, dataClust = loadDataX(data_opts, transpose = args.transpose)
 
 
     ##############################
@@ -148,20 +162,14 @@ def entry_point():
     # Choose between MOFA (view = omic) and transpose MOFA (view = cells' population)
     model_opts['transpose'] = args.transpose
 
-    # Use a covariance prior structure between samples per factor
-    model_opts['covariance_samples'] = args.covariance_samples
-    model_opts['positions_samples_file'] = args.positions_samples_file
-    model_opts['fraction_spatial_factors'] = args.fraction_spatial_factors
-    model_opts['permute_samples'] = args.permute_samples
-    model_opts['sigma_cluster_file'] = args.sigma_cluster_file
-
     # Define initial number of latent factors
     model_opts['K'] = args.factors
 
     # Define likelihoods
     model_opts['likelihood'] = args.likelihoods
-    assert M==len(model_opts['likelihood']), "Please specify one likelihood for each view"
-    assert set(model_opts['likelihood']).issubset(set(["gaussian","bernoulli","poisson"]))
+    assert M == len(model_opts['likelihood']), "Please specify one likelihood for each view"
+    assert set(model_opts['likelihood']).issubset(set(["gaussian", "bernoulli", "poisson"]))
+
 
     #################################
     ## Define the training options ##
@@ -180,16 +188,18 @@ def entry_point():
     if args.seed is None or args.seed==0:                 # Seed for the random number generator
         train_opts['seed'] = int(round(time()*1000)%1e6)
         s.random.seed(train_opts['seed'])
+    else:
+        train_opts['seed'] = args.seed
 
     # Define schedule of updates
     # Think to its importance ?
     if model_opts['transpose']:
-        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
+        if data_opts['X_Files'] is not None:
             train_opts['schedule'] = ( "Y", "TZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaZ", "AlphaW", "ThetaZ", "Tau")
     else:
-        if (model_opts['positions_samples_file'] is not None) or (model_opts['covariance_samples']):
+        if data_opts['X_Files'] is not None:
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )
@@ -200,7 +210,7 @@ def entry_point():
     ## Build the model ##
     #####################
 
-    model = build_model(model_opts, data)
+    model = build_model(model_opts, data, dataX, dataClust)
 
     #####################
     ## Train the model ##

@@ -27,7 +27,8 @@ scale_views=0 	    # scale the views to unit variance (not necessary as long as 
 transpose=1
 
 # Use a covariance prior structure between samples per factor (in at least one view, if transpose = True)
-covariance_samples=0
+X_Files=( None None None )
+#X_Files=( None )
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )
@@ -77,7 +78,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 # Prepare command
 cmd='python ../build_model/entry_point.py
     --transpose $transpose
-    --covariance_samples $covariance_samples
+    --X_Files ${X_Files[@]}
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile

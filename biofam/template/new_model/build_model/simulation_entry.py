@@ -24,14 +24,16 @@ def entry_point():
 
     # simulation options
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
+    p.add_argument( '--spatialFact',       type=float, default=0.,                              help='Initial percentage of non-spatial latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     # p.add_argument( '--SpatialFact',       type=float, default=0.2,                             help='fraction of spatial facts for simulations')  # TODO add that to spatialFA
     p.add_argument( '--noise',             type=float, default=10.,                              help='noise level for simulations')
+    p.add_argument('--sparsity',           type=float, default=.1,                              help='sparsity level for simulations')
     p.add_argument( '--N',                 type=int, default=500,                               help='number of samples to simulate for')
     p.add_argument( '--D',                 type=int, default=1000,                               help='number of features per view to simulate for')
     p.add_argument( '--M',                 type=int, default=3,                               help='number of views to simulate from ')
     p.add_argument( '--seed',              type=int, default=0 ,                                help='Random seed' )
-
+    p.add_argument( '--X_Files',           type=str, default=None,                              help='Use positions of samples for covariance prior structure per factor')
 
     args = p.parse_args()
 
@@ -76,6 +78,10 @@ def entry_point():
     assert set(model_opts['likelihood']).issubset(set(["gaussian","bernoulli","poisson"]))
     model_opts['learnIntercept'] = False # TODO could use that to simulate intercept
     model_opts['outDir'] = args.outDir
+    model_opts['X_Files'] = args.X_Files
+    model_opts['noise'] = args.noise
+    model_opts['sparsity'] = args.sparsity
+    model_opts['spatialFact'] = args.spatialFact
     #####################
     ## Build the model ##
     #####################

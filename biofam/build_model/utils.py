@@ -2,6 +2,7 @@ from __future__ import division
 from time import sleep
 
 import numpy as np
+import scipy as s
 import pandas as pd
 import numpy.ma as ma
 import os
@@ -133,6 +134,80 @@ def loadData(data_opts, verbose=True):
         print("\n")
 
     return Y
+
+def loadDataX(data_opts, transpose = False):
+    """ Method to load the data of the samples positions and assigned clusters
+    """
+
+    print ("\n")
+    print ("#"*18)
+    print ("## Loading samples positions data ##")
+    print ("#"*18)
+    print ("\n")
+    sleep(1)
+
+    M = len(data_opts['view_names'])
+
+    if data_opts['X_Files'] is None:
+
+        X = None
+        sigma_clust = None
+
+    else:
+
+        if transpose:
+
+            assert M == len(data_opts['X_Files']), "Length of view names and samples positions input files does not match"
+
+            X = [None] * M
+            sigma_clust = [None] * M
+            for m in range(M):
+                file = data_opts['X_Files'][m]
+                if file != "None":
+                    try:
+                        X[m] = np.loadtxt(file, delimiter=',')
+                    except:
+                        X[m] = np.loadtxt(file, delimiter=' ')
+
+            if data_opts['permute_samples'] == 1:
+                for m in range(M):
+                    perm = np.random.permutation(D[m])
+                    X[m] = X[m][perm, :]
+
+            # load sigma cluster if among arguments
+            if data_opts['sigmaClusterFiles'] is not None:
+                assert M == len(data_opts['sigmaClusterFiles']), "Length of view names and samples clusters input files does not match"
+                for m in range(M):
+                    file = data_opts['sigmaClusterFiles'][m]
+                    if file != "None":
+                        sigma_clust[m] = np.loadtxt(file)
+
+        else:
+
+            assert 1 == len(data_opts['X_Files']), "Length of view names and samples positions input files does not match"
+
+            file = data_opts['X_Files'][0]
+            if file != "None":
+                try:
+                    X = np.loadtxt(file, delimiter=',')
+                except:
+                    X = np.loadtxt(file, delimiter=' ')
+
+                if data_opts['permute_samples'] == 1:
+                    perm = np.random.permutation(N)
+                    X = X[perm, :]
+
+                # load sigma cluster if among arguments
+                if data_opts['sigmaClusterFiles'] is not None:
+                    assert 1 == len(data_opts['sigmaClusterFiles']), "Length of view names and samples clusters input files does not match"
+                    sigma_clust = np.loadtxt(data_opts['sigmaClusterFiles'][0])
+
+            else:
+                X = None
+                sigma_clust = None
+
+    return X, sigma_clust
+
 
 def corr(A,B):
     """ Method to efficiently compute correlation coefficients between two matrices

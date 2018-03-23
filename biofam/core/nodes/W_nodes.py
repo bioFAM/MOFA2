@@ -309,15 +309,18 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # Calculate intermediate steps
             term1 = (theta_lnE-theta_lnEInv)[:,k]
             term2 = 0.5*s.log(alpha[k])
+
             # term3 = 0.5*s.log(ma.dot(ZZ[:,k],tau) + alpha[k])
             term3 = 0.5*s.log(s.dot(ZZ[:,k],tau) + alpha[k]) # good to modify
+
             # term4_tmp1 = ma.dot((tau*Y).T,Z[:,k]).data
             term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify
+
             # term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
             term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify
 
-            term4_tmp3 = ma.dot(ZZ[:,k].T,tau) + alpha[k]
-            # term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            #term4_tmp3 = ma.dot(ZZ[:,k].T,tau) + alpha[k]
+            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically

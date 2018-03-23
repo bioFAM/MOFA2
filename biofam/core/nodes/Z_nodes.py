@@ -15,8 +15,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
-        super(Z_Node, self).__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE,
-                                     qE2=qE2)
+        super(Z_Node, self).__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
         self.precompute(precompute_pcovinv=precompute_pcovinv)
 
@@ -322,17 +321,18 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # Calculate intermediate stept
             term1 = (theta_lnE - theta_lnEInv)[:, k]
             term2 = 0.5 * s.log(alpha[k])
+
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]),axis=0) + alpha[k])  # good to modify
+            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[k])  # good to modify
 
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
-            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]),axis=0)  # good to modify
+            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify
 
             # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(TZ[:,s.arange(self.dim[1]) != k],(W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]),axis=0)  # good to modify
+            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(TZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify
 
-            term4_tmp3 = np.sum(np.array([ma.dot(tau[m], WW[m][:, k]) for m in range(M)]),axis=0) + alpha[k]
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[k]
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
