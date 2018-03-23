@@ -9,12 +9,14 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
+
 # TODO : remove loop l.137 (if possible)
 # TODO : check if we should ask the mask l. 472, and ELBO formula muZ (muZ not used for now)
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
-        super(Z_Node,self).__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
+        super(Z_Node, self).__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE,
+                                     qE2=qE2)
 
         self.precompute(precompute_pcovinv=precompute_pcovinv)
 
@@ -22,7 +24,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self,precompute_pcovinv=True):
+    def precompute(self, precompute_pcovinv=True):
         # Precompute terms to speed up computation
         self.N = self.dim[0]
         self.K = self.dim[1]
@@ -36,8 +38,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             self.p_cov_inv_diag = []
 
             for k in range(self.K):
-                tmp = p_cov[k,0,0]
-                if np.all(p_cov[k]/tmp == np.eye(self.N)):
+                tmp = p_cov[k, 0, 0]
+                if np.all(p_cov[k] / tmp == np.eye(self.N)):
                     inv = 1 / tmp * np.eye(self.N)
                     diag_inv = 1 / tmp * np.ones(self.N)
                 else:
@@ -79,7 +81,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         Y = deepcopy(self.markov_blanket["Y"].getExpectation())
         SWtmp = self.markov_blanket["SW"].getExpectations()
         tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
-        latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
+        latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
 
         # Collect parameters from the prior or expectations from the markov blanket
@@ -105,7 +107,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
             if tau[m].shape != Y[m].shape:
-               tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
+                tau[m] = s.repeat(tau[m].copy()[None, :], self.N, axis=0)
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.
@@ -122,19 +124,21 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             foo = s.zeros((self.N,))
             bar = s.zeros((self.N,))
             for m in range(M):
-                foo += np.dot(tau[m],SWtmp[m]["E2"][:,k])
-                bar += np.dot(tau[m]*(Y[m] - s.dot( Qmean[:,s.arange(self.dim[1])!=k] , SWtmp[m]["E"][:,s.arange(self.dim[1])!=k].T )), SWtmp[m]["E"][:,k])
+                foo += np.dot(tau[m], SWtmp[m]["E2"][:, k])
+                bar += np.dot(tau[m] * (Y[m] - s.dot(Qmean[:, s.arange(self.dim[1]) != k],
+                                                     SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)),
+                              SWtmp[m]["E"][:, k])
 
             if "AlphaZ" in self.markov_blanket:
-                Qvar[:,k] = 1./(Alpha[:,k]+foo)
-                Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
+                Qvar[:, k] = 1. / (Alpha[:, k] + foo)
+                Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
 
             else:
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k, :])
 
                 tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.N)
                 for n in range(self.N):
-                    Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :],Mu[:,k]-Qmean[:, k]))
+                    Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
@@ -181,7 +185,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         return lb_p - lb_q
 
     def calculateELBO(self):
-        if not("AlphaZ" in self.markov_blanket):
+        if not ("AlphaZ" in self.markov_blanket):
             latent_variables = self.getLvIndex()
             elbo = 0
             for k in latent_variables:
@@ -193,18 +197,20 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         else:
             # Collect parameters and expectations of current node
-            Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
+            Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
             Qmean, Qvar = Qpar['mean'], Qpar['var']
-            QE, QE2 = Qexp['E'],Qexp['E2']
+            QE, QE2 = Qexp['E'], Qexp['E2']
 
             if "MuZ" in self.markov_blanket:
-                PE, PE2 = self.markov_blanket['MuZ'].getExpectations()['E'], self.markov_blanket['MuZ'].getExpectations()['E2']
+                PE, PE2 = self.markov_blanket['MuZ'].getExpectations()['E'], \
+                          self.markov_blanket['MuZ'].getExpectations()['E2']
             else:
-                PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.N,self.dim[1]))
+                PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.N, self.dim[1]))
 
-            Alpha = self.markov_blanket['AlphaZ'].getExpectations().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
-            Alpha["E"] = s.repeat(Alpha["E"][None,:], self.N, axis=0)
-            Alpha["lnE"] = s.repeat(Alpha["lnE"][None,:], self.N, axis=0)
+            Alpha = self.markov_blanket[
+                'AlphaZ'].getExpectations().copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
+            Alpha["E"] = s.repeat(Alpha["E"][None, :], self.N, axis=0)
+            Alpha["lnE"] = s.repeat(Alpha["lnE"][None, :], self.N, axis=0)
 
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()
@@ -224,7 +230,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
             lb_q = -(s.log(Qvar).sum() + self.N * len(latent_variables)) / 2.
 
-            return lb_p-lb_q
+            return lb_p - lb_q
 
     def sample(self, dist='P'):
         if "MuZ" in self.markov_blanket:
@@ -234,7 +240,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaZ'].sample()
-            p_var = s.square(1./alpha)
+            p_var = s.square(1. / alpha)
             p_cov = s.diag(p_var)
         else:
             if "SigmaZ" in self.markov_blanket:
@@ -249,10 +255,13 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         return self.samp
 
+
 class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
-    def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta, qEZ_T0=None, qEZ_T1=None, qET=None, idx_covariates=None):
-        super(TZ_Node,self).__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
+    def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta,
+                 qEZ_T0=None, qEZ_T1=None, qET=None, idx_covariates=None):
+        super(TZ_Node, self).__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
+                                      qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
         self.precompute()
 
         # Define indices for covariates
@@ -263,7 +272,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.N = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
-        
+
         self.factors_axis = 1
 
     def updateParameters(self):
@@ -277,7 +286,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()]
         alpha = self.markov_blanket["AlphaZ"].getExpectation().copy()
         thetatmp = self.markov_blanket['ThetaZ'].getExpectations().copy()
-        theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
+        theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
         # Collect parameters and expectations from P and Q distributions of this node
         TZ = self.Q.getExpectations()["E"]
@@ -286,15 +295,15 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Check dimensions of theta and and expand if necessary
         if theta_lnE.shape != Qmean_T1.shape:
-            theta_lnE = s.repeat(theta_lnE[None,:],Qmean_T1.shape[0],0)
+            theta_lnE = s.repeat(theta_lnE[None, :], Qmean_T1.shape[0], 0)
         if theta_lnEInv.shape != Qmean_T1.shape:
-            theta_lnEInv = s.repeat(theta_lnEInv[None,:],Qmean_T1.shape[0],0)
+            theta_lnEInv = s.repeat(theta_lnEInv[None, :], Qmean_T1.shape[0], 0)
 
         # Check dimensions of Tau and and expand if necessary
-        M = len(Y) #number of views
+        M = len(Y)  # number of views
         for m in range(M):
             if tau[m].shape != Y[m].shape:
-                tau[m] = s.repeat(tau[m][None,:], Y[m].shape[0], axis=0)
+                tau[m] = s.repeat(tau[m][None, :], Y[m].shape[0], axis=0)
 
         # Check dimensions of alpha and and expand if necessary
         if alpha.shape[0] == 1:
@@ -310,43 +319,44 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # TODO : remove loops working with tensors ?
         # Update each latent variable in turn
         for k in range(self.dim[1]):
-
             # Calculate intermediate stept
-            term1 = (theta_lnE-theta_lnEInv)[:,k]
-            term2 = 0.5*s.log(alpha[k])
+            term1 = (theta_lnE - theta_lnEInv)[:, k]
+            term2 = 0.5 * s.log(alpha[k])
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            term3 = 0.5*s.log(sum([s.dot(tau[m],WW[m][:,k]) for m in range(M)]) + alpha[k]) # good to modify
+            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]),axis=0) + alpha[k])  # good to modify
+
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
-            term4_tmp1 = sum([s.dot(tau[m]*Y[m],W[m][:,k]) for m in range(M)]) # good to modify
+            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]),axis=0)  # good to modify
 
             # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = sum([(tau[m] * s.dot((W[m][:,k]*W[m][:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T).T ).sum(axis=1) for m in range(M)]) # good to modify
+            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(TZ[:,s.arange(self.dim[1]) != k],(W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]),axis=0)  # good to modify
 
-            term4_tmp3 = sum([ma.dot(tau[m],WW[m][:,k]) for m in range(M)]) + alpha[k]
+            term4_tmp3 = np.sum(np.array([ma.dot(tau[m], WW[m][:, k]) for m in range(M)]),axis=0) + alpha[k]
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
-            term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically
+            term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
 
             # Update T
             # NOTE there could be some precision issues in T --> loads of 1s in result
-            Qtheta[:,k] = 1./(1.+s.exp(-(term1+term2-term3+term4)))
+            Qtheta[:, k] = 1. / (1. + s.exp(-(term1 + term2 - term3 + term4)))
 
             # Update Z
-            Qvar_T1[:,k] = 1./term4_tmp3
-            Qmean_T1[:,k] = Qvar_T1[:,k]*(term4_tmp1-term4_tmp2)
+            Qvar_T1[:, k] = 1. / term4_tmp3
+            Qmean_T1[:, k] = Qvar_T1[:, k] * (term4_tmp1 - term4_tmp2)
 
             # Update Expectations for the next iteration
-            TZ[:,k] = Qtheta[:,k] * Qmean_T1[:,k]
+            TZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_B0=s.zeros((self.N,self.dim[1])), var_B0=s.repeat(1./alpha[None,:],self.N,0), mean_B1=Qmean_T1, var_B1=Qvar_T1, theta=Qtheta )
+        self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=s.repeat(1. / alpha[None, :], self.N, 0),
+                             mean_B1=Qmean_T1, var_B1=Qvar_T1, theta=Qtheta)
 
     def calculateELBO(self):
 
         # Collect parameters and expectations
-        Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
-        T,ZZ = Qexp["EB"], Qexp["ENN"]
+        Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
+        T, ZZ = Qexp["EB"], Qexp["ENN"]
         Qvar = Qpar['var_B1']
         theta = self.markov_blanket['ThetaZ'].getExpectations()
 
@@ -361,13 +371,14 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             exit()
 
         # Calculate ELBO for Z
-        lb_pz = (self.N*alpha["lnE"].sum() - s.sum(alpha["E"]*ZZ))/2.
-        lb_qz = -0.5*self.dim[1]*self.N - 0.5*(T*s.log(Qvar) + (1.-T)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
+        lb_pz = (self.N * alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
+        lb_qz = -0.5 * self.dim[1] * self.N - 0.5 * (
+                    T * s.log(Qvar) + (1. - T) * s.log(1. / alpha["E"])).sum()  # IS THE FIRST CONSTANT TERM CORRECT???
         lb_z = lb_pz - lb_qz
 
         # Calculate ELBO for T
-        lb_pt = T*theta['lnE'] + (1.-T)*theta['lnEInv']
-        lb_qt = T*s.log(T) + (1.-T)*s.log(1.-T)
+        lb_pt = T * theta['lnE'] + (1. - T) * theta['lnEInv']
+        lb_qt = T * s.log(T) + (1. - T) * s.log(1. - T)
         lb_pt[s.isnan(lb_pt)] = 0.
         lb_qt[s.isnan(lb_qt)] = 0.
         lb_t = s.sum(lb_pt) - s.sum(lb_qt)
@@ -381,25 +392,27 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         theta = self.markov_blanket['ThetaZ'].sample()
         if theta.shape != mu_z_hat.shape:
-            theta = s.repeat(theta[None,:],mu_z_hat.shape[0],0)
+            theta = s.repeat(theta[None, :], mu_z_hat.shape[0], 0)
 
         alpha = self.markov_blanket['AlphaZ'].sample()
         if alpha.shape[0] == 1:
             alpha = s.repeat(alpha[:], self.dim[1], axis=0)
         if alpha.shape != mu_z_hat.shape:
-            alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
+            alpha = s.repeat(alpha[None, :], self.dim[0], axis=0)
 
         # simulate
         bernoulli_t = s.random.binomial(1, theta)
-        z_hat = s.random.normal(mu_z_hat, np.sqrt(1./alpha))
+        z_hat = s.random.normal(mu_z_hat, np.sqrt(1. / alpha))
 
         self.samp = bernoulli_t * z_hat
         self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
 
         return self.samp
 
+
 class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
     """ """
+
     def __init__(self, pmean, pvar, qmean, qvar, clusters, n_Z, cluster_dic=None, qE=None, qE2=None):
         # compute dim from numbers of clusters (n_clusters * Z)
         self.clusters = clusters
@@ -407,7 +420,8 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
         self.n_clusters = len(np.unique(clusters))
         dim = (self.n_clusters, n_Z)
         self.factors_axis = 1
-        super(Cluster_Node_Gaussian, self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+        super(Cluster_Node_Gaussian, self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE,
+                                                    qE2=qE2)
 
     def getExpectations(self):
         # reshape the values to N_samples * N_factors and return
@@ -415,15 +429,16 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
         expanded_expectation = QExp['E'][self.clusters, :]
         expanded_E2 = QExp['E2'][self.clusters, :]
         # do we need to expand the variance as well -> not used I think
-        return {'E': expanded_expectation , 'E2': expanded_E2}
+        return {'E': expanded_expectation, 'E2': expanded_E2}
 
     def updateParameters(self):
         Ppar = self.P.getParameters()
         Z = self.markov_blanket['Z'].Q.getExpectation()
 
         if "AlphaZ" in self.markov_blanket:
-            Alpha = self.markov_blanket['AlphaZ'].getExpectation().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
-            Alpha = s.repeat(Alpha[None,:], self.N, axis=0)
+            Alpha = self.markov_blanket[
+                'AlphaZ'].getExpectation().copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
+            Alpha = s.repeat(Alpha[None, :], self.N, axis=0)
         elif "SigmaZ" in self.markov_blanket:
             Sigma = self.markov_blanket['SigmaZ'].getExpectation().copy()
         else:
@@ -438,26 +453,26 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
             if "AlphaZ" in self.markov_blanket:
                 tmp = (Alpha[mask, :]).sum(axis=0)
             else:
-                tmp = np.matrix.trace(Sigma[:,mask,mask])
-            Qvar[c,:] = tmp
-        Qvar += 1./Ppar['var']
-        Qvar = 1./Qvar
+                tmp = np.matrix.trace(Sigma[:, mask, mask])
+            Qvar[c, :] = tmp
+        Qvar += 1. / Ppar['var']
+        Qvar = 1. / Qvar
 
         # update of the mean
 
         if "AlphaZ" in self.markov_blanket:
             tmp = Z * Alpha
         else:
-            #TODO : check if we should ask the mask l. 462
+            # TODO : check if we should ask the mask l. 462
             tmp = np.zeros(self.dim)
             for k in range(self.dim[1]):
-                tmp[:,k] = np.dot(Sigma[k,:,:]-np.diag(Sigma[k,:,:]),Z[:,k])
+                tmp[:, k] = np.dot(Sigma[k, :, :] - np.diag(Sigma[k, :, :]), Z[:, k])
 
         for c in range(self.n_clusters):
             mask = (self.clusters == c)
             tmp = (tmp[mask, :]).sum(axis=0)
-            Qmean[c,:] = tmp
-        Qmean = Qmean + Ppar['mean']/Ppar['var']
+            Qmean[c, :] = tmp
+        Qmean = Qmean + Ppar['mean'] / Ppar['var']
         Qmean *= Qvar
 
         self.Q.setParameters(mean=Qmean, var=Qvar)
@@ -480,11 +495,10 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         # minus cross entropy
         tmp = -(0.5 * s.log(PVar)).sum()
-        tmp2 = - ((0.5/PVar) * (QE2 - 2.*QE*Pmean + Pmean**2.)).sum()
+        tmp2 = - ((0.5 / PVar) * (QE2 - 2. * QE * Pmean + Pmean ** 2.)).sum()
 
         # entropy of Q
         tmp3 = 0.5 * (s.log(Qvar)).sum()
         tmp3 += 0.5 * self.dim[0] * len(latent_variables)
 
         return tmp + tmp2 + tmp3
-
