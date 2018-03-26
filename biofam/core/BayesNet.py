@@ -260,7 +260,7 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 # print "Node: " + str(node)
                 # t = time()
-                if node=="Theta" and i<self.options['startSparsity']:
+                if i<self.options['startSparsity'] and ((node=="ThetaZ") or (node=="ThetaW")) :
                     continue
                 self.nodes[node].update()
                 # print "time: " + str(time()-t)

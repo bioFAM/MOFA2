@@ -31,6 +31,7 @@ def entry_point():
 
     # Model options
     p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
+    p.add_argument( '--sample_X',         type=int, default=0,                                  help='Sample the positions of the samples' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
@@ -154,13 +155,15 @@ def entry_point():
 
     dataX, dataClust = loadDataX(data_opts, transpose = args.transpose)
 
-
     ##############################
     ## Define the model options ##
     ##############################
 
     # Choose between MOFA (view = omic) and transpose MOFA (view = cells' population)
     model_opts['transpose'] = args.transpose
+
+    # Choose or not to simulate the positions of samples
+    model_opts['sample_X'] = args.sample_X
 
     # Define initial number of latent factors
     model_opts['K'] = args.factors
@@ -194,12 +197,12 @@ def entry_point():
     # Define schedule of updates
     # Think to its importance ?
     if model_opts['transpose']:
-        if data_opts['X_Files'] is not None:
+        if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "TZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaZ", "AlphaW", "ThetaZ", "Tau")
     else:
-        if data_opts['X_Files'] is not None:
+        if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )
@@ -210,7 +213,7 @@ def entry_point():
     ## Build the model ##
     #####################
 
-    model = build_model(model_opts, data, dataX, dataClust)
+    model = build_model(model_opts, data=data, dataX=dataX, dataClust=dataClust)
 
     #####################
     ## Train the model ##

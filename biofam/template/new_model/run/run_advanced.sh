@@ -26,9 +26,12 @@ scale_views=0 	    # scale the views to unit variance (not necessary as long as 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 transpose=1
 
-# Use a covariance prior structure between samples per factor (in at least one view, if transpose = True)
+# Use a covariance prior structure between samples per factor
 X_Files=( None None None )
-#X_Files=( None )
+# X_Files=( None )
+
+#Choose to sample the positions of the samples to test the covariance prior structure (for any view if transpose = 1)
+sample_X=1
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )
@@ -79,6 +82,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 cmd='python ../build_model/entry_point.py
     --transpose $transpose
     --X_Files ${X_Files[@]}
+    --sample_X $sample_X
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile

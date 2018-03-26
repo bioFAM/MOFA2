@@ -182,6 +182,9 @@ def loadDataX(data_opts, transpose = False):
                     if file != "None":
                         sigma_clust[m] = np.loadtxt(file)
 
+            if X == [None] * M:
+                X = None
+
         else:
 
             assert 1 == len(data_opts['X_Files']), "Length of view names and samples positions input files does not match"

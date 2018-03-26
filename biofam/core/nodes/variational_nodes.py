@@ -150,7 +150,7 @@ class Gamma_Unobserved_Variational_Node(Unobserved_Variational_Node):
     """
     Abstract class for a variational node where P(x) and Q(x) are both gamma distributions
     """
-    def __init__(self, dim, pa, pb, qa, qb, qE=None):
+    def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
 	    # dim (2d tuple): dimensionality of the node
 	    # pa (nd array): the 'a' parameter of the P distribution
 	    # qa (nd array): the 'b' parameter of the P distribution
@@ -161,7 +161,7 @@ class Gamma_Unobserved_Variational_Node(Unobserved_Variational_Node):
 
         # Initialise the distributions
         self.P = Gamma(dim=dim, a=pa, b=pb)
-        self.Q = Gamma(dim=dim, a=qa, b=qb, E=qE)
+        self.Q = Gamma(dim=dim, a=qa, b=qb, E=qE, lnE=qlnE)
 
 class Bernoulli_Unobserved_Variational_Node(Unobserved_Variational_Node):
     """

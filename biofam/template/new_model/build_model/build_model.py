@@ -30,13 +30,14 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         N = model_opts['N']
         D = model_opts['D']
 
-        if model_opts["transpose"]:
-           dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
-           dataClust = [None] * M
-           view_has_covariance_prior = [True] * M
-        else:
-           dataX = s.random.normal(0, 1, [N, 2])
-           dataClust  = None
+        if model_opts["sample_X"]:
+            if model_opts["transpose"]:
+               dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
+               dataClust = [None] * M
+               view_has_covariance_prior = [True] * M
+            else:
+               dataX = s.random.normal(0, 1, [N, 2])
+               dataClust  = None
 
         data = [np.ones([N, D[m]]) * np.nan for m in range(M)]
 
@@ -54,16 +55,24 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         D = s.asarray([data[m].shape[1] for m in range(M)])
 
         if model_opts["transpose"]:
-           view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
+
+           if dataX is None :
+               view_has_covariance_prior = [None] * M
+           else:
+               view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
 
            # TODO : TO REMOVE (test)
-           dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
-           dataClust = [None] * M
+           if model_opts["sample_X"]:
+               dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
+               dataClust = [None] * M
+               view_has_covariance_prior = [True] * M
 
         else:
+
             # TODO : TO REMOVE (test)
-            dataX = s.random.normal(0, 1, [N, 2])
-            dataClust = None
+            if model_opts["sample_X"]:
+                dataX = s.random.normal(0, 1, [N, 2])
+                dataClust = None
 
     K = model_opts["K"]
 
@@ -112,14 +121,10 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         initZ_varT0 = 1.
         initZ_varT1 = 1
         initZ_theta = 1.
-        initZ_qEZ_T0 = 0.
-        initZ_qEZ_T1 = 0.
-        initZ_qET = 1.
         init.initTZ(pmean_T0=priorZ_mean_T0, pmean_T1=priorZ_meanT1, pvar_T0=priorZ_varT0, pvar_T1=priorZ_varT1,
                     ptheta=priorZ_theta,
                     qmean_T0=initZ_meanT0, qmean_T1=initZ_meanT1, qvar_T0=initZ_varT0, qvar_T1=initZ_varT1,
-                    qtheta=initZ_theta,
-                    qEZ_T0=initZ_qEZ_T0, qEZ_T1=initZ_qEZ_T1, qET=initZ_qET)
+                    qtheta=initZ_theta)
     else:
         pmean = 0.;
         pcov = 1.;
@@ -153,9 +158,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         initW_varS0 = 1.;
         initW_varS1 = 1;
         initW_theta = 1.;
-        initW_qEW_S0 = 0.;
-        initW_qEW_S1 = 0.;
-        initW_qES = 1.;
 
         # TO-DOOOOOOOOOO: fIX LEARN INTERCEPT
         # if model_opts["learnIntercept"]:
@@ -166,8 +168,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         #         initSW_theta[m][:,0] = 1.
 
         init.initSW(pmean_S0=priorW_mean_S0, pmean_S1=priorW_meanS1, pvar_S0=priorW_varS0, pvar_S1=priorW_varS1, ptheta=priorW_theta,
-            qmean_S0=initW_meanS0, qmean_S1=initW_meanS1, qvar_S0=initW_varS0, qvar_S1=initW_varS1, qtheta=initW_theta,
-            qEW_S0=initW_qEW_S0, qEW_S1=initW_qEW_S1, qES=initW_qES)
+            qmean_S0=initW_meanS0, qmean_S1=initW_meanS1, qvar_S0=initW_varS0, qvar_S1=initW_varS1, qtheta=initW_theta)
 
 
     # Initialise ARD or covariance prior structure on W for each view
@@ -179,21 +180,21 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
                 if view_has_covariance_prior[m]:
                     params[m]={'X':dataX[m],'sigma_clust':dataClust[m],'n_diag':n_diag}
                 else:
-                    params[m]={'pa':1e-14, 'pb':1e-14, 'qa':1., 'qb':1., 'qE':1.}
+                    params[m]={'pa':1e-14, 'pb':1e-14, 'qa':1., 'qb':1.}
             init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
         else:
-            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
             init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
         # TODO do sth here for siulations
-        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
         init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
 
 
     # Initialise ARD or covariance prior structure on Z
 
     if model_opts['transpose']:
-        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
         init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
         if dataX is not None:
@@ -203,14 +204,14 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             else:
                 init.initSigmaBlockZ_k(dataX, clust=dataClust, n_diag=n_diag)
         else:
-            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.; qE = 1.
+            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
             init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
 
 
     # Initialise precision of noise
     # TODO do sth here for siulations
 
-    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
+    pa=1e-14; pb=1e-14; qa=1.; qb=1.
     init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
 
     if model_opts["transpose"]:
@@ -220,7 +221,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         priorTheta_b = 1.
         initTheta_a = 1.
         initTheta_b = 1.
-        initTheta_E = 1.
+        initTheta_E = 0.5
         # TO-DOOOOOOOOOO
         # if model_opts["learnIntercept"]:
         #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
@@ -238,7 +239,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         priorTheta_b = 1.
         initTheta_a = 1.
         initTheta_b = 1.
-        initTheta_E = 1.
+        initTheta_E = 0.5
         # TO-DOOOOOOOOOO
         # if model_opts["learnIntercept"]:
         #     for m in range(M):
@@ -288,7 +289,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         nodes["SW"].addMarkovBlanket(AlphaW=nodes["AlphaW"], ThetaW=nodes["ThetaW"], Y=nodes["Y"], Z=nodes["Z"],Tau=nodes["Tau"])
         nodes["Y"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Tau=nodes["Tau"])
         nodes["Tau"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Y=nodes["Y"])
-
 
 
     #################################
