@@ -18,7 +18,7 @@ class Gamma(Distribution):
     H[x] = ln(Gamma(a)) - (a-1)*digamma(a) - ln(b) + a
     """
 
-    def __init__(self, dim, a, b, E=None):
+    def __init__(self, dim, a, b, E=None, lnE=None):
         Distribution.__init__(self, dim)
 
         # Initialise parameters
@@ -30,7 +30,10 @@ class Gamma(Distribution):
         if E is None:
             self.updateExpectations()
         else:
-            self.expectations = { 'E':s.ones(dim)*E, 'lnE':s.log(s.ones(dim)*E) }
+            if lnE is None:
+                self.expectations = { 'E':s.ones(dim)*E, 'lnE':s.log(s.ones(dim)*E) }
+            else:
+                self.expectations = { 'E':s.ones(dim)*E, 'lnE':s.ones(dim)*lnE }
 
         # Check that dimensionalities match
         self.CheckDimensionalities()

@@ -134,7 +134,7 @@ def build_model(model_opts, data=None):
         learnTheta_ix = [np.ones(K)]*M
         if model_opts["learnIntercept"]:
             for ix in learnTheta_ix:
-                ix[0] =0
+                ix[0] = 0
         init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a,  qb=initTheta_b, qE=initTheta_E)
 
 

@@ -36,7 +36,7 @@ class Bernoulli(Distribution):
 
     def loglik(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
-        return s.sum( x*self.params['theta'] + (1-x)*(1-self.params['theta']) )
+        return s.sum( x*s.log(self.params['theta']) + (1-x)*s.log(1-self.params['theta']) )
 
     def sample(self):
         return s.random.binomial(1, self.params['theta'])
