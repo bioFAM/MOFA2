@@ -20,8 +20,7 @@ class Y_Node(Constant_Variational_Node):
     def precompute(self):
         # Precompute some terms to speed up the calculations
         self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
-        self.D = self.dim[1]
-        self.likconst = -0.5*s.sum(self.N * self.D)*s.log(2.*s.pi)
+        self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
 
     def mask(self):
         # Mask the observations if they have missing values
@@ -35,11 +34,13 @@ class Y_Node(Constant_Variational_Node):
         # We use the trick that the update of Tau already contains the Gaussian likelihod.
         # However, it is important that the lower bound is calculated after the update of Tau is performed
         if "SW" in self.markov_blanket:
+            self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
             tauQ_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
             tauP_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
             tau_exp = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
             lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
         else:
+            self.likconst = -0.5 * s.sum(self.D) * s.log(2.*s.pi)
             tauQ_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
             tauP_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
             tau_exp = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
