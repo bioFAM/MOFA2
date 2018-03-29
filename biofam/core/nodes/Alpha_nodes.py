@@ -23,7 +23,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
 
         # Collect expectations from other nodes
         tmp = self.markov_blanket["SW"].getExpectations()
-        ES,EWW = tmp["ES"],tmp["EWW"]
+        ES, EWW = tmp["EB"],tmp["ENN"]
 
         # Collect parameters from the P and Q distributions of this node
         P,Q = self.P.getParameters(), self.Q.getParameters()

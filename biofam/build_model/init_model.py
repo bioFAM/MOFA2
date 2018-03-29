@@ -191,7 +191,7 @@ class initModel(object):
             alpha_list[m] = AlphaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1.):
+    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1., transposed=False):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -205,6 +205,9 @@ class initModel(object):
          qE: float
             initial expectation of the variational distribution
         """
+        Tau_Node = TauN_Node if transposed else TauD_Node
+        if transposed:
+            print("TauN noise!")
 
         tau_list = [None]*self.M
         for m in range(self.M):

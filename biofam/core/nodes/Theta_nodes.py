@@ -33,7 +33,7 @@ class Theta_Node(Beta_Unobserved_Variational_Node):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes
-        S = self.markov_blanket['SW'].getExpectations()["ES"]
+        S = self.markov_blanket['SW'].getExpectations()["EB"]
 
         # Precompute terms
         if factors_selection is not None:

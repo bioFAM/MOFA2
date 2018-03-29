@@ -89,7 +89,7 @@ def build_model(model_opts, data=None):
     # Initialise precision of noise
     # TODO do sth here for siulations
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
-    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
+    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb, transposed=model_opts["transpose"])
 
     # Initialise sparsity on the weights
     learnTheta = [ s.ones((D[m], K)) for m in range(M) ]

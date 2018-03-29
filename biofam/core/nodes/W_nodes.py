@@ -32,7 +32,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Collect parameters and expectations from P and Q distributions of this node
         SW = self.Q.getExpectations()["E"]
         Q = self.Q.getParameters()
-        Qmean_S1, Qvar_S1, Qtheta = Q['mean_S1'], Q['var_S1'], Q['theta']
+        Qmean_S1, Qvar_S1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
         # Check dimensions of Theta and and expand if necessary
         if theta_lnE.shape != Qmean_S1.shape:
@@ -87,14 +87,14 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_S0=s.zeros((self.D,self.dim[1])), var_S0=s.repeat(1./alpha[None,:],self.D,0), mean_S1=Qmean_S1, var_S1=Qvar_S1, theta=Qtheta )
+        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=s.repeat(1./alpha[None,:],self.D,0), mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
 
     def calculateELBO(self):
 
         # Collect parameters and expectations
         Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
-        S,WW = Qexp["ES"], Qexp["EWW"]
-        Qvar = Qpar['var_S1']
+        S,WW = Qexp["EB"], Qexp["ENN"]
+        Qvar = Qpar['var_B1']
         theta = self.markov_blanket['Theta'].getExpectations()
 
         # Get ARD sparsity or prior variance
