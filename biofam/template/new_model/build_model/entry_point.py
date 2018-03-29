@@ -183,7 +183,7 @@ def entry_point():
     
 
     if model_opts['transpose_sparsity']:
-        train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
+        train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
     else:
         train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "ThetaW", "Tau" )
 

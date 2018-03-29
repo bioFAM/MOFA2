@@ -1,5 +1,5 @@
-
 from __future__ import division
+from copy import deepcopy
 import numpy.ma as ma
 import numpy as np
 import scipy as s

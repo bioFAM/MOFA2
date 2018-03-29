@@ -73,11 +73,11 @@ def build_model(model_opts, data=None):
                     qEZ_S0=initZ_qEZ_S0, qEZ_S1=initZ_qEZ_S1, qES=initZ_qES)
 
         pmean = 0.;
-        pcov = 1.;
+        pvar = 1.;
         qmean = "random";
         qvar = 1.
 
-        init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariatesFiles'],
+        init.initW(pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
                    scale_covariates=model_opts['scale_covariates'])
 
     else:
@@ -122,7 +122,9 @@ def build_model(model_opts, data=None):
         learnTheta_ix = np.ones(K)        
         initTheta_a = 1.
         initTheta_b = 1.
-        initTheta_E = 0.5
+        initTheta_E = 1.
+        priorTheta_a = 1.
+        priorTheta_b = 1.
         # TO-DOOOOOOOOOO
         # if model_opts["learnIntercept"]:
         #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
@@ -165,6 +167,7 @@ def build_model(model_opts, data=None):
         nodes["W"].addMarkovBlanket(SZ=nodes["SZ"], Tau=nodes["Tau"], AlphaW=nodes["AlphaW"], Y=nodes["Y"])
         nodes["Y"].addMarkovBlanket(SZ=nodes["SZ"], W=nodes["W"], Tau=nodes["Tau"])
         nodes["Tau"].addMarkovBlanket(SZ=nodes["SZ"], W=nodes["W"], Y=nodes["Y"])
+        nodes["ThetaZ"].addMarkovBlanket(SZ=nodes["SZ"])
     else:
         nodes["Z"].addMarkovBlanket(SW=nodes["SW"], Tau=nodes["Tau"], Y=nodes["Y"])
         nodes["ThetaW"].addMarkovBlanket(SW=nodes["SW"])

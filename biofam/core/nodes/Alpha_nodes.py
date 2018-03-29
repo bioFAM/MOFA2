@@ -9,9 +9,9 @@ import scipy.special as special
 from .variational_nodes import Gamma_Unobserved_Variational_Node
 
 class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
-    def __init__(self, dim, pa, pb, qa, qb, qE=None):
+    def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
         # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.precompute()
 
     def precompute(self):
@@ -28,7 +28,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
             EWW = tmp["ENN"]
         else:
             tmp = self.markov_blanket["W"].getExpectations()
-            ES  = tmp["EB"]
+            ES  = tmp["E"]
             EWW = tmp["E2"]
 
 

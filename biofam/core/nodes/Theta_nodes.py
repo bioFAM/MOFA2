@@ -107,7 +107,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
 
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         # Beta_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        super(ThetaZ_Node_k, self).__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.precompute()
 
     def precompute(self):

@@ -255,13 +255,19 @@ class BayesNet(object):
                 self.nodes[node].update()
                 # print "time: " + str(time()-t)
 
+            # Set the proper name of the Z node
+            if "SZ" in self.nodes:
+                name_Z="SZ"
+            else:
+                name_Z="Z"
+
             # Calculate Evidence Lower Bound
             if (i+1) % self.options['elbofreq'] == 0:
                 elbo.iloc[i] = self.calculateELBO()
 
                 # Print first iteration
                 if i==0:
-                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time()-t,elbo.iloc[i]["total"], (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
+                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time()-t,elbo.iloc[i]["total"], (~self.nodes[name_Z].covariates).sum(), self.nodes[name_Z].covariates.sum() ))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -270,7 +276,7 @@ class BayesNet(object):
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
-                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
+                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes[name_Z].covariates).sum(), self.nodes[name_Z].covariates.sum() ))
                     if delta_elbo<0: print("Warning, lower bound is decreasing..."); print('\a')
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")

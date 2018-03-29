@@ -221,7 +221,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
             term4_tmp1 = s.sum([s.dot(tau[m]*Y[m], W[m][:,k]) for m in range(M)], axis=0) # good to modify
-            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
+            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
 
             # term4_tmp2 = s.sum([(tau[m] * s.dot(SZ[:,s.arange(self.dim[1])!=k], W[m][:,k]*W[m][:,s.arange(self.dim[1])!=k].T) ).sum(axis=1) for m in range(M)], axis=0)
             term4_tmp2 = s.sum([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)], axis=0)  # good to modify
