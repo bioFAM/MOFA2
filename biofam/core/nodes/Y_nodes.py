@@ -34,10 +34,16 @@ class Y_Node(Constant_Variational_Node):
         # Calculate evidence lower bound
         # We use the trick that the update of Tau already contains the Gaussian likelihod.
         # However, it is important that the lower bound is calculated after the update of Tau is performed
-        tauQ_param = self.markov_blanket["Tau"].getParameters("Q")
-        tauP_param = self.markov_blanket["Tau"].getParameters("P")
-        tau_exp = self.markov_blanket["Tau"].getExpectations()
-        lik = self.likconst + 0.5*s.sum(tau_exp["lnE"]) - s.sum(tau_exp["E"] * (tauQ_param["b"]-tauP_param["b"]))
+        if "SW" in self.markov_blanket:
+            tauQ_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
+            tauP_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
+            tau_exp = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+            lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
+        else:
+            tauQ_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
+            tauP_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
+            tau_exp = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+            lik = self.likconst + 0.5*s.sum(self.D*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
         return lik
 
     def sample(self, dist='P'):

@@ -10,7 +10,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
-        super(Z_Node,self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+        super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
         self.precompute()
 
         # Define indices for covariates
@@ -147,7 +147,7 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
         self.n_clusters = len(np.unique(clusters))
         dim = (self.n_clusters, n_Z)
         self.factors_axis = 1
-        super(Cluster_Node_Gaussian, self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+        super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
 
     def getExpectations(self):
         # reshape the values to N_samples * N_factors and return

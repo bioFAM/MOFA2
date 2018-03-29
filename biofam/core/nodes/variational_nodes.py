@@ -196,7 +196,7 @@ class Beta_Unobserved_Variational_Node(Unobserved_Variational_Node):
         # qa (nd array): the 'a' parameter of the Q distribution
         # qb (nd array): the 'b' parameter of the Q distribution
         # qE (nd array): the initial expectation of the Q distribution
-        super(Beta_Unobserved_Variational_Node, self).__init__(dim)
+        super().__init__(dim)
 
         # Initialise P and Q distributions
         self.P = Beta(dim, pa, pb)

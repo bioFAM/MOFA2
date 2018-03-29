@@ -162,7 +162,9 @@ def entry_point():
     train_opts['startSparsity'] = args.startSparsity      # Iteration to activate spike and slab sparsity
     if args.seed is None or args.seed==0:                 # Seed for the random number generator
         train_opts['seed'] = int(round(time()*1000)%1e6)
-        s.random.seed(train_opts['seed'])
+    else:
+        train_opts['seed'] = args.seed
+    s.random.seed(train_opts['seed'])
     train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" ) # Define schedule of updates
 
 
