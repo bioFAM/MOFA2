@@ -7,8 +7,9 @@ import scipy as s
 from .variational_nodes import Constant_Variational_Node
 
 class Y_Node(Constant_Variational_Node):
-    def __init__(self, dim, value):
-        Constant_Variational_Node.__init__(self, dim, value)
+    def __init__(self, dim, value, transpose_noise):
+        tau_d = not transpose_noise
+        Constant_Variational_Node.__init__(self, dim, value, {'tau_d': tau_d})
 
         # Create a boolean mask of the data to hide missing values
         if type(self.value) != ma.MaskedArray:
@@ -22,6 +23,12 @@ class Y_Node(Constant_Variational_Node):
         self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
 
+        # Precompute the constant depending on the noise dimensions
+        if self.opts['tau_d']:
+            self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
+        else:
+            self.likconst = -0.5 * s.sum(self.D) * s.log(2.*s.pi)
+
     def mask(self):
         # Mask the observations if they have missing values
         self.value = ma.masked_invalid(self.value)
@@ -33,14 +40,12 @@ class Y_Node(Constant_Variational_Node):
         # Calculate evidence lower bound
         # We use the trick that the update of Tau already contains the Gaussian likelihod.
         # However, it is important that the lower bound is calculated after the update of Tau is performed
-        if "SW" in self.markov_blanket:
-            self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
+        if self.opts['tau_d']:
             tauQ_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
             tauP_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
             tau_exp = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
             lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
         else:
-            self.likconst = -0.5 * s.sum(self.D) * s.log(2.*s.pi)
             tauQ_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
             tauP_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
             tau_exp = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}

@@ -153,7 +153,7 @@ def build_model(model_opts, data=None):
 
 
     # Observed data
-    init.initY()
+    init.initY(transpose_noise=model_opts["transpose_noise"])
 
     ############################################
     ## Define the markov blanket of each node ##

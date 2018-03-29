@@ -39,9 +39,9 @@ class Constant_Variational_Node(Variational_Node,Constant_Node):
     """
     Abstract class for an observed/constant variational node in a Bayesian probabilistic model.
     """
-    def __init__(self, dim, value):
+    def __init__(self, dim, value, opts):
         # SHOULD WE ALSO INITIALISE VARIATIONAL_NODE ..?
-        Constant_Node.__init__(self, dim, value)
+        Constant_Node.__init__(self, dim, value, opts)
 
 class Unobserved_Variational_Node(Variational_Node):
     """
