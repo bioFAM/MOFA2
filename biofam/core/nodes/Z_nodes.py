@@ -138,6 +138,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         return self.samp
 
 
+
 class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
     """ """
     def __init__(self, pmean, pvar, qmean, qvar, clusters, n_Z, cluster_dic=None, qE=None, qE2=None):

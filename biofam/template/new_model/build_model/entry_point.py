@@ -13,37 +13,39 @@ def entry_point():
     p = argparse.ArgumentParser( description='Basic run script for BioFAM' )
 
     # I/O
-    p.add_argument( '--inFiles',           type=str, nargs='+', required=True,                  help='Input data files (including extension)' )
-    p.add_argument( '--outFile',           type=str, required=True,                             help='Output data file (hdf5 format)' )
-    p.add_argument( '--delimiter',         type=str, default=" ",                               help='Delimiter for input files' )
-    p.add_argument( '--covariatesFile',    type=str, default=None,                              help='Input data file for covariates' )
-    p.add_argument( '--header_cols',       action='store_true',                                 help='Do the input files contain column names?' )
-    p.add_argument( '--header_rows',       action='store_true',                                 help='Do the input files contain row names?' )
+    p.add_argument( '--inFiles',            type=str, nargs='+', required=True,           help='Input data files (including extension)' )
+    p.add_argument( '--outFile',            type=str, required=True,                      help='Output data file (hdf5 format)' )
+    p.add_argument( '--delimiter',          type=str, default=" ",                        help='Delimiter for input files' )
+    p.add_argument( '--covariatesFile',     type=str, default=None,                       help='Input data file for covariates' )
+    p.add_argument( '--header_cols',        action='store_true',                          help='Do the input files contain column names?' )
+    p.add_argument( '--header_rows',        action='store_true',                          help='Do the input files contain row names?' )
 
     # Data options
-    p.add_argument( '--center_features',   action="store_true",                                 help='Center the features to zero-mean?' )
-    p.add_argument( '--scale_features',    action="store_true",                                 help='Scale the features to unit variance?' )
-    p.add_argument( '--scale_views',       action="store_true",                                 help='Scale the views to unit variance?' )
-    p.add_argument( '--scale_covariates',  type=int, nargs='+', default=0,                      help='Scale covariates?' )
+    p.add_argument( '--center_features',    action="store_true",                          help='Center the features to zero-mean?' )
+    p.add_argument( '--scale_features',     action="store_true",                          help='Scale the features to unit variance?' )
+    p.add_argument( '--scale_views',        action="store_true",                          help='Scale the views to unit variance?' )
+    p.add_argument( '--scale_covariates',   type=int, nargs='+', default=0,               help='Scale covariates?' )
 
     # Model options
-    p.add_argument( '--transpose',         action='store_true',                                 help='Use the transposed MOFA (use features as a shared dimention)?' )
-    p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
-    p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
-    p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
-    p.add_argument( '--learnIntercept',    action='store_true',                                 help='Learn the feature-wise mean?' )
+    p.add_argument( '--transpose',          action='store_true',                          help='Use the transposed MOFA (use features as a shared dimention)?' )
+    p.add_argument( '--transpose_noise',    action='store_true',                          help='Noise in the common dimension?' )
+    p.add_argument( '--transpose_sparsity', action='store_true',                          help='Sparsity across the common dimension?' )
+    p.add_argument( '--factors',            type=int, default=10,                         help='Initial number of latent variables')
+    p.add_argument( '--likelihoods',        type=str, nargs='+', required=True,           help='Likelihood per view, current options are bernoulli, gaussian, poisson')
+    p.add_argument( '--views',              type=str, nargs='+', required=True,           help='View names')
+    p.add_argument( '--learnIntercept',     action='store_true',                          help='Learn the feature-wise mean?' )
 
     # Training options
-    p.add_argument( '--elbofreq',          type=int, default=1,                                 help='Frequency of computation of ELBO' )
-    p.add_argument( '--iter',              type=int, default=5000,                              help='Maximum number of iterations' )
-    p.add_argument( '--startSparsity',     type=int, default=100,                               help='Iteration to activate the spike-and-slab')
-    p.add_argument( '--tolerance',         type=float, default=0.01 ,                           help='Tolerance for convergence (based on the change in ELBO)')
-    p.add_argument( '--startDrop',         type=int, default=1 ,                                help='First iteration to start dropping factors')
-    p.add_argument( '--freqDrop',          type=int, default=1 ,                                help='Frequency for dropping factors')
-    p.add_argument( '--dropR2',            type=float, default=None ,                           help='Threshold to drop latent variables based on coefficient of determination' )
-    p.add_argument( '--nostop',            action='store_true',                                 help='Do not stop when convergence criterion is met' )
-    p.add_argument( '--verbose',           action='store_true',                                 help='Use more detailed log messages?')
-    p.add_argument( '--seed',              type=int, default=0 ,                                help='Random seed' )
+    p.add_argument( '--elbofreq',           type=int, default=1,                          help='Frequency of computation of ELBO' )
+    p.add_argument( '--iter',               type=int, default=5000,                       help='Maximum number of iterations' )
+    p.add_argument( '--startSparsity',      type=int, default=100,                        help='Iteration to activate the spike-and-slab')
+    p.add_argument( '--tolerance',          type=float, default=0.01 ,                    help='Tolerance for convergence (based on the change in ELBO)')
+    p.add_argument( '--startDrop',          type=int, default=1 ,                         help='First iteration to start dropping factors')
+    p.add_argument( '--freqDrop',           type=int, default=1 ,                         help='Frequency for dropping factors')
+    p.add_argument( '--dropR2',             type=float, default=None ,                    help='Threshold to drop latent variables based on coefficient of determination' )
+    p.add_argument( '--nostop',             action='store_true',                          help='Do not stop when convergence criterion is met' )
+    p.add_argument( '--verbose',            action='store_true',                          help='Use more detailed log messages?')
+    p.add_argument( '--seed',               type=int, default=0 ,                         help='Random seed' )
 
 
     args = p.parse_args()
@@ -142,6 +144,8 @@ def entry_point():
 
     # Choose between MOFA (view = omic) and transposed MOFA (view = group of samples or cell population)
     model_opts['transpose'] = args.transpose
+    model_opts['transpose_noise'] = args.transpose_noise
+    model_opts['transpose_sparsity'] = args.transpose_sparsity
     if model_opts['transpose']: print("Using features as a shared dimension...")
 
 
@@ -174,10 +178,10 @@ def entry_point():
     s.random.seed(train_opts['seed'])
     
 
-    if model_opts['transpose']:
-        train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "Theta", "Tau" )
+    if model_opts['transpose_sparsity']:
+        train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
     else:
-        train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" )
+        train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "ThetaW", "Tau" )
 
     print("schedule for train : ", train_opts["schedule"])
 
