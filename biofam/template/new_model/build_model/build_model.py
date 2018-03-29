@@ -80,6 +80,23 @@ def build_model(model_opts, data=None):
         init.initW(pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, covariates=model_opts['covariates'],
                    scale_covariates=model_opts['scale_covariates'])
 
+        # Initialise sparsity on latent variables
+        learnTheta_ix = np.ones(K)        
+        initTheta_a = 1.
+        initTheta_b = 1.
+        initTheta_E = 1.
+        priorTheta_a = 1.
+        priorTheta_b = 1.
+        # TO-DOOOOOOOOOO
+        # if model_opts["learnIntercept"]:
+        #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
+        
+        if model_opts["learnIntercept"]:
+            for ix in learnTheta_ix:
+                ix[0] = 0
+        init.initThetaMixedZ_k(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
+                               qE=initTheta_E)
+
     else:
 
         # Initialise latent variables
@@ -102,39 +119,7 @@ def build_model(model_opts, data=None):
         init.initSW(pmean_S0=priorSW_mean_S0, pmean_S1=priorSW_meanS1, pvar_S0=priorSW_varS0, pvar_S1=priorSW_varS1, ptheta=priorSW_theta,
             qmean_S0=initSW_meanS0, qmean_S1=initSW_meanS1, qvar_S0=initSW_varS0, qvar_S1=initSW_varS1, qtheta=initSW_theta,
             qEW_S0=initSW_qEW_S0, qEW_S1=initSW_qEW_S1, qES=initSW_qES)
-
-
-    # Initialise ARD on weights
-    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
-    init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
-
-    # Initialise ARD on latent variables
-    if model_opts['transpose_sparsity']:
-        qa = 1.; qb = 1.
-        init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
-
-    # Initialise precision of noise
-    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
-    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb, transposed=model_opts["transpose_noise"])
-
-    if model_opts["transpose"]:
-        # Initialise sparsity on latent variables
-        learnTheta_ix = np.ones(K)        
-        initTheta_a = 1.
-        initTheta_b = 1.
-        initTheta_E = 1.
-        priorTheta_a = 1.
-        priorTheta_b = 1.
-        # TO-DOOOOOOOOOO
-        # if model_opts["learnIntercept"]:
-        #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
         
-        if model_opts["learnIntercept"]:
-            for ix in learnTheta_ix:
-                ix[0] = 0
-        init.initThetaMixedZ_k(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
-                               qE=initTheta_E)
-    else:
         # Initialise sparsity on weights
         learnTheta = [ s.ones((D[m], K)) for m in range(M) ]
         priorTheta_a = 1.
@@ -151,6 +136,21 @@ def build_model(model_opts, data=None):
             for ix in learnTheta_ix:
                 ix[0] =0
         init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a,  qb=initTheta_b, qE=initTheta_E)
+
+
+    # Initialise ARD on weights
+    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
+    init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
+
+    # Initialise ARD on latent variables
+    if model_opts['transpose_sparsity']:
+        qa = 1.; qb = 1.
+        init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
+
+    # Initialise precision of noise
+    pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
+    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb, transposed=model_opts["transpose_noise"])
+
 
     # Observed data
     init.initY()

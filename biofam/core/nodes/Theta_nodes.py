@@ -43,7 +43,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
 
         # Perform updates
         Qa = self.Ppar['a'] + tmp1
-        Qb = self.Ppar['b'] + S.shape[0]-tmp1
+        Qb = self.Ppar['b'] + S.shape[0] - tmp1
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
@@ -51,7 +51,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
     def calculateELBO(self):
 
         # Collect parameters and expectations
-        Qpar,Qexp = self.getParameters(), self.getExpectations()
+        Qpar, Qexp = self.getParameters(), self.getExpectations()
         Pa, Pb, Qa, Qb = self.Ppar['a'], self.Ppar['b'], Qpar['a'], Qpar['b']
         QE, QlnE, QlnEInv = Qexp['E'], Qexp['lnE'], Qexp['lnEInv']
 
