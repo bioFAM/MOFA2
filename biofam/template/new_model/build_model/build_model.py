@@ -158,7 +158,7 @@ def build_model(model_opts, data=None):
     ############################################
 
     nodes = init.getNodes()
-    if model['transpose_sparsity']:
+    if model_opts['transpose_sparsity']:
         nodes["SZ"].addMarkovBlanket(W=nodes["W"], Tau=nodes["Tau"], AlphaZ=nodes["AlphaZ"], Y=nodes["Y"], ThetaZ=nodes["ThetaZ"])
         nodes["AlphaW"].addMarkovBlanket(W=nodes["W"])
         nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])

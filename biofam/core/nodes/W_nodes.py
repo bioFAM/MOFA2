@@ -6,6 +6,131 @@ import scipy as s
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
+from. variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
+
+class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
+    def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
+        super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
+        self.precompute()
+
+        # Define indices for covariates
+        if idx_covariates is not None:
+            self.covariates[idx_covariates] = True
+
+    def precompute(self):
+        # Precompute terms to speed up computation
+        self.D = self.dim[0]
+        self.covariates = np.zeros(self.dim[1], dtype=bool)
+        self.factors_axis = 1
+
+    def getLvIndex(self):
+        # Method to return the index of the latent variables (without covariates)
+        latent_variables = np.array(range(self.dim[1]))
+        if any(self.covariates):
+            # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
+            latent_variables = latent_variables[~self.covariates]
+        return latent_variables
+
+    def updateParameters(self):
+
+        # Collect expectations from the markov blanket
+        Y = deepcopy(self.markov_blanket["Y"].getExpectation())
+        SZtmp = self.markov_blanket["SZ"].getExpectations()
+        tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
+        latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
+        mask = ma.getmask(Y)
+
+        # Collect parameters from the prior or expectations from the markov blanket
+        if "MuZ" in self.markov_blanket:
+            Mu = self.markov_blanket['MuW'].getExpectation()
+        else:
+            Mu = self.P.getParameters()["mean"]
+
+        if "AlphaW" in self.markov_blanket:
+            Alpha = self.markov_blanket['AlphaW'].getExpectation()
+            Alpha = s.repeat(Alpha[None,:], self.D, axis=0)
+        else:
+            Alpha = 1./self.P.getParameters()["var"]
+
+        # DEPRECATED: tau is expanded inside the node
+        # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
+        # if tau.shape != Y.shape:
+        #     tau = s.repeat(tau.copy()[None,:], np.shape(Y)[0], axis=0)
+        # Mask tau
+        tau[mask] = 0.
+        # Mask Y
+        Y = Y.data
+        Y[mask] = 0.
+
+        # Collect parameters from the P and Q distributions of this node
+        Q = self.Q.getParameters().copy()
+        Qmean, Qvar = Q['mean'], Q['var']
+
+        for k in latent_variables:
+            foo = s.zeros((self.D,))
+            bar = s.zeros((self.D,))
+            foo += np.dot(SZtmp["E2"][:,k], tau)
+            bar += np.dot(SZtmp["E"][:,k], tau * (Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
+            Qvar[:,k] = 1./(Alpha[:,k] + foo)
+            Qmean[:,k] = Qvar[:,k] * ( Alpha[:,k] * Mu[:,k] + bar )
+
+        # Save updated parameters of the Q distribution
+        self.Q.setParameters(mean=Qmean, var=Qvar)
+
+    def calculateELBO(self):
+        # Collect parameters and expectations of current node
+        Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
+        Qmean, Qvar = Qpar['mean'], Qpar['var']
+        QE, QE2 = Qexp['E'],Qexp['E2']
+
+        if "MuW" in self.markov_blanket:
+            PE, PE2 = self.markov_blanket['MuW'].getExpectations()['E'], self.markov_blanket['MuW'].getExpectations()['E2']
+        else:
+            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.D,self.dim[1]))
+
+        if "AlphaW" in self.markov_blanket:
+            Alpha = self.markov_blanket['AlphaW'].getExpectations().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
+            Alpha["E"] = s.repeat(Alpha["E"][None,:], self.D, axis=0)
+            Alpha["lnE"] = s.repeat(Alpha["lnE"][None,:], self.D, axis=0)
+        else:
+            Alpha = { 'E':1./self.P.getParameters()["var"], 'lnE':s.log(1./self.P.getParameters()["var"]) }
+
+        # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
+        latent_variables = self.getLvIndex()
+        Alpha["E"], Alpha["lnE"] = Alpha["E"][:,latent_variables], Alpha["lnE"][:,latent_variables]
+        Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
+        PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
+        QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
+
+        # compute term from the exponential in the Gaussian
+        tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2
+        tmp1 = -(tmp1 * Alpha['E']).sum()
+
+        # compute term from the precision factor in front of the Gaussian
+        tmp2 = 0.5*Alpha["lnE"].sum()
+
+        lb_p = tmp1 + tmp2
+        # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
+        lb_q = -(s.log(Qvar).sum() + self.D*len(latent_variables))/2.
+
+        return lb_p - lb_q
+
+    def sample(self, dist='P'):
+        if "MuW" in self.markov_blanket:
+            p_mean = self.markov_blanket['MuW'].sample()
+        else:
+            p_mean = self.P.params['mean']
+        if "AlphaW" in self.markov_blanket:
+            alpha = self.markov_blanket['AlphaW'].sample()
+            p_var = s.square(1./alpha)
+        else:
+            p_var = self.P.params['var']
+
+        # simulating and handling covariates
+        self.samp = s.random.normal(p_mean, np.sqrt(p_var))
+        self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
+
+        return self.samp
 
 class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
