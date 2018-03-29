@@ -146,6 +146,10 @@ def entry_point():
     model_opts['transpose'] = args.transpose
     model_opts['transpose_noise'] = args.transpose_noise
     model_opts['transpose_sparsity'] = args.transpose_sparsity
+    # To keep reverse-compatibility
+    if model_opts['transpose']:
+        model_opts['transpose_noise'] = True
+        model_opts['transpose_sparsity'] = True
     if model_opts['transpose']: print("Using features as a shared dimension...")
 
 
