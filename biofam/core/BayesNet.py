@@ -139,6 +139,9 @@ class BayesNet(object):
                 Z = self.nodes['SZ'].getExpectation()
                 W = self.nodes["W"].getExpectation()
 
+            all_r2 = s.zeros([self.dim['M'], self.dim['K']])
+            for m in range(self.dim['M']):
+                
                 # Fetch the mask for missing vlaues
                 mask = self.nodes["Y"].getNodes()[m].getMask()
 
