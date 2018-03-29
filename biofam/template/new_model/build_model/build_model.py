@@ -12,6 +12,8 @@ from biofam.core.BayesNet import *
 from init_model import initNewModel
 from biofam.build_model.utils import *
 
+#TODO : remove the 3 TODO before giving to britta
+
 def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None):
     """Method to build a bioFAM model"""
 
@@ -47,7 +49,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
         # TODO : TO REMOVE (test)
         if (M==1)and(model_opts["transpose"]):
-            print(type(data[0]))
             tmp = np.transpose(data[0])
             data = [tmp]
 
@@ -90,7 +91,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     ###########################
 
     #TODO : add covariates by passing dataCovariates in argument of build_model (loading before in entry_point)
-    '''
     # If learnIntercept is True, add one extra factor as a covariate with constant 1s
     if model_opts["learnIntercept"]:
         dim["K"] += 1
@@ -100,7 +100,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         else:
             model_opts['covariatesFiles'] = s.ones((dim["N"],1))
             model_opts['scale_covariates'] = [False]
-    '''
 
     #####################################
     ## Define and initialise the nodes ##
@@ -130,8 +129,11 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         pcov = 1.;
         qmean = "random";
         qvar = 1.;
-        precompute_pcovinv = dataX is not None  #if "AlphaZ" not in init.nodes
-        init.initZ(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=dataCovariates, #model_opts['covariatesFiles']
+        precompute_pcovinv = dataX is None
+        # Warning : precompute_pcovinv must be True if and only if "AlphaZ" and "SigmaZ" not in init.nodes
+        # (currently, we chosed that if we have no dataX, we do not have "AlphaZ" since it is redundant with "SigmaAlphaW"
+        # and if we have dataX, we have necessarily "SigmaAlphaZ")
+        init.initZ(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar,  covariates=model_opts['covariatesFiles'], #covariates=dataCovariates,
                    scale_covariates=model_opts['scale_covariates'], precompute_pcovinv=precompute_pcovinv)
 
 
@@ -141,11 +143,11 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         pcov = 1.;
         qmean = "random";
         qvar = 1.
-        if dataX is None:#if "AlphaW" in init.nodes
-            precompute_pcovinv = [False] * M
-        else:
-            precompute_pcovinv = view_has_covariance_prior
-        init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=dataCovariates, #model_opts['covariatesFiles']
+        precompute_pcovinv = [False]*M
+        # Warning : precompute_pcovinv must be True if and only if "AlphaW" and "SigmaAlphaW" not in init.nodes
+        # (currently, we chosed that if we have no dataX, we always keep "AlphaW" to have factor relevance per view in addition of "AlphaZ"
+        # and if we have dataX, we have necessarily "SigmaAlphaW")
+        init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariatesFiles'], #covariates=dataCovariates,
                    scale_covariates=model_opts['scale_covariates'], precompute_pcovinv=precompute_pcovinv)
     else:
         priorW_mean_S0 = 0.;
@@ -173,6 +175,12 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
     # Initialise ARD or covariance prior structure on W for each view
 
+    # values of the parameters of the prior Gamma distribution
+    if 'noise' in model_opts: #simulation
+        pa = 50. ; pb = 50.
+    else:
+        pa = 1e-14 ; pb = 1e-14
+
     if model_opts['transpose']:
         if dataX is not None:
             params = [None] * M
@@ -180,21 +188,27 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
                 if view_has_covariance_prior[m]:
                     params[m]={'X':dataX[m],'sigma_clust':dataClust[m],'n_diag':n_diag}
                 else:
-                    params[m]={'pa':1e-14, 'pb':1e-14, 'qa':1., 'qb':1.}
+                    params[m]={'pa': pa, 'pb':pb, 'qa':1., 'qb':1.}
             init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
         else:
-            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
+            qa = 1.; qb = 1.
             init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
         # TODO do sth here for siulations
-        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
+        qa = 1.; qb = 1.
         init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
 
 
     # Initialise ARD or covariance prior structure on Z
 
+    # values of the parameters of the prior Gamma distribution
+    if 'noise' in model_opts:  # simulation
+        pa = 50.; pb = 50.
+    else:
+        pa = 1e-14; pb = 1e-14
+
     if model_opts['transpose']:
-        pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
+        qa = 1.; qb = 1.
         init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
         if dataX is not None:
@@ -204,21 +218,40 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             else:
                 init.initSigmaBlockZ_k(dataX, clust=dataClust, n_diag=n_diag)
         else:
-            pa = 1e-14; pb = 1e-14; qa = 1.; qb = 1.
+            qa = 1.; qb = 1.
             init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
 
 
     # Initialise precision of noise
     # TODO do sth here for siulations
 
-    pa=1e-14; pb=1e-14; qa=1.; qb=1.
+    # values of the parameters of the prior Gamma distribution
+    if 'noise' in model_opts:  # simulation
+        pa = 20.; pb = pa * model_opts['noise']
+    else:
+        pa = 1e-14; pb = 1e-14
+
+    qa=1.; qb=1.
     init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
+
+
+    #Initialise sparsity on weights (or factors if transpose)
+
+    # values of the parameters of the prior Beta distribution
+    if 'sparsity' in model_opts:
+        assert 0. <= model_opts['sparsity'] <= 1., 'sparsty level must be between 0 and 1'
+        priorTheta_a = 10.
+        priorTheta_b = ((1 - model_opts['sparsity']) / model_opts['sparsity']) * priorTheta_a
+    elif 'noise' in model_opts:
+        priorTheta_a = 10.
+        priorTheta_b = 10.
+    else:
+        priorTheta_a = 1.
+        priorTheta_b = 1.
+
 
     if model_opts["transpose"]:
         # Initialise sparsity on the factors
-        learnTheta = s.ones((1, K))
-        priorTheta_a = 1.
-        priorTheta_b = 1.
         initTheta_a = 1.
         initTheta_b = 1.
         initTheta_E = 0.5
@@ -235,8 +268,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
         # Initialise sparsity on the weights
         learnTheta = [s.ones((D[m], K)) for m in xrange(M)]
-        priorTheta_a = 1.
-        priorTheta_b = 1.
         initTheta_a = 1.
         initTheta_b = 1.
         initTheta_E = 0.5
@@ -252,6 +283,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
                                 qE=initTheta_E)
 
     # Observed data
+
     init.initY()
 
     ############################################
@@ -280,8 +312,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             nodes["SigmaZ"].addMarkovBlanket(Z=nodes["Z"])
             nodes["Z"].addMarkovBlanket(SigmaZ=nodes["SigmaZ"])
         else:
-            nodes["AlphaZ"].addMarkovBlanket(Z=nodes["Z"])
-            nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"])
+            pass
+            #nodes["AlphaZ"].addMarkovBlanket(Z=nodes["Z"])
+            #nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"])
         nodes["Z"].addMarkovBlanket(Y=nodes["Y"], SW=nodes["SW"], Tau=nodes["Tau"])
 
         nodes["ThetaW"].addMarkovBlanket(SW=nodes["SW"])

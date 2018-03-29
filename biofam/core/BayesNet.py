@@ -84,13 +84,17 @@ class BayesNet(object):
         """ Method to simulate from the generative model """
 
         self.nodes['Tau'].sample(dist)
-        self.nodes['Y'].sample(dist)
         if 'SW' in self.nodes:
             self.nodes["SW"].sample(dist)
             self.nodes['Z'].sample(dist)
+            if "SigmaZ" in self.nodes:
+                self.nodes['SigmaZ'].sample(dist)
         else:
             self.nodes["W"].sample(dist)
             self.nodes['TZ'].sample(dist)
+            if "SigmaW" in self.nodes:
+                self.nodes['SigmaW'].sample(dist)
+        self.nodes['Y'].sample(dist)
 
         self.simulated = True
 

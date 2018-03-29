@@ -204,6 +204,8 @@ def loadDataX(data_opts, transpose = False):
                 if data_opts['sigmaClusterFiles'] is not None:
                     assert 1 == len(data_opts['sigmaClusterFiles']), "Length of view names and samples clusters input files does not match"
                     sigma_clust = np.loadtxt(data_opts['sigmaClusterFiles'][0])
+                else:
+                    sigma_clust = None
 
             else:
                 X = None
@@ -435,7 +437,37 @@ def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names
             to_save.columns = feature_names
         if sample_names is not None:
             to_save.index = sample_names
-        to_save.to_csv(file_name)
+        to_save.to_csv(file_name, index=False, header=False)
+
+def saveDataXTxt(model, outDir, transpose, view_names=None, sample_names=None):
+    """ Method to save the X_Files data in text files (X_Files : positions of the samples)
+
+    PARAMETERS
+    ----------
+    model: a BayesNet instance
+    outDir
+    view_names
+    sample_names
+    """
+    if transpose:
+        dataX = model.getNodes()["SigmaAlphaW"].getParameters()["X"]
+        for m in range(len(dataX)):
+            view = view_names[m] if view_names is not None else 'view_' + str(m)
+            file_name = outDir + '/' + "X_file_" + view
+            to_save = pd.DataFrame(dataX.nodes[m])
+            #to_save.columns = ["x1", "x2"]
+            if sample_names is not None:
+                to_save.index = sample_names
+            to_save.to_csv(file_name, index=False, header=False)
+    else:
+        dataX = model.getNodes()["SigmaZ"].getParameters()["X"]
+        file_name = outDir + '/' + "X_file"
+        to_save = pd.DataFrame(dataX)
+        #to_save.columns = ["x1","x2"]
+        if sample_names is not None:
+            to_save.index = sample_names
+        to_save.to_csv(file_name, index=False, header=False)
+
 
 def overwriteExpectations(net):
     """
@@ -522,7 +554,10 @@ def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, 
 
     overwriteExpectations(model)
     if 'outDir' in model_opts:
-        saveDataTxt(model, model_opts['outDir'], view_names, sample_names, feature_names)
+        saveDataTxt(model, model_opts['outDir'], view_names=view_names, sample_names=None, feature_names=None)
+
+        if model_opts['sample_X']:
+            saveDataXTxt(model, model_opts['outDir'], model_opts["transpose"], view_names=view_names, sample_names=None)
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model,hdf5,view_names)

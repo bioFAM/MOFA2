@@ -30,6 +30,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.factors_axis = 1
 
         if precompute_pcovinv:
+            print("precompute p_cov_inv in W node !")
             p_cov = self.P.params["cov"]
 
             self.p_cov_inv = []
@@ -145,8 +146,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         Qmean, Qvar = Qpar['mean'], Qpar['var']
         QE, QE2 = Qexp['E'], Qexp['E2']
 
-        if "AlphaSigmaW" in self.markov_blanket:
-            Sigma = self.markov_blanket['AlphaSigmaW'].getExpectations()
+        if "SigmaAlphaW" in self.markov_blanket:
+            Sigma = self.markov_blanket['SigmaAlphaW'].getExpectations()
             p_cov = Sigma['cov']
             p_cov_inv = Sigma['inv']
             p_cov_inv_diag = Sigma['inv_diag']
@@ -176,6 +177,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
         lb_q = -.5 * s.log(Qvar[:, k]).sum()
         # import pdb; pdb.set_trace()
+
+        #print("d")
 
         return lb_p - lb_q
 

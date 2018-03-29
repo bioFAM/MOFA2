@@ -7,6 +7,8 @@ from build_model import build_model
 from biofam.build_model.train_model import train_model
 from biofam.build_model.utils import *
 
+#TODO : enable covariatesFiles
+
 def entry_point():
 
     # Read arguments
@@ -31,7 +33,7 @@ def entry_point():
 
     # Model options
     p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
-    p.add_argument( '--sample_X',         type=int, default=0,                                  help='Sample the positions of the samples' )
+    p.add_argument( '--sample_X',         type=int, default=0,                                  help='Sample the positions of the samples to test covariance prior structure per factor' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
@@ -137,13 +139,13 @@ def entry_point():
 
     # TODO : create a function loadDataCovariates in utils.py as loadData or loadDataX, and call it below
     if args.covariatesFiles is not None:
-        model_opts['covariates'] = pd.read_csv(args.covariatesFiles, delimiter=" ", header=None).as_matrix()
-        print("Loaded covariates from " + args.covariatesFiles + "with shape " + str(model_opts['covariates'].shape) + "...")
+        model_opts['covariatesFiles'] = pd.read_csv(args.covariatesFiles, delimiter=" ", header=None).as_matrix()
+        print("Loaded covariates from " + args.covariatesFiles + "with shape " + str(model_opts['covariatesFiles'].shape) + "...")
         model_opts['scale_covariates'] = 1
-        args.factors += model_opts['covariates'].shape[1]
+        args.factors += model_opts['covariatesFiles'].shape[1]
     else:
         model_opts['scale_covariates'] = False
-        model_opts['covariates'] = None
+        model_opts['covariatesFiles'] = None
 
     ##############################
     ## Load X and cluster files ##
@@ -190,9 +192,9 @@ def entry_point():
     train_opts['startSparsity'] = args.startSparsity      # Iteration to activate spike and slab sparsity
     if args.seed is None or args.seed==0:                 # Seed for the random number generator
         train_opts['seed'] = int(round(time()*1000)%1e6)
-        s.random.seed(train_opts['seed'])
     else:
         train_opts['seed'] = args.seed
+    s.random.seed(train_opts['seed'])
 
     # Define schedule of updates
     # Think to its importance ?
@@ -200,12 +202,12 @@ def entry_point():
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "TZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
-            train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaZ", "AlphaW", "ThetaZ", "Tau")
+            train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
     else:
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
         else:
-            train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "AlphaZ", "ThetaW", "Tau" )
+            train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "ThetaW", "Tau" )
 
     print("schedule for train : ", model_opts['transpose'],train_opts["schedule"])
 

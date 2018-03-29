@@ -43,16 +43,15 @@ class Y_Node(Constant_Variational_Node):
     def sample(self, dist='P'):
         # Y does NOT call sample recursively but relies on previous calls
         if "SW" in self.markov_blanket:
-            Z_samp = self.markov_blanket['Z'].samp
-            W_samp = self.markov_blanket['SW'].samp
+            Z_samp = self.markov_blanket['Z'].sample()
+            W_samp = self.markov_blanket['SW'].sample()
         else:
-            Z_samp = self.markov_blanket['TZ'].samp
-            W_samp = self.markov_blanket['W'].samp
-        Tau_samp = self.markov_blanket['Tau'].samp
+            Z_samp = self.markov_blanket['TZ'].sample()
+            W_samp = self.markov_blanket['W'].sample()
+        Tau_samp = self.markov_blanket['Tau'].sample()
         mu = Z_samp.dot(W_samp.transpose())
         if Tau_samp.shape != mu.shape:
             Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
         var =1./Tau_samp
-
         self.samp = s.random.normal(mu, var)
         return self.samp

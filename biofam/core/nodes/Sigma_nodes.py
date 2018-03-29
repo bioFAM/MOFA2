@@ -10,16 +10,18 @@ import scipy as s
 # TODO we need to deal with covariates too
 class SigmaGrid_Node(Node):
     # dim should be the number of latent variables
-    def __init__(self, dim, X, start_opt=20, n_grid=10, n_diag=0):
+    def __init__(self, dim, X, start_opt=0, n_grid=10, n_diag=0):
+        print("optimization of hyperparameters of sigma will begin at iteration "+str(start_opt))
         super(SigmaGrid_Node,self).__init__(dim)
         self.X = X
         self.N = X.shape[0]
         self.start_opt = start_opt
         self.n_grid = n_grid
         self.iter = 0
-        self.ix = [0] * dim[0]
-        #self.ix = np.zeros(dim[0])  # index of the grid values to use
+        self.ix = [0] * dim[0] # index of the grid values to use
+        self.true_ix = [None] * dim[0] #index of the true hyperparameters values (if simulated)
         self.spatial_sig = np.zeros(dim[0])
+
         self.precompute()
         self.compute_cov()
 
@@ -45,6 +47,8 @@ class SigmaGrid_Node(Node):
             self.grid_cov[i,:,:] *= covar_rescaling_factor(self.grid_cov[i,:,:])
 
             # intialisation of inverse covariance
+            #if i==0:
+            #    self.grid_cov_inv[i, :, :] = np.eye(np.shape(self.grid_cov)[0])
             self.grid_cov_inv[i,:,:] = s.linalg.inv(self.grid_cov[i,:,:])  # TODO speed up
 
             # initialisation of diagonal terms
@@ -62,7 +66,9 @@ class SigmaGrid_Node(Node):
 
     def getParameters(self):
         ls = self.get_ls()
-        return {'l':ls, 'sig': self.spatial_sig, 'X':self.X}
+        print("recovered",self.ix)
+        print("true",self.true_ix)
+        return {'l':ls, 'sig': self.spatial_sig, 'X':self.X, 'true_l': np.array([self.l_grid[i] for i in self.true_ix])}
 
     def removeFactors(self, idx, axis=1):
         self.ix = s.delete(self.ix, axis=0, obj=idx)
@@ -92,6 +98,8 @@ class SigmaGrid_Node(Node):
             self.spatial_sig[k] = best_elbo - elbo0
             self.ix[k] = best_i
 
+        #print("new indices for hyperparameters per factor", self.ix)
+
     def updateParameters(self):
         self.iter += 1
         if self.iter >= self.start_opt:
@@ -103,10 +111,10 @@ class SigmaGrid_Node(Node):
 
     def sample(self, dist='P'):
         ix = s.random.choice(range(1, self.n_grid), self.dim[0], replace=True)
-        i0 = s.random.choice(range(self.dim[0]), self.n_diag, replace=False)
+        i0 = s.random.choice(range(self.dim[0]), int(self.n_diag), replace=False)
         ix[i0] = 0
 
-        self.samp = ix   # saving locally only the grid indices
+        self.true_ix = ix   # saving locally only the grid indices
         return np.array([self.grid_cov[i,:,:] for i in ix])
 
 # TODO add clusters as parameters
