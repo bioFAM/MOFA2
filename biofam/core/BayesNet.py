@@ -138,6 +138,8 @@ class BayesNet(object):
             else:
                 Z = self.nodes['SZ'].getExpectation()
                 W = self.nodes["W"].getExpectation()
+            
+            Y = self.nodes["Y"].getExpectation()
 
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
             for m in range(self.dim['M']):
