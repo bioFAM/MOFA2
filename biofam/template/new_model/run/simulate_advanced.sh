@@ -6,20 +6,36 @@
 ## START EDITING ##
 ###################
 
-# Output file path, please use the .hdf5 extension
-outFile=( "/tmp/test.hdf5" )
-outDir='/tmp'
+
+factors=10   # initial number of factors
+M=2
+N=100
+D=200
+spatialFact=0.
+noise=1.  # 0.5, 1, 2, 3, 4, 5
+sparsity=0.2
+outDir='/home/yonatan/PycharmProjects/biofam/biofam/biofam/template/new_model/run/train_non_spatial'
+outFile='/home/yonatan/PycharmProjects/biofam/biofam/biofam/template/new_model/run/train_non_spatial/simul_spatial.h5'
+
+
+# Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
+transpose=0
+
+#Choose to sample the positions of the samples to test the covariance prior structure (for any view if transpose = 1)
+sample_X=0
+
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-likelihoods=( gaussian gaussian gaussian )
+likelihoods=( gaussian gaussian )
 
-factors=20   # initial number of facotrs
-M=3
-N=100
-D=1000
+
+# Names of views
+views=( view_A view_B )
+
+
 
 # Random seed
-seed=0 # if 0, the seed is automatically generated using the current time
+# seed=2018 # if 0, the seed is automatically generated using the current time
 
 ####################
 ## FINISH EDITING ##
@@ -27,14 +43,19 @@ seed=0 # if 0, the seed is automatically generated using the current time
 
 # Prepare command
 cmd='python ../build_model/simulation_entry.py
+    --transpose $transpose
+    --sample_X $sample_X
 	--outFile $outFile
 	--outDir $outDir
 	--likelihoods ${likelihoods[@]}
 	--factors $factors
-	--seed $seed
 	--M $M
 	--D $D
 	--N $N
+	--spatialFact $spatialFact
+	--noise $noise
+	--sparsity $sparsity
+	--views ${views[@]}
 '
 
 eval $cmd

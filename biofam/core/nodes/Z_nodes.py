@@ -190,7 +190,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             for k in latent_variables:
                 elbo += self.calculateELBO_k(k)
 
-            elbo -= .5 * self.N * len(latent_variables)
+            elbo += .5 * self.N * len(latent_variables)
 
             return elbo
 
@@ -387,7 +387,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
     def sample(self, dist='P'):
         # get necessary parameters
-        mu_z_hat = self.P.getParameters()['mean_T1']
+        mu_z_hat = self.P.getParameters()['mean_B1']
         mu_z_hat = s.ones(self.dim) * mu_z_hat
 
         theta = self.markov_blanket['ThetaZ'].sample()

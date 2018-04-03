@@ -48,9 +48,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         M = len(data)
 
         # TODO : TO REMOVE (test)
-        if (M==1)and(model_opts["transpose"]):
-            tmp = np.transpose(data[0])
-            data = [tmp]
+        #if (M==1)and(model_opts["transpose"]):
+        #    tmp = np.transpose(data[0])
+        #    data = [tmp]
 
         N = data[0].shape[0]
         D = s.asarray([data[m].shape[1] for m in range(M)])
@@ -218,8 +218,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             else:
                 init.initSigmaBlockZ_k(dataX, clust=dataClust, n_diag=n_diag)
         else:
-            qa = 1.; qb = 1.
-            init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
+            pass
+            #qa = 1.; qb = 1.
+            #init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
 
 
     # Initialise precision of noise

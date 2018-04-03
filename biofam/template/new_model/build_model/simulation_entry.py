@@ -102,7 +102,7 @@ def entry_point():
     print("Saving model in %s...\n" % args.outFile)
     print(model_opts["outDir"]) #, args.outFile)
 
-    # saveSimulatedModel(model=model, outfile=args.outFile, view_names=args.views, train_opts=None, model_opts=model_opts)
+    saveSimulatedModel(model=model, outfile=args.outFile, view_names=args.views, train_opts=None, model_opts=model_opts)
 
 
 

@@ -86,14 +86,10 @@ class BayesNet(object):
         self.nodes['Tau'].sample(dist)
         if 'SW' in self.nodes:
             self.nodes["SW"].sample(dist)
-            self.nodes['Z'].sample(dist)
-            if "SigmaZ" in self.nodes:
-                self.nodes['SigmaZ'].sample(dist)
+            self.nodes["Z"].sample(dist)
         else:
+            self.nodes["TZ"].sample(dist)
             self.nodes["W"].sample(dist)
-            self.nodes['TZ'].sample(dist)
-            if "SigmaW" in self.nodes:
-                self.nodes['SigmaW'].sample(dist)
         self.nodes['Y'].sample(dist)
 
         self.simulated = True

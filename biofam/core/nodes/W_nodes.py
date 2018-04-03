@@ -249,6 +249,10 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 p_cov = s.diag(p_var)
             else:
                 p_cov = self.markov_blanket['SigmaAlphaW'].sample()
+        elif "AlphaW" in self.markov_blanket:
+            alpha = self.markov_blanket['AlphaW'].sample()
+            p_var = s.square(1. / alpha)
+            p_cov = s.diag(p_var)
         else:
             p_cov = self.P.params['cov']
 
@@ -384,11 +388,15 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         if theta.shape != mu_w_hat.shape:
             theta = s.repeat(theta[None,:],mu_w_hat.shape[0],0)
 
-        alpha = self.markov_blanket["AlphaW"].sample()
-        if alpha.shape[0] == 1:
-            alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-        if alpha.shape != mu_w_hat.shape:
-            alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
+        if "AlphaW" in self.markov_blanket:
+            alpha = self.markov_blanket["AlphaW"].sample()
+            if alpha.shape[0] == 1:
+                alpha = s.repeat(alpha[:], self.dim[1], axis=0)
+            if alpha.shape != mu_w_hat.shape:
+                alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
+        else:
+            print("Not implemented")
+            exit()
 
         # simulate
         bernoulli_s = s.random.binomial(1, theta)
