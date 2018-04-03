@@ -257,8 +257,6 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
                 if only_first_moments:
                     if node == "SW":
                         expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
-                    if node == "SZ":
-                        expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EZ':expectations[m]["EN"]}
                     else:
                         expectations[m] = {'E':expectations[m]["E"]}
 
@@ -272,6 +270,8 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
 
         # Single-view nodes
         else:
+            if node == "SZ":
+                expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
             if only_first_moments: expectations = {'E':expectations["E"]}
             for exp_name in expectations.keys():
                 node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
@@ -321,15 +321,15 @@ def saveModelOpts(opts, hdf5):
     opts:
     hdf5:
     """
-    # opts_interest = ["learnIntercept","schedule","likelihood"]
-    opts_interest = ["learnIntercept","likelihood"]
+    # opts_interest = ["learnIntercept", "schedule", "likelihood"]
+    opts_interest = ["learnIntercept", "likelihood", "transpose_noise", "transpose_sparsity"]
     opts = dict((k, opts[k]) for k in opts_interest)
     grp = hdf5.create_group('model_opts')
     for k, v in opts.items():
         grp.create_dataset(k, data=np.asarray(v).astype('S'))
     grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
-def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_names=None):
+def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_names=None, shared_features=False):
     """ Method to save the training data in an hdf5 file
 
     PARAMETERS
@@ -342,15 +342,28 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
     """
     data = model.getTrainingData()
     data_grp = hdf5.create_group("data")
-    featuredata_grp = hdf5.create_group("features")
-    sampledata_grp = hdf5.create_group("samples")
-    if sample_names is not None:
-        sampledata_grp.create_dataset("0", data=[s.encode('utf8') for s in sample_names])
-    for m in range(len(data)):
-        view = view_names[m] if view_names is not None else str(m)
-        data_grp.create_dataset(view, data=data[m].data.T)
+    if shared_features:
+        # Save features (shared between views)
         if feature_names is not None:
-            featuredata_grp.create_dataset(view, data=[f.encode('utf8') for f in feature_names[m]])
+            hdf5.create_dataset("features", data=[s.encode('utf8') for s in feature_names])
+        # Save samples (per view)
+        sampledata_grp = hdf5.create_group("samples")
+        for m in range(len(data)):
+            view = view_names[m] if view_names is not None else str(m)
+            data_grp.create_dataset(view, data=data[m].data.T)
+            if sample_names is not None:
+                sampledata_grp.create_dataset(view, data=[s.encode('utf8') for s in sample_names[m]])
+    else:
+        # Save samples (shared between views)
+        if sample_names is not None:
+            hdf5.create_dataset("samples", data=[s.encode('utf8') for s in sample_names])
+        # Save features (per view)
+        featuredata_grp = hdf5.create_group("features")
+        for m in range(len(data)):
+            view = view_names[m] if view_names is not None else str(m)
+            data_grp.create_dataset(view, data=data[m].data.T)
+            if feature_names is not None:
+                featuredata_grp.create_dataset(view, data=[f.encode('utf8') for f in feature_names[m]])
 
 def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None):
     """ Method to save the training data in text files
@@ -408,7 +421,7 @@ def overwriteExpectationsMV(MV):
             node.mask()
 
 
-def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
+def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None, shared_features=False):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
@@ -424,14 +437,18 @@ def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sa
         tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
         model_opts["likelihood"] = tmp
 
-    if sample_names is not None:
-        assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
+    if shared_features:
+        if feature_names is not None:
+            assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
+    else:
+        if sample_names is not None:
+            assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model,hdf5,view_names)
     saveParameters(model,hdf5, view_names)
     saveModelOpts(model_opts, hdf5)
-    saveTrainingData(model, hdf5, view_names, sample_names, feature_names)
+    saveTrainingData(model, hdf5, view_names, sample_names, feature_names, shared_features)
     saveTrainingStats(model, hdf5)
     saveTrainingOpts(train_opts, hdf5)
 

@@ -25,6 +25,7 @@ def entry_point():
     p.add_argument( '--scale_features',     action="store_true",                          help='Scale the features to unit variance?' )
     p.add_argument( '--scale_views',        action="store_true",                          help='Scale the views to unit variance?' )
     p.add_argument( '--scale_covariates',   type=int, nargs='+', default=0,               help='Scale covariates?' )
+    p.add_argument( '--shared_features',    action="store_true", default=False,           help='Features, not samples are shared between views?' )
 
     # Model options
     p.add_argument( '--transpose',          action='store_true',                          help='Use the transposed MOFA (use features as a shared dimention)?' )
@@ -103,6 +104,8 @@ def entry_point():
     else:
         data_opts['scale_features'] = [ False for l in args.likelihoods ]
 
+    # Data options: if features are in rows or in columns
+    data_opts['shared_features'] = args.shared_features
 
 
     ###############
@@ -116,8 +119,12 @@ def entry_point():
     D = [data[m].shape[1] for m in range(M)]
 
     # Extract sample and features names
-    data_opts['sample_names'] = data[0].index.tolist()
-    data_opts['feature_names'] = [ data[m].columns.values.tolist() for m in range(len(data)) ]
+    if (data_opts['shared_features']):
+        data_opts['feature_names']  = data[0].index.tolist()
+        data_opts['sample_names'] = [ data[m].columns.values.tolist() for m in range(len(data)) ]
+    else:
+        data_opts['sample_names']  = data[0].index.tolist()
+        data_opts['feature_names'] = [ data[m].columns.values.tolist() for m in range(len(data)) ]
 
 
     #####################
@@ -209,7 +216,7 @@ def entry_point():
     print("Saving model in %s...\n" % data_opts['outfile'])
     train_opts['schedule'] = '_'.join(train_opts['schedule'])
     saveTrainedModel(model=model, outfile=data_opts['outfile'], train_opts=train_opts, model_opts=model_opts,
-        view_names=data_opts['view_names'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
+        view_names=data_opts['view_names'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'], shared_features=data_opts['shared_features'])
 
 
 if __name__ == '__main__':
