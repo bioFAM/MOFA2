@@ -31,7 +31,7 @@ def entry_point():
     p.add_argument( '--noise',             type=float, default=10.,                              help='noise level for simulations')
     p.add_argument('--sparsity',           type=float, default=.1,                              help='sparsity level for simulations')
     p.add_argument( '--N',                 type=int, default=500,                               help='number of samples to simulate for')
-    p.add_argument( '--D',                 type=int, default=1000,                               help='number of features per view to simulate for')
+    p.add_argument( '--D',                 type=int, nargs='+', required=True,                  help='number of features per view to simulate for')
     p.add_argument( '--M',                 type=int, default=3,                               help='number of views to simulate from ')
 
     args = p.parse_args()
@@ -39,7 +39,7 @@ def entry_point():
     # Calculate dimensionalities
     N = args.N
     M = args.M
-    D = [args.D for m in range(M)]
+    D = args.D
 
     #####################
     ## Load covariates ##

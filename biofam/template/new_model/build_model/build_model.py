@@ -12,7 +12,7 @@ from biofam.core.BayesNet import *
 from init_model import initNewModel
 from biofam.build_model.utils import *
 
-#TODO : remove the 3 TODO before giving to britta
+#TODO : remove the 2 TODO before giving to britta
 
 def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None):
     """Method to build a bioFAM model"""
@@ -46,12 +46,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
 
         M = len(data)
-
-        # TODO : TO REMOVE (test)
-        #if (M==1)and(model_opts["transpose"]):
-        #    tmp = np.transpose(data[0])
-        #    data = [tmp]
-
         N = data[0].shape[0]
         D = s.asarray([data[m].shape[1] for m in range(M)])
 
@@ -63,7 +57,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
                view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
 
            # TODO : TO REMOVE (test)
-           if model_opts["sample_X"]:
+           if (dataX is not None) and (model_opts["sample_X"]):
                dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
                dataClust = [None] * M
                view_has_covariance_prior = [True] * M
@@ -71,16 +65,16 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         else:
 
             # TODO : TO REMOVE (test)
-            if model_opts["sample_X"]:
+            if (dataX is not None) and (model_opts["sample_X"]):
                 dataX = s.random.normal(0, 1, [N, 2])
                 dataClust = None
 
     K = model_opts["K"]
 
     if 'spatialFact' in model_opts:
-        n_diag = model_opts['spatialFact'] * K
+        n_diag = (1-model_opts['spatialFact']) * K
     else:
-        n_diag = 0
+        n_diag = K
 
     dim = {'M': M, 'N': N, 'D': D, 'K': K}
     print(dim)

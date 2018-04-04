@@ -7,35 +7,35 @@
 ###################
 
 
-factors=10   # initial number of factors
-M=2
+factors=5   # initial number of factors
+M=1
 N=100
-D=( 200 200 )
-spatialFact=0.
+D=( 100 )
+spatialFact=0.2
 noise=1.  # 0.5, 1, 2, 3, 4, 5
 sparsity=0.2
-outDir='/home/yonatan/PycharmProjects/covar/biofam/biofam/template/new_model/run/non_spatial'
-outFile='/home/yonatan/PycharmProjects/covar/biofam/biofam/template/new_model/run/non_spatial/simul.h5'
+outDir='/home/yonatan/PycharmProjects/covar/biofam/biofam/template/new_model/run/spatial'
+outFile='/home/yonatan/PycharmProjects/covar/biofam/biofam/template/new_model/run/spatial/simul_spatial.h5'
 
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose=0
+transpose=1
 
 #Choose to sample the positions of the samples to test the covariance prior structure (for any view if transpose = 1)
-sample_X=0
+sample_X=1
 
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-likelihoods=( gaussian gaussian )
+likelihoods=( gaussian )
 
 
 # Names of views
-views=( view_A view_B )
+views=( view_A )
 
 
 
 # Random seed
-# seed=2018 # if 0, the seed is automatically generated using the current time
+seed=0 # if 0, the seed is automatically generated using the current time
 
 ####################
 ## FINISH EDITING ##
@@ -55,7 +55,7 @@ cmd='python ../build_model/simulation_entry.py
 	--spatialFact $spatialFact
 	--noise $noise
 	--sparsity $sparsity
-	--views ${views[@]}
+	--views $views
 '
 
 eval $cmd

@@ -182,7 +182,7 @@ def loadDataX(data_opts, transpose = False):
                     if file != "None":
                         sigma_clust[m] = np.loadtxt(file)
 
-            if X == [None] * M:
+            if [np.all(X_m == None) for X_m in X] == True*[M]:
                 X = None
 
         else:
@@ -450,11 +450,11 @@ def saveDataXTxt(model, outDir, transpose, view_names=None, sample_names=None):
     sample_names
     """
     if transpose:
-        dataX = model.getNodes()["SigmaAlphaW"].getParameters()["X"]
+        dataX = [SigmaAlphaW_m["X"] for SigmaAlphaW_m in model.getNodes()["SigmaAlphaW"].getParameters()]
         for m in range(len(dataX)):
             view = view_names[m] if view_names is not None else 'view_' + str(m)
             file_name = outDir + '/' + "X_file_" + view
-            to_save = pd.DataFrame(dataX.nodes[m])
+            to_save = pd.DataFrame(dataX[m])
             #to_save.columns = ["x1", "x2"]
             if sample_names is not None:
                 to_save.index = sample_names

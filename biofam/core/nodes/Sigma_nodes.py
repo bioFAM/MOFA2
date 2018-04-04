@@ -10,8 +10,8 @@ import scipy as s
 # TODO we need to deal with covariates too
 class SigmaGrid_Node(Node):
     # dim should be the number of latent variables
-    def __init__(self, dim, X, start_opt=0, n_grid=10, n_diag=0):
-        print("optimization of hyperparameters of sigma will begin at iteration "+str(start_opt))
+    def __init__(self, dim, X, start_opt=10, n_grid=10, n_diag=0):
+        #print("optimization of hyperparameters of sigma will begin at iteration "+str(start_opt))
         super(SigmaGrid_Node,self).__init__(dim)
         self.X = X
         self.N = X.shape[0]
@@ -19,7 +19,6 @@ class SigmaGrid_Node(Node):
         self.n_grid = n_grid
         self.iter = 0
         self.ix = [0] * dim[0] # index of the grid values to use
-        self.true_ix = [None] * dim[0] #index of the true hyperparameters values (if simulated)
         self.spatial_sig = np.zeros(dim[0])
 
         self.precompute()
@@ -66,9 +65,7 @@ class SigmaGrid_Node(Node):
 
     def getParameters(self):
         ls = self.get_ls()
-        print("recovered",self.ix)
-        print("true",self.true_ix)
-        return {'l':ls, 'sig': self.spatial_sig, 'X':self.X, 'true_l': np.array([self.l_grid[i] for i in self.true_ix])}
+        return {'l':ls, 'sig': self.spatial_sig, 'X':self.X, 'ix': np.array(self.ix)}
 
     def removeFactors(self, idx, axis=1):
         self.ix = s.delete(self.ix, axis=0, obj=idx)
@@ -114,7 +111,9 @@ class SigmaGrid_Node(Node):
         i0 = s.random.choice(range(self.dim[0]), int(self.n_diag), replace=False)
         ix[i0] = 0
 
-        self.true_ix = ix   # saving locally only the grid indices
+        #ix = ix   # saving locally only the grid indices
+        self.ix = ix
+
         return np.array([self.grid_cov[i,:,:] for i in ix])
 
 # TODO add clusters as parameters
