@@ -46,7 +46,7 @@ class Y_Node(Constant_Variational_Node):
             Z_samp = self.markov_blanket['Z'].sample()
             W_samp = self.markov_blanket['SW'].sample()
         else:
-            Z_samp = self.markov_blanket['TZ'].sample()
+            Z_samp = self.markov_blanket['SZ'].sample()
             W_samp = self.markov_blanket['W'].sample()
         Tau_samp = self.markov_blanket['Tau'].sample()
         mu = Z_samp.dot(W_samp.transpose())

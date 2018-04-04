@@ -121,7 +121,7 @@ class initModel(object):
         self.nodes["Z"] = Z_Node(dim=(self.N, self.K), pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
                              idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv)
 
-    def initTZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0., qvar_T0=1.,
+    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0., qvar_T0=1.,
               qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
         """Method to initialise the factors (spike and slab reparametrised as the product of bernoulli and gaussian variables)
         PARAMETERS
@@ -152,7 +152,7 @@ class initModel(object):
             print("Wrong initialisation for Z")
             exit(1)
 
-        self.nodes["TZ"] = TZ_Node(
+        self.nodes["SZ"] = SZ_Node(
             dim=(self.N, self.K),
 
             ptheta=ptheta,

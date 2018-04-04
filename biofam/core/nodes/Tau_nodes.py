@@ -31,7 +31,7 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
             Ztmp = self.markov_blanket["Z"].getExpectations()
         else:
             Wtmp = self.markov_blanket["W"].getExpectations()
-            Ztmp = self.markov_blanket["TZ"].getExpectations()
+            Ztmp = self.markov_blanket["SZ"].getExpectations()
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 

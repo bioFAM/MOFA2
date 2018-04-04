@@ -68,7 +68,7 @@ dropR2=1  # threshold on fraction of variance explained
 # Define hyperparameters for the feature-wise spike-and-slab sparsity prior
 # learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
 # initTheta=( 1 1 1 ) 	# initial value of sparsity levels (1 corresponds to a dense model, 0.5 corresponds to factors ); each element of the vector corresponds to a view
-startSparsity=250 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
+startSparsity=1 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
 
 # Learn an intercept term (feature-wise means)?
 # Recommendation: always leave it active. If all your views are gaussian you can set this to 0 and center the features, it does not matter.

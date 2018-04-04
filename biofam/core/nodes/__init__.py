@@ -7,7 +7,7 @@ from .W_nodes import W_Node
 from .W_nodes import SW_Node
 from .Y_nodes import Y_Node
 from .Z_nodes import Z_Node
-from .Z_nodes import TZ_Node
+from .Z_nodes import SZ_Node
 from .multiview_nodes import *
 from .basic_nodes import *
 from .mixed_nodes import *

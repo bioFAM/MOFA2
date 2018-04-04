@@ -67,8 +67,8 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
     def updateParameters(self):
 
         # Collect expectations from other node
-        if "TZ" in self.markov_blanket:
-            tmp = self.markov_blanket["TZ"].getExpectations()
+        if "SZ" in self.markov_blanket:
+            tmp = self.markov_blanket["SZ"].getExpectations()
             EZZ = tmp["ENN"]
         else:
             tmp = self.markov_blanket["Z"].getExpectations()

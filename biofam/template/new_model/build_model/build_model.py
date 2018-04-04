@@ -114,7 +114,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         initZ_varT0 = 1.
         initZ_varT1 = 1
         initZ_theta = 1.
-        init.initTZ(pmean_T0=priorZ_mean_T0, pmean_T1=priorZ_meanT1, pvar_T0=priorZ_varT0, pvar_T1=priorZ_varT1,
+        init.initSZ(pmean_T0=priorZ_mean_T0, pmean_T1=priorZ_meanT1, pvar_T0=priorZ_varT0, pvar_T1=priorZ_varT1,
                     ptheta=priorZ_theta,
                     qmean_T0=initZ_meanT0, qmean_T1=initZ_meanT1, qvar_T0=initZ_varT0, qvar_T1=initZ_varT1,
                     qtheta=initZ_theta)
@@ -287,9 +287,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
     nodes = init.getNodes()
     if model_opts['transpose']:
-        nodes["ThetaZ"].addMarkovBlanket(TZ=nodes["TZ"])
-        nodes["AlphaZ"].addMarkovBlanket(TZ=nodes["TZ"])
-        nodes["TZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
+        nodes["ThetaZ"].addMarkovBlanket(SZ=nodes["SZ"])
+        nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])
+        nodes["SZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
 
         if dataX is not None:
             nodes["SigmaAlphaW"].addMarkovBlanket(W=nodes["W"])
@@ -297,10 +297,10 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         else:
             nodes["AlphaW"].addMarkovBlanket(W=nodes["W"])
             nodes["W"].addMarkovBlanket(AlphaW=nodes["AlphaW"])
-        nodes["W"].addMarkovBlanket(Y=nodes["Y"], TZ=nodes["TZ"], Tau=nodes["Tau"])
+        nodes["W"].addMarkovBlanket(Y=nodes["Y"], SZ=nodes["SZ"], Tau=nodes["Tau"])
 
-        nodes["Y"].addMarkovBlanket(TZ=nodes["TZ"], W=nodes["W"], Tau=nodes["Tau"])
-        nodes["Tau"].addMarkovBlanket(TZ=nodes["TZ"], W=nodes["W"], Y=nodes["Y"])
+        nodes["Y"].addMarkovBlanket(SZ=nodes["SZ"], W=nodes["W"], Tau=nodes["Tau"])
+        nodes["Tau"].addMarkovBlanket(SZ=nodes["SZ"], W=nodes["W"], Y=nodes["Y"])
 
     else:
         if dataX is not None:

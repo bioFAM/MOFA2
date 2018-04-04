@@ -76,7 +76,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Collect expectations from the markov blanket
         Y = deepcopy(self.markov_blanket["Y"].getExpectation())
-        TZtmp = self.markov_blanket["TZ"].getExpectations()
+        SZtmp = self.markov_blanket["SZ"].getExpectations()
         tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
         latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
         mask = ma.getmask(Y)
@@ -119,8 +119,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         for k in latent_variables:
             foo = s.zeros((self.D,))
             bar = s.zeros((self.D,))
-            foo += np.dot(TZtmp["E2"][:,k],tau)
-            bar += np.dot(TZtmp["E"][:,k],tau*(Y - s.dot(TZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
+            foo += np.dot(SZtmp["E2"][:,k],tau)
+            bar += np.dot(SZtmp["E"][:,k],tau*(Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")

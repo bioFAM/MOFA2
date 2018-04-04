@@ -88,7 +88,7 @@ class BayesNet(object):
             self.nodes["SW"].sample(dist)
             self.nodes["Z"].sample(dist)
         else:
-            self.nodes["TZ"].sample(dist)
+            self.nodes["SZ"].sample(dist)
             self.nodes["W"].sample(dist)
         self.nodes['Y'].sample(dist)
 
@@ -143,7 +143,7 @@ class BayesNet(object):
                 Z = self.nodes['Z'].getExpectation()
             else:
                 W = self.nodes["W"].getExpectation()
-                Z = self.nodes['TZ'].getExpectation()
+                Z = self.nodes['SZ'].getExpectation()
 
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
             for m in range(self.dim['M']):
@@ -270,8 +270,8 @@ class BayesNet(object):
                 elbo.iloc[i] = self.calculateELBO()
 
                 name_Z = "Z"
-                if "TZ" in self.nodes:
-                    name_Z = "TZ"
+                if "SZ" in self.nodes:
+                    name_Z = "SZ"
 
                 # Print first iteration
                 if i==0:

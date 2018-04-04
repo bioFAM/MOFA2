@@ -121,7 +121,7 @@ class PseudoY_Seeger(PseudoY):
             Z = self.markov_blanket["Z"].getExpectation()
             W = self.markov_blanket["SW"].getExpectation()
         else:
-            Z = self.markov_blanket["TZ"].getExpectation()
+            Z = self.markov_blanket["SZ"].getExpectation()
             W = self.markov_blanket["W"].getExpectation()
         self.params["zeta"] = s.dot(Z,W.T)
 
@@ -179,7 +179,7 @@ class Poisson_PseudoY(PseudoY_Seeger):
             Z = self.markov_blanket["Z"].getExpectation()
             W = self.markov_blanket["SW"].getExpectation()
         else:
-            Z = self.markov_blanket["TZ"].getExpectation()
+            Z = self.markov_blanket["SZ"].getExpectation()
             W = self.markov_blanket["W"].getExpectation()
         tmp = self.ratefn(s.dot(Z,W.T))
         lb = s.sum( self.obs*s.log(tmp) - tmp)
@@ -223,7 +223,7 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
             Z = self.markov_blanket["Z"].getExpectation()
             W = self.markov_blanket["SW"].getExpectation()
         else:
-            Z = self.markov_blanket["TZ"].getExpectation()
+            Z = self.markov_blanket["SZ"].getExpectation()
             W = self.markov_blanket["W"].getExpectation()
         tmp = s.dot(Z,W.T)
         lik = s.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
@@ -274,7 +274,7 @@ class Binomial_PseudoY(PseudoY_Seeger):
             Z = self.markov_blanket["Z"].getExpectation()
             W = self.markov_blanket["SW"].getExpectation()
         else:
-            Z = self.markov_blanket["TZ"].getExpectation()
+            Z = self.markov_blanket["SZ"].getExpectation()
             W = self.markov_blanket["W"].getExpectation()
 
         tmp = sigmoid(s.dot(Z,W.T))
@@ -359,7 +359,7 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
                 s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
                                                                                                        W["EBNN"].T))
         else:
-            Z = self.markov_blanket["TZ"].getExpectations()
+            Z = self.markov_blanket["SZ"].getExpectations()
             W = self.markov_blanket["W"].getExpectations()
             self.params["zeta"] = s.sqrt(
                 s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["EBNN"],
@@ -372,7 +372,7 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
             Z = self.markov_blanket["Z"].getExpectation()
             W = self.markov_blanket["SW"].getExpectation()
         else:
-            Z = self.markov_blanket["TZ"].getExpectation()
+            Z = self.markov_blanket["SZ"].getExpectation()
             W = self.markov_blanket["W"].getExpectation()
         tmp = s.dot(Z,W.T)
         lik = ma.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )

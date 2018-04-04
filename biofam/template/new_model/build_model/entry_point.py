@@ -200,9 +200,9 @@ def entry_point():
     # Think to its importance ?
     if model_opts['transpose']:
         if (dataX is not None) or (model_opts['sample_X']):
-            train_opts['schedule'] = ( "Y", "TZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
+            train_opts['schedule'] = ( "Y", "SZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
-            train_opts['schedule'] = ( "Y", "TZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
+            train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
     else:
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )

@@ -15,8 +15,8 @@ class W_Node(MultivariateGaussian_Unobserved_Variational_Node):
        self.factors_axis = 1
 
    def updateParameters(self):
-       Z = self.markov_blanket["TZ"].getExpectation()
-       ZZ = self.markov_blanket["TZ"].getExpectations()["EXXT"]
+       Z = self.markov_blanket["SZ"].getExpectation()
+       ZZ = self.markov_blanket["SZ"].getExpectations()["EXXT"]
        alpha = self.markov_blanket["AlphaW"].getExpectation()
 
        #tau = (self.markov_blanket["Tau"].getExpectation())[:, None, None]

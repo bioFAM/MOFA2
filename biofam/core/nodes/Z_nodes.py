@@ -255,11 +255,11 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         return self.samp
 
 
-class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
+class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
     def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta,
                  qEZ_T0=None, qEZ_T1=None, qET=None, idx_covariates=None):
-        super(TZ_Node, self).__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
+        super(SZ_Node, self).__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
                                       qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
         self.precompute()
 
@@ -288,7 +288,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
         # Collect parameters and expectations from P and Q distributions of this node
-        TZ = self.Q.getExpectations()["E"]
+        SZ = self.Q.getExpectations()["E"]
         Q = self.Q.getParameters()
         Qmean_T1, Qvar_T1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
@@ -328,8 +328,8 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
             term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify
 
-            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, TZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(TZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify
+            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
+            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify
 
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
             term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[k]
@@ -346,7 +346,7 @@ class TZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qmean_T1[:, k] = Qvar_T1[:, k] * (term4_tmp1 - term4_tmp2)
 
             # Update Expectations for the next iteration
-            TZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]
+            SZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=s.repeat(1. / alpha[None, :], self.N, 0),
