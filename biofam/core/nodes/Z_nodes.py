@@ -15,7 +15,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
-        super(Z_Node, self).__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
+        super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
         self.precompute(precompute_pcovinv=precompute_pcovinv)
 
@@ -105,8 +105,11 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
-            if tau[m].shape != Y[m].shape:
-                tau[m] = s.repeat(tau[m].copy()[None, :], self.N, axis=0)
+
+            # DEPRECATED: tau is expanded inside the node
+            # if tau[m].shape != Y[m].shape:
+            #     tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
+
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.
@@ -240,7 +243,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaZ'].sample()
             p_var = s.square(1. / alpha)
-            p_cov = s.diag(p_var)
+            #p_cov = s.diag(p_var)
+            p_cov = np.array([p_var[k] * np.eye(self.N) for k in range(self.K)])
         else:
             if "SigmaZ" in self.markov_blanket:
                 p_cov = self.markov_blanket['SigmaZ'].sample()
@@ -259,7 +263,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
     def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta,
                  qEZ_T0=None, qEZ_T1=None, qET=None, idx_covariates=None):
-        super(SZ_Node, self).__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
+        super().__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
                                       qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
         self.precompute()
 
@@ -273,6 +277,15 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.covariates = np.zeros(self.dim[1], dtype=bool)
 
         self.factors_axis = 1
+
+    def getLvIndex(self):
+        # Method to return the index of the latent variables (without covariates)
+        latent_variables = np.array(range(self.dim[1]))
+        if any(self.covariates):
+            # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
+            latent_variables = latent_variables[~self.covariates]
+
+        return latent_variables
 
     def updateParameters(self):
         # Collect expectations from other nodes
@@ -292,17 +305,21 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Q = self.Q.getParameters()
         Qmean_T1, Qvar_T1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
+        M = len(Y)  # number of views
+
         # Check dimensions of theta and and expand if necessary
         if theta_lnE.shape != Qmean_T1.shape:
             theta_lnE = s.repeat(theta_lnE[None, :], Qmean_T1.shape[0], 0)
         if theta_lnEInv.shape != Qmean_T1.shape:
             theta_lnEInv = s.repeat(theta_lnEInv[None, :], Qmean_T1.shape[0], 0)
 
+        # DEPRECATED: tau is expanded inside the node
         # Check dimensions of Tau and and expand if necessary
-        M = len(Y)  # number of views
-        for m in range(M):
-            if tau[m].shape != Y[m].shape:
-                tau[m] = s.repeat(tau[m][None, :], Y[m].shape[0], axis=0)
+        # M = len(Y) #number of views
+        # for m in range(M):
+        #     if tau[m].shape != Y[m].shape:
+        #         tau[m] = s.repeat(tau[m][None,:], Y[m].shape[0], axis=0)
+        # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Check dimensions of alpha and and expand if necessary
         if alpha.shape[0] == 1:
@@ -337,7 +354,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
 
-            # Update T
+            # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
             Qtheta[:, k] = 1. / (1. + s.exp(-(term1 + term2 - term3 + term4)))
 
@@ -369,6 +386,14 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         else:
             print("Not implemented")
             exit()
+
+        # This ELBO term contains only cross entropy between Q and P, and entropy of Q. So the covariates should not intervene at all
+        latent_variables = self.getLvIndex()
+        alpha["E"], alpha["lnE"] = alpha["E"][latent_variables], alpha["lnE"][latent_variables]
+        T, ZZ = T[:, latent_variables], ZZ[:, latent_variables]
+        Qvar = Qvar[:, latent_variables]
+        theta['lnE'] = theta['lnE'][latent_variables]
+        theta['lnEInv'] = theta['lnEInv'][latent_variables]
 
         # Calculate ELBO for Z
         lb_pz = (self.N * alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
@@ -408,6 +433,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
 
         return self.samp
+
 
 
 class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):

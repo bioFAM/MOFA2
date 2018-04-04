@@ -19,7 +19,8 @@ outFile='/home/yonatan/PycharmProjects/covar/biofam/biofam/template/new_model/ru
 
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose=1
+transpose_sparsity=1
+transpose_noise=1
 
 #Choose to sample the positions of the samples to test the covariance prior structure (for any view if transpose = 1)
 sample_X=1
@@ -42,8 +43,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='python ../build_model/simulation_entry.py
-    --transpose $transpose
+cmd='python3 ../build_model/simulation_entry.py
     --sample_X $sample_X
 	--outFile $outFile
 	--outDir $outDir
@@ -57,5 +57,8 @@ cmd='python ../build_model/simulation_entry.py
 	--sparsity $sparsity
 	--views $views
 '
+
+if [[ $transpose_sparsity -eq 1 ]]; then cmd="$cmd --transpose_sparsity"; fi
+if [[ $transpose_noise -eq 1 ]]; then cmd="$cmd --transpose_noise"; fi
 
 eval $cmd

@@ -19,7 +19,6 @@ class BernoulliGaussian(Distribution):
     ROOM FOR IMPROVEMENT: i think the current code is inefficient because you have to keep track of the params
     and expectations in both the factorised distributions and the joint one. I think
     perhaps is better not to define new Bernoulli and UnivariateGaussian but work directly with the joint model
-
     """
     def __init__(self, dim, mean_B0, mean_B1, var_B0, var_B1, theta, EN_B0=None, EN_B1=None, EB=None):
         Distribution.__init__(self,dim)

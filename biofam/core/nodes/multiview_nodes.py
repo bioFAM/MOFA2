@@ -32,7 +32,7 @@ class Multiview_Node(Node):
             list of M nodes, which must be instances or children of the 'Node' class. If the node is not defined in view m, then index m is set to None.
         """
         self.M = M
-        self.activeM = [ m for m,node in enumerate(nodes) if node is not None]
+        self.activeM = [ m for m, node in enumerate(nodes) if node is not None]
         self.nodes = nodes
 
     def addMarkovBlanket(self, **kwargs):

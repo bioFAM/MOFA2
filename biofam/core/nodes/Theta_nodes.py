@@ -22,7 +22,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
 
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         # Beta_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        super(ThetaW_Node_mk,self).__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.precompute()
 
     def precompute(self):
@@ -43,7 +43,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
 
         # Perform updates
         Qa = self.Ppar['a'] + tmp1
-        Qb = self.Ppar['b'] + S.shape[0]-tmp1
+        Qb = self.Ppar['b'] + S.shape[0] - tmp1
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
@@ -51,7 +51,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
     def calculateELBO(self):
 
         # Collect parameters and expectations
-        Qpar,Qexp = self.getParameters(), self.getExpectations()
+        Qpar, Qexp = self.getParameters(), self.getExpectations()
         Pa, Pb, Qa, Qb = self.Ppar['a'], self.Ppar['b'], Qpar['a'], Qpar['b']
         QE, QlnE, QlnEInv = Qexp['E'], Qexp['lnE'], Qexp['lnEInv']
 
@@ -73,7 +73,7 @@ class ThetaW_Constant_Node_mk(Constant_Variational_Node):
     Dimensions of Theta_Constant_Node should be (D[m], K)
     """
     def __init__(self, dim, value, N_cells=1):
-        super(ThetaW_Constant_Node_mk, self).__init__(dim, value)
+        super().__init__(dim, value)
         self.N_cells = N_cells
         self.precompute()
 
@@ -99,17 +99,15 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
     """
     This class contain a Theta node associate to factors for which
     we dont have annotations.
-
     The inference is done per factor, so the dimension of the node is the
     number of non-annotated factors
-
     the updateParameters function needs to know what factors are non-annotated in
     order to choose from the T matrix
     """
 
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         # Beta_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        super(ThetaZ_Node_k, self).__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.precompute()
 
     def precompute(self):
@@ -181,4 +179,3 @@ class ThetaZ_Constant_Node_k(Constant_Variational_Node):
         self.value = s.delete(self.value, idx, axis)
         self.precompute()
         self.updateDim(axis=axis, new_dim=self.dim[axis] - len(idx))
-

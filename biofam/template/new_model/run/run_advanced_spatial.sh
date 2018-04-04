@@ -25,7 +25,8 @@ center_features=0   # center the features to zero-mean? (not necessary as long a
 scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose=1
+transpose_sparsity=1
+transpose_noise=1
 
 #Use samples' positions data as a covariance prior structure between samples per factor
 #X_Files=( "$inFolder/X_file" )
@@ -56,7 +57,7 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 # Recommendation:
 # (1) If you remove inactive factors (dropR2>0), then the initial number of factors should be large enough
 # (2) If you want to get the most strong drivers of variation then we recommend dropR2 to be at least 0.05 (5%), but if you want to capture more subtle sources of variation you should decrease it to 0.01 (1%) or 0.03 (3%)
-factors=10   # initial number of facotrs
+factors=5   # initial number of facotrs
 startDrop=1000  # initial iteration to start shutting down factors
 freqDrop=1 	 # frequency of checking for shutting down factors
 dropR2=0.01  # threshold on fractionof variance explained
@@ -80,8 +81,7 @@ seed=1 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='python ../build_model/entry_point.py
-    --transpose $transpose
+cmd='python3 ../build_model/entry_point.py
     --X_Files ${X_Files[@]}
     --sample_X $sample_X
 	--delimiter "$delimiter"
@@ -106,5 +106,8 @@ if [[ $center_features -eq 1 ]]; then cmd="$cmd --center_features"; fi
 if [[ $scale_views -eq 1 ]]; then cmd="$cmd --scale_views"; fi
 if [[ $nostop -eq 1 ]]; then cmd="$cmd --nostop"; fi
 if [[ $learnIntercept -eq 1 ]]; then cmd="$cmd --learnIntercept"; fi
+
+if [[ $transpose_sparsity -eq 1 ]]; then cmd="$cmd --transpose_sparsity"; fi
+if [[ $transpose_noise -eq 1 ]]; then cmd="$cmd --transpose_noise"; fi
 
 eval $cmd

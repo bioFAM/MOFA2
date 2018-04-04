@@ -39,9 +39,9 @@ class Constant_Variational_Node(Variational_Node,Constant_Node):
     """
     Abstract class for an observed/constant variational node in a Bayesian probabilistic model.
     """
-    def __init__(self, dim, value):
+    def __init__(self, dim, value, opts):
         # SHOULD WE ALSO INITIALISE VARIATIONAL_NODE ..?
-        Constant_Node.__init__(self, dim, value)
+        Constant_Node.__init__(self, dim, value, opts)
 
 class Unobserved_Variational_Node(Variational_Node):
     """
@@ -191,11 +191,12 @@ class BernoulliGaussian_Unobserved_Variational_Node(Unobserved_Variational_Node)
 	    # dim (2d tuple): dimensionality of the node
         # pmean (nd array): the mean parameter of the P distribution
         # pvar (nd array): the var parameter of the P distribution
-	    # ptheta (nd array): the theta parameter of the P distribution
+        # ptheta (nd array): the theta parameter of the P distribution
         # qmean (nd array): the mean parameter of the Q distribution
         # qvar (nd array): the var parameter of the Q distribution
-	    # qtheta (nd array): the theta parameter of the Q distribution
-        Unobserved_Variational_Node.__init__(self,dim)
+        # qtheta (nd array): the theta parameter of the Q distribution
+
+        # Unobserved_Variational_Node.__init__(self,dim)
         Unobserved_Variational_Node.__init__(self,dim)
 
         # Initialise the P and Q distributions
@@ -214,7 +215,7 @@ class Beta_Unobserved_Variational_Node(Unobserved_Variational_Node):
         # qa (nd array): the 'a' parameter of the Q distribution
         # qb (nd array): the 'b' parameter of the Q distribution
         # qE (nd array): the initial expectation of the Q distribution
-        super(Beta_Unobserved_Variational_Node, self).__init__(dim)
+        super().__init__(dim)
 
         # Initialise P and Q distributions
         self.P = Beta(dim, pa, pb)

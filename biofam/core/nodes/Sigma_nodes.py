@@ -75,7 +75,7 @@ class SigmaGrid_Node(Node):
     def optimise(self):
         # as the multiple latent variables are independent in the elbo term,
         # no need to test for all possible length scale combinations, optimise one at a time
-        child_node = self.markov_blanket.keys()[0]
+        child_node = list(self.markov_blanket.keys())[0]
         child = self.markov_blanket[child_node]
         K = child.dim[1]
         assert K == len(self.ix), 'problem in dropping factor'

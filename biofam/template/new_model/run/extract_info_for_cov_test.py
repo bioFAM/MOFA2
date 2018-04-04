@@ -1,13 +1,13 @@
 import h5py
 
 def print_attrs(name, obj):
-    print name
+    print(name)
     for key, val in obj.attrs.iteritems():
-        print "    %s: %s" % (key, val)
+        print ("    %s: %s" % (key, val))
 
-transpose=1
+transpose_sparsity=1
 
-if transpose:
+if transpose_sparsity:
     SigmaNode = "SigmaAlphaW"
 
     f = h5py.File("spatial/simul_spatial.h5", 'r')

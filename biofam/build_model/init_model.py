@@ -259,6 +259,7 @@ class initModel(object):
                 else:
                     print("Wrong initialisation for W")
                     exit()
+
             else:
                 qmean_m = None
 
@@ -275,6 +276,7 @@ class initModel(object):
                                idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv[m])
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
+
 
 
     def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1., qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1., qEW_S0=None, qEW_S1=None, qES=None):
@@ -415,7 +417,7 @@ class initModel(object):
 
         self.nodes["SigmaAlphaW"] = Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 
-    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1., transposed=False):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -429,38 +431,41 @@ class initModel(object):
          qE: float
             initial expectation of the variational distribution
         """
+        Tau_Node = TauN_Node if transposed else TauD_Node
+        if transposed:
+            print("Using TauN noise!")
 
         tau_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m] == "poisson":
                 tmp = 0.25 + 0.17*s.amax(self.data[m],axis=0)
-                tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
+                tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
             elif self.lik[m] == "bernoulli":
                 # tau_list[m] = Constant_Node(dim=(self.D[m],), value=s.ones(self.D[m])*0.25)
                 # tau_list[m] = Tau_Jaakkola(dim=(self.D[m],), value=0.25)
-                tau_list[m] = Tau_Jaakkola(dim=((self.N,self.D[m])), value=1.)
+                tau_list[m] = Tau_Jaakkola(dim=((self.N, self.D[m])), value=1.)
             elif self.lik[m] == "binomial":
                 tmp = 0.25*s.amax(self.data["tot"][m],axis=0)
-                tau_list[m] = Constant_Node(dim=(self.D[m],), value=tmp)
+                tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
             elif self.lik[m] == "gaussian":
-                tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
+                tau_list[m] = Tau_Node(dim=(self.N, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
             # elif self.lik[m] == "warp":
             #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
-        self.nodes["Tau"] = Multiview_Mixed_Node(self.M,*tau_list)
+        self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
-    def initY(self):
+    def initY(self, transpose_noise=False):
         """Method to initialise the observations"""
         Y_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m]=="gaussian":
-                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m])
+                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], transpose_noise=transpose_noise)
             elif self.lik[m]=="poisson":
                 # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
-                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
+                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None, transpose_noise=transpose_noise)
             elif self.lik[m]=="bernoulli":
                 # Y_list[m] = Bernoulli_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
                 # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
-                Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
+                Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None, transpose_noise=transpose_noise)
                 # Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
             # elif self.lik[m]=="warp":
             #     print "Not implemented"
@@ -546,7 +551,7 @@ class initModel(object):
         self.nodes["ThetaZ"] = ThetaZ_Constant_Node_k(dim=(self.N, self.K,), value=s.ones((self.N, self.K)) * pmean,
                                                       N_cells=1.)
 
-    def initThetaLearnW_k(self, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaLearnW_mk(self, pa=1., pb=1., qa=1., qb=1., qE=None):
         """Method to initialise the sparsity parameter of the spike and slab weights
 
         PARAMETERS
@@ -595,12 +600,12 @@ class initModel(object):
                     print("Wrong initialisation for Theta"); exit()
         elif isinstance(qE,s.ndarray):
             assert qE.shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
-            tmp = [ qE for m in xrange(self.M)]
+            tmp = [ qE for m in range(self.M)]
             qE = tmp # IS THIS REQUIRED????
 
 
         elif isinstance(qE,(int,float)):
-            tmp = [ s.ones((self.D[m],self.K)) * qE for m in xrange(self.M)]
+            tmp = [ s.ones((self.D[m],self.K)) * qE for m in range(self.M)]
             qE = tmp # IS THIS REQUIRED????
 
         else:
@@ -634,7 +639,7 @@ class initModel(object):
         self.Theta = Multiview_Mixed_Node(self.M, *Theta_list)
         self.nodes["ThetaW"] = self.Theta
 
-    def initThetaWConst_mk(self, value=1.):
+    def initThetaConstW_mk(self, value=1.):
         """Method to initialise a constant sparsity parameter of the spike and slab weights
 
         PARAMETERS

@@ -27,7 +27,8 @@ center_features=0   # center the features to zero-mean? (not necessary as long a
 scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose=1
+transpose_sparsity=1
+transpose_noise=1
 
 #Use samples' positions data as a covariance prior structure between samples per factor
 X_Files=( None None None )
@@ -52,7 +53,7 @@ iter=5000 # we recommend to set this to a large enough value (>1000)
 
 # Convergence criterion
 # Recommendation: a 'tolerance' of 0.01 is quite strict and can take a bit of time, for initial testing we recommend increasing it to 0.1
-tolerance=1000 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
+tolerance=10 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
 nostop=0       # if nostop=1 the training will complete all iterations even if the convergence criterion is met
 
 # Define the initial number of factors and how inactive factors are dropped during training.
@@ -63,12 +64,12 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 factors=20   # initial number of factors
 startDrop=1  # initial iteration to start shutting down factors
 freqDrop=1 	 # frequency of checking for shutting down factors
-dropR2=1  # threshold on fraction of variance explained
+dropR2=0  # threshold on fraction of variance explained
 
 # Define hyperparameters for the feature-wise spike-and-slab sparsity prior
 # learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
 # initTheta=( 1 1 1 ) 	# initial value of sparsity levels (1 corresponds to a dense model, 0.5 corresponds to factors ); each element of the vector corresponds to a view
-startSparsity=1 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
+startSparsity=5 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
 
 # Learn an intercept term (feature-wise means)?
 # Recommendation: always leave it active. If all your views are gaussian you can set this to 0 and center the features, it does not matter.
@@ -84,8 +85,7 @@ seed=2018 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='python ../build_model/entry_point.py
-    --transpose $transpose
+cmd='python3 ../build_model/entry_point.py
     --X_Files ${X_Files[@]}
     --sample_X $sample_X
 	--delimiter "$delimiter"
@@ -110,5 +110,8 @@ if [[ $center_features -eq 1 ]]; then cmd="$cmd --center_features"; fi
 if [[ $scale_views -eq 1 ]]; then cmd="$cmd --scale_views"; fi
 if [[ $nostop -eq 1 ]]; then cmd="$cmd --nostop"; fi
 if [[ $learnIntercept -eq 1 ]]; then cmd="$cmd --learnIntercept"; fi
+
+if [[ $transpose_sparsity -eq 1 ]]; then cmd="$cmd --transpose_sparsity"; fi
+if [[ $transpose_noise -eq 1 ]]; then cmd="$cmd --transpose_noise"; fi
 
 eval $cmd

@@ -1,4 +1,5 @@
 from __future__ import division
+from copy import deepcopy
 import numpy.ma as ma
 import numpy as np
 import scipy as s
@@ -14,7 +15,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None,precompute_pcovinv=True):
-        super(W_Node,self).__init__(dim=dim,  pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
+        super().__init__(dim=dim,  pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
         self.precompute(precompute_pcovinv=precompute_pcovinv)
 
@@ -57,6 +58,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         else:
             self.p_cov_inv = None
             self.p_cov_inv_diag = None
+
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -103,9 +105,11 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             p_cov_inv = self.p_cov_inv
             p_cov_inv_diag = self.p_cov_inv_diag
 
+        # DEPRECATED: tau is expanded inside the node
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
-        if tau.shape != Y.shape:
-            tau = s.repeat(tau.copy()[None,:], np.shape(Y)[0], axis=0)
+        # if tau.shape != Y.shape:
+        #     tau = s.repeat(tau.copy()[None,:], np.shape(Y)[0], axis=0)
+
         # Mask tau
         tau[mask] = 0.
         # Mask Y
@@ -119,6 +123,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         for k in latent_variables:
             foo = s.zeros((self.D,))
             bar = s.zeros((self.D,))
+
             foo += np.dot(SZtmp["E2"][:,k],tau)
             bar += np.dot(SZtmp["E"][:,k],tau*(Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
 
@@ -236,6 +241,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
             return lb_p-lb_q
 
+
     def sample(self, dist='P'):
         if "MuW" in self.markov_blanket:
             p_mean = self.markov_blanket['MuW'].sample()
@@ -246,13 +252,15 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             if self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk":
                 alpha = self.markov_blanket['SigmaAlphaW'].sample()
                 p_var = s.square(1./alpha)
-                p_cov = s.diag(p_var)
+                #p_cov = s.diag(p_var)
+                p_cov = np.array([p_var[k]*np.eye(self.D) for k in range(self.K)])
             else:
                 p_cov = self.markov_blanket['SigmaAlphaW'].sample()
         elif "AlphaW" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaW'].sample()
             p_var = s.square(1. / alpha)
-            p_cov = s.diag(p_var)
+            #p_cov = s.diag(p_var)
+            p_cov = np.array([p_var[k] * np.eye(self.D) for k in range(self.K)])
         else:
             p_cov = self.P.params['cov']
 
@@ -267,7 +275,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
     # def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
     def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
-        super(SW_Node,self).__init__(dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES)
+        super().__init__(dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES)
         self.precompute()
 
     def precompute(self):
@@ -296,9 +304,11 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         if theta_lnEInv.shape != Qmean_S1.shape:
             theta_lnEInv = s.repeat(theta_lnEInv[None,:],Qmean_S1.shape[0],0)
 
+        # DEPRECATED: tau is expanded inside the node
         # Check dimensions of Tau and and expand if necessary
-        if tau.shape != Y.shape:
-            tau = s.repeat(tau[None,:], Y.shape[0], axis=0)
+        # if tau.shape != Y.shape:
+        #     tau = s.repeat(tau[None,:], Y.shape[0], axis=0)
+        
         # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Check dimensions of Alpha and and expand if necessary
@@ -352,6 +362,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
         S,WW = Qexp["EB"], Qexp["ENN"]
         Qvar = Qpar['var_B1']
+
         theta = self.markov_blanket["ThetaW"].getExpectations()
 
         # Get ARD sparsity or prior variance

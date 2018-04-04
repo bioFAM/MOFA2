@@ -21,9 +21,13 @@ def entry_point():
     p.add_argument( '--scale_covariates',  type=int, nargs='+', default=0,                      help='Scale covariates?' )
 
     # simulation options
+    #p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ')
+    p.add_argument('--transpose', action='store_true', help='Use the transposed MOFA (use features as a shared dimention)?')
+    p.add_argument('--transpose_noise', action='store_true', help='Noise in the common dimension?')
+    p.add_argument('--transpose_sparsity', action='store_true', help='Sparsity across the common dimension?')
+
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--spatialFact',       type=float, default=0.,                              help='Initial percentage of non-spatial latent variables')
-    p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ')
     p.add_argument( '--sample_X',          type=int, default=0,                                 help='Sample the positions of the samples to test covariance prior structure per factor')
 
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
@@ -66,8 +70,15 @@ def entry_point():
     model_opts['M'] = M
     model_opts['D'] = D
 
-    # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
+    # Choose between MOFA (view = omic) and transposed MOFA (view = group of samples or cell population)
     model_opts['transpose'] = args.transpose
+    model_opts['transpose_noise'] = args.transpose_noise
+    model_opts['transpose_sparsity'] = args.transpose_sparsity
+    # To keep reverse-compatibility
+    if model_opts['transpose']:
+        model_opts['transpose_noise'] = True
+        model_opts['transpose_sparsity'] = True
+    if model_opts['transpose']: print("Using features as a shared dimension...")
 
     # Define likelihoods
     model_opts['likelihood'] = args.likelihoods

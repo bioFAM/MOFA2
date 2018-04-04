@@ -137,17 +137,19 @@ class BayesNet(object):
         #   Advantages: it takes into account both weights and latent variables, is based on how well the model fits the data
         #   Disadvantages: slow, doesnt work with non-gaussian data
         if by_r2 is not None:
-            Y = self.nodes["Y"].getExpectation()
-            if 'SW' in self.nodes:
-                W = self.nodes["SW"].getExpectation()
+
+            if "SW" in self.nodes:
                 Z = self.nodes['Z'].getExpectation()
+                W = self.nodes["SW"].getExpectation()
             else:
-                W = self.nodes["W"].getExpectation()
                 Z = self.nodes['SZ'].getExpectation()
+                W = self.nodes["W"].getExpectation()
+            
+            Y = self.nodes["Y"].getExpectation()
 
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
             for m in range(self.dim['M']):
-
+                
                 # Fetch the mask for missing vlaues
                 mask = self.nodes["Y"].getNodes()[m].getMask()
 
@@ -260,10 +262,16 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 # print "Node: " + str(node)
                 # t = time()
-                if i<self.options['startSparsity'] and ((node=="ThetaZ") or (node=="ThetaW")) :
+                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['startSparsity']:
                     continue
                 self.nodes[node].update()
                 # print "time: " + str(time()-t)
+
+            # Set the proper name of the Z node
+            if "SZ" in self.nodes:
+                name_Z="SZ"
+            else:
+                name_Z="Z"
 
             # Calculate Evidence Lower Bound
             if (i+1) % self.options['elbofreq'] == 0:

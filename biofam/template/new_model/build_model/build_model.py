@@ -17,11 +17,11 @@ from biofam.build_model.utils import *
 def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None):
     """Method to build a bioFAM model"""
 
-    print ("\n")
-    print ("#"*24)
-    print ("## Building the model ##")
-    print ("#"*24)
-    print ("\n")
+    print("\n")
+    print("#"*24)
+    print("## Building the model ##")
+    print("#"*24)
+    print("\n")
     sleep(1)
 
     # Define dimensionalities
@@ -33,7 +33,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         D = model_opts['D']
 
         if model_opts["sample_X"]:
-            if model_opts["transpose"]:
+            if model_opts["transpose_sparsity"]:
                dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
                dataClust = [None] * M
                view_has_covariance_prior = [True] * M
@@ -49,7 +49,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         N = data[0].shape[0]
         D = s.asarray([data[m].shape[1] for m in range(M)])
 
-        if model_opts["transpose"]:
+        if model_opts["transpose_sparsity"]:
 
            if dataX is None :
                view_has_covariance_prior = [None] * M
@@ -57,7 +57,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
                view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
 
            # TODO : TO REMOVE (test)
-           if (dataX is not None) and (model_opts["sample_X"]):
+           if (dataX is None) and (model_opts["sample_X"]):
                dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
                dataClust = [None] * M
                view_has_covariance_prior = [True] * M
@@ -65,7 +65,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         else:
 
             # TODO : TO REMOVE (test)
-            if (dataX is not None) and (model_opts["sample_X"]):
+            if (dataX is None) and (model_opts["sample_X"]):
                 dataX = s.random.normal(0, 1, [N, 2])
                 dataClust = None
 
@@ -103,7 +103,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     init = initNewModel(dim, data, model_opts["likelihood"])
 
     # Initialise latent variables
-    if model_opts['transpose']:
+    if model_opts['transpose_sparsity']:
         priorZ_mean_T0 = 0.
         priorZ_meanT1 = 0.
         priorZ_varT0 = 1.
@@ -132,7 +132,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
 
     #Initialise weights
-    if model_opts['transpose']:
+    if model_opts['transpose_sparsity']:
         pmean = 0.;
         pcov = 1.;
         qmean = "random";
@@ -155,14 +155,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         initW_varS1 = 1;
         initW_theta = 1.;
 
-        # TO-DOOOOOOOOOO: fIX LEARN INTERCEPT
-        # if model_opts["learnIntercept"]:
-        # for m in range(M):
-        #     if model_opts["likelihood"][m]=="gaussian":
-        #         initSW_meanS1[m][:,0] = data[m].mean(axis=0)
-        #         initSW_varS1[m][:,0] = 1e-5
-        #         initSW_theta[m][:,0] = 1.
-
         init.initSW(pmean_S0=priorW_mean_S0, pmean_S1=priorW_meanS1, pvar_S0=priorW_varS0, pvar_S1=priorW_varS1, ptheta=priorW_theta,
             qmean_S0=initW_meanS0, qmean_S1=initW_meanS1, qvar_S0=initW_varS0, qvar_S1=initW_varS1, qtheta=initW_theta)
 
@@ -175,7 +167,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
         pa = 1e-14 ; pb = 1e-14
 
-    if model_opts['transpose']:
+    if model_opts['transpose_sparsity']:
         if dataX is not None:
             params = [None] * M
             for m in range(M):
@@ -201,7 +193,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
         pa = 1e-14; pb = 1e-14
 
-    if model_opts['transpose']:
+    if model_opts['transpose_sparsity']:
         qa = 1.; qb = 1.
         init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
@@ -215,20 +207,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             pass
             #qa = 1.; qb = 1.
             #init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
-
-
-    # Initialise precision of noise
-    # TODO do sth here for siulations
-
-    # values of the parameters of the prior Gamma distribution
-    if 'noise' in model_opts:  # simulation
-        pa = 20.; pb = pa * model_opts['noise']
-    else:
-        pa = 1e-14; pb = 1e-14
-
-    qa=1.; qb=1.
-    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
-
 
     #Initialise sparsity on weights (or factors if transpose)
 
@@ -245,7 +223,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         priorTheta_b = 1.
 
 
-    if model_opts["transpose"]:
+    if model_opts["transpose_sparsity"]:
         # Initialise sparsity on the factors
         initTheta_a = 1.
         initTheta_b = 1.
@@ -262,7 +240,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
     else:
         # Initialise sparsity on the weights
-        learnTheta = [s.ones((D[m], K)) for m in xrange(M)]
+        learnTheta = [s.ones((D[m], K)) for m in range(M)]
         initTheta_a = 1.
         initTheta_b = 1.
         initTheta_E = 0.5
@@ -277,16 +255,29 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
                                 qE=initTheta_E)
 
-    # Observed data
 
-    init.initY()
+    # Noise
+
+
+    # values of the parameters of the prior Gamma distribution
+    if 'noise' in model_opts:  # simulation
+        pa = 20.; pb = pa * model_opts['noise']
+    else:
+        pa = 1e-14; pb = 1e-14
+
+    qa=1.; qb=1.
+    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb, transposed=model_opts["transpose_noise"])
+
+    # Observed data
+    init.initY(transpose_noise=model_opts["transpose_noise"])
+
 
     ############################################
     ## Define the markov blanket of each node ##
     ############################################
 
     nodes = init.getNodes()
-    if model_opts['transpose']:
+    if model_opts['transpose_sparsity']:
         nodes["ThetaZ"].addMarkovBlanket(SZ=nodes["SZ"])
         nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])
         nodes["SZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
@@ -317,7 +308,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         nodes["SW"].addMarkovBlanket(AlphaW=nodes["AlphaW"], ThetaW=nodes["ThetaW"], Y=nodes["Y"], Z=nodes["Z"],Tau=nodes["Tau"])
         nodes["Y"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Tau=nodes["Tau"])
         nodes["Tau"].addMarkovBlanket(Z=nodes["Z"], SW=nodes["SW"], Y=nodes["Y"])
-
 
     #################################
     ## Initialise Bayesian Network ##

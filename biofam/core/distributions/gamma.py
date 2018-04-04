@@ -27,7 +27,7 @@ class Gamma(Distribution):
         self.params = { 'a':a, 'b':b }
 
         # Initialise expectations
-        if E is None:
+        if (E is None) or (lnE is None):
             self.updateExpectations()
         else:
             self.expectations = { 'E':s.ones(dim)*E, 'lnE':s.ones(dim)*lnE }
