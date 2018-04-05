@@ -26,6 +26,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   
   # Load expectations
   object@Expectations <- h5read(file, "expectations")
+  object@Parameters <- h5read(file,"parameters")
   object@Status <- "trained"
 
   # Unify names of the nodes with sparsity
@@ -83,7 +84,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
 
 
   tryCatch( {
-
+    
     if (object@DataOpts$shared_features) {
       for (m in names(TrainData)) {
         rownames(TrainData[[m]]) <- featureData
@@ -128,9 +129,9 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   # Set view, sample, feature and factor names
   if (is.null(names(object@TrainData))) {
     viewNames(object) <- paste0("V", as.character(1:object@Dimensions[["M"]]))
-  } else {
-    viewNames(object) <- names(object@TrainData)
-  }
+  } #else {
+    #viewNames(object) <- names(object@TrainData)
+  #}
   if (is.null(colnames(object@TrainData[[1]]))) {
     sampleNames(object) <- paste0("S", as.character(1:object@Dimensions[["N"]]))
   } else {
