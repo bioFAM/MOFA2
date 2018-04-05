@@ -16,8 +16,8 @@ plotFactPosition = function(object, fact='all', position_file=NA, separator=' ',
     # add length scale and significance to the factor names 
     # TODO check first that Parameters$Sigma$l is an attribute (or try catch)
     
-    l_scales = paste('l=', round(object@Parameters$SigmaZ$l, 1), sep='')
-    sig = paste('sig=', round(object@Parameters$SigmaZ$sig, 1), sep='')
+    l_scales = paste('l=', round(object@Parameters$SigmaZ$l, 2), sep='')
+    sig = paste('sig=', round(object@Parameters$SigmaZ$sig, 2), sep='')
     colnames(f_sfa) = paste(colnames(f_sfa), l_scales, sep=',  ')
     colnames(f_sfa) = paste(colnames(f_sfa), sig, sep=',  ')
 
@@ -82,8 +82,8 @@ plotFactPosition = function(object, fact='all', position_file=NA, separator=' ',
       colnames(f_sfa[[m]]) = paste('factors_',colnames(f_sfa[[m]]), sep='')
       f_sfa[[m]]= data.frame(f_sfa[[m]])
 
-      l_scales = paste('l=', round(object@Parameters$SigmaAlphaW[[m]]$l, 1), sep='')
-      sig = paste('sig=', round(object@Parameters$SigmaAlphaW[[m]]$sig, 1), sep='')
+      l_scales = paste('l=', round(object@Parameters$SigmaAlphaW[[m]]$l, 2), sep='')
+      sig = paste('sig=', round(object@Parameters$SigmaAlphaW[[m]]$sig, 2), sep='')
       colnames(f_sfa[[m]]) = paste(colnames(f_sfa[[m]]), l_scales, sep=',  ')
       colnames(f_sfa[[m]]) = paste(colnames(f_sfa[[m]]), sig, sep=',  ')
       
