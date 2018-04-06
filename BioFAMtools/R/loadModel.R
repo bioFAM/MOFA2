@@ -26,7 +26,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   
   # Load expectations
   object@Expectations <- h5read(file, "expectations")
-  object@Parameters <- h5read(file,"parameters")
+  tryCatch(object@Parameters <- h5read(file, "parameters"), error = function(e) { print(paste("No parameters found in ", file)) })
   object@Status <- "trained"
 
   # Unify names of the nodes with sparsity
