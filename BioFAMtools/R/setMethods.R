@@ -181,11 +181,13 @@ setMethod("viewNames<-", signature(object="BioFAModel", value="character"),
     if (!length(value)==length(object@TrainData))
       stop("view names do not match the number of views in the training data")
     
-    # We have to modify this
     if (object@Status == "trained"){
-      multiview_nodes <- c("AlphaW","W","Tau","Theta","Y")
-      for (node in multiview_nodes) { 
-        names(object@Expectations[[node]]) <- value 
+      # Deduce multiview nodes (e.g. AlphaW, W, Tau, Theta, Y)
+      for (node in names(object@Expectations)) {
+        if (class(object@Expectations[[node]]) == "list" & 
+            length(object@Expectations[[node]]) == object@Dimensions["M"]) {
+          names(object@Expectations[[node]]) <- value 
+        }
       }
     }
     
