@@ -9,7 +9,7 @@
 
 # Input files as plain text format
 inFolder="spatial"
-inFiles=( "$inFolder/view_A" )
+inFiles=( "$inFolder/view_A" "$inFolder/view_B" )
 
 # Options for the input files
 delimiter="," # delimiter, such as "\t", "" or " "
@@ -30,16 +30,16 @@ transpose_noise=1
 
 #Use samples' positions data as a covariance prior structure between samples per factor
 #X_Files=( "$inFolder/X_file" )
-X_Files=( "$inFolder/X_file_view_A" )
+X_Files=( "$inFolder/X_file_view_A" "$inFolder/X_file_view_B" )
 
 #Choose to sample the positions of the samples to test the covariance prior structure (for any view if transpose = 1)
 sample_X=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-likelihoods=( gaussian )
+likelihoods=( gaussian gaussian )
 
 # Define view names
-views=( view_A )
+views=( view_A view_B )
 
 # Define file with covariates (not implemented yet, please ignore)
 # covariatesFile="/tmp/covariates.txt"
@@ -57,7 +57,7 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 # Recommendation:
 # (1) If you remove inactive factors (dropR2>0), then the initial number of factors should be large enough
 # (2) If you want to get the most strong drivers of variation then we recommend dropR2 to be at least 0.05 (5%), but if you want to capture more subtle sources of variation you should decrease it to 0.01 (1%) or 0.03 (3%)
-factors=5   # initial number of facotrs
+factors=10   # initial number of facotrs
 startDrop=1000  # initial iteration to start shutting down factors
 freqDrop=1 	 # frequency of checking for shutting down factors
 dropR2=0.01  # threshold on fractionof variance explained

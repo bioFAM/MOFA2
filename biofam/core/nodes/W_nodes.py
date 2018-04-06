@@ -15,7 +15,7 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None,precompute_pcovinv=True):
-        super().__init__(dim=dim,  pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
+        super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
         self.precompute(precompute_pcovinv=precompute_pcovinv)
 

@@ -8,16 +8,16 @@
 
 
 # Input files as plain text format
-#inFolder="non_spatial"
-inFolder="test_data"
-#inFolder="real_data"
+#inFolder="test_data"
+inFolder="real_data"
 
-inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" )
+#inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" )
+inFiles=( "$inFolder/S12765-B2.csv" "$inFolder/S14077-H5.csv" "$inFolder/S14092-H2.csv" )
 
 # Options for the input files
-delimiter=" " # delimiter, such as "\t", "" or " "
-header_rows=0 # set to 1 if the files contain row names
-header_cols=0 # set to 1 if the files contain column names
+delimiter="," # delimiter, such as "\t", "" or " "
+header_rows=1 # set to 1 if the files contain row names
+header_cols=1 # set to 1 if the files contain column names
 
 # Output file path, please use the .hdf5 extension
 outFile=( "/tmp/test.hdf5" )

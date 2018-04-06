@@ -84,16 +84,18 @@ class MultivariateGaussian(Distribution):
         # for i in range(self.dim[0]):
         #     self.E2[i,:,:] = s.outer(self.E[i,:],self.E[i,:]) + self.cov[i,:,:]
 
-        EXXT = self.params['cov'].copy()
+        # computing the expectation of X*X.T
+        # Work but not useful now !
+        #EXXT = self.params['cov'].copy()
         # TODO sort out index
         # import pdb; pdb.set_trace()
 
-        if self.axis_cov == 1:
-            for i in range(self.dim[0]):
-                EXXT[i,:,:] += s.outer(E[i,:],E[i,:])
-        else:
-            for i in range(self.dim[1]):
-                EXXT[i,:,:] += s.outer(E[:,i],E[:,i])
+        #if self.axis_cov == 1:
+        #    for i in range(self.dim[0]):
+        #        EXXT[i,:,:] += s.outer(E[i,:],E[i,:])
+        #else:
+        #    for i in range(self.dim[1]):
+        #        EXXT[i,:,:] += s.outer(E[:,i],E[:,i])
 
         # from the expectation of X*X.T to the expectation of X^2
         # Work but not useful now !
@@ -105,7 +107,7 @@ class MultivariateGaussian(Distribution):
         #    for i in range(self.dim[1]):
         #        E2[:, i] = np.diag(EXXT[i, :, :]).flatten()  # extracting the diagonal
 
-        self.expectations = {'E': E,  'EXXT': EXXT}
+        self.expectations = {'E': E}
         #self.expectations = {'E':E, 'E2':E2, 'EXXT':EXXT}
 
     #def density(self, x):

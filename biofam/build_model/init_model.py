@@ -221,7 +221,8 @@ class initModel(object):
 
             # covariance
             if isinstance(pcov, (int, float)):
-                pcov_m = s.array([s.eye(self.D[m]) * pcov for k in range(self.K)])
+                pcov_mk = s.eye(self.D[m]) * pcov
+                pcov_m =  s.repeat(pcov_mk[None,:,:],self.K,axis=0)
 
             ## Initialise variational distribution (Q) ##
 

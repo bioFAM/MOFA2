@@ -7,11 +7,11 @@
 ###################
 
 
-factors=5   # initial number of factors
-M=1
+factors=10   # initial number of factors
+M=2
 N=100
-D=( 100 )
-spatialFact=0.2
+D=( 100 100 )
+spatialFact=0.6
 noise=1.  # 0.5, 1, 2, 3, 4, 5
 sparsity=0.2
 outDir='/home/yonatan/PycharmProjects/covar/biofam/biofam/template/new_model/run/spatial'
@@ -27,11 +27,11 @@ sample_X=1
 
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-likelihoods=( gaussian )
+likelihoods=( gaussian gaussian )
 
 
 # Names of views
-views=( view_A )
+views=( view_A view_B )
 
 
 
@@ -55,7 +55,7 @@ cmd='python3 ../build_model/simulation_entry.py
 	--spatialFact $spatialFact
 	--noise $noise
 	--sparsity $sparsity
-	--views $views
+	--views ${views[@]}
 '
 
 if [[ $transpose_sparsity -eq 1 ]]; then cmd="$cmd --transpose_sparsity"; fi

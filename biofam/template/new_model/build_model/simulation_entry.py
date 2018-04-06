@@ -19,6 +19,7 @@ def entry_point():
 
     # Data options
     p.add_argument( '--scale_covariates',  type=int, nargs='+', default=0,                      help='Scale covariates?' )
+    p.add_argument( '--shared_features',    action="store_true", default=False,           help='Features, not samples are shared between views?' )
 
     # simulation options
     #p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ')
@@ -113,7 +114,7 @@ def entry_point():
     print("Saving model in %s...\n" % args.outFile)
     print(model_opts["outDir"]) #, args.outFile)
 
-    saveSimulatedModel(model=model, outfile=args.outFile, view_names=args.views, train_opts=None, model_opts=model_opts)
+    saveSimulatedModel(model=model, outfile=args.outFile, view_names=args.views, train_opts=None, model_opts=model_opts, shared_features=args.shared_features)
 
 
 

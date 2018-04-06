@@ -192,7 +192,8 @@ def loadDataX(data_opts, transpose = False):
                     if file != "None":
                         sigma_clust[m] = np.loadtxt(file)
 
-            if [np.all(X_m == None) for X_m in X] == True*[M]:
+            #if [np.all(X_m == None) for X_m in X] == [True]*M:
+            if [X_m is None for X_m in X] == [True] * M: #simplified expression
                 X = None
 
         else:
@@ -564,7 +565,7 @@ def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sa
 
     hdf5.close()
 
-def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
+def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None,  shared_features=False):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
@@ -595,6 +596,6 @@ def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, 
     saveExpectations(model,hdf5,view_names)
     saveParameters(model,hdf5,view_names)
     saveModelOpts(model_opts,hdf5)
-    saveTrainingData(model, hdf5, view_names, sample_names, feature_names)
+    saveTrainingData(model, hdf5, view_names, sample_names, feature_names, shared_features)
 
     hdf5.close()

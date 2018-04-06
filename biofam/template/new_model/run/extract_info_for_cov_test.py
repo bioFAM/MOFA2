@@ -5,13 +5,12 @@ def print_attrs(name, obj):
     for key, val in obj.attrs.iteritems():
         print ("    %s: %s" % (key, val))
 
-transpose_sparsity=1
+f = h5py.File("spatial/simul_spatial.h5",'r')
+#f.visititems(print_attrs)
 
-if transpose_sparsity:
+if "SigmaAlphaW" in f["parameters"].keys():
     SigmaNode = "SigmaAlphaW"
 
-    f = h5py.File("spatial/simul_spatial.h5", 'r')
-    # f.visititems(print_attrs)
     views = f["parameters"][SigmaNode].keys()
     print("Simulated model")
     for view in views:
@@ -32,8 +31,7 @@ if transpose_sparsity:
 
 else:
     SigmaNode = "SigmaZ"
-    f = h5py.File("spatial/simul_spatial.h5",'r')
-    #f.visititems(print_attrs)
+
     print("Simulated model")
     #print("X positions cells : ",f["parameters"][SigmaNode]["X"][:,:])
     print("true variance hyperparameters for each factor : ", f["parameters"][SigmaNode]["ix"][:,])
