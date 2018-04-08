@@ -10,9 +10,6 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# TODO : remove loop l.135 if possible
-# TODO : check if we should ask the mask l.455 and ELBO formula muW (muW not used for now)
-
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None,precompute_pcovinv=True):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
@@ -31,18 +28,16 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.factors_axis = 1
 
         if precompute_pcovinv:
-            print("precompute p_cov_inv in W node !")
             p_cov = self.P.params["cov"]
 
             self.p_cov_inv = []
             self.p_cov_inv_diag = []
 
             for k in range(self.K):
-                tmp = p_cov[k,0,0]
-                if np.all(p_cov[k]/tmp == np.eye(self.D)):
-                    inv = 1 / tmp * np.eye(self.D)
-                    diag_inv = 1 / tmp * np.ones(self.D)
-                else:
+                if p_cov[k].__class__.__name__ == 'dia_matrix':
+                    diag_inv = 1 / p_cov[k].data
+                    inv = np.diag(diag_inv)
+                elif p_cov[k].__class__.__name__ == 'ndarray':
                     diagonal = np.diagonal(p_cov[k])
                     if np.all(np.diag(diagonal) == p_cov[k]):
                         diag_inv = 1. / diagonal
@@ -50,11 +45,14 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                     else:
                         inv = np.linalg.inv(p_cov[k])
                         diag_inv = np.diagonal(inv)
+                else:
+                    #TODO : deal with sparse non diagonal input matrices as pcov
+                    print("Not implemented yet")
+                    exit()
+
                 self.p_cov_inv.append(inv)
                 self.p_cov_inv_diag.append(diag_inv)
 
-            self.p_cov_inv = np.array(self.p_cov_inv)
-            self.p_cov_inv_diag = np.array(self.p_cov_inv_diag)
         else:
             self.p_cov_inv = None
             self.p_cov_inv_diag = None
@@ -71,8 +69,11 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
     def removeFactors(self, idx):
         super(W_Node, self).removeFactors(idx, axis=1)
         if self.p_cov_inv is not None:
-            self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
-            self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
+            for i in idx :
+                del self.p_cov_inv[i]
+                del self.p_cov_inv_diag[i]
+            #self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
+            #self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
     def updateParameters(self):
 
@@ -135,9 +136,9 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
 
             else:
-                Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k, :])
+                Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k])
 
-                tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.D)
+                tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.D)
                 for d in range(self.D):
                     Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])) #-Qmean[:, k]))
 
@@ -163,9 +164,9 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # compute cross entropy term
         tmp1 = 0
-        mat_tmp = p_cov_inv[k, :, :] - p_cov_inv_diag[k, :] * s.eye(self.D)
+        mat_tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.D)
         tmp1 += QE[:, k].transpose().dot(mat_tmp).dot(QE[:, k])
-        tmp1 += p_cov_inv_diag[k, :].dot(QE2[:, k])
+        tmp1 += p_cov_inv_diag[k].dot(QE2[:, k])
         tmp1 = -.5 * tmp1
         # tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2
         # tmp1 = -(tmp1 * Alpha['E']).sum()
@@ -174,7 +175,13 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         tmp2 = 0  # constant here
         # if self.n_iter> 4:
         #     import pdb; pdb.set_trace()
-        tmp2 += np.linalg.slogdet(p_cov[k, :, :])[1]
+        if p_cov[k].__class__.__name__ == 'dia_matrix':
+            tmp2 += np.sum(p_cov[k].data)
+        elif p_cov[k].__class__.__name__ == 'ndarray':
+            tmp2 += np.linalg.slogdet(p_cov[k])[1]
+        else:
+            print("Not implemented yet")
+            exit()
         tmp2 *= (-.5)
         # tmp2 = 0.5*Alpha["lnE"].sum()
 
@@ -253,19 +260,30 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 alpha = self.markov_blanket['SigmaAlphaW'].sample()
                 p_var = s.square(1./alpha)
                 #p_cov = s.diag(p_var)
-                p_cov = np.array([p_var[k]*np.eye(self.D) for k in range(self.K)])
+                p_cov = [p_var[k]*np.eye(self.D) for k in range(self.K)]
             else:
                 p_cov = self.markov_blanket['SigmaAlphaW'].sample()
         elif "AlphaW" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaW'].sample()
             p_var = s.square(1. / alpha)
             #p_cov = s.diag(p_var)
-            p_cov = np.array([p_var[k] * np.eye(self.D) for k in range(self.K)])
+            p_cov = [p_var[k] * np.eye(self.D) for k in range(self.K)]
         else:
             p_cov = self.P.params['cov']
 
         # simulating
-        samp_tmp = [s.random.multivariate_normal(p_mean[:, i], p_cov[i, :, :]) for i in range(self.dim[1])]
+
+        samp_tmp = []
+        for i in range(self.dim[1]):
+            #samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i])) #does it yield the correct result for sparse input matrices ?
+            if p_cov[i].__class__.__name__ == 'dia_matrix':
+                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i].toarray())) #inefficient
+            elif p_cov[i].__class__.__name__ == 'ndarray':
+                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i]))
+            else:
+                print("Not implemented yet")
+                exit()
+
         # self.samp = s.array([tmp/tmp.std() for tmp in samp_tmp]).transpose()
         self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
 

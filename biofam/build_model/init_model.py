@@ -56,7 +56,7 @@ class initModel(object):
 
         # TODO add sanity check if not float (dim of the matrices)
         if isinstance(pcov, (int, float)):
-            pcov = s.array([s.eye(self.N) * pcov for k in range(self.K)])  # covariance
+            pcov = [s.sparse.eye(self.N) * pcov] * self.K
 
         ## Initialise variational distribution (Q) ##
 
@@ -110,7 +110,7 @@ class initModel(object):
             qmean[:, idx_covariates] = covariates
 
             # Remove prior and variational distributions from the covariates
-            pcov[:, idx_covariates, idx_covariates] = s.nan
+            pcov[idx_covariates] = s.nan
             #pvar[:, idx_covariates] = s.nan
             qvar[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
@@ -221,8 +221,8 @@ class initModel(object):
 
             # covariance
             if isinstance(pcov, (int, float)):
-                pcov_mk = s.eye(self.D[m]) * pcov
-                pcov_m =  s.repeat(pcov_mk[None,:,:],self.K,axis=0)
+                pcov_mk = s.sparse.eye(self.D[m]) * pcov
+                pcov_m = [pcov_mk] * self.K
 
             ## Initialise variational distribution (Q) ##
 
@@ -269,7 +269,7 @@ class initModel(object):
                 qmean_m[:, idx_covariates] = covariates
 
                 # Remove prior and variational distributions from the covariates
-                pcov_m[:, idx_covariates] = s.nan
+                pcov_m[idx_covariates] = s.nan
                 qvar_m[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
             # Initialise the node

@@ -5,7 +5,9 @@ def print_attrs(name, obj):
     for key, val in obj.attrs.iteritems():
         print ("    %s: %s" % (key, val))
 
-f = h5py.File("spatial/simul_spatial.h5",'r')
+folder="ns"
+
+f = h5py.File("$folder/simul.h5",'r')
 #f.visititems(print_attrs)
 
 if "SigmaAlphaW" in f["parameters"].keys():
@@ -18,7 +20,7 @@ if "SigmaAlphaW" in f["parameters"].keys():
         #print("X positions cells : ", f["parameters"][SigmaNode][view]["X"][:, :])
         print("true variance hyperparameters for each factor : ", f["parameters"][SigmaNode][view]["ix"][:, ])
 
-    f2 = h5py.File("spatial/test.hdf5", 'r')
+    f2 = h5py.File("$folder/test.hdf5", 'r')
     # f2.visititems(print_attrs)
     views = f["parameters"][SigmaNode].keys()
     print("")
@@ -36,7 +38,7 @@ else:
     #print("X positions cells : ",f["parameters"][SigmaNode]["X"][:,:])
     print("true variance hyperparameters for each factor : ", f["parameters"][SigmaNode]["ix"][:,])
 
-    f2 = h5py.File("spatial/test.hdf5",'r')
+    f2 = h5py.File("$folder/test.hdf5",'r')
     print("")
     print("Fitted model")
     print("recovered variance hyperparameters for each factor : ", f2["parameters"][SigmaNode]["ix"][:,])

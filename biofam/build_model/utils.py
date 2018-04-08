@@ -342,12 +342,24 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
                         expectations[m] = {'E':expectations[m]["E"]}
 
                 if expectations[m] is not None:
+
+                    # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
+                    SigmaNode = node == "SigmaAlphaW" and nodes[node].getNodes()[m].__class__.__name__ != "AlphaW_Node_mk"
+
                     for exp_name in expectations[m].keys():
                         if type(expectations[m][exp_name]) == ma.core.MaskedArray:
                             tmp = ma.filled(expectations[m][exp_name], fill_value=np.nan)
-                            view_subgrp.create_dataset(exp_name, data=tmp.T)
+                            if SigmaNode:
+                                view_subgrp.create_dataset(exp_name, data=tmp)
+                            else:
+                                view_subgrp.create_dataset(exp_name, data=tmp.T)
+
                         else:
-                            view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name].T)
+                            if SigmaNode:
+                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name])
+                            else:
+                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name].T)
+
 
         # Single-view nodes
         else:
@@ -355,7 +367,12 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
                 expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
             if only_first_moments: expectations = {'E':expectations["E"]}
             for exp_name in expectations.keys():
-                node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
+
+                # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
+                if node == "SigmaZ":
+                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
+                else:
+                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
 
 def saveTrainingStats(model, hdf5):
     """ Method to save the training statistics in an hdf5 file

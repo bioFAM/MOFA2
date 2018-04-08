@@ -27,9 +27,9 @@ class MultivariateGaussian(Distribution):
     Dimensionalities :
     - X: (N,D)
     - Mu: (N,D)
-    - Sigma: (N,D,D) if axis_cov=1, (D,N,N) if axis_cov=0
+    - Sigma: (N,D,D) if axis_cov=1, (D,N,N) if axis_cov=0, as a list of N matrices (D,D)
     - E[X]: (N,D)
-    - E[X^2]: (N,D,D) if axis_cov=1, (D,N,N) if axis_cov=0
+    - E[X^2]: (N,D,D) if axis_cov=1, (D,N,N) if axis_cov=0, , as a list of N matrices (D,D)
     """
     def __init__(self, dim, mean, cov, axis_cov=1, E=None):
         Distribution.__init__(self, dim)
@@ -49,23 +49,23 @@ class MultivariateGaussian(Distribution):
 
         # Initialise the covariance
         # If 'cov' is a matrix and not a tensor, broadcast it along the zeroth axis
-        if len(cov.shape) == 2:
-            assert ((axis_cov == 0)or(axis_cov == 1)), "Error : axis_cov is the index of the dimension of the covariance matrix, either 0 or 1"
-            if axis_cov == 1 :
-                cov = s.repeat(cov[None,:,:], dim[0],0)
-            else:
-                cov = s.repeat(cov[None, :, :], dim[1], 0)
+        if isinstance(cov,s.ndarray):
+            if len(cov.shape) == 2:
+                assert ((axis_cov == 0)or(axis_cov == 1)), "Error : axis_cov is the index of the dimension of the covariance matrix, either 0 or 1"
+                if axis_cov == 1 :
+                    cov = [cov] * dim[0]
+                else:
+                    cov = [cov] * dim[1]
 
-        assert (cov.shape[1] == cov.shape[2]) and (sum(cov.shape[1:]) > 1), "The covariance has to be a tensor with shape (N,D,D) or (D,N,N)"
+        assert (cov[0].shape[0] == cov[0].shape[1]) and (sum(cov[0].shape) > 1), "The covariance has to be a tensor with shape (N,D,D) or (D,N,N)"
 
         # Check that the dimensionalities of 'mean' and 'cov' match
         if axis_cov == 1:
-            assert (cov.shape[1] == cov.shape[2]) and (sum(cov.shape[1:]) > 1), "The covariance has to be a tensor with shape (N,D,D)"
-            assert cov.shape[1] == mean.shape[1] == dim[1], "The covariance has to be a tensor with shape (N,D,D)"
-            assert cov.shape[0] == mean.shape[0] == dim[0], "The covariance has to be a tensor with shape (N,D,D)"
+            assert cov[0].shape[0] == mean.shape[1] == dim[1], "The covariance has to be a tensor with shape (N,D,D)"
+            assert len(cov) == mean.shape[0] == dim[0], "The covariance has to be a tensor with shape (N,D,D)"
         else:
-            assert cov.shape[1] == mean.shape[0] == dim[0], "The covariance has to be a tensor with shape (D,N,N)"
-            assert cov.shape[0] == mean.shape[1] == dim[1], "The covariance has to be a tensor with shape (D,N,N)"
+            assert cov[0].shape[0] == mean.shape[0] == dim[0], "The covariance has to be a tensor with shape (D,N,N)"
+            assert len(cov) == mean.shape[1] == dim[1], "The covariance has to be a tensor with shape (D,N,N)"
 
         self.axis_cov = axis_cov
         self.params = {'mean':mean, 'cov':cov }
@@ -121,15 +121,15 @@ class MultivariateGaussian(Distribution):
         if self.axis_cov == 1:
             D = self.dim[1]
             for n in range(self.dim[0]):
-                qterm = (x[n,:]-self.params['mean'][n,:]).T.dot(linalg.det(self.params['cov'][n,:,:])).dot(x[n,:]-self.params['mean'][n,:])
-                l += -0.5*D*s.log(2*s.pi) - 0.5*s.log(linalg.det(self.params['cov'][n,:,:])) -0.5*qterm
+                qterm = (x[n,:]-self.params['mean'][n,:]).T.dot(linalg.det(self.params['cov'][n])).dot(x[n,:]-self.params['mean'][n,:])
+                l += -0.5*D*s.log(2*s.pi) - 0.5*s.log(linalg.det(self.params['cov'][n])) -0.5*qterm
             # return s.sum( s.log(stats.multivariate_normal.pdf(x, mean=self.mean[n,:], cov=self.cov[n,:,:])) )
 
         else:
             N = self.dim[0]
             for d in range(self.dim[1]):
-                qterm = (x[:, d] - self.params['mean'][:, d]).dot(linalg.det(self.params['cov'][d, :, :])).dot((x[:, d] - self.params['mean'][:, d]).T)
-                l += -0.5 * N * s.log(2 * s.pi) - 0.5 * s.log(linalg.det(self.params['cov'][d, :, :])) - 0.5 * qterm
+                qterm = (x[:, d] - self.params['mean'][:, d]).dot(linalg.det(self.params['cov'][d])).dot((x[:, d] - self.params['mean'][:, d]).T)
+                l += -0.5 * N * s.log(2 * s.pi) - 0.5 * s.log(linalg.det(self.params['cov'][d])) - 0.5 * qterm
 
         return l
 
@@ -146,22 +146,32 @@ class MultivariateGaussian(Distribution):
 
         if self.axis_cov == 1: #cov has shape (a,b,b) when mean has shape (a,b)
             if axis == 0:
-                self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
+                for i in idx: del self.params["cov"][i]
             else:
+                self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
                 self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
-                self.params["cov"] = s.delete(self.params["cov"], axis=2, obj=idx)
 
         else: #cov has shape (b,a,a) when mean has shape (a,b)
             if axis == 0:
-                self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
-                self.params["cov"] = s.delete(self.params["cov"], axis=2, obj=idx)
-            else:
                 self.params["cov"] = s.delete(self.params["cov"], axis=0, obj=idx)
+                self.params["cov"] = s.delete(self.params["cov"], axis=1, obj=idx)
+            else:
+                for i in idx: del self.params["cov"][i]
 
         self.updateDim(axis=axis, new_dim=self.dim[axis] - len(idx))
 
     def sample(self):
-        return s.random.multivariate_normal(self.params['mean'], self.params['cov'])
+        if axis_cov==1:
+            samples = []
+            for n in range(self.dim[0]):
+                samples.append(s.random.multivariate_normal(self.params['mean'][n,:], self.params['cov'][n]))
+            samples = np.array(samples)
+        else:
+            samples = []
+            for d in range(self.dim[1]):
+                samples.append(s.random.multivariate_normal(self.params['mean'][:,d], self.params['cov'][d]))
+            samples = np.array(samples).T
+        return samples
 
     # def entropy(self):
         # CHECK THIs Is CORRECT

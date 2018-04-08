@@ -54,9 +54,9 @@ class SigmaGrid_Node(Node):
             self.grid_cov_inv_diag[i,:] = s.diag(self.grid_cov_inv[i,:,:])
 
     def getExpectations(self):
-        cov = np.array([self.grid_cov[i,:,:] for i in self.ix])
-        inv = np.array([self.grid_cov_inv[i,:,:] for i in self.ix])
-        inv_diag = np.array([self.grid_cov_inv_diag[i,:] for i in self.ix])
+        cov = [self.grid_cov[i,:,:] for i in self.ix]
+        inv = [self.grid_cov_inv[i,:,:] for i in self.ix]
+        inv_diag = [self.grid_cov_inv_diag[i,:] for i in self.ix]
         return {'cov':cov, 'inv': inv, 'inv_diag':inv_diag, 'E':cov}
 
     def get_ls(self):
