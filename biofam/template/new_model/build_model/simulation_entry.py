@@ -111,12 +111,20 @@ def entry_point():
     ## Save model ##
     ################
 
+    #filling feature_names and sample_names fields before saving the model
+    data = model.getTrainingData()
+    data = [pd.DataFrame(data=data_m) for data_m in data]
+    if args.shared_features:
+        feature_names = data[0].index.tolist()
+        sample_names = [data[m].columns.values.tolist() for m in range(len(data))]
+    else:
+        sample_names = data[0].index.tolist()
+        feature_names = [data[m].columns.values.tolist() for m in range(len(data))]
+
     print("Saving model in %s...\n" % args.outFile)
     print(model_opts["outDir"]) #, args.outFile)
 
-    saveSimulatedModel(model=model, outfile=args.outFile, view_names=args.views, train_opts=None, model_opts=model_opts, shared_features=args.shared_features)
-
-
+    saveSimulatedModel(model=model, outfile=args.outFile, view_names=args.views, train_opts=None, model_opts=model_opts, feature_names=feature_names, sample_names=sample_names, shared_features=args.shared_features)
 
 if __name__ == '__main__':
   entry_point()

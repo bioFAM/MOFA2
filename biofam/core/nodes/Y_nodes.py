@@ -69,4 +69,7 @@ class Y_Node(Constant_Variational_Node):
         var = 1./Tau_samp
 
         self.samp = s.random.normal(mu, var)
+
+        self.value = self.samp
+
         return self.samp
