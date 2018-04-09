@@ -65,22 +65,22 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   
   # Load training data
 
-  tryCatch( {
-    TrainData   <- h5read(file, "data")
-    featureData <- h5read(file, "features")
-    sampleData  <- h5read(file, "samples")
+  # tryCatch( {
+  TrainData   <- h5read(file, "data")
+  featureData <- h5read(file, "features")
+  sampleData  <- h5read(file, "samples")
 
-    # Define data options (if features are in rows or in columns)
-    if (is.null(sharedFeatures)) {
-      if (is.list(sampleData) & (length(featureData) == nrow(TrainData[[1]]))) {
-        object@DataOpts <- list(shared_features = TRUE)
-      } else {
-        object@DataOpts <- list(shared_features = FALSE)
-      }
+  # Define data options (if features are in rows or in columns)
+  if (is.null(sharedFeatures)) {
+    if (is.list(sampleData) & (length(featureData) == nrow(TrainData[[1]]))) {
+      object@DataOpts <- list(shared_features = TRUE)
     } else {
-      object@DataOpts <- list(shared_features = sharedFeatures)
+      object@DataOpts <- list(shared_features = FALSE)
     }
-  }, error = function(x) { print("Error loading the training data...") })
+  } else {
+    object@DataOpts <- list(shared_features = sharedFeatures)
+  }
+  # }, error = function(x) { print("Error loading the training data...") })
 
 
   tryCatch( {
