@@ -21,7 +21,10 @@
   for (node in nodes) {
     
     # Multi-view nodes
-    if (node != "Z") {
+    
+    if (!(node %in% c("Z","AlphaZ","SigmaZ","ThetaZ"))) {
+    #if (node != "Z") {
+      
     # if (setequal(names(object@Expectations[[node]]),views)) {
       
       # Loop over views

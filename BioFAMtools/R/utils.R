@@ -33,13 +33,28 @@
   # Update expectations
   if (is.list(object@Expectations$Z)) {
     object@Expectations$Z <- object@Expectations$Z$E
-    for (view in viewNames(object)) {
-      object@Expectations$AlphaW[[view]] <- object@Expectations$AlphaW[[view]]$E
-      object@Expectations$W[[view]] <- object@Expectations$W[[view]]$E
-      object@Expectations$Tau[[view]] <- object@Expectations$Tau[[view]]$E
-      object@Expectations$Theta[[view]] <- object@Expectations$Theta[[view]]$E
-      object@Expectations$Y[[view]] <- object@Expectations$Y[[view]]$E
+    
+    nodes=c("AlphaZ","SigmaZ","ThetaZ")
+    for (node in nodes){
+      if (node %in% names(object@Expectations)){
+        object@Expectations$node <- object@Expectations$node$E
+      }
     }
+    
+    for (view in viewNames(object)) {
+      
+      object@Expectations$W[[view]] <- object@Expectations$W[[view]]$E
+      object@Expectations$Y[[view]] <- object@Expectations$Y[[view]]$E
+      object@Expectations$Tau[[view]] <- object@Expectations$Tau[[view]]$E
+      
+      nodes=c("AlphaW","SigmaAlphaW","ThetaW")
+      for (node in nodes){
+        if (node %in% names(object@Expectations)){
+          object@Expectations$node[[view]] <- object@Expectations$node[[view]]$E
+        }
+      }
+    }
+    
   }
   
   # update learnMean to learnIntercept

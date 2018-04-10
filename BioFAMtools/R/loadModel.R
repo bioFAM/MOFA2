@@ -117,6 +117,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   }
   
   # Update old models
+  
   object <- .updateOldModel(object)
   
   # Load dimensions
@@ -172,17 +173,17 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   object <- detectPassengers(object)
 
   # Parse factors: order factors in order of variance explained
-  # if (sortFactors == T) {
-  #   r2 <- rowSums(calculateVarianceExplained(object)$R2PerFactor)
-  #   order_factors <- c(names(r2)[order(r2, decreasing = T)])
-  #   if (object@ModelOpts$learnIntercept==T) { order_factors <- c("intercept",order_factors) }
-  #   object <- subsetFactors(object,order_factors)
-  #   if (object@ModelOpts$learnIntercept==T) { 
-  #     factorNames(object) <- c("intercept",1:(object@Dimensions$K-1))
-  #   } else {
-  #     factorNames(object) <- c(1:object@Dimensions$K) 
-  #   }
-  # }
+  if (sortFactors) {
+   r2 <- rowSums(calculateVarianceExplained(object)$R2PerFactor)
+   order_factors <- c(names(r2)[order(r2, decreasing = T)])
+   if (object@ModelOpts$learnIntercept==T) { order_factors <- c("intercept",order_factors) }
+   object <- subsetFactors(object,order_factors)
+   if (object@ModelOpts$learnIntercept==T) { 
+     factorNames(object) <- c("intercept",1:(object@Dimensions$K-1))
+   } else {
+     factorNames(object) <- c(1:object@Dimensions$K) 
+   }
+  }
   
   
   # Check for intercept factors

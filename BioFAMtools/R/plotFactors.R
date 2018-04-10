@@ -450,11 +450,10 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
   df <- as.data.frame(Z); colnames(df) <- paste0("LF_",colnames(df))
   df <- cbind(df, color_by=color_by, shape_by=shape_by)
 
-    #turn into factors
-   df$shape_by[is.na(df$shape_by)] <- "NA"
-   df$shape_by <- as.factor(df$shape_by)
-   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
-  
+  #turn into factors
+  df$shape_by[is.na(df$shape_by)] <- "NA"
+  df$shape_by <- as.factor(df$shape_by)
+  if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
   
   # Define title and legend of the plot
   main <- "" 
