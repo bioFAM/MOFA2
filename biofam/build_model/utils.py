@@ -463,7 +463,7 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
             if feature_names is not None:
                 featuredata_grp.create_dataset(view, data=[str(f).encode('utf8') for f in feature_names[m]])
 
-def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None):
+def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None, shared_features=False):
     """ Method to save the training data in text files
 
     PARAMETERS
@@ -479,11 +479,17 @@ def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names
         view = view_names[m] if view_names is not None else 'view_' + str(m)
         file_name = outDir + '/' + view
         to_save = pd.DataFrame(data[m].data)
-        if feature_names is not None:
-            to_save.columns = feature_names
+        if feature_names is not None: #shared features or not -> to distinguish
+            if shared_features:
+                to_save.columns = feature_names
+            else:
+                to_save.columns = feature_names[m]
         if sample_names is not None:
-            to_save.index = sample_names
-        to_save.to_csv(file_name, index=False, header=False)
+            if shared_features:
+                to_save.index = sample_names[m]
+            else:
+                to_save.index = sample_names
+        to_save.to_csv(file_name)
 
 def saveDataXTxt(model, outDir, transpose, view_names=None, sample_names=None):
     """ Method to save the X_Files data in text files (X_Files : positions of the samples)
@@ -604,10 +610,10 @@ def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, 
 
     overwriteExpectations(model)
     if 'outDir' in model_opts:
-        saveDataTxt(model, model_opts['outDir'], view_names=view_names, sample_names=None, feature_names=None)
+        saveDataTxt(model, model_opts['outDir'], view_names=view_names, sample_names=sample_names, feature_names=feature_names, shared_features=shared_features)
 
         if model_opts['sample_X']:
-            saveDataXTxt(model, model_opts['outDir'], model_opts["transpose_sparsity"], view_names=view_names, sample_names=None)
+            saveDataXTxt(model, model_opts['outDir'], model_opts["transpose_sparsity"], view_names=view_names) #, sample_names=sample_names)
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model,hdf5,view_names)
