@@ -35,6 +35,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             for k in range(self.K):
                 if p_cov[k].__class__.__name__ == 'dia_matrix':
                     diag_inv = 1 / p_cov[k].data
+                    diag_inv = diag_inv.flatten()
                     inv = np.diag(diag_inv)
                 elif p_cov[k].__class__.__name__ == 'ndarray':
                     diagonal = np.diagonal(p_cov[k])
@@ -174,7 +175,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         # if self.n_iter> 4:
         #     import pdb; pdb.set_trace()
         if p_cov[k].__class__.__name__ == 'dia_matrix':
-            tmp2 += np.sum(p_cov[k].data)
+            tmp2 += np.sum(np.log(p_cov[k].data.flatten()))
         elif p_cov[k].__class__.__name__ == 'ndarray':
             tmp2 += np.linalg.slogdet(p_cov[k])[1]
         else:
