@@ -69,12 +69,10 @@ class Y_Node(Constant_Variational_Node):
         #     Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
         var = 1./Tau_samp
 
-        if np.shape(var)[0]==np.shape(F)[0]: #TauN
+        if self.markov_blanket['Tau'].__class__.__name__ == "TauN_Node": #TauN
             self.samp = np.array([s.random.normal(F[i, :], math.sqrt(var[i])) for i in range(F.shape[0])])
-        elif np.shape(var)[0]==1 and np.shape(var)[1]==np.shape(F)[1]: #TauD
-            self.samp = np.array([s.random.normal(F[:, i],math.sqrt(var[0, i])) for i in range(F.shape[1])]).T
-        else:
-            print("Tau and Z*W dimensions mismatch")
+        else: #TauD
+            self.samp = np.array([s.random.normal(F[:, i],math.sqrt(var[i])) for i in range(F.shape[1])]).T
 
         self.value = self.samp
 
