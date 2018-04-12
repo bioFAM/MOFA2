@@ -432,9 +432,11 @@ class initModel(object):
          qE: float
             initial expectation of the variational distribution
         """
-        Tau_Node = TauN_Node if transposed else TauD_Node
         if transposed:
             print("Using TauN noise!")
+            Tau_Node = TauN_Node
+        else:
+            Tau_Node = TauD_Node
 
         tau_list = [None]*self.M
         for m in range(self.M):

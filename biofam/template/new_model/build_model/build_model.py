@@ -227,7 +227,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         # Initialise sparsity on the factors
         initTheta_a = 1.
         initTheta_b = 1.
-        initTheta_E = 0.5
+        initTheta_E = 1.
         # TO-DOOOOOOOOOO
         # if model_opts["learnIntercept"]:
         #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
@@ -243,7 +243,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         learnTheta = [s.ones((D[m], K)) for m in range(M)]
         initTheta_a = 1.
         initTheta_b = 1.
-        initTheta_E = 0.5
+        initTheta_E = 1.
         # TO-DOOOOOOOOOO
         # if model_opts["learnIntercept"]:
         #     for m in range(M):

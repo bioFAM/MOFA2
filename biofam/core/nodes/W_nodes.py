@@ -4,6 +4,7 @@ import numpy.ma as ma
 import numpy as np
 import scipy as s
 from copy import deepcopy
+import math
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
@@ -415,22 +416,24 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         mu_w_hat = s.ones(self.dim) * mu_w_hat
 
         theta = self.markov_blanket["ThetaW"].sample()
-        if theta.shape != mu_w_hat.shape:
-            theta = s.repeat(theta[None,:],mu_w_hat.shape[0],0)
+        #if theta.shape != mu_w_hat.shape:  #if theta had already mu_z_hat shape, then the sampling above would be wrong
+        theta = s.repeat(theta[None,:],mu_w_hat.shape[0],0)
 
-        if "AlphaW" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaW"].sample()
-            if alpha.shape[0] == 1:
-                alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-            if alpha.shape != mu_w_hat.shape:
-                alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
-        else:
-            print("Not implemented")
-            exit()
+        #if "AlphaW" in self.markov_blanket:
+        alpha = self.markov_blanket["AlphaW"].sample()
+            #if alpha.shape[0] == 1:
+            #    alpha = s.repeat(alpha[:], self.dim[1], axis=0)
+            #if alpha.shape != mu_w_hat.shape:
+            #    alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
+        #else:
+        #    print("Not implemented")
+        #    exit()
 
         # simulate
         bernoulli_s = s.random.binomial(1, theta)
-        w_hat = s.random.normal(mu_w_hat, np.sqrt(1./alpha))
+
+        w_hat = np.array([s.random.normal(mu_w_hat[:, i], math.sqrt(1./alpha[i])) for i in range(mu_w_hat.shape[1])]).T
+        #w_hat = np.random.normal(mu_w_hat, np.sqrt(1./alpha))
 
         self.samp = bernoulli_s * w_hat
         return self.samp

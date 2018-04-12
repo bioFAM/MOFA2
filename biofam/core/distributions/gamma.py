@@ -22,8 +22,10 @@ class Gamma(Distribution):
         Distribution.__init__(self, dim)
 
         # Initialise parameters
-        a = s.ones(dim) * a
-        b = s.ones(dim) * b
+        if isinstance(a, (int, float)):
+            a = s.ones(dim) * a
+        if isinstance(b, (int, float)):
+            b = s.ones(dim) * b
         self.params = { 'a':a, 'b':b }
 
         # Initialise expectations
@@ -51,4 +53,4 @@ class Gamma(Distribution):
     def sample(self, n=1):
         k = self.params['a']
         theta = 1./self.params['b']  # using shape/scale parametrisation
-        return s.random.gamma(k, theta)
+        return np.random.gamma(k, scale=theta)

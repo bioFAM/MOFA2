@@ -44,7 +44,6 @@ class UnivariateGaussian(Distribution):
         E2 = E**2 + self.params['var']
         self.expectations = { 'E':E, 'E2':E2 }
 
-
     def density(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
         # print stats.norm.pdf(x, loc=self.mean, scale=s.sqrt(self.var))

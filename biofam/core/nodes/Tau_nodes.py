@@ -9,6 +9,8 @@ from biofam.core.utils import dotd
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
 
+from biofam.core.distributions import *
+
 
 class TauD_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
@@ -76,6 +78,12 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         return lb_p - lb_q
 
+    def sample(self, distrib='P'):
+        #instead of overwriting sample, we should maybe change the dimensions of this node !
+        P = Gamma(dim=(self.dim[1],1), a=self.P.params["a"][0,:], b=self.P.params["b"][0,:])
+        self.samp = P.sample()[np.newaxis] #transposing 1D array
+        return self.samp
+
 
 
 
@@ -140,3 +148,9 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         lb_q = s.sum(Qa*s.log(Qb)) + s.sum((Qa-1.)*QlnE) - s.sum(Qb*QE) - s.sum(special.gammaln(Qa))
 
         return lb_p - lb_q
+
+    def sample(self, distrib='P'):
+        #instead of overwriting sample, we should maybe change the dimensions of this node
+        P = Gamma(dim=(self.dim[0], 1), a=self.P.params["a"][:,0], b=self.P.params["b"][:,0])
+        self.samp = P.sample()
+        return self.samp
