@@ -219,4 +219,4 @@ class Beta_Unobserved_Variational_Node(Unobserved_Variational_Node):
 
         # Initialise P and Q distributions
         self.P = Beta(dim, pa, pb)
-        self.Q = Beta(dim, qa, qb, qE)
+        self.Q = Beta(dim, qa, qb, E=qE)

@@ -418,7 +418,7 @@ class initModel(object):
 
         self.nodes["SigmaAlphaW"] = Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 
-    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=1., transposed=False):
+    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, transposed=False):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -541,6 +541,7 @@ class initModel(object):
         # Initialise mixed node
         if (ConstThetaNode is not None) and (LearnThetaNode is not None):
             self.nodes["ThetaZ"] = Mixed_ThetaZ_Nodes_k(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=idx)
+
 
     def initThetaZConst_k(self, value=1.):
         """Method to initialise a constant sparsity parameter of the spike and slab factors

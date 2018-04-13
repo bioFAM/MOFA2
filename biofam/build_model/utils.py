@@ -124,7 +124,7 @@ def loadData(data_opts, verbose=True):
         var = Y[m].std(axis=0)
         if np.any(var==0.):
             print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
-            #Y[m].drop(Y[m].columns[np.where(var==0.)], axis=1, inplace=True)
+            Y[m].drop(Y[m].columns[np.where(var==0.)], axis=1, inplace=True)
 
         # Center the features
         if data_opts['center_features'][m]:
