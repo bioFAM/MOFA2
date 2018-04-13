@@ -227,7 +227,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         # Initialise sparsity on the factors
         initTheta_a = 1.
         initTheta_b = 1.
-        initTheta_E = 1.
+        #initTheta_E = 1. #mandatory and used if ThetaMixed contains a ThetaConstNode
+
+        # learnTheta = s.ones((D, K))
         # TO-DOOOOOOOOOO
         # if model_opts["learnIntercept"]:
         #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
@@ -235,15 +237,17 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         if model_opts["learnIntercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
-        init.initThetaMixedZ_k(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
-                               qE=initTheta_E)
+
+        init.initThetaMixedZ_k(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b)
+        #init.initThetaMixedZ_k(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,qE=initTheta_E)
 
     else:
         # Initialise sparsity on the weights
-        learnTheta = [s.ones((D[m], K)) for m in range(M)]
         initTheta_a = 1.
         initTheta_b = 1.
-        initTheta_E = 1.
+        #initTheta_E = 1. #mandatory and used if ThetaMixed contains a ThetaConstNode
+
+        # learnTheta = [s.ones((D[m], K)) for m in range(M)]
         # TO-DOOOOOOOOOO
         # if model_opts["learnIntercept"]:
         #     for m in range(M):
@@ -252,8 +256,8 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         if model_opts["learnIntercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
-        init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b,
-                                qE=initTheta_E)
+        init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b)
+        #init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b, qE=initTheta_E)
 
 
     # Noise

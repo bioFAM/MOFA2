@@ -517,17 +517,18 @@ class initModel(object):
             qE = s.ones((self.N, self.K)) * qE
         elif isinstance(qE, s.ndarray):
             assert qE.shape == (self.N, self.K), "Wrong dimensionality of Theta"
-        else:
-            print("Wrong initialisation for Theta");
-            exit()
 
         # Initialise constant node
         Kconst = idx == 0
         if Kconst.sum() == 0:
             ConstThetaNode = None
         else:
-            ConstThetaNode = ThetaZ_Constant_Node_k(dim=(self.N, s.sum(Kconst),), value=qE[:, Kconst], N_cells=1)
-            self.nodes["ThetaZ"] = ConstThetaNode
+            if qE is None:
+                print("Wrong initialisation for Theta");
+                exit()
+            else:
+                ConstThetaNode = ThetaZ_Constant_Node_k(dim=(self.N, s.sum(Kconst),), value=qE[:, Kconst], N_cells=1)
+                self.nodes["ThetaZ"] = ConstThetaNode
 
         # Initialise non-constant node
         Klearn = idx == 1
@@ -535,7 +536,10 @@ class initModel(object):
             LearnThetaNode = None
         else:
             # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED, THIS IS UGLY
-            LearnThetaNode = ThetaZ_Node_k(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[0, Klearn])
+            if qE is None:
+                LearnThetaNode = ThetaZ_Node_k(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+            else:
+                LearnThetaNode = ThetaZ_Node_k(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[0, Klearn])
             self.nodes["ThetaZ"]=LearnThetaNode
 
         # Initialise mixed node
@@ -552,7 +556,7 @@ class initModel(object):
             constant value from 0 to 1 to initialise the node, 0 corresponds to complete sparsity (all weights are zero) and 1 corresponds to no sparsity
         """
 
-        self.nodes["ThetaZ"] = ThetaZ_Constant_Node_k(dim=(self.N, self.K,), value=s.ones((self.N, self.K)) * pmean,
+        self.nodes["ThetaZ"] = ThetaZ_Constant_Node_k(dim=(self.N, self.K,), value=s.ones((self.N, self.K)) * value,
                                                       N_cells=1.)
 
     def initThetaLearnW_mk(self, pa=1., pb=1., qa=1., qb=1., qE=None):
@@ -602,6 +606,7 @@ class initModel(object):
                     assert qE[m].shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
                 else:
                     print("Wrong initialisation for Theta"); exit()
+
         elif isinstance(qE,s.ndarray):
             assert qE.shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
             tmp = [ qE for m in range(self.M)]
@@ -612,10 +617,6 @@ class initModel(object):
             tmp = [ s.ones((self.D[m],self.K)) * qE for m in range(self.M)]
             qE = tmp # IS THIS REQUIRED????
 
-        else:
-            print("Wrong initialisation for Theta"); exit()
-
-
         Theta_list = [None] * self.M
         for m in range(self.M):
 
@@ -624,16 +625,23 @@ class initModel(object):
             if Kconst.sum() == 0:
                 ConstThetaNode = None
             else:
-                ConstThetaNode = ThetaW_Constant_Node_mk(dim=(self.D[m],s.sum(Kconst),), value=qE[m][:,Kconst], N_cells=1)
-                Theta_list[m] = ConstThetaNode
+                if qE is None:
+                    print("Wrong initialisation for Theta");
+                    exit()
+                else:
+                    ConstThetaNode = ThetaW_Constant_Node_mk(dim=(self.D[m],s.sum(Kconst),), value=qE[m][:,Kconst], N_cells=1)
+                    Theta_list[m] = ConstThetaNode
 
             # Initialise non-constant node
             Klearn = idx[m]==1
             if Klearn.sum() == 0:
                 LearnThetaNode = None
             else:
-                # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED, THIS IS UGLY
-                LearnThetaNode = ThetaW_Node_mk(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[m][0,Klearn])
+                if qE is None:
+                    LearnThetaNode = ThetaW_Node_mk(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+                else:
+                    # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED, THIS IS UGLY
+                    LearnThetaNode = ThetaW_Node_mk(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[m][0,Klearn])
                 Theta_list[m] = LearnThetaNode
 
             # Initialise mixed node
@@ -653,7 +661,7 @@ class initModel(object):
         """
         Theta_list = [None] * self.M
         for m in range(self.M):
-            Theta_list[m] = ThetaW_Constant_Node_mk(dim=(self.D[m],self.K,), value=s.ones((self.D[m],self.K))*pmean, N_cells=1.)
+            Theta_list[m] = ThetaW_Constant_Node_mk(dim=(self.D[m],self.K,), value=s.ones((self.D[m],self.K))*value, N_cells=1.)
         self.Theta = Multiview_Constant_Node(self.M, *Theta_list)
         self.nodes["ThetaW"] = self.Theta
 
