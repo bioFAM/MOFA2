@@ -267,15 +267,16 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
   if (as.data.frame==T) {
     if (variable=="Z") {
       tmp <- reshape2::melt(exp)
-      colnames(tmp) <- c("sample","factor","value")
+      colnames(tmp) <- c("sample", "factor", "value")
+      tmp[c("sample", "factor")] <- sapply(tmp[c("sample", "factor")], as.character)
     }
     else if (variable=="W") {
       tmp <- lapply(names(exp), function(m) { 
         tmp <- reshape2::melt(exp[[m]])
-        colnames(tmp) <- c("feature","factor","value");
+        colnames(tmp) <- c("feature", "factor", "value")
         tmp$view <- m
-        tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character)
-        return(tmp) 
+        tmp[c("view","feature","factor")] <- sapply(tmp[c("view", "feature", "factor")], as.character)
+        return(tmp)
       })
       tmp <- do.call(rbind.data.frame,tmp)
     }
@@ -284,7 +285,7 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
         tmp <- reshape2::melt(exp[[m]])
         colnames(tmp) <- c("sample","feature","value")
         tmp$view <- m
-        tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character)
+        tmp[c("view","feature","factor")] <- sapply(tmp[c("view", "feature", "factor")], as.character)
         return(tmp) 
       })
       tmp <- do.call(rbind,tmp)

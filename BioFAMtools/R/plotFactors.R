@@ -68,7 +68,7 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
   }
   
   names(group_by) <- sampleNames(object)
-  Z$group_by <- group_by[as.character(Z$sample)]
+  Z$group_by <- group_by[Z$sample]
 
   # Remove missing samples
   if(!showMissing) Z <- Z[!is.na(Z$group_by),]
