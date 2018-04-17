@@ -298,7 +298,7 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
       # })
       # tmp <- do.call(rbind,tmp)
     }
-    else if (variable == "Alpha" | variable=="AlphaW" | variable=="AlphaZ") {
+    else if (variable=="AlphaW" | variable=="AlphaZ") {
       tmp <- lapply(names(exp), function(m) { 
         tmp <- data.frame(view=m, factor=names(exp[[m]]), value=unname(exp[[m]]))
         tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character)
@@ -306,10 +306,13 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
       })
       tmp <- do.call(rbind,tmp)
     }
-    else if (variable=="Theta" | variable=="ThetaW" | variable=="ThetaZ") {
+    else if (variable=="ThetaW" | variable=="ThetaZ") {
       stop("Not implemented")
       # tmp <- lapply(names(exp), function(m) { tmp <- reshape2::melt(exp[[m]]); colnames(tmp) <- c("sample","feature","value"); tmp$view <- m; tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character); return(tmp) })
       # tmp <- do.call(rbind,tmp)
+    }
+    else if (variable=="SigmaAlphaW" | variable=="SigmaZ") {
+      stop("Not implemented")
     }
     exp <- tmp
   }
