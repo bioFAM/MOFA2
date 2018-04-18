@@ -48,6 +48,8 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
 
         SWZ = ma.array(SW.dot(Z.T), mask=mask.T)
 
+        # dotd(SWZ, SWZ.T) should compute a sum for all k and k' of W_{d,k} Z_{d,k} W_{d,k'} Z_{d,k'} including for k=k', and then summed over n
+        # s.dot(s.square(Z),s.square(SW).T) computes the sum over all k of wdk^2 * znk2 summed over all n too
         term4 = dotd(SWZ, SWZ.T) - ma.array(s.dot(s.square(Z),s.square(SW).T), mask=mask).sum(axis=0)
 
         tmp = term1 - term2 + term3 + term4
@@ -64,7 +66,7 @@ class Tau_Node(Gamma_Unobserved_Variational_Node):
         # Collect parameters and expectations from current node
         P,Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
-        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
+        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE'] 
 
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)

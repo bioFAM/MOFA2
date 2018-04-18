@@ -7,7 +7,7 @@
 ###################
 
 # Input files as plain text format
-inFolder="/Users/ricard/mofa/mofa/run/test_data"
+nFolder="test_data/"
 inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt")
 
 # Options for the input files
