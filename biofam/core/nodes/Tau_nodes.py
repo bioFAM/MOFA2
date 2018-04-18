@@ -46,7 +46,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         # Calculate terms for the update
         # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
-        term1 = s.square(Y).sum(axis=0)
+        term1 = s.square(Y.astype("float64")).sum(axis=0)
 
         # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
         term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0) # save to modify
@@ -119,7 +119,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
-        term1 = s.square(Y).sum(axis=1)
+        term1 = s.square(Y.astype("float64")).sum(axis=1)
 
         term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=1) # save to modify
 
