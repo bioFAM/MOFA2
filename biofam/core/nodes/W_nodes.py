@@ -348,8 +348,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term2 = 0.5*s.log(alpha[k])
 
             # term3 = 0.5*s.log(ma.dot(ZZ[:,k],tau) + alpha[k])
-            term3 = 0.5*s.log(s.dot(ZZ[:,k],tau) + alpha[k]) # good to modify
-
+            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[k]) # good to modify
             # term4_tmp1 = ma.dot((tau*Y).T,Z[:,k]).data
             term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify
 

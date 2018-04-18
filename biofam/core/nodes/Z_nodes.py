@@ -385,6 +385,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
             Qtheta[:, k] = 1. / (1. + s.exp(-(term1 + term2 - term3 + term4)))
+            Qtheta[:,k] = np.nan_to_num(Qtheta[:,k])
 
             # Update Z
             Qvar_T1[:, k] = 1. / term4_tmp3
