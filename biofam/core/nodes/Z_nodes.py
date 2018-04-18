@@ -197,7 +197,7 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         Qvar = self.Q.getParameters()['var']
 
-        # Cluster terms corersponding to covariates should not intervene
+        # Cluster terms corresponding to covariates should not intervene
         # filtering the covariates out
         latent_variables = self.markov_blanket['Z'].getLvIndex()
         PVar, Pmean = PVar[:, latent_variables], Pmean[:, latent_variables]

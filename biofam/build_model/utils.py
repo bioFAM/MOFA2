@@ -139,13 +139,13 @@ def loadData(data_opts, verbose=True):
 def corr(A,B):
     """ Method to efficiently compute correlation coefficients between two matrices
 
-    PARMETERS
+    PARAMETERS
     ---------
     A: np array
     B: np array
     """
 
-    # Rowwise mean of input arrays & subtract from input arrays themeselves
+    # Rowwise mean of input arrays & subtract from input arrays themselves
     A_mA = A - A.mean(1)[:,None]
     B_mB = B - B.mean(1)[:,None]
 
@@ -364,7 +364,7 @@ def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names
 def overwriteExpectations(net):
     """
     methods to overwrite the expectations of the Q distributions with sampled
-    values in cases where we dont train the network but do only simulations
+    values in cases where we don't train the network but do only simulations
 
     This enables saving the values more easily
     """

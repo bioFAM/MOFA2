@@ -1,6 +1,6 @@
 
 """
-Module to initalise a bioFAM model
+Module to initialise a bioFAM model
 """
 
 import scipy as s
@@ -134,7 +134,7 @@ class initModel(object):
             if isinstance(qmean_S1,str):
 
                 if qmean_S1 == "random": # random
-                    qmean_S1 = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
+                    qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
                 else:
                     print("%s initialisation not implemented for SW" % qmean_S1)
                     exit()
@@ -143,7 +143,7 @@ class initModel(object):
                 assert qmean_S1.shape == (self.D[m],self.K), "Wrong dimensionality"
 
             elif isinstance(qmean_S1,(int,float)):
-                qmean_S1 = s.ones((self.D[m],self.K)) * qmean_S1
+                qmean_S1_tmp = s.ones((self.D[m],self.K)) * qmean_S1
 
             else:
                 print("Wrong initialisation for SW")
@@ -161,7 +161,7 @@ class initModel(object):
                 qtheta=qtheta,
                 qmean_S0=qmean_S0,
                 qvar_S0=qvar_S0,
-                qmean_S1=qmean_S1,
+                qmean_S1=qmean_S1_tmp,
                 qvar_S1=qvar_S1,
 
                 qES=qES,

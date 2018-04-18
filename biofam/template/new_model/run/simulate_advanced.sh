@@ -13,7 +13,7 @@ outDir='/tmp'
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )
 
-factors=20   # initial number of facotrs
+factors=20   # initial number of factors
 M=3
 N=100
 D=1000

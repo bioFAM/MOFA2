@@ -82,12 +82,12 @@ def build_model(model_opts, data=None):
 
 
     # Initialise ARD on weights
-    # TODO do sth here for siulations
+    # TODO do sth here for simulations
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
     init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
 
     # Initialise precision of noise
-    # TODO do sth here for siulations
+    # TODO do sth here for simulations
     pa=1e-14; pb=1e-14; qa=1.; qb=1.; qE=1.
     init.initTau(pa=pa, pb=pb, qa=qa, qb=qb)
 
