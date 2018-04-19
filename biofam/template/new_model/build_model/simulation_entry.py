@@ -26,6 +26,7 @@ def entry_point():
     p.add_argument('--transpose', action='store_true', help='Use the transposed MOFA (use features as a shared dimention)?')
     p.add_argument('--transpose_noise', action='store_true', help='Noise in the common dimension?')
     p.add_argument('--transpose_sparsity', action='store_true', help='Sparsity across the common dimension?')
+    p.add_argument('--ARD_per_view',  action='store_true', help='ARD per view ? (if transposed MOFA used without covariance prior structure)')
 
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--spatialFact',       type=float, default=0.,                              help='Initial percentage of non-spatial latent variables')
@@ -83,9 +84,10 @@ def entry_point():
 
     # Define likelihoods
     model_opts['likelihood'] = args.likelihoods
-    if (len(model_opts['likelihood']) == 1) and (M!=1) :  # TODO check that
-        model_opts['likelihood'] = [model_opts['likelihood']] * M
+    if (len(model_opts['likelihood']) == 1) and (M>1) :  # TODO check that
+        model_opts['likelihood'] = [model_opts['likelihood'][0]] * M
     assert M==len(model_opts['likelihood']), "Please specify one likelihood for each view"
+    # assert set(model_opts['likelihood']).issubset(set(["gaussian","bernoulli","poisson"]))
     model_opts['learnIntercept'] = False # TODO could use that to simulate intercept
     model_opts['outDir'] = args.outDir
     model_opts['noise'] = args.noise
@@ -94,6 +96,9 @@ def entry_point():
 
     #Use sampled positions of the samples
     model_opts['sample_X'] = args.sample_X
+
+    model_opts["ARD_per_view"] = args.ARD_per_view
+
 
     #####################
     ## Build the model ##
@@ -115,11 +120,11 @@ def entry_point():
     data = model.getTrainingData()
     data = [pd.DataFrame(data=data_m) for data_m in data]
     if args.shared_features:
-        feature_names = data[0].index.tolist()
-        sample_names = [data[m].columns.values.tolist() for m in range(len(data))]
+        feature_names = ["feature_" + str(s) for s in data[0].index.tolist()]
+        sample_names = [["sample_" + str(s) for s in data[m].columns.values.tolist()] for m in range(len(data))]
     else:
-        sample_names = data[0].index.tolist()
-        feature_names = [data[m].columns.values.tolist() for m in range(len(data))]
+        sample_names = ["sample_" + str(s) for s in data[0].index.tolist()]
+        feature_names = [["feature_" + str(s) for s in data[m].columns.values.tolist()] for m in range(len(data))]
 
     print("Saving model in %s...\n" % args.outFile)
     print(model_opts["outDir"]) #, args.outFile)

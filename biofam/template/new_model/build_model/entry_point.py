@@ -37,6 +37,7 @@ def entry_point():
     p.add_argument('--transpose',           action='store_true', help='Use the transposed MOFA (use features as a shared dimention)?')
     p.add_argument('--transpose_noise',     action='store_true', help='Noise in the common dimension?')
     p.add_argument('--transpose_sparsity',  action='store_true', help='Sparsity across the common dimension?')
+    p.add_argument('--ARD_per_view',  action='store_true', help='ARD per view ? (if transposed MOFA used without covariance prior structure)')
     p.add_argument( '--sample_X',         type=int, default=0,                                  help='Sample the positions of the samples to test covariance prior structure per factor' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
@@ -193,6 +194,7 @@ def entry_point():
     assert M == len(model_opts['likelihood']), "Please specify one likelihood for each view"
     assert set(model_opts['likelihood']).issubset(set(["gaussian", "bernoulli", "poisson"]))
 
+    model_opts["ARD_per_view"] = args.ARD_per_view
 
     #################################
     ## Define the training options ##
@@ -220,7 +222,10 @@ def entry_point():
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
-            train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
+            if model_opts["ARD_per_view"]:
+                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
+            else:
+                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "ThetaZ", "Tau")
     else:
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )

@@ -294,8 +294,8 @@ class BayesNet(object):
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes[name_Z].covariates).sum(), self.nodes[name_Z].covariates.sum() ))
                     if delta_elbo<0:
                         print("Warning, lower bound is decreasing..."); print('\a')
-                        import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (1, 440))
-                        import pdb; pdb.set_trace()
+                        #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
+                        #import pdb; pdb.set_trace()
 
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
@@ -348,6 +348,5 @@ class BayesNet(object):
         elbo = pd.Series(s.zeros(len(nodes)+1), index=list(nodes)+["total"])
         for node in nodes:
             elbo[node] = float(self.nodes[node].calculateELBO())
-            #print(node, elbo[node])
             elbo["total"] += elbo[node]
         return elbo

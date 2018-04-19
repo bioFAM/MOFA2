@@ -94,7 +94,6 @@ class ThetaW_Constant_Node_mk(Constant_Variational_Node):
         self.precompute()
         self.updateDim(axis=axis, new_dim=self.dim[axis]-len(idx))
 
-
 class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
     """
     This class contain a Theta node associate to factors for which

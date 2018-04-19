@@ -56,19 +56,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
            else:
                view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
 
-           # TODO : TO REMOVE (test)
-           if (dataX is None) and (model_opts["sample_X"]):
-               dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
-               dataClust = [None] * M
-               view_has_covariance_prior = [True] * M
-
-        else:
-
-            # TODO : TO REMOVE (test)
-            if (dataX is None) and (model_opts["sample_X"]):
-                dataX = s.random.normal(0, 1, [N, 2])
-                dataClust = None
-
     K = model_opts["K"]
 
     if 'spatialFact' in model_opts:
@@ -137,10 +124,8 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         pcov = 1.;
         qmean = "random";
         qvar = 1.
-        precompute_pcovinv = [False]*M
+        precompute_pcovinv = [(dataX is None) and not(model_opts["ARD_per_view"])] * M
         # Warning : precompute_pcovinv must be True if and only if "AlphaW" and "SigmaAlphaW" not in init.nodes
-        # (currently, we chosed that if we have no dataX, we always keep "AlphaW" to have factor relevance per view in addition of "AlphaZ"
-        # and if we have dataX, we have necessarily "SigmaAlphaW")
         init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariatesFiles'], #covariates=dataCovariates,
                    scale_covariates=model_opts['scale_covariates'], precompute_pcovinv=precompute_pcovinv)
     else:
@@ -177,8 +162,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
                     params[m]={'pa': pa, 'pb':pb, 'qa':1., 'qb':1.}
             init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
         else:
-            qa = 1.; qb = 1.
-            init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
+            if model_opts["ARD_per_view"]:
+                qa = 1.; qb = 1.
+                init.initAlphaW_mk(pa=pa, pb=pb, qa=qa, qb=qb)
     else:
         # TODO do sth here for siulations
         qa = 1.; qb = 1.
@@ -226,7 +212,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     if model_opts["transpose_sparsity"]:
         # Initialise sparsity on the factors
         initTheta_a = 1.
-        initTheta_b = 1.
+        initTheta_b = 0.001 #1.
         #initTheta_E = 1. #mandatory and used if ThetaMixed contains a ThetaConstNode
 
         # learnTheta = s.ones((D, K))
@@ -290,8 +276,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             nodes["SigmaAlphaW"].addMarkovBlanket(W=nodes["W"])
             nodes["W"].addMarkovBlanket(SigmaAlphaW=nodes["SigmaAlphaW"])
         else:
-            nodes["AlphaW"].addMarkovBlanket(W=nodes["W"])
-            nodes["W"].addMarkovBlanket(AlphaW=nodes["AlphaW"])
+            if model_opts["ARD_per_view"]:
+                nodes["AlphaW"].addMarkovBlanket(W=nodes["W"])
+                nodes["W"].addMarkovBlanket(AlphaW=nodes["AlphaW"])
         nodes["W"].addMarkovBlanket(Y=nodes["Y"], SZ=nodes["SZ"], Tau=nodes["Tau"])
 
         nodes["Y"].addMarkovBlanket(SZ=nodes["SZ"], W=nodes["W"], Tau=nodes["Tau"])
