@@ -73,8 +73,10 @@ predict <- function(object, views = "all", factors = "all",
     predictedView <- t(Z%*% t(W[[i]])) 
     
     # make predicitons based on underlying likelihood
+    lks <- object@ModelOptions$likelihood
+    names(lks) <- viewNames(object)
     if (type!="link") {
-      lk <- object@ModelOpts$likelihood[i]
+      lk <- lks[i]
       if (lk == "gaussian") { 
         predictedView <- predictedView 
       }
