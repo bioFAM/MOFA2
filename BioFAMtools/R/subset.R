@@ -28,7 +28,22 @@ subsetFactors <- function(object, factors) {
       object@Expectations$node <- sapply(object@Expectations$node, function(x) x[factors], simplify = F, USE.NAMES = T)
     }
   }
+  
+  # Reordering covariance hyperparameters and "spatial signifiances" (spatialFA)
+  if ("SigmaZ" %in% names(object@Parameters)){
+    object@Parameters$SigmaZ$l <- object@Parameters$SigmaZ$l[factors]
+    object@Parameters$SigmaZ$sig <- object@Parameters$SigmaZ$sig[factors]
+  }
 
+  if ("SigmaAlphaW" %in% names(object@Parameters)){
+    for (m in viewNames(object)){ 
+    object@Parameters$SigmaAlphaW[[m]]$l <- object@Parameters$SigmaAlphaW[[m]]$l[factors]
+    object@Parameters$SigmaAlphaW[[m]]$sig <- object@Parameters$SigmaAlphaW[[m]]$sig[factors]
+    }
+  }
+  
+  # TODO : reorder parameters of other nodes ?
+    
   # Modify dimensionality
   object@Dimensions[["K"]] <- length(factors)
   

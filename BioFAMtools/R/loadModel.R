@@ -72,7 +72,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
 
   # Define data options (if features are in rows or in columns)
   if (is.null(sharedFeatures)) {
-    if (is.list(sampleData) & (length(featureData) == nrow(TrainData[[1]]))) {
+    if (is.list(sampleData) & (length(featureData) == nrow(TrainData[[names(TrainData)[[1]]]]))) {
       object@DataOpts <- list(shared_features = TRUE)
     } else {
       object@DataOpts <- list(shared_features = FALSE)
@@ -81,10 +81,8 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
     object@DataOpts <- list(shared_features = sharedFeatures)
   }
   # }, error = function(x) { print("Error loading the training data...") })
-
-
+  
   tryCatch( {
-    
     if (object@DataOpts$shared_features) {
       for (m in names(TrainData)) {
         rownames(TrainData[[m]]) <- featureData
@@ -117,7 +115,6 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   }
   
   # Update old models
-  
   object <- .updateOldModel(object)
   
   # Load dimensions
