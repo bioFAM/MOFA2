@@ -16,7 +16,6 @@
       colnames(object@TrainData[[m]]) <- values
   }
   
-  
   # Loop over nodes
   for (node in nodes) {
     
@@ -31,34 +30,67 @@
       for (m in views) {
         
         # Loop over expectations
-          if (class(object@Expectations[[node]][[m]]) == "matrix") {
-            if (nrow(object@Expectations[[node]][[m]]) == dimensionality)
-              rownames(object@Expectations[[node]][[m]]) <- values
-            if (ncol(object@Expectations[[node]][[m]]) == dimensionality)
-              colnames(object@Expectations[[node]][[m]]) <- values
-          } else if (class(object@Expectations[[node]][[m]]) == "array") {
-            if (length(object@Expectations[[node]][[m]]) == dimensionality)
-              names(object@Expectations[[node]][[m]]) <- values
+        if (class(object@Expectations[[node]][[m]]) == "matrix") {
+          if (nrow(object@Expectations[[node]][[m]]) == dimensionality)
+            rownames(object@Expectations[[node]][[m]]) <- values
+          if (ncol(object@Expectations[[node]][[m]]) == dimensionality)
+            colnames(object@Expectations[[node]][[m]]) <- values
+        } else if (class(object@Expectations[[node]][[m]]) == "array") {
+          if (length(object@Expectations[[node]][[m]]) == dimensionality)
+            names(object@Expectations[[node]][[m]]) <- values
+        }
+        
+        # Loop over parameters
+        for (Parameter in attributes(object@Parameters[[node]][[m]])$names){
+          
+          if (class(object@Parameters[[node]][[m]][[Parameter]]) == "matrix") {
+            if (nrow(object@Parameters[[node]][[m]][[Parameter]]) == dimensionality)
+              rownames(object@Parameters[[node]][[m]][[Parameter]]) <- values
+            if (ncol(object@Parameters[[node]][[m]][[Parameter]]) == dimensionality)
+              colnames(object@Parameters[[node]][[m]][[Parameter]]) <- values
+          } else if (class(object@Parameters[[node]][[m]][[Parameter]]) %in% c("array",'list')) {
+            if (length(object@Parameters[[node]][[m]][[Parameter]]) == dimensionality)
+              names(object@Parameters[[node]][[m]][[Parameter]]) <- values
           }
+          
+        }
         
       }
       
-    # Single-view nodes
+      # Single-view nodes
     } else {
       
       # Loop over expectations
-        if (class(object@Expectations[[node]]) == "matrix") {
-          if (nrow(object@Expectations[[node]]) == dimensionality)
-            rownames(object@Expectations[[node]]) <- values
-          if (ncol(object@Expectations[[node]]) == dimensionality)
-            colnames(object@Expectations[[node]]) <- values
-        } else if (class(object@Expectations[[node]]) == "array") {
-          if (length(object@Expectations[[node]]) == dimensionality)
-            names(object@Expectations[[node]]) <- values
+      if (class(object@Expectations[[node]]) == "matrix") {
+        if (nrow(object@Expectations[[node]]) == dimensionality)
+          rownames(object@Expectations[[node]]) <- values
+        if (ncol(object@Expectations[[node]]) == dimensionality)
+          colnames(object@Expectations[[node]]) <- values
+      } else if (class(object@Expectations[[node]]) == "array") {
+        if (length(object@Expectations[[node]]) == dimensionality)
+          names(object@Expectations[[node]]) <- values
+      }
+      
+      # Loop over parameters
+      
+      for (Parameter in attributes(object@Parameters[[node]])$names){
+        if (class(object@Parameters[[node]][[Parameter]]) == "matrix") {
+          if (nrow(object@Parameters[[node]][[Parameter]]) == dimensionality)
+            rownames(object@Parameters[[node]][[Parameter]]) <- values
+          if (ncol(object@Parameters[[node]][[Parameter]]) == dimensionality)
+            colnames(object@Parameters[[node]][[Parameter]]) <- values
+        } else if (class(object@Parameters[[node]][[Parameter]]) %in% c("array",'list')) {
+          if (length(object@Parameters[[node]][[Parameter]]) == dimensionality){
+            names(object@Parameters[[node]][[Parameter]]) <- values
+          }
         }
+        
+      }
       
     }
+    
   }
+  
   
   return(object)
 }
@@ -72,7 +104,7 @@
 #' @aliases factorNames,BioFAModel-method
 #' @return character vector with the features names
 #' @export
-setMethod("factorNames", signature(object="BioFAModel"), function(object) { colnames(object@Expectations$Z) } )
+setMethod("factorNames", signature(object="BioFAModel"), function(object) { colnames(object@Expectations$Z) })
 
 #' @rdname factorNames
 #' @param value a character vector of factor names
