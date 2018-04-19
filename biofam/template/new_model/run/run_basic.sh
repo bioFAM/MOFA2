@@ -7,8 +7,8 @@
 ###################
 
 # Input files as plain text format
-inFolder="/Users/ricard/mofa/mofa/run/test_data"
-inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt")
+inFolder="test_data"
+inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" )
 
 # Options for the input files
 delimiter=" " # Delimiter, such as "\t", "" or " "
@@ -16,13 +16,18 @@ header_rows=0 # Set to 1 if the files contain row names
 header_cols=0 # Set to 1 if the files contain column names
 
 # Output file path, please use the .hdf5 extension
-outFile=( "/Users/ricard/MOFA/MOFA/test/test.hdf5" )
+outFolder="test_results"
+outFile=( "$outFolder/test.hdf5" )
+
+# Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
+transpose_sparsity=1
+transpose_noise=1
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )
 
 # Define view names
-views=( A B C )
+views=( view_A view_B view_C )
 
 # Maximum number of iterations
 # Recommendation: set this to large enough value (>1000)
@@ -36,12 +41,15 @@ iterations=5000
 factors=25
 dropR2=0.05
 
+center_features=1
+learnIntercept=0
+
 ####################
 ## FINISH EDITING ##
 ####################
 
 # Prepare command
-cmd='python ../build_model/entry_point.py
+cmd='python3 ../build_model/entry_point.py
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile
@@ -50,10 +58,16 @@ cmd='python ../build_model/entry_point.py
 	--iter $iterations
 	--factors $factors
 	--dropR2 $dropR2
-	--learnIntercept
 '
+
 if [[ $header_rows -eq 1 ]]; then cmd="$cmd --header_rows"; fi
 if [[ $header_cols -eq 1 ]]; then cmd="$cmd --header_cols"; fi
+
+if [[ $center_features -eq 1 ]]; then cmd="$cmd --center_features"; fi
+if [[ $learnIntercept -eq 1 ]]; then cmd="$cmd --learnIntercept"; fi
+
+if [[ $transpose_sparsity -eq 1 ]]; then cmd="$cmd --transpose_sparsity"; fi
+if [[ $transpose_noise -eq 1 ]]; then cmd="$cmd --transpose_noise"; fi
 
 # Run!
 eval $cmd

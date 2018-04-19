@@ -56,6 +56,18 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
            else:
                view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
 
+           #for test purpose
+           if (dataX is None) and (model_opts["sample_X"]):
+               dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
+               dataClust = [None] * M
+               view_has_covariance_prior = [True] * M
+
+        #for test purpose
+        else:
+           if (dataX is None) and (model_opts["sample_X"]):
+               dataX = s.random.normal(0, 1, [N, 2])
+               dataClust = None
+
     K = model_opts["K"]
 
     if 'spatialFact' in model_opts:

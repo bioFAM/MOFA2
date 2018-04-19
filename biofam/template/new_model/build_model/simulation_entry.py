@@ -1,4 +1,5 @@
 import argparse
+from time import time
 
 from build_model import build_model
 from biofam.build_model.simulate_model import simulate_model
@@ -22,23 +23,22 @@ def entry_point():
     p.add_argument( '--shared_features',    action="store_true", default=False,           help='Features, not samples are shared between views?' )
 
     # simulation options
-    #p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ')
-    p.add_argument('--transpose', action='store_true', help='Use the transposed MOFA (use features as a shared dimention)?')
+    p.add_argument('--transpose', action='store_true', help='Noise and sparsity across the common dimension?')
     p.add_argument('--transpose_noise', action='store_true', help='Noise in the common dimension?')
     p.add_argument('--transpose_sparsity', action='store_true', help='Sparsity across the common dimension?')
-    p.add_argument('--ARD_per_view',  action='store_true', help='ARD per view ? (if transposed MOFA used without covariance prior structure)')
-
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--spatialFact',       type=float, default=0.,                              help='Initial percentage of non-spatial latent variables')
-    p.add_argument( '--sample_X',          type=int, default=0,                                 help='Sample the positions of the samples to test covariance prior structure per factor')
-
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
-    p.add_argument( '--noise',             type=float, default=10.,                              help='noise level for simulations')
+    p.add_argument('--ARD_per_view',  action='store_true', help='ARD prior per view ? (relevant option if transpose_sparsity=1, X_Files=None and sample_X=None)')
+    p.add_argument( '--sample_X',          type=int, default=0,                                 help='Sample the positions of the samples to test covariance prior structure per factor')
+
+    p.add_argument( '--noise',             type=float, default=1.,                              help='noise level for simulations')
     p.add_argument('--sparsity',           type=float, default=.1,                              help='sparsity level for simulations')
     p.add_argument( '--N',                 type=int, default=500,                               help='number of samples to simulate for')
     p.add_argument( '--D',                 type=int, nargs='+', required=True,                  help='number of features per view to simulate for')
     p.add_argument( '--M',                 type=int, default=3,                               help='number of views to simulate from ')
+    p.add_argument( '--seed',               type=int, default=0 ,                         help='Random seed' )
 
     args = p.parse_args()
 
@@ -46,6 +46,15 @@ def entry_point():
     N = args.N
     M = args.M
     D = args.D
+
+    #Seed
+    if args.seed is None or args.seed==0:                 # Seed for the random number generator
+        seed = int(round(time()*1000)%1e6)
+    else:
+        seed = args.seed
+    s.random.seed(seed)
+
+    print ("## Simulating the model with seed %d ##" % (seed))
 
     #####################
     ## Load covariates ##
