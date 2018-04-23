@@ -604,9 +604,12 @@ def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, 
         tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
         model_opts["likelihood"] = tmp
 
-    if sample_names is not None:
-        assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
-
+    if shared_features:
+        if feature_names is not None:
+            assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
+    else:
+        if sample_names is not None:
+            assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
     overwriteExpectations(model)
     if 'outDir' in model_opts:

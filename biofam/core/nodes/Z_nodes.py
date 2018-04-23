@@ -188,7 +188,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         lb_p = tmp1 + tmp2
         # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
         lb_q = -.5 * s.log(Qvar[:, k]).sum()
-        # import pdb; pdb.set_trace()
 
         return lb_p - lb_q
 
@@ -271,7 +270,9 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 exit()
 
         # self.samp = s.array([tmp/tmp.std() for tmp in samp_tmp]).transpose()
+
         self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
+        #self.samp = np.array(samp_tmp).T
 
         return self.samp
 

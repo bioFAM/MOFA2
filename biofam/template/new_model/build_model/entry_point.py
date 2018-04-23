@@ -33,15 +33,15 @@ def entry_point():
     p.add_argument( '--shared_features',    action="store_true", default=False,           help='Features, not samples are shared between views?' )
 
     # Model options
-    #p.add_argument( '--transpose',         type=int, default=0,                                 help='Use the transpose MOFA (a view is a population of cells, not an omic) ? ' )
-    p.add_argument('--transpose',           action='store_true', help='Use the transposed MOFA (use features as a shared dimention)?')
+    p.add_argument('--transpose',           action='store_true', help='Noise and sparsity across the common dimension?')
     p.add_argument('--transpose_noise',     action='store_true', help='Noise in the common dimension?')
     p.add_argument('--transpose_sparsity',  action='store_true', help='Sparsity across the common dimension?')
-    p.add_argument( '--sample_X',         type=int, default=0,                                  help='Sample the positions of the samples to test covariance prior structure per factor' )
     p.add_argument( '--factors',           type=int, default=10,                                help='Initial number of latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
     p.add_argument( '--learnIntercept',    action='store_true',                                 help='Learn the feature-wise mean?' )
+    p.add_argument('--ARD_per_view',  action='store_true',default=True, help='ARD prior per view ? (relevant option if transpose_sparsity=1, X_Files=None and sample_X=None)')
+    p.add_argument( '--sample_X',         type=int, default=0,                                  help='Sample the positions of the samples to test covariance prior structure per factor' )
 
     # Training options
     p.add_argument( '--elbofreq',           type=int, default=1,                          help='Frequency of computation of ELBO' )
@@ -193,6 +193,7 @@ def entry_point():
     assert M == len(model_opts['likelihood']), "Please specify one likelihood for each view"
     assert set(model_opts['likelihood']).issubset(set(["gaussian", "bernoulli", "poisson"]))
 
+    model_opts["ARD_per_view"] = args.ARD_per_view
 
     #################################
     ## Define the training options ##
@@ -220,7 +221,10 @@ def entry_point():
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
-            train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
+            if model_opts["ARD_per_view"]:
+                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
+            else:
+                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "ThetaZ", "Tau")
     else:
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
