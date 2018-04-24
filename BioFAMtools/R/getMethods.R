@@ -30,11 +30,14 @@ getDimensions <- function(object) {
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (sample,factor,value).
 #' @export
 #' 
-getFactors <- function(object, factors = "all", as.data.frame = FALSE, include_intercept = TRUE) {
+getFactors <- function(object, batches = "all", factors = "all", as.data.frame = FALSE, include_intercept = TRUE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
+  # Get batches
+  if (paste0(batches, collapse="") == "all")   { batches <- batchNames(object) } else { stopifnot(all(batches %in% batchNames(object))) }
+
   # Get factors
   if (paste0(factors, collapse="") == "all") { factors <- factorNames(object) } 
   else if(is.numeric(factors)) {
@@ -42,21 +45,26 @@ getFactors <- function(object, factors = "all", as.data.frame = FALSE, include_i
     else factors <- factorNames(object)[factors]
   }
   else { stopifnot(all(factors %in% factorNames(object))) }
-
+  
   # Collect factors
   Z <- getExpectations(object, "Z", as.data.frame)
-  if (as.data.frame == FALSE) {
-    Z <- Z[,factors, drop=FALSE]
+  if (as.data.frame) {
+    Z <- lapply(Z, function(z) z[z$factor %in% factors,])
+    names(Z) <- batches
   } else {
-    Z <- Z[Z$factor %in% factors,]
+    Z <- lapply(Z, function(z) z[,factors, drop=FALSE])
   }
 
   # Remove intercept
   if (include_intercept == FALSE) {
-    if (as.data.frame==FALSE) {
-      if ("intercept" %in% colnames(Z)) Z <- Z[,colnames(Z)!="intercept"]
+    if (as.data.frame == FALSE) {
+      Z <- lapply(names(Z), function(h) {
+        if ("intercept" %in% colnames(Z[[h]])) Z[[h]][,colnames(Z[[h]])!="intercept"]
+      })
     } else {
-      if ("intercept" %in% unique(Z$factor)) Z <- Z[Z$factor!="intercept",]
+      Z <- lapply(names(Z), function(h) {
+        if ("intercept" %in% unique(Z[[h]]$factor)) Z[[h]][Z[[h]]$factor!="intercept",]
+      })
     }
   }
   return(Z)
@@ -83,11 +91,10 @@ getWeights <- function(object, views = "all", factors = "all", as.data.frame = F
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
-  # Get views and factors
-  if (paste0(views,collapse="") == "all") { views <- viewNames(object) } else { stopifnot(all(views %in% viewNames(object))) }
-
+  # Get views
+  if (paste0(views, collapse="") == "all") { views <- viewNames(object) }   else { stopifnot(all(views %in% viewNames(object))) }
   # Get factors
-  if (paste0(factors,collapse="") == "all") { 
+  if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object) 
   } else if (is.numeric(factors)) {
       if (object@ModelOpts$learnIntercept == T) {
@@ -96,14 +103,14 @@ getWeights <- function(object, views = "all", factors = "all", as.data.frame = F
         factors <- factorNames(object)[factors]
       }
     } else { stopifnot(all(factors %in% factorNames(object))) }
-        
+  
   # Fetch weights
-  weights <- getExpectations(object,"W",as.data.frame)
-  if (as.data.frame==T) {
+  weights <- getExpectations(object, "W", as.data.frame)
+  if (as.data.frame) {
     weights <- weights[weights$view%in%views & weights$factor%in%factors, ]
   } else {
     weights <- lapply(views, function(m) weights[[m]][,factors,drop=F])
-    names(weights) <-  views
+    names(weights) <- views
     # if (length(views)==1) { weights <- weights[[1]] }
   }
   return(weights)
@@ -264,7 +271,7 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
   # }
   
   # Convert to long data frame
-  if (as.data.frame==T) {
+  if (as.data.frame) {
     if (variable=="Z") {
       tmp <- reshape2::melt(exp)
       colnames(tmp) <- c("sample", "factor", "value")
@@ -281,14 +288,17 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
       tmp <- do.call(rbind.data.frame,tmp)
     }
     else if (variable=="Y") {
-      tmp <- lapply(names(exp), function(m) { 
-        tmp <- reshape2::melt(exp[[m]])
-        colnames(tmp) <- c("sample","feature","value")
-        tmp$view <- m
-        tmp[c("view","feature","factor")] <- sapply(tmp[c("view", "feature", "factor")], as.character)
-        return(tmp) 
+      tmp <- lapply(names(exp), function(m) {
+        tmp <- lapply(names(exp[[m]]), function(h) {
+          tmp <- reshape2::melt(exp[[m]][[h]])
+          colnames(tmp) <- c("sample", "feature", "value")
+          tmp$view <- m
+          tmp$batch <- h
+          tmp[c("view", "batch", "feature", "factor")] <- sapply(tmp[c("view", "batch", "feature", "factor")], as.character)
+          return(tmp) 
+        })
       })
-      tmp <- do.call(rbind,tmp)
+      tmp <- do.call(rbind, tmp)
     }
     else if (variable=="Tau") {
       stop("Not implemented")

@@ -59,19 +59,29 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
 
   # Collect relevant expectations
   W <- getWeights(object, views, factors)
-  Z <- getFactors(object, factors)
-  Y <- getExpectations(object, "Y") # for non-Gaussian likelihoods the pseudodata is considered
+  Z <- getFactors(object, batches, factors)
+  Y <- getExpectations(object, "Y")  # for non-Gaussian likelihoods the pseudodata is considered
   
   # Calulcate feature-wise means as null model
-  FeatureMean <- lapply(views, function(m) { apply(Y[[m]], 2, mean, na.rm=T) })
+  FeatureMean <- lapply(views, function(m) {
+    lapply(batches, function(h) {
+      apply(Y[[m]][[h]], 2, mean, na.rm=T) 
+    })
+  })
   names(FeatureMean) <- views
+  for (view in views) { names(FeatureMean[[view]]) <- batches }
 
   # Sweep out the feature-wise mean to calculate null model residuals
-  resNullModel <- lapply(views, function(m) sweep(Y[[m]],2,FeatureMean[[m]],"-"))
+  resNullModel <- lapply(views, function(m) {
+    lapply(batches, function(h) {
+      sweep(Y[[m]][[h]], 2, FeatureMean[[m]][[h]], "-")
+    })
+  })
   names(resNullModel) <- views
-
+  for (view in views) { names(resNullModel[[view]]) <- batches }
+  browser()
   # replace masked values on Z by 0 (so that they do not contribute to predictions)
-  Z[is.na(Z)] <- 0 
+  for (batch in batches) { Z[[batch]][is.na(Z[[batch]])] <- 0 }
     
   # Calculate predictions under the MOFA model using all (non-intercept) factors
   Ypred_m <- lapply(views, function(m) Z%*%t(W[[m]])); names(Ypred_m) <- views

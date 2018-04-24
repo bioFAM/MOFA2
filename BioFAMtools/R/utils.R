@@ -29,33 +29,32 @@
     names(object@Expectations)[names(object@Expectations) == "SZ"] <- "Z"
     colnames(object@TrainStats$elbo_terms)[colnames(object@TrainStats$elbo_terms)=="SZ"] <- "Z"
   }
-  
+
   # Update expectations
-  if (is.list(object@Expectations$Z)) {
-    object@Expectations$Z <- object@Expectations$Z$E
-    
-    nodes=c("AlphaZ","SigmaZ","ThetaZ")
-    for (node in nodes){
-      if (node %in% names(object@Expectations)){
-        object@Expectations$node <- object@Expectations$node$E
-      }
-    }
-    
-    for (view in viewNames(object)) {
-      
-      object@Expectations$W[[view]] <- object@Expectations$W[[view]]$E
-      object@Expectations$Y[[view]] <- object@Expectations$Y[[view]]$E
-      object@Expectations$Tau[[view]] <- object@Expectations$Tau[[view]]$E
-      
-      nodes=c("AlphaW","SigmaAlphaW","ThetaW")
+  if (is.list(object@Expectations$Z[[1]]) & ("E" %in% names(object@Expectations$Z[[1]]))) {
+    for (m in viewNames(object)) {
+      nodes <- c("W", "Tau", "AlphaW", "SigmaAlphaW", "ThetaW")
       for (node in nodes){
         if (node %in% names(object@Expectations)){
-          object@Expectations$node[[view]] <- object@Expectations$node[[view]]$E
+          object@Expectations[[node]][[m]] <- object@Expectations[[node]][[m]]$E
         }
       }
     }
-    
+    for (h in batchNames(object)) {
+      nodes <- c("Z", "AlphaZ", "SigmaZ", "ThetaZ")
+      for (node in nodes){
+        if (node %in% names(object@Expectations)){
+          object@Expectations[[node]][[h]] <- object@Expectations[[node]][[h]]$E
+        }
+      }
+    }
+    for (m in viewNames(object)) {
+      for (h in batchNames(object)) {
+        object@Expectations$Y[[m]][[h]] <- object@Expectations$Y[[m]][[h]]$E
+      }
+    }
   }
+  
   
   # update learnMean to learnIntercept
   if ("learnMean" %in% names(object@ModelOpts)) {

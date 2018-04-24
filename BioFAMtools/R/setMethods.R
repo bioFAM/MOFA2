@@ -6,7 +6,7 @@
   if (paste0(views, collapse = "") == "all") { 
     views <- names(object@Dimensions$D)
   } else {
-    stopifnot(all(views   %in% names(object@Dimensions$D)))
+    stopifnot(all(views  %in% names(object@Dimensions$D)))
   } 
 
   if (paste0(batches, collapse = "") == "all") {
@@ -28,9 +28,43 @@
   # Loop over nodes
   for (node in nodes) {
     
-    # Multi-view nodes
+
+    if (node %in% c("Y")) {
+
+      for (m in views) {
+        for (h in batches) {
+
+          # Loop over expectations
+          if (class(object@Expectations[[node]][[m]][[h]]) == "matrix") {
+            if (nrow(object@Expectations[[node]][[m]][[h]]) == dimensionality)
+              rownames(object@Expectations[[node]][[m]][[h]]) <- values
+            if (ncol(object@Expectations[[node]][[m]][[h]]) == dimensionality)
+              colnames(object@Expectations[[node]][[m]][[h]]) <- values
+          } else if (class(object@Expectations[[node]][[m]][[h]]) == "array") {
+            if (length(object@Expectations[[node]][[m]][[h]]) == dimensionality)
+              names(object@Expectations[[node]][[m]][[h]]) <- values
+          }
+          
+          # Loop over parameters
+          for (Parameter in attributes(object@Parameters[[node]][[m]][[h]])$names){
+            
+            if (class(object@Parameters[[node]][[m]][[h]][[Parameter]]) == "matrix") {
+              if (nrow(object@Parameters[[node]][[m]][[h]][[Parameter]]) == dimensionality)
+                rownames(object@Parameters[[node]][[m]][[h]][[Parameter]]) <- values
+              if (ncol(object@Parameters[[node]][[m]][[h]][[Parameter]]) == dimensionality)
+                colnames(object@Parameters[[node]][[m]][[h]][[Parameter]]) <- values
+            } else if (class(object@Parameters[[node]][[m]][[h]][[Parameter]]) %in% c("array",'list')) {
+              if (length(object@Parameters[[node]][[m]][[h]][[Parameter]]) == dimensionality)
+                names(object@Parameters[[node]][[m]][[h]][[Parameter]]) <- values
+            }
+            
+          }
+
+        }
+      }
     
-    if (!(node %in% c("Z","AlphaZ","SigmaZ","ThetaZ"))) {
+    # Multi-view nodes
+    } else if (!(node %in% c("Z", "AlphaZ", "SigmaZ", "ThetaZ"))) {
     #if (node != "Z") {
       
     # if (setequal(names(object@Expectations[[node]]),views)) {
@@ -66,34 +100,38 @@
         
       }
       
-      # Single-view nodes
+    # Single-view nodes
     } else {
-      
-      # Loop over expectations
-      if (class(object@Expectations[[node]]) == "matrix") {
-        if (nrow(object@Expectations[[node]]) == dimensionality)
-          rownames(object@Expectations[[node]]) <- values
-        if (ncol(object@Expectations[[node]]) == dimensionality)
-          colnames(object@Expectations[[node]]) <- values
-      } else if (class(object@Expectations[[node]]) == "array") {
-        if (length(object@Expectations[[node]]) == dimensionality)
-          names(object@Expectations[[node]]) <- values
-      }
-      
-      # Loop over parameters
-      
-      for (Parameter in attributes(object@Parameters[[node]])$names){
-        if (class(object@Parameters[[node]][[Parameter]]) == "matrix") {
-          if (nrow(object@Parameters[[node]][[Parameter]]) == dimensionality)
-            rownames(object@Parameters[[node]][[Parameter]]) <- values
-          if (ncol(object@Parameters[[node]][[Parameter]]) == dimensionality)
-            colnames(object@Parameters[[node]][[Parameter]]) <- values
-        } else if (class(object@Parameters[[node]][[Parameter]]) %in% c("array",'list')) {
-          if (length(object@Parameters[[node]][[Parameter]]) == dimensionality){
-            names(object@Parameters[[node]][[Parameter]]) <- values
-          }
+
+      # Loop over batches
+      for (h in batches) {
+        
+        # Loop over expectations
+        if (class(object@Expectations[[node]][[h]]) == "matrix") {
+          if (nrow(object@Expectations[[node]][[h]]) == dimensionality)
+            rownames(object@Expectations[[node]][[h]]) <- values
+          if (ncol(object@Expectations[[node]][[h]]) == dimensionality)
+            colnames(object@Expectations[[node]][[h]]) <- values
+        } else if (class(object@Expectations[[node]][[h]]) == "array") {
+          if (length(object@Expectations[[node]][[h]]) == dimensionality)
+            names(object@Expectations[[node]][[h]]) <- values
         }
         
+        # Loop over parameters
+        
+        for (Parameter in attributes(object@Parameters[[node]][[h]])$names){
+          if (class(object@Parameters[[node]][[h]][[Parameter]]) == "matrix") {
+            if (nrow(object@Parameters[[node]][[h]][[Parameter]]) == dimensionality)
+              rownames(object@Parameters[[node]][[h]][[Parameter]]) <- values
+            if (ncol(object@Parameters[[node]][[h]][[Parameter]]) == dimensionality)
+              colnames(object@Parameters[[node]][[h]][[Parameter]]) <- values
+          } else if (class(object@Parameters[[node]][[h]][[Parameter]]) %in% c("array", 'list')) {
+            if (length(object@Parameters[[node]][[h]][[Parameter]]) == dimensionality){
+              names(object@Parameters[[node]][[h]][[Parameter]]) <- values
+            }
+          }
+        }
+
       }
       
     }
@@ -113,7 +151,7 @@
 #' @aliases factorNames,BioFAModel-method
 #' @return character vector with the features names
 #' @export
-setMethod("factorNames", signature(object="BioFAModel"), function(object) { colnames(object@Expectations$Z) })
+setMethod("factorNames", signature(object="BioFAModel"), function(object) { colnames(object@Expectations$Z[[1]]) })
 
 #' @rdname factorNames
 #' @param value a character vector of factor names
@@ -123,12 +161,12 @@ setReplaceMethod("factorNames", signature(object="BioFAModel", value="vector"),
   function(object,value) {
    if (!methods::.hasSlot(object,"Expectations") | length(object@Expectations) == 0)
      stop("Before assigning factor names you have to assign expectations")
-   if (methods::.hasSlot(object,"Dimensions") | length(object@Dimensions) == 0)
-     if (!length(value)==object@Dimensions["K"])
+   if (methods::.hasSlot(object,"Dimensions") & length(object@Dimensions) != 0)
+     if (length(value) != object@Dimensions["K"])
        stop("Length of factor names does not match the dimensionality of the latent variable matrix")
-   if(!length(value)==ncol(object@Expectations$Z)) 
+   if(length(value) != ncol(object@Expectations$Z[[1]])) 
      stop("Factor names do not match the number of columns in the latent variable matrix")
-    
+   
    object <- .setNames(object, value, object@Dimensions[["K"]])
    object
 })
@@ -156,10 +194,10 @@ setReplaceMethod("sampleNames", signature(object="BioFAModel", value="list"),
      stop("Before assigning sample names you have to assign the training data")
    if (!methods::.hasSlot(object,"Expectations") | length(object@Expectations) == 0)
      stop("Before assigning sample names you have to assign the expectations")
-   if (methods::.hasSlot(object,"Dimensions") | length(object@Dimensions) == 0)
+   if (methods::.hasSlot(object,"Dimensions") & length(object@Dimensions) != 0)
     if (!all(sapply(value,length) == object@Dimensions[["N"]]))
         stop("Length of sample names does not match the dimensionality of the model")
-    if (!all(sapply(value,length) == sapply(object@TrainData[[1]],ncol)))
+    if (!all(sapply(value,length) == sapply(object@TrainData[[1]], ncol)))
       stop("sample names do not match the dimensionality of the data (columns)")
 
     for (h in 1:length(object@TrainData[[1]])) {
@@ -227,12 +265,14 @@ setMethod("viewNames<-", signature(object="BioFAModel", value="character"),
     if (length(value) != length(object@TrainData))
       stop("View names do not match the number of views in the training data")
     
-    if (object@Status == "trained"){
-      # Deduce multiview nodes (e.g. AlphaW, W, Tau, Theta, Y)
-      for (node in names(object@Expectations)) {
-        if (class(object@Expectations[[node]]) == "list" & 
-            length(object@Expectations[[node]]) == object@Dimensions["M"]) {
-          names(object@Expectations[[node]]) <- value 
+    if (object@Status == "trained") {
+      multiview_nodes <- c("W", "AlphaW", "Tau", "Theta", "ThetaW", "Y")
+      for (node in multiview_nodes) {
+        if (node %in% names(object@Expectations)) {
+          if (class(object@Expectations[[node]]) == "list" & 
+              length(object@Expectations[[node]]) == object@Dimensions["M"]) {
+            names(object@Expectations[[node]]) <- value 
+          }
         }
       }
     }
@@ -271,11 +311,17 @@ setMethod("batchNames<-", signature(object="BioFAModel", value="character"),
       stop("Batch names do not match the number of views in the training data")
     
     if (object@Status == "trained"){
-      # Deduce multibatch nodes (e.g. AlphaZ, Z, Y)
-      for (node in names(object@Expectations)) {
-        if (class(object@Expectations[[node]]) == "list" & 
-            length(object@Expectations[[node]]) == object@Dimensions["H"]) {
-          names(object@Expectations[[node]]) <- value 
+      multibatch_nodes <- c("Z", "Z", "AlphaZ")
+      for (node in multibatch_nodes) {
+        if (node %in% names(object@Expectations)) {
+          if (node == "Y") {  # the only multi-view and multi-batch node
+            for (m in 1:length(object@Expectations$Y)) {
+              names(object@Expectations$Y[[m]]) <- value 
+            }
+          } else if (class(object@Expectations[[node]]) == "list" & 
+              length(object@Expectations[[node]]) == object@Dimensions["H"]) {
+            names(object@Expectations[[node]]) <- value 
+          }
         }
       }
     }

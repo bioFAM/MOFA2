@@ -90,7 +90,6 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
     }
   }, error = function(x) { print("Error defining data options...") })
 
-
   # To keep reverse-compatibility with models without batches (e.g. MOFA models)
   if (!object@DataOpts$multiBatch) {
     sampleData <- list("B1" = sampleData)
@@ -98,7 +97,23 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
     if (length(unique(sapply(TrainData, nrow))) == 1 && length(unique(sapply(TrainData, ncol))) > 1) {
       TrainData <- lapply(TrainData, t)
     }
+    if ((ncol(TrainData[[1]]) != length(sampleData[[1]])) & (nrow(TrainData[[1]]) == length(sampleData[[1]]))) {
+      TrainData <- lapply(TrainData, t)
+    }
     TrainData  <- lapply(TrainData, function(e) list("B1" = e))
+    # Expectations for multi-batch and multi-view nodes should be nested lists
+    if (("E" %in% names(object@Expectations$Y[[1]]))    & (class(object@Expectations$Y[[1]]$E) != "list") | 
+        (!("E" %in% names(object@Expectations$Y[[1]]))) & (class(object@Expectations$Y[[1]])   != "list")) {
+      tmp <- lapply(names(TrainData), function(m) {
+        list("B1" = object@Expectations$Y[[m]])
+      })
+      names(tmp) <- names(TrainData)
+      object@Expectations$Y <- tmp
+    }
+    if (("E" %in% names(object@Expectations$Z))    & (class(object@Expectations$Z$E) != "list") | 
+        (!("E" %in% names(object@Expectations$Z))) & (class(object@Expectations$Z)   != "list")) {
+      object@Expectations$Z <- list("B1" = object@Expectations$Z)
+    }
     object@DataOpts$multiBatch <- TRUE
   }
 
@@ -109,7 +124,16 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
     if (length(unique(sapply(TrainData, ncol))) == 1 && length(unique(sapply(TrainData, nrow))) > 1) {
       TrainData <- lapply(TrainData, t)
     }
-    TrainData   <- list("V1" = TrainData)
+    TrainData <- list("V1" = TrainData)
+    # Expectations for multi-batch and multi-view nodes should be nested lists
+    if (("E" %in% names(object@Expectations$Y[[1]]))    & (class(object@Expectations$Y[[1]]$E) != "list") | 
+        (!("E" %in% names(object@Expectations$Y[[1]]))) & (class(object@Expectations$Y[[1]])   != "list")) {
+      object@Expectations$Y <- list("V1" = object@Expectations$Y)
+    }
+    if (("E" %in% names(object@Expectations$W[[1]]))    & (class(object@Expectations$W[[1]]$E) != "list") | 
+        (!("E" %in% names(object@Expectations$W[[1]]))) & (class(object@Expectations$W[[1]])   != "list")) {
+      object@Expectations$W <- list("V1" = object@Expectations$W)
+    }
     object@DataOpts$multiView <- TRUE
   }
 
@@ -120,7 +144,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   object@Dimensions[["N"]] <- sapply(TrainData[[1]], ncol)
   object@Dimensions[["D"]] <- sapply(TrainData, function(e) nrow(e[[1]]))
   # K=tail(training_stats$activeK[!is.nan(training_stats$activeK)],n=1)
-  object@Dimensions[["K"]] <- ncol(object@Expectations$Z$E)  # TODO: Z should be a list with length H
+  object@Dimensions[["K"]] <- ncol(object@Expectations$Z[[1]]$E)
 
 
   # Fix sample and feature names is they are null
@@ -130,7 +154,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   if (is.null(featureData)) {
     featureData <- paste0("G", lapply(object@Dimensions[["D"]], function(d) as.character(1:d)))
   }  
-
+  
   # Give corresponding names for rows (features) and columns (samples)
   tryCatch( {
     for (m in names(TrainData)) {  # there is always at least one view
@@ -141,7 +165,6 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
     }
     object@TrainData <- TrainData
   }, error = function(x) { cat("Error defining feature and sample names!..\n") })
-  
   
   # Replace NaN by NA
   for (m in names(TrainData)) {
@@ -160,23 +183,23 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
     }
   }
   
-  # Update old models
-  object <- .updateOldModel(object)
-
-  # Set view, batch, sample, feature, and factor names
-
+  # Set view and batch names
   if (is.null(names(object@TrainData))) {
     viewNames(object) <- paste0("V", as.character(1:object@Dimensions[["M"]]))
   } else {
     viewNames(object) <- names(object@TrainData)
   }
-
+  
   if (is.null(names(object@TrainData[[1]]))) {
     batchNames(object) <- paste0("B", as.character(1:object@Dimensions[["H"]]))
   } else {
     batchNames(object) <- names(object@TrainData[[1]])
   }
+  
+  # Update old models
+  object <- .updateOldModel(object)
 
+  # Set sample, feature, and factor names
   sampleNames(object)  <- lapply(object@TrainData[[1]], colnames)
   featureNames(object) <- lapply(object@TrainData, function(e) rownames(e[[1]]))
   factorNames(object)  <- paste0("F", as.character(1:object@Dimensions[["K"]]))
@@ -230,7 +253,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   
   # Do quality control on the model
   # qualityControl(object)
-  
+
   return(object)
 }
 
