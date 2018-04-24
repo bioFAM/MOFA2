@@ -13,8 +13,9 @@ from init_model import initNewModel
 from biofam.build_model.utils import *
 
 #TODO : remove the 2 TODO before giving to britta
-
-def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None):
+# TODO find a better way to pass the data related arguments (eg, pass a dictionary with all the data in it)
+# TODO dataClust and dataGroups is for now confusing, to sort out
+def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None, dataGroups=None):
     """Method to build a bioFAM model"""
 
     print("\n")
@@ -191,10 +192,10 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
         pa = 1e-14; pb = 1e-14
 
-    if model_opts['transpose_sparsity']:
-        qa = 1.; qb = 1.
-        init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
-    else:
+    # if model_opts['transpose_sparsity']:
+        # qa = 1.; qb = 1.
+        # init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
+    if not model_opts['transpose_sparsity']:
         if dataX is not None:
             # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
             if dataClust is None:
@@ -202,7 +203,8 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             else:
                 init.initSigmaBlockZ_k(dataX, clust=dataClust, n_diag=n_diag)
         else:
-            pass
+            if dataGroups is not None:
+                init.initAlphaZ_groups(dataGroups)
             #qa = 1.; qb = 1.
             #init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
 
@@ -281,8 +283,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     nodes = init.getNodes()
     if model_opts['transpose_sparsity']:
         nodes["ThetaZ"].addMarkovBlanket(SZ=nodes["SZ"])
-        nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])
-        nodes["SZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
+        # nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])
+        # nodes["SZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
+        nodes["SZ"].addMarkovBlanket(ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
 
         if dataX is not None:
             nodes["SigmaAlphaW"].addMarkovBlanket(W=nodes["W"])
@@ -305,6 +308,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             #nodes["AlphaZ"].addMarkovBlanket(Z=nodes["Z"])
             #nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"])
         nodes["Z"].addMarkovBlanket(Y=nodes["Y"], SW=nodes["SW"], Tau=nodes["Tau"])
+        if dataGroups is not None:
+            nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"])
+            nodes["AlphaZ"].addMarkovBlanket(Z=nodes['Z'])
 
         nodes["ThetaW"].addMarkovBlanket(SW=nodes["SW"])
         nodes["AlphaW"].addMarkovBlanket(SW=nodes["SW"])
@@ -315,7 +321,6 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     #################################
     ## Initialise Bayesian Network ##
     #################################
-
     net = BayesNet(dim=dim, nodes=init.getNodes())
 
     return net

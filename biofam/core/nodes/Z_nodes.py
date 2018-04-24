@@ -92,7 +92,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].getExpectation()
-            Alpha = s.repeat(Alpha[None, :], self.N, axis=0)
+            if Alpha.shape != self.dim:
+                Alpha = s.repeat(Alpha[None, :], self.N, axis=0)
 
         else:
             if "SigmaZ" in self.markov_blanket:
@@ -216,8 +217,10 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
             Alpha = self.markov_blanket[
                 'AlphaZ'].getExpectations().copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
-            Alpha["E"] = s.repeat(Alpha["E"][None, :], self.N, axis=0)
-            Alpha["lnE"] = s.repeat(Alpha["lnE"][None, :], self.N, axis=0)
+
+            if Alpha["E"].shape != self.dim:
+                Alpha["E"] = s.repeat(Alpha["E"][None, :], self.N, axis=0)
+                Alpha["lnE"] = s.repeat(Alpha["lnE"][None, :], self.N, axis=0)
 
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()

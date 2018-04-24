@@ -145,6 +145,15 @@ def loadData(data_opts, verbose=True):
 
     return Y
 
+def loadDataGroups(data_opts):
+    """
+    method to load the labels of the samples when there are groups of samples
+    """
+    if data_opts['sampleGroups'] is None:
+        return None
+    sample_labels = np.genfromtxt(data_opts['sampleGroups'], dtype='str')
+    return sample_labels
+
 def loadDataX(data_opts, transpose = False):
     """ Method to load the data of the samples positions and assigned clusters
     """

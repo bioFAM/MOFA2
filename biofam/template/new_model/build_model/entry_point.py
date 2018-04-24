@@ -20,9 +20,10 @@ def entry_point():
     p.add_argument( '--delimiter',         type=str, default=" ",                               help='Delimiter for input files' )
     p.add_argument( '--header_cols',       action='store_true',                                 help='Do the input files contain column names?' )
     p.add_argument( '--header_rows',       action='store_true',                                 help='Do the input files contain row names?' )
-    p.add_argument( '--covariatesFiles',   type=str, nargs='+', default=None,                              help='Input data file for covariates')
-    p.add_argument( '--X_Files',           type=str, nargs='+', default=None,                              help='Use positions of samples for covariance prior structure per factor')
-    p.add_argument( '--sigmaClusterFiles', type=str, nargs='+', default=None,                              help='Use clusters assigned to samples for a block covariance prior structure per factor')
+    p.add_argument( '--covariatesFiles',   type=str, nargs='+', default=None,                   help='Input data file for covariates')
+    p.add_argument( '--X_Files',           type=str, nargs='+', default=None,                   help='Use positions of samples for covariance prior structure per factor')
+    p.add_argument( '--sampleGroups',      type=str, default=None,                   help='if samples contain groups, file containing the labels of the samples')
+    p.add_argument( '--sigmaClusterFiles', type=str, nargs='+', default=None,                   help='Use clusters assigned to samples for a block covariance prior structure per factor')
     p.add_argument( '--permute_samples',   type=int, default=0,                                 help='Permute samples positions in the data')
 
     # Data options
@@ -164,8 +165,10 @@ def entry_point():
     data_opts['X_Files'] = args.X_Files
     data_opts['sigmaClusterFiles'] = args.sigmaClusterFiles
     data_opts['permute_samples'] = args.permute_samples
+    data_opts['sampleGroups'] = args.sampleGroups
 
     dataX, dataClust = loadDataX(data_opts, transpose = args.transpose_sparsity)
+    sampleGroups = loadDataGroups(data_opts)
 
     ##############################
     ## Define the model options ##
@@ -228,6 +231,8 @@ def entry_point():
     else:
         if (dataX is not None) or (model_opts['sample_X']):
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
+        elif sampleGroups is not None:
+            train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaZ", "AlphaW", "ThetaW", "Tau" )
         else:
             train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "ThetaW", "Tau" )
 
@@ -239,7 +244,7 @@ def entry_point():
     ## Build the model ##
     #####################
 
-    model = build_model(model_opts, data=data, dataX=dataX, dataClust=dataClust)
+    model = build_model(model_opts, data=data, dataX=dataX, dataClust=dataClust, dataGroups=sampleGroups)
 
     #####################
     ## Train the model ##

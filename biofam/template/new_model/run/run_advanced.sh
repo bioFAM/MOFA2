@@ -8,8 +8,9 @@
 
 
 # Input files as plain text format
-inFolder="/Users/damienarnol1/Documents/local/pro/PhD/FA/results/results_tmofa/"
-inFiles=( "$inFolder/KO.txt" "$inFolder/WT.txt" )
+inFolder="/Users/damienarnol1/Documents/local/pro/PhD/FA/results/results_tmofa/merged/"
+inFiles=( "$inFolder/all_data.txt" )
+sampleGroups="$inFolder/z_groups.txt"
 
 # Options for the input files
 delimiter="\t" # delimiter, such as "\t", "" or " "
@@ -25,14 +26,14 @@ center_features=1   # center the features to zero-mean? (not necessary as long a
 scale_views=1 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose_sparsity=1
-transpose_noise=1
+transpose_sparsity=0
+transpose_noise=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-likelihoods=( gaussian gaussian )
+likelihoods=( gaussian )
 
 # Define view names
-views=( KO WT )
+views=( unique )
 
 # Define file with covariates (not implemented yet, please ignore)
 # covariatesFile="/tmp/covariates.txt"
@@ -88,6 +89,7 @@ cmd='python ../build_model/entry_point.py
 	--freqDrop $freqDrop
 	--dropR2 $dropR2
 	--seed $seed
+	--sampleGroups $sampleGroups
 '
 
 if [[ $header_rows -eq 1 ]]; then cmd="$cmd --header_rows"; fi
