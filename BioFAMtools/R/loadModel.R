@@ -93,8 +93,8 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
         rownames(TrainData[[m]]) <- sampleData
         colnames(TrainData[[m]]) <- featureData[[m]]
       }
+      TrainData <- lapply(TrainData, t)
     }
-    TrainData <- lapply(TrainData, t)
     object@TrainData <- TrainData
 
   }, error = function(x) { cat(paste0("Error loading the training data!.. Try to load the model with sharedFeatures set to ", as.character(!object@DataOpts$shared_features), ".\n")) })
@@ -119,8 +119,13 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   
   # Load dimensions
   object@Dimensions[["M"]] <- length(object@TrainData)
-  object@Dimensions[["N"]] <- ncol(object@TrainData[[1]])
-  object@Dimensions[["D"]] <- sapply(object@TrainData, nrow)
+  if (object@DataOpts$shared_features) {
+    object@Dimensions[["N"]] <- nrow(object@TrainData[[1]])
+    object@Dimensions[["D"]] <- sapply(object@TrainData, ncol)
+  } else {
+    object@Dimensions[["N"]] <- ncol(object@TrainData[[1]]) 
+    object@Dimensions[["D"]] <- sapply(object@TrainData, nrow)
+  }
   # K=tail(training_stats$activeK[!is.nan(training_stats$activeK)],n=1)
   object@Dimensions[["K"]] <- ncol(object@Expectations$Z)
   
@@ -130,12 +135,20 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   } else {
     viewNames(object) <- names(object@TrainData)
   }
-  if (is.null(colnames(object@TrainData[[1]]))) {
-    sampleNames(object) <- paste0("S", as.character(1:object@Dimensions[["N"]]))
+
+  browser()
+
+  if (object@DataOpts$shared_features) {
+    sampleNames(object)  <- lapply(object@TrainData, colnames)
+    featureNames(object) <- rownames(object@TrainData[[1]])
   } else {
-    sampleNames(object) <- colnames(object@TrainData[[1]])
-  }
-  featureNames(object) <- lapply(object@TrainData, rownames)
+    if (is.null(colnames(object@TrainData[[1]]))) {
+      sampleNames(object) <- paste0("S", as.character(1:object@Dimensions[["N"]]))
+    } else {
+      sampleNames(object) <- colnames(object@TrainData[[1]])
+    }
+    featureNames(object) <- lapply(object@TrainData, rownames)
+  } 
   factorNames(object) <- as.character(1:object@Dimensions[["K"]])
   
   # Add names to likelihood vector
