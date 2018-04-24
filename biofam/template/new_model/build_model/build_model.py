@@ -160,7 +160,8 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
     # values of the parameters of the prior Gamma distribution
     if 'noise' in model_opts: #simulation
-        pa = 50. ; pb = 50.
+        #pa = 0.01; pb = 0.01
+        pa = 1 ; pb = 1.
     else:
         pa = 1e-14 ; pb = 1e-14
 
@@ -187,7 +188,8 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
     # values of the parameters of the prior Gamma distribution
     if 'noise' in model_opts:  # simulation
-        pa = 50.; pb = 50.
+        #pa = 0.01; pb = 0.01
+        pa = 1; pb = 1.
     else:
         pa = 1e-14; pb = 1e-14
 
