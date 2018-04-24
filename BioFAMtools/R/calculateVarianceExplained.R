@@ -21,7 +21,7 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # check whether the intercept was learned
-  if(!object@ModelOpts$learnIntercept & include_intercept) {
+  if(!object@ModelOptions$learnIntercept & include_intercept) {
     include_intercept <- FALSE
     # warning("No intercept was learned in BioFAM.\n Intercept is not included in the model prediction.")
   }

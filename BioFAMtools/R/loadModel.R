@@ -46,19 +46,19 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
 
   
   # Load training options
-  if (length(object@TrainOpts) == 0) {
-    tryCatch(object@TrainOpts <- as.list(h5read(file, 'training_opts', read.attributes=T)), error = function(x) { print("Training opts not found, not loading it...") })
+  if (length(object@TrainOptions) == 0) {
+    tryCatch(object@TrainOptions <- as.list(h5read(file, 'training_opts', read.attributes=T)), error = function(x) { print("Training opts not found, not loading it...") })
   }
     
   # Load model options
   # COMMENTED BECAUSE We always need to load the model options, as h5py sort the views alphabetically
-  # if (length(object@ModelOpts) == 0) {
-  #   tryCatch(object@ModelOpts <- as.list(h5read(file, 'model_opts',read.attributes=T)), error = function(x) { print("Model opts not found, not loading it...") })
+  # if (length(object@ModelOptions) == 0) {
+  #   tryCatch(object@ModelOptions <- as.list(h5read(file, 'model_opts',read.attributes=T)), error = function(x) { print("Model opts not found, not loading it...") })
   # }
-  tryCatch(object@ModelOpts <- as.list(h5read(file, 'model_opts', read.attributes=T)), error = function(x) { print("Model opts not found, not loading it...") })
-  for (opt in names(object@ModelOpts)) {
+  tryCatch(object@ModelOptions <- as.list(h5read(file, 'model_opts', read.attributes=T)), error = function(x) { print("Model opts not found, not loading it...") })
+  for (opt in names(object@ModelOptions)) {
     if (opt == "False" | opt == "True") {
-      object@ModelOpts[opt] <- as.logical(object@ModelOpts[opt])
+      object@ModelOptions[opt] <- as.logical(object@ModelOptions[opt])
     }
   }
 
@@ -72,26 +72,26 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
 
   # Define data options
 
-  object@DataOpts <- list()
+  object@DataOptions <- list()
 
   tryCatch( {
     # Specify if multiple views are present
     if (is.null(multiView)) {
-      object@DataOpts$multiView <- is.list(featureData)
+      object@DataOptions$multiView <- is.list(featureData)
     } else {
-      object@DataOpts$multiView <- multiView
+      object@DataOptions$multiView <- multiView
     }
 
     # Specify if multiple batches are present
     if (is.null(multiBatch)) {
-      object@DataOpts$multiBatch <- is.list(sampleData)
+      object@DataOptions$multiBatch <- is.list(sampleData)
     } else {
-      object@DataOpts$multiBatch <- multiBatch
+      object@DataOptions$multiBatch <- multiBatch
     }
   }, error = function(x) { print("Error defining data options...") })
 
   # To keep reverse-compatibility with models without batches (e.g. MOFA models)
-  if (!object@DataOpts$multiBatch) {
+  if (!object@DataOptions$multiBatch) {
     sampleData <- list("B1" = sampleData)
     # Samples should be in columns
     if (length(unique(sapply(TrainData, nrow))) == 1 && length(unique(sapply(TrainData, ncol))) > 1) {
@@ -114,11 +114,11 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
         (!("E" %in% names(object@Expectations$Z))) & (class(object@Expectations$Z)   != "list")) {
       object@Expectations$Z <- list("B1" = object@Expectations$Z)
     }
-    object@DataOpts$multiBatch <- TRUE
+    object@DataOptions$multiBatch <- TRUE
   }
 
   # To keep reverse-compatibility with models having views as batches (e.g. transposed MOFA)
-  if (!object@DataOpts$multiView) {
+  if (!object@DataOptions$multiView) {
     featureData <- list("V1" = featureData)
     # Features should be in rows
     if (length(unique(sapply(TrainData, ncol))) == 1 && length(unique(sapply(TrainData, nrow))) > 1) {
@@ -134,7 +134,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
         (!("E" %in% names(object@Expectations$W[[1]]))) & (class(object@Expectations$W[[1]])   != "list")) {
       object@Expectations$W <- list("V1" = object@Expectations$W)
     }
-    object@DataOpts$multiView <- TRUE
+    object@DataOptions$multiView <- TRUE
   }
 
 
@@ -177,9 +177,9 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   # Sanity check on the order of the likelihoods
   if (!is.null(attr(TrainData, "likelihood"))) {
     lik <- attr(TrainData, "likelihood")
-    if (!all(object@ModelOpts$likelihood == lik)) {
-      object@ModelOpts$likelihood <- lik
-      names(object@ModelOpts$likelihood) <- names(TrainData)
+    if (!all(object@ModelOptions$likelihood == lik)) {
+      object@ModelOptions$likelihood <- lik
+      names(object@ModelOptions$likelihood) <- names(TrainData)
     }
   }
   
@@ -205,29 +205,29 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   factorNames(object)  <- paste0("F", as.character(1:object@Dimensions[["K"]]))
   
   # Add names to likelihood vector
-  if (!is.null(names(object@ModelOpts$likelihood))) {
-    names(object@ModelOpts$likelihood) <- viewNames(object)
+  if (!is.null(names(object@ModelOptions$likelihood))) {
+    names(object@ModelOptions$likelihood) <- viewNames(object)
   }
   
   # Rename covariates, including intercept
-  # if (object@ModelOpts$learnIntercept == TRUE) factorNames(object) <- c("intercept",as.character(1:(object@Dimensions[["K"]]-1)))
-  # if (!is.null(object@ModelOpts$covariates)) {
-  #   if (object@ModelOpts$learnIntercept == TRUE) {
-  #     factorNames(object) <- c("intercept", colnames(object@ModelOpts$covariates), as.character((ncol(object@ModelOpts$covariates)+1:(object@Dimensions[["K"]]-1-ncol(object@ModelOpts$covariates)))))
+  # if (object@ModelOptions$learnIntercept == TRUE) factorNames(object) <- c("intercept",as.character(1:(object@Dimensions[["K"]]-1)))
+  # if (!is.null(object@ModelOptions$covariates)) {
+  #   if (object@ModelOptions$learnIntercept == TRUE) {
+  #     factorNames(object) <- c("intercept", colnames(object@ModelOptions$covariates), as.character((ncol(object@ModelOptions$covariates)+1:(object@Dimensions[["K"]]-1-ncol(object@ModelOptions$covariates)))))
   #   } else {
-  #     factorNames(object) <- c(colnames(object@ModelOpts$covariates), as.character((ncol(object@ModelOpts$covariates)+1:(object@Dimensions[["K"]]-1))))
+  #     factorNames(object) <- c(colnames(object@ModelOptions$covariates), as.character((ncol(object@ModelOptions$covariates)+1:(object@Dimensions[["K"]]-1))))
   #   }
   # }
   
   # Rename factors if intercept is included
-  if (object@ModelOpts$learnIntercept) {
+  if (object@ModelOptions$learnIntercept) {
     intercept_idx <- names(which(sapply(apply(object@Expectations$Z, 2, unique),length)==1))
     factornames <- as.character(1:(object@Dimensions[["K"]]))
     factornames[factornames==intercept_idx] <- "intercept"
     factorNames(object) <- factornames
     # object@Dimensions[["K"]] <- object@Dimensions[["K"]] - 1
   }
-  # if (!is.null(object@ModelOpts$covariates)) {
+  # if (!is.null(object@ModelOptions$covariates)) {
   #   stop("Covariates not working")
   # }
   
@@ -238,9 +238,9 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   if (sortFactors) {
     r2 <- rowSums(sapply(calculateVarianceExplained(object)$R2PerFactor, function(e) rowSums(e)))
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
-    if (object@ModelOpts$learnIntercept==T) { order_factors <- c("intercept",order_factors) }
+    if (object@ModelOptions$learnIntercept==T) { order_factors <- c("intercept",order_factors) }
     object <- subsetFactors(object, order_factors)
-    if (object@ModelOpts$learnIntercept==T) { 
+    if (object@ModelOptions$learnIntercept==T) { 
      factorNames(object) <- c("intercept",1:(object@Dimensions$K-1))
     } else {
      factorNames(object) <- c(1:object@Dimensions$K) 

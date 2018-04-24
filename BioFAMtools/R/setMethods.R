@@ -409,15 +409,15 @@ setMethod(".ImputedData<-", signature(object="BioFAModel", value="list"),
 ## Set and retrieve training options ##
 #######################################
 
-#' @rdname TrainOpts
+#' @rdname TrainOptions
 #' @param object a \code{\link{BioFAModel}} object.
-#' @rdname TrainOpts
+#' @rdname TrainOptions
 #' @return list of training options
 #' @export
-setMethod("TrainOpts", "BioFAModel", function(object) { object@TrainOpts } )
-setMethod(".TrainOpts<-", signature(object="BioFAModel", value="list"),
+setMethod("TrainOptions", "BioFAModel", function(object) { object@TrainOptions } )
+setMethod(".TrainOptions<-", signature(object="BioFAModel", value="list"),
           function(object,value) {
-            object@TrainOpts <- value
+            object@TrainOptions <- value
             object
           })
 
@@ -425,15 +425,15 @@ setMethod(".TrainOpts<-", signature(object="BioFAModel", value="list"),
 ## Set and retrieve model options ##
 #######################################
 
-#' @rdname ModelOpts
+#' @rdname ModelOptions
 #' @param object a \code{\link{BioFAModel}} object.
-#' @rdname ModelOpts
+#' @rdname ModelOptions
 #' @return list of model options
 #' @export
-setMethod("ModelOpts", "BioFAModel", function(object) { object@ModelOpts } )
-setMethod(".ModelOpts<-", signature(object="BioFAModel", value="list"),
+setMethod("ModelOptions", "BioFAModel", function(object) { object@ModelOptions } )
+setMethod(".ModelOptions<-", signature(object="BioFAModel", value="list"),
           function(object,value) {
-            object@ModelOpts <- value
+            object@ModelOptions <- value
             object
           })
 

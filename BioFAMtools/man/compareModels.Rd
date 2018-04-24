@@ -4,29 +4,12 @@
 \alias{compareModels}
 \title{Plot the robustness of the latent factors across diferent trials}
 \usage{
-compareModels(models, comparison = "all", ...)
+compareModels(models, show_modelnames = FALSE)
 }
 \arguments{
 \item{models}{a list containing \code{\link{BioFAModel}} objects.}
-
-\item{comparison}{tye of comparison, either 'pairwise' or 'all'}
-
-\item{...}{extra arguments passed to pheatmap}
-}
-\value{
-Plots a heatmap of correlation of Latent Factors in all models when 'comparison' is 'all'. 
-Otherwise, for each pair of models, a seperate heatmap is produced comparing one model againt the other.
-The corresponding correlation matrix or list or pairwise correlation matrices is returned
 }
 \description{
-Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
-their latent factors. The correlation is calculated only on those samples which are present in all models.
-Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
-If not, it suggests that some factors are weak and not captured by all models.
-}
-\details{
-TO-FILL
-}
-\references{
-fill this
+Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics. 
+For model selection the model with the highest ELBO value is selected.
 }

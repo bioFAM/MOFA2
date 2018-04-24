@@ -21,7 +21,7 @@
   
   # Update node names
   if ("SW" %in% names(object@Expectations)) {
-    # object@ModelOpts$schedule[object@ModelOpts$schedule == "SW"] <- "W" # schedule is depreciated from ModelOpts
+    # object@ModelOptions$schedule[object@ModelOptions$schedule == "SW"] <- "W" # schedule is depreciated from ModelOptions
     names(object@Expectations)[names(object@Expectations) == "SW"] <- "W"
     colnames(object@TrainStats$elbo_terms)[colnames(object@TrainStats$elbo_terms)=="SW"] <- "W"
   }
@@ -57,12 +57,12 @@
   
   
   # update learnMean to learnIntercept
-  if ("learnMean" %in% names(object@ModelOpts)) {
-    tmp <- names(object@ModelOpts)
+  if ("learnMean" %in% names(object@ModelOptions)) {
+    tmp <- names(object@ModelOptions)
     tmp[tmp=="learnMean"] <- "learnIntercept"
-    names(object@ModelOpts) <- tmp
+    names(object@ModelOptions) <- tmp
   }
-  object@ModelOpts$learnIntercept <- as.logical(object@ModelOpts$learnIntercept)
+  object@ModelOptions$learnIntercept <- as.logical(object@ModelOptions$learnIntercept)
   
   
   return(object)

@@ -126,7 +126,7 @@ compareModels <- function(models, show_modelnames = FALSE) {
   elbo_vals <- sapply(models, getELBO)
   n_factors <- sapply(models, function(m) {
     n_fac <- getDimensions(m)$K
-    if(m@ModelOpts$learnIntercept) n_fac <- n_fac - 1
+    if(m@ModelOptions$learnIntercept) n_fac <- n_fac - 1
     n_fac
     })
   if(is.null(names(models))) names(models) <- paste0("model_", seq_along(models))
