@@ -68,8 +68,7 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
       apply(Y[[m]][[h]], 2, mean, na.rm=T) 
     })
   })
-  names(FeatureMean) <- views
-  for (view in views) { names(FeatureMean[[view]]) <- batches }
+  FeatureMean <- .setViewAndBatchNames(FeatureMean, views, batches)
 
   # Sweep out the feature-wise mean to calculate null model residuals
   resNullModel <- lapply(views, function(m) {
@@ -77,49 +76,57 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
       sweep(Y[[m]][[h]], 2, FeatureMean[[m]][[h]], "-")
     })
   })
-  names(resNullModel) <- views
-  for (view in views) { names(resNullModel[[view]]) <- batches }
-  browser()
+  resNullModel <- .setViewAndBatchNames(resNullModel, views, batches)
+  
   # replace masked values on Z by 0 (so that they do not contribute to predictions)
   for (batch in batches) { Z[[batch]][is.na(Z[[batch]])] <- 0 }
     
   # Calculate predictions under the MOFA model using all (non-intercept) factors
-  Ypred_m <- lapply(views, function(m) Z%*%t(W[[m]])); names(Ypred_m) <- views
+  Ypred_m <- lapply(views, function(m) {
+    lapply(batches, function(h) {
+      Z[[h]] %*% t(W[[m]])
+    })
+  })
+  Ypred_m <- .setViewAndBatchNames(Ypred_m, views, batches)
+
+  for (view in views) { names(resNullModel[[view]]) <- batches }
 
   # Calculate predictions under the MOFA model using each (non-intercept) factors on its own
   Ypred_mk <- lapply(views, function(m) {
-                      ltmp <- lapply(factors, function(k) Z[,k]%*%t(W[[m]][,k]) )
-                      names(ltmp) <- factors
-                      ltmp
-                    })
-  names(Ypred_mk) <- views
+    lapply(batches, function(h) {
+      ltmp <- lapply(factors, function(k) Z[[h]][,k] %*% t(W[[m]][,k]) )
+      names(ltmp) <- factors
+      ltmp
+    })
+  })
+  Ypred_mk <- .setViewAndBatchNames(Ypred_mk, views, batches)
   
   # If an intercept is included, regress out the intercept from the data
   if (include_intercept==T) {
       intercept <- getWeights(object,views,"intercept")
-      Y <- lapply(views, function(m) sweep(Y[[m]],2,intercept[[m]],"-"))
-      names(Y) <- views
+      Y <- lapply(views, function(m) lapply(batches, function(h) sweep(Y[[m]][[h]],2,intercept[[m]],"-")))
+      Y <- .setViewAndBatchNames(Y, views, batches)
   }
 
   # Calculate coefficient of determination per view
-  fvar_m <- sapply(views, function(m) 1 - sum((Y[[m]]-Ypred_m[[m]])**2, na.rm=T) / sum(resNullModel[[m]]**2, na.rm=T))
-   
+  fvar_m <- sapply(batches, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T)))
+  fvar_m <- .setViewAndBatchNames(fvar_m, batches, views)
+
   # Calculate coefficient of determination per factor and view
-  tmp <- sapply(views, function(m) {
-    sapply(factors, function(k) {
-      1 - sum((Y[[m]]-Ypred_mk[[m]][[k]])**2, na.rm=T) / sum(resNullModel[[m]]**2, na.rm=T) 
+  tmp <- lapply(batches, function(h) {
+    sapply(views, function(m) {
+      sapply(factors, function(k) {
+        1 - sum((Y[[m]][[h]]-Ypred_mk[[m]][[h]][[k]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T) 
+      })
     })
-  }) 
-  fvar_mk <- matrix(tmp, ncol=length(views), nrow=length(factors))
-  
-  # Set names
-  names(fvar_m) <- views
-  colnames(fvar_mk) <- views
-  rownames(fvar_mk) <- factors
+  })
+  fvar_mk <- lapply(tmp, function(e) matrix(e, ncol=length(views), nrow=length(factors)))
+  names(fvar_mk) <- batches
+  for (h in batches) { colnames(fvar_mk[[h]]) <- views; rownames(fvar_mk[[h]]) <- factors }
 
   # Store results
   R2_list <- list(R2Total = fvar_m, R2PerFactor = fvar_mk)
-
+  
   return(R2_list)
  
 }

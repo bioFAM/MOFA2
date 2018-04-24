@@ -68,6 +68,13 @@
   return(object)
 }
 
+# Set view names and batch names for nested list objects (e.g. Y)
+.setViewAndBatchNames <- function(nested_list, view_names, batch_names) {
+  names(nested_list) <- view_names
+  for (view in view_names) { names(nested_list[[view]]) <- batch_names }
+  nested_list
+}
+
 # Function to find factors that act like an intercept term for the sample, 
 # which means that they capture global mean effects
 findInterceptFactors <- function(object, cor_threshold = 0.8) {
@@ -130,17 +137,23 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
   
   # Identify factors unique to a single view by calculating relative R2 per factor
   r2 <- calculateVarianceExplained(object, views = views, factors = factors, batches = batches)$R2PerFactor
-  unique_factors <- names(which(rowSums(r2>=r2_threshold)==1))
+  unique_factors <- unique(unlist(lapply(batches, function(h) names(which(rowSums(r2[[h]]>=r2_threshold)==1)) )))
   
   # Mask samples that are unique in the unique factors
-  missing <- sapply(getTrainData(object,views), function(view) sampleNames(object)[apply(view, 2, function(x) all(is.na(x)))] )
-  names(missing) <- viewNames(object)
+  missing <- lapply(getTrainData(object, views, batches), function(views) {
+    lapply(views, function(batch) {
+      sampleNames(object)[apply(batch, 2, function(x) all(is.na(x)))]
+    })
+  })
+  missing <- .setViewAndBatchNames(missing, viewNames(object), batchNames(object))
   for (factor in unique_factors) {
     # view <- names(which(r2[factor,]>=r2_threshold))
-    view <- colnames(r2[,which(r2[factor,]>=r2_threshold),drop=F])
-    missing_samples <- missing[[view]]
-    if (length(missing_samples)>0) {
-      Z[missing_samples,factor] <- NA
+    for (h in batches) {
+      view <- colnames(r2[[h]][,which(r2[[h]][factor,]>=r2_threshold),drop=F])
+      missing_samples <- missing[[view]][[h]]
+      if (length(missing_samples) > 0) {
+        Z[[h]][missing_samples,factor] <- NA
+      }
     }
   }
   

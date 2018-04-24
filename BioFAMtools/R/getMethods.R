@@ -131,19 +131,20 @@ getWeights <- function(object, views = "all", factors = "all", as.data.frame = F
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-getTrainData <- function(object, views = "all", features = "all", as.data.frame = F) {
+getTrainData <- function(object, views = "all", batches = "all", features = "all", as.data.frame = F) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get views
-  if (paste0(views,collapse="") == "all") { views <- viewNames(object) } else { stopifnot(all(views %in% viewNames(object))) }
+  if (paste0(views, collapse="") == "all") { views <- viewNames(object) } else { stopifnot(all(views %in% viewNames(object))) }
+  if (paste0(batches, collapse="") == "all") { batches <- batchNames(object) } else { stopifnot(all(batches %in% batchNames(object))) }
   
   # Get features
-  if (class(features)=="list") {
+  if (class(features) == "list") {
     stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% featureNames(object)[[views[i]]]))))
   } else {
-    if (paste0(features,collapse="") == "all") { 
+    if (paste0(features, collapse="") == "all") { 
       features <- featureNames(object)[views]
     } else {
       stop("features not recognised, please read the documentation")
@@ -151,14 +152,22 @@ getTrainData <- function(object, views = "all", features = "all", as.data.frame 
   }
   
   # Fetch data
-  trainData <- object@TrainData[views]
-  trainData <- lapply(1:length(trainData), function(m) trainData[[m]][features[[m]],,drop=F]); names(trainData) <- views
+  trainData <- lapply(object@TrainData[views], function(e) e[batches])
+  trainData <- lapply(1:length(trainData), function(m) lapply(1:length(trainData[[1]]), function(h) trainData[[m]][[h]][features[[m]],,drop=F]))
+  trainData <- .setViewAndBatchNames(trainData, views, batches)
   
   # Convert to long data frame
   if (as.data.frame==T) {
-    tmp <- lapply(views, function(m) { tmp <- reshape2::melt(trainData[[m]]); colnames(tmp) <- c("feature","sample","value"); tmp <- cbind(view=m,tmp); return(tmp) })
+    tmp <- lapply(views, function(m) { 
+      lapply(batches, function(h) { 
+        tmp <- reshape2::melt(trainData[[m]][[h]])
+        colnames(tmp) <- c("feature", "sample", "value")
+        tmp <- cbind(view = m, batch = h, tmp)
+        return(tmp) 
+      })
+    })
     trainData <- do.call(rbind,tmp)
-    trainData[,c("view","feature","sample")] <- sapply(trainData[,c("view","feature","sample")], as.character)
+    trainData[,c("view","batch","feature","sample")] <- sapply(trainData[,c("view","batch","feature","sample")], as.character)
   }# else if ((length(views)==1) && (as.data.frame==F)) {
   #  trainData <- trainData[[views]]
   #}

@@ -19,7 +19,7 @@ subsetFactors <- function(object, factors) {
   if (is.numeric(factors)) stopifnot(all(factors %in% 1:object@Dimensions[["K"]]))
   
   # Subset expectations
-  object@Expectations$Z <- object@Expectations$Z[,factors]
+  object@Expectations$Z <- sapply(object@Expectations$Z, function(x) x[,factors], simplify = F, USE.NAMES = T)
   object@Expectations$W <- sapply(object@Expectations$W, function(x) x[,factors], simplify = F, USE.NAMES = T)
   
   nodes=c("AlphaZ","SigmaZ","ThetaZ","AlphaW","SigmaAlphaW","ThetaW")
@@ -29,7 +29,9 @@ subsetFactors <- function(object, factors) {
     }
   }
   
+  # TODO: adapt for 2D
   # Reordering covariance hyperparameters and "spatial signifiances" (spatialFA)
+
   if ("SigmaZ" %in% names(object@Parameters)){
     object@Parameters$SigmaZ$l <- object@Parameters$SigmaZ$l[factors]
     object@Parameters$SigmaZ$sig <- object@Parameters$SigmaZ$sig[factors]
@@ -48,7 +50,7 @@ subsetFactors <- function(object, factors) {
   object@Dimensions[["K"]] <- length(factors)
   
   # Modify factor names
-  factorNames(object) <- as.character(1:object@Dimensions[["K"]])
+  factorNames(object) <- paste0("F", as.character(1:object@Dimensions[["K"]]))
   
   return(object)
 }
