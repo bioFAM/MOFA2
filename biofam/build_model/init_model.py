@@ -352,6 +352,30 @@ class initModel(object):
         """
         self.nodes["AlphaZ"] = AlphaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
+    def initAlphaZ_groups(self, clusters, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+        """Method to initialise the precision of the ARD prior per sample groups/clusters on the factors
+
+        PARAMETERS
+        ----------
+         pa: float
+            'a' parameter of the prior distribution
+         pb :float
+            'b' parameter of the prior distribution
+         qb: float
+            initialisation of the 'b' parameter of the variational distribution
+         qE: float
+            initial expectation of the variational distribution
+        """
+        # convert clusters into integers from 0 to n_clusters and keep the corresponding cluster names in clust_dic
+        tmp = np.unique(clusters, return_inverse=True)
+        clust_dic = tmp[0]
+        clust_ix = tmp[1]
+
+        n_clust = len(np.unique(clust_ix))
+        assert len(clust_dic) == n_clust, 'problem in np.unique'
+
+        self.nodes["AlphaZ"] = AlphaZ_Node_groups(dim=(n_clust, self.K), pa=pa, pb=pb, qa=qa, qb=qb, clusters=clust_ix, cluster_dic=clust_dic, qE=qE, qlnE=qlnE)
+
     def initSigmaZ_k(self, X, n_diag=0):
         '''Method to initialise the covariance prior structure on Z'''
         dim = (self.K,)
@@ -674,6 +698,3 @@ class initModel(object):
         """ Get method to return the nodes"""
         return self.nodes
         #return { k:v for (k,v) in self.nodes.items()}
-
-
-

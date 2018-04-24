@@ -8,7 +8,8 @@ import scipy.special as special
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
 
-# TODO add sample functions everywhere 
+# TODO add sample functions everywhere
+# TODO calculateELBO is the same and could be moved to the parent node ?
 class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
         # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
@@ -148,6 +149,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
             Qb[c,:] = Pb[c,:] + 0.5*EZZ[mask, :].sum(axis=0)
 
         # TODO not even necessary as we already have a reference above ?
+        # to do anyway in case setParameters called another function
         self.Q.setParameters(a=Qa, b=Qb)
 
     def calculateELBO(self):

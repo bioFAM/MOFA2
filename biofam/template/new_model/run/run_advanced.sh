@@ -8,41 +8,41 @@
 
 
 # Input files as plain text format
-inFolder="test_data"
-inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" )
+inFolder="/Users/damienarnol1/Documents/local/pro/PhD/FA/results/results_tmofa/"
+inFiles=( "$inFolder/KO.txt" "$inFolder/WT.txt" )
 
 # Options for the input files
-delimiter=" " # delimiter, such as "\t", "" or " "
+delimiter="\t" # delimiter, such as "\t", "" or " "
 header_rows=0 # set to 1 if the files contain row names
 header_cols=0 # set to 1 if the files contain column names
 
 # Output file path, please use the .hdf5 extension
-outFolder="test_results"
+outFolder="/Users/damienarnol1/Documents/local/pro/PhD/FA/results/results_tmofa/res/"
 outFile=( "$outFolder/test.hdf5" )
 
 # Data options
 center_features=1   # center the features to zero-mean? (not necessary as long as learnMean=1)
-scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
+scale_views=1 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 transpose_sparsity=1
 transpose_noise=1
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-likelihoods=( gaussian gaussian gaussian )
+likelihoods=( gaussian gaussian )
 
 # Define view names
-views=( view_A view_B view_C )
+views=( KO WT )
 
 # Define file with covariates (not implemented yet, please ignore)
 # covariatesFile="/tmp/covariates.txt"
 
 # Maximum number of iterations
-iter=5000 # we recommend to set this to a large enough value (>1000)
+iter=500 # we recommend to set this to a large enough value (>1000)
 
 # Convergence criterion
 # Recommendation: a 'tolerance' of 0.01 is quite strict and can take a bit of time, for initial testing we recommend increasing it to 0.1
-tolerance=1. # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
+tolerance=.01 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than tolerance
 nostop=0       # if nostop=1 the training will complete all iterations even if the convergence criterion is met
 
 # Define the initial number of factors and how inactive factors are dropped during training.
@@ -53,7 +53,7 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 factors=10   # initial number of factors
 startDrop=1  # initial iteration to start shutting down factors
 freqDrop=1 	 # frequency of checking for shutting down factors
-dropR2=0.01  # threshold on fraction of variance explained
+dropR2=0.  # threshold on fraction of variance explained
 
 # Define hyperparameters for the feature-wise spike-and-slab sparsity prior
 # learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
@@ -74,7 +74,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='python3 ../build_model/entry_point.py
+cmd='python ../build_model/entry_point.py
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile
