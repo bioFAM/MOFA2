@@ -165,3 +165,15 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
 }
 
 
+flip_factor <- function(model, factor){
+  for(batchnm in names(model@Expectations$Z)) {
+    model@Expectations$Z[[batchnm]][,factor] <- - model@Expectations$Z[[batchnm]][,factor]
+  }
+  for(viewnm in names(model@Expectations$W)) {
+    model@Expectations$W[[viewnm]][,factor] <- -model@Expectations$W[[viewnm]][,factor]
+  }
+return(model)
+}
+
+
+

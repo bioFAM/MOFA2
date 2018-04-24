@@ -4,8 +4,8 @@
 \alias{getFactors}
 \title{getFactors}
 \usage{
-getFactors(object, factors = "all", as.data.frame = FALSE,
-  include_intercept = TRUE)
+getFactors(object, batches = "all", factors = "all",
+  as.data.frame = FALSE, include_intercept = TRUE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}

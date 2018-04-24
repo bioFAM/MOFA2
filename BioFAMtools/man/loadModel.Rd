@@ -4,7 +4,8 @@
 \alias{loadModel}
 \title{loading a trained BioFAModel}
 \usage{
-loadModel(file, object = NULL, sortFactors = T)
+loadModel(file, object = NULL, sortFactors = TRUE, multiView = NULL,
+  multiBatch = NULL)
 }
 \arguments{
 \item{file}{an hdf5 file saved by the BioFAM python framework.}

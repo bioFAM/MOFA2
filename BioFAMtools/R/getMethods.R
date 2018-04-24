@@ -41,7 +41,7 @@ getFactors <- function(object, batches = "all", factors = "all", as.data.frame =
   # Get factors
   if (paste0(factors, collapse="") == "all") { factors <- factorNames(object) } 
   else if(is.numeric(factors)) {
-    if (object@ModelOpts$learnIntercept == T) factors <- factorNames(object)[factors+1]
+    if (object@ModelOptions$learnIntercept == T) factors <- factorNames(object)[factors+1]
     else factors <- factorNames(object)[factors]
   }
   else { stopifnot(all(factors %in% factorNames(object))) }
@@ -97,7 +97,7 @@ getWeights <- function(object, views = "all", factors = "all", as.data.frame = F
   if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object) 
   } else if (is.numeric(factors)) {
-      if (object@ModelOpts$learnIntercept == T) {
+      if (object@ModelOptions$learnIntercept == T) {
         factors <- factorNames(object)[factors+1]
       } else {
         factors <- factorNames(object)[factors]
@@ -339,4 +339,14 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
   return(exp)
 }
 
+
+#' @title getELBO
+#' @name getELBO
+#' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
+#' @param object a \code{\link{BioFAModel}} object.
+#' @export
+getELBO <- function(object) {
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
+  return(tail(object@TrainStats$elbo, 1))
+}
 

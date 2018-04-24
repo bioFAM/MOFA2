@@ -4,8 +4,8 @@
 \alias{plotFactorBeeswarm}
 \title{Beeswarm plot of latent factors}
 \usage{
-plotFactorBeeswarm(object, factors, color_by = NULL, name_color = "",
-  showMissing = FALSE)
+plotFactorBeeswarm(object, factors = "all", color_by = NULL,
+  name_color = "", showMissing = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}

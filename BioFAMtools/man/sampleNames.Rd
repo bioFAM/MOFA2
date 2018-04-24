@@ -6,7 +6,7 @@
 \alias{sampleNames}
 \alias{sampleNames<-}
 \alias{sampleNames,BioFAModel-method}
-\alias{sampleNames<-,BioFAModel,vector-method}
+\alias{sampleNames<-,BioFAModel,list-method}
 \title{sampleNames: set and retrieve sample names}
 \usage{
 sampleNames(object)
@@ -15,13 +15,13 @@ sampleNames(object) <- value
 
 \S4method{sampleNames}{BioFAModel}(object)
 
-\S4method{sampleNames}{BioFAModel,vector}(object) <- value
+\S4method{sampleNames}{BioFAModel,list}(object) <- value
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{value}{a character vector of sample names}
+\item{value}{list of character vectors with the sample names for every batch}
 }
 \value{
-character vector with the sample names
+list of character vectors with the sample names for each batch
 }
