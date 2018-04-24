@@ -132,7 +132,6 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
         return expanded_expectation
 
     def updateParameters(self):
-        import pdb; pdb.set_trace()
         # TODO: add an if MuZ is in markov blanket ?
         if "SZ" in self.markov_blanket:
             tmp = self.markov_blanket["SZ"].getExpectations()

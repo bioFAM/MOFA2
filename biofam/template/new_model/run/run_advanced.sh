@@ -39,7 +39,7 @@ views=( unique )
 # covariatesFile="/tmp/covariates.txt"
 
 # Maximum number of iterations
-iter=500 # we recommend to set this to a large enough value (>1000)
+iter=1000 # we recommend to set this to a large enough value (>1000)
 
 # Convergence criterion
 # Recommendation: a 'tolerance' of 0.01 is quite strict and can take a bit of time, for initial testing we recommend increasing it to 0.1
