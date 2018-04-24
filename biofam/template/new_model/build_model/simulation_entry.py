@@ -30,7 +30,7 @@ def entry_point():
     p.add_argument( '--spatialFact',       type=float, default=0.,                              help='Initial percentage of non-spatial latent variables')
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
-    p.add_argument('--ARD_per_view',  action='store_true', help='ARD prior per view ? (relevant option if transpose_sparsity=1, X_Files=None and sample_X=None)')
+    p.add_argument('--ARD_per_view',  action='store_false', help='ARD prior per view ? (relevant option if transpose_sparsity=1, X_Files=None and sample_X=None)')
     p.add_argument( '--sample_X',          type=int, default=0,                                 help='Sample the positions of the samples to test covariance prior structure per factor')
 
     p.add_argument( '--noise',             type=float, default=1.,                              help='noise level for simulations')
