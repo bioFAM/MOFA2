@@ -97,24 +97,30 @@ subset_augment <- function(mat, pats) {
 }
 
 
-detectPassengers <- function(object, views = "all", factors = "all", r2_threshold = 0.03) {
+detectPassengers <- function(object, views = "all", factors = "all", r2_threshold = 0.03, batches = "all") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-
-  # browser()
   
   # Define views
-  if (paste0(views,sep="",collapse="") == "all") { 
+  if (paste0(views, sep="", collapse="") == "all") { 
     views <- viewNames(object) 
   } else {
     stopifnot(all(views %in% viewNames(object)))  
   }
   M <- length(views)
+
+  # Define batches
+  if (paste0(batches, sep="", collapse="") == "all") { 
+    batches <- batchNames(object) 
+  } else {
+    stopifnot(all(batches %in% batchNames(object)))  
+  }
+  H <- length(batches)
   
   # Define factors
   factors <- as.character(factors)
-  if (paste0(factors,collapse="") == "all") { 
+  if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object)
   } else {
     stopifnot(all(factors %in% factorNames(object)))  
@@ -124,7 +130,7 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
   Z <- getFactors(object)
   
   # Identify factors unique to a single view by calculating relative R2 per factor
-  r2 <- calculateVarianceExplained(object, views = views, factors = factors)$R2PerFactor
+  r2 <- calculateVarianceExplained(object, views = views, factors = factors, batches = batches)$R2PerFactor
   unique_factors <- names(which(rowSums(r2>=r2_threshold)==1))
   
   # Mask samples that are unique in the unique factors

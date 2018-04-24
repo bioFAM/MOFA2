@@ -9,12 +9,13 @@
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @param include_intercept include the intercept factor for calculation of variance explained (only used when an intercept was learned)
+#' @param batches character vector with the batch names, or numeric vector with batch indexes. Default is 'all'
 #' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor). 
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated. 
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
-calculateVarianceExplained <- function(object, views = "all", factors = "all", include_intercept = TRUE, ...) {
+calculateVarianceExplained <- function(object, views = "all", factors = "all", include_intercept = TRUE, batches = "all", ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -26,15 +27,23 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
   }
   
   # Define views
-  if (paste0(views,sep="",collapse="") =="all") { 
+  if (paste0(views, sep="", collapse="") == "all") { 
     views <- viewNames(object) 
   } else {
     stopifnot(all(views %in% viewNames(object)))  
   }
   M <- length(views)
 
+  # Define batches
+  if (paste0(batches, sep="", collapse="") == "all") { 
+    batches <- batchNames(object) 
+  } else {
+    stopifnot(all(batches %in% batchNames(object)))  
+  }
+  H <- length(batches)
+
   # Define factors
-  if (paste0(factors,collapse="") == "all") { 
+  if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object) 
   } else if (is.numeric(factors)) {
     if (include_intercept == T) {
@@ -49,12 +58,12 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
   K <- length(factors)
 
   # Collect relevant expectations
-  W <- getWeights(object,views,factors)
-  Z <- getFactors(object,factors)
-  Y <- getExpectations(object,"Y") # for non-Gaussian likelihoods the pseudodata is considered
+  W <- getWeights(object, views, factors)
+  Z <- getFactors(object, factors)
+  Y <- getExpectations(object, "Y") # for non-Gaussian likelihoods the pseudodata is considered
   
   # Calulcate feature-wise means as null model
-  FeatureMean <- lapply(views, function(m)  { apply(Y[[m]],2,mean,na.rm=T) })
+  FeatureMean <- lapply(views, function(m) { apply(Y[[m]], 2, mean, na.rm=T) })
   names(FeatureMean) <- views
 
   # Sweep out the feature-wise mean to calculate null model residuals

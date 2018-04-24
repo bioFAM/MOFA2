@@ -15,7 +15,7 @@
 #' @importFrom rhdf5 h5read
 #' @export
 
-loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = NULL) {
+loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL, multiBatch = NULL) {
   
   # message(paste0("Loading the following BioFAModel: ", file))
   
@@ -65,49 +65,95 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   
   # Load training data
 
-  # tryCatch( {
   TrainData   <- h5read(file, "data")
   featureData <- h5read(file, "features")
   sampleData  <- h5read(file, "samples")
 
-  # Define data options (if features are in rows or in columns)
-  if (is.null(sharedFeatures)) {
-    if (is.list(sampleData) & (length(featureData) == nrow(TrainData[[names(TrainData)[[1]]]]))) {
-      object@DataOpts <- list(shared_features = TRUE)
-    } else {
-      object@DataOpts <- list(shared_features = FALSE)
-    }
-  } else {
-    object@DataOpts <- list(shared_features = sharedFeatures)
-  }
-  # }, error = function(x) { print("Error loading the training data...") })
-  
+
+  # Define data options
+
+  object@DataOpts <- list()
+
   tryCatch( {
-    if (object@DataOpts$shared_features) {
-      for (m in names(TrainData)) {
-        rownames(TrainData[[m]]) <- featureData
-        colnames(TrainData[[m]]) <- sampleData[[m]]
-      }
+    # Specify if multiple views are present
+    if (is.null(multiView)) {
+      object@DataOpts$multiView <- is.list(featureData)
     } else {
-      for (m in names(TrainData)) {
-        rownames(TrainData[[m]]) <- sampleData
-        colnames(TrainData[[m]]) <- featureData[[m]]
-      }
+      object@DataOpts$multiView <- multiView
+    }
+
+    # Specify if multiple batches are present
+    if (is.null(multiBatch)) {
+      object@DataOpts$multiBatch <- is.list(sampleData)
+    } else {
+      object@DataOpts$multiBatch <- multiBatch
+    }
+  }, error = function(x) { print("Error defining data options...") })
+
+
+  # To keep reverse-compatibility with models without batches (e.g. MOFA models)
+  if (!object@DataOpts$multiBatch) {
+    sampleData <- list("B1" = sampleData)
+    # Samples should be in columns
+    if (length(unique(sapply(TrainData, nrow))) == 1 && length(unique(sapply(TrainData, ncol))) > 1) {
       TrainData <- lapply(TrainData, t)
     }
-    object@TrainData <- TrainData
+    TrainData  <- lapply(TrainData, function(e) list("B1" = e))
+    object@DataOpts$multiBatch <- TRUE
+  }
 
-  }, error = function(x) { cat(paste0("Error loading the training data!.. Try to load the model with sharedFeatures set to ", as.character(!object@DataOpts$shared_features), ".\n")) })
+  # To keep reverse-compatibility with models having views as batches (e.g. transposed MOFA)
+  if (!object@DataOpts$multiView) {
+    featureData <- list("V1" = featureData)
+    # Features should be in rows
+    if (length(unique(sapply(TrainData, ncol))) == 1 && length(unique(sapply(TrainData, nrow))) > 1) {
+      TrainData <- lapply(TrainData, t)
+    }
+    TrainData   <- list("V1" = TrainData)
+    object@DataOpts$multiView <- TRUE
+  }
+
+
+  # Load dimensions
+  object@Dimensions[["M"]] <- length(TrainData)
+  object@Dimensions[["H"]] <- length(TrainData[[1]])
+  object@Dimensions[["N"]] <- sapply(TrainData[[1]], ncol)
+  object@Dimensions[["D"]] <- sapply(TrainData, function(e) nrow(e[[1]]))
+  # K=tail(training_stats$activeK[!is.nan(training_stats$activeK)],n=1)
+  object@Dimensions[["K"]] <- ncol(object@Expectations$Z$E)  # TODO: Z should be a list with length H
+
+
+  # Fix sample and feature names is they are null
+  if (is.null(sampleData)) {
+    sampleData <- paste0("S", lapply(object@Dimensions[["N"]], function(n) as.character(1:n)))
+  }
+  if (is.null(featureData)) {
+    featureData <- paste0("G", lapply(object@Dimensions[["D"]], function(d) as.character(1:d)))
+  }  
+
+  # Give corresponding names for rows (features) and columns (samples)
+  tryCatch( {
+    for (m in names(TrainData)) {  # there is always at least one view
+      for (h in names(TrainData[[m]])) {  # there is always at least one batch
+        rownames(TrainData[[m]][[h]]) <- featureData[[m]]
+        colnames(TrainData[[m]][[h]]) <- sampleData[[h]]
+      }
+    }
+    object@TrainData <- TrainData
+  }, error = function(x) { cat("Error defining feature and sample names!..\n") })
+  
   
   # Replace NaN by NA
   for (m in names(TrainData)) {
-    # object@Expectations[[m]][is.nan(object@Expectations[[m]])] <- NA
-    TrainData[[m]][is.nan(TrainData[[m]])] <- NA
+    for (h in names(TrainData[[m]])) {
+      # object@Expectations[[m]][[h]][is.nan(object@Expectations[[m]][[h]])] <- NA
+      TrainData[[m]][[h]][is.nan(TrainData[[m]][[h]])] <- NA
+    }
   }
   
   # Sanity check on the order of the likelihoods
-  if (!is.null(attr(TrainData,"likelihood"))) {
-    lik <- attr(TrainData,"likelihood")
+  if (!is.null(attr(TrainData, "likelihood"))) {
+    lik <- attr(TrainData, "likelihood")
     if (!all(object@ModelOpts$likelihood == lik)) {
       object@ModelOpts$likelihood <- lik
       names(object@ModelOpts$likelihood) <- names(TrainData)
@@ -116,40 +162,24 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   
   # Update old models
   object <- .updateOldModel(object)
-  
-  # Load dimensions
-  object@Dimensions[["M"]] <- length(object@TrainData)
-  if (object@DataOpts$shared_features) {
-    object@Dimensions[["N"]] <- nrow(object@TrainData[[1]])
-    object@Dimensions[["D"]] <- sapply(object@TrainData, ncol)
-  } else {
-    object@Dimensions[["N"]] <- ncol(object@TrainData[[1]]) 
-    object@Dimensions[["D"]] <- sapply(object@TrainData, nrow)
-  }
-  # K=tail(training_stats$activeK[!is.nan(training_stats$activeK)],n=1)
-  object@Dimensions[["K"]] <- ncol(object@Expectations$Z)
-  
-  # Set view, sample, feature and factor names
+
+  # Set view, batch, sample, feature, and factor names
+
   if (is.null(names(object@TrainData))) {
     viewNames(object) <- paste0("V", as.character(1:object@Dimensions[["M"]]))
   } else {
     viewNames(object) <- names(object@TrainData)
   }
 
-  browser()
-
-  if (object@DataOpts$shared_features) {
-    sampleNames(object)  <- lapply(object@TrainData, colnames)
-    featureNames(object) <- rownames(object@TrainData[[1]])
+  if (is.null(names(object@TrainData[[1]]))) {
+    batchNames(object) <- paste0("B", as.character(1:object@Dimensions[["H"]]))
   } else {
-    if (is.null(colnames(object@TrainData[[1]]))) {
-      sampleNames(object) <- paste0("S", as.character(1:object@Dimensions[["N"]]))
-    } else {
-      sampleNames(object) <- colnames(object@TrainData[[1]])
-    }
-    featureNames(object) <- lapply(object@TrainData, rownames)
-  } 
-  factorNames(object) <- as.character(1:object@Dimensions[["K"]])
+    batchNames(object) <- names(object@TrainData[[1]])
+  }
+
+  sampleNames(object)  <- lapply(object@TrainData[[1]], colnames)
+  featureNames(object) <- lapply(object@TrainData, function(e) rownames(e[[1]]))
+  factorNames(object)  <- paste0("F", as.character(1:object@Dimensions[["K"]]))
   
   # Add names to likelihood vector
   if (!is.null(names(object@ModelOpts$likelihood))) {
@@ -166,9 +196,8 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, sharedFeatures = 
   #   }
   # }
   
-  
   # Rename factors if intercept is included
-  if (object@ModelOpts$learnIntercept == TRUE) {
+  if (object@ModelOpts$learnIntercept) {
     intercept_idx <- names(which(sapply(apply(object@Expectations$Z, 2, unique),length)==1))
     factornames <- as.character(1:(object@Dimensions[["K"]]))
     factornames[factornames==intercept_idx] <- "intercept"

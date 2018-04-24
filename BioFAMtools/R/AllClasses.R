@@ -53,11 +53,14 @@ setMethod("show", "BioFAModel", function(object) {
   if (object@Status == "trained") {
     nfactors <- object@Dimensions[["K"]]
     if (object@ModelOpts$learnIntercept==TRUE) { nfactors <- nfactors-1 }
-    cat(sprintf("Trained BioFAModel with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of samples: %d \n Number of factors: %d \n",
-                object@Dimensions[["M"]], paste(viewNames(object),collapse=" "), paste(as.character(object@Dimensions[["D"]]),collapse=" "), object@Dimensions[["N"]], nfactors))
+    cat(sprintf("Trained BioFAModel with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of batches: %d \n Batch names: %s \n Number of samples per batch: %s \n Number of factors: %d \n",
+                object@Dimensions[["M"]], paste(viewNames(object), collapse=" "), paste(as.character(object@Dimensions[["D"]]), collapse=" "), 
+                object@Dimensions[["H"]], paste(batchNames(object), collapse=" "), paste(as.character(object@Dimensions[["N"]]), collapse=" "), 
+                nfactors))
   } else {
     cat(sprintf("Untrained BioFAModel model with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of samples: %d \n",
-                object@Dimensions[["M"]], paste(viewNames(object),collapse=" "), paste(as.character(object@Dimensions[["D"]]),collapse=" "), object@Dimensions[["N"]]))
-    cat("\n")
+                object@Dimensions[["M"]], paste(viewNames(object), collapse=" "), paste(as.character(object@Dimensions[["D"]]), collapse=" "),
+                object@Dimensions[["H"]], paste(batchNames(object), collapse=" "), paste(as.character(object@Dimensions[["N"]]), collapse=" ")))
   }
+  cat("\n")
 })

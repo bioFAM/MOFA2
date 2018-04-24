@@ -1,19 +1,28 @@
 
 # (Hidden) General function to set names
-.setNames <- function(object, values, dimensionality, views="all") {
+.setNames <- function(object, values, dimensionality, views="all", batches="all") {
   nodes <- names(object@Expectations)
-  if (paste0(views,collapse="") == "all") { 
-    views <- names(object@Dimensions$D) 
+
+  if (paste0(views, collapse = "") == "all") { 
+    views <- names(object@Dimensions$D)
   } else {
-    stopifnot(all(views%in%names(object@Dimensions$D) ))
+    stopifnot(all(views   %in% names(object@Dimensions$D)))
   } 
+
+  if (paste0(batches, collapse = "") == "all") {
+    batches <- names(object@Dimensions$N)
+  } else {
+    stopifnot(all(batches %in% names(object@Dimensions$N)))
+  }
   
   # Loop over training data
   for (m in views) {
-    if (nrow(object@TrainData[[m]]) == dimensionality)
-      rownames(object@TrainData[[m]]) <- values
-    if (ncol(object@TrainData[[m]]) == dimensionality)
-      colnames(object@TrainData[[m]]) <- values
+    for (h in batches) {
+      if (nrow(object@TrainData[[m]][[h]]) == dimensionality)
+        rownames(object@TrainData[[m]][[h]]) <- values
+      if (ncol(object@TrainData[[m]][[h]]) == dimensionality)
+        colnames(object@TrainData[[m]][[h]]) <- values
+    }
   }
   
   # Loop over nodes
@@ -118,7 +127,7 @@ setReplaceMethod("factorNames", signature(object="BioFAModel", value="vector"),
      if (!length(value)==object@Dimensions["K"])
        stop("Length of factor names does not match the dimensionality of the latent variable matrix")
    if(!length(value)==ncol(object@Expectations$Z)) 
-     stop("factor names do not match the number of columns in the latent variable matrix")
+     stop("Factor names do not match the number of columns in the latent variable matrix")
     
    object <- .setNames(object, value, object@Dimensions[["K"]])
    object
@@ -133,27 +142,29 @@ setReplaceMethod("factorNames", signature(object="BioFAModel", value="vector"),
 #' @rdname sampleNames
 #' @param object a \code{\link{BioFAModel}} object.
 #' @aliases sampleNames,BioFAModel-method
-#' @return character vector with the sample names
+#' @return list of character vectors with the sample names for each batch
 #' @export
-setMethod("sampleNames", signature(object="BioFAModel"), function(object) { colnames(object@TrainData[[1]]) } )
+setMethod("sampleNames", signature(object="BioFAModel"), function(object) { tmp <- lapply(object@TrainData[[1]], colnames); names(tmp) <- batchNames(object); return(tmp) } )
 
 #' @rdname sampleNames
-#' @param value a character vector of sample names
+#' @param value list of character vectors with the sample names for every batch
 #' @import methods
 #' @export
-setReplaceMethod("sampleNames", signature(object="BioFAModel", value="vector"), 
+setReplaceMethod("sampleNames", signature(object="BioFAModel", value="list"), 
   function(object,value) {
-   if (!methods::.hasSlot(object,"TrainData") | length(object@TrainData) == 0)
+   if (!methods::.hasSlot(object,"TrainData") | length(object@TrainData) == 0 | length(object@TrainData[[1]]) == 0)
      stop("Before assigning sample names you have to assign the training data")
    if (!methods::.hasSlot(object,"Expectations") | length(object@Expectations) == 0)
      stop("Before assigning sample names you have to assign the expectations")
    if (methods::.hasSlot(object,"Dimensions") | length(object@Dimensions) == 0)
-     if (!length(value)==object@Dimensions["N"])
-       stop("Length of sample names does not match the dimensionality of the model")
-   if(!length(value)==ncol(object@TrainData[[1]])) 
-     stop("sample names do not match the dimensionality of the data (cols) ")
-   
-    object <- .setNames(object, value, object@Dimensions[["N"]])
+    if (!all(sapply(value,length) == object@Dimensions[["N"]]))
+        stop("Length of sample names does not match the dimensionality of the model")
+    if (!all(sapply(value,length) == sapply(object@TrainData[[1]],ncol)))
+      stop("sample names do not match the dimensionality of the data (columns)")
+
+    for (h in 1:length(object@TrainData[[1]])) {
+      object <- .setNames(object, value[[h]], object@Dimensions[["N"]][h], batches = names(object@Dimensions[["N"]][h]))
+    }
     object
 })
 
@@ -166,23 +177,23 @@ setReplaceMethod("sampleNames", signature(object="BioFAModel", value="vector"),
 #' @aliases featureNames,BioFAModel-method
 #' @return list of character vectors with the feature names for each view
 #' @export
-setMethod("featureNames", signature(object="BioFAModel"), function(object) { tmp <- lapply(object@TrainData,rownames); names(tmp) <- viewNames(object); return(tmp) } )
+setMethod("featureNames", signature(object="BioFAModel"), function(object) { tmp <- lapply(object@TrainData, function(e) rownames(e[[1]])); names(tmp) <- viewNames(object); return(tmp) } )
 
 #' @rdname featureNames
-#' @param value list of character vectors with the feature names for each view
+#' @param value list of character vectors with the feature names for every view
 #' @import methods
 #' @export
-setReplaceMethod("featureNames", signature(object="BioFAModel", value="list"), 
-  function(object,value) {
+setReplaceMethod("featureNames", signature(object="BioFAModel", value="list"),
+  function(object, value) {
     if (!methods::.hasSlot(object,"TrainData")  | length(object@TrainData) == 0)
       stop("Before assigning feature names you have to assign the training data")
-    if (!methods::.hasSlot(object,"Expectations")  | length(object@Expectations) == 0)
+    if (!methods::.hasSlot(object,"Expectations") | length(object@Expectations) == 0)
       stop("Before assigning feature names you have to assign the expectations")
     if (methods::.hasSlot(object,"Dimensions")  | length(object@Dimensions) == 0)
-      if (!all(sapply(value,length) == object@Dimensions[["D"]]))
+      if (!all(sapply(value, length) == object@Dimensions[["D"]]))
         stop("Length of feature names does not match the dimensionality of the model")
-    if (!all(sapply(value,length)==sapply(object@TrainData,nrow)))
-      stop("feature names do not match the dimensionality of the data (columns)")
+    if (!all(sapply(value, length) == sapply(object@TrainData, function(e) nrow(e[[1]]))))
+      stop("Feature names do not match the dimensionality of the data (rows)")
     
     for (m in 1:length(object@TrainData)) {
       object <- .setNames(object, value[[m]], object@Dimensions[["D"]][m], names(object@Dimensions[["D"]][m]))
@@ -207,14 +218,14 @@ setMethod("viewNames", signature(object="BioFAModel"), function(object) { names(
 #' @import methods
 #' @export
 setMethod("viewNames<-", signature(object="BioFAModel", value="character"), 
-  function(object,value) {
+  function(object, value) {
     if (!methods::.hasSlot(object,"TrainData") | length(object@TrainData) == 0)
       stop("Before assigning view names you have to assign the training data")
-    if (methods::.hasSlot(object,"Dimensions")| length(object@Dimensions) == 0)
-      if (!length(value) == object@Dimensions["M"])
-        stop("Length of view names does not match the dimensionality of the model")
-    if (!length(value)==length(object@TrainData))
-      stop("view names do not match the number of views in the training data")
+    if (methods::.hasSlot(object,"Dimensions") & length(object@Dimensions) != 0)
+      if (length(value) != object@Dimensions["M"])
+      stop("Length of view names does not match the dimensionality of the model")
+    if (length(value) != length(object@TrainData))
+      stop("View names do not match the number of views in the training data")
     
     if (object@Status == "trained"){
       # Deduce multiview nodes (e.g. AlphaW, W, Tau, Theta, Y)
@@ -228,6 +239,51 @@ setMethod("viewNames<-", signature(object="BioFAModel", value="character"),
     
     names(object@TrainData) <- value
     names(object@Dimensions$D) <- value
+    
+    return(object)
+})
+
+
+#################################
+## Set and retrieve batch names ##
+#################################
+
+#' @rdname batchNames
+#' @param object a \code{\link{BioFAModel}} object.
+#' @return character vector with the names for each view
+#' @rdname batchNames
+#' @export
+setMethod("batchNames", signature(object="BioFAModel"), function(object) { names(object@TrainData[[1]]) } )
+
+
+#' @rdname batchNames
+#' @param value character vector with the names for each view
+#' @import methods
+#' @export
+setMethod("batchNames<-", signature(object="BioFAModel", value="character"), 
+  function(object, value) {
+    if (!methods::.hasSlot(object,"TrainData") | length(object@TrainData) == 0)
+      stop("Before assigning batch names you have to assign the training data")
+    if (methods::.hasSlot(object,"Dimensions") & length(object@Dimensions) != 0)
+      if(length(value) != object@Dimensions["H"])
+        stop("Length of batch names does not match the dimensionality of the model")
+    if (length(value) != length(object@TrainData[[1]]))
+      stop("Batch names do not match the number of views in the training data")
+    
+    if (object@Status == "trained"){
+      # Deduce multibatch nodes (e.g. AlphaZ, Z, Y)
+      for (node in names(object@Expectations)) {
+        if (class(object@Expectations[[node]]) == "list" & 
+            length(object@Expectations[[node]]) == object@Dimensions["H"]) {
+          names(object@Expectations[[node]]) <- value 
+        }
+      }
+    }
+    
+    for (m in names(object@TrainData)) {
+      names(object@TrainData[[m]]) <- value
+    }
+    names(object@Dimensions$N) <- value
     
     return(object)
 })
