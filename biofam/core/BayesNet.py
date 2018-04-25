@@ -85,9 +85,12 @@ class BayesNet(object):
         if 'SW' in self.nodes:
             self.nodes["SW"].sample(dist)
             self.nodes["Z"].sample(dist)
+            self.nodes["Z"].samp -= self.nodes["Z"].samp.mean() #centering
         else:
             self.nodes["SZ"].sample(dist)
             self.nodes["W"].sample(dist)
+            for m in range(self.dim["M"]):
+                self.nodes["W"].nodes[m].samp -= self.nodes["W"].nodes[m].samp.mean() #centering
         self.nodes['Tau'].sample(dist)
         self.nodes['Y'].sample(dist)
 

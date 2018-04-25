@@ -41,7 +41,7 @@ def entry_point():
     p.add_argument( '--likelihoods',       type=str, nargs='+', required=True,                  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
     p.add_argument( '--views',             type=str, nargs='+', required=True,                  help='View names')
     p.add_argument( '--learnIntercept',    action='store_true',                                 help='Learn the feature-wise mean?' )
-    p.add_argument('--ARD_per_view',  action='store_true',default=True, help='ARD prior per view ? (relevant option if transpose_sparsity=1, X_Files=None and sample_X=None)')
+    p.add_argument('--ARD_per_view',  action='store_false', help='ARD prior per view ? (relevant option if transpose_sparsity=1, X_Files=None and sample_X=None)')
     p.add_argument( '--sample_X',         type=int, default=0,                                  help='Sample the positions of the samples to test covariance prior structure per factor' )
 
     # Training options
@@ -225,7 +225,7 @@ def entry_point():
             train_opts['schedule'] = ( "Y", "SZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
             if model_opts["ARD_per_view"]:
-                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "AlphaW", "ThetaZ", "Tau")
+                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
             else:
                 train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "ThetaZ", "Tau")
     else:
