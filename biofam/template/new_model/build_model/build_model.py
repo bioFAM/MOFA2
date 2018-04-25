@@ -192,9 +192,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
         pa = 1e-14; pb = 1e-14
 
-    # if model_opts['transpose_sparsity']:
-        # qa = 1.; qb = 1.
-        # init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
+    if model_opts['transpose_sparsity']:
+        qa = 1.; qb = 1.
+        init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
     if not model_opts['transpose_sparsity']:
         if dataX is not None:
             # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
@@ -283,9 +283,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     nodes = init.getNodes()
     if model_opts['transpose_sparsity']:
         nodes["ThetaZ"].addMarkovBlanket(SZ=nodes["SZ"])
-        # nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])
-        # nodes["SZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
-        nodes["SZ"].addMarkovBlanket(ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
+        nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])
+        nodes["SZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
+        # nodes["SZ"].addMarkovBlanket(ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])
 
         if dataX is not None:
             nodes["SigmaAlphaW"].addMarkovBlanket(W=nodes["W"])

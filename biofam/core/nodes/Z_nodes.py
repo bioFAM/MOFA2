@@ -84,7 +84,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
 
         # Collect parameters from the prior or expectations from the markov blanket
-
         if "MuZ" in self.markov_blanket:
             Mu = self.markov_blanket['MuZ'].getExpectation()
         else:
@@ -175,7 +174,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         # compute term from the precision factor in front of the Gaussian
         tmp2 = 0  # constant here
         # if self.n_iter> 4:
-        #     import pdb; pdb.set_trace()
         if p_cov[k].__class__.__name__ == 'dia_matrix':
             tmp2 += np.sum(np.log(p_cov[k].data.flatten()))
         elif p_cov[k].__class__.__name__ == 'ndarray':
@@ -317,7 +315,17 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         tau = [tau_m.copy() for tau_m in self.markov_blanket["Tau"].getExpectation()]
         Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()]
-        alpha = self.markov_blanket["AlphaZ"].getExpectation().copy()
+        # TODO sort that out
+        if "AlphaZ" in self.markov_blanket:
+            alpha = self.markov_blanket["AlphaZ"].getExpectation().copy()
+            # Check dimensions of alpha and and expand if necessary
+            # TODO this is still not right. needs to be implemented for anpther case which is the full Alpha matrix (when groups)
+            if alpha.shape[0] == 1:
+                alpha = s.repeat(alpha[:], self.dim[1], axis=0)
+        else:
+            # TODO implement that
+            print('SZ not implemented without alphaZ')
+            exit(1)
         thetatmp = self.markov_blanket['ThetaZ'].getExpectations().copy()
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
@@ -342,10 +350,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         #         tau[m] = s.repeat(tau[m][None,:], Y[m].shape[0], axis=0)
         # tau = ma.masked_where(ma.getmask(Y), tau)
 
-        # Check dimensions of alpha and and expand if necessary
-        if alpha.shape[0] == 1:
-            alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-
         # Mask matrices (excluding covariates from the list of latent variables)
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
         for m in range(M):
@@ -358,6 +362,9 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         for k in range(self.dim[1]):
             # Calculate intermediate stept
             term1 = (theta_lnE - theta_lnEInv)[:, k]
+            # TODO this is not right: alpha should be expended to full matrix before and used as full matrix
+            # term2 = 0.5 * s.log(alpha[:, k]) should work
+            # TODO modify everywhere else
             term2 = 0.5 * s.log(alpha[k])
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
@@ -401,6 +408,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Get ARD sparsity or prior variance
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaZ'].getExpectations().copy()
+            # TODO change that for new possibilities on Alpha
             if alpha["E"].shape[0] == 1:
                 alpha["E"] = s.repeat(alpha["E"][:], self.dim[1], axis=0)
                 alpha["lnE"] = s.repeat(alpha["lnE"][:], self.dim[1], axis=0)

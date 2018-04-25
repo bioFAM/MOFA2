@@ -225,7 +225,7 @@ def entry_point():
             train_opts['schedule'] = ( "Y", "SZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
         else:
             if model_opts["ARD_per_view"]:
-                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "ThetaZ", "Tau")
+                train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "AlphaW", "ThetaZ", "Tau")
             else:
                 train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "ThetaZ", "Tau")
     else:

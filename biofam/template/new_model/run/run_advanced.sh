@@ -9,6 +9,7 @@
 
 # Input files as plain text format
 inFolder="/Users/damienarnol1/Documents/local/pro/PhD/FA/results/results_tmofa/merged/"
+# inFiles=( "$inFolder/WT.txt" "$inFolder/KO.txt" )
 inFiles=( "$inFolder/all_data.txt" )
 sampleGroups="$inFolder/z_groups.txt"
 
@@ -30,9 +31,11 @@ transpose_sparsity=0
 transpose_noise=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
+# likelihoods=( gaussian gaussian )
 likelihoods=( gaussian )
 
 # Define view names
+# views=( wt ko )
 views=( unique )
 
 # Define file with covariates (not implemented yet, please ignore)
@@ -91,6 +94,7 @@ cmd='python ../build_model/entry_point.py
 	--seed $seed
 	--sampleGroups $sampleGroups
 '
+#
 
 if [[ $header_rows -eq 1 ]]; then cmd="$cmd --header_rows"; fi
 if [[ $header_cols -eq 1 ]]; then cmd="$cmd --header_cols"; fi
