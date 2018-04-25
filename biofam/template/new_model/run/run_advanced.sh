@@ -8,6 +8,10 @@
 
 
 # Input files as plain text format
+#inFolder="/Users/damienarnol1/Documents/local/pro/PhD/FA/results/results_tmofa/merged/"
+## inFiles=( "$inFolder/WT.txt" "$inFolder/KO.txt" )
+#inFiles=( "$inFolder/all_data.txt" )
+#sampleGroups="$inFolder/z_groups.txt"
 inFolder="test_data"
 inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" )
 
@@ -25,10 +29,16 @@ center_features=1   # center the features to zero-mean? (not necessary as long a
 scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose_sparsity=1
-transpose_noise=1
+transpose_sparsity=0
+transpose_noise=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
+# likelihoods=( gaussian gaussian )
+#likelihoods=( gaussian )
+#
+## Define view names
+## views=( wt ko )
+#views=( unique )
 likelihoods=( gaussian gaussian gaussian )
 
 # Define view names
@@ -90,7 +100,8 @@ cmd='python3 ../build_model/entry_point.py
 	--dropR2 $dropR2
 	--seed $seed
 '
-
+#
+#--sampleGroups $sampleGroups
 if [[ $header_rows -eq 1 ]]; then cmd="$cmd --header_rows"; fi
 if [[ $header_cols -eq 1 ]]; then cmd="$cmd --header_cols"; fi
 # if [ -n "$covariatesFile" ]; then cmd="$cmd --covariatesFile $covariatesFile"; fi

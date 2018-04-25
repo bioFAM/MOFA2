@@ -107,25 +107,29 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
 class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
     """ """
 
-    # TODO: for now it is assumed that clusters are a list of digits from 0 to n_clust. we should handle other types
-    # and convert it (strings etc)
-    def __init__(self, dim, pa, pb, qa, qb, clusters, cluster_dic=None, qE=None, qE2=None):
-        self.clusters = clusters
+    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic=None, qE=None, qlnE=None):
+        self.groups = groups
         self.factors_axis = 1
-        self.N = len(self.clusters)
-        self.n_clusters = len(np.unique(clusters))
+        self.N = len(self.groups)
+        self.n_groups = len(np.unique(groups))
 
-        assert self.n_clusters == dim[0], "node dimension does not match number of clusters"
+        assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
     def getExpectations(self):
         # reshape the values to N_samples * N_factors and return
         QExp = self.Q.getExpectations()
-        expanded_expectation = QExp['E'][self.clusters, :]
-        expanded_lnE = QExp['lnE'][self.clusters, :]
+        expanded_expectation = QExp['E'][self.groups, :]
+        expanded_lnE = QExp['lnE'][self.groups, :]
         # do we need to expand the variance as well -> not used I think
         return {'E': expanded_expectation, 'lnE': expanded_lnE}
+
+    def getExpectation(self):
+        # reshape the values to N_samples * N_factors and return
+        QExp = self.Q.getExpectations()
+        expanded_expectation = QExp['E'][self.groups, :]
+        return expanded_expectation
 
     def updateParameters(self):
         # TODO: add an if MuZ is in markov blanket ?
@@ -137,19 +141,17 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
             EZZ = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
-        P,Q = self.P.getParameters()
+        P,Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb = P['a'], P['b']
         Qa, Qb = Q['a'], Q['b']
 
         # Perform update
-        for c in range(self.n_clusters):
-            mask = (self.clusters == c)
+        for c in range(self.n_groups):
+            mask = (self.groups == c)
 
             Qa[c,:] = Pa[c,:] + 0.5*EZZ[mask, :].shape[0]
             Qb[c,:] = Pb[c,:] + 0.5*EZZ[mask, :].sum(axis=0)
 
-        # TODO not even necessary as we already have a reference above ?
-        # to do anyway in case setParameters called another function
         self.Q.setParameters(a=Qa, b=Qb)
 
     def calculateELBO(self):

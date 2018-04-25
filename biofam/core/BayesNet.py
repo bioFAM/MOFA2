@@ -146,12 +146,12 @@ class BayesNet(object):
             else:
                 Z = self.nodes['SZ'].getExpectation()
                 W = self.nodes["W"].getExpectation()
-            
+
             Y = self.nodes["Y"].getExpectation()
 
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
             for m in range(self.dim['M']):
-                
+
                 # Fetch the mask for missing vlaues
                 mask = self.nodes["Y"].getNodes()[m].getMask()
 
@@ -181,7 +181,6 @@ class BayesNet(object):
                         all_r2[m,k] = R2_k/R2_tot
                 # No intercept term
                 else:
-                    # import pdb; pdb.set_trace()
                     # calculate the total R2
                     SS = ((Y[m] - Y[m].mean())**2.).sum()
                     Res = ((Ypred_m - Y[m])**2.).sum()
@@ -253,7 +252,6 @@ class BayesNet(object):
         # Start training
         for i in range(self.options['maxiter']):
             t = time();
-
             # Remove inactive latent variables
             if (i >= self.options["startdrop"]) and (i % self.options['freqdrop']) == 0:
                 if any(self.options['drop'].values()):
@@ -298,7 +296,6 @@ class BayesNet(object):
                     if delta_elbo<0:
                         print("Warning, lower bound is decreasing..."); print('\a')
                         #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
-                        #import pdb; pdb.set_trace()
 
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
@@ -323,7 +320,7 @@ class BayesNet(object):
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """
-        # TODO problem with dictionnary comprehension here 
+        # TODO problem with dictionnary comprehension here
         to_ret = {}
         for node in self.nodes.keys():
             if isinstance(self.nodes[node],Variational_Node):

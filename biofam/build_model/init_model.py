@@ -352,8 +352,8 @@ class initModel(object):
         """
         self.nodes["AlphaZ"] = AlphaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
-    def initAlphaZ_groups(self, clusters, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
-        """Method to initialise the precision of the ARD prior per sample groups/clusters on the factors
+    def initAlphaZ_groups(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+        """Method to initialise the precision of the ARD prior per sample groups on the factors
 
         PARAMETERS
         ----------
@@ -366,15 +366,18 @@ class initModel(object):
          qE: float
             initial expectation of the variational distribution
         """
-        # convert clusters into integers from 0 to n_clusters and keep the corresponding cluster names in clust_dic
-        tmp = np.unique(clusters, return_inverse=True)
-        clust_dic = tmp[0]
-        clust_ix = tmp[1]
+        # sanity checks
+        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
-        n_clust = len(np.unique(clust_ix))
-        assert len(clust_dic) == n_clust, 'problem in np.unique'
+        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        tmp = np.unique(groups, return_inverse=True)
+        groups_dic = tmp[0]
+        groups_ix = tmp[1]
 
-        self.nodes["AlphaZ"] = AlphaZ_Node_groups(dim=(n_clust, self.K), pa=pa, pb=pb, qa=qa, qb=qb, clusters=clust_ix, cluster_dic=clust_dic, qE=qE, qlnE=qlnE)
+        n_group = len(np.unique(groups_ix))
+        assert len(groups_dic) == n_group, 'problem in np.unique'
+
+        self.nodes["AlphaZ"] = AlphaZ_Node_groups(dim=(n_group, self.K), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE, qlnE=qlnE)
 
     def initSigmaZ_k(self, X, n_diag=0):
         '''Method to initialise the covariance prior structure on Z'''

@@ -82,6 +82,23 @@ def maskData(data, data_opts):
 
     return data
 
+def _gaussianise_vec(vec):
+    # take ranks and scale to uniform
+    vec = s.stats.rankdata(vec, 'dense').astype(float)
+    vec /= (vec.max()+1.)
+
+    # transform uniform to gaussian using probit
+    vec_norm = np.sqrt(2.) * s.special.erfinv(2.*vec-1.)  # TODO to double check
+    # phenotype_norm = np.reshape(phenotype_norm, [len(phenotype_norm), 1])
+
+    return vec_norm
+
+def gaussianise(Y_m, axis=0):
+    # double check axis for pandas
+    Y_norm = Y_m.apply(_gaussianise_vec, axis)
+
+    return Y_norm
+
 def loadData(data_opts, verbose=True):
     """ Method to load the data
 
@@ -136,6 +153,11 @@ def loadData(data_opts, verbose=True):
             print("Scaling view " + str(m) + " to unit variance...")
             Y[m] = Y[m] / np.nanstd(Y[m].as_matrix())
 
+        # quantile normalise features
+        # if data_opts['gaussianise_features'][m]:
+        #     print("Gaussianising features for view " + str(m) + "...")
+        #     Y[m] = gaussianise(Y[m])
+
         # Scale the features to unit variance
         if data_opts['scale_features'][m]:
             print("Scaling features for view " + str(m) + " to unit variance...")
@@ -144,6 +166,15 @@ def loadData(data_opts, verbose=True):
         print("\n")
 
     return Y
+
+def loadDataGroups(data_opts):
+    """
+    method to load the labels of the samples when there are groups of samples
+    """
+    if data_opts['sampleGroups'] is None:
+        return None
+    sample_labels = np.genfromtxt(data_opts['sampleGroups'], dtype='str')
+    return sample_labels
 
 def loadDataX(data_opts, transpose = False):
     """ Method to load the data of the samples positions and assigned clusters
