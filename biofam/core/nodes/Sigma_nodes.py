@@ -12,7 +12,7 @@ class SigmaGrid_Node(Node):
     # dim should be the number of latent variables
     def __init__(self, dim, X, start_opt=10, n_grid=10, n_diag=0):
         #print("optimization of hyperparameters of sigma will begin at iteration "+str(start_opt))
-        super(SigmaGrid_Node,self).__init__(dim)
+        super().__init__(dim)
         self.X = X
         self.N = X.shape[0]
         self.start_opt = start_opt
@@ -120,7 +120,7 @@ class SigmaGrid_Node(Node):
 class BlockSigmaGrid_Node(SigmaGrid_Node):
     def __init__(self, dim, X, clusters, start_opt=20, n_grid=10, n_diag=0):
         self.clusters = clusters
-        super(BlockSigmaGrid_Node, self).__init__(dim, X, start_opt, n_grid, n_diag)
+        super().__init__(dim, X, start_opt, n_grid, n_diag)
 
     def compute_cov(self):
         # compute SE block covariance based on clusters

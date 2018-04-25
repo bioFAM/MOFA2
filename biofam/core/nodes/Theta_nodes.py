@@ -158,7 +158,7 @@ class ThetaZ_Constant_Node_k(Constant_Variational_Node):
     """
 
     def __init__(self, dim, value, N_cells=1):
-        super(ThetaZ_Constant_Node_k, self).__init__(dim, value)
+        super().__init__(dim, value)
         self.N_cells = N_cells
         self.precompute()
 
