@@ -18,19 +18,21 @@ class Gamma(Distribution):
     H[x] = ln(Gamma(a)) - (a-1)*digamma(a) - ln(b) + a
     """
 
-    def __init__(self, dim, a, b, E=None):
+    def __init__(self, dim, a, b, E=None, lnE=None):
         Distribution.__init__(self, dim)
 
         # Initialise parameters
-        a = s.ones(dim) * a
-        b = s.ones(dim) * b
+        if isinstance(a, (int, float)):
+            a = s.ones(dim) * a
+        if isinstance(b, (int, float)):
+            b = s.ones(dim) * b
         self.params = { 'a':a, 'b':b }
 
         # Initialise expectations
-        if E is None:
+        if (E is None) or (lnE is None):
             self.updateExpectations()
         else:
-            self.expectations = { 'E':s.ones(dim)*E, 'lnE':s.log(s.ones(dim)*E) }
+            self.expectations = { 'E':s.ones(dim)*E, 'lnE':s.ones(dim)*lnE }
 
         # Check that dimensionalities match
         self.CheckDimensionalities()
@@ -46,9 +48,9 @@ class Gamma(Distribution):
 
     def loglik(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
-        return s.sum( -s.log(special.gamma(self.params['a'])) + self.params['a']*s.log(self.params['b']) * (self.params['a']-1)*s.log(x) -self.params['b']*x )
+        return s.sum( -s.log(special.gamma(self.params['a'])) + self.params['a']*s.log(self.params['b']) + (self.params['a']-1)*s.log(x) -self.params['b']*x )
 
     def sample(self, n=1):
         k = self.params['a']
         theta = 1./self.params['b']  # using shape/scale parametrisation
-        return s.random.gamma(k, theta)
+        return np.random.gamma(k, scale=theta)

@@ -35,7 +35,6 @@ class UnivariateGaussian(Distribution):
         if E2 is not None:
             self.expectations['E2'] = s.ones(dim)*E2
 
-
         # Check that dimensionalities match
         self.CheckDimensionalities()
 
@@ -44,7 +43,6 @@ class UnivariateGaussian(Distribution):
         E = self.params['mean']
         E2 = E**2 + self.params['var']
         self.expectations = { 'E':E, 'E2':E2 }
-
 
     def density(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"

@@ -82,8 +82,15 @@ class BayesNet(object):
 
     def simulate(self, dist='P'):
         """ Method to simulate from the generative model """
-        self.nodes['SW'].sample(dist)
-        self.nodes['Z'].sample(dist)
+        if 'SW' in self.nodes:
+            self.nodes["SW"].sample(dist)
+            self.nodes["Z"].sample(dist)
+            self.nodes["Z"].samp -= self.nodes["Z"].samp.mean() #centering
+        else:
+            self.nodes["SZ"].sample(dist)
+            self.nodes["W"].sample(dist)
+            for m in range(self.dim["M"]):
+                self.nodes["W"].nodes[m].samp -= self.nodes["W"].nodes[m].samp.mean() #centering
         self.nodes['Tau'].sample(dist)
         self.nodes['Y'].sample(dist)
 
@@ -132,9 +139,16 @@ class BayesNet(object):
         #   Advantages: it takes into account both weights and latent variables, is based on how well the model fits the data
         #   Disadvantages: slow, doesnt work with non-gaussian data
         if by_r2 is not None:
-            Z = self.nodes['Z'].getExpectation()
+
+            if "SW" in self.nodes:
+                Z = self.nodes['Z'].getExpectation()
+                W = self.nodes["SW"].getExpectation()
+            else:
+                Z = self.nodes['SZ'].getExpectation()
+                W = self.nodes["W"].getExpectation()
+
             Y = self.nodes["Y"].getExpectation()
-            W = self.nodes["SW"].getExpectation()
+
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
             for m in range(self.dim['M']):
 
@@ -167,7 +181,6 @@ class BayesNet(object):
                         all_r2[m,k] = R2_k/R2_tot
                 # No intercept term
                 else:
-                    # import pdb; pdb.set_trace()
                     # calculate the total R2
                     SS = ((Y[m] - Y[m].mean())**2.).sum()
                     Res = ((Ypred_m - Y[m])**2.).sum()
@@ -239,7 +252,6 @@ class BayesNet(object):
         # Start training
         for i in range(self.options['maxiter']):
             t = time();
-
             # Remove inactive latent variables
             if (i >= self.options["startdrop"]) and (i % self.options['freqdrop']) == 0:
                 if any(self.options['drop'].values()):
@@ -250,18 +262,28 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 # print "Node: " + str(node)
                 # t = time()
-                if node=="Theta" and i<self.options['startSparsity']:
+                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['startSparsity']:
                     continue
                 self.nodes[node].update()
                 # print "time: " + str(time()-t)
+
+            # Set the proper name of the Z node
+            if "SZ" in self.nodes:
+                name_Z="SZ"
+            else:
+                name_Z="Z"
 
             # Calculate Evidence Lower Bound
             if (i+1) % self.options['elbofreq'] == 0:
                 elbo.iloc[i] = self.calculateELBO()
 
+                name_Z = "Z"
+                if "SZ" in self.nodes:
+                    name_Z = "SZ"
+
                 # Print first iteration
                 if i==0:
-                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time()-t,elbo.iloc[i]["total"], (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
+                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time() - t, elbo.iloc[i]["total"], (~self.nodes[name_Z].covariates).sum(),self.nodes[name_Z].covariates.sum()))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -270,8 +292,11 @@ class BayesNet(object):
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
-                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes["Z"].covariates).sum(), self.nodes["Z"].covariates.sum() ))
-                    if delta_elbo<0: print("Warning, lower bound is decreasing..."); print('\a')
+                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes[name_Z].covariates).sum(), self.nodes[name_Z].covariates.sum() ))
+                    if delta_elbo<0:
+                        print("Warning, lower bound is decreasing..."); print('\a')
+                        #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
+
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -295,7 +320,7 @@ class BayesNet(object):
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """
-        # TODO problem with dictionnary comprehension here 
+        # TODO problem with dictionnary comprehension here
         to_ret = {}
         for node in self.nodes.keys():
             if isinstance(self.nodes[node],Variational_Node):

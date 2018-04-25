@@ -8,6 +8,7 @@
 
 
 factors=10   # initial number of factors
+spatialFact=0.6
 M=2
 N=100
 D=( 200 200 )
@@ -20,6 +21,10 @@ outFile='/home/yonatan/PycharmProjects/biofam2/biofam/biofam/template/new_model/
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 transpose_sparsity=1
 transpose_noise=1
+
+
+#Choose to sample the positions of the samples to test the covariance prior structure (for any view if transpose = 1)
+sample_X=1
 
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
@@ -40,6 +45,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 
 # Prepare command
 cmd='python3 ../build_model/simulation_entry.py
+    --sample_X $sample_X
 	--outFile $outFile
 	--outDir $outDir
 	--likelihoods ${likelihoods[@]}
@@ -47,6 +53,7 @@ cmd='python3 ../build_model/simulation_entry.py
 	--M $M
 	--D ${D[@]}
 	--N $N
+	--spatialFact $spatialFact
 	--noise $noise
 	--sparsity $sparsity
 	--views ${views[@]}

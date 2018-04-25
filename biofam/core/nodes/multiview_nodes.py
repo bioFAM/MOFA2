@@ -18,6 +18,8 @@ import scipy as s
 from .basic_nodes import Node
 from .variational_nodes import Variational_Node
 
+#TODO : check add Basic_Multiview_Mixed_Node(Node,Multiview_Constant_Node)
+
 class Multiview_Node(Node):
     """General class for a multiview node"""
     def __init__(self, M, *nodes):
@@ -30,7 +32,7 @@ class Multiview_Node(Node):
             list of M nodes, which must be instances or children of the 'Node' class. If the node is not defined in view m, then index m is set to None.
         """
         self.M = M
-        self.activeM = [ m for m,node in enumerate(nodes) if node is not None]
+        self.activeM = [ m for m, node in enumerate(nodes) if node is not None]
         self.nodes = nodes
 
     def addMarkovBlanket(self, **kwargs):
@@ -109,6 +111,7 @@ class Multiview_Variational_Node(Multiview_Node, Variational_Node):
         for m in self.activeM:
             self.nodes[m].updateParameters()
             self.nodes[m].updateExpectations()
+
     def updateExpectations(self):
         """Method to update expectations using current estimates of the parameters"""
         for m in self.activeM: self.nodes[m].updateExpectations()
