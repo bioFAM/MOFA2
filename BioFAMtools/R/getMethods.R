@@ -189,13 +189,14 @@ getTrainData <- function(object, views = "all", batches = "all", features = "all
 #' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-getImputedData <- function(object, views = "all", features = "all", as.data.frame = FALSE) {
+getImputedData <- function(object, views = "all", batches = "all", features = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
-  # Get views
-  if (paste0(views,collapse="") == "all") { views <- viewNames(object) } else { stopifnot(all(views %in% viewNames(object))) }
+  # Get views and batches
+  if (paste0(views, collapse="") == "all") { views <- viewNames(object) } else { stopifnot(all(views %in% viewNames(object))) }
+  if (paste0(batches, collapse="") == "all") { batches <- batchNames(object) } else { stopifnot(all(batches %in% batchNames(object))) }
   
   # Get features
   if (class(features)=="list") {
@@ -208,15 +209,24 @@ getImputedData <- function(object, views = "all", features = "all", as.data.fram
     }
   }
   
+
   # Fetch data
-  ImputedData <- object@ImputedData[views]
-  ImputedData <- lapply(1:length(ImputedData), function(m) ImputedData[[m]][features[[m]],,drop=F]); names(ImputedData) <- views
+  ImputedData <- lapply(object@ImputedData[views], function(e) e[batches])
+  ImputedData <- lapply(1:length(ImputedData), function(m) lapply(1:length(ImputedData[[1]]), function(h) ImputedData[[m]][[h]][features[[m]],,drop=F]))
+  ImputedData <- .setViewAndBatchNames(ImputedData, views, batches)
   
   # Convert to long data frame
   if (as.data.frame==T) {
-    tmp <- lapply(views, function(m) { tmp <- reshape2::melt(ImputedData[[m]]); colnames(tmp) <- c("feature","sample","value"); tmp <- cbind(view=m,tmp); return(tmp) })
+    tmp <- lapply(views, function(m) { 
+      lapply(batches, function(h) { 
+        tmp <- reshape2::melt(ImputedData[[m]][[h]])
+        colnames(tmp) <- c("feature", "sample", "value")
+        tmp <- cbind(view = m, batch = h, tmp)
+        return(tmp) 
+      })
+    })
     ImputedData <- do.call(rbind,tmp)
-    ImputedData[,c("view","feature","sample")] <- sapply(ImputedData[,c("view","feature","sample")], as.character)
+    ImputedData[,c("view","batch","feature","sample")] <- sapply(ImputedData[,c("view","batch","feature","sample")], as.character)
   } else if ((length(views)==1) && (as.data.frame==F)) {
     ImputedData <- ImputedData[[views]]
   }

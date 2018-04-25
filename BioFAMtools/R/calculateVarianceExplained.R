@@ -143,12 +143,19 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plotVarianceExplained <- function(object, cluster = T, ...) {
+plotVarianceExplained <- function(object, batches = "all", cluster = T, ...) {
+
+  if (paste0(batches, collapse="") == "all") { 
+    batches <- batchNames(object) 
+  } else if (is.numeric(batches)) { 
+    batches <- batchNames(object)[batches]
+  }
+  stopifnot(all(batches %in% batchNames(object)))
   
   # Calculate Variance Explained
   R2_list <- calculateVarianceExplained(object, ...)
-  fvar_m <- R2_list$R2Total
-  fvar_mk <- R2_list$R2PerFactor
+  fvar_m  <- Reduce('+', R2_list$R2Total[batches])
+  fvar_mk <- Reduce('+', R2_list$R2PerFactor[batches])
   
   ## Plot variance explained by factor ##
   

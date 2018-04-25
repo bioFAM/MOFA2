@@ -38,11 +38,17 @@
 #' # Plot top 50 features for factor 1 in the mRNA view, do not show feature or row names
 #' plotDataHeatmap(model, "mRNA", 1, 50, show_colnames = FALSE, show_rownames = FALSE) 
 #' @export
-plotDataHeatmap <- function(object, view, factor, features = 50, includeWeights = FALSE, transpose = FALSE, imputed = FALSE, sortSamples = TRUE, ...) {
+plotDataHeatmap <- function(object, view, factor, batches = "all", features = 50, includeWeights = FALSE, transpose = FALSE, imputed = FALSE, sortSamples = TRUE, ...) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+
+  if (is.numeric(view)) { 
+    view <- viewNames(object)[view]
+  }
   stopifnot(view %in% viewNames(object))
+
+  if (paste0(batches, collapse="") == "all") { batches <- batchNames(object) } else { stopifnot(all(batches %in% batchNames(object))) }
 
   if(is.numeric(factor)) {
       if (object@ModelOptions$learnIntercept == T) factor <- factorNames(object)[factor+1]
@@ -51,13 +57,21 @@ plotDataHeatmap <- function(object, view, factor, features = 50, includeWeights 
 
   # Collect relevant data
   W <- getWeights(object)[[view]][,factor]
-  Z <- getFactors(object)[,factor]
+  # NOTE: By default concatenate all the batches
+  Z <- lapply(getFactors(object)[batches], function(z) as.matrix(z[,factor]))
+  Z <- do.call(rbind, Z)[,1]
   Z <- Z[!is.na(Z)]
   
+  
   if (imputed) {
-    data <- getImputedData(object, view)[[1]][,names(Z)]
+    data <- lapply(getImputedData(object, view, batches)[[1]], function(e) e[,names(Z)])
   } else {
-    data <- getTrainData(object, view)[[1]][,names(Z)]
+    data <- lapply(getTrainData(object, view, batches)[[1]], function(e) e[,names(Z)])
+  }
+
+  # NOTE: Currently batches are concatenated
+  if (class(data) == "list") {
+    data <- do.call(cbind, data)
   }
   
   # Ignore samples with full missing views
