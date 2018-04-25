@@ -156,11 +156,11 @@ plotVarianceExplained <- function(object, batches = "all", cluster = T, ...) {
   R2_list <- calculateVarianceExplained(object, ...)
   fvar_m  <- Reduce('+', R2_list$R2Total[batches])
   fvar_mk <- Reduce('+', R2_list$R2PerFactor[batches])
-  
+
   ## Plot variance explained by factor ##
   
   # convert matrix to data frame for ggplot2  
-  fvar_mk_df <- reshape2::melt(fvar_mk, varnames=c("factor","view"))
+  fvar_mk_df <- reshape2::melt(fvar_mk, varnames = c("factor","view"))
   fvar_mk_df$factor <- factor(fvar_mk_df$factor)
   
   # If multiple views, sort factors according to hierarchical clustering
@@ -192,7 +192,7 @@ plotVarianceExplained <- function(object, batches = "all", cluster = T, ...) {
   ## Plot variance explained per view ##
   
   # Create data.frame for ggplot
-  fvar_m_df <- data.frame(view=names(fvar_m), R2=fvar_m)
+  fvar_m_df <- data.frame(view=names(fvar_m), R2=unlist(fvar_m))
   
   # If multiple views, sort factors according to hierarchical clustering
   if (cluster==TRUE & ncol(fvar_mk)>1) {
