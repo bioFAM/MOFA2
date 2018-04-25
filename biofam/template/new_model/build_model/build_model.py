@@ -15,6 +15,7 @@ from biofam.build_model.utils import *
 #TODO : remove the 2 TODO before giving to britta
 # TODO find a better way to pass the data related arguments (eg, pass a dictionary with all the data in it)
 # TODO dataClust and dataGroups is for now confusing, to sort out
+
 def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None, dataGroups=None):
     """Method to build a bioFAM model"""
 

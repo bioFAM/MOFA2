@@ -8,7 +8,7 @@ from biofam.build_model.train_model import train_model
 from biofam.build_model.utils import *
 
 #TODO : enable covariatesFiles
-
+# TODO change the names coming from spatialFA
 def entry_point():
 
     # Read arguments
@@ -22,7 +22,7 @@ def entry_point():
     p.add_argument( '--header_rows',       action='store_true',                                 help='Do the input files contain row names?' )
     p.add_argument( '--covariatesFiles',   type=str, nargs='+', default=None,                   help='Input data file for covariates')
     p.add_argument( '--X_Files',           type=str, nargs='+', default=None,                   help='Use positions of samples for covariance prior structure per factor')
-    p.add_argument( '--sampleGroups',      type=str, default=None,                   help='if samples contain groups, file containing the labels of the samples')
+    p.add_argument( '--sampleGroups',      type=str, default=None,                              help='if samples contain groups, file containing the labels of the samples')
     p.add_argument( '--sigmaClusterFiles', type=str, nargs='+', default=None,                   help='Use clusters assigned to samples for a block covariance prior structure per factor')
     p.add_argument( '--permute_samples',   type=int, default=0,                                 help='Permute samples positions in the data')
 
@@ -165,6 +165,8 @@ def entry_point():
     data_opts['X_Files'] = args.X_Files
     data_opts['sigmaClusterFiles'] = args.sigmaClusterFiles
     data_opts['permute_samples'] = args.permute_samples
+    # TODO load file here and add to data_opts
+    # same for dataX etc
     data_opts['sampleGroups'] = args.sampleGroups
 
     dataX, dataClust = loadDataX(data_opts, transpose = args.transpose_sparsity)
