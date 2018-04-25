@@ -23,6 +23,8 @@ plotWeightsHeatmap <- function(object, view, features = "all", factors = "all", 
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+
+  if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(all(view %in% viewNames(object)))  
   
   # Get factors
