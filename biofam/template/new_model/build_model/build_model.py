@@ -9,13 +9,103 @@ import scipy as s
 #from joblib import Parallel, delayed
 
 from biofam.core.BayesNet import *
-from init_model import initNewModel
+from biofam.build_model.init_model import initModel
 from biofam.build_model.utils import *
+
+
+# # QUESTION: do we need this ?
+class buildModel(object):
+    def __init__(self):
+        self.BayesNet = None
+
+# no spatial covariance in that but create child node instead
+# model_opts should mostly contain 4 T/F flags for ARD on Z/W and SL on Z/W, plus the dimension on which to put the noise ?
+# do we also have a noise per group on N ? do we also handle theta per group on n ?
+# data_opts should contain data, sample group labels and thats it for now
+class buildBiofam(buildModel):
+
+    def  __init__(self, data_opts, model_opts):
+        # defining model's dimensionalities
+        self.data = data_opts['data']
+        M = len(self.data)
+        N = self.data[0].shape[0]
+        D = s.asarray([data[m].shape[1] for m in range(M)])
+        self.dim = {'M': M, 'N': N, 'D': D, 'K': K}
+
+        self.data_opts = data_opts
+        self.model_opts = model_opts
+
+        # create an instance of initModel and start buidling
+        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihood"])
+        self.BayesNet = None
+        self.build_all()
+
+    def build_all(self):
+        self.build_Y()
+        self.build_Z()
+        self.build_W()
+        self.build_Tau()
+
+        # define ARDs
+        if ARD_Z:
+            self.buildAlphAZ(data_opts)
+        if Theta_Z:
+            self.buildTheta
+
+        self.createMarkovBlankets()
+
+    def build_Y(self):
+        pass
+
+    def build_Z(self):
+        # calling int_Z with specific parameters
+        pass
+
+    def build_W(self):
+        pass
+
+    def build_AlphaZ(self):
+        pass
+
+    def build_AlphaW(self):
+        pass
+
+    def build_ThetaZ(self):
+        pass
+
+    def build_ThetaW(self):
+        pass
+
+    def createMarkovBlankets(self):
+        pass
+
+class build_spatial_model(build_biofam):
+    def __init__(self):
+        pass
+
+class build_simulation_model(build_basic):
+    def __init__():
+        super().__init__()
+
+    def build_all():
+        self.super().build_all()
+        self.build_Sigma()
+        # build other stuff
+        self.createMB
+
+    def createMB(self):
+        # add the new stuff
+
+    def build_Z():
+        pass
+
+    def build_Sigma():
+        self.init_model.initSigma()
+        self.init_model['Sigma'].addMarkovBlanket(self.init_model['Z'])
 
 #TODO : remove the 2 TODO before giving to britta
 # TODO find a better way to pass the data related arguments (eg, pass a dictionary with all the data in it)
 # TODO dataClust and dataGroups is for now confusing, to sort out
-
 def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None, dataGroups=None):
     """Method to build a bioFAM model"""
 
@@ -47,9 +137,9 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
     else:
 
-        M = len(data)
-        N = data[0].shape[0]
-        D = s.asarray([data[m].shape[1] for m in range(M)])
+        # M = len(data)
+        # N = data[0].shape[0]
+        # D = s.asarray([data[m].shape[1] for m in range(M)])
 
         if model_opts["transpose_sparsity"]:
 
