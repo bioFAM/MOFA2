@@ -102,14 +102,14 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
   Ypred_mk <- .setViewAndBatchNames(Ypred_mk, views, batches)
   
   # If an intercept is included, regress out the intercept from the data
-  if (include_intercept==T) {
+  if (include_intercept) {
       intercept <- getWeights(object,views,"intercept")
       Y <- lapply(views, function(m) lapply(batches, function(h) sweep(Y[[m]][[h]],2,intercept[[m]],"-")))
       Y <- .setViewAndBatchNames(Y, views, batches)
   }
 
   # Calculate coefficient of determination per view
-  fvar_m <- sapply(batches, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T)))
+  fvar_m <- lapply(batches, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T)))
   fvar_m <- .setViewAndBatchNames(fvar_m, batches, views)
 
   # Calculate coefficient of determination per factor and view
