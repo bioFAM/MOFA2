@@ -2,6 +2,7 @@ from __future__ import division
 from time import sleep
 
 import numpy as np
+import scipy as s
 import pandas as pd
 import numpy.ma as ma
 import os
@@ -107,8 +108,18 @@ def loadData(data_opts, verbose=True):
         Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
 
         # Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"])
-        print("Loaded %s with dim (%d,%d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
+        print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
 
+    # Check that the dimensions match
+    if len(set([Y[m].shape[0] for m in range(M)])) != 1:
+        if len(set([Y[m].shape[1] for m in range(M)])) == 1:
+            print("\nWarning: Columns seem to be the shared axis, transposing the data...")
+            for m in range(M): Y[m] = Y[m].T
+        else:
+            print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
+            exit()
+
+    for m in range(M):
         # Removing features with no variance
         var = Y[m].std(axis=0)
         if np.any(var==0.):
@@ -134,6 +145,86 @@ def loadData(data_opts, verbose=True):
 
     return Y
 
+def loadDataX(data_opts, transpose = False):
+    """ Method to load the data of the samples positions and assigned clusters
+    """
+
+    print ("\n")
+    print ("#"*18)
+    print ("## Loading samples positions data ##")
+    print ("#"*18)
+    print ("\n")
+    sleep(1)
+
+    M = len(data_opts['view_names'])
+
+    if data_opts['X_Files'] is None:
+
+        X = None
+        sigma_clust = None
+
+    else:
+
+        if transpose:
+
+            assert M == len(data_opts['X_Files']), "Length of view names and samples positions input files does not match"
+
+            X = [None] * M
+            sigma_clust = [None] * M
+            for m in range(M):
+                file = data_opts['X_Files'][m]
+                if file != "None":
+                    try:
+                        X[m] = np.loadtxt(file, delimiter=',')
+                    except:
+                        X[m] = np.loadtxt(file, delimiter=' ')
+
+            if data_opts['permute_samples'] == 1:
+                for m in range(M):
+                    perm = np.random.permutation(D[m])
+                    X[m] = X[m][perm, :]
+
+            # load sigma cluster if among arguments
+            if data_opts['sigmaClusterFiles'] is not None:
+                assert M == len(data_opts['sigmaClusterFiles']), "Length of view names and samples clusters input files does not match"
+                for m in range(M):
+                    file = data_opts['sigmaClusterFiles'][m]
+                    if file != "None":
+                        sigma_clust[m] = np.loadtxt(file)
+
+            #if [np.all(X_m == None) for X_m in X] == [True]*M:
+            if [X_m is None for X_m in X] == [True] * M: #simplified expression
+                X = None
+
+        else:
+
+            assert 1 == len(data_opts['X_Files']), "Length of view names and samples positions input files does not match"
+
+            file = data_opts['X_Files'][0]
+            if file != "None":
+                try:
+                    X = np.loadtxt(file, delimiter=',')
+                except:
+                    X = np.loadtxt(file, delimiter=' ')
+
+                if data_opts['permute_samples'] == 1:
+                    perm = np.random.permutation(N)
+                    X = X[perm, :]
+
+                # load sigma cluster if among arguments
+                if data_opts['sigmaClusterFiles'] is not None:
+                    assert 1 == len(data_opts['sigmaClusterFiles']), "Length of view names and samples clusters input files does not match"
+                    sigma_clust = np.loadtxt(data_opts['sigmaClusterFiles'][0])
+                else:
+                    sigma_clust = None
+
+            else:
+                X = None
+                sigma_clust = None
+
+    return X, sigma_clust
+
+
 def corr(A,B):
     """ Method to efficiently compute correlation coefficients between two matrices
 
@@ -152,7 +243,7 @@ def corr(A,B):
     ssB = (B_mB**2).sum(1);
 
     # Finally get corr coeff
-    return np.dot(A_mA,B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))
+    return np.dot(A_mA, B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))
 
 def saveParameters(model, hdf5, view_names=None):
     """ Method to save the parameters of the model in an hdf5 file
@@ -246,23 +337,42 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
                 # Loop through the expectations
                 if only_first_moments:
                     if node == "SW":
-                        expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["ES"], 'EW':expectations[m]["EW"]}
+                        expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
                     else:
                         expectations[m] = {'E':expectations[m]["E"]}
 
                 if expectations[m] is not None:
+
+                    # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
+                    SigmaNode = node == "SigmaAlphaW" and nodes[node].getNodes()[m].__class__.__name__ != "AlphaW_Node_mk"
+
                     for exp_name in expectations[m].keys():
                         if type(expectations[m][exp_name]) == ma.core.MaskedArray:
                             tmp = ma.filled(expectations[m][exp_name], fill_value=np.nan)
-                            view_subgrp.create_dataset(exp_name, data=tmp.T)
+                            if SigmaNode:
+                                view_subgrp.create_dataset(exp_name, data=tmp)
+                            else:
+                                view_subgrp.create_dataset(exp_name, data=tmp.T)
+
                         else:
-                            view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name].T)
+                            if SigmaNode:
+                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name])
+                            else:
+                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name].T)
+
 
         # Single-view nodes
         else:
+            if node == "SZ":
+                expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
             if only_first_moments: expectations = {'E':expectations["E"]}
             for exp_name in expectations.keys():
-                node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
+
+                # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
+                if node == "SigmaZ":
+                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
+                else:
+                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
 
 def saveTrainingStats(model, hdf5):
     """ Method to save the training statistics in an hdf5 file
@@ -295,7 +405,10 @@ def saveTrainingOpts(opts, hdf5):
             opts.pop(k)
 
     # Create HDF5 data set
-    hdf5.create_dataset("training_opts", data=np.array(opts.values()))
+    if 'schedule' in opts.keys():
+        del opts['schedule']
+    # For more info see the issue with UTF-8 strings in Python3 and h5py: https://github.com/h5py/h5py/issues/289
+    hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
     hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
 def saveModelOpts(opts, hdf5):
@@ -306,15 +419,15 @@ def saveModelOpts(opts, hdf5):
     opts:
     hdf5:
     """
-    # opts_interest = ["learnIntercept","schedule","likelihood"]
-    opts_interest = ["learnIntercept","likelihood"]
+    # opts_interest = ["learnIntercept", "schedule", "likelihood"]
+    opts_interest = ["learnIntercept", "likelihood", "transpose_noise", "transpose_sparsity"]
     opts = dict((k, opts[k]) for k in opts_interest)
     grp = hdf5.create_group('model_opts')
-    for k,v in opts.items():
+    for k, v in opts.items():
         grp.create_dataset(k, data=np.asarray(v).astype('S'))
     grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
-def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_names=None):
+def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_names=None, shared_features=False):
     """ Method to save the training data in an hdf5 file
 
     PARAMETERS
@@ -327,17 +440,30 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
     """
     data = model.getTrainingData()
     data_grp = hdf5.create_group("data")
-    featuredata_grp = hdf5.create_group("features")
-    sampledata_grp = hdf5.create_group("samples")
-    if sample_names is not None:
-        sampledata_grp.create_dataset("0", data=sample_names)
-    for m in range(len(data)):
-        view = view_names[m] if view_names is not None else str(m)
-        data_grp.create_dataset(view, data=data[m].data.T)
+    if shared_features:
+        # Save features (shared between views)
         if feature_names is not None:
-            featuredata_grp.create_dataset(view, data=feature_names[m])
+            hdf5.create_dataset("features", data=[str(f).encode('utf8') for f in feature_names])
+        # Save samples (per view)
+        sampledata_grp = hdf5.create_group("samples")
+        for m in range(len(data)):
+            view = view_names[m] if view_names is not None else str(m)
+            data_grp.create_dataset(view, data=data[m].data.T)
+            if sample_names is not None:
+                sampledata_grp.create_dataset(view, data=[str(s).encode('utf8') for s in sample_names[m]])
+    else:
+        # Save samples (shared between views)
+        if sample_names is not None:
+            hdf5.create_dataset("samples", data=[str(s).encode('utf8') for s in sample_names])
+        # Save features (per view)
+        featuredata_grp = hdf5.create_group("features")
+        for m in range(len(data)):
+            view = view_names[m] if view_names is not None else str(m)
+            data_grp.create_dataset(view, data=data[m].data.T)
+            if feature_names is not None:
+                featuredata_grp.create_dataset(view, data=[str(f).encode('utf8') for f in feature_names[m]])
 
-def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None):
+def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None, shared_features=False):
     """ Method to save the training data in text files
 
     PARAMETERS
@@ -353,11 +479,47 @@ def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names
         view = view_names[m] if view_names is not None else 'view_' + str(m)
         file_name = outDir + '/' + view
         to_save = pd.DataFrame(data[m].data)
-        if feature_names is not None:
-            to_save.columns = feature_names
+        if feature_names is not None: #shared features or not -> to distinguish
+            if shared_features:
+                to_save.columns = feature_names
+            else:
+                to_save.columns = feature_names[m]
+        if sample_names is not None:
+            if shared_features:
+                to_save.index = sample_names[m]
+            else:
+                to_save.index = sample_names
+        to_save.to_csv(file_name)
+
+def saveDataXTxt(model, outDir, transpose, view_names=None, sample_names=None):
+    """ Method to save the X_Files data in text files (X_Files : positions of the samples)
+
+    PARAMETERS
+    ----------
+    model: a BayesNet instance
+    outDir
+    view_names
+    sample_names
+    """
+    if transpose:
+        dataX = [SigmaAlphaW_m["X"] for SigmaAlphaW_m in model.getNodes()["SigmaAlphaW"].getParameters()]
+        for m in range(len(dataX)):
+            view = view_names[m] if view_names is not None else 'view_' + str(m)
+            file_name = outDir + '/' + "X_file_" + view
+            to_save = pd.DataFrame(dataX[m])
+            #to_save.columns = ["x1", "x2"]
+            if sample_names is not None:
+                to_save.index = sample_names
+            to_save.to_csv(file_name, index=False, header=False)
+    else:
+        dataX = model.getNodes()["SigmaZ"].getParameters()["X"]
+        file_name = outDir + '/' + "X_file"
+        to_save = pd.DataFrame(dataX)
+        #to_save.columns = ["x1","x2"]
         if sample_names is not None:
             to_save.index = sample_names
-        to_save.to_csv(file_name)
+        to_save.to_csv(file_name, index=False, header=False)
+
 
 def overwriteExpectations(net):
     """
@@ -393,7 +555,7 @@ def overwriteExpectationsMV(MV):
             node.mask()
 
 
-def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
+def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None, shared_features=False):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
@@ -409,20 +571,24 @@ def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sa
         tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
         model_opts["likelihood"] = tmp
 
-    if sample_names is not None:
-        assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
+    if shared_features:
+        if feature_names is not None:
+            assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
+    else:
+        if sample_names is not None:
+            assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model,hdf5,view_names)
-    saveParameters(model,hdf5,view_names)
-    saveModelOpts(model_opts,hdf5)
-    saveTrainingData(model, hdf5, view_names, sample_names, feature_names)
-    saveTrainingStats(model,hdf5)
-    saveTrainingOpts(train_opts,hdf5)
+    saveParameters(model,hdf5, view_names)
+    saveModelOpts(model_opts, hdf5)
+    saveTrainingData(model, hdf5, view_names, sample_names, feature_names, shared_features)
+    saveTrainingStats(model, hdf5)
+    saveTrainingOpts(train_opts, hdf5)
 
     hdf5.close()
 
-def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None):
+def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None,  shared_features=False):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
@@ -438,18 +604,24 @@ def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, 
         tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
         model_opts["likelihood"] = tmp
 
-    if sample_names is not None:
-        assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
-
+    if shared_features:
+        if feature_names is not None:
+            assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
+    else:
+        if sample_names is not None:
+            assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
     overwriteExpectations(model)
     if 'outDir' in model_opts:
-        saveDataTxt(model, model_opts['outDir'], view_names, sample_names, feature_names)
+        saveDataTxt(model, model_opts['outDir'], view_names=view_names, sample_names=sample_names, feature_names=feature_names, shared_features=shared_features)
+
+        if model_opts['sample_X']:
+            saveDataXTxt(model, model_opts['outDir'], model_opts["transpose_sparsity"], view_names=view_names) #, sample_names=sample_names)
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model,hdf5,view_names)
     saveParameters(model,hdf5,view_names)
     saveModelOpts(model_opts,hdf5)
-    saveTrainingData(model, hdf5, view_names, sample_names, feature_names)
+    saveTrainingData(model, hdf5, view_names, sample_names, feature_names, shared_features)
 
     hdf5.close()

@@ -117,9 +117,13 @@ class PseudoY_Seeger(PseudoY):
         PseudoY.__init__(self, dim=dim, obs=obs, params=params, E=E)
 
     def updateParameters(self):
-        Z = self.markov_blanket["Z"].getExpectation()
-        SW = self.markov_blanket["SW"].getExpectation()
-        self.params["zeta"] = s.dot(Z,SW.T)
+        if "SW" in self.markov_blanket:
+            Z = self.markov_blanket["Z"].getExpectation()
+            W = self.markov_blanket["SW"].getExpectation()
+        else:
+            Z = self.markov_blanket["SZ"].getExpectation()
+            W = self.markov_blanket["W"].getExpectation()
+        self.params["zeta"] = s.dot(Z,W.T)
 
 class Poisson_PseudoY(PseudoY_Seeger):
     """
@@ -171,11 +175,16 @@ class Poisson_PseudoY(PseudoY_Seeger):
 
     def calculateELBO(self):
         # Compute Lower Bound using the Poisson likelihood with observed data
-        Z = self.markov_blanket["Z"].getExpectation()
-        SW = self.markov_blanket["SW"].getExpectation()
-        tmp = self.ratefn(s.dot(Z,SW.T))
+        if "SW" in self.markov_blanket:
+            Z = self.markov_blanket["Z"].getExpectation()
+            W = self.markov_blanket["SW"].getExpectation()
+        else:
+            Z = self.markov_blanket["SZ"].getExpectation()
+            W = self.markov_blanket["W"].getExpectation()
+        tmp = self.ratefn(s.dot(Z,W.T))
         lb = s.sum( self.obs*s.log(tmp) - tmp)
         return lb
+
 class Bernoulli_PseudoY(PseudoY_Seeger):
     """
     Class for a Bernoulli (0,1 data) pseudodata node
@@ -210,9 +219,13 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
 
     def calculateELBO(self):
         # Compute Lower Bound using the Bernoulli likelihood with observed data
-        Z = self.markov_blanket["Z"].getExpectation()
-        SW = self.markov_blanket["SW"].getExpectation()
-        tmp = s.dot(Z,SW.T)
+        if "SW" in self.markov_blanket:
+            Z = self.markov_blanket["Z"].getExpectation()
+            W = self.markov_blanket["SW"].getExpectation()
+        else:
+            Z = self.markov_blanket["SZ"].getExpectation()
+            W = self.markov_blanket["W"].getExpectation()
+        tmp = s.dot(Z,W.T)
         lik = s.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
         return lik
 class Binomial_PseudoY(PseudoY_Seeger):
@@ -257,10 +270,14 @@ class Binomial_PseudoY(PseudoY_Seeger):
 
     def calculateELBO(self):
         # Compute Lower Bound using the Bernoulli likelihood with observed data
-        Z = self.markov_blanket["Z"].getExpectation()
-        SW = self.markov_blanket["SW"].getExpectation()
+        if "SW" in self.markov_blanket:
+            Z = self.markov_blanket["Z"].getExpectation()
+            W = self.markov_blanket["SW"].getExpectation()
+        else:
+            Z = self.markov_blanket["SZ"].getExpectation()
+            W = self.markov_blanket["W"].getExpectation()
 
-        tmp = sigmoid(s.dot(Z,SW.T))
+        tmp = sigmoid(s.dot(Z,W.T))
 
         # TODO change apprximation
         tmp[tmp==0] = 0.00000001
@@ -335,15 +352,28 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
 
     def updateParameters(self):
-        Z = self.markov_blanket["Z"].getExpectations()
-        SW = self.markov_blanket["SW"].getExpectations()
-        self.params["zeta"] = s.sqrt( s.square(Z["E"].dot(SW["E"].T)) - s.dot(s.square(Z["E"]),s.square(SW["E"].T)) + s.dot(Z["E2"], SW["ESWW"].T) )
+        if "SW" in self.markov_blanket:
+            Z = self.markov_blanket["Z"].getExpectations()
+            W = self.markov_blanket["SW"].getExpectations()
+            self.params["zeta"] = s.sqrt(
+                s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
+                                                                                                       W["EBNN"].T))
+        else:
+            Z = self.markov_blanket["SZ"].getExpectations()
+            W = self.markov_blanket["W"].getExpectations()
+            self.params["zeta"] = s.sqrt(
+                s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["EBNN"],
+                                                                                                     W["E2"].T))
         self.params["zeta"] = ma.masked_invalid(self.params["zeta"])
 
     def calculateELBO(self):
         # Compute Lower Bound using the Bernoulli likelihood with observed data
-        Z = self.markov_blanket["Z"].getExpectation()
-        SW = self.markov_blanket["SW"].getExpectation()
-        tmp = s.dot(Z,SW.T)
+        if "SW" in self.markov_blanket:
+            Z = self.markov_blanket["Z"].getExpectation()
+            W = self.markov_blanket["SW"].getExpectation()
+        else:
+            Z = self.markov_blanket["SZ"].getExpectation()
+            W = self.markov_blanket["W"].getExpectation()
+        tmp = s.dot(Z,W.T)
         lik = ma.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
         return lik

@@ -28,6 +28,12 @@ scale_views=0 	    # scale the views to unit variance (not necessary as long as 
 transpose_sparsity=1
 transpose_noise=1
 
+#Use samples' positions data as a covariance prior structure between samples per factor
+X_Files=( None None None )
+
+#Choose to sample the positions of the samples to test the covariance prior structure (for any view if transpose = 1)
+sample_X=1
+
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 likelihoods=( gaussian gaussian gaussian )
 
@@ -50,11 +56,10 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 # Recommendation:
 # (1) If you remove inactive factors (dropR2>0), then the initial number of factors should be large enough
 # (2) If you want to get the most strong drivers of variation then we recommend dropR2 to be at least 0.05 (5%), but if you want to capture more subtle sources of variation you should decrease it to 0.01 (1%) or 0.03 (3%)
-
-factors=10   # initial number of factors
+factors=10   # initial number of facotrs
 startDrop=1  # initial iteration to start shutting down factors
 freqDrop=1 	 # frequency of checking for shutting down factors
-dropR2=0.01  # threshold on fraction of variance explained
+dropR2=0.01  # threshold on fractionof variance explained
 
 # Define hyperparameters for the feature-wise spike-and-slab sparsity prior
 # learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
@@ -76,6 +81,8 @@ seed=0 # if 0, the seed is automatically generated using the current time
 
 # Prepare command
 cmd='python3 ../build_model/entry_point.py
+    --X_Files ${X_Files[@]}
+    --sample_X $sample_X
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile

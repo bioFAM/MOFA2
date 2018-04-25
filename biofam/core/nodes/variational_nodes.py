@@ -39,9 +39,9 @@ class Constant_Variational_Node(Variational_Node,Constant_Node):
     """
     Abstract class for an observed/constant variational node in a Bayesian probabilistic model.
     """
-    def __init__(self, dim, value):
+    def __init__(self, dim, value, opts):
         # SHOULD WE ALSO INITIALISE VARIATIONAL_NODE ..?
-        Constant_Node.__init__(self, dim, value)
+        Constant_Node.__init__(self, dim, value, opts)
 
 class Unobserved_Variational_Node(Variational_Node):
     """
@@ -129,11 +129,28 @@ class MultivariateGaussian_Unobserved_Variational_Node(Unobserved_Variational_No
         self.P = MultivariateGaussian(dim=dim, mean=pmean, cov=pcov)
         self.Q = MultivariateGaussian(dim=dim, mean=qmean, cov=qcov, E=qE)
 
+class UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior(Unobserved_Variational_Node):
+    """
+    Abstract class for a variational node where P(.) is a multivariate Gaussian distribution
+    and Q(.) is univariate Gaussian distribution.
+    """
+    def __init__(self, dim, pmean, pcov, qmean, qvar, axis_cov=0, qE=None, qE2=None):
+	    # dim (2d tuple): dimensionality of the node
+	    # pmean (nd array): the mean parameter of the P distribution
+	    # qmean (nd array): the mean parameter of the Q distribution
+	    # pcov (nd array): the covariance parameter of the P distribution
+	    # qvar (nd array): the variance parameter of the Q distribution
+	    # qE (nd array): the initial first moment of the Q distribution
+        Unobserved_Variational_Node.__init__(self, dim)
+        # Initialise the P and Q distributions
+        self.P = MultivariateGaussian(dim=dim, axis_cov=axis_cov, mean=pmean, cov=pcov)
+        self.Q = UnivariateGaussian(dim=dim, mean=qmean, var=qvar, E=qE, E2=qE2)
+
 class Gamma_Unobserved_Variational_Node(Unobserved_Variational_Node):
     """
     Abstract class for a variational node where P(x) and Q(x) are both gamma distributions
     """
-    def __init__(self, dim, pa, pb, qa, qb, qE=None):
+    def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
 	    # dim (2d tuple): dimensionality of the node
 	    # pa (nd array): the 'a' parameter of the P distribution
 	    # qa (nd array): the 'b' parameter of the P distribution
@@ -144,7 +161,7 @@ class Gamma_Unobserved_Variational_Node(Unobserved_Variational_Node):
 
         # Initialise the distributions
         self.P = Gamma(dim=dim, a=pa, b=pb)
-        self.Q = Gamma(dim=dim, a=qa, b=qb, E=qE)
+        self.Q = Gamma(dim=dim, a=qa, b=qb, E=qE, lnE=qlnE)
 
 class Bernoulli_Unobserved_Variational_Node(Unobserved_Variational_Node):
     """
@@ -169,20 +186,22 @@ class BernoulliGaussian_Unobserved_Variational_Node(Unobserved_Variational_Node)
     Multi-Task and Multiple Kernel Learning by Titsias and Gredilla)
     """
     def __init__(self, dim,
-        pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta,
-        qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
+        pmean_B0, pmean_B1, pvar_B0, pvar_B1, ptheta,
+        qmean_B0, qmean_B1, qvar_B0, qvar_B1, qtheta, qEN_B0=None, qEN_B1=None, qEB=None):
 	    # dim (2d tuple): dimensionality of the node
         # pmean (nd array): the mean parameter of the P distribution
         # pvar (nd array): the var parameter of the P distribution
-	    # ptheta (nd array): the theta parameter of the P distribution
+        # ptheta (nd array): the theta parameter of the P distribution
         # qmean (nd array): the mean parameter of the Q distribution
         # qvar (nd array): the var parameter of the Q distribution
-	    # qtheta (nd array): the theta parameter of the Q distribution
+        # qtheta (nd array): the theta parameter of the Q distribution
+
+        # Unobserved_Variational_Node.__init__(self,dim)
         Unobserved_Variational_Node.__init__(self,dim)
 
         # Initialise the P and Q distributions
-        self.P = BernoulliGaussian(dim=dim, theta=ptheta, mean_S0=pmean_S0, var_S0=pvar_S0, mean_S1=pmean_S1, var_S1=pvar_S1)
-        self.Q = BernoulliGaussian(dim=dim, theta=qtheta, mean_S0=qmean_S0, var_S0=qvar_S0, mean_S1=qmean_S1, var_S1=qvar_S1, EW_S0=qEW_S0, EW_S1=qEW_S1, ES=qES)
+        self.P = BernoulliGaussian(dim=dim, theta=ptheta, mean_B0=pmean_B0, var_B0=pvar_B0, mean_B1=pmean_B1, var_B1=pvar_B1)
+        self.Q = BernoulliGaussian(dim=dim, theta=qtheta, mean_B0=qmean_B0, var_B0=qvar_B0, mean_B1=qmean_B1, var_B1=qvar_B1, EN_B0=qEN_B0, EN_B1=qEN_B1, EB=qEB)
 
 class Beta_Unobserved_Variational_Node(Unobserved_Variational_Node):
     """
@@ -196,8 +215,8 @@ class Beta_Unobserved_Variational_Node(Unobserved_Variational_Node):
         # qa (nd array): the 'a' parameter of the Q distribution
         # qb (nd array): the 'b' parameter of the Q distribution
         # qE (nd array): the initial expectation of the Q distribution
-        super(Beta_Unobserved_Variational_Node, self).__init__(dim)
+        super().__init__(dim)
 
         # Initialise P and Q distributions
         self.P = Beta(dim, pa, pb)
-        self.Q = Beta(dim, qa, qb, qE)
+        self.Q = Beta(dim, qa, qb, E=qE)

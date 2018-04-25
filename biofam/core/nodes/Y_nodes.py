@@ -2,13 +2,15 @@ from __future__ import division
 import numpy.ma as ma
 import numpy as np
 import scipy as s
+import math
 
 # Import manually defined functions
 from .variational_nodes import Constant_Variational_Node
 
 class Y_Node(Constant_Variational_Node):
-    def __init__(self, dim, value):
-        Constant_Variational_Node.__init__(self, dim, value)
+    def __init__(self, dim, value, transpose_noise):
+        tau_d = not transpose_noise
+        Constant_Variational_Node.__init__(self, dim, value, {'tau_d': tau_d})
 
         # Create a boolean mask of the data to hide missing values
         if type(self.value) != ma.MaskedArray:
@@ -20,8 +22,13 @@ class Y_Node(Constant_Variational_Node):
     def precompute(self):
         # Precompute some terms to speed up the calculations
         self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
-        self.D = self.dim[1]
-        self.likconst = -0.5*s.sum(self.N)*s.log(2.*s.pi)
+        self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
+
+        # Precompute the constant depending on the noise dimensions
+        if self.opts['tau_d']:
+            self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
+        else:
+            self.likconst = -0.5 * s.sum(self.D) * s.log(2.*s.pi)
 
     def mask(self):
         # Mask the observations if they have missing values
@@ -34,22 +41,39 @@ class Y_Node(Constant_Variational_Node):
         # Calculate evidence lower bound
         # We use the trick that the update of Tau already contains the Gaussian likelihod.
         # However, it is important that the lower bound is calculated after the update of Tau is performed
-        tauQ_param = self.markov_blanket["Tau"].getParameters("Q")
-        tauP_param = self.markov_blanket["Tau"].getParameters("P")
-        tau_exp = self.markov_blanket["Tau"].getExpectations()
-        lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"],tauQ_param["b"]-tauP_param["b"])
+        if self.opts['tau_d']:
+            tauQ_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
+            tauP_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
+            tau_exp = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+            lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
+        else:
+            tauQ_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
+            tauP_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
+            tau_exp = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+            lik = self.likconst + 0.5*s.sum(self.D*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
         return lik
 
     def sample(self, dist='P'):
         # Y does NOT call sample recursively but relies on previous calls
-        Z_samp = self.markov_blanket['Z'].samp
-        W_samp = self.markov_blanket['SW'].samp
+        if "SW" in self.markov_blanket:
+            W_samp = self.markov_blanket['SW'].samp
+            Z_samp = self.markov_blanket['Z'].samp
+        else:
+            Z_samp = self.markov_blanket['SZ'].samp
+            W_samp = self.markov_blanket['W'].samp
         Tau_samp = self.markov_blanket['Tau'].samp
+        F = Z_samp.dot(W_samp.transpose())
 
-        mu = Z_samp.dot(W_samp.transpose())
-        if Tau_samp.shape != mu.shape:
-            Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
-        var =1./Tau_samp
+        # DEPRECATED (tau is expanded inside the node)
+        # if Tau_samp.shape != mu.shape:
+        #     Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
+        var = 1./Tau_samp
 
-        self.samp = s.random.normal(mu, var)
+        if self.markov_blanket['Tau'].__class__.__name__ == "TauN_Node": #TauN
+            self.samp = np.array([s.random.normal(F[i, :], math.sqrt(var[i])) for i in range(F.shape[0])])
+        else: #TauD
+            self.samp = np.array([s.random.normal(F[:, i],math.sqrt(var[i])) for i in range(F.shape[1])]).T
+
+        self.value = self.samp
+
         return self.samp
