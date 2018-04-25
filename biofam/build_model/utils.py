@@ -81,6 +81,23 @@ def maskData(data, data_opts):
             data[m] = tmp
 
     return data
+    
+def _gaussianise_vec(vec):
+    # take ranks and scale to uniform
+    vec = s.stats.rankdata(vec, 'dense').astype(float)
+    vec /= (vec.max()+1.)
+
+    # transform uniform to gaussian using probit
+    vec_norm = np.sqrt(2.) * s.special.erfinv(2.*vec-1.)  # TODO to double check
+    # phenotype_norm = np.reshape(phenotype_norm, [len(phenotype_norm), 1])
+
+    return vec_norm
+
+def gaussianise(Y_m, axis=0):
+    # double check axis for pandas
+    Y_norm = Y_m.apply(_gaussianise_vec, axis)
+
+    return Y_norm
 
 def loadData(data_opts, verbose=True):
     """ Method to load the data
