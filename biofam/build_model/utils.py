@@ -81,7 +81,7 @@ def maskData(data, data_opts):
             data[m] = tmp
 
     return data
-    
+
 def _gaussianise_vec(vec):
     # take ranks and scale to uniform
     vec = s.stats.rankdata(vec, 'dense').astype(float)
@@ -152,6 +152,11 @@ def loadData(data_opts, verbose=True):
         if data_opts['scale_views'][m]:
             print("Scaling view " + str(m) + " to unit variance...")
             Y[m] = Y[m] / np.nanstd(Y[m].as_matrix())
+
+        # quantile normalise features
+        # if data_opts['gaussianise_features'][m]:
+        #     print("Gaussianising features for view " + str(m) + "...")
+        #     Y[m] = gaussianise(Y[m])
 
         # Scale the features to unit variance
         if data_opts['scale_features'][m]:
