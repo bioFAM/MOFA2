@@ -33,7 +33,6 @@ transpose_sparsity=0
 transpose_noise=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-<<<<<<< HEAD
 # likelihoods=( gaussian gaussian )
 #likelihoods=( gaussian )
 #
