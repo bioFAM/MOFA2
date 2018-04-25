@@ -43,9 +43,7 @@ plotDataHeatmap <- function(object, view, factor, batches = "all", features = 50
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
 
-  if (is.numeric(view)) { 
-    view <- viewNames(object)[view]
-  }
+  if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(view %in% viewNames(object))
 
   if (paste0(batches, collapse="") == "all") { batches <- batchNames(object) } else { stopifnot(all(batches %in% batchNames(object))) }
