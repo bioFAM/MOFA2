@@ -152,8 +152,6 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
             Qa[c,:] = Pa[c,:] + 0.5*EZZ[mask, :].shape[0]
             Qb[c,:] = Pb[c,:] + 0.5*EZZ[mask, :].sum(axis=0)
 
-        # TODO not even necessary as we already have a reference above ?
-        # to do anyway in case setParameters called another function
         self.Q.setParameters(a=Qa, b=Qb)
 
     def calculateELBO(self):

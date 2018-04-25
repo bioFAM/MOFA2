@@ -143,12 +143,12 @@ class BayesNet(object):
             else:
                 Z = self.nodes['SZ'].getExpectation()
                 W = self.nodes["W"].getExpectation()
-            
+
             Y = self.nodes["Y"].getExpectation()
 
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
             for m in range(self.dim['M']):
-                
+
                 # Fetch the mask for missing vlaues
                 mask = self.nodes["Y"].getNodes()[m].getMask()
 
@@ -250,7 +250,7 @@ class BayesNet(object):
         # Start training
         for i in range(self.options['maxiter']):
             t = time();
-
+            import pdb; pdb.set_trace()
             # Remove inactive latent variables
             if (i >= self.options["startdrop"]) and (i % self.options['freqdrop']) == 0:
                 if any(self.options['drop'].values()):
@@ -320,7 +320,7 @@ class BayesNet(object):
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """
-        # TODO problem with dictionnary comprehension here 
+        # TODO problem with dictionnary comprehension here
         to_ret = {}
         for node in self.nodes.keys():
             if isinstance(self.nodes[node],Variational_Node):
