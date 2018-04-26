@@ -389,7 +389,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Calculate ELBO for W
         # import pdb; pdb.set_trace()
-        lb_pw = (self.D*alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
+        lb_pw = (alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
         lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
         # #NOT SURE ABOUT THE FORMULA for lb_qw (brackets of expectation propagating inside the log ?)
         lb_w = lb_pw - lb_qw
