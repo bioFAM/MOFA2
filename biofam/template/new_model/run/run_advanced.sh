@@ -84,7 +84,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='python3 ../build_model/entry_point.py
+cmd='python ../build_model/entry_point.py
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile

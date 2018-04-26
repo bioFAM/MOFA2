@@ -27,7 +27,8 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         if expand:
             D = self.markov_blanket['SW'].D
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
-            expanded_lnE = s.repeat(QExp['E'][None, :], D, axis=0)
+            expanded_lnE = s.repeat(QExp['lnE'][None, :], D, axis=0)
+            # import pdb; pdb.set_trace()
             return {'E': expanded_E, 'lnE': expanded_lnE}
         else:
             return QExp
@@ -37,7 +38,6 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         return QExp['E']
 
     def updateParameters(self):
-
         # Collect expectations from other nodes
         if "SW" in self.markov_blanket:
             tmp = self.markov_blanket["SW"].getExpectations()
