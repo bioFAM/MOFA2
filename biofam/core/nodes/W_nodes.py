@@ -328,7 +328,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Check dimensions of Tau and and expand if necessary
         # if tau.shape != Y.shape:
         #     tau = s.repeat(tau[None,:], Y.shape[0], axis=0)
-        
+
         # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Check dimensions of Alpha and and expand if necessary
