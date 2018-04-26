@@ -33,7 +33,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes
-        S = self.markov_blanket['SW'].getExpectations()["EB"]
+        S = self.markov_blanket['W'].getExpectations()["EB"]
 
         # Precompute terms
         if factors_selection is not None:
@@ -66,7 +66,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         lb_q[np.isnan(lb_q)] = 0
 
         return lb_p.sum() - lb_q.sum()
-    
+
 
 class ThetaW_Constant_Node_mk(Constant_Variational_Node):
     """
@@ -117,7 +117,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes
-        S = self.markov_blanket['SZ'].getExpectations()["EB"]
+        S = self.markov_blanket['Z'].getExpectations()["EB"]
 
         # Precompute terms
         if factors_selection is not None:

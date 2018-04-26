@@ -27,12 +27,9 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Y = self.markov_blanket["Y"].getExpectation().copy()
         mask = ma.getmask(Y)
 
-        if "SW" in self.markov_blanket:
-            Wtmp = self.markov_blanket["SW"].getExpectations()
-            Ztmp = self.markov_blanket["Z"].getExpectations()
-        else:
-            Wtmp = self.markov_blanket["W"].getExpectations()
-            Ztmp = self.markov_blanket["SZ"].getExpectations()
+        Wtmp = self.markov_blanket["W"].getExpectations()
+        Ztmp = self.markov_blanket["Z"].getExpectations()
+
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
@@ -106,12 +103,9 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         Y = self.markov_blanket["Y"].getExpectation().copy()
         mask = ma.getmask(Y)
 
-        if "SW" in self.markov_blanket:
-            Wtmp = self.markov_blanket["SW"].getExpectations()
-            Ztmp = self.markov_blanket["Z"].getExpectations()
-        else:
-            Wtmp = self.markov_blanket["W"].getExpectations()
-            Ztmp = self.markov_blanket["SZ"].getExpectations()
+        Wtmp = self.markov_blanket["W"].getExpectations()
+        Ztmp = self.markov_blanket["Z"].getExpectations()
+
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
@@ -148,7 +142,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
 #<<<<<<< HEAD
 #        P,Q = self.P.getParameters(), self.Q.getParameters()
 #        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
-#        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE'] 
+#        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
 #=======
         P, Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb, Qa, Qb = P['a'][:,0], P['b'][:,0], Q['a'][:,0], Q['b'][:,0]

@@ -11,6 +11,7 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
+# TODO make more general to handle both cases with and without SL in the Markov Blanket
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None,precompute_pcovinv=True):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
@@ -81,7 +82,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Collect expectations from the markov blanket
         Y = deepcopy(self.markov_blanket["Y"].getExpectation())
-        SZtmp = self.markov_blanket["SZ"].getExpectations()
+        SZtmp = self.markov_blanket["Z"].getExpectations()
         tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
         latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
         mask = ma.getmask(Y)
@@ -328,7 +329,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Check dimensions of Tau and and expand if necessary
         # if tau.shape != Y.shape:
         #     tau = s.repeat(tau[None,:], Y.shape[0], axis=0)
-        
+
         # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Check dimensions of Alpha and and expand if necessary

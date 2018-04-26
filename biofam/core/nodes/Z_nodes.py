@@ -78,7 +78,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Collect expectations from the markov blanket
         Y = deepcopy(self.markov_blanket["Y"].getExpectation())
-        SWtmp = self.markov_blanket["SW"].getExpectations()
+        SWtmp = self.markov_blanket["W"].getExpectations()
         tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
         latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
