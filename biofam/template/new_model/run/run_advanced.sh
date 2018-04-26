@@ -76,7 +76,7 @@ startSparsity=20 		# initial iteration to activate the spike and slab, we recomm
 learnIntercept=0
 
 # Random seed
-seed=0 # if 0, the seed is automatically generated using the current time
+seed=1 # if 0, the seed is automatically generated using the current time
 
 
 ####################
