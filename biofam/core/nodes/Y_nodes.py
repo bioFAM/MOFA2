@@ -4,6 +4,8 @@ import numpy as np
 import scipy as s
 import math
 
+from biofam.core.utils import dotd
+
 # Import manually defined functions
 from .variational_nodes import Constant_Variational_Node
 
@@ -39,18 +41,46 @@ class Y_Node(Constant_Variational_Node):
 
     def calculateELBO(self):
         # Calculate evidence lower bound
-        # We use the trick that the update of Tau already contains the Gaussian likelihod.
-        # However, it is important that the lower bound is calculated after the update of Tau is performed
-        if self.opts['tau_d']:
-            tauQ_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
-            tauP_param = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
-            tau_exp = {k:v[0,:] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
-            lik = self.likconst + 0.5*s.sum(self.N*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
+
+        # Collect expectations from nodes
+
+        Y = self.getExpectation().copy()
+        mask = ma.getmask(Y)
+
+        Tau = {k: v[0, :] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+
+        if "SW" in self.markov_blanket:
+            Wtmp = self.markov_blanket["SW"].getExpectations()
+            Ztmp = self.markov_blanket["Z"].getExpectations()
         else:
-            tauQ_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("Q").items()}
-            tauP_param = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getParameters("P").items()}
-            tau_exp = {k:v[:,0] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
-            lik = self.likconst + 0.5*s.sum(self.D*(tau_exp["lnE"])) - s.dot(tau_exp["E"], tauQ_param["b"]-tauP_param["b"])
+            Wtmp = self.markov_blanket["W"].getExpectations()
+            Ztmp = self.markov_blanket["SZ"].getExpectations()
+        W, WW = Wtmp["E"], Wtmp["E2"]
+        Z, ZZ = Ztmp["E"], Ztmp["E2"]
+
+        # Mask matrices
+        Y = Y.data
+        Y[mask] = 0.
+
+        # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
+        term1 = s.square(Y.astype("float64")).sum(axis=0)
+
+        # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
+        term2 = 2. * (Y * s.dot(Z, W.T)).sum(axis=0)  # save to modify
+
+        term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=0)
+
+        WZ = ma.array(W.dot(Z.T), mask=mask.T)
+        term4 = dotd(WZ, WZ.T) - ma.array(s.dot(s.square(Z), s.square(W).T), mask=mask).sum(axis=0)
+
+        tmp = term1 - term2 + term3 + term4
+        tmp /= 2.
+
+        if self.opts['tau_d']:
+            lik = self.likconst + 0.5 * s.sum(self.N * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
+        else:
+            lik = self.likconst + 0.5 * s.sum(self.D * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
+            
         return lik
 
     def sample(self, dist='P'):
