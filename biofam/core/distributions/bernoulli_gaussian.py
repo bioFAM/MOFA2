@@ -65,6 +65,7 @@ class BernoulliGaussian(Distribution):
         EB = self.B.getExpectation()
         EN = self.N_B1.getExpectation()
         E = EB * EN
+        # TODO double check the order here 
         E2 = EB * (s.square(EN) + self.params["var_B1"])
         ENN = EB*(s.square(EN)+self.params["var_B1"]) + (1-EB)*self.params["var_B0"]
 

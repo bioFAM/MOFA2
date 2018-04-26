@@ -10,6 +10,7 @@ from .variational_nodes import Gamma_Unobserved_Variational_Node
 
 # TODO add sample functions everywhere
 # TODO calculateELBO is the same and could be moved to the parent node ?
+# TODO change the way we look at the nodes
 class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
         # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
@@ -26,12 +27,12 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         # Collect expectations from other nodes
         if "SW" in self.markov_blanket:
             tmp = self.markov_blanket["SW"].getExpectations()
-            ES  = tmp["EB"]
+            E  = tmp["E"]
             # TODO what is ENN and is it really what we want and not E2 ? (eternal question)
             EWW = tmp["ENN"]
         else:
             tmp = self.markov_blanket["W"].getExpectations()
-            ES  = tmp["E"]
+            E  = tmp["E"]
             EWW = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
@@ -39,7 +40,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         Pa, Pb = P['a'], P['b']
 
         # Perform updates
-        Qa = Pa + 0.5*ES.shape[0]
+        Qa = Pa + 0.5*E.shape[0]
         Qb = Pb + 0.5*EWW.sum(axis=0)
 
         # Save updated parameters of the Q distribution

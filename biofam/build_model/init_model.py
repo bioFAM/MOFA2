@@ -152,7 +152,7 @@ class initModel(object):
             print("Wrong initialisation for Z")
             exit(1)
 
-        self.nodes["SZ"] = SZ_Node(
+        self.nodes["Z"] = SZ_Node(
             dim=(self.N, self.K),
 
             ptheta=ptheta,
@@ -334,7 +334,7 @@ class initModel(object):
                 qEW_S1=qEW_S1,
             )
 
-        self.nodes["SW"] = Multiview_Variational_Node(self.M, *W_list)
+        self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
     def initAlphaZ_k(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
         """Method to initialise the precision of the ARD prior on the factors
