@@ -29,7 +29,7 @@ center_features=1   # center the features to zero-mean? (not necessary as long a
 scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
-transpose_sparsity=0
+transpose_sparsity=1
 transpose_noise=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
@@ -76,7 +76,7 @@ startSparsity=20 		# initial iteration to activate the spike and slab, we recomm
 learnIntercept=0
 
 # Random seed
-seed=0 # if 0, the seed is automatically generated using the current time
+seed=1 # if 0, the seed is automatically generated using the current time
 
 
 ####################
@@ -84,7 +84,7 @@ seed=0 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='python3 ../build_model/entry_point.py
+cmd='python ../build_model/entry_point.py
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile
