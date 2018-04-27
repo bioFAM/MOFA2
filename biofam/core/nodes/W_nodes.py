@@ -106,11 +106,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             p_cov_inv = self.p_cov_inv
             p_cov_inv_diag = self.p_cov_inv_diag
 
-        # DEPRECATED: tau is expanded inside the node
-        # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
-        # if tau.shape != Y.shape:
-        #     tau = s.repeat(tau.copy()[None,:], np.shape(Y)[0], axis=0)
-
         # Mask tau
         tau[mask] = 0.
         # Mask Y

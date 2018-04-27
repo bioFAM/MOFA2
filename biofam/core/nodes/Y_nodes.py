@@ -41,13 +41,13 @@ class Y_Node(Constant_Variational_Node):
 
     def calculateELBO(self):
         # Calculate evidence lower bound
-
         # Collect expectations from nodes
 
         Y = self.getExpectation().copy()
         mask = ma.getmask(Y)
 
-        Tau = {k: v[0, :] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+        # Tau = {k: v[0, :] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+        Tau = self.markov_blanket["Tau"].getExpectations()
 
         if "SW" in self.markov_blanket:
             Wtmp = self.markov_blanket["SW"].getExpectations()
@@ -75,12 +75,15 @@ class Y_Node(Constant_Variational_Node):
 
         tmp = term1 - term2 + term3 + term4
         tmp /= 2.
-
+        # import pdb; pdb.set_trace()
+        # lik = self.likconst + 0.5 * s.sum(Tau['lnE']) - s.sum(s.dot(Tau['E'], tmp))
         if self.opts['tau_d']:
-            lik = self.likconst + 0.5 * s.sum(self.N * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
+            lik = self.likconst + 0.5 * s.sum(Tau["lnE"]) - s.dot(Tau["E"][0,:], tmp)
         else:
+            print 'non implemented'
+            return 0
             lik = self.likconst + 0.5 * s.sum(self.D * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
-            
+
         return lik
 
     def sample(self, dist='P'):

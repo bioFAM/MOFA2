@@ -19,21 +19,24 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
     def precompute(self):
         self.N = self.dim[0]
-        self.lbconst = s.sum(self.P.params['a'][0,:]*s.log(self.P.params['b'][0,:]) - special.gammaln(self.P.params['a'][0,:]))
+        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
 
-    # def getExpectations(self, expand=True):
-    #     QExp = self.Q.getExpectations()
-    #     if expand:
-    #         D = self.markov_blanket['SW'].D
-    #         expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
-    #         expanded_lnE = s.repeat(QExp['E'][None, :], D, axis=0)
-    #         return {'E': expanded_E, 'lnE': expanded_lnE}
-    #     else:
-    #         return QExp
-    #
-    # def getExpectation(self, expand=True):
-    #     QExp = self.getExpectations(expand)
-    #     return QExp['E']
+    def getExpectations(self, expand=True):
+        QExp = self.Q.getExpectations()
+        if expand:
+            if 'SZ' in self.markov_blanket:
+                N = self.markov_blanket['SZ'].N
+            else:
+                N = self.markov_blanket['Z'].N
+            expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
+            expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
+            return {'E': expanded_E, 'lnE': expanded_lnE}
+        else:
+            return QExp
+
+    def getExpectation(self, expand=True):
+        QExp = self.getExpectations(expand)
+        return QExp['E']
 
     def updateParameters(self):
 
@@ -79,8 +82,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         tmp = term1 - term2 + term3 + term4
 
         # Perform updates of the Q distribution
-        Qa = Pa + s.repeat((Y.shape[0] - mask.sum(axis=0))[None,:], self.N, axis=0)/2.
-        Qb = Pb + s.repeat(tmp.copy()[None,:], self.N, axis=0)/2.
+        Qa = Pa + (Y.shape[0] - mask.sum(axis=0))/2.
+        Qb = Pb + tmp.copy()/2.
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
@@ -88,8 +91,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     def calculateELBO(self):
         # Collect parameters and expectations from current node
         P, Q = self.P.getParameters(), self.Q.getParameters()
-        Pa, Pb, Qa, Qb = P['a'][0,:], P['b'][0,:], Q['a'][0,:], Q['b'][0,:]
-        QE, QlnE = self.Q.expectations['E'][0,:], self.Q.expectations['lnE'][0,:]
+        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
+        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
 
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
@@ -110,8 +113,25 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         self.precompute()
 
     def precompute(self):
-        self.D = self.dim[1]
-        self.lbconst = s.sum(self.P.params['a'][:,0]*s.log(self.P.params['b'][:,0]) - special.gammaln(self.P.params['a'][:,0]))
+        self.D = self.dim[0]
+        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+
+    def getExpectations(self, expand=True):
+        QExp = self.Q.getExpectations()
+        if expand:
+            if 'SW' in self.markov_blanket:
+                D = self.markov_blanket['SW'].D
+            else:
+                D = self.markov_blanket['W'].D
+            expanded_E = s.repeat(QExp['E'][:, None], D, axis=1)
+            expanded_lnE = s.repeat(QExp['lnE'][:, None], D, axis=1)
+            return {'E': expanded_E, 'lnE': expanded_lnE}
+        else:
+            return QExp
+
+    def getExpectation(self, expand=True):
+        QExp = self.getExpectations(expand)
+        return QExp['E']
 
     def updateParameters(self):
         # Collect expectations from other nodes
@@ -148,8 +168,8 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         tmp = term1 - term2 + term3 + term4
 
         # Perform updates of the Q distribution
-        Qa = Pa + s.repeat((Y.shape[1] - mask.sum(axis=1))[:,None], self.D, axis=1)/2.
-        Qb = Pb + s.repeat(tmp.copy()[:,None], self.D, axis=1)/2.
+        Qa = Pa + (Y.shape[1] - mask.sum(axis=1))/2.
+        Qb = Pb + tmp.copy()/2.
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
@@ -163,8 +183,8 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
 #        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
 #=======
         P, Q = self.P.getParameters(), self.Q.getParameters()
-        Pa, Pb, Qa, Qb = P['a'][:,0], P['b'][:,0], Q['a'][:,0], Q['b'][:,0]
-        QE, QlnE = self.Q.expectations['E'][:,0], self.Q.expectations['lnE'][:,0]
+        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
+        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
 
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
