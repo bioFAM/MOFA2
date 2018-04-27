@@ -21,6 +21,20 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         self.N = self.dim[0]
         self.lbconst = s.sum(self.P.params['a'][0,:]*s.log(self.P.params['b'][0,:]) - special.gammaln(self.P.params['a'][0,:]))
 
+    # def getExpectations(self, expand=True):
+    #     QExp = self.Q.getExpectations()
+    #     if expand:
+    #         D = self.markov_blanket['SW'].D
+    #         expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
+    #         expanded_lnE = s.repeat(QExp['E'][None, :], D, axis=0)
+    #         return {'E': expanded_E, 'lnE': expanded_lnE}
+    #     else:
+    #         return QExp
+    #
+    # def getExpectation(self, expand=True):
+    #     QExp = self.getExpectations(expand)
+    #     return QExp['E']
+
     def updateParameters(self):
 
         # Collect expectations from other nodes
@@ -85,8 +99,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         P = Gamma(dim=(self.dim[1],1), a=self.P.params["a"][0,:], b=self.P.params["b"][0,:])
         self.samp = P.sample()
         return self.samp
-
-
 
 
 class TauN_Node(Gamma_Unobserved_Variational_Node):

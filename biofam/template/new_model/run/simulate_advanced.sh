@@ -30,7 +30,6 @@ likelihoods=( gaussian gaussian )
 views=( view_A view_B )
 
 
-
 # Random seed
 seed=0 # if 0, the seed is automatically generated using the current time
 
