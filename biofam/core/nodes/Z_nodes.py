@@ -427,11 +427,10 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Calculate ELBO for Z
         lb_pz = (self.N * alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
-        print('lb_pz', lb_pz)
         lb_qz = -0.5 * self.dim[1] * self.N - 0.5 * (
                     T * s.log(Qvar) + (1. - T) * s.log(1. / alpha["E"])).sum()  # IS THE FIRST CONSTANT TERM CORRECT???
-        print('lb_qz', lb_qz)
         lb_z = lb_pz - lb_qz
+        import pdb; pdb.set_trace()
 
         # Calculate ELBO for T
         lb_pt = T * theta['lnE'] + (1. - T) * theta['lnEInv']
@@ -439,8 +438,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_pt[s.isnan(lb_pt)] = 0.
         lb_qt[s.isnan(lb_qt)] = 0.
         lb_t = s.sum(lb_pt) - s.sum(lb_qt)
-        print('lb_pt', s.sum(lb_pt))
-        print('lb_qt', s.sum(lb_qt))
+
         return lb_z + lb_t
 
     def sample(self, dist='P'):
