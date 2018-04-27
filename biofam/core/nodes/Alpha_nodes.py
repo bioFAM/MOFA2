@@ -89,7 +89,7 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
         if expand:
             N = self.markov_blanket['SZ'].N
             expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
-            expanded_lnE = s.repeat(QExp['E'][None, :], N, axis=0)
+            expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
             return {'E': expanded_E, 'lnE': expanded_lnE}
         else:
             return QExp

@@ -416,7 +416,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_qz = -0.5 * self.dim[1] * self.N - 0.5 * (
                     T * s.log(Qvar) + (1. - T) * s.log(1. / alpha["E"])).sum()  # IS THE FIRST CONSTANT TERM CORRECT???
         lb_z = lb_pz - lb_qz
-        import pdb; pdb.set_trace()
 
         # Calculate ELBO for T
         lb_pt = T * theta['lnE'] + (1. - T) * theta['lnEInv']
