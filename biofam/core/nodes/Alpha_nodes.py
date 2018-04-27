@@ -39,8 +39,8 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
 
     def updateParameters(self):
         # Collect expectations from other nodes
-        if "SW" in self.markov_blanket:
-            tmp = self.markov_blanket["SW"].getExpectations()
+        if "W" in self.markov_blanket:
+            tmp = self.markov_blanket["W"].getExpectations()
             E  = tmp["E"]
             # TODO what is ENN and is it really what we want and not E2 ? (eternal question)
             EWW = tmp["ENN"]

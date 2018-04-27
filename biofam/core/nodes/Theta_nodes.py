@@ -132,7 +132,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            N = self.markov_blanket['SZ'].N
+            N = self.markov_blanket['Z'].N
             expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
             expanded_lnEInv = s.repeat(QExp['lnEInv'][None, :], N, axis=0)

@@ -95,7 +95,7 @@ class buildBiofam(buildModel):
             init.initSW()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
-            # TODO could also make sure that SZ and SW can have a covariance prior
+            # TODO could also make sure that SZ and SW can have a Sigma covariance prior
             init.initW()
 
     def build_Tau(self):

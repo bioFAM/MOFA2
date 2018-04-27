@@ -80,7 +80,7 @@ class Y_Node(Constant_Variational_Node):
             lik = self.likconst + 0.5 * s.sum(self.N * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
         else:
             lik = self.likconst + 0.5 * s.sum(self.D * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
-            
+
         return lik
 
     def sample(self, dist='P'):
