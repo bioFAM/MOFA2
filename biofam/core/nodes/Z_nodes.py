@@ -326,12 +326,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         M = len(Y)  # number of views
 
-        # Check dimensions of theta and and expand if necessary
-        if theta_lnE.shape != Qmean_T1.shape:
-            theta_lnE = s.repeat(theta_lnE[None, :], Qmean_T1.shape[0], 0)
-        if theta_lnEInv.shape != Qmean_T1.shape:
-            theta_lnEInv = s.repeat(theta_lnEInv[None, :], Qmean_T1.shape[0], 0)
-
         # DEPRECATED: tau is expanded inside the node
         # Check dimensions of Tau and and expand if necessary
         # M = len(Y) #number of views
@@ -408,8 +402,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         alpha["E"], alpha["lnE"] = alpha["E"][:,latent_variables], alpha["lnE"][:,latent_variables]
         T, ZZ = T[:, latent_variables], ZZ[:, latent_variables]
         Qvar = Qvar[:, latent_variables]
-        theta['lnE'] = theta['lnE'][latent_variables]
-        theta['lnEInv'] = theta['lnEInv'][latent_variables]
+        theta['lnE'] = theta['lnE'][:,latent_variables]
+        theta['lnEInv'] = theta['lnEInv'][:,latent_variables]
 
         # Calculate ELBO for Z
         lb_pz = (alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
