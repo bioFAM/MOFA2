@@ -80,7 +80,7 @@ class Y_Node(Constant_Variational_Node):
         if self.opts['tau_d']:
             lik = self.likconst + 0.5 * s.sum(Tau["lnE"]) - s.dot(Tau["E"][0,:], tmp)
         else:
-            print 'non implemented'
+            print('non implemented')
             return 0
             lik = self.likconst + 0.5 * s.sum(self.D * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
 
