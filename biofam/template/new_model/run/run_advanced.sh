@@ -30,7 +30,7 @@ scale_views=0 	    # scale the views to unit variance (not necessary as long as 
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 transpose_sparsity=1
-transpose_noise=0
+transpose_noise=1
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 # likelihoods=( gaussian gaussian )
@@ -84,7 +84,7 @@ seed=1 # if 0, the seed is automatically generated using the current time
 ####################
 
 # Prepare command
-cmd='python ../build_model/entry_point.py
+cmd='python3 ../build_model/entry_point.py
 	--delimiter "$delimiter"
 	--inFiles ${inFiles[@]}
 	--outFile $outFile

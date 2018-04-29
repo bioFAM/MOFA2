@@ -45,22 +45,21 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
+
+        ZW =  ma.array(Z.dot(W.T), mask=mask)
+
         # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
         term1 = s.square(Y.astype("float64")).sum(axis=0)
 
         # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
-        term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0) # save to modify
-
+        term2 = 2.*(Y*ZW).sum(axis=0) # save to modify
 
         term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=0)
 
-#<<<<<<< HEAD
-#        # dotd(SWZ, SWZ.T) should compute a sum for all k and k' of W_{d,k} Z_{d,k} W_{d,k'} Z_{d,k'} including for k=k', and then summed over n
-#        # s.dot(s.square(Z),s.square(SW).T) computes the sum over all k of wdk^2 * znk2 summed over all n too
-#        term4 = dotd(SWZ, SWZ.T) - ma.array(s.dot(s.square(Z),s.square(SW).T), mask=mask).sum(axis=0)
-#=======
-        WZ = ma.array(W.dot(Z.T), mask=mask.T)
-        term4 = dotd(WZ, WZ.T) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0)
+        # dotd(WZ, WZ.T) should compute a sum for all k and k' of W_{d,k} Z_{d,k} W_{d,k'} Z_{d,k'} including for k=k', and then summed over n
+        # s.dot(s.square(Z),s.square(SW).T) computes the sum over all k of wdk^2 * znk2 summed over all n too
+
+        term4 = dotd(ZW.T, ZW) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0)
 
         tmp = term1 - term2 + term3 + term4
 
@@ -124,13 +123,15 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
+
+        ZW =  ma.array(Z.dot(W.T), mask=mask)
+
         term1 = s.square(Y.astype("float64")).sum(axis=1)
 
-        term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=1) # save to modify
+        term2 = 2.*(Y*ZW).sum(axis=1) # save to modify
 
         term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=1)
 
-        ZW = ma.array(Z.dot(W.T), mask=mask)
         term4 = dotd(ZW, ZW.T) - ma.array(s.dot(s.square(Z), s.square(W).T), mask=mask).sum(axis=1)
 
         tmp = term1 - term2 + term3 + term4
@@ -144,12 +145,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node
-	# older version of the code before biofam2
-#<<<<<<< HEAD
-#        P,Q = self.P.getParameters(), self.Q.getParameters()
-#        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
-#        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE'] 
-#=======
+
         P, Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb, Qa, Qb = P['a'][:,0], P['b'][:,0], Q['a'][:,0], Q['b'][:,0]
         QE, QlnE = self.Q.expectations['E'][:,0], self.Q.expectations['lnE'][:,0]
