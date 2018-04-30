@@ -208,7 +208,7 @@ def entry_point():
     train_opts['maxiter'] = args.iter                     # Maximum number of iterations
     train_opts['elbofreq'] = args.elbofreq                # Lower bound computation frequency
     train_opts['verbose'] = args.verbose                  # Verbosity
-    train_opts['verbose'] = 2
+    train_opts['verbose'] = 2                  # Verbosity
     train_opts['drop'] = { "by_r2":args.dropR2 }          # Minimum fraction of variance explained to drop latent variables while training
     train_opts['startdrop'] = args.startDrop              # Initial iteration to start dropping factors
     train_opts['freqdrop'] = args.freqDrop                # Frequency of dropping factors
