@@ -142,8 +142,9 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
 class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
     """ """
 
-    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic=None, qE=None, qlnE=None):
+    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic, qE=None, qlnE=None):
         self.groups = groups
+        self.group_names = groups_dic
         self.factors_axis = 1
         self.N = len(self.groups)
         self.n_groups = len(np.unique(groups))

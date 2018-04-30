@@ -342,6 +342,14 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
     # Get nodes from the model
     nodes = model.getNodes()
 
+    # check if there are sample groups in the model
+    if 'AlphaZ' in nodes and isinstance(nodes["AlphaZ"], AlphaZ_Node_groups):
+        sample_groups = nodes["AlphaZ"].groups
+        group_names = nodes['AlphaZ'].group_names
+    else:
+        sample_groups = np.array([0] * model.dim['N'])
+        group_names = np.array(['all'])
+
     exp_grp = hdf5.create_group("expectations")
 
     # Iterate over nodes
@@ -398,13 +406,15 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
             if node == "SZ":
                 expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
             if only_first_moments: expectations = {'E':expectations["E"]}
-            for exp_name in expectations.keys():
-
-                # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
-                if node == "SigmaZ":
-                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
-                else:
-                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
+            for samp_group in range(len(group_names)):
+                samp_subgrp = node_subgrp.create_group(samp_group)
+                for exp_name in expectations.keys():
+                    # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
+                    if node == "SigmaZ":
+                        samp_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
+                    else:
+                        df = expectations[exp_name][sample_groups,:]
+                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
 
 def saveTrainingStats(model, hdf5):
     """ Method to save the training statistics in an hdf5 file

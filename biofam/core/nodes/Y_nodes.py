@@ -27,6 +27,7 @@ class Y_Node(Constant_Variational_Node):
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
 
         # Precompute the constant depending on the noise dimensions
+        #  TODO rewrite with no tau_d argument 
         if self.opts['tau_d']:
             self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
         else:

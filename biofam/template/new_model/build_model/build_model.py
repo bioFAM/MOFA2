@@ -116,7 +116,7 @@ class buildBiofam(buildModel):
         initTheta_b = 0.001 #1.
         learnTheta_ix = np.ones(self.dim['K'])
 
-        # TODO: this for loop cannot possibly work ....
+        # TODO: this for loop cannot possibly work change
         if model_opts["learnIntercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
@@ -129,7 +129,7 @@ class buildBiofam(buildModel):
         initTheta_b = 1.
         learnTheta_ix = [np.ones(K)] * M
 
-        # TODO: this for loop cannot possibly work ....
+        # TODO: this for loop cannot possibly work change
         if model_opts["learnIntercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
@@ -161,9 +161,7 @@ class buildBiofam(buildModel):
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
 
 
-
-
-class buildSpatialBiofam(build_biofam):
+class buildSpatialBiofam(buildBiofam):
     def __init__(self):
         pass
 
@@ -198,7 +196,7 @@ class buildSpatialBiofam(build_biofam):
 
 
 
-class buildSimulationBiofam(build_basic):
+class buildSimulationBiofam(buildBiofam):
     def __init__(self, model_opts):
         M = model_opts['M']
         N = model_opts['N']
