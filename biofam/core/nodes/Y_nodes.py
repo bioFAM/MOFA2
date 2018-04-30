@@ -41,13 +41,12 @@ class Y_Node(Constant_Variational_Node):
 
     def calculateELBO(self):
         # Calculate evidence lower bound
-
         # Collect expectations from nodes
 
         Y = self.getExpectation().copy()
         mask = ma.getmask(Y)
 
-        Tau = {k: v[0, :] for (k, v) in self.markov_blanket["Tau"].getExpectations().items()}
+        Tau = self.markov_blanket["Tau"].getExpectations()
 
         if "SW" in self.markov_blanket:
             Wtmp = self.markov_blanket["SW"].getExpectations()
@@ -62,24 +61,21 @@ class Y_Node(Constant_Variational_Node):
         Y = Y.data
         Y[mask] = 0.
 
+        ZW = ma.array(s.dot(Z, W.T),mask=mask)
+
         # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
-        term1 = s.square(Y.astype("float64")).sum(axis=0)
+        term1 = s.square(Y.astype("float64"))
 
         # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
-        term2 = 2. * (Y * s.dot(Z, W.T)).sum(axis=0)  # save to modify
+        term2 = 2. * (Y * ZW)  # save to modify
 
-        term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=0)
+        term3 = ma.array(ZZ.dot(WW.T), mask=mask)
 
-        WZ = ma.array(W.dot(Z.T), mask=mask.T)
-        term4 = dotd(WZ, WZ.T) - ma.array(s.dot(s.square(Z), s.square(W).T), mask=mask).sum(axis=0)
+        term4 = s.square(ZW) - ma.array(s.dot(s.square(Z),s.square(W).T),mask=mask)
 
-        tmp = term1 - term2 + term3 + term4
-        tmp /= 2.
+        tmp = 0.5 * (term1 - term2 + term3 + term4)
 
-        if self.opts['tau_d']:
-            lik = self.likconst + 0.5 * s.sum(self.N * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
-        else:
-            lik = self.likconst + 0.5 * s.sum(self.D * (Tau["lnE"])) - s.dot(Tau["E"], tmp)
+        lik = self.likconst + 0.5 * s.sum(Tau["lnE"]) - s.sum(s.multiply(Tau["E"], tmp))
 
         return lik
 

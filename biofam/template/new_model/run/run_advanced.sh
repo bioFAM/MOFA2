@@ -30,7 +30,7 @@ scale_views=0 	    # scale the views to unit variance (not necessary as long as 
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 transpose_sparsity=1
-transpose_noise=0
+transpose_noise=1
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
 # likelihoods=( gaussian gaussian )
@@ -52,7 +52,7 @@ iter=5000 # we recommend to set this to a large enough value (>1000)
 
 # Convergence criterion
 # Recommendation: a 'tolerance' of 0.01 is quite strict and can take a bit of time, for initial testing we recommend increasing it to 0.1
-tolerance=1. # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
+tolerance=.001 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
 nostop=0       # if nostop=1 the training will complete all iterations even if the convergence criterion is met
 
 # Define the initial number of factors and how inactive factors are dropped during training.
@@ -63,7 +63,7 @@ nostop=0       # if nostop=1 the training will complete all iterations even if t
 factors=10   # initial number of factors
 startDrop=1  # initial iteration to start shutting down factors
 freqDrop=1 	 # frequency of checking for shutting down factors
-dropR2=0.01  # threshold on fraction of variance explained
+dropR2=0.0  # threshold on fraction of variance explained
 
 # Define hyperparameters for the feature-wise spike-and-slab sparsity prior
 # learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
@@ -76,7 +76,7 @@ startSparsity=1 		# initial iteration to activate the spike and slab, we recomme
 learnIntercept=0
 
 # Random seed
-seed=1 # if 0, the seed is automatically generated using the current time
+seed=2 # if 0, the seed is automatically generated using the current time
 
 
 ####################
