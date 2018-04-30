@@ -27,7 +27,7 @@ class Y_Node(Constant_Variational_Node):
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
 
         # Precompute the constant depending on the noise dimensions
-        #  TODO rewrite with no tau_d argument 
+        #  TODO rewrite with no tau_d argument
         if self.opts['tau_d']:
             self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
         else:
@@ -49,12 +49,9 @@ class Y_Node(Constant_Variational_Node):
 
         Tau = self.markov_blanket["Tau"].getExpectations()
 
-        if "SW" in self.markov_blanket:
-            Wtmp = self.markov_blanket["SW"].getExpectations()
-            Ztmp = self.markov_blanket["Z"].getExpectations()
-        else:
-            Wtmp = self.markov_blanket["W"].getExpectations()
-            Ztmp = self.markov_blanket["SZ"].getExpectations()
+        Wtmp = self.markov_blanket["W"].getExpectations()
+        Ztmp = self.markov_blanket["Z"].getExpectations()
+
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
@@ -82,12 +79,9 @@ class Y_Node(Constant_Variational_Node):
 
     def sample(self, dist='P'):
         # Y does NOT call sample recursively but relies on previous calls
-        if "SW" in self.markov_blanket:
-            W_samp = self.markov_blanket['SW'].samp
-            Z_samp = self.markov_blanket['Z'].samp
-        else:
-            Z_samp = self.markov_blanket['SZ'].samp
-            W_samp = self.markov_blanket['W'].samp
+        Z_samp = self.markov_blanket['Z'].samp
+        W_samp = self.markov_blanket['W'].samp
+
         Tau_samp = self.markov_blanket['Tau'].samp
         F = Z_samp.dot(W_samp.transpose())
 

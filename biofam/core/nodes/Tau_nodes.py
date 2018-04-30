@@ -24,10 +24,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            if 'SZ' in self.markov_blanket:
-                N = self.markov_blanket['SZ'].N
-            else:
-                N = self.markov_blanket['Z'].N
+            N = self.markov_blanket['Z'].N
             expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
             return {'E': expanded_E, 'lnE': expanded_lnE}
@@ -115,10 +112,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            if 'SW' in self.markov_blanket:
-                D = self.markov_blanket['SW'].D
-            else:
-                D = self.markov_blanket['W'].D
+            D = self.markov_blanket['W'].D
             expanded_E = s.repeat(QExp['E'][:, None], D, axis=1)
             expanded_lnE = s.repeat(QExp['lnE'][:, None], D, axis=1)
             return {'E': expanded_E, 'lnE': expanded_lnE}

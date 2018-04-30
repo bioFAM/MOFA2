@@ -25,10 +25,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            if 'SW' in self.markov_blanket:
-                D = self.markov_blanket['SW'].D
-            else:
-                D = self.markov_blanket['W'].D
+            D = self.markov_blanket['W'].D
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], D, axis=0)
             # import pdb; pdb.set_trace()
@@ -42,14 +39,11 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
 
     def updateParameters(self):
         # Collect expectations from other nodes
-        if "W" in self.markov_blanket:
-            tmp = self.markov_blanket["W"].getExpectations()
-            E  = tmp["E"]
-            # TODO what is ENN and is it really what we want and not E2 ? (eternal question)
+        tmp = self.markov_blanket["W"].getExpectations()
+        E  = tmp["E"]
+        if "ENN" in tmp:
             EWW = tmp["ENN"]
         else:
-            tmp = self.markov_blanket["W"].getExpectations()
-            E  = tmp["E"]
             EWW = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
@@ -90,10 +84,7 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            if 'SZ' in self.markov_blanket:
-                N = self.markov_blanket['SZ'].N
-            else:
-                N = self.markov_blanket['Z'].N
+            N = self.markov_blanket['Z'].N
             expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
             return {'E': expanded_E, 'lnE': expanded_lnE}
@@ -108,11 +99,10 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
 
         # TODO: muZ node not accounted for here
         # Collect expectations from other node
-        if "SZ" in self.markov_blanket:
-            tmp = self.markov_blanket["SZ"].getExpectations()
+        tmp = self.markov_blanket["Z"].getExpectations()
+        if 'ENN' in tmp:
             EZZ = tmp["ENN"]
-        else:
-            tmp = self.markov_blanket["Z"].getExpectations()
+        else
             EZZ = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
@@ -170,11 +160,10 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
 
     def updateParameters(self):
         # TODO: add an if MuZ is in markov blanket ?
-        if "SZ" in self.markov_blanket:
-            tmp = self.markov_blanket["SZ"].getExpectations()
+        tmp = self.markov_blanket["Z"].getExpectations()
+        if 'ENN' in tmp:
             EZZ = tmp["ENN"]
         else:
-            tmp = self.markov_blanket["Z"].getExpectations()
             EZZ = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
