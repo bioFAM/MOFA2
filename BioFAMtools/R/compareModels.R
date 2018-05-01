@@ -40,7 +40,7 @@ compareFactors <- function(models, comparison = "all", show_rownames=FALSE, show
   LFs <- lapply(seq_along(models), function(modelidx){
     model <- models[[modelidx]]
     Z <- getFactors(model)
-    # NOTE: concatenate all batches by default
+    # NOTE: concatenate all groups by default
     Z <- do.call(rbind, Z)
     if (model@ModelOptions$learnIntercept==TRUE) 
       Z <- Z[,-1, drop=FALSE]

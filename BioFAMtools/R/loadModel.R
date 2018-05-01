@@ -15,7 +15,7 @@
 #' @importFrom rhdf5 h5read
 #' @export
 
-loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL, multiBatch = NULL) {
+loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL, multiGroup = NULL) {
   
   # message(paste0("Loading the following BioFAModel: ", file))
   
@@ -82,16 +82,16 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
       object@DataOptions$multiView <- multiView
     }
 
-    # Specify if multiple batches are present
-    if (is.null(multiBatch)) {
-      object@DataOptions$multiBatch <- is.list(sampleData)
+    # Specify if multiple groups are present
+    if (is.null(multiGroup)) {
+      object@DataOptions$multiGroup <- is.list(sampleData)
     } else {
-      object@DataOptions$multiBatch <- multiBatch
+      object@DataOptions$multiGroup <- multiGroup
     }
   }, error = function(x) { print("Error defining data options...") })
 
-  # To keep reverse-compatibility with models without batches (e.g. MOFA models)
-  if (!object@DataOptions$multiBatch) {
+  # To keep reverse-compatibility with models without groups (e.g. MOFA models)
+  if (!object@DataOptions$multiGroup) {
     sampleData <- list("B1" = sampleData)
     # Samples should be in columns
     if (length(unique(sapply(TrainData, nrow))) == 1 && length(unique(sapply(TrainData, ncol))) > 1) {
@@ -101,7 +101,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
       TrainData <- lapply(TrainData, t)
     }
     TrainData  <- lapply(TrainData, function(e) list("B1" = e))
-    # Expectations for multi-batch and multi-view nodes should be nested lists
+    # Expectations for multi-group and multi-view nodes should be nested lists
     if (("E" %in% names(object@Expectations$Y[[1]]))    & (class(object@Expectations$Y[[1]]$E) != "list") | 
         (!("E" %in% names(object@Expectations$Y[[1]]))) & (class(object@Expectations$Y[[1]])   != "list")) {
       tmp <- lapply(names(TrainData), function(m) {
@@ -114,10 +114,10 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
         (!("E" %in% names(object@Expectations$Z))) & (class(object@Expectations$Z)   != "list")) {
       object@Expectations$Z <- list("B1" = object@Expectations$Z)
     }
-    object@DataOptions$multiBatch <- TRUE
+    object@DataOptions$multiGroup <- TRUE
   }
 
-  # To keep reverse-compatibility with models having views as batches (e.g. transposed MOFA)
+  # To keep reverse-compatibility with models having views as groups (e.g. transposed MOFA)
   if (!object@DataOptions$multiView) {
     featureData <- list("V1" = featureData)
     # Features should be in rows
@@ -125,7 +125,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
       TrainData <- lapply(TrainData, t)
     }
     TrainData <- list("V1" = TrainData)
-    # Expectations for multi-batch and multi-view nodes should be nested lists
+    # Expectations for multi-group and multi-view nodes should be nested lists
     if (("E" %in% names(object@Expectations$Y[[1]]))    & (class(object@Expectations$Y[[1]]$E) != "list") | 
         (!("E" %in% names(object@Expectations$Y[[1]]))) & (class(object@Expectations$Y[[1]])   != "list")) {
       object@Expectations$Y <- list("V1" = object@Expectations$Y)
@@ -158,7 +158,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   # Give corresponding names for rows (features) and columns (samples)
   tryCatch( {
     for (m in names(TrainData)) {  # there is always at least one view
-      for (h in names(TrainData[[m]])) {  # there is always at least one batch
+      for (h in names(TrainData[[m]])) {  # there is always at least one group
         rownames(TrainData[[m]][[h]]) <- featureData[[m]]
         colnames(TrainData[[m]][[h]]) <- sampleData[[h]]
       }
@@ -183,7 +183,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
     }
   }
   
-  # Set view and batch names
+  # Set view and group names
   if (is.null(names(object@TrainData))) {
     viewNames(object) <- paste0("V", as.character(1:object@Dimensions[["M"]]))
   } else {
@@ -191,9 +191,9 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   }
   
   if (is.null(names(object@TrainData[[1]]))) {
-    batchNames(object) <- paste0("B", as.character(1:object@Dimensions[["H"]]))
+    groupNames(object) <- paste0("B", as.character(1:object@Dimensions[["H"]]))
   } else {
-    batchNames(object) <- names(object@TrainData[[1]])
+    groupNames(object) <- names(object@TrainData[[1]])
   }
   
   # Update old models

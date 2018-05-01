@@ -1,6 +1,6 @@
 
 # (Hidden) General function to set names
-.setNames <- function(object, values, dimensionality, views="all", batches="all") {
+.setNames <- function(object, values, dimensionality, views="all", groups="all") {
   nodes <- names(object@Expectations)
 
   if (paste0(views, collapse = "") == "all") { 
@@ -9,15 +9,15 @@
     stopifnot(all(views  %in% names(object@Dimensions$D)))
   } 
 
-  if (paste0(batches, collapse = "") == "all") {
-    batches <- names(object@Dimensions$N)
+  if (paste0(groups, collapse = "") == "all") {
+    groups <- names(object@Dimensions$N)
   } else {
-    stopifnot(all(batches %in% names(object@Dimensions$N)))
+    stopifnot(all(groups %in% names(object@Dimensions$N)))
   }
   
   # Loop over training data
   for (m in views) {
-    for (h in batches) {
+    for (h in groups) {
       if (nrow(object@TrainData[[m]][[h]]) == dimensionality)
         rownames(object@TrainData[[m]][[h]]) <- values
       if (ncol(object@TrainData[[m]][[h]]) == dimensionality)
@@ -32,7 +32,7 @@
     if (node %in% c("Y")) {
 
       for (m in views) {
-        for (h in batches) {
+        for (h in groups) {
 
           # Loop over expectations
           if (class(object@Expectations[[node]][[m]][[h]]) == "matrix") {
@@ -103,8 +103,8 @@
     # Single-view nodes
     } else {
 
-      # Loop over batches
-      for (h in batches) {
+      # Loop over groups
+      for (h in groups) {
         
         # Loop over expectations
         if (class(object@Expectations[[node]][[h]]) == "matrix") {
@@ -180,12 +180,12 @@ setReplaceMethod("factorNames", signature(object="BioFAModel", value="vector"),
 #' @rdname sampleNames
 #' @param object a \code{\link{BioFAModel}} object.
 #' @aliases sampleNames,BioFAModel-method
-#' @return list of character vectors with the sample names for each batch
+#' @return list of character vectors with the sample names for each group
 #' @export
-setMethod("sampleNames", signature(object="BioFAModel"), function(object) { tmp <- lapply(object@TrainData[[1]], colnames); names(tmp) <- batchNames(object); return(tmp) } )
+setMethod("sampleNames", signature(object="BioFAModel"), function(object) { tmp <- lapply(object@TrainData[[1]], colnames); names(tmp) <- groupNames(object); return(tmp) } )
 
 #' @rdname sampleNames
-#' @param value list of character vectors with the sample names for every batch
+#' @param value list of character vectors with the sample names for every group
 #' @import methods
 #' @export
 setReplaceMethod("sampleNames", signature(object="BioFAModel", value="list"), 
@@ -201,7 +201,7 @@ setReplaceMethod("sampleNames", signature(object="BioFAModel", value="list"),
       stop("sample names do not match the dimensionality of the data (columns)")
 
     for (h in 1:length(object@TrainData[[1]])) {
-      object <- .setNames(object, value[[h]], object@Dimensions[["N"]][h], batches = names(object@Dimensions[["N"]][h]))
+      object <- .setNames(object, value[[h]], object@Dimensions[["N"]][h], groups = names(object@Dimensions[["N"]][h]))
     }
     object
 })
@@ -285,36 +285,36 @@ setMethod("viewNames<-", signature(object="BioFAModel", value="character"),
 
 
 #################################
-## Set and retrieve batch names ##
+## Set and retrieve group names ##
 #################################
 
-#' @rdname batchNames
+#' @rdname groupNames
 #' @param object a \code{\link{BioFAModel}} object.
 #' @return character vector with the names for each view
-#' @rdname batchNames
+#' @rdname groupNames
 #' @export
-setMethod("batchNames", signature(object="BioFAModel"), function(object) { names(object@TrainData[[1]]) } )
+setMethod("groupNames", signature(object="BioFAModel"), function(object) { names(object@TrainData[[1]]) } )
 
 
-#' @rdname batchNames
+#' @rdname groupNames
 #' @param value character vector with the names for each view
 #' @import methods
 #' @export
-setMethod("batchNames<-", signature(object="BioFAModel", value="character"), 
+setMethod("groupNames<-", signature(object="BioFAModel", value="character"), 
   function(object, value) {
     if (!methods::.hasSlot(object,"TrainData") | length(object@TrainData) == 0)
-      stop("Before assigning batch names you have to assign the training data")
+      stop("Before assigning group names you have to assign the training data")
     if (methods::.hasSlot(object,"Dimensions") & length(object@Dimensions) != 0)
       if(length(value) != object@Dimensions["H"])
-        stop("Length of batch names does not match the dimensionality of the model")
+        stop("Length of group names does not match the dimensionality of the model")
     if (length(value) != length(object@TrainData[[1]]))
-      stop("Batch names do not match the number of views in the training data")
+      stop("Group names do not match the number of views in the training data")
     
     if (object@Status == "trained"){
-      multibatch_nodes <- c("Z", "Z", "AlphaZ")
-      for (node in multibatch_nodes) {
+      multigroup_nodes <- c("Z", "Z", "AlphaZ")
+      for (node in multigroup_nodes) {
         if (node %in% names(object@Expectations)) {
-          if (node == "Y") {  # the only multi-view and multi-batch node
+          if (node == "Y") {  # the only multi-view and multi-group node
             for (m in 1:length(object@Expectations$Y)) {
               names(object@Expectations$Y[[m]]) <- value 
             }

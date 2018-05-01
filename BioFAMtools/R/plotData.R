@@ -38,7 +38,7 @@
 #' # Plot top 50 features for factor 1 in the mRNA view, do not show feature or row names
 #' plotDataHeatmap(model, "mRNA", 1, 50, show_colnames = FALSE, show_rownames = FALSE) 
 #' @export
-plotDataHeatmap <- function(object, view, factor, batches = "all", features = 50, includeWeights = FALSE, transpose = FALSE, imputed = FALSE, sortSamples = TRUE, ...) {
+plotDataHeatmap <- function(object, view, factor, groups = "all", features = 50, includeWeights = FALSE, transpose = FALSE, imputed = FALSE, sortSamples = TRUE, ...) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -46,7 +46,7 @@ plotDataHeatmap <- function(object, view, factor, batches = "all", features = 50
   if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(view %in% viewNames(object))
 
-  if (paste0(batches, collapse="") == "all") { batches <- batchNames(object) } else { stopifnot(all(batches %in% batchNames(object))) }
+  if (paste0(groups, collapse="") == "all") { groups <- groupNames(object) } else { stopifnot(all(groups %in% groupNames(object))) }
 
   if(is.numeric(factor)) {
       if (object@ModelOptions$learnIntercept == T) factor <- factorNames(object)[factor+1]
@@ -55,19 +55,19 @@ plotDataHeatmap <- function(object, view, factor, batches = "all", features = 50
 
   # Collect relevant data
   W <- getWeights(object)[[view]][,factor]
-  # NOTE: By default concatenate all the batches
-  Z <- lapply(getFactors(object)[batches], function(z) as.matrix(z[,factor]))
+  # NOTE: By default concatenate all the groups
+  Z <- lapply(getFactors(object)[groups], function(z) as.matrix(z[,factor]))
   Z <- do.call(rbind, Z)[,1]
   Z <- Z[!is.na(Z)]
   
   
   if (imputed) {
-    data <- lapply(getImputedData(object, view, batches)[[1]], function(e) e[,names(Z)])
+    data <- lapply(getImputedData(object, view, groups)[[1]], function(e) e[,names(Z)])
   } else {
-    data <- lapply(getTrainData(object, view, batches)[[1]], function(e) e[,names(Z)])
+    data <- lapply(getTrainData(object, view, groups)[[1]], function(e) e[,names(Z)])
   }
 
-  # NOTE: Currently batches are concatenated
+  # NOTE: Currently groups are concatenated
   if (class(data) == "list") {
     data <- do.call(cbind, data)
   }

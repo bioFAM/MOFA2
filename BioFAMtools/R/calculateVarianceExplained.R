@@ -9,13 +9,13 @@
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @param include_intercept include the intercept factor for calculation of variance explained (only used when an intercept was learned)
-#' @param batches character vector with the batch names, or numeric vector with batch indexes. Default is 'all'
+#' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
 #' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor). 
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated. 
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
-calculateVarianceExplained <- function(object, views = "all", factors = "all", include_intercept = TRUE, batches = "all", ...) {
+calculateVarianceExplained <- function(object, views = "all", factors = "all", include_intercept = TRUE, groups = "all", ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -34,13 +34,13 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
   }
   M <- length(views)
 
-  # Define batches
-  if (paste0(batches, sep="", collapse="") == "all") { 
-    batches <- batchNames(object) 
+  # Define groups
+  if (paste0(groups, sep="", collapse="") == "all") { 
+    groups <- groupNames(object) 
   } else {
-    stopifnot(all(batches %in% batchNames(object)))  
+    stopifnot(all(groups %in% groupNames(object)))  
   }
-  H <- length(batches)
+  H <- length(groups)
 
   # Define factors
   if (paste0(factors, collapse="") == "all") { 
@@ -59,61 +59,61 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
 
   # Collect relevant expectations
   W <- getWeights(object, views, factors)
-  Z <- getFactors(object, batches, factors)
+  Z <- getFactors(object, groups, factors)
   Y <- getExpectations(object, "Y")  # for non-Gaussian likelihoods the pseudodata is considered
   
   # Calulcate feature-wise means as null model
   FeatureMean <- lapply(views, function(m) {
-    lapply(batches, function(h) {
+    lapply(groups, function(h) {
       apply(Y[[m]][[h]], 2, mean, na.rm=T) 
     })
   })
-  FeatureMean <- .setViewAndBatchNames(FeatureMean, views, batches)
+  FeatureMean <- .setViewAndgroupNames(FeatureMean, views, groups)
 
   # Sweep out the feature-wise mean to calculate null model residuals
   resNullModel <- lapply(views, function(m) {
-    lapply(batches, function(h) {
+    lapply(groups, function(h) {
       sweep(Y[[m]][[h]], 2, FeatureMean[[m]][[h]], "-")
     })
   })
-  resNullModel <- .setViewAndBatchNames(resNullModel, views, batches)
+  resNullModel <- .setViewAndgroupNames(resNullModel, views, groups)
   
   # replace masked values on Z by 0 (so that they do not contribute to predictions)
-  for (batch in batches) { Z[[batch]][is.na(Z[[batch]])] <- 0 }
+  for (group in groups) { Z[[group]][is.na(Z[[group]])] <- 0 }
     
   # Calculate predictions under the MOFA model using all (non-intercept) factors
   Ypred_m <- lapply(views, function(m) {
-    lapply(batches, function(h) {
+    lapply(groups, function(h) {
       Z[[h]] %*% t(W[[m]])
     })
   })
-  Ypred_m <- .setViewAndBatchNames(Ypred_m, views, batches)
+  Ypred_m <- .setViewAndgroupNames(Ypred_m, views, groups)
 
-  for (view in views) { names(resNullModel[[view]]) <- batches }
+  for (view in views) { names(resNullModel[[view]]) <- groups }
 
   # Calculate predictions under the MOFA model using each (non-intercept) factors on its own
   Ypred_mk <- lapply(views, function(m) {
-    lapply(batches, function(h) {
+    lapply(groups, function(h) {
       ltmp <- lapply(factors, function(k) Z[[h]][,k] %*% t(W[[m]][,k]) )
       names(ltmp) <- factors
       ltmp
     })
   })
-  Ypred_mk <- .setViewAndBatchNames(Ypred_mk, views, batches)
+  Ypred_mk <- .setViewAndgroupNames(Ypred_mk, views, groups)
   
   # If an intercept is included, regress out the intercept from the data
   if (include_intercept) {
       intercept <- getWeights(object,views,"intercept")
-      Y <- lapply(views, function(m) lapply(batches, function(h) sweep(Y[[m]][[h]],2,intercept[[m]],"-")))
-      Y <- .setViewAndBatchNames(Y, views, batches)
+      Y <- lapply(views, function(m) lapply(groups, function(h) sweep(Y[[m]][[h]],2,intercept[[m]],"-")))
+      Y <- .setViewAndgroupNames(Y, views, groups)
   }
 
   # Calculate coefficient of determination per view
-  fvar_m <- lapply(batches, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T)))
-  fvar_m <- .setViewAndBatchNames(fvar_m, batches, views)
+  fvar_m <- lapply(groups, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T)))
+  fvar_m <- .setViewAndgroupNames(fvar_m, groups, views)
 
   # Calculate coefficient of determination per factor and view
-  tmp <- lapply(batches, function(h) {
+  tmp <- lapply(groups, function(h) {
     sapply(views, function(m) {
       sapply(factors, function(k) {
         1 - sum((Y[[m]][[h]]-Ypred_mk[[m]][[h]][[k]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T) 
@@ -121,8 +121,8 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
     })
   })
   fvar_mk <- lapply(tmp, function(e) matrix(e, ncol=length(views), nrow=length(factors)))
-  names(fvar_mk) <- batches
-  for (h in batches) { colnames(fvar_mk[[h]]) <- views; rownames(fvar_mk[[h]]) <- factors }
+  names(fvar_mk) <- groups
+  for (h in groups) { colnames(fvar_mk[[h]]) <- views; rownames(fvar_mk[[h]]) <- factors }
 
   # Store results
   R2_list <- list(R2Total = fvar_m, R2PerFactor = fvar_mk)
@@ -143,19 +143,19 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plotVarianceExplained <- function(object, batches = "all", cluster = T, ...) {
+plotVarianceExplained <- function(object, groups = "all", cluster = T, ...) {
 
-  if (paste0(batches, collapse="") == "all") { 
-    batches <- batchNames(object) 
-  } else if (is.numeric(batches)) { 
-    batches <- batchNames(object)[batches]
+  if (paste0(groups, collapse="") == "all") { 
+    groups <- groupNames(object) 
+  } else if (is.numeric(groups)) { 
+    groups <- groupNames(object)[groups]
   }
-  stopifnot(all(batches %in% batchNames(object)))
+  stopifnot(all(groups %in% groupNames(object)))
   
   # Calculate Variance Explained
   R2_list <- calculateVarianceExplained(object, ...)
-  fvar_m  <- Reduce('+', R2_list$R2Total[batches])
-  fvar_mk <- Reduce('+', R2_list$R2PerFactor[batches])
+  fvar_m  <- Reduce('+', R2_list$R2Total[groups])
+  fvar_mk <- Reduce('+', R2_list$R2PerFactor[groups])
 
   ## Plot variance explained by factor ##
   

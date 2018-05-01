@@ -292,7 +292,7 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
   }
   
   # Create data frame to plot
-  # NOTE: factor are concatenated across batches
+  # NOTE: factor are concatenated across groupes
   tmp <- lapply(Z, function(z) data.frame(x = z[, factors[1]], y = z[, factors[2]], shape_by = shape_by, color_by = color_by))
   df <- do.call(rbind, tmp)
   

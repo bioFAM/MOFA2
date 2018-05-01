@@ -40,7 +40,7 @@
         }
       }
     }
-    for (h in batchNames(object)) {
+    for (h in groupNames(object)) {
       nodes <- c("Z", "AlphaZ", "SigmaZ", "ThetaZ")
       for (node in nodes){
         if (node %in% names(object@Expectations)){
@@ -49,7 +49,7 @@
       }
     }
     for (m in viewNames(object)) {
-      for (h in batchNames(object)) {
+      for (h in groupNames(object)) {
         object@Expectations$Y[[m]][[h]] <- object@Expectations$Y[[m]][[h]]$E
       }
     }
@@ -68,10 +68,10 @@
   return(object)
 }
 
-# Set view names and batch names for nested list objects (e.g. Y)
-.setViewAndBatchNames <- function(nested_list, view_names, batch_names) {
+# Set view names and group names for nested list objects (e.g. Y)
+.setViewAndGroupNames <- function(nested_list, view_names, group_names) {
   names(nested_list) <- view_names
-  for (view in view_names) { names(nested_list[[view]]) <- batch_names }
+  for (view in view_names) { names(nested_list[[view]]) <- group_names }
   nested_list
 }
 
@@ -103,7 +103,7 @@ subset_augment <- function(mat, pats) {
 }
 
 
-detectPassengers <- function(object, views = "all", factors = "all", r2_threshold = 0.03, batches = "all") {
+detectPassengers <- function(object, views = "all", factors = "all", r2_threshold = 0.03, groups = "all") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -116,13 +116,13 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
   }
   M <- length(views)
 
-  # Define batches
-  if (paste0(batches, sep="", collapse="") == "all") { 
-    batches <- batchNames(object) 
+  # Define groups
+  if (paste0(groups, sep="", collapse="") == "all") { 
+    groups <- groupNames(object) 
   } else {
-    stopifnot(all(batches %in% batchNames(object)))  
+    stopifnot(all(groups %in% groupNames(object)))  
   }
-  H <- length(batches)
+  H <- length(groups)
   
   # Define factors
   factors <- as.character(factors)
@@ -136,19 +136,19 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
   Z <- getFactors(object)
   
   # Identify factors unique to a single view by calculating relative R2 per factor
-  r2 <- calculateVarianceExplained(object, views = views, factors = factors, batches = batches)$R2PerFactor
-  unique_factors <- unique(unlist(lapply(batches, function(h) names(which(rowSums(r2[[h]]>=r2_threshold)==1)) )))
+  r2 <- calculateVarianceExplained(object, views = views, factors = factors, groups = groups)$R2PerFactor
+  unique_factors <- unique(unlist(lapply(groups, function(h) names(which(rowSums(r2[[h]]>=r2_threshold)==1)) )))
   
   # Mask samples that are unique in the unique factors
-  missing <- lapply(getTrainData(object, views, batches), function(views) {
-    lapply(views, function(batch) {
-      sampleNames(object)[apply(batch, 2, function(x) all(is.na(x)))]
+  missing <- lapply(getTrainData(object, views, groups), function(views) {
+    lapply(views, function(group) {
+      sampleNames(object)[apply(group, 2, function(x) all(is.na(x)))]
     })
   })
-  missing <- .setViewAndBatchNames(missing, viewNames(object), batchNames(object))
+  missing <- .setViewAndGroupNames(missing, viewNames(object), groupNames(object))
   for (factor in unique_factors) {
     # view <- names(which(r2[factor,]>=r2_threshold))
-    for (h in batches) {
+    for (h in groups) {
       view <- colnames(r2[[h]][,which(r2[[h]][factor,]>=r2_threshold),drop=F])
       missing_samples <- missing[[view]][[h]]
       if (length(missing_samples) > 0) {
@@ -166,8 +166,8 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
 
 
 flip_factor <- function(model, factor){
-  for(batchnm in names(model@Expectations$Z)) {
-    model@Expectations$Z[[batchnm]][,factor] <- - model@Expectations$Z[[batchnm]][,factor]
+  for(groupnm in names(model@Expectations$Z)) {
+    model@Expectations$Z[[groupnm]][,factor] <- - model@Expectations$Z[[groupnm]][,factor]
   }
   for(viewnm in names(model@Expectations$W)) {
     model@Expectations$W[[viewnm]][,factor] <- -model@Expectations$W[[viewnm]][,factor]

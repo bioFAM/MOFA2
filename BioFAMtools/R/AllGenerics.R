@@ -65,20 +65,20 @@ setGeneric("viewNames", function(object) {standardGeneric("viewNames")})
 setGeneric("viewNames<-", function(object, value) {standardGeneric("viewNames<-")})
 
 ################
-## Batch Names ##
+## group Names ##
 ################
 
-#' @title batchNames: set and retrieve view names
-#' @name batchNames
-#' @rdname batchNames
+#' @title groupNames: set and retrieve view names
+#' @name groupNames
+#' @rdname groupNames
 #' @export
-setGeneric("batchNames", function(object) {standardGeneric("batchNames")})
+setGeneric("groupNames", function(object) {standardGeneric("groupNames")})
 
-#' @name batchNames
-#' @rdname batchNames
-#' @aliases batchNames<-
+#' @name groupNames
+#' @rdname groupNames
+#' @aliases groupNames<-
 #' @export
-setGeneric("batchNames<-", function(object, value) {standardGeneric("batchNames<-")})
+setGeneric("groupNames<-", function(object, value) {standardGeneric("groupNames<-")})
 
 ################
 ## Input Data ##
