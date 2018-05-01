@@ -37,14 +37,14 @@ compareFactors <- function(models, comparison = "all", node= 'Z', ...) {
   if(is.null(names(models))) names(models) <- paste("model", 1: length(models), sep="")
 
   # TODO maybe find a better way to handle that
-  if(node=='Z'){
-      Z <- getExpectations(model, 'Z', 'E')
-    }
-    else{
-      SW <- getExpectations(model, 'SW', 'E')
-      Z  <- do.call('rbind', SW)
-      # concatenate weight matrices across views
-    }
+  # if(node=='Z'){
+  #     Z <- getFactors(models)
+  #   }
+  #   else{
+  #     SW <- getWeights(model)
+  #     Z  <- do.call('rbind', SW)
+  #     # concatenate weight matrices across views
+  #   }
 
   # get latent factors
   LFs <- lapply(seq_along(models), function(modelidx){
