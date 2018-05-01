@@ -26,8 +26,7 @@ subsetFactors <- function(object, factors, keep_intercept=T) {
   } else { 
     stopifnot(all(factors %in% factorNames(object))) 
   }
-
-  if (keep_intercept & object@ModelOptions$learnIntercept == T & !"intercept" %in% factors) {
+  if (keep_intercept & object@ModelOptions$learnIntercept & !"intercept" %in% factors) {
     factors <- c("intercept", factors)
   }
   

@@ -36,7 +36,7 @@ getFactors <- function(object, groups = "all", factors = "all", as.data.frame = 
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get groups
-  if (paste0(groups, collapse="") == "all")   { groups <- groupNames(object) } else { stopifnot(all(groups %in% groupNames(object))) }
+  groups <- .check_and_get_groups(object, groups)
 
   # Get factors
   if (paste0(factors, collapse="") == "all") { factors <- factorNames(object) } 
@@ -154,7 +154,7 @@ getTrainData <- function(object, views = "all", groups = "all", features = "all"
   # Fetch data
   trainData <- lapply(object@TrainData[views], function(e) e[groups])
   trainData <- lapply(1:length(trainData), function(m) lapply(1:length(trainData[[1]]), function(h) trainData[[m]][[h]][features[[m]],,drop=F]))
-  trainData <- .setViewAndgroupNames(trainData, views, groups)
+  trainData <- .name_views_and_groups(trainData, views, groups)
   
   # Convert to long data frame
   if (as.data.frame==T) {

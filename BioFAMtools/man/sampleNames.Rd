@@ -20,8 +20,8 @@ sampleNames(object) <- value
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{value}{list of character vectors with the sample names for every batch}
+\item{value}{list of character vectors with the sample names for every group}
 }
 \value{
-list of character vectors with the sample names for each batch
+list of character vectors with the sample names for each group
 }

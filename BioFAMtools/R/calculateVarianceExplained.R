@@ -15,13 +15,13 @@
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated. 
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
-calculateVarianceExplained <- function(object, views = "all", factors = "all", include_intercept = TRUE, groups = "all", ...) {
+calculateVarianceExplained <- function(object, views = "all", groups = "all", factors = "all", include_intercept = TRUE, ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # check whether the intercept was learned
-  if(!object@ModelOptions$learnIntercept & include_intercept) {
+  if(!object@ModelOptions$learn_intercept & include_intercept) {
     include_intercept <- FALSE
     # warning("No intercept was learned in BioFAM.\n Intercept is not included in the model prediction.")
   }
@@ -68,7 +68,7 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
       apply(Y[[m]][[h]], 2, mean, na.rm=T) 
     })
   })
-  FeatureMean <- .setViewAndgroupNames(FeatureMean, views, groups)
+  FeatureMean <- .name_views_and_groups(FeatureMean, views, groups)
 
   # Sweep out the feature-wise mean to calculate null model residuals
   resNullModel <- lapply(views, function(m) {
@@ -76,7 +76,7 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
       sweep(Y[[m]][[h]], 2, FeatureMean[[m]][[h]], "-")
     })
   })
-  resNullModel <- .setViewAndgroupNames(resNullModel, views, groups)
+  resNullModel <- .name_views_and_groups(resNullModel, views, groups)
   
   # replace masked values on Z by 0 (so that they do not contribute to predictions)
   for (group in groups) { Z[[group]][is.na(Z[[group]])] <- 0 }
@@ -87,7 +87,7 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
       Z[[h]] %*% t(W[[m]])
     })
   })
-  Ypred_m <- .setViewAndgroupNames(Ypred_m, views, groups)
+  Ypred_m <- .name_views_and_groups(Ypred_m, views, groups)
 
   for (view in views) { names(resNullModel[[view]]) <- groups }
 
@@ -99,18 +99,18 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
       ltmp
     })
   })
-  Ypred_mk <- .setViewAndgroupNames(Ypred_mk, views, groups)
+  Ypred_mk <- .name_views_and_groups(Ypred_mk, views, groups)
   
   # If an intercept is included, regress out the intercept from the data
   if (include_intercept) {
       intercept <- getWeights(object,views,"intercept")
       Y <- lapply(views, function(m) lapply(groups, function(h) sweep(Y[[m]][[h]],2,intercept[[m]],"-")))
-      Y <- .setViewAndgroupNames(Y, views, groups)
+      Y <- .name_views_and_groups(Y, views, groups)
   }
 
   # Calculate coefficient of determination per view
   fvar_m <- lapply(groups, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T)))
-  fvar_m <- .setViewAndgroupNames(fvar_m, groups, views)
+  fvar_m <- .name_views_and_groups(fvar_m, groups, views)
 
   # Calculate coefficient of determination per factor and view
   tmp <- lapply(groups, function(h) {

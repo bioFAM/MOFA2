@@ -4,7 +4,7 @@
 \alias{getTrainData}
 \title{getTrainData}
 \usage{
-getTrainData(object, views = "all", batches = "all", features = "all",
+getTrainData(object, views = "all", groups = "all", features = "all",
   as.data.frame = F)
 }
 \arguments{

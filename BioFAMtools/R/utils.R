@@ -69,7 +69,7 @@
 }
 
 # Set view names and group names for nested list objects (e.g. Y)
-.setViewAndGroupNames <- function(nested_list, view_names, group_names) {
+.name_views_and_groups <- function(nested_list, view_names, group_names) {
   names(nested_list) <- view_names
   for (view in view_names) { names(nested_list[[view]]) <- group_names }
   nested_list
@@ -103,7 +103,7 @@ subset_augment <- function(mat, pats) {
 }
 
 
-detectPassengers <- function(object, views = "all", factors = "all", r2_threshold = 0.03, groups = "all") {
+detectPassengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.03) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -136,7 +136,7 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
   Z <- getFactors(object)
   
   # Identify factors unique to a single view by calculating relative R2 per factor
-  r2 <- calculateVarianceExplained(object, views = views, factors = factors, groups = groups)$R2PerFactor
+  r2 <- calculateVarianceExplained(object, views = views, groups = groups, factors = factors)$R2PerFactor
   unique_factors <- unique(unlist(lapply(groups, function(h) names(which(rowSums(r2[[h]]>=r2_threshold)==1)) )))
   
   # Mask samples that are unique in the unique factors
@@ -145,7 +145,7 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
       sampleNames(object)[apply(group, 2, function(x) all(is.na(x)))]
     })
   })
-  missing <- .setViewAndGroupNames(missing, viewNames(object), groupNames(object))
+  missing <- .name_views_and_groups(missing, viewNames(object), groupNames(object))
   for (factor in unique_factors) {
     # view <- names(which(r2[factor,]>=r2_threshold))
     for (h in groups) {
@@ -177,3 +177,32 @@ return(model)
 
 
 
+
+.check_and_get_views <- function(object, views) {
+  if (is.numeric(views)) {
+    stopifnot(all(views <= object@Dimensions$M))
+    viewNames(object)[views] 
+  } else {
+    if (paste0(views, sep = "", collapse = "") == "all") { 
+      viewNames(object)
+    } else {
+      stopifnot(all(views %in% viewNames(object)))
+      views
+    }
+  }
+}
+
+
+.check_and_get_groups <- function(object, groups) {
+  if (is.numeric(groups)) {
+    stopifnot(all(groups <= object@Dimensions$M))
+    groupNames(object)[groups] 
+  } else {
+    if (paste0(groups, sep = "", collapse = "") == "all") { 
+      groupNames(object)
+    } else {
+      stopifnot(all(groups %in% groupNames(object)))
+      groups
+    }
+  }
+}

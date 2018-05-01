@@ -57,8 +57,11 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   # }
   tryCatch(object@ModelOptions <- as.list(h5read(file, 'model_opts', read.attributes=T)), error = function(x) { print("Model opts not found, not loading it...") })
   for (opt in names(object@ModelOptions)) {
-    if (opt == "False" | opt == "True") {
+    if (object@ModelOptions[opt] == "False" | object@ModelOptions[opt] == "True") {
       object@ModelOptions[opt] <- as.logical(object@ModelOptions[opt])
+      if (opt == "learn_intercept") {
+        object@ModelOptions["learnIntercept"] <- as.logical(object@ModelOptions[opt])
+      }
     }
   }
 
@@ -238,10 +241,10 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   if (sortFactors) {
     r2 <- rowSums(sapply(calculateVarianceExplained(object)$R2PerFactor, function(e) rowSums(e)))
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
-    if (object@ModelOptions$learnIntercept==T) { order_factors <- c("intercept",order_factors) }
+    if (object@ModelOptions$learnIntercept) { order_factors <- c("intercept", order_factors) }
     object <- subsetFactors(object, order_factors)
-    if (object@ModelOptions$learnIntercept==T) { 
-     factorNames(object) <- c("intercept",1:(object@Dimensions$K-1))
+    if (object@ModelOptions$learnIntercept) { 
+     factorNames(object) <- c("intercept", 1:(object@Dimensions$K-1))
     } else {
      factorNames(object) <- c(1:object@Dimensions$K) 
     }
