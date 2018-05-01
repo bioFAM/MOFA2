@@ -14,6 +14,7 @@
 #sampleGroups="$inFolder/z_groups.txt"
 inFolder="test_data"
 inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" )
+X_Files = ( "$inFolder/positions.txt" )
 
 # Options for the input files
 delimiter=" " # delimiter, such as "\t", "" or " "
@@ -39,7 +40,7 @@ transpose_noise=0
 ## Define view names
 ## views=( wt ko )
 #views=( unique )
-likelihoods=( gaussian gaussian gaussian )
+likelihoods=( gaussian )
 
 # Define view names
 views=( view_A view_B view_C )
@@ -98,6 +99,7 @@ cmd='python ../build_model/entry_point.py
 	--freqDrop $freqDrop
 	--dropR2 $dropR2
 	--seed $seed
+	--X_Files ${X_Files[@]}
 '
 #
 #--sampleGroups $sampleGroups
