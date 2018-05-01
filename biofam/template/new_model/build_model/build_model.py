@@ -51,24 +51,24 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         N = data[0].shape[0]
         D = s.asarray([data[m].shape[1] for m in range(M)])
 
-        if model_opts["transpose_sparsity"]:
+        # if model_opts["transpose_sparsity"]:
 
-           if dataX is None :
-               view_has_covariance_prior = [None] * M
-           else:
-               view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
+        #    if dataX is None :
+        #        view_has_covariance_prior = [None] * M
+        #    else:
+        #        view_has_covariance_prior = [dataX[m] is not None for m in range(M)]
 
-           #for test purpose
-           if (dataX is None) and (model_opts["sample_X"]):
-               dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
-               dataClust = [None] * M
-               view_has_covariance_prior = [True] * M
+        #    #for test purpose
+        #    if (dataX is None) and (model_opts["sample_X"]):
+        #        dataX = [s.random.normal(0, 1, [D[m], 2]) for m in range(M)]
+        #        dataClust = [None] * M
+        #        view_has_covariance_prior = [True] * M
 
-        #for test purpose
-        else:
-           if (dataX is None) and (model_opts["sample_X"]):
-               dataX = s.random.normal(0, 1, [N, 2])
-               dataClust = None
+        # #for test purpose
+        # else:
+        #    if (dataX is None) and (model_opts["sample_X"]):
+        #        dataX = s.random.normal(0, 1, [N, 2])
+        #        dataClust = None
 
     K = model_opts["K"]
 
@@ -87,13 +87,13 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
 
     #TODO : add covariates by passing dataCovariates in argument of build_model (loading before in entry_point)
     # If learnIntercept is True, add one extra factor as a covariate with constant 1s
-    if model_opts["learnIntercept"]:
+    if model_opts["learn_intercept"]:
         dim["K"] += 1
-        if model_opts['covariatesFiles'] is not None:
-            model_opts['covariatesFiles'] = s.insert(model_opts['covariatesFiles'], obj=0, values=1, axis=1)
+        if model_opts['covariates_files'] is not None:
+            model_opts['covariates_files'] = s.insert(model_opts['covariates_files'], obj=0, values=1, axis=1)
             model_opts['scale_covariates'].insert(0,False)
         else:
-            model_opts['covariatesFiles'] = s.ones((dim["N"],1))
+            model_opts['covariates_files'] = s.ones((dim["N"],1))
             model_opts['scale_covariates'] = [False]
 
     #####################################
@@ -104,7 +104,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     init = initNewModel(dim, data, model_opts["likelihood"])
 
     # Initialise latent variables
-    if model_opts['transpose_sparsity']:
+    if model_opts['sample_wise_sparsity']:
         priorZ_mean_T0 = 0.
         priorZ_meanT1 = 0.
         priorZ_varT0 = 1.
@@ -128,19 +128,19 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         # Warning : precompute_pcovinv must be True if and only if "AlphaZ" and "SigmaZ" not in init.nodes
         # (currently, we chosed that if we have no dataX, we do not have "AlphaZ" since it is redundant with "SigmaAlphaW"
         # and if we have dataX, we have necessarily "SigmaAlphaZ")
-        init.initZ(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar,  covariates=model_opts['covariatesFiles'], #covariates=dataCovariates,
+        init.initZ(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar,  covariates=model_opts['covariates_files'], #covariates=dataCovariates,
                    scale_covariates=model_opts['scale_covariates'], precompute_pcovinv=precompute_pcovinv)
 
 
     #Initialise weights
-    if model_opts['transpose_sparsity']:
+    if model_opts['sample_wise_sparsity']:
         pmean = 0.;
         pcov = 1.;
         qmean = "random";
         qvar = 1.
         precompute_pcovinv = [(dataX is None) and not(model_opts["ARD_per_view"])] * M
         # Warning : precompute_pcovinv must be True if and only if "AlphaW" and "SigmaAlphaW" not in init.nodes
-        init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariatesFiles'], #covariates=dataCovariates,
+        init.initW(pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, covariates=model_opts['covariates_files'], #covariates=dataCovariates,
                    scale_covariates=model_opts['scale_covariates'], precompute_pcovinv=precompute_pcovinv)
     else:
         priorW_mean_S0 = 0.;
@@ -167,7 +167,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
         pa = 1e-14 ; pb = 1e-14
 
-    if model_opts['transpose_sparsity']:
+    if model_opts['sample_wise_sparsity']:
         if dataX is not None:
             params = [None] * M
             for m in range(M):
@@ -195,10 +195,10 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     else:
         pa = 1e-14; pb = 1e-14
 
-    if model_opts['transpose_sparsity']:
+    if model_opts['sample_wise_sparsity']:
         qa = 1.; qb = 1.
         init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
-    if not model_opts['transpose_sparsity']:
+    if not model_opts['sample_wise_sparsity']:
         if dataX is not None:
             # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
             if dataClust is None:
@@ -226,7 +226,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         priorTheta_b = 1.
 
 
-    if model_opts["transpose_sparsity"]:
+    if model_opts["sample_wise_sparsity"]:
         # Initialise sparsity on the factors
         initTheta_a = 1.
         initTheta_b = 0.001 #1.
@@ -256,7 +256,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         #     for m in range(M):
         #     learnTheta[m][:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
         learnTheta_ix = [np.ones(K)] * M
-        if model_opts["learnIntercept"]:
+        if model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
         init.initThetaMixedW_mk(learnTheta_ix, pa=priorTheta_a, pb=priorTheta_b, qa=initTheta_a, qb=initTheta_b)
@@ -273,10 +273,10 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         pa = 1e-14; pb = 1e-14
 
     qa=1.; qb=1.
-    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb, transposed=model_opts["transpose_noise"])
+    init.initTau(pa=pa, pb=pb, qa=qa, qb=qb, transposed=model_opts["sample_wise_noise"])
 
     # Observed data
-    init.initY(transpose_noise=model_opts["transpose_noise"])
+    init.initY(sample_wise_noise=model_opts["sample_wise_noise"])
 
 
     ############################################
@@ -284,7 +284,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
     ############################################
 
     nodes = init.getNodes()
-    if model_opts['transpose_sparsity']:
+    if model_opts['sample_wise_sparsity']:
         nodes["ThetaZ"].addMarkovBlanket(SZ=nodes["SZ"])
         nodes["AlphaZ"].addMarkovBlanket(SZ=nodes["SZ"])
         nodes["SZ"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"], ThetaZ=nodes["ThetaZ"], Y=nodes["Y"], W=nodes["W"],Tau=nodes["Tau"])

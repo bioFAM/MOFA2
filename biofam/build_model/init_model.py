@@ -483,19 +483,19 @@ class initModel(object):
             #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
-    def initY(self, transpose_noise=False):
+    def initY(self, sample_wise_noise=False):  # TODO: make independent of noise
         """Method to initialise the observations"""
         Y_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m]=="gaussian":
-                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], transpose_noise=transpose_noise)
+                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], sample_wise_noise=sample_wise_noise)
             elif self.lik[m]=="poisson":
                 # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
-                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None, transpose_noise=transpose_noise)
+                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None, sample_wise_noise=sample_wise_noise)
             elif self.lik[m]=="bernoulli":
                 # Y_list[m] = Bernoulli_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
                 # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
-                Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None, transpose_noise=transpose_noise)
+                Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None, sample_wise_noise=sample_wise_noise)
                 # Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
             # elif self.lik[m]=="warp":
             #     print "Not implemented"
