@@ -150,7 +150,7 @@ plotVarianceExplained <- function(object, groups = "all", cluster = T, ...) {
   
   # Calculate Variance Explained
   R2_list <- calculateVarianceExplained(object, ...)
-  fvar_m  <- Reduce(function(a, b) Map('+', a, b), R2_list$R2Total)
+  fvar_m  <- Reduce(function(a, b) Map('+', a, b), R2_list$R2Total[groups])
   fvar_mk <- Reduce('+', R2_list$R2PerFactor[groups])
 
   ## Plot variance explained by factor ##
@@ -219,4 +219,90 @@ plotVarianceExplained <- function(object, groups = "all", cluster = T, ...) {
   return(p)
 }
 
+#' @title Plot variance explained by the model in groups
+#' @name plotVarianceExplainedInGroups
+#' @description Method to plot variance explained (R-squared) by the MOFA model for each group and latent factor. \cr
+#' As a measure of variance explained for gaussian data we adopt the coefficient of determination (R2). \cr
+#' For details on the computation see the help of the \code{\link{calculateVarianceExplained}} function
+#' @param object a \code{\link{MOFAmodel}} object.
+#' @param cluster logical indicating whether to do hierarchical clustering on the plot
+#' @param ... extra arguments to be passed to \code{\link{calculateVarianceExplained}}
+#' @return ggplot object
+#' @import pheatmap ggplot2 reshape2
+#' @importFrom cowplot plot_grid
+#' @export
+plotVarianceExplainedInGroups <- function(object, views = "all", cluster = T, ...) {
+
+  views <- .check_and_get_views(object, views)
+  
+  # Calculate Variance Explained
+  R2_list <- calculateVarianceExplained(object, ...)
+  fvar_m  <- lapply(R2_list$R2Total, function(p) Reduce('+', p[views]))
+  fvar_mk <- sapply(R2_list$R2PerFactor, function(p) rowSums(as.matrix(p[,views])))
+
+  ## Plot variance explained by factor ##
+  
+  # convert matrix to data frame for ggplot2  
+  fvar_mk_df <- reshape2::melt(fvar_mk, varnames = c("factor", "group"))
+  fvar_mk_df$factor <- factor(fvar_mk_df$factor)
+  
+  # If multiple views, sort factors according to hierarchical clustering
+  if (cluster==TRUE & ncol(fvar_mk)>1) {
+    hc <- hclust(dist(t(fvar_mk)))
+    fvar_mk_df$group <- factor(fvar_mk_df$group, levels = colnames(fvar_mk)[hc$order])
+  }
+  
+  # Grid plot with the variance explained per factor and group
+  hm <- ggplot(fvar_mk_df, aes(group, factor)) + 
+    geom_tile(aes(fill=value), color="black") +
+    guides(fill=guide_colorbar("R2")) +
+    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar") +
+    ylab("Latent factor") +
+    theme(
+      # plot.margin = margin(5,5,5,5),
+      plot.title = element_text(size=17, hjust=0.5),
+      axis.title.x = element_blank(),
+      axis.text.x = element_text(size=11, angle=60, hjust=1, vjust=1, color="black"),
+      axis.text.y = element_text(size=12, color="black"),
+      axis.title.y = element_text(size=15),
+      axis.line = element_blank(),
+      axis.ticks =  element_blank(),
+      panel.background = element_blank()
+    )
+  hm <- hm + ggtitle("Variance explained per factor")  + 
+    guides(fill=guide_colorbar("R2"))
+  
+  ## Plot variance explained per group ##
+  
+  # Create data.frame for ggplot
+  fvar_m_df <- data.frame(group=names(fvar_m), R2=unlist(fvar_m))
+  
+  # If multiple views, sort factors according to hierarchical clustering
+  if (cluster==TRUE & ncol(fvar_mk)>1) {
+    fvar_m_df$group <- factor(fvar_m_df$group, levels = colnames(fvar_mk)[hc$order])
+  }
+  
+  # Barplot with variance explained per group
+  bplt <- ggplot( fvar_m_df, aes(x=group, y=R2)) + 
+    ggtitle("Total variance explained per group") +
+    geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
+    xlab("") + ylab("R2") +
+    scale_y_continuous(expand=c(0.01,0.01)) +
+    theme(
+      plot.margin = unit(c(1,2.4,0,0), "cm"),
+      panel.background = element_blank(),
+      plot.title = element_text(size=17, hjust=0.5),
+      axis.ticks.x = element_blank(),
+      # axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size=12, color="black"),
+      axis.title.y = element_text(size=13, color="black"),
+      axis.line = element_line(size=rel(1.0), color="black")
+    )
+  
+  # Join the two plots
+  p <- plot_grid(bplt, hm, align="v", nrow=2, rel_heights=c(1/3,2/3), axis="l")
+  
+  return(p)
+}
 
