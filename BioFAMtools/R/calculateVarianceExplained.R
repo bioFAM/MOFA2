@@ -132,8 +132,101 @@ calculateVarianceExplained <- function(object, views = "all", groups = "all", fa
  
 }
 
+
 #' @title Plot variance explained by the model
 #' @name plotVarianceExplained
+#' @description Method to plot variance explained (R-squared) by the MOFA model for each view, each group, and latent factor. \cr
+#' As a measure of variance explained for gaussian data we adopt the coefficient of determination (R2). \cr
+#' For details on the computation see the help of the \code{\link{calculateVarianceExplained}} function
+#' @param object a \code{\link{MOFAmodel}} object.
+#' @param cluster logical indicating whether to do hierarchical clustering on the plot
+#' @param ... extra arguments to be passed to \code{\link{calculateVarianceExplained}}
+#' @return ggplot object
+#' @import pheatmap ggplot2 reshape2
+#' @importFrom cowplot plot_grid
+#' @export
+plotVarianceExplained <- function(object, views = "all", groups = "all", cluster = T, ...) {
+
+  views  <- .check_and_get_views(object, views)
+  groups <- .check_and_get_groups(object, groups)
+  
+  # Calculate Variance Explained
+  R2_list <- calculateVarianceExplained(object, ...)
+  fvar_m  <- lapply(R2_list$R2Total[groups], function(e) e[views])
+  fvar_mk <- lapply(R2_list$R2PerFactor[groups], function(e) e[,views])
+
+  ## Plot variance explained by factor ##
+  
+  # convert matrix to data frame for ggplot2  
+  fvar_mk_df <- reshape2::melt(
+    lapply(fvar_mk, function(gr) 
+      reshape2::melt(gr, varnames = c("factor", "view"))
+    ), id.vars=c("factor", "view", "value")
+  )
+  colnames(fvar_mk_df)[ncol(fvar_mk_df)] <- "group"
+  fvar_mk_df$factor <- factor(fvar_mk_df$factor)
+  ## Plot variance explained per view ##
+  
+  # Create data.frame for ggplot
+  fvar_m_df <- melt(sapply(fvar_m, function(e) sapply(e, function(x) x)), 
+                    varnames=c("view", "group"),
+                    value.name="R2")
+
+  hms   <- list()
+  bplts <- list()
+
+  for (gr in unique(fvar_mk_df$group)) {
+
+    # Grid plot with the variance explained per factor and view
+    hm <- ggplot(fvar_mk_df[fvar_mk_df$group == gr,], aes(view, factor)) + 
+      geom_tile(aes(fill=value), color="black") +
+      guides(fill=guide_colorbar("R2")) +
+      scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar") +
+      ylab("Latent factor") +
+      theme(
+        # plot.margin = margin(5,5,5,5),
+        plot.title = element_text(size=17, hjust=0.5),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(size=11, angle=60, hjust=1, vjust=1, color="black"),
+        axis.text.y = element_text(size=12, color="black"),
+        axis.title.y = element_text(size=15),
+        axis.line = element_blank(),
+        axis.ticks =  element_blank(),
+        panel.background = element_blank()
+      )
+    hm <- hm + ggtitle("Variance explained per factor")  + 
+      guides(fill=guide_colorbar("R2"))
+    hms[[gr]] <- hm
+    
+    # Barplot with variance explained per view
+    bplt <- ggplot(fvar_m_df[fvar_m_df$group == gr,], aes(x=view, y=R2)) + 
+      ggtitle("Total variance explained per view") +
+      geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
+      xlab("") + ylab("R2") +
+      scale_y_continuous(expand=c(0.01,0.01)) +
+      theme(
+        plot.margin = unit(c(1,2.4,0,0), "cm"),
+        panel.background = element_blank(),
+        plot.title = element_text(size=17, hjust=0.5),
+        axis.ticks.x = element_blank(),
+        # axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size=12, color="black"),
+        axis.title.y = element_text(size=13, color="black"),
+        axis.line = element_line(size=rel(1.0), color="black")
+      )
+    bplts[[gr]] <- bplt
+  }
+    
+  # Join the two plots
+  p <- plot_grid(plotlist = c(bplts, hms), align="v", nrow=2, ncol=length(unique(fvar_mk_df$group)), rel_heights=c(1/3,2/3), axis="l")
+  
+  return(p)
+}
+
+
+#' @title Plot variance explained by the model
+#' @name plotVarianceExplainedInViews
 #' @description Method to plot variance explained (R-squared) by the MOFA model for each view and latent factor. \cr
 #' As a measure of variance explained for gaussian data we adopt the coefficient of determination (R2). \cr
 #' For details on the computation see the help of the \code{\link{calculateVarianceExplained}} function
@@ -144,7 +237,7 @@ calculateVarianceExplained <- function(object, views = "all", groups = "all", fa
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plotVarianceExplained <- function(object, groups = "all", cluster = T, ...) {
+plotVarianceExplainedInViews <- function(object, groups = "all", cluster = T, ...) {
 
   groups <- .check_and_get_groups(object, groups)
   
@@ -219,6 +312,7 @@ plotVarianceExplained <- function(object, groups = "all", cluster = T, ...) {
   return(p)
 }
 
+
 #' @title Plot variance explained by the model in groups
 #' @name plotVarianceExplainedInGroups
 #' @description Method to plot variance explained (R-squared) by the MOFA model for each group and latent factor. \cr
@@ -277,7 +371,7 @@ plotVarianceExplainedInGroups <- function(object, views = "all", cluster = T, ..
   # Create data.frame for ggplot
   fvar_m_df <- data.frame(group=names(fvar_m), R2=unlist(fvar_m))
   
-  # If multiple views, sort factors according to hierarchical clustering
+  # If multiple groups, sort factors according to hierarchical clustering
   if (cluster==TRUE & ncol(fvar_mk)>1) {
     fvar_m_df$group <- factor(fvar_m_df$group, levels = colnames(fvar_mk)[hc$order])
   }
