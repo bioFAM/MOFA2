@@ -33,7 +33,7 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
   if(!factor %in% factorNames(object)) { stop("factor not recognised") }
   
   # Collect relevant data
-  N <- object@Dimensions[["N"]]
+  N <- sum(object@Dimensions[["N"]])
   Z <- getFactors(object, factors = factor, as.data.frame = TRUE)
   
   # get groups
@@ -63,11 +63,11 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
     }
     
   } else {
-    group_by <- rep(TRUE,N)
+    group_by <- rep(TRUE, N)
     groupLegend <- F
   }
   
-  names(group_by) <- sampleNames(object)
+  names(group_by) <- unname(do.call(c, sampleNames(object)))
   Z$group_by <- group_by[Z$sample]
 
   # Remove missing samples
@@ -530,7 +530,7 @@ plotFactorCor <- function(object, method = "pearson", ...) {
   Z <- getFactors(object)
   
   # Remove intercept
-  if(object@ModelOptions$learnIntercept==TRUE) Z <- lapply(Z, function(z) z[,-1])
+  if(object@ModelOptions$LearnIntercept) Z <- lapply(Z, function(z) z[,-1])
   
   # Compute and plot correlation
   r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))

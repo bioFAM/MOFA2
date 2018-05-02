@@ -59,7 +59,7 @@ runBioFAM <- function(object, DirOptions, ..., biofamPath="biofam") {
     arglist$covariatesFile <- NULL
     arglist$scale_covariates <- NULL
   }
-  arglist$learnIntercept <- as.logical(object@ModelOptions$learnIntercept)
+  arglist$LearnIntercept <- as.logical(object@ModelOptions$LearnIntercept)
   if (! object@ModelOptions$sparsity) {
     arglist$learnTheta <- rep(0, object@Dimensions$M) 
   } else {

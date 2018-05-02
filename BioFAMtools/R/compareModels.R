@@ -51,7 +51,7 @@ compareFactors <- function(models, comparison = "all", show_rownames=FALSE, show
     Z <- getFactors(model)
     # NOTE: concatenate all groups by default
     Z <- do.call(rbind, Z)
-    if (model@ModelOptions$learnIntercept==TRUE) 
+    if (model@ModelOptions$LearnIntercept) 
       Z <- Z[,-1, drop=FALSE]
     Z
     })
@@ -136,7 +136,7 @@ compareModels <- function(models, show_modelnames = FALSE) {
   elbo_vals <- sapply(models, getELBO)
   n_factors <- sapply(models, function(m) {
     n_fac <- getDimensions(m)$K
-    if(m@ModelOptions$learnIntercept) n_fac <- n_fac - 1
+    if(m@ModelOptions$LearnIntercept) n_fac <- n_fac - 1
     n_fac
     })
   if(is.null(names(models))) names(models) <- paste0("model_", seq_along(models))

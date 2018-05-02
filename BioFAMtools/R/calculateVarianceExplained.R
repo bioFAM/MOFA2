@@ -21,7 +21,7 @@ calculateVarianceExplained <- function(object, views = "all", groups = "all", fa
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # check whether the intercept was learned
-  if(!object@ModelOptions$learn_intercept & include_intercept) {
+  if(!object@ModelOptions$LearnIntercept & include_intercept) {
     include_intercept <- FALSE
     # warning("No intercept was learned in BioFAM.\n Intercept is not included in the model prediction.")
   }
@@ -61,6 +61,7 @@ calculateVarianceExplained <- function(object, views = "all", groups = "all", fa
   W <- getWeights(object, views, factors)
   Z <- getFactors(object, groups, factors)
   Y <- getExpectations(object, "Y")  # for non-Gaussian likelihoods the pseudodata is considered
+  Y <- lapply(Y, function(m) lapply(m, t))
   
   # Calulcate feature-wise means as null model
   FeatureMean <- lapply(views, function(m) {
@@ -72,8 +73,8 @@ calculateVarianceExplained <- function(object, views = "all", groups = "all", fa
 
   # Sweep out the feature-wise mean to calculate null model residuals
   resNullModel <- lapply(views, function(m) {
-    lapply(groups, function(h) {
-      sweep(Y[[m]][[h]], 2, FeatureMean[[m]][[h]], "-")
+    lapply(groups, function(p) {
+      sweep(Y[[m]][[p]], 2, FeatureMean[[m]][[p]], "-")
     })
   })
   resNullModel <- .name_views_and_groups(resNullModel, views, groups)
@@ -104,7 +105,7 @@ calculateVarianceExplained <- function(object, views = "all", groups = "all", fa
   # If an intercept is included, regress out the intercept from the data
   if (include_intercept) {
       intercept <- getWeights(object,views,"intercept")
-      Y <- lapply(views, function(m) lapply(groups, function(h) sweep(Y[[m]][[h]],2,intercept[[m]],"-")))
+      Y <- lapply(views, function(m) lapply(groups, function(h) sweep(Y[[m]][[h]], 2, intercept[[m]], "-")))
       Y <- .name_views_and_groups(Y, views, groups)
   }
 
@@ -145,22 +146,17 @@ calculateVarianceExplained <- function(object, views = "all", groups = "all", fa
 #' @export
 plotVarianceExplained <- function(object, groups = "all", cluster = T, ...) {
 
-  if (paste0(groups, collapse="") == "all") { 
-    groups <- groupNames(object) 
-  } else if (is.numeric(groups)) { 
-    groups <- groupNames(object)[groups]
-  }
-  stopifnot(all(groups %in% groupNames(object)))
+  groups <- .check_and_get_groups(object, groups)
   
   # Calculate Variance Explained
   R2_list <- calculateVarianceExplained(object, ...)
-  fvar_m  <- Reduce('+', R2_list$R2Total[groups])
+  fvar_m  <- Reduce(function(a, b) Map('+', a, b), R2_list$R2Total)
   fvar_mk <- Reduce('+', R2_list$R2PerFactor[groups])
 
   ## Plot variance explained by factor ##
   
   # convert matrix to data frame for ggplot2  
-  fvar_mk_df <- reshape2::melt(fvar_mk, varnames = c("factor","view"))
+  fvar_mk_df <- reshape2::melt(fvar_mk, varnames = c("factor", "view"))
   fvar_mk_df$factor <- factor(fvar_mk_df$factor)
   
   # If multiple views, sort factors according to hierarchical clustering

@@ -46,10 +46,10 @@ plotDataHeatmap <- function(object, view, factor, groups = "all", features = 50,
   if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(view %in% viewNames(object))
 
-  if (paste0(groups, collapse="") == "all") { groups <- groupNames(object) } else { stopifnot(all(groups %in% groupNames(object))) }
+  groups <- .check_and_get_groups(object, groups)
 
   if(is.numeric(factor)) {
-      if (object@ModelOptions$learnIntercept == T) factor <- factorNames(object)[factor+1]
+      if (object@ModelOptions$LearnIntercept == T) factor <- factorNames(object)[factor+1]
       else factor <- factorNames(object)[factor]
     } else{ stopifnot(factor %in% factorNames(object)) }
 
@@ -77,9 +77,13 @@ plotDataHeatmap <- function(object, view, factor, groups = "all", features = 50,
   
   # Define features
   if (class(features) == "numeric") {
-    features <- names(tail(sort(abs(W)), n=features))
-    stopifnot(all(features %in% featureNames(object)[[view]]))
-  } else if (class(features)=="character") {
+    if (length(features) == 1) {
+      features <- names(tail(sort(abs(W)), n=features))
+    } else {
+      features <- names(sort(-abs(W))[features])
+    }
+    stopifnot(all(features %in% featureNames(object)[[view]]))  
+  } else if (class(features) == "character") {
     stopifnot(all(features %in% featureNames(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
@@ -87,7 +91,7 @@ plotDataHeatmap <- function(object, view, factor, groups = "all", features = 50,
   data <- data[features,]
   
   # Sort samples according to latent factors
-  if (sortSamples==T) {
+  if (sortSamples) {
     order_samples <- names(sort(Z, decreasing=T))
     order_samples <- order_samples[order_samples %in% colnames(data)]
     data <- data[,order_samples]
@@ -138,7 +142,7 @@ plotDataHeatmap <- function(object, view, factor, groups = "all", features = 50,
 #' @import ggplot2
 #' @import dplyr
 #' @export
-plotDataScatter <- function(object, view, factor, features = 10,
+plotDataScatter <- function(object, view, factor, groups = "all", features = 10,
                             color_by=NULL, name_color="",  
                             shape_by=NULL, name_shape="") {
   
@@ -146,23 +150,33 @@ plotDataScatter <- function(object, view, factor, features = 10,
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(factor)==1)
   stopifnot(length(view)==1)
+  if (is.numeric(view)) view <- viewNames(object)[view]
   if (!view %in% viewNames(object)) stop(sprintf("The view %s is not present in the object",view))
 
+  groups <- .check_and_get_groups(object, groups)
+
   if(is.numeric(factor)) {
-      if (object@ModelOptions$learnIntercept == T) factor <- factorNames(object)[factor+1]
+      if (object@ModelOptions$LearnIntercept == T) factor <- factorNames(object)[factor+1]
       else factor <- factorNames(object)[factor]
     } else{ stopifnot(factor %in% factorNames(object)) }
       
   # Collect relevant data
   N <- getDimensions(object)[["N"]]
-  Z <- getFactors(object)[,factor]
-  W <- getWeights(object, views=view, factors=factor)[,1]
-  Y <- object@TrainData[[view]]
+  W <- getWeights(object)[[view]][,factor]
+  Y <- do.call(cbind, object@TrainData[[view]][groups])
+  # NOTE: By default concatenate all the groups
+  Z <- lapply(getFactors(object)[groups], function(z) as.matrix(z[,factor]))
+  Z <- do.call(rbind, Z)[,1]
+  Z <- Z[!is.na(Z)]
   
   # Get features
   if (class(features) == "numeric") {
-    features <- names(tail(sort(abs(W)), n=features))
-    stopifnot(all(features %in% featureNames(object)[[view]]))
+    if (length(features) == 1) {
+      features <- names(tail(sort(abs(W)), n=features))
+    } else {
+      features <- names(sort(-abs(W))[features])
+    }
+    stopifnot(all(features %in% featureNames(object)[[view]]))  
   } else if (class(features)=="character") {
     stopifnot(all(features %in% featureNames(object)[[view]]))
   } else {
@@ -189,13 +203,13 @@ plotDataScatter <- function(object, view, factor, features = 10,
       else stop("'color_by' was specified but it was not recognised, please read the documentation")
       # It is a vector of length N
     } else if (length(color_by) > 1) {
-      stopifnot(length(color_by) == N)
+      stopifnot(length(color_by) == ncol(Y))
       # color_by <- as.factor(color_by)
     } else {
       stop("'color_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
-    color_by <- rep(TRUE,N)
+    color_by <- rep(TRUE, ncol(Y))
     colorLegend <- F
   }
   
@@ -217,20 +231,20 @@ plotDataScatter <- function(object, view, factor, features = 10,
       # It is a vector of length N
       # It is a vector of length N
     } else if (length(shape_by) > 1) {
-      stopifnot(length(shape_by) == N)
+      stopifnot(length(shape_by) == ncol(Y))
     } else {
       stop("'shape_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
-    shape_by <- rep(TRUE,N)
+    shape_by <- rep(TRUE, ncol(Y))
     shapeLegend <- F
   }
   
   
   # Create data frame 
-  df1 <- data.frame(sample=names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors=F)
-  df2 <- getTrainData(object, views=view, features = list(features), as.data.frame=T)
-  df <- dplyr::left_join(df1,df2, by="sample")
+  df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = F)
+  df2 <- getTrainData(object, views = view, groups = groups, features = list(features), as.data.frame = T)
+  df <- dplyr::left_join(df1, df2, by = "sample")
   
   #remove values missing color or shape annotation
   # if(!showMissing) df <- df[!(is.nan(df$shape_by) & !(is.nan(df$color_by))]
@@ -296,27 +310,28 @@ plotTilesData <- function(object, colors = NULL) {
   if (length(colors)!=M) stop("Length of 'colors' does not match the number of views")
   names(colors) <- viewNames(object)
   
-  
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  ovw <- sapply(TrainData, function(dat) apply(dat,2,function(s) !all(is.na(s))))
+  ovw <- sapply(TrainData, function(datgr) sapply(datgr, function(dat) apply(dat, 2, function(s) !all(is.na(s)))))
   
   # Remove samples with no measurements
-  ovw <- ovw[apply(ovw,1,any),, drop=FALSE]
+  ovw <- ovw[apply(ovw, 1, any),, drop=FALSE]
+  if (is.null(rownames(ovw))) rownames(ovw) <- as.character(1:nrow(ovw))
   
   # Melt to data.frame
   molten_ovw <- melt(ovw, varnames=c("sample", "view"))
   
   # order samples
   molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw)[order(rowSums(ovw), decreasing = T)])
+
   n <- length(unique(molten_ovw$sample))
   
   # Add number of samples and features per view
   molten_ovw$combi <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
-  molten_ovw$ntotal <- paste("n=", colSums(ovw)[as.character(molten_ovw$view) ], sep="")
-  molten_ovw$ptotal <- paste("d=", sapply(TrainData, nrow)[as.character(molten_ovw$view) ], sep="")
+  molten_ovw$ntotal <- paste("n=", colSums(ovw)[ as.character(molten_ovw$view) ], sep="")
+  molten_ovw$ptotal <- paste("d=", sapply(TrainData, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
     
   # Define y-axis label
-  molten_ovw <-  mutate(molten_ovw,view_label = paste(view, ptotal, sep="\n"))
+  molten_ovw <-  mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"))
   
   # Plot
   p <- ggplot(molten_ovw, aes(x=sample, y=view_label, fill=combi)) +
@@ -325,10 +340,10 @@ plotTilesData <- function(object, colors = NULL) {
               aes(x=levels(molten_ovw$sample)[n/2],label=ntotal), size=6) +
     scale_fill_manual(values = c('missing'="grey", colors)) +
     # ggtitle("Samples available for training") +
-    xlab(paste0("Samples (n=",n,")")) + ylab("") +
+    xlab(paste0("Samples (n=", n, ")")) + ylab("") +
     guides(fill=F) + 
     theme(
-      axis.text.x =element_blank(),
+      axis.text.x = element_blank(),
       panel.background = element_rect(fill="white"),
       text = element_text(size=16),
       axis.ticks.y = element_blank(),

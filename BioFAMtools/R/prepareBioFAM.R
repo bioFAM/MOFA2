@@ -167,7 +167,7 @@ getDefaultDataOptions <- function() {
 #'  \item{\strong{numFactors}:}{ numeric indicating the initial number of factors. 
 #'  If you want to learn the number of factors automaticallty and you have no prior expectation, 
 #'  we recommend setting this to a large value, around 50. Default is 25.}
-#'  \item{\strong{learnIntercept}:}{ logical indicating whether to learn an intercept term to capture differences in feature means.
+#'  \item{\strong{LearnIntercept}:}{ logical indicating whether to learn an intercept term to capture differences in feature means.
 #'  This prevents you from having to center the data, so this option is always recommended. Default is TRUE.}
 #'  \item{\strong{sparsity}:}{ logical indicating whether to use the sparse model. 
 #'  This is always recommended, as it will make the loadings more interpretable. Default is TRUE.}
@@ -191,7 +191,7 @@ getDefaultModelOptions <- function(object) {
   # Define default model options
   ModelOptions <- list(
     likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    learnIntercept = TRUE,      # (bool) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
+    LearnIntercept = TRUE,      # (bool) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
     numFactors = 25,            # (numeric) initial number of latent factors
     sparsity = TRUE,            # use feature-wise sparsity?
     covariates = NULL           # no covariates by default

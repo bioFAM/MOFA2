@@ -32,14 +32,16 @@
 
   # Update expectations
   if (is.list(object@Expectations$Z[[1]]) & ("E" %in% names(object@Expectations$Z[[1]]))) {
+    # Multi-view nodes
     for (m in viewNames(object)) {
-      nodes <- c("W", "Tau", "AlphaW", "SigmaAlphaW", "ThetaW")
+      nodes <- c("W", "AlphaW", "SigmaAlphaW", "ThetaW")
       for (node in nodes){
         if (node %in% names(object@Expectations)){
           object@Expectations[[node]][[m]] <- object@Expectations[[node]][[m]]$E
         }
       }
     }
+    # Multi-group nodes
     for (h in groupNames(object)) {
       nodes <- c("Z", "AlphaZ", "SigmaZ", "ThetaZ")
       for (node in nodes){
@@ -48,21 +50,23 @@
         }
       }
     }
+    # Multi-view & multi-group nodes
     for (m in viewNames(object)) {
       for (h in groupNames(object)) {
-        object@Expectations$Y[[m]][[h]] <- object@Expectations$Y[[m]][[h]]$E
+        object@Expectations$Y[[m]][[h]]   <- object@Expectations$Y[[m]][[h]]$E
+        object@Expectations$Tau[[m]][[h]] <- object@Expectations$Tau[[m]][[h]]$E
       }
     }
   }
   
   
-  # update learnMean to learnIntercept
-  if ("learnMean" %in% names(object@ModelOptions)) {
+  # update LearnMean to LearnIntercept
+  if ("LearnMean" %in% names(object@ModelOptions)) {
     tmp <- names(object@ModelOptions)
-    tmp[tmp=="learnMean"] <- "learnIntercept"
+    tmp[tmp=="LearnMean"] <- "LearnIntercept"
     names(object@ModelOptions) <- tmp
   }
-  object@ModelOptions$learnIntercept <- as.logical(object@ModelOptions$learnIntercept)
+  object@ModelOptions$LearnIntercept <- as.logical(object@ModelOptions$LearnIntercept)
   
   
   return(object)

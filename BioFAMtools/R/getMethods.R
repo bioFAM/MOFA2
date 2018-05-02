@@ -41,7 +41,7 @@ getFactors <- function(object, groups = "all", factors = "all", as.data.frame = 
   # Get factors
   if (paste0(factors, collapse="") == "all") { factors <- factorNames(object) } 
   else if(is.numeric(factors)) {
-    if (object@ModelOptions$learnIntercept == T) factors <- factorNames(object)[factors+1]
+    if (object@ModelOptions$LearnIntercept) factors <- factorNames(object)[factors+1]
     else factors <- factorNames(object)[factors]
   }
   else { stopifnot(all(factors %in% factorNames(object))) }
@@ -49,10 +49,10 @@ getFactors <- function(object, groups = "all", factors = "all", as.data.frame = 
   # Collect factors
   Z <- getExpectations(object, "Z", as.data.frame)
   if (as.data.frame) {
-    Z <- lapply(Z, function(z) z[z$factor %in% factors,])
-    names(Z) <- groups
+    Z <- Z[Z$factor %in% factors,]
   } else {
     Z <- lapply(Z, function(z) z[,factors, drop=FALSE])
+    names(Z) <- groups
   }
 
   # Remove intercept
@@ -97,7 +97,7 @@ getWeights <- function(object, views = "all", factors = "all", as.data.frame = F
   if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object) 
   } else if (is.numeric(factors)) {
-      if (object@ModelOptions$learnIntercept == T) {
+      if (object@ModelOptions$LearnIntercept) {
         factors <- factorNames(object)[factors+1]
       } else {
         factors <- factorNames(object)[factors]
@@ -153,20 +153,20 @@ getTrainData <- function(object, views = "all", groups = "all", features = "all"
   
   # Fetch data
   trainData <- lapply(object@TrainData[views], function(e) e[groups])
-  trainData <- lapply(1:length(trainData), function(m) lapply(1:length(trainData[[1]]), function(h) trainData[[m]][[h]][features[[m]],,drop=F]))
+  trainData <- lapply(1:length(trainData), function(m) lapply(1:length(trainData[[1]]), function(p) trainData[[m]][[p]][features[[m]],,drop=F]))
   trainData <- .name_views_and_groups(trainData, views, groups)
   
   # Convert to long data frame
   if (as.data.frame==T) {
     tmp <- lapply(views, function(m) { 
-      lapply(groups, function(h) { 
-        tmp <- reshape2::melt(trainData[[m]][[h]])
+      lapply(groups, function(p) { 
+        tmp <- reshape2::melt(trainData[[m]][[p]])
         colnames(tmp) <- c("feature", "sample", "value")
-        tmp <- cbind(view = m, group = h, tmp)
+        tmp <- cbind(view = m, group = p, tmp)
         return(tmp) 
       })
     })
-    trainData <- do.call(rbind,tmp)
+    trainData <- do.call(rbind, do.call(rbind, tmp))
     trainData[,c("view","group","feature","sample")] <- sapply(trainData[,c("view","group","feature","sample")], as.character)
   }# else if ((length(views)==1) && (as.data.frame==F)) {
   #  trainData <- trainData[[views]]
@@ -293,15 +293,15 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
   if (as.data.frame) {
     if (variable=="Z") {
       tmp <- reshape2::melt(exp)
-      colnames(tmp) <- c("sample", "factor", "value")
-      tmp[c("sample", "factor")] <- sapply(tmp[c("sample", "factor")], as.character)
+      colnames(tmp) <- c("sample", "factor", "value", "group")
+      tmp[c("sample", "factor", "group")] <- sapply(tmp[c("sample", "factor", "group")], as.character)
     }
     else if (variable=="W") {
       tmp <- lapply(names(exp), function(m) { 
         tmp <- reshape2::melt(exp[[m]])
         colnames(tmp) <- c("feature", "factor", "value")
         tmp$view <- m
-        tmp[c("view","feature","factor")] <- sapply(tmp[c("view", "feature", "factor")], as.character)
+        tmp[c("view", "feature", "factor")] <- sapply(tmp[c("view", "feature", "factor")], as.character)
         return(tmp)
       })
       tmp <- do.call(rbind.data.frame,tmp)

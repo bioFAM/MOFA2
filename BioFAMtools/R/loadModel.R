@@ -59,11 +59,14 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   for (opt in names(object@ModelOptions)) {
     if (object@ModelOptions[opt] == "False" | object@ModelOptions[opt] == "True") {
       object@ModelOptions[opt] <- as.logical(object@ModelOptions[opt])
-      if (opt == "learn_intercept") {
-        object@ModelOptions["learnIntercept"] <- as.logical(object@ModelOptions[opt])
-      }
+    } else {
+      object@ModelOptions[opt] <- object@ModelOptions[opt]
     }
   }
+  names(object@ModelOptions) <- sapply(names(object@ModelOptions), function(e)
+    paste0(sapply(strsplit(e, split = "_")[[1]], function(s) 
+      paste(toupper(substring(s, 1, 1)), substring(s, 2), sep="", collapse=" ")), collapse="")
+  )
 
   
   # Load training data
@@ -178,11 +181,11 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   }
   
   # Sanity check on the order of the likelihoods
-  if (!is.null(attr(TrainData, "likelihood"))) {
-    lik <- attr(TrainData, "likelihood")
-    if (!all(object@ModelOptions$likelihood == lik)) {
-      object@ModelOptions$likelihood <- lik
-      names(object@ModelOptions$likelihood) <- names(TrainData)
+  if (!is.null(attr(TrainData, "Likelihood"))) {
+    lik <- attr(TrainData, "Likelihood")
+    if (!all(object@ModelOptions$Likelihood == lik)) {
+      object@ModelOptions$Likelihood <- lik
+      names(object@ModelOptions$Likelihood) <- names(TrainData)
     }
   }
   
@@ -213,9 +216,9 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   }
   
   # Rename covariates, including intercept
-  # if (object@ModelOptions$learnIntercept == TRUE) factorNames(object) <- c("intercept",as.character(1:(object@Dimensions[["K"]]-1)))
+  # if (object@ModelOptions$LearnIntercept == TRUE) factorNames(object) <- c("intercept",as.character(1:(object@Dimensions[["K"]]-1)))
   # if (!is.null(object@ModelOptions$covariates)) {
-  #   if (object@ModelOptions$learnIntercept == TRUE) {
+  #   if (object@ModelOptions$LearnIntercept == TRUE) {
   #     factorNames(object) <- c("intercept", colnames(object@ModelOptions$covariates), as.character((ncol(object@ModelOptions$covariates)+1:(object@Dimensions[["K"]]-1-ncol(object@ModelOptions$covariates)))))
   #   } else {
   #     factorNames(object) <- c(colnames(object@ModelOptions$covariates), as.character((ncol(object@ModelOptions$covariates)+1:(object@Dimensions[["K"]]-1))))
@@ -223,7 +226,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   # }
   
   # Rename factors if intercept is included
-  if (object@ModelOptions$learnIntercept) {
+  if (object@ModelOptions$LearnIntercept) {
     intercept_idx <- names(which(sapply(apply(object@Expectations$Z, 2, unique),length)==1))
     factornames <- as.character(1:(object@Dimensions[["K"]]))
     factornames[factornames==intercept_idx] <- "intercept"
@@ -241,9 +244,9 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   if (sortFactors) {
     r2 <- rowSums(sapply(calculateVarianceExplained(object)$R2PerFactor, function(e) rowSums(e)))
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
-    if (object@ModelOptions$learnIntercept) { order_factors <- c("intercept", order_factors) }
+    if (object@ModelOptions$LearnIntercept) { order_factors <- c("intercept", order_factors) }
     object <- subsetFactors(object, order_factors)
-    if (object@ModelOptions$learnIntercept) { 
+    if (object@ModelOptions$LearnIntercept) { 
      factorNames(object) <- c("intercept", 1:(object@Dimensions$K-1))
     } else {
      factorNames(object) <- c(1:object@Dimensions$K) 

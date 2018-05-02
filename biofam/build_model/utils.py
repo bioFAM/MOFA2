@@ -405,6 +405,7 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                     SigmaNode = node == "SigmaAlphaW" and nodes[node].getNodes()[m].__class__.__name__ != "AlphaW_Node_mk"
 
                     for exp_name in expectations[m].keys():
+
                         tmp = expectations[m][exp_name]
                         if type(tmp) == ma.core.MaskedArray:
                             tmp = ma.filled(tmp, fill_value=np.nan)
@@ -416,7 +417,7 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                                 samp_subgrp = view_subgrp.create_group(str(samp_group))
                                 samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
                                 df = tmp[samp_indices,:]
-                                samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
+                                samp_subgrp.create_dataset(str(exp_name), data=df)
                         else:
                             if SigmaNode:
                                 view_subgrp.create_dataset(exp_name, data=tmp)
