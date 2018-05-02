@@ -19,7 +19,24 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
     def precompute(self):
         self.N = self.dim[0]
-        self.lbconst = s.sum(self.P.params['a'][0,:]*s.log(self.P.params['b'][0,:]) - special.gammaln(self.P.params['a'][0,:]))
+        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+
+    def getExpectations(self, expand=True):
+        QExp = self.Q.getExpectations()
+        if expand:
+            if 'SZ' in self.markov_blanket:
+                N = self.markov_blanket['SZ'].N
+            else:
+                N = self.markov_blanket['Z'].N
+            expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
+            expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
+            return {'E': expanded_E, 'lnE': expanded_lnE}
+        else:
+            return QExp
+
+    def getExpectation(self, expand=True):
+        QExp = self.getExpectations(expand)
+        return QExp['E']
 
     def updateParameters(self):
 
@@ -45,28 +62,27 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
+
+        ZW =  ma.array(Z.dot(W.T), mask=mask)
+
         # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
         term1 = s.square(Y.astype("float64")).sum(axis=0)
 
         # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
-        term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0) # save to modify
-
+        term2 = 2.*(Y*ZW).sum(axis=0) # save to modify
 
         term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=0)
 
-#<<<<<<< HEAD
-#        # dotd(SWZ, SWZ.T) should compute a sum for all k and k' of W_{d,k} Z_{d,k} W_{d,k'} Z_{d,k'} including for k=k', and then summed over n
-#        # s.dot(s.square(Z),s.square(SW).T) computes the sum over all k of wdk^2 * znk2 summed over all n too
-#        term4 = dotd(SWZ, SWZ.T) - ma.array(s.dot(s.square(Z),s.square(SW).T), mask=mask).sum(axis=0)
-#=======
-        WZ = ma.array(W.dot(Z.T), mask=mask.T)
-        term4 = dotd(WZ, WZ.T) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0)
+        # dotd(WZ, WZ.T) should compute a sum for all k and k' of W_{d,k} Z_{d,k} W_{d,k'} Z_{d,k'} including for k=k', and then summed over n
+        # s.dot(s.square(Z),s.square(SW).T) computes the sum over all k of wdk^2 * znk2 summed over all n too
+
+        term4 = dotd(ZW.T, ZW) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0)
 
         tmp = term1 - term2 + term3 + term4
 
         # Perform updates of the Q distribution
-        Qa = Pa + s.repeat((Y.shape[0] - mask.sum(axis=0))[None,:], self.N, axis=0)/2.
-        Qb = Pb + s.repeat(tmp.copy()[None,:], self.N, axis=0)/2.
+        Qa = Pa + (Y.shape[0] - mask.sum(axis=0))/2.
+        Qb = Pb + tmp.copy()/2.
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
@@ -74,8 +90,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     def calculateELBO(self):
         # Collect parameters and expectations from current node
         P, Q = self.P.getParameters(), self.Q.getParameters()
-        Pa, Pb, Qa, Qb = P['a'][0,:], P['b'][0,:], Q['a'][0,:], Q['b'][0,:]
-        QE, QlnE = self.Q.expectations['E'][0,:], self.Q.expectations['lnE'][0,:]
+        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
+        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
 
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
@@ -90,16 +106,31 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         return self.samp
 
 
-
-
 class TauN_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.precompute()
 
     def precompute(self):
-        self.D = self.dim[1]
-        self.lbconst = s.sum(self.P.params['a'][:,0]*s.log(self.P.params['b'][:,0]) - special.gammaln(self.P.params['a'][:,0]))
+        self.D = self.dim[0]
+        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+
+    def getExpectations(self, expand=True):
+        QExp = self.Q.getExpectations()
+        if expand:
+            if 'SW' in self.markov_blanket:
+                D = self.markov_blanket['SW'].D
+            else:
+                D = self.markov_blanket['W'].D
+            expanded_E = s.repeat(QExp['E'][:, None], D, axis=1)
+            expanded_lnE = s.repeat(QExp['lnE'][:, None], D, axis=1)
+            return {'E': expanded_E, 'lnE': expanded_lnE}
+        else:
+            return QExp
+
+    def getExpectation(self, expand=True):
+        QExp = self.getExpectations(expand)
+        return QExp['E']
 
     def updateParameters(self):
         # Collect expectations from other nodes
@@ -124,35 +155,31 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
+
+        ZW =  ma.array(Z.dot(W.T), mask=mask)
+
         term1 = s.square(Y.astype("float64")).sum(axis=1)
 
-        term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=1) # save to modify
+        term2 = 2.*(Y*ZW).sum(axis=1) # save to modify
 
         term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=1)
 
-        ZW = ma.array(Z.dot(W.T), mask=mask)
         term4 = dotd(ZW, ZW.T) - ma.array(s.dot(s.square(Z), s.square(W).T), mask=mask).sum(axis=1)
 
         tmp = term1 - term2 + term3 + term4
 
         # Perform updates of the Q distribution
-        Qa = Pa + s.repeat((Y.shape[1] - mask.sum(axis=1))[:,None], self.D, axis=1)/2.
-        Qb = Pb + s.repeat(tmp.copy()[:,None], self.D, axis=1)/2.
+        Qa = Pa + (Y.shape[1] - mask.sum(axis=1))/2.
+        Qb = Pb + tmp.copy()/2.
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node
-	# older version of the code before biofam2
-#<<<<<<< HEAD
-#        P,Q = self.P.getParameters(), self.Q.getParameters()
-#        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
-#        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE'] 
-#=======
         P, Q = self.P.getParameters(), self.Q.getParameters()
-        Pa, Pb, Qa, Qb = P['a'][:,0], P['b'][:,0], Q['a'][:,0], Q['b'][:,0]
-        QE, QlnE = self.Q.expectations['E'][:,0], self.Q.expectations['lnE'][:,0]
+        Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
+        QE, QlnE = self.Q.expectations['E'], self.Q.expectations['lnE']
 
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)

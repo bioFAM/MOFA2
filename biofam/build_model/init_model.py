@@ -459,11 +459,6 @@ class initModel(object):
          qE: float
             initial expectation of the variational distribution
         """
-        if transposed:
-            print("Using TauN noise!")
-            Tau_Node = TauN_Node
-        else:
-            Tau_Node = TauD_Node
 
         tau_list = [None]*self.M
         for m in range(self.M):
@@ -478,7 +473,11 @@ class initModel(object):
                 tmp = 0.25*s.amax(self.data["tot"][m],axis=0)
                 tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
             elif self.lik[m] == "gaussian":
-                tau_list[m] = Tau_Node(dim=(self.N, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+                if transposed:
+                    tau_list[m] = TauN_Node(dim=(self.N,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+                    print("Using TauN noise!")
+                else:
+                    tau_list[m] = TauD_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
             # elif self.lik[m] == "warp":
             #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)

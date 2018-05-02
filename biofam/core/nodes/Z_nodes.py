@@ -91,8 +91,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].getExpectation()
-            if Alpha.shape != self.dim:
-                Alpha = s.repeat(Alpha[None, :], self.N, axis=0)
 
         else:
             if "SigmaZ" in self.markov_blanket:
@@ -105,10 +103,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
-
-            # DEPRECATED: tau is expanded inside the node
-            # if tau[m].shape != Y[m].shape:
-            #     tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
 
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
@@ -216,10 +210,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             Alpha = self.markov_blanket[
                 'AlphaZ'].getExpectations().copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
 
-            if Alpha["E"].shape != self.dim:
-                Alpha["E"] = s.repeat(Alpha["E"][None, :], self.N, axis=0)
-                Alpha["lnE"] = s.repeat(Alpha["lnE"][None, :], self.N, axis=0)
-
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()
             Alpha["E"], Alpha["lnE"] = Alpha["E"][:, latent_variables], Alpha["lnE"][:, latent_variables]
@@ -318,10 +308,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # TODO sort that out
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket["AlphaZ"].getExpectation().copy()
-            # Check dimensions of alpha and and expand if necessary
-            # TODO this is still not right. needs to be implemented for anpther case which is the full Alpha matrix (when groups)
-            if alpha.shape[0] == 1:
-                alpha = s.repeat(alpha[:], self.dim[1], axis=0)
         else:
             # TODO implement that
             print('SZ not implemented without alphaZ')
@@ -335,20 +321,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qmean_T1, Qvar_T1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
         M = len(Y)  # number of views
-
-        # Check dimensions of theta and and expand if necessary
-        if theta_lnE.shape != Qmean_T1.shape:
-            theta_lnE = s.repeat(theta_lnE[None, :], Qmean_T1.shape[0], 0)
-        if theta_lnEInv.shape != Qmean_T1.shape:
-            theta_lnEInv = s.repeat(theta_lnEInv[None, :], Qmean_T1.shape[0], 0)
-
-        # DEPRECATED: tau is expanded inside the node
-        # Check dimensions of Tau and and expand if necessary
-        # M = len(Y) #number of views
-        # for m in range(M):
-        #     if tau[m].shape != Y[m].shape:
-        #         tau[m] = s.repeat(tau[m][None,:], Y[m].shape[0], axis=0)
-        # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Mask matrices (excluding covariates from the list of latent variables)
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
@@ -365,10 +337,10 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # TODO this is not right: alpha should be expended to full matrix before and used as full matrix
             # term2 = 0.5 * s.log(alpha[:, k]) should work
             # TODO modify everywhere else
-            term2 = 0.5 * s.log(alpha[k])
+            term2 = 0.5 * s.log(alpha[:,k])
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[k])  # good to modify
+            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k])  # good to modify
 
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
             term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify
@@ -377,7 +349,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify
 
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[k]
+            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k]
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
@@ -395,7 +367,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             SZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=s.repeat(1. / alpha[None, :], self.N, 0),
+        self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=1. / alpha,
                              mean_B1=Qmean_T1, var_B1=Qvar_T1, theta=Qtheta)
 
     def calculateELBO(self):
@@ -409,24 +381,20 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Get ARD sparsity or prior variance
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaZ'].getExpectations().copy()
-            # TODO change that for new possibilities on Alpha
-            if alpha["E"].shape[0] == 1:
-                alpha["E"] = s.repeat(alpha["E"][:], self.dim[1], axis=0)
-                alpha["lnE"] = s.repeat(alpha["lnE"][:], self.dim[1], axis=0)
         else:
             print("Not implemented")
             exit()
 
         # This ELBO term contains only cross entropy between Q and P, and entropy of Q. So the covariates should not intervene at all
         latent_variables = self.getLvIndex()
-        alpha["E"], alpha["lnE"] = alpha["E"][latent_variables], alpha["lnE"][latent_variables]
+        alpha["E"], alpha["lnE"] = alpha["E"][:,latent_variables], alpha["lnE"][:,latent_variables]
         T, ZZ = T[:, latent_variables], ZZ[:, latent_variables]
         Qvar = Qvar[:, latent_variables]
-        theta['lnE'] = theta['lnE'][latent_variables]
-        theta['lnEInv'] = theta['lnEInv'][latent_variables]
+        theta['lnE'] = theta['lnE'][:,latent_variables]
+        theta['lnEInv'] = theta['lnEInv'][:,latent_variables]
 
         # Calculate ELBO for Z
-        lb_pz = (self.N * alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
+        lb_pz = (alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
         lb_qz = -0.5 * self.dim[1] * self.N - 0.5 * (
                     T * s.log(Qvar) + (1. - T) * s.log(1. / alpha["E"])).sum()  # IS THE FIRST CONSTANT TERM CORRECT???
         lb_z = lb_pz - lb_qz
@@ -497,7 +465,6 @@ class MuZ_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket[
                 'AlphaZ'].getExpectation().copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
-            Alpha = s.repeat(Alpha[None, :], self.N, axis=0)
         elif "SigmaZ" in self.markov_blanket:
             Sigma = self.markov_blanket['SigmaZ'].getExpectation().copy()
         else:

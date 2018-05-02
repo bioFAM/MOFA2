@@ -10,6 +10,7 @@ from .variational_nodes import Gamma_Unobserved_Variational_Node
 
 # TODO add sample functions everywhere
 # TODO calculateELBO is the same and could be moved to the parent node ?
+# TODO actually all the nodes are exactly the same apart from labeling. Could be one single node
 class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
         # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
@@ -19,10 +20,27 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
     def precompute(self):
         # self.lbconst = self.K * ( self.P.a*s.log(self.P.b) - special.gammaln(self.P.a) )
         # self.lbconst = s.sum( self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']) )
-        self.factors_axis = 0  # TODO check that !
+        self.factors_axis = 0
+
+    def getExpectations(self, expand=True):
+        QExp = self.Q.getExpectations()
+        if expand:
+            if 'SW' in self.markov_blanket:
+                D = self.markov_blanket['SW'].D
+            else:
+                D = self.markov_blanket['W'].D
+            expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
+            expanded_lnE = s.repeat(QExp['lnE'][None, :], D, axis=0)
+            # import pdb; pdb.set_trace()
+            return {'E': expanded_E, 'lnE': expanded_lnE}
+        else:
+            return QExp
+
+    def getExpectation(self, expand=True):
+        QExp = self.getExpectations(expand)
+        return QExp['E']
 
     def updateParameters(self):
-
         # Collect expectations from other nodes
         if "SW" in self.markov_blanket:
             tmp = self.markov_blanket["SW"].getExpectations()
@@ -68,6 +86,23 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
         # self.lbconst = self.K * ( self.P.a*s.log(self.P.b) - special.gammaln(self.P.a) )
         # self.lbconst = s.sum( self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']) )
         self.factors_axis = 0   # TODO check that !!!!!
+
+    def getExpectations(self, expand=True):
+        QExp = self.Q.getExpectations()
+        if expand:
+            if 'SZ' in self.markov_blanket:
+                N = self.markov_blanket['SZ'].N
+            else:
+                N = self.markov_blanket['Z'].N
+            expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
+            expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
+            return {'E': expanded_E, 'lnE': expanded_lnE}
+        else:
+            return QExp
+
+    def getExpectation(self, expand=True):
+        QExp = self.getExpectations(expand)
+        return QExp['E']
 
     def updateParameters(self):
 
@@ -117,19 +152,20 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
 
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
-    def getExpectations(self):
-        # reshape the values to N_samples * N_factors and return
+    def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
-        expanded_expectation = QExp['E'][self.groups, :]
-        expanded_lnE = QExp['lnE'][self.groups, :]
-        # do we need to expand the variance as well -> not used I think
-        return {'E': expanded_expectation, 'lnE': expanded_lnE}
+        if expand:
+            # reshape the values to N_samples * N_factors and return
+            expanded_expectation = QExp['E'][self.groups, :]
+            expanded_lnE = QExp['lnE'][self.groups, :]
+            # do we need to expand the variance as well -> not used I think
+            return {'E': expanded_expectation, 'lnE': expanded_lnE}
+        else:
+            return {'E': QExp['E'], 'lnE': QExp['lnE']}
 
-    def getExpectation(self):
-        # reshape the values to N_samples * N_factors and return
-        QExp = self.Q.getExpectations()
-        expanded_expectation = QExp['E'][self.groups, :]
-        return expanded_expectation
+    def getExpectation(self, expand=True):
+        QExp = self.getExpectations(expand)
+        return QExp['E']
 
     def updateParameters(self):
         # TODO: add an if MuZ is in markov blanket ?

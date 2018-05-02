@@ -106,8 +106,6 @@ def entry_point():
     if args.sample_groups_file:
         data_opts['sample_groups_file'] = args.sample_groups_file
         data_opts['sample_groups'] = loadDataGroups(data_opts)
-    else:
-        data_opts['sample_groups'] = list()  # TODO: np.array?
     
     if data_opts['group_names'] is None and not args.treat_as_groups:
         # All the files are views
@@ -152,6 +150,9 @@ def entry_point():
     ## Data processing ##
     #####################
 
+    # Check that the likelihood is provided for every input file
+    assert len(args.input_files) == len(args.likelihoods), "Please specify one likelihood for each input file"
+
     # Data processing: center features
     if args.center_features:
         data_opts['center_features'] = [ True if l=="gaussian" else False for l in args.likelihoods ]
@@ -182,6 +183,9 @@ def entry_point():
     ###############
 
     data, sample_groups = loadData(data_opts)
+
+    if 'sample_groups' not in data_opts:
+        data_opts['sample_groups'] = sample_groups
 
     # Calculate dimensionalities
     M = len(data_opts['view_names'])
@@ -266,7 +270,6 @@ def entry_point():
 
     # Define likelihoods
     model_opts['likelihood'] = args.likelihoods
-    assert M == len(model_opts['likelihood']), "Please specify one likelihood for each view"
     assert set(model_opts['likelihood']).issubset(set(["gaussian", "bernoulli", "poisson"]))
 
     model_opts["ard_per_view"] = args.ard_per_view
@@ -333,9 +336,8 @@ def entry_point():
 
     print("Saving model in %s...\n" % data_opts['output_file'])
     train_opts['schedule'] = '_'.join(train_opts['schedule'])
-    
     saveTrainedModel(model=model, outfile=data_opts['output_file'], train_opts=train_opts, model_opts=model_opts,
-        view_names=data_opts['view_names'], group_names=data_opts['group_names'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
+        view_names=data_opts['view_names'], group_names=data_opts['group_names'], sample_groups=data_opts['sample_groups'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
 
 
 if __name__ == '__main__':

@@ -94,12 +94,10 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         if "AlphaW" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaW'].getExpectation()
-            Alpha = s.repeat(Alpha[None, :], self.D, axis=0)
 
         elif "SigmaAlphaW" in self.markov_blanket:
             if self.markov_blanket["SigmaAlphaW"].__class__.__name__=="AlphaW_Node_mk":
                 Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation()
-                Alpha = s.repeat(Alpha[None,:], self.D, axis=0)
             else:
                 Sigma = self.markov_blanket['SigmaAlphaW'].getExpectations()
                 p_cov_inv = Sigma['inv']
@@ -107,11 +105,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         else:
             p_cov_inv = self.p_cov_inv
             p_cov_inv_diag = self.p_cov_inv_diag
-
-        # DEPRECATED: tau is expanded inside the node
-        # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
-        # if tau.shape != Y.shape:
-        #     tau = s.repeat(tau.copy()[None,:], np.shape(Y)[0], axis=0)
 
         # Mask tau
         tau[mask] = 0.
@@ -227,8 +220,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             else:
                 name_alpha = "AlphaW"
             Alpha = self.markov_blanket[name_alpha].getExpectations().copy() # Notice that this Alpha is the ARD prior on Z, not on W.
-            Alpha["E"] = s.repeat(Alpha["E"][None,:], self.D, axis=0)
-            Alpha["lnE"] = s.repeat(Alpha["lnE"][None,:], self.D, axis=0)
 
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()
@@ -318,23 +309,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Q = self.Q.getParameters()
         Qmean_S1, Qvar_S1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
-        # Check dimensions of Theta and and expand if necessary
-        if theta_lnE.shape != Qmean_S1.shape:
-            theta_lnE = s.repeat(theta_lnE[None,:],Qmean_S1.shape[0],0)
-        if theta_lnEInv.shape != Qmean_S1.shape:
-            theta_lnEInv = s.repeat(theta_lnEInv[None,:],Qmean_S1.shape[0],0)
-
-        # DEPRECATED: tau is expanded inside the node
-        # Check dimensions of Tau and and expand if necessary
-        # if tau.shape != Y.shape:
-        #     tau = s.repeat(tau[None,:], Y.shape[0], axis=0)
-        
-        # tau = ma.masked_where(ma.getmask(Y), tau)
-
-        # Check dimensions of Alpha and and expand if necessary
-        if alpha.shape[0] == 1:
-            alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-
         # Mask matrices
         Y = Y.data
         Y[mask] = 0.
@@ -345,18 +319,16 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             # Calculate intermediate steps
             term1 = (theta_lnE-theta_lnEInv)[:,k]
-            term2 = 0.5*s.log(alpha[k])
+            term2 = 0.5*s.log(alpha[:,k])
 
-            # term3 = 0.5*s.log(ma.dot(ZZ[:,k],tau) + alpha[k])
-            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[k]) # good to modify
+            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k]) # good to modify
             # term4_tmp1 = ma.dot((tau*Y).T,Z[:,k]).data
             term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify
 
             # term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
             term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify
 
-            #term4_tmp3 = ma.dot(ZZ[:,k].T,tau) + alpha[k]
-            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically
@@ -373,10 +345,10 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=s.repeat(1./alpha[None,:],self.D,0), mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
+        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=1./alpha, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
 
     def calculateELBO(self):
-
+        # import pdb; pdb.set_trace()
         # Collect parameters and expectations
         Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
         S,WW = Qexp["EB"], Qexp["ENN"]
@@ -384,18 +356,17 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         theta = self.markov_blanket["ThetaW"].getExpectations()
 
+
         # Get ARD sparsity or prior variance
         if "AlphaW" in self.markov_blanket:
             alpha = self.markov_blanket["AlphaW"].getExpectations().copy()
-            if alpha["E"].shape[0] == 1:
-                alpha["E"] = s.repeat(alpha["E"][:], self.dim[1], axis=0)
-                alpha["lnE"] = s.repeat(alpha["lnE"][:], self.dim[1], axis=0)
         else:
             print("Not implemented")
-            exit()
+            exit(1)
 
         # Calculate ELBO for W
-        lb_pw = (self.D*alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
+        # import pdb; pdb.set_trace()
+        lb_pw = (alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
         lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
         # #NOT SURE ABOUT THE FORMULA for lb_qw (brackets of expectation propagating inside the log ?)
         lb_w = lb_pw - lb_qw
@@ -466,7 +437,6 @@ class MuW_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if "SigmaAlphaW" in self.markov_blanket:
             if self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk":
                 Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation().copy()  # Notice that this Alpha is the ARD prior on W, not on W.
-                Alpha = s.repeat(Alpha[None, :], self.D, axis=0)
             else:
                 Sigma = self.markov_blanket['SigmaAlphaW'].getExpectation().copy()
         else:
