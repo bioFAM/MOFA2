@@ -64,6 +64,21 @@ setGeneric("viewNames", function(object) {standardGeneric("viewNames")})
 #' @export
 setGeneric("viewNames<-", function(object, value) {standardGeneric("viewNames<-")})
 
+################
+## group Names ##
+################
+
+#' @title groupNames: set and retrieve view names
+#' @name groupNames
+#' @rdname groupNames
+#' @export
+setGeneric("groupNames", function(object) {standardGeneric("groupNames")})
+
+#' @name groupNames
+#' @rdname groupNames
+#' @aliases groupNames<-
+#' @export
+setGeneric("groupNames<-", function(object, value) {standardGeneric("groupNames<-")})
 
 ################
 ## Input Data ##
@@ -114,32 +129,32 @@ setGeneric(".TrainData<-", function(object, value) {standardGeneric(".TrainData<
 ## Train Options ##
 ###################
 
-#' @title TrainOpts: set and retrieve training opts
-#' @name TrainOpts
-#' @rdname TrainOpts
+#' @title TrainOptions: set and retrieve training opts
+#' @name TrainOptions
+#' @rdname TrainOptions
 #' @export
-setGeneric("TrainOpts", function(object) {standardGeneric("TrainOpts")})
+setGeneric("TrainOptions", function(object) {standardGeneric("TrainOptions")})
 
-#' @name TrainOpts
-#' @rdname TrainOpts
-#' @aliases TrainOpts<-
+#' @name TrainOptions
+#' @rdname TrainOptions
+#' @aliases TrainOptions<-
 #' @export
-setGeneric(".TrainOpts<-", function(object, value) {standardGeneric(".TrainOpts<-")})
+setGeneric(".TrainOptions<-", function(object, value) {standardGeneric(".TrainOptions<-")})
 
 
 ###################
 ## Model Options ##
 ###################
 
-#' @title ModelOpts: set and retrieve Model options
-#' @name ModelOpts
+#' @title ModelOptions: set and retrieve Model options
+#' @name ModelOptions
 #' @export
-setGeneric("ModelOpts", function(object) {standardGeneric("ModelOpts")})
+setGeneric("ModelOptions", function(object) {standardGeneric("ModelOptions")})
 
-#' @name ModelOpts
-#' @aliases ModelOpts<-
+#' @name ModelOptions
+#' @aliases ModelOptions<-
 #' @export
-setGeneric(".ModelOpts<-", function(object, value) {standardGeneric(".ModelOpts<-")})
+setGeneric(".ModelOptions<-", function(object, value) {standardGeneric(".ModelOptions<-")})
 
 
 ######################

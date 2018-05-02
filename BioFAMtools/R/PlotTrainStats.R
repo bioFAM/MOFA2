@@ -20,7 +20,7 @@ trainCurveFactors <- function(object) {
   if (class(object) != "BioFAModel") { stop("'object' has to be an instance of BioFAModel") }
   
   # Collect training statistics
-  idx = seq(1+object@TrainOpts$startdrop,length(object@TrainStats$activeK),object@TrainOpts$freqdrop)
+  idx = seq(1+object@TrainOptions$startdrop,length(object@TrainStats$activeK),object@TrainOptions$freqdrop)
   stat = object@TrainStats$activeK[idx] 
   data <- data.frame(time=idx, value=stat)
   
@@ -68,7 +68,7 @@ trainCurveELBO <- function(object, log = F) {
   if (class(object) != "BioFAModel") { stop("'object' has to be an instance of BioFAModel") }
   
   # Fetch ELBO from TrainStats  
-  idx = seq(1,length(object@TrainStats$elbo),object@TrainOpts$elbofreq)
+  idx = seq(1,length(object@TrainStats$elbo),object@TrainOptions$elbofreq)
   stat = object@TrainStats$elbo[idx]
   
   # Apply log transform

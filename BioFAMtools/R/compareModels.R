@@ -6,7 +6,7 @@
 
 #' @title Plot the robustness of the latent factors across diferent trials
 #' @name compareFactors
-#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between
+#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
 #' their latent factors. The correlation is calculated only on those samples which are present in all models.
 #' Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
 #' If not, it suggests that some factors are weak and not captured by all models.
@@ -23,8 +23,7 @@
 #' @importFrom grDevices colorRampPalette
 #' @export
 
-compareFactors <- function(models, comparison = "all", node= 'Z', ...) {
-
+compareFactors <- function(models, comparison = "all", show_rownames=FALSE, show_colnames=FALSE,...) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")
@@ -50,7 +49,9 @@ compareFactors <- function(models, comparison = "all", node= 'Z', ...) {
   LFs <- lapply(seq_along(models), function(modelidx){
     model <- models[[modelidx]]
     Z <- getFactors(model)
-    if (model@ModelOpts$learnIntercept==TRUE)
+    # NOTE: concatenate all groups by default
+    Z <- do.call(rbind, Z)
+    if (model@ModelOptions$learnIntercept==TRUE) 
       Z <- Z[,-1, drop=FALSE]
     Z
     })
@@ -79,13 +80,13 @@ compareFactors <- function(models, comparison = "all", node= 'Z', ...) {
     corLFs[is.na(corLFs)]  = 0
     # if(is.null(main)) main <- "Absolute correlation between latent factors"
     if(length(unique(as.numeric(abs(corLFs))))>1){
-    pheatmap(abs(corLFs), show_rownames = F,
+    pheatmap(abs(corLFs), show_rownames = show_rownames,show_colnames = show_colnames,
              color = colorRampPalette(c("white",RColorBrewer::brewer.pal(9,name="YlOrRd")))(100),
              # color=colorRampPalette(c("white", "orange" ,"red"))(100),
              # annotation_col = modelAnnot, main= main , ...)
              ...)
     } else warning("No plot produced as correlations consist of only one value")
-    return(corLFs)
+    # return(corLFs)
   }
 
   if(comparison=="pairwise"){
@@ -110,8 +111,10 @@ compareFactors <- function(models, comparison = "all", node= 'Z', ...) {
         names(sublist) <- names(models)[(i+1):length(LFs)]
         sublist
     })
+    
     names(PairWiseCor) <- names(models[-length(models)])
-    return(PairWiseCor)
+    return(NULL)
+    #return(PairWiseCor)
   }
 }
 
@@ -133,7 +136,7 @@ compareModels <- function(models, show_modelnames = FALSE) {
   elbo_vals <- sapply(models, getELBO)
   n_factors <- sapply(models, function(m) {
     n_fac <- getDimensions(m)$K
-    if(m@ModelOpts$learnIntercept) n_fac <- n_fac - 1
+    if(m@ModelOptions$learnIntercept) n_fac <- n_fac - 1
     n_fac
     })
   if(is.null(names(models))) names(models) <- paste0("model_", seq_along(models))
@@ -147,12 +150,13 @@ compareModels <- function(models, show_modelnames = FALSE) {
 
 #' @title Select a model from a list of trained \code{\link{BioFAModel}} objects based on the best ELBO value
 #' @name select_model
-#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics
+#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics 
+
 #' and the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{BioFAModel}} objects.
 #' @export
 
-selectModel <- function(models, plotit =TRUE) {
+selectModel <- function(models, plotit = TRUE) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")

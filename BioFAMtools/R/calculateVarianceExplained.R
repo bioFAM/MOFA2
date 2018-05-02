@@ -9,32 +9,41 @@
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @param include_intercept include the intercept factor for calculation of variance explained (only used when an intercept was learned)
+#' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
 #' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor). 
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated. 
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
-calculateVarianceExplained <- function(object, views = "all", factors = "all", include_intercept = TRUE, ...) {
+calculateVarianceExplained <- function(object, views = "all", groups = "all", factors = "all", include_intercept = TRUE, ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # check whether the intercept was learned
-  if(!object@ModelOpts$learnIntercept & include_intercept) {
+  if(!object@ModelOptions$learn_intercept & include_intercept) {
     include_intercept <- FALSE
     # warning("No intercept was learned in BioFAM.\n Intercept is not included in the model prediction.")
   }
   
   # Define views
-  if (paste0(views,sep="",collapse="") =="all") { 
+  if (paste0(views, sep="", collapse="") == "all") { 
     views <- viewNames(object) 
   } else {
     stopifnot(all(views %in% viewNames(object)))  
   }
   M <- length(views)
 
+  # Define groups
+  if (paste0(groups, sep="", collapse="") == "all") { 
+    groups <- groupNames(object) 
+  } else {
+    stopifnot(all(groups %in% groupNames(object)))  
+  }
+  H <- length(groups)
+
   # Define factors
-  if (paste0(factors,collapse="") == "all") { 
+  if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object) 
   } else if (is.numeric(factors)) {
     if (include_intercept == T) {
@@ -49,58 +58,75 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
   K <- length(factors)
 
   # Collect relevant expectations
-  W <- getWeights(object,views,factors)
-  Z <- getFactors(object,factors)
-  Y <- getExpectations(object,"Y") # for non-Gaussian likelihoods the pseudodata is considered
+  W <- getWeights(object, views, factors)
+  Z <- getFactors(object, groups, factors)
+  Y <- getExpectations(object, "Y")  # for non-Gaussian likelihoods the pseudodata is considered
   
   # Calulcate feature-wise means as null model
-  FeatureMean <- lapply(views, function(m)  { apply(Y[[m]],2,mean,na.rm=T) })
-  names(FeatureMean) <- views
+  FeatureMean <- lapply(views, function(m) {
+    lapply(groups, function(h) {
+      apply(Y[[m]][[h]], 2, mean, na.rm=T) 
+    })
+  })
+  FeatureMean <- .name_views_and_groups(FeatureMean, views, groups)
 
   # Sweep out the feature-wise mean to calculate null model residuals
-  resNullModel <- lapply(views, function(m) sweep(Y[[m]],2,FeatureMean[[m]],"-"))
-  names(resNullModel) <- views
-
+  resNullModel <- lapply(views, function(m) {
+    lapply(groups, function(h) {
+      sweep(Y[[m]][[h]], 2, FeatureMean[[m]][[h]], "-")
+    })
+  })
+  resNullModel <- .name_views_and_groups(resNullModel, views, groups)
+  
   # replace masked values on Z by 0 (so that they do not contribute to predictions)
-  Z[is.na(Z)] <- 0 
+  for (group in groups) { Z[[group]][is.na(Z[[group]])] <- 0 }
     
   # Calculate predictions under the MOFA model using all (non-intercept) factors
-  Ypred_m <- lapply(views, function(m) Z%*%t(W[[m]])); names(Ypred_m) <- views
+  Ypred_m <- lapply(views, function(m) {
+    lapply(groups, function(h) {
+      Z[[h]] %*% t(W[[m]])
+    })
+  })
+  Ypred_m <- .name_views_and_groups(Ypred_m, views, groups)
+
+  for (view in views) { names(resNullModel[[view]]) <- groups }
 
   # Calculate predictions under the MOFA model using each (non-intercept) factors on its own
   Ypred_mk <- lapply(views, function(m) {
-                      ltmp <- lapply(factors, function(k) Z[,k]%*%t(W[[m]][,k]) )
-                      names(ltmp) <- factors
-                      ltmp
-                    })
-  names(Ypred_mk) <- views
+    lapply(groups, function(h) {
+      ltmp <- lapply(factors, function(k) Z[[h]][,k] %*% t(W[[m]][,k]) )
+      names(ltmp) <- factors
+      ltmp
+    })
+  })
+  Ypred_mk <- .name_views_and_groups(Ypred_mk, views, groups)
   
   # If an intercept is included, regress out the intercept from the data
-  if (include_intercept==T) {
+  if (include_intercept) {
       intercept <- getWeights(object,views,"intercept")
-      Y <- lapply(views, function(m) sweep(Y[[m]],2,intercept[[m]],"-"))
-      names(Y) <- views
+      Y <- lapply(views, function(m) lapply(groups, function(h) sweep(Y[[m]][[h]],2,intercept[[m]],"-")))
+      Y <- .name_views_and_groups(Y, views, groups)
   }
 
   # Calculate coefficient of determination per view
-  fvar_m <- sapply(views, function(m) 1 - sum((Y[[m]]-Ypred_m[[m]])**2, na.rm=T) / sum(resNullModel[[m]]**2, na.rm=T))
-   
+  fvar_m <- lapply(groups, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T)))
+  fvar_m <- .name_views_and_groups(fvar_m, groups, views)
+
   # Calculate coefficient of determination per factor and view
-  tmp <- sapply(views, function(m) {
-    sapply(factors, function(k) {
-      1 - sum((Y[[m]]-Ypred_mk[[m]][[k]])**2, na.rm=T) / sum(resNullModel[[m]]**2, na.rm=T) 
+  tmp <- lapply(groups, function(h) {
+    sapply(views, function(m) {
+      sapply(factors, function(k) {
+        1 - sum((Y[[m]][[h]]-Ypred_mk[[m]][[h]][[k]])**2, na.rm=T) / sum(resNullModel[[m]][[h]]**2, na.rm=T) 
+      })
     })
-  }) 
-  fvar_mk <- matrix(tmp, ncol=length(views), nrow=length(factors))
-  
-  # Set names
-  names(fvar_m) <- views
-  colnames(fvar_mk) <- views
-  rownames(fvar_mk) <- factors
+  })
+  fvar_mk <- lapply(tmp, function(e) matrix(e, ncol=length(views), nrow=length(factors)))
+  names(fvar_mk) <- groups
+  for (h in groups) { colnames(fvar_mk[[h]]) <- views; rownames(fvar_mk[[h]]) <- factors }
 
   # Store results
   R2_list <- list(R2Total = fvar_m, R2PerFactor = fvar_mk)
-
+  
   return(R2_list)
  
 }
@@ -117,17 +143,24 @@ calculateVarianceExplained <- function(object, views = "all", factors = "all", i
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plotVarianceExplained <- function(object, cluster = T, ...) {
+plotVarianceExplained <- function(object, groups = "all", cluster = T, ...) {
+
+  if (paste0(groups, collapse="") == "all") { 
+    groups <- groupNames(object) 
+  } else if (is.numeric(groups)) { 
+    groups <- groupNames(object)[groups]
+  }
+  stopifnot(all(groups %in% groupNames(object)))
   
   # Calculate Variance Explained
   R2_list <- calculateVarianceExplained(object, ...)
-  fvar_m <- R2_list$R2Total
-  fvar_mk <- R2_list$R2PerFactor
-  
+  fvar_m  <- Reduce('+', R2_list$R2Total[groups])
+  fvar_mk <- Reduce('+', R2_list$R2PerFactor[groups])
+
   ## Plot variance explained by factor ##
   
   # convert matrix to data frame for ggplot2  
-  fvar_mk_df <- reshape2::melt(fvar_mk, varnames=c("factor","view"))
+  fvar_mk_df <- reshape2::melt(fvar_mk, varnames = c("factor","view"))
   fvar_mk_df$factor <- factor(fvar_mk_df$factor)
   
   # If multiple views, sort factors according to hierarchical clustering
@@ -159,7 +192,7 @@ plotVarianceExplained <- function(object, cluster = T, ...) {
   ## Plot variance explained per view ##
   
   # Create data.frame for ggplot
-  fvar_m_df <- data.frame(view=names(fvar_m), R2=fvar_m)
+  fvar_m_df <- data.frame(view=names(fvar_m), R2=unlist(fvar_m))
   
   # If multiple views, sort factors according to hierarchical clustering
   if (cluster==TRUE & ncol(fvar_mk)>1) {

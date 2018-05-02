@@ -4,8 +4,9 @@
 \alias{plotDataHeatmap}
 \title{Plot heatmap of relevant features}
 \usage{
-plotDataHeatmap(object, view, factor, features = 50, includeWeights = FALSE,
-  transpose = FALSE, imputed = FALSE, sortSamples = TRUE, ...)
+plotDataHeatmap(object, view, factor, groups = "all", features = 50,
+  includeWeights = FALSE, transpose = FALSE, imputed = FALSE,
+  sortSamples = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

@@ -38,26 +38,38 @@
 #' # Plot top 50 features for factor 1 in the mRNA view, do not show feature or row names
 #' plotDataHeatmap(model, "mRNA", 1, 50, show_colnames = FALSE, show_rownames = FALSE) 
 #' @export
-plotDataHeatmap <- function(object, view, factor, features = 50, includeWeights = FALSE, transpose = FALSE, imputed = FALSE, sortSamples = TRUE, ...) {
+plotDataHeatmap <- function(object, view, factor, groups = "all", features = 50, includeWeights = FALSE, transpose = FALSE, imputed = FALSE, sortSamples = TRUE, ...) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+
+  if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(view %in% viewNames(object))
 
+  if (paste0(groups, collapse="") == "all") { groups <- groupNames(object) } else { stopifnot(all(groups %in% groupNames(object))) }
+
   if(is.numeric(factor)) {
-      if (object@ModelOpts$learnIntercept == T) factor <- factorNames(object)[factor+1]
+      if (object@ModelOptions$learnIntercept == T) factor <- factorNames(object)[factor+1]
       else factor <- factorNames(object)[factor]
     } else{ stopifnot(factor %in% factorNames(object)) }
 
   # Collect relevant data
   W <- getWeights(object)[[view]][,factor]
-  Z <- getFactors(object)[,factor]
+  # NOTE: By default concatenate all the groups
+  Z <- lapply(getFactors(object)[groups], function(z) as.matrix(z[,factor]))
+  Z <- do.call(rbind, Z)[,1]
   Z <- Z[!is.na(Z)]
   
+  
   if (imputed) {
-    data <- getImputedData(object, view)[[1]][,names(Z)]
+    data <- lapply(getImputedData(object, view, groups)[[1]], function(e) e[,names(Z)])
   } else {
-    data <- getTrainData(object, view)[[1]][,names(Z)]
+    data <- lapply(getTrainData(object, view, groups)[[1]], function(e) e[,names(Z)])
+  }
+
+  # NOTE: Currently groups are concatenated
+  if (class(data) == "list") {
+    data <- do.call(cbind, data)
   }
   
   # Ignore samples with full missing views
@@ -137,7 +149,7 @@ plotDataScatter <- function(object, view, factor, features = 10,
   if (!view %in% viewNames(object)) stop(sprintf("The view %s is not present in the object",view))
 
   if(is.numeric(factor)) {
-      if (object@ModelOpts$learnIntercept == T) factor <- factorNames(object)[factor+1]
+      if (object@ModelOptions$learnIntercept == T) factor <- factorNames(object)[factor+1]
       else factor <- factorNames(object)[factor]
     } else{ stopifnot(factor %in% factorNames(object)) }
       

@@ -4,7 +4,7 @@
 \alias{getImputedData}
 \title{getImputedData}
 \usage{
-getImputedData(object, views = "all", features = "all",
+getImputedData(object, views = "all", groups = "all", features = "all",
   as.data.frame = FALSE)
 }
 \arguments{
