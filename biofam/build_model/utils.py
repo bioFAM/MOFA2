@@ -115,32 +115,41 @@ def loadData(data_opts, verbose=True):
     print ("\n")
     sleep(1)
 
-    M = len(set(data_opts['view_names']))
+    uniq_view_names = np.unique(data_opts['view_names'])
+    M = len(uniq_view_names)
     P = None if data_opts['group_names'] is None else len(set(data_opts['group_names']))
 
     Y =  [None] * M
     sample_groups = None
 
-    for m in range(M):
-        if P is None or P == 1:
+
+    if P is None or P == 1:
+        assert len(data_opts['input_files']) == len(uniq_view_names) == len(data_opts['view_names']), "View names should be unique if there are no groups"
+        for m, vname in enumerate(uniq_view_names):
             # Read files as views
             file = data_opts['input_files'][m]
             Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
+            if data_opts['features_in_rows']: Y[m] = Y[m].T
             group_name = data_opts['group_names'][0] if 'group_names' in data_opts else 'group_0'
             sample_groups = list([group_name for e in range(Y[m].shape[0])])
             print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
-        else:  # there are multiple groups
-            group_names = data_opts['group_names']
+    else:  # there are multiple groups
+        for m, vname in enumerate(uniq_view_names):
+            uniq_group_names = np.unique(data_opts['group_names'])
+            group_y = [None] * len(uniq_group_names)
+            indices = np.where(np.array(data_opts['view_names']) == vname)[0]
+            group_names = [data_opts['group_names'][e] for e in indices]
+            assert len(group_names) == len(uniq_group_names), "Group names for one view should be unique"
             sample_groups = list()
-            group_y = [None] * len(group_names)
-            for j, group in enumerate(group_names):
-                file = data_opts["input_files"][j]
+            for j, i in enumerate(indices):
+                file = data_opts["input_files"][i]
+                group = data_opts["group_names"][i]
                 group_y[j] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
+                if data_opts['features_in_rows']: group_y[j] = group_y[j].T
                 sample_groups.extend([group for e in range(group_y[j].shape[0])])
                 print("Loaded %s with dim (%d, %d)..." % (file, group_y[j].shape[0], group_y[j].shape[1]))
             Y[m] = pd.concat(group_y)
 
-        
 
     # Deprecated for 2d models
     # Check that the dimensions match
@@ -152,14 +161,14 @@ def loadData(data_opts, verbose=True):
     #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
     #         exit()
     
-    if data_opts['features_in_rows']:
-        for m in range(M): Y[m] = Y[m].T
-        if len(set([Y[m].shape[1] for m in range(M)])) == 1:
-            print("\nWarning: Columns seem to be the shared axis, transposing the data...")
-            for m in range(M): Y[m] = Y[m].T
-        else:
-            print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
-            exit()
+    # if data_opts['features_in_rows']:
+    #     for m in range(M): Y[m] = Y[m].T
+    #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
+    #         print("\nWarning: Columns seem to be the shared axis, transposing the data...")
+    #         for m in range(M): Y[m] = Y[m].T
+    #     else:
+    #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
+    #         exit()
 
 
     for m in range(M):
@@ -332,10 +341,8 @@ def saveParameters(model, hdf5, view_names=None, group_names=None):
         if type(parameters) == list:
             # Loop through the views
             for m in range(len(parameters)):
-                if view_names is not None:
-                    tmp = view_names[m]
-                else:
-                    tmp = "%d" % m
+                tmp = np.unique(view_names)[m] if view_names is not None else "view_" + str(m)
+
                 # Create subsubgroup for the view
                 view_subgrp = node_subgrp.create_group(tmp)
                 # Loop through the parameters of the view
@@ -384,10 +391,7 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
 
             # Iterate over views
             for m in range(len(expectations)):
-                if view_names is not None:
-                    tmp = view_names[m]
-                else:
-                    tmp = "%d" % m
+                tmp = np.unique(view_names)[m] if view_names is not None else "view_" + str(m)
 
                 # Create subsubgroup for the view
                 view_subgrp = node_subgrp.create_group(tmp)
@@ -412,7 +416,7 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
 
                         # Expectations for the node like Y and Tau have both view and group structure
                         if node == "Y" or node == "Tau":
-                            for samp_group in group_names:
+                            for samp_group in np.unique(group_names):
                                 # create hdf5 group for the considered sample group
                                 samp_subgrp = view_subgrp.create_group(str(samp_group))
                                 samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
@@ -429,7 +433,7 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
             if node == "SZ":
                 expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
             if only_first_moments: expectations = {'E':expectations["E"]}
-            for samp_group in group_names:
+            for samp_group in np.unique(group_names):
                 # create hdf5 group for the considered sample group
                 samp_subgrp = node_subgrp.create_group(str(samp_group))
 
@@ -528,7 +532,7 @@ def saveTrainingData(model, hdf5, view_names=None, group_names=None, sample_grou
     sampledata_grp  = hdf5.create_group("samples")
 
     for m in range(len(data)):
-        view = view_names[m] if view_names is not None else "view_" + str(m)
+        view = np.unique(view_names)[m] if view_names is not None else "view_" + str(m)
 
         # Save features for the view
         if feature_names is not None:
@@ -536,14 +540,16 @@ def saveTrainingData(model, hdf5, view_names=None, group_names=None, sample_grou
 
         view_subgrp = data_grp.create_group(view)
 
-        # Save data and samples for the group
-        for samp_group in group_names:
+        # Save data for the view and the group
+        for samp_group in np.unique(group_names):
             samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
-
-            if sample_names is not None:
-                sampledata_grp.create_dataset(samp_group, data=[str(s).encode('utf8') for s in [sample_names[e] for e in samp_indices]])
-            
             view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:].data)
+
+    # Save samples for the group
+    for samp_group in np.unique(group_names):
+        samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
+        if sample_names is not None:
+            sampledata_grp.create_dataset(samp_group, data=[str(s).encode('utf8') for s in [sample_names[e] for e in samp_indices]])
 
 
 def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None, shared_features=False):

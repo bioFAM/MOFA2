@@ -28,7 +28,7 @@ def entry_point():
     p.add_argument( '--delimiter',         type=str, default=" ",                               help='Delimiter for input files' )
     p.add_argument( '--header-cols',       action='store_true',                                 help='Do the input files contain column names?' )
     p.add_argument( '--header-rows',       action='store_true',                                 help='Do the input files contain row names?' )
-    p.add_argument( '--samples-in-rows',      action="store_true", default=True,          help='Samples are in rows of the input files (default)' ) # TODO: check for conflicts with --cgenes_in_rows
+    p.add_argument( '--samples-in-rows',      action="store_true",          help='Samples are in rows of the input files (default)' ) # TODO: check for conflicts with --cgenes_in_rows
     p.add_argument( '--features-in-rows',      action="store_true", default=False,           help='Features (e.g. genes) are in rows of the input files' )  # TODO: check for conflicts with --cells_in_rows
 
     # Data normalisation options
@@ -174,6 +174,7 @@ def entry_point():
         data_opts['scale_features'] = [ False for l in args.likelihoods ]
 
     # Data options: if features are in rows or in columns
+    if not args.samples_in_rows and not args.features_in_rows: args.samples_in_rows = True
     assert args.features_in_rows != args.samples_in_rows, "Please choose if features or samples are in rows"
     data_opts['features_in_rows'] = args.features_in_rows
 
@@ -322,7 +323,7 @@ def entry_point():
     ## Build the model ##
     #####################
     
-    model = build_model(model_opts, data=data, dataX=dataX, dataClust=dataClust, dataGroups=sample_groups)
+    model = build_model(model_opts, data=data, dataX=dataX, dataClust=dataClust, data_groups=sample_groups)
 
     #####################
     ## Train the model ##

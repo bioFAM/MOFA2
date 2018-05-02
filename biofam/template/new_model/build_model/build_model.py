@@ -14,9 +14,9 @@ from biofam.build_model.utils import *
 
 #TODO : remove the 2 TODO before giving to britta
 # TODO find a better way to pass the data related arguments (eg, pass a dictionary with all the data in it)
-# TODO dataClust and dataGroups is for now confusing, to sort out
+# TODO dataClust and data_groups is for now confusing, to sort out
 
-def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None, dataGroups=None):
+def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariates=None, data_groups=None):
     """Method to build a bioFAM model"""
 
     print("\n")
@@ -206,8 +206,8 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             else:
                 init.initSigmaBlockZ_k(dataX, clust=dataClust, n_diag=n_diag)
         else:
-            if dataGroups is not None:
-                init.initAlphaZ_groups(dataGroups)
+            if data_groups is not None:
+                init.initAlphaZ_groups(data_groups)
             #qa = 1.; qb = 1.
             #init.initAlphaZ_k(pa=pa, pb=pb, qa=qa, qb=qb)
 
@@ -237,7 +237,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
         # if model_opts["learnIntercept"]:
         #     learnTheta[:,0] = 0. # Remove sparsity from the weight vector that will capture the feature-wise means
         learnTheta_ix = np.ones(K)
-        if model_opts["learnIntercept"]:
+        if model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
 
@@ -311,7 +311,7 @@ def build_model(model_opts, data=None, dataX=None, dataClust=None, dataCovariate
             #nodes["AlphaZ"].addMarkovBlanket(Z=nodes["Z"])
             #nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"])
         nodes["Z"].addMarkovBlanket(Y=nodes["Y"], SW=nodes["SW"], Tau=nodes["Tau"])
-        if dataGroups is not None:
+        if data_groups is not None:
             nodes["Z"].addMarkovBlanket(AlphaZ=nodes["AlphaZ"])
             nodes["AlphaZ"].addMarkovBlanket(Z=nodes['Z'])
 
