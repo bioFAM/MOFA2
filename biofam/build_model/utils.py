@@ -115,8 +115,8 @@ def loadData(data_opts, verbose=True):
     print ("\n")
     sleep(1)
 
-    M = len(data_opts['view_names'])
-    P = None if data_opts['group_names'] is None else len(data_opts['group_names'])
+    M = len(set(data_opts['view_names']))
+    P = None if data_opts['group_names'] is None else len(set(data_opts['group_names']))
 
     Y =  [None] * M
     sample_groups = None
@@ -127,20 +127,18 @@ def loadData(data_opts, verbose=True):
             file = data_opts['input_files'][m]
             Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
             group_name = data_opts['group_names'][0] if 'group_names' in data_opts else 'group_0'
-            sample_groups = np.array([group_name for e in range(Y[m].shape[0])])
+            sample_groups = list([group_name for e in range(Y[m].shape[0])])
             print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
         else:  # there are multiple groups
-            group_names = list(set(data_opts['group_names']))
-            sample_groups = np.empty()
-            for group in group_names:
-                group_indices = np.where([e == group for e in data_opts['group_names']])[0]
-                group_y = [None] * len(group_indices)
-                for i, j in enumerate(group_indices):
-                    file = data_opts["input_files"][i]
-                    group_y[j] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
-                    sample_groups = np.append(sample_groups, [group for e in range(group_y[j].shape[0])])
-                    print("Loaded %s with dim (%d, %d)..." % (file, group_y[j].shape[0], group_y[j].shape[1]))
-                Y[m] = np.concatenate(group_y)
+            group_names = data_opts['group_names']
+            sample_groups = list()
+            group_y = [None] * len(group_names)
+            for j, group in enumerate(group_names):
+                file = data_opts["input_files"][j]
+                group_y[j] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
+                sample_groups.extend([group for e in range(group_y[j].shape[0])])
+                print("Loaded %s with dim (%d, %d)..." % (file, group_y[j].shape[0], group_y[j].shape[1]))
+            Y[m] = pd.concat(group_y)
 
         
 
@@ -407,28 +405,34 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                     SigmaNode = node == "SigmaAlphaW" and nodes[node].getNodes()[m].__class__.__name__ != "AlphaW_Node_mk"
 
                     for exp_name in expectations[m].keys():
-                        if type(expectations[m][exp_name]) == ma.core.MaskedArray:
-                            tmp = ma.filled(expectations[m][exp_name], fill_value=np.nan)
+                        tmp = expectations[m][exp_name]
+                        if type(tmp) == ma.core.MaskedArray:
+                            tmp = ma.filled(tmp, fill_value=np.nan)
+
+                        # Expectations for the node like Y and Tau have both view and group structure
+                        if node == "Y" or node == "Tau":
+                            for samp_group in group_names:
+                                # create hdf5 group for the considered sample group
+                                samp_subgrp = view_subgrp.create_group(str(samp_group))
+                                samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
+                                df = tmp[samp_indices,:]
+                                samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
+                        else:
                             if SigmaNode:
                                 view_subgrp.create_dataset(exp_name, data=tmp)
                             else:
                                 view_subgrp.create_dataset(exp_name, data=tmp.T)
-
-                        else:
-                            if SigmaNode:
-                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name])
-                            else:
-                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name].T)
 
         # Single-view nodes
         else:
             if node == "SZ":
                 expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
             if only_first_moments: expectations = {'E':expectations["E"]}
-            for samp_group in range(len(group_names)):
+            for samp_group in group_names:
                 # create hdf5 group for the considered sample group
-                nm = group_names[samp_group]
-                samp_subgrp = node_subgrp.create_group(str(nm))
+                samp_subgrp = node_subgrp.create_group(str(samp_group))
+
+                samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
 
                 # iterate over expectation names
                 for exp_name in expectations.keys():
@@ -436,9 +440,9 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                     if node == "SigmaZ":
                         samp_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
                     else:
-                        # df = expectations[exp_name][sample_groups,:]
-                        # samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
-                        samp_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
+                        df = expectations[exp_name][samp_indices,:]
+                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
+
 
 def saveTrainingStats(model, hdf5):
     """ Method to save the training statistics in an hdf5 file
@@ -532,13 +536,13 @@ def saveTrainingData(model, hdf5, view_names=None, group_names=None, sample_grou
         view_subgrp = data_grp.create_group(view)
 
         # Save data and samples for the group
-        for samp_group in range(len(group_names)):
-            nm = group_names[samp_group]
+        for samp_group in group_names:
+            samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
 
             if sample_names is not None:
-                sampledata_grp.create_dataset(view, data=[str(s).encode('utf8') for s in [sample_names[e] for e in np.where(sample_groups == nm)[0]]])
-
-            view_subgrp.create_dataset(nm, data=data[m].data.T)
+                sampledata_grp.create_dataset(samp_group, data=[str(s).encode('utf8') for s in [sample_names[e] for e in samp_indices]])
+            
+            view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:].data)
 
 
 def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None, shared_features=False):
@@ -642,7 +646,7 @@ def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, gr
     assert model.trained, "Model is not trained yet"
 
     if view_names is not None:
-        assert len(np.unique(view_names)) == len(view_names), 'View names must be unique'
+        uniq_view_names = np.unique(view_names)
 
         # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
         idx = sorted(range(len(view_names)), key=lambda k: view_names[k])
@@ -651,8 +655,8 @@ def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, gr
 
     # if feature_names is not None:
     #     assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
-    if sample_names is not None:
-        assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
+    # if sample_names is not None:
+    #     assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model, hdf5, view_names, group_names, sample_groups)

@@ -358,4 +358,4 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
 getELBO <- function(object) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
   return(tail(object@TrainStats$elbo, 1))
-
+}

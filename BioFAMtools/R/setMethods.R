@@ -305,13 +305,13 @@ setMethod("groupNames<-", signature(object="BioFAModel", value="character"),
     if (!methods::.hasSlot(object,"TrainData") | length(object@TrainData) == 0)
       stop("Before assigning group names you have to assign the training data")
     if (methods::.hasSlot(object,"Dimensions") & length(object@Dimensions) != 0)
-      if(length(value) != object@Dimensions["H"])
+      if(length(value) != object@Dimensions["P"])
         stop("Length of group names does not match the dimensionality of the model")
     if (length(value) != length(object@TrainData[[1]]))
-      stop("Group names do not match the number of views in the training data")
+      stop("Group names do not match the number of groups in the training data")
     
     if (object@Status == "trained"){
-      multigroup_nodes <- c("Z", "Z", "AlphaZ")
+      multigroup_nodes <- c("Z", "Y", "AlphaZ")
       for (node in multigroup_nodes) {
         if (node %in% names(object@Expectations)) {
           if (node == "Y") {  # the only multi-view and multi-group node
@@ -319,7 +319,7 @@ setMethod("groupNames<-", signature(object="BioFAModel", value="character"),
               names(object@Expectations$Y[[m]]) <- value 
             }
           } else if (class(object@Expectations[[node]]) == "list" & 
-              length(object@Expectations[[node]]) == object@Dimensions["H"]) {
+              length(object@Expectations[[node]]) == object@Dimensions["P"]) {
             names(object@Expectations[[node]]) <- value 
           }
         }

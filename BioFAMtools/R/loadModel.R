@@ -95,7 +95,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
 
   # To keep reverse-compatibility with models without groups (e.g. MOFA models)
   if (!object@DataOptions$multiGroup) {
-    sampleData <- list("B1" = sampleData)
+    sampleData <- list("T1" = sampleData)
     # Samples should be in columns
     if (length(unique(sapply(TrainData, nrow))) == 1 && length(unique(sapply(TrainData, ncol))) > 1) {
       TrainData <- lapply(TrainData, t)
@@ -143,7 +143,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
 
   # Load dimensions
   object@Dimensions[["M"]] <- length(TrainData)
-  object@Dimensions[["H"]] <- length(TrainData[[1]])
+  object@Dimensions[["P"]] <- length(TrainData[[1]])
   object@Dimensions[["N"]] <- sapply(TrainData[[1]], ncol)
   object@Dimensions[["D"]] <- sapply(TrainData, function(e) nrow(e[[1]]))
   # K=tail(training_stats$activeK[!is.nan(training_stats$activeK)],n=1)
@@ -161,9 +161,9 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   # Give corresponding names for rows (features) and columns (samples)
   tryCatch( {
     for (m in names(TrainData)) {  # there is always at least one view
-      for (h in names(TrainData[[m]])) {  # there is always at least one group
-        rownames(TrainData[[m]][[h]]) <- featureData[[m]]
-        colnames(TrainData[[m]][[h]]) <- sampleData[[h]]
+      for (p in names(TrainData[[m]])) {  # there is always at least one group
+        rownames(TrainData[[m]][[p]]) <- featureData[[m]]
+        colnames(TrainData[[m]][[p]]) <- sampleData[[p]]
       }
     }
     object@TrainData <- TrainData
@@ -194,7 +194,7 @@ loadModel <- function(file, object = NULL, sortFactors = TRUE, multiView = NULL,
   }
   
   if (is.null(names(object@TrainData[[1]]))) {
-    groupNames(object) <- paste0("B", as.character(1:object@Dimensions[["H"]]))
+    groupNames(object) <- paste0("T", as.character(1:object@Dimensions[["P"]]))
   } else {
     groupNames(object) <- names(object@TrainData[[1]])
   }

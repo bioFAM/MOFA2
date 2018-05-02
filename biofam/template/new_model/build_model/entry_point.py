@@ -188,8 +188,8 @@ def entry_point():
         data_opts['sample_groups'] = sample_groups
 
     # Calculate dimensionalities
-    M = len(data_opts['view_names'])
-    P = len(data_opts['group_names'])
+    M = len(set(data_opts['view_names']))
+    P = len(set(data_opts['group_names']))
     N = data[0].shape[0]
     D = [data[m].shape[1] for m in range(M)]
 

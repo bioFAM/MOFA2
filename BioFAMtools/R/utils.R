@@ -137,7 +137,7 @@ detectPassengers <- function(object, views = "all", groups = "all", factors = "a
   
   # Identify factors unique to a single view by calculating relative R2 per factor
   r2 <- calculateVarianceExplained(object, views = views, groups = groups, factors = factors)$R2PerFactor
-  unique_factors <- unique(unlist(lapply(groups, function(h) names(which(rowSums(r2[[h]]>=r2_threshold)==1)) )))
+  unique_factors <- unique(unlist(lapply(groups, function(p) names(which(rowSums(r2[[p]]>=r2_threshold)==1)) )))
   
   # Mask samples that are unique in the unique factors
   missing <- lapply(getTrainData(object, views, groups), function(views) {
@@ -148,11 +148,13 @@ detectPassengers <- function(object, views = "all", groups = "all", factors = "a
   missing <- .name_views_and_groups(missing, viewNames(object), groupNames(object))
   for (factor in unique_factors) {
     # view <- names(which(r2[factor,]>=r2_threshold))
-    for (h in groups) {
-      view <- colnames(r2[[h]][,which(r2[[h]][factor,]>=r2_threshold),drop=F])
-      missing_samples <- missing[[view]][[h]]
-      if (length(missing_samples) > 0) {
-        Z[[h]][missing_samples,factor] <- NA
+    for (p in groups) {
+      view <- colnames(r2[[p]][,which(r2[[p]][factor,]>=r2_threshold),drop=F])
+      if (!is.null(view)) {
+        missing_samples <- missing[[view]][[p]]
+        if (length(missing_samples) > 0) {
+          Z[[p]][missing_samples, factor] <- NA
+        }
       }
     }
   }
