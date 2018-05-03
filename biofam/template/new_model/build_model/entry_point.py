@@ -15,65 +15,66 @@ def entry_point():
     p = argparse.ArgumentParser( description='Basic run script for BioFAM' )
 
     # I/O: Main files
-    p.add_argument( '--input-files',           type=str, nargs='+', required=True,                  help='Input data files (including extension)' )
-    p.add_argument( '--output-file',           type=str, required=True,                             help='Output data file (hdf5 format)' )
+    p.add_argument('--input-files',           type=str, nargs='+', required=True,  help='Input data files (including extension)')
+    p.add_argument('--output-file',           type=str, required=True,             help='Output data file (hdf5 format)')
 
     # I/O: Files descriptions
-    p.add_argument( '--views',              type=str, nargs='+', required=False,           help='View names')
-    p.add_argument( '--groups',             type=str, nargs='+', required=False,           help='Group names')
-    p.add_argument( '--treat-as-views',     action='store_true',            help='Treat all the input files as views')
-    p.add_argument( '--treat-as-groups',    action='store_true',            help='Treat all the input files as groups')
+    p.add_argument('--views',                 type=str, nargs='+', required=False, help='View names')
+    p.add_argument('--groups',                type=str, nargs='+', required=False, help='Group names')
+    p.add_argument('--treat-as-views',        action='store_true',                 help='Treat all the input files as views')
+    p.add_argument('--treat-as-groups',       action='store_true',                 help='Treat all the input files as groups')
 
     # Data files format options
-    p.add_argument( '--delimiter',         type=str, default=" ",                               help='Delimiter for input files' )
-    p.add_argument( '--header-cols',       action='store_true',                                 help='Do the input files contain column names?' )
-    p.add_argument( '--header-rows',       action='store_true',                                 help='Do the input files contain row names?' )
-    p.add_argument( '--samples-in-rows',      action="store_true",          help='Samples are in rows of the input files (default)' ) # TODO: check for conflicts with --cgenes_in_rows
-    p.add_argument( '--features-in-rows',      action="store_true", default=False,           help='Features (e.g. genes) are in rows of the input files' )  # TODO: check for conflicts with --cells_in_rows
+    p.add_argument('--delimiter',             type=str, default=" ",               help='Delimiter for input files')
+    p.add_argument('--header-cols',           action='store_true',                 help='Treat first row as of input files as column names')
+    p.add_argument('--header-rows',           action='store_true',                 help='Treat first column of input files as row names')
+    p.add_argument('--samples-in-rows',       action="store_true",                 help='Samples are in rows of the input files (default)')
+    p.add_argument('--features-in-rows',      action="store_true", default=False,  help='Features (e.g. genes) are in rows of the input files')
 
     # Data normalisation options
-    p.add_argument( '--center-features',    action="store_true",                          help='Center the features to zero-mean' )
-    p.add_argument( '--scale-features',     action="store_true",                          help='Scale the features to unit variance' )
-    p.add_argument( '--scale-views',        action="store_true",                          help='Scale the views to unit variance' )
-    p.add_argument( '--scale-groups',       action="store_true",                          help='Scale sample groups to unit variance' )  # TODO: implement per-group scaling
-    p.add_argument( '--scale-covariates',   type=int, nargs='+', default=0,               help='Scale covariates' )
+    p.add_argument('--center-features',       action="store_true",                 help='Center the features to zero-mean')
+    p.add_argument('--scale-features',        action="store_true",                 help='Scale the features to unit variance')
+    p.add_argument('--scale-views',           action="store_true",                 help='Scale the views to unit variance')
+    # p.add_argument('--scale-groups',          action="store_true",                 help='Scale sample groups to unit variance')  # TODO: implement per-group scaling
+    p.add_argument('--scale-covariates',      type=int, nargs='+', default=0,      help='Scale covariates' )
 
     # I/O: Additional files
-    p.add_argument( '--sample-groups-file',      type=str, default=None,                              help='If samples contain groups, file containing the labels of the samples')
-    p.add_argument( '--covariates-files',   type=str, nargs='+', default=None,                   help='Input data file for covariates')
-    p.add_argument( '--x-files',           type=str, nargs='+', default=None,                   help='Use positions of samples for covariance prior structure per factor')
-    p.add_argument( '--sigma-cluster-files', type=str, nargs='+', default=None,                   help='Use clusters assigned to samples for a block covariance prior structure per factor')
+    p.add_argument('--sample-groups-file',    type=str, default=None,              help='If samples contain groups, file containing the labels of the samples')
+    p.add_argument('--covariates-files',      type=str, nargs='+', default=None,   help='Input data file for covariates')
+    p.add_argument('--x-files',               type=str, nargs='+', default=None,   help='Use positions of samples for covariance prior structure per factor')
+    p.add_argument('--sigma-cluster-files',   type=str, nargs='+', default=None,   help='Use clusters assigned to samples for a block covariance prior structure per factor')
 
     # Model options
-    p.add_argument( '--feature-wise-noise',         action='store_true', default=True,           help='Noise parameter per feature (e.g. gene)' )
-    p.add_argument( '--sample-wise-noise',       action='store_true', default=False,           help='Noise parameter per sample' )
-    p.add_argument( '--feature-wise-sparsity', action='store_true', default=True,           help='Sparsity across features (e.g. genes)' )
-    p.add_argument( '--sample-wise-sparsity', action='store_true', default=False,           help='Sparsity across samples' )
-    p.add_argument( '--factors',            type=int, default=10,                         help='Initial number of latent variables')
-    p.add_argument( '--likelihoods',        type=str, nargs='+', required=True,           help='Likelihood per view, current options are bernoulli, gaussian, poisson')
-    p.add_argument( '--learn-intercept',     action='store_true',                          help='Learn the feature-wise mean?' )
-    p.add_argument('--ard-per-view',        action='store_false',                         help='ARD prior per view ? (relevant option if transpose_sparsity=1, X_Files=None and sample_X=None)')  # TODO: add symmetry with ard-per-group?
+    p.add_argument('--feature-wise-noise',    action='store_true', default=True,   help='Noise parameter per feature (e.g. gene)' )
+    p.add_argument('--sample-wise-noise',     action='store_true', default=False,  help='Noise parameter per sample')
+    p.add_argument('--feature-wise-sparsity', action='store_true', default=True,   help='Sparsity across features (e.g. genes)')
+    p.add_argument('--sample-wise-sparsity',  action='store_true', default=False,  help='Sparsity across samples')
+    p.add_argument('--factors',               type=int, default=10,                help='Initial number of latent variables')
+    p.add_argument('--likelihoods',           type=str, nargs='+', required=True,  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
+    p.add_argument('--learn-intercept',       action='store_true',                 help='Learn the feature-wise mean?')
+    p.add_argument('--ard-per-view',          action='store_false',                help='ARD prior per view (relevant option if --sample-wise-sparsity, no x_files, and no sample_x)')  # TODO: add symmetry with ard-per-group?
 
     # Training options
-    p.add_argument( '--elbofreq',           type=int, default=1,                          help='Frequency of computation of ELBO' )
-    p.add_argument( '--iter',               type=int, default=5000,                       help='Maximum number of iterations' )
-    p.add_argument( '--start-sparsity',      type=int, default=100,                        help='Iteration to activate the spike-and-slab')
-    p.add_argument( '--tolerance',          type=float, default=0.01 ,                    help='Tolerance for convergence (based on the change in ELBO)')
-    p.add_argument( '--start-drop',          type=int, default=1 ,                         help='First iteration to start dropping factors')
-    p.add_argument( '--freq-drop',           type=int, default=1 ,                         help='Frequency for dropping factors')
-    p.add_argument( '--drop-r2',             type=float, default=None ,                    help='Threshold to drop latent variables based on coefficient of determination' )
-    p.add_argument( '--non-stop',             action='store_true',                          help='Do not stop when convergence criterion is met' )
-    p.add_argument( '--verbose',            action='store_true',                          help='Use more detailed log messages?')
-    p.add_argument( '--seed',               type=int, default=0 ,                         help='Random seed' )
+    p.add_argument('--elbofreq',              type=int, default=1,                 help='Frequency of computation of ELBO')
+    p.add_argument('--iter',                  type=int, default=5000,              help='Maximum number of iterations')
+    p.add_argument('--start-sparsity',        type=int, default=100,               help='Iteration to activate the spike-and-slab')
+    p.add_argument('--tolerance',             type=float, default=0.01 ,           help='Tolerance for convergence (based on the change in ELBO)')
+    p.add_argument('--start-drop',            type=int, default=1 ,                help='First iteration to start dropping factors')
+    p.add_argument('--freq-drop',             type=int, default=1 ,                help='Frequency for dropping factors')
+    p.add_argument('--drop-r2',               type=float, default=None ,           help='Threshold to drop latent variables based on coefficient of determination')
+    p.add_argument('--non-stop',              action='store_true',                 help='Do not stop when convergence criterion is met')
+    p.add_argument('--verbose',               action='store_true',                 help='Use more detailed log messages')
+    p.add_argument('--seed',                  type=int, default=0 ,                help='Random seed' )
 
 
-    # TODO: what are those options below?..
+    # TODO: put options below into respective categories
+    # TODO: adapt options below for having clusters on Z
     
     # Misc
-    p.add_argument( '--permute-samples',   action='store_true', default=False,                  help='Permute samples positions in the data')
+    p.add_argument( '--permute-samples',      action='store_true', default=False,  help='Permute samples positions in the data')
     
     # Simulations
-    p.add_argument( '--sample_x',           action='store_true', default=False,           help='Sample the positions of the samples to test covariance prior structure per factor' )
+    p.add_argument( '--sample_x',             action='store_true', default=False,  help='Sample the positions of the samples to test covariance prior structure per factor' )
 
     args = p.parse_args()
 
@@ -93,7 +94,7 @@ def entry_point():
     data_opts['group_names'] = args.groups
 
     # File format
-    data_opts['delimiter']   = args.delimiter
+    data_opts['delimiter'] = args.delimiter
     data_opts['rownames'] = 0 if args.header_rows else None
     data_opts['colnames'] = 0 if args.header_rows else None
     data_opts['features_in_rows'] = args.features_in_rows if args.features_in_rows else not args.samples_in_rows
@@ -235,7 +236,7 @@ def entry_point():
     data_opts['x_files'] = args.x_files
     data_opts['sigma_cluster_files'] = args.sigma_cluster_files
     data_opts['permute_samples'] = args.permute_samples
-    # TODO load file here and add to data_opts
+    # TODO: load file here and add to data_opts
     # same for dataX etc
     
     dataX, dataClust = loadDataX(data_opts)
@@ -280,17 +281,16 @@ def entry_point():
     #################################
 
     train_opts = {}
-    train_opts['maxiter'] = args.iter                     # Maximum number of iterations
-    train_opts['elbofreq'] = args.elbofreq                # Lower bound computation frequency
-    train_opts['verbose'] = args.verbose                  # Verbosity
-    train_opts['verbose'] = 2                  # Verbosity
-    train_opts['drop'] = { "by_r2":args.drop_r2 }          # Minimum fraction of variance explained to drop latent variables while training
-    train_opts['start_drop'] = args.start_drop              # Initial iteration to start dropping factors
-    train_opts['freq_drop'] = args.freq_drop                # Frequency of dropping factors
-    train_opts['tolerance'] = args.tolerance              # Tolerance level for convergence
-    train_opts['forceiter'] = args.non_stop                 # Do no stop even when convergence criteria is met
-    train_opts['start_sparsity'] = args.start_sparsity      # Iteration to activate spike and slab sparsity
-    if args.seed is None or args.seed==0:                 # Seed for the random number generator
+    train_opts['maxiter'] = args.iter                            # Maximum number of iterations
+    train_opts['elbofreq'] = args.elbofreq                       # Lower bound computation frequency
+    train_opts['verbose'] = args.verbose if args.verbose else 2  # Verbosity
+    train_opts['drop'] = { "by_r2":args.drop_r2 }                # Minimum fraction of variance explained to drop latent variables while training
+    train_opts['start_drop'] = args.start_drop                   # Initial iteration to start dropping factors
+    train_opts['freq_drop'] = args.freq_drop                     # Frequency of dropping factors
+    train_opts['tolerance'] = args.tolerance                     # Tolerance level for convergence
+    train_opts['forceiter'] = args.non_stop                      # Do no stop even when convergence criteria is met
+    train_opts['start_sparsity'] = args.start_sparsity           # Iteration to activate spike and slab sparsity
+    if args.seed is None or args.seed==0:                        # Seed for the random number generator
         train_opts['seed'] = int(round(time()*1000)%1e6)
     else:
         train_opts['seed'] = args.seed
