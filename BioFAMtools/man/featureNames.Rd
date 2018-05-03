@@ -20,7 +20,7 @@ featureNames(object) <- value
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{value}{list of character vectors with the feature names for each view}
+\item{value}{list of character vectors with the feature names for every view}
 }
 \value{
 list of character vectors with the feature names for each view

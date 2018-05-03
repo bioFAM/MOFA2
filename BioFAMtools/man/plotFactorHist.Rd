@@ -5,7 +5,7 @@
 \title{Plot histogram of latent factor values}
 \usage{
 plotFactorHist(object, factor, group_by = NULL, group_names = "",
-  alpha = 0.5, binwidth = NULL, showMissing = FALSE)
+  alpha = 0.5, binwidth = NULL, showMissing = FALSE, ...)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}

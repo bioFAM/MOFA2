@@ -33,7 +33,7 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
   if(!factor %in% factorNames(object)) { stop("factor not recognised") }
   
   # Collect relevant data
-  N <- object@Dimensions[["N"]]
+  N <- sum(object@Dimensions[["N"]])
   Z <- getFactors(object, factors = factor, as.data.frame = TRUE)
   
   # get groups
@@ -63,11 +63,11 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
     }
     
   } else {
-    group_by <- rep(TRUE,N)
+    group_by <- rep(TRUE, N)
     groupLegend <- F
   }
   
-  names(group_by) <- sampleNames(object)
+  names(group_by) <- unname(do.call(c, sampleNames(object)))
   Z$group_by <- group_by[Z$sample]
 
   # Remove missing samples
@@ -234,7 +234,7 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
   
   # Collect relevant data  
   N <- object@Dimensions[["N"]]
-  Z <- getExpectations(object, "Z", "E")
+  Z <- getExpectations(object, "Z")
   factors <- as.character(factors)
   
   # Set color
@@ -292,7 +292,9 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
   }
   
   # Create data frame to plot
-  df = data.frame(x = Z[, factors[1]], y = Z[, factors[2]], shape_by = shape_by, color_by = color_by)
+  # NOTE: factor are concatenated across groupes
+  tmp <- lapply(Z, function(z) data.frame(x = z[, factors[1]], y = z[, factors[2]], shape_by = shape_by, color_by = color_by))
+  df <- do.call(rbind, tmp)
   
   # remove values missing color or shape annotation
   if (!showMissing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
@@ -365,11 +367,11 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
 
   # Collect relevant data
   N <- object@Dimensions[["N"]]
-  Z <- getExpectations(object, "Z", "E")
+  Z <- getExpectations(object, "Z")
   factors <- as.character(factors)
   
   # Get factors
-  if (paste0(factors,collapse="") == "all") { 
+  if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object) 
     # if(is.null(factors)) factors <- 1:ncol(Z) # old object are not compatible with factro names
   } else {
@@ -528,10 +530,10 @@ plotFactorCor <- function(object, method = "pearson", ...) {
   Z <- getFactors(object)
   
   # Remove intercept
-  if(object@ModelOpts$learnIntercept==TRUE) Z <- Z[,-1]
+  if(object@ModelOptions$LearnIntercept) Z <- lapply(Z, function(z) z[,-1])
   
   # Compute and plot correlation
-  r <- abs(cor(x=Z, y=Z, method=method, use = "complete.obs"))
+  r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))
   p <- corrplot(r, tl.col="black", ...)
   
   return(r)

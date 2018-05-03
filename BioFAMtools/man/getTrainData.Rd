@@ -4,7 +4,8 @@
 \alias{getTrainData}
 \title{getTrainData}
 \usage{
-getTrainData(object, views = "all", features = "all", as.data.frame = F)
+getTrainData(object, views = "all", groups = "all", features = "all",
+  as.data.frame = F)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

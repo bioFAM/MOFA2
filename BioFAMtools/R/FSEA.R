@@ -39,7 +39,7 @@ FeatureSetEnrichmentAnalysis <- function(object, view, feature.sets, factors = "
   # Define factors
   if (paste0(factors,collapse="") == "all") { factors <- factorNames(object) } 
     else if(is.numeric(factors)) {
-      if (object@ModelOpts$learnIntercept == T) factors <- factorNames(object)[factors+1]
+      if (object@ModelOptions$LearnIntercept) factors <- factorNames(object)[factors+1]
       else factors <- factorNames(object)[factors]
     }
       else{ stopifnot(all(factors %in% factorNames(object))) }

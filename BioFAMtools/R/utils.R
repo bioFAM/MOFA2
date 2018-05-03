@@ -21,7 +21,7 @@
   
   # Update node names
   if ("SW" %in% names(object@Expectations)) {
-    # object@ModelOpts$schedule[object@ModelOpts$schedule == "SW"] <- "W" # schedule is depreciated from ModelOpts
+    # object@ModelOptions$schedule[object@ModelOptions$schedule == "SW"] <- "W" # schedule is depreciated from ModelOptions
     names(object@Expectations)[names(object@Expectations) == "SW"] <- "W"
     colnames(object@TrainStats$elbo_terms)[colnames(object@TrainStats$elbo_terms)=="SW"] <- "W"
   }
@@ -29,44 +29,54 @@
     names(object@Expectations)[names(object@Expectations) == "SZ"] <- "Z"
     colnames(object@TrainStats$elbo_terms)[colnames(object@TrainStats$elbo_terms)=="SZ"] <- "Z"
   }
-  
+
   # Update expectations
-  if (is.list(object@Expectations$Z)) {
-    object@Expectations$Z <- object@Expectations$Z$E
-    
-    nodes=c("AlphaZ","SigmaZ","ThetaZ")
-    for (node in nodes){
-      if (node %in% names(object@Expectations)){
-        object@Expectations$node <- object@Expectations$node$E
-      }
-    }
-    
-    for (view in viewNames(object)) {
-      
-      object@Expectations$W[[view]] <- object@Expectations$W[[view]]$E
-      object@Expectations$Y[[view]] <- object@Expectations$Y[[view]]$E
-      object@Expectations$Tau[[view]] <- object@Expectations$Tau[[view]]$E
-      
-      nodes=c("AlphaW","SigmaAlphaW","ThetaW")
+  if (is.list(object@Expectations$Z[[1]]) & ("E" %in% names(object@Expectations$Z[[1]]))) {
+    # Multi-view nodes
+    for (m in viewNames(object)) {
+      nodes <- c("W", "AlphaW", "SigmaAlphaW", "ThetaW")
       for (node in nodes){
         if (node %in% names(object@Expectations)){
-          object@Expectations$node[[view]] <- object@Expectations$node[[view]]$E
+          object@Expectations[[node]][[m]] <- object@Expectations[[node]][[m]]$E
         }
       }
     }
-    
+    # Multi-group nodes
+    for (h in groupNames(object)) {
+      nodes <- c("Z", "AlphaZ", "SigmaZ", "ThetaZ")
+      for (node in nodes){
+        if (node %in% names(object@Expectations)){
+          object@Expectations[[node]][[h]] <- object@Expectations[[node]][[h]]$E
+        }
+      }
+    }
+    # Multi-view & multi-group nodes
+    for (m in viewNames(object)) {
+      for (h in groupNames(object)) {
+        object@Expectations$Y[[m]][[h]]   <- object@Expectations$Y[[m]][[h]]$E
+        object@Expectations$Tau[[m]][[h]] <- object@Expectations$Tau[[m]][[h]]$E
+      }
+    }
   }
   
-  # update learnMean to learnIntercept
-  if ("learnMean" %in% names(object@ModelOpts)) {
-    tmp <- names(object@ModelOpts)
-    tmp[tmp=="learnMean"] <- "learnIntercept"
-    names(object@ModelOpts) <- tmp
+  
+  # update LearnMean to LearnIntercept
+  if ("LearnMean" %in% names(object@ModelOptions)) {
+    tmp <- names(object@ModelOptions)
+    tmp[tmp=="LearnMean"] <- "LearnIntercept"
+    names(object@ModelOptions) <- tmp
   }
-  object@ModelOpts$learnIntercept <- as.logical(object@ModelOpts$learnIntercept)
+  object@ModelOptions$LearnIntercept <- as.logical(object@ModelOptions$LearnIntercept)
   
   
   return(object)
+}
+
+# Set view names and group names for nested list objects (e.g. Y)
+.name_views_and_groups <- function(nested_list, view_names, group_names) {
+  names(nested_list) <- view_names
+  for (view in view_names) { names(nested_list[[view]]) <- group_names }
+  nested_list
 }
 
 # Function to find factors that act like an intercept term for the sample, 
@@ -97,24 +107,30 @@ subset_augment <- function(mat, pats) {
 }
 
 
-detectPassengers <- function(object, views = "all", factors = "all", r2_threshold = 0.03) {
+detectPassengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.03) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-
-  # browser()
   
   # Define views
-  if (paste0(views,sep="",collapse="") == "all") { 
+  if (paste0(views, sep="", collapse="") == "all") { 
     views <- viewNames(object) 
   } else {
     stopifnot(all(views %in% viewNames(object)))  
   }
   M <- length(views)
+
+  # Define groups
+  if (paste0(groups, sep="", collapse="") == "all") { 
+    groups <- groupNames(object) 
+  } else {
+    stopifnot(all(groups %in% groupNames(object)))  
+  }
+  H <- length(groups)
   
   # Define factors
   factors <- as.character(factors)
-  if (paste0(factors,collapse="") == "all") { 
+  if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object)
   } else {
     stopifnot(all(factors %in% factorNames(object)))  
@@ -124,18 +140,26 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
   Z <- getFactors(object)
   
   # Identify factors unique to a single view by calculating relative R2 per factor
-  r2 <- calculateVarianceExplained(object, views = views, factors = factors)$R2PerFactor
-  unique_factors <- names(which(rowSums(r2>=r2_threshold)==1))
+  r2 <- calculateVarianceExplained(object, views = views, groups = groups, factors = factors)$R2PerFactor
+  unique_factors <- unique(unlist(lapply(groups, function(p) names(which(rowSums(r2[[p]]>=r2_threshold)==1)) )))
   
   # Mask samples that are unique in the unique factors
-  missing <- sapply(getTrainData(object,views), function(view) sampleNames(object)[apply(view, 2, function(x) all(is.na(x)))] )
-  names(missing) <- viewNames(object)
+  missing <- lapply(getTrainData(object, views, groups), function(views) {
+    lapply(views, function(group) {
+      sampleNames(object)[apply(group, 2, function(x) all(is.na(x)))]
+    })
+  })
+  missing <- .name_views_and_groups(missing, viewNames(object), groupNames(object))
   for (factor in unique_factors) {
     # view <- names(which(r2[factor,]>=r2_threshold))
-    view <- colnames(r2[,which(r2[factor,]>=r2_threshold),drop=F])
-    missing_samples <- missing[[view]]
-    if (length(missing_samples)>0) {
-      Z[missing_samples,factor] <- NA
+    for (p in groups) {
+      view <- colnames(r2[[p]][,which(r2[[p]][factor,]>=r2_threshold),drop=F])
+      if (!is.null(view)) {
+        missing_samples <- missing[[view]][[p]]
+        if (length(missing_samples) > 0) {
+          Z[[p]][missing_samples, factor] <- NA
+        }
+      }
     }
   }
   
@@ -147,3 +171,44 @@ detectPassengers <- function(object, views = "all", factors = "all", r2_threshol
 }
 
 
+flip_factor <- function(model, factor){
+  for(groupnm in names(model@Expectations$Z)) {
+    model@Expectations$Z[[groupnm]][,factor] <- - model@Expectations$Z[[groupnm]][,factor]
+  }
+  for(viewnm in names(model@Expectations$W)) {
+    model@Expectations$W[[viewnm]][,factor] <- -model@Expectations$W[[viewnm]][,factor]
+  }
+return(model)
+}
+
+
+
+
+.check_and_get_views <- function(object, views) {
+  if (is.numeric(views)) {
+    stopifnot(all(views <= object@Dimensions$M))
+    viewNames(object)[views] 
+  } else {
+    if (paste0(views, sep = "", collapse = "") == "all") { 
+      viewNames(object)
+    } else {
+      stopifnot(all(views %in% viewNames(object)))
+      views
+    }
+  }
+}
+
+
+.check_and_get_groups <- function(object, groups) {
+  if (is.numeric(groups)) {
+    stopifnot(all(groups <= object@Dimensions$M))
+    groupNames(object)[groups] 
+  } else {
+    if (paste0(groups, sep = "", collapse = "") == "all") { 
+      groupNames(object)
+    } else {
+      stopifnot(all(groups %in% groupNames(object)))
+      groups
+    }
+  }
+}

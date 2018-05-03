@@ -65,7 +65,7 @@ qualityControl <- function(object, verbose = F) {
   if (verbose==T) message("Checking likelihooods...")
   predicted_lik <- .inferLikelihoods(object)
   for (view in viewNames(object)) {
-    lk <- object@ModelOpts$likelihood[view]
+    lk <- object@ModelOptions$likelihood[view]
     if (lk != predicted_lik[view])
       message(sprintf("Warning, view %s should follow a %s distribution rather than %s ", view, predicted_lik[view], lk))
   }

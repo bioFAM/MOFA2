@@ -12,7 +12,6 @@ from biofam.core.BayesNet import *
 from biofam.build_model.init_model import initModel
 from biofam.build_model.utils import *
 
-
 # # QUESTION: do we need this ?
 class buildModel(object):
     def __init__(self):
@@ -176,14 +175,12 @@ class buildSpatialBiofam(buildBiofam):
                     params[m]={'pa': pa, 'pb':pb, 'qa':1., 'qb':1.}
             init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
 
-
         if dataX is not None:
             # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
             if dataClust is None:
                 init.initSigmaZ_k(dataX, n_diag=n_diag)
             else:
                 init.initSigmaBlockZ_k(dataX, clust=dataClust, n_diag=n_diag)
-
     def createMarkovBlankets(self):
         # TODO adapt this code
         if dataX is not None:
@@ -193,7 +190,6 @@ class buildSpatialBiofam(buildBiofam):
         if dataX is not None:
             nodes["SigmaZ"].addMarkovBlanket(Z=nodes["Z"])
             nodes["Z"].addMarkovBlanket(SigmaZ=nodes["SigmaZ"])
-
 
 
 class buildSimulationBiofam(buildBiofam):

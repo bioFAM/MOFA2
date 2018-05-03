@@ -253,7 +253,7 @@ class BayesNet(object):
         for i in range(self.options['maxiter']):
             t = time();
             # Remove inactive latent variables
-            if (i >= self.options["startdrop"]) and (i % self.options['freqdrop']) == 0:
+            if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
                 if any(self.options['drop'].values()):
                     self.removeInactiveFactors(**self.options['drop'])
                 activeK[i] = self.dim["K"]
@@ -262,7 +262,7 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 # print "Node: " + str(node)
                 # t = time()
-                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['startSparsity']:
+                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
                 self.nodes[node].update()
                 # print "time: " + str(time()-t)

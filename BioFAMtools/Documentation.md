@@ -2,9 +2,9 @@
 MOFAmodel it is the main S4 class used to store all relevant data to analyse a MOFA model. Its slots are the following (accessible using @):
 * **InputData**: input data, either a list of matrices or a MultiAssayExperiment
 * **TrainData**: training data, a list of matrices with processed data (centered, scaled, etc.)
-* **TrainOpts**: training options
-* **DataOpts**: data processing options
-* **ModelOpts**: model options
+* **TrainOptions**: training options
+* **DataOptions**: data processing options
+* **ModelOptions**: model options
 * **TrainStats**: training statistics
 * **Expectations**: expectations of the different random variables
 

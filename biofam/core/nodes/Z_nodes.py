@@ -104,10 +104,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
 
-            # DEPRECATED: tau is expanded inside the node
-            # if tau[m].shape != Y[m].shape:
-            #     tau[m] = s.repeat(tau[m].copy()[None,:], self.N, axis=0)
-
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.
@@ -325,14 +321,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qmean_T1, Qvar_T1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
         M = len(Y)  # number of views
-
-        # DEPRECATED: tau is expanded inside the node
-        # Check dimensions of Tau and and expand if necessary
-        # M = len(Y) #number of views
-        # for m in range(M):
-        #     if tau[m].shape != Y[m].shape:
-        #         tau[m] = s.repeat(tau[m][None,:], Y[m].shape[0], axis=0)
-        # tau = ma.masked_where(ma.getmask(Y), tau)
 
         # Mask matrices (excluding covariates from the list of latent variables)
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]

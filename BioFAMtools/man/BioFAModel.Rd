@@ -20,9 +20,9 @@ The \code{BioFAModel} is an S4 class used to store all relevant data to analyse 
    \item{\code{Expectations}:}{ expected values of the different variables of the model. }
    A list of matrices, one per variable. The most relevant are "W" for weights and "Z" for factors.
    \item{\code{TrainStats}:}{ list with training statistics such as evidence lower bound (ELBO), number of active factors, etc.}
-   \item{\code{DataOpts}:}{ list with the data processing options such as whether to center or scale the data.}
-   \item{\code{TrainOpts}:}{ list with the training options such as maximum number of iterations, tolerance for convergence, etc.}
-   \item{\code{ModelOpts}:}{ list with the model options such as likelihoods, whether an intercept factors was learnt, etc.}
+   \item{\code{DataOptions}:}{ list with the data processing options such as whether to center or scale the data.}
+   \item{\code{TrainOptions}:}{ list with the training options such as maximum number of iterations, tolerance for convergence, etc.}
+   \item{\code{ModelOptions}:}{ list with the model options such as likelihoods, whether an intercept factors was learnt, etc.}
    \item{\code{Dimensions}:}{ list with the relevant dimensionalities of the model. N for the number of samples, 
    M for the number of views, D for the number of features of each view and K for the number of infered latent factors.}
    \item{\code{Status}:}{Auxiliary variable indicating whether the model has been trained.}

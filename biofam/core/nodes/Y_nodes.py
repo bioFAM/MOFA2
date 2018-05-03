@@ -10,8 +10,8 @@ from biofam.core.utils import dotd
 from .variational_nodes import Constant_Variational_Node
 
 class Y_Node(Constant_Variational_Node):
-    def __init__(self, dim, value, transpose_noise):
-        tau_d = not transpose_noise
+    def __init__(self, dim, value, sample_wise_noise):
+        tau_d = not sample_wise_noise
         Constant_Variational_Node.__init__(self, dim, value, {'tau_d': tau_d})
 
         # Create a boolean mask of the data to hide missing values

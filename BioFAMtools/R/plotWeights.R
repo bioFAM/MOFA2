@@ -23,12 +23,14 @@ plotWeightsHeatmap <- function(object, view, features = "all", factors = "all", 
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+
+  if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(all(view %in% viewNames(object)))  
   
   # Get factors
   if (paste0(factors,collapse="") == "all") { factors <- factorNames(object) } 
     else if(is.numeric(factors)) {
-      if (object@ModelOpts$learnIntercept == T) factors <- factorNames(object)[factors+1]
+      if (object@ModelOptions$LearnIntercept) factors <- factorNames(object)[factors+1]
       else factors <- factorNames(object)[factors]
     }
       else{ stopifnot(all(factors %in% factorNames(object))) }
@@ -67,6 +69,148 @@ plotWeightsHeatmap <- function(object, view, features = "all", factors = "all", 
 }
 
 
+#' @title Scatterplot of weights for two factors
+#' @name plotWeightScatter
+#' @description Scatterplot of the weights values for two factors
+#' @param object a trained \code{\link{BioFAModel}} object.
+#' @param view character vector with the voiew name, or numeric vector with the index of the view to use.
+#' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
+#' using the factor names, or as numeric with the index of the factors
+#' @param color_by specifies groups or values used to color the samples. 
+#' This can be either 
+#' a character giving the name of a feature present in the training data, 
+#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
+#' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
+#' @param shape_by specifies groups or values used to shape the samples. 
+#' This can be either
+#' a character giving the name of a feature present in the training data, 
+#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
+#' or a vector of the same length as the number of samples specifying discrete groups.
+#' @param name_color name for color legend (usually only used if color_by is not a character itself)
+#' @param name_shape name for shape legend (usually only used if shape_by is not a character itself)
+#' @param showMissing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
+#' This method generates a single scatterplot for the combination of two latent factors.
+#' @return Returns a \code{ggplot2} object
+#' @import ggplot2
+#' @export
+plotWeightScatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, name_color="",
+                         name_shape="", showMissing = TRUE) {
+  
+  # Sanity checks
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  stopifnot(length(factors)==2)
+  stopifnot(all(factors %in% factorNames(object)))
+
+  if (is.numeric(view)) view <- viewNames(object)[view]
+  stopifnot(all(view %in% viewNames(object))) 
+
+  # Get factor
+  if(is.numeric(factors)) {
+      if (object@ModelOptions$LearnIntercept == T) {
+        factors <- factorNames(object)[factor+1]
+      } else {
+        factors <- factorNames(object)[factors]
+      }
+  } else { 
+    stopifnot(factors %in% factorNames(object))
+  }
+  
+  # Collect relevant data  
+  D <- object@Dimensions[["D"]][view]
+  W <- getWeights(object, views=view, factors=factors, as.data.frame = F)
+  W <- W[[view]][,factors]
+  
+  # Set color
+  colorLegend <- T
+  if (!is.null(color_by)) {
+    # It is the name of a covariate or a feature in the TrainData
+    if (length(color_by) == 1 & is.character(color_by)) {
+      if(name_color=="") name_color <- color_by
+      featureNames <- featureNames(object)
+      if(color_by %in% Reduce(union, featureNames)) {
+        viewidx <- which(sapply(featureNames, function(vnm) color_by %in% vnm))
+        color_by <- TrainData[[viewidx]][[1]][color_by,]
+      } else if(class(object@InputData) == "MultiAssayExperiment"){
+        color_by <- getCovariates(object, color_by)
+    }
+    else stop("'color_by' was specified but it was not recognised, please read the documentation")
+    # It is a vector of length N
+    } else if (length(color_by) > 1) {
+      stopifnot(length(color_by) == N)
+      # color_by <- as.factor(color_by)
+    } else {
+      stop("'color_by' was specified but it was not recognised, please read the documentation")
+    }
+  } else {
+    color_by <- rep(TRUE, D)
+    colorLegend <- F
+  }
+
+  # Set shape
+  shapeLegend <- T
+  if (!is.null(shape_by)) {
+    # It is the name of a covariate 
+    if (length(shape_by) == 1 & is.character(shape_by)) {
+      if(name_shape=="") name_shape <- shape_by
+      featureNames <- featureNames(object)
+      if(shape_by %in% Reduce(union,featureNames)) {
+        viewidx <- which(sapply(featureNames, function(vnm) shape_by %in% vnm))
+        shape_by <- TrainData[[viewidx]][[1]][shape_by,]
+      } else if(class(object@InputData) == "MultiAssayExperiment"){
+        shape_by <- getCovariates(object, shape_by)
+    }
+    else stop("'shape_by' was specified but it was not recognised, please read the documentation")
+    # It is a vector of length N
+    # It is a vector of length N
+    } else if (length(shape_by) > 1) {
+      stopifnot(length(shape_by) == N)
+    } else {
+      stop("'shape_by' was specified but it was not recognised, please read the documentation")
+    }
+  } else {
+    shape_by <- rep(TRUE, D)
+    shapeLegend <- F
+  }
+  
+  # Create data frame to plot
+  df <- data.frame(x = W[, factors[1]], y = W[, factors[2]], shape_by = shape_by, color_by = color_by)
+  
+  # remove values missing color or shape annotation
+  if (!showMissing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
+
+  #turn into factors
+  df$shape_by[is.na(df$shape_by)] <- "NA"
+  df$shape_by <- as.factor(df$shape_by)
+  if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
+ 
+  
+  xlabel <- paste("Latent factor", factors[1])
+  ylabel <- paste("Latent factor", factors[2])
+                                
+  p <- ggplot(df, aes_string(x = "x", y = "y")) + 
+      geom_point(aes_string(color = "color_by", shape = "shape_by")) + xlab(xlabel) + ylab(ylabel) +
+      # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
+      theme(plot.margin = margin(20, 20, 10, 10), 
+            axis.text = element_text(size = rel(1), color = "black"), 
+            axis.title = element_text(size = 16), 
+            axis.title.y = element_text(size = rel(1.1), margin = margin(0, 10, 0, 0)), 
+            axis.title.x = element_text(size = rel(1.1), margin = margin(10, 0, 0, 0)), 
+            axis.line = element_line(color = "black", size = 0.5), 
+            axis.ticks = element_line(color = "black", size = 0.5),
+            panel.border = element_blank(), 
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(), 
+            panel.background = element_blank(),
+            legend.key = element_rect(fill = "white"),
+            legend.text = element_text(size = 16),
+            legend.title = element_text(size =16)
+            )
+  if (colorLegend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
+  if (shapeLegend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
+  return(p)
+}
+
 
 #' @title Plot Weights
 #' @name plotWeights
@@ -89,11 +233,13 @@ plotWeights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual = 
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+
+  if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(all(view %in% viewNames(object))) 
 
   # Get factor
   if(is.numeric(factor)) {
-      if (object@ModelOpts$learnIntercept == T) factor <- factorNames(object)[factor+1]
+      if (object@ModelOptions$LearnIntercept == T) factor <- factorNames(object)[factor+1]
       else factor <- factorNames(object)[factor]
     } else{ stopifnot(factor %in% factorNames(object)) }
 
