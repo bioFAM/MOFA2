@@ -194,13 +194,13 @@ plotVarianceExplained <- function(object, views = "all", groups = "all", cluster
         axis.ticks =  element_blank(),
         panel.background = element_blank()
       )
-    hm <- hm + ggtitle("Variance explained per factor")  + 
+    hm <- hm + ggtitle(paste0("Variance explained per factor\nin group ", gr))  + 
       guides(fill=guide_colorbar("R2"))
     hms[[gr]] <- hm
     
     # Barplot with variance explained per view
     bplt <- ggplot(fvar_m_df[fvar_m_df$group == gr,], aes(x=view, y=R2)) + 
-      ggtitle("Total variance explained per view") +
+      ggtitle(paste0("Total variance explained per view\nin group ", gr)) +
       geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
       xlab("") + ylab("R2") +
       scale_y_continuous(expand=c(0.01,0.01)) +
