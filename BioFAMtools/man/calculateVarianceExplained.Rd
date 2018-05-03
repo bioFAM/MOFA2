@@ -4,19 +4,19 @@
 \alias{calculateVarianceExplained}
 \title{Calculate variance explained by the model}
 \usage{
-calculateVarianceExplained(object, views = "all", factors = "all",
-  include_intercept = TRUE, groups = "all", ...)
+calculateVarianceExplained(object, views = "all", groups = "all",
+  factors = "all", include_intercept = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
 \item{views}{character vector with the view names, or numeric vector with view indexes. Default is 'all'}
 
+\item{groups}{character vector with the group names, or numeric vector with group indexes. Default is 'all'}
+
 \item{factors}{character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'}
 
 \item{include_intercept}{include the intercept factor for calculation of variance explained (only used when an intercept was learned)}
-
-\item{groups}{character vector with the group names, or numeric vector with group indexes. Default is 'all'}
 }
 \value{
 a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone

@@ -10,7 +10,7 @@ prepareBioFAM(object, DirOptions, DataOptions = NULL, ModelOptions = NULL,
 \arguments{
 \item{object}{an untrained \code{\link{BioFAModel}}}
 
-\item{DirOptions}{list with Input/Output options, which must contain a 'dataDir' element where temporary text files will be stored 
+\item{DirOptions}{list with Input/Output options, which must contain a 'data_dir' element where temporary text files will be stored 
 and an 'outFile' with hdf5 extension where the final model will be stored.}
 
 \item{DataOptions}{list of DataOptions (see \code{\link{getDefaultDataOptions}} details). 
@@ -34,12 +34,12 @@ data <- list("gaussian_view"=matrix(rnorm(100,mean=0,sd=1),10,10), "poisson_view
 # Create a BioFAM object
 BioFAMobject <- createBioFAM(data)
 # Define I/O options
-DirOptions <- list("dataDir" = tempdir(), "outFile" = tempfile())
+DirOptions <- list("data_dir" = tempdir(), "output_file" = tempfile())
 # Define Data Options
 DataOptions <- getDefaultDataOptions()
 # Define Model Options
 ModelOptions <- getDefaultModelOptions(BioFAMobject)
-ModelOptions$likelihood <- ("gaussian","poisson")
+ModelOptions$likelihood <- ("gaussian", "poisson")
 ModelOptions <- getDefaultModelOptions(BioFAMobject)
 # Define Training Options
 TrainOptions <- getDefaultTrainOptions()

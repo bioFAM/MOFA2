@@ -4,7 +4,7 @@
 \alias{runBioFAM}
 \title{train an untrained BioFAModel}
 \usage{
-runBioFAM(object, DirOptions, ..., biofamPath = "biofam")
+runBioFAM(object, DirOptions, ..., biofam_path = "biofam")
 }
 \arguments{
 \item{object}{an untrained \code{\link{BioFAModel}} object}
@@ -27,5 +27,5 @@ Function to train an untrained \code{\link{BioFAModel}} object.
 In this step the R package is calling the \code{BioFAM} Python package, where the the training is performed. \cr
 The interface with Python is not great for now. Sometimes the training might freeze, but it is running from the background, just be patient! \cr
 It is important the \code{biofam} executable is on your $PATH so that R can detect it. This will generally be the case, 
-but if it is not, then you need to specify it manually in the \code{biofamPath} argument. Please, read our FAQ for troubleshooting. \cr
+but if it is not, then you need to specify it manually in the \code{biofam_path} argument. Please, read our FAQ for troubleshooting. \cr
 }
