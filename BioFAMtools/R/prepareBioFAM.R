@@ -3,7 +3,7 @@
 #' @name prepareBioFAM
 #' @description Function to prepare a \code{\link{BioFAModel}} object for training. It requires defining data, model and training options.
 #' @param object an untrained \code{\link{BioFAModel}}
-#' @param DirOptions list with Input/Output options, which must contain a 'dataDir' element where temporary text files will be stored 
+#' @param DirOptions list with Input/Output options, which must contain a 'data_dir' element where temporary text files will be stored 
 #' and an 'outFile' with hdf5 extension where the final model will be stored.
 #' @param DataOptions list of DataOptions (see \code{\link{getDefaultDataOptions}} details). 
 #' If NULL, default data options are used.
@@ -19,12 +19,12 @@
 #' # Create a BioFAM object
 #' BioFAMobject <- createBioFAM(data)
 #' # Define I/O options
-#' DirOptions <- list("dataDir" = tempdir(), "outFile" = tempfile())
+#' DirOptions <- list("data_dir" = tempdir(), "output_file" = tempfile())
 #' # Define Data Options
 #' DataOptions <- getDefaultDataOptions()
 #' # Define Model Options
 #' ModelOptions <- getDefaultModelOptions(BioFAMobject)
-#' ModelOptions$likelihood <- ("gaussian","poisson")
+#' ModelOptions$likelihood <- ("gaussian", "poisson")
 #' ModelOptions <- getDefaultModelOptions(BioFAMobject)
 #' # Define Training Options
 #' TrainOptions <- getDefaultTrainOptions()
@@ -39,7 +39,7 @@ prepareBioFAM <- function(object, DirOptions, DataOptions = NULL, ModelOptions =
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Create temporary folder to store data
-  dir.create(DirOptions$dataDir, showWarnings = F)
+  dir.create(DirOptions$data_dir, showWarnings = F)
   
   # Get data options
   message("Checking data options...")
@@ -76,21 +76,21 @@ prepareBioFAM <- function(object, DirOptions, DataOptions = NULL, ModelOptions =
   }
   
   # Store views as matrices in .txt files
-  message(sprintf("Storing input views in %s...", DirOptions$dataDir))
+  message(sprintf("Storing input views in %s...", DirOptions$data_dir))
   for(view in viewNames(object)) {
-    write.table(t(object@TrainData[[view]]), file=file.path(DirOptions$dataDir, paste0(view,".txt")),
+    write.table(t(object@TrainData[[view]]), file=file.path(DirOptions$data_dir, paste0(view,".txt")),
                 sep=object@DataOptions$delimiter, row.names=T, col.names=T, quote=F)
   }
   
   # Store covariates as a .txt file
   if (!is.null(ModelOptions$covariates)) {
-    write.table(ModelOptions$covariates, file=file.path(DirOptions$dataDir, "covariates.txt"),
+    write.table(ModelOptions$covariates, file=file.path(DirOptions$data_dir, "covariates.txt"),
                 sep=object@DataOptions$delimiter, row.names=F, col.names=F, quote=F)
   }
   
   # If output already exists, remove it
-  if (file.exists(DirOptions$outFile)) {
-    file.remove(DirOptions$outFile)
+  if (file.exists(DirOptions$output_file)) {
+    file.remove(DirOptions$output_file)
   }
   
   return(object)
@@ -117,11 +117,11 @@ prepareBioFAM <- function(object, DirOptions, DataOptions = NULL, ModelOptions =
 #' @export
 getDefaultTrainOptions <- function() {
   TrainOptions <- list(
-    maxiter = 1000,               # Maximum number of iterations
-    tolerance = 0.1,              # Convergence threshold based on change in the evidence lower bound
-    learnFactors = TRUE,          # (bool) learn the number of factors?
-    DropFactorThreshold = 0.02,   # Threshold on fraction of variance explained to drop a factor
-    verbose = F                   # verbosity?
+    maxiter               = 1000,         # Maximum number of iterations
+    tolerance             = 0.1,          # Convergence threshold based on change in the evidence lower bound
+    learn_factors         = TRUE,         # (bool) learn the number of factors?
+    drop_factor_threshold = 0.02,         # Threshold on fraction of variance explained to drop a factor
+    verbose               = F             # verbosity?
   )
   return(TrainOptions)
 }
@@ -147,10 +147,10 @@ getDefaultTrainOptions <- function() {
 #' @export
 getDefaultDataOptions <- function() {
   DataOptions <- list(
-    delimiter = "\t",            # Delimiter for the data
-    centerFeatures = F,          # Center features to zero mean (does not apply to binary or count views)
-    scaleViews = F,              # Scale views to unit variance (does not apply to binary or count views)
-    removeIncompleteSamples = F  # Remove incomplete samples that are not profiled in all omics?
+    delimiter                 = "\t",     # Delimiter for the data
+    center_features           = F,        # Center features to zero mean (does not apply to binary or count views)
+    scale_views               = F,        # Scale views to unit variance (does not apply to binary or count views)
+    remove_incomplete_samples = F         # Remove incomplete samples that are not profiled in all omics?
   )
   return(DataOptions)
 }
@@ -179,22 +179,22 @@ getDefaultModelOptions <- function(object) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  if (!.hasSlot(object,"Dimensions") | length(object@Dimensions) == 0) stop("Dimensions of object need to be defined before getting ModelOptions")
-  if (!.hasSlot(object,"InputData")) stop("InputData slot needs to be specified before getting ModelOptions")
-  if (!.hasSlot(object,"TrainData")) stop("TrainData slot needs to be specified before getting ModelOptions")
+  if (!.hasSlot(object, "Dimensions") | length(object@Dimensions) == 0) stop("Dimensions of object need to be defined before getting ModelOptions")
+  if (!.hasSlot(object, "InputData")) stop("InputData slot needs to be specified before getting ModelOptions")
+  if (!.hasSlot(object, "TrainData")) stop("TrainData slot needs to be specified before getting ModelOptions")
   
   # Guess likelihood type
   # likelihood = rep("gaussian", object@Dimensions[["M"]]); names(likelihood) <- viewNames(object)
   likelihood <- .inferLikelihoods(object)
-  message(paste0("Likelihoods guessed automatically: ",paste(likelihood,collapse=" ")))
+  message(paste0("Likelihoods guessed automatically: ", paste(likelihood, collapse=" ")))
   
   # Define default model options
   ModelOptions <- list(
-    likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    LearnIntercept = TRUE,      # (bool) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
-    numFactors = 25,            # (numeric) initial number of latent factors
-    sparsity = TRUE,            # use feature-wise sparsity?
-    covariates = NULL           # no covariates by default
+    likelihood      = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
+    learn_intercept = TRUE,          # (bool) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
+    num_factors     = 25,            # (numeric) initial number of latent factors
+    sparsity        = TRUE,          # use feature-wise sparsity?
+    covariates      = NULL           # no covariates by default
   )
   
   return(ModelOptions)
