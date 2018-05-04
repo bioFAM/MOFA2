@@ -29,6 +29,7 @@ class entry_point():
   def __init__(self):
     self.print_banner()
     self.dimensionalities = {}
+    self.model_opts = None
 
   def print_banner(self):
     """ Method to print the MOFA banner """
@@ -91,7 +92,7 @@ class entry_point():
 
   def set_train_options(self,
     iter=5000, elbofreq=1, ntrials=1, startSparsity=100, tolerance=0.01,
-    startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None, schedule=None
+    startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None
     ):
     """ Parse training options """
 
@@ -133,30 +134,30 @@ class entry_point():
       seed = 0
     self.train_opts['seed'] = int(seed)
 
-    # Define schedule of updates
-    if schedule is not None:
-      print("\nWarning... we recommend using the default training schedule\n")
-      self.train_opts['schedule'] = schedule
-    else:
-      self.train_opts['schedule'] = ( "Y", "W", "Z", "AlphaW", "ThetaW", "Tau" )
 
   def set_model(self, sl_z=False, sl_w=True, ard_z=False, ard_w=True):
-    self.model_def={}
+    if self.model_opts is None:
+        self.model_opts={}
 
-    self.model_def['sl_z'] = sl_z
-    self.model_def['sl_w'] = sl_w
+    self.model_opts['sl_z'] = sl_z
+    self.model_opts['sl_w'] = sl_w
 
-    self.model_def['ard_z'] = ard_z
-    self.model_def['ard_w'] = ard_w
+    self.model_opts['ard_z'] = ard_z
+    self.model_opts['ard_w'] = ard_w
 
 
-  def set_model_options(self, factors, likelihoods, schedule=None, learnTheta=True, learn_intercept=False):
+  def set_model_options(self, factors, likelihoods, learnTheta=True, learn_intercept=False):
     """ Parse model options """
 
     # TO-DO: SANITY CHECKS AND:
     # - learnTheta should be replaced by sparsity=True
 
-    self.model_opts = {}
+    if self.model_opts is None:
+        self.model_opts = {}
+
+    # TODO make that flexible everywhere but problem here is also that we cant actually have both
+    self.model_opts['feature_wise_noise'] = True
+    self.model_opts['sample_wise_noise'] = False
 
     # Define initial number of latent factors
     K = self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
@@ -289,8 +290,10 @@ class entry_point():
     self.model_opts["initZ"]["var"][idx] = 0.
 
   def build_and_run(self):
-    model_builder = buildBiofam(self.all_data, self.model_opts, self.model_def)
+    model_builder = buildBiofam(self.all_data, self.model_opts)
+
     self.model = model_builder.net
+    self.train_opts['schedule'] = model_builder.schedule
     self.model.setTrainOptions(self.train_opts)
 
     train_model(self.model, self.train_opts)
@@ -298,8 +301,7 @@ class entry_point():
     print("Saving model in %s...\n" % self.data_opts['output_file'])
     self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
     saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], train_opts=self.train_opts, model_opts=self.model_opts,
-                     view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.data_opts['sample_groups'],
-                     sample_names=self.data_opts['sample_names'], feature_names=self.data_opts['feature_names'])
+                     view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
 if __name__ == '__main__':
   a = entry_point()
@@ -313,7 +315,7 @@ if __name__ == '__main__':
   outfile ="/tmp/test.hdf5"
 
   a.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-  a.set_train_options(iter=50, tolerance=0.01, dropR2=0.0)
+  a.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
   a.set_model()
   a.set_model_options(factors=10, likelihoods=lik, learn_intercept=False)
   a.set_dataprocessing_options()

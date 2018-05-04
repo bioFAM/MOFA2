@@ -300,6 +300,9 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
         tau = self.markov_blanket["Tau"].getExpectation().copy()
         Y = self.markov_blanket["Y"].getExpectation().copy()
+        if "AlphaW" not in self.markov_blanket:
+            print("SW node not implemented wihtout ARD")
+            exit(1)
         alpha = self.markov_blanket["AlphaW"].getExpectation().copy()
         thetatmp = self.markov_blanket["ThetaW"].getExpectations()
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']

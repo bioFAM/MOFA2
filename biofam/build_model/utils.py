@@ -506,8 +506,8 @@ def saveModelOpts(opts, hdf5):
     opts:
     hdf5:
     """
-    # opts_interest = ["learnIntercept", "schedule", "likelihood"]
-    opts_interest = ["learn_intercept", "likelihood", "feature_wise_noise", "feature_wise_sparsity", "sample_wise_noise", "sample_wise_sparsity"]
+    # opts_interest = ["learnIntercept", "schedule", "likelihoods"]
+    opts_interest = ["learn_intercept", "likelihoods", "feature_wise_noise", "sl_z", "sample_wise_noise", "sl_w"]
     opts = dict((k, opts[k]) for k in opts_interest)
     grp = hdf5.create_group('model_opts')
     for k, v in opts.items():
@@ -669,8 +669,8 @@ def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, gr
 
         # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
         idx = sorted(range(len(view_names)), key=lambda k: view_names[k])
-        tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
-        model_opts["likelihood"] = tmp
+        tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
+        model_opts["likelihoods"] = tmp
 
     # if feature_names is not None:
     #     assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
@@ -700,8 +700,8 @@ def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, 
 
         # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
         idx = sorted(range(len(view_names)), key=lambda k: view_names[k])
-        tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
-        model_opts["likelihood"] = tmp
+        tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
+        model_opts["likelihoods"] = tmp
 
     # if feature_names is not None:
     #         assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'

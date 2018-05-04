@@ -21,7 +21,7 @@ class buildModel(object):
 # TODO create schedule here too ?
 class buildBiofam(buildModel):
 
-    def  __init__(self, data_opts, model_opts, model_def):
+    def  __init__(self, data_opts, model_opts):
         # defining model's dimensionalities
         self.data = data_opts['data']
         M = len(self.data)
@@ -42,7 +42,6 @@ class buildBiofam(buildModel):
 
         # save options in the object
         self.data_opts = data_opts
-        self.model_def = model_def
         self.model_opts = model_opts
 
         # create an instance of initModel and start buidling
@@ -57,18 +56,19 @@ class buildBiofam(buildModel):
         self.build_Tau()
 
         # define ARDs
-        if self.model_def['ard_z']:
+        if self.model_opts['ard_z']:
             self.build_AlphaZ()
-        if self.model_def['ard_w']:
+        if self.model_opts['ard_w']:
             self.build_AlphaW()
 
         # define thetas
-        if self.model_def['sl_z']:
+        if self.model_opts['sl_z']:
             self.build_ThetaZ()
-        if self.model_def['sl_w']:
+        if self.model_opts['sl_w']:
             self.build_ThetaW()
 
         self.createMarkovBlankets()
+        self.createSchedule()
         self.net = BayesNet(dim=self.dim, nodes=self.init_model.getNodes())
 
     def build_Y(self):
@@ -79,7 +79,7 @@ class buildBiofam(buildModel):
         # Initialise latent variables
         # TODO change to 'if sl_Z in model_opts ' ? would enable to not have to
         # add all the possible options to model_opt
-        if self.model_def['sl_z']:
+        if self.model_opts['sl_z']:
             self.init_model.initSZ()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
@@ -87,7 +87,7 @@ class buildBiofam(buildModel):
 
     def build_W(self):
         #Initialise weights
-        if self.model_def['sl_w']:
+        if self.model_opts['sl_w']:
             self.init_model.initSW()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
@@ -100,7 +100,7 @@ class buildBiofam(buildModel):
 
     def build_AlphaZ(self):
         # cases to distinguish are whether there are groups or not and whether we should account for them
-        if data_opts['sample_groups'] is not None:
+        if self.data_opts['sample_groups'] is not None:
             self.init_model.initAlphaZ_groups(self.data_opts['sample_groups'])
         else:
             self.init_model.initAlphaZ_k()
@@ -143,20 +143,51 @@ class buildBiofam(buildModel):
         nodes['Tau'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Z=nodes["Z"])
 
         # adding theta nodes if spike and slab
-        if self.model_def['sl_z']:
+        if self.model_opts['sl_z']:
             nodes['Z'].addMarkovBlanket(ThetaZ=nodes["ThetaZ"])
             nodes["ThetaZ"].addMarkovBlanket(Z=nodes["Z"])
-        if self.model_def['sl_w']:
+        if self.model_opts['sl_w']:
             nodes['W'].addMarkovBlanket(ThetaW=nodes["ThetaW"])
             nodes["ThetaW"].addMarkovBlanket(W=nodes["W"])
 
         # adding alpha nodes if ARD
-        if self.model_def['ard_z']:
+        if self.model_opts['ard_z']:
             nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
             nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
-        if self.model_def['ard_w']:
+        if self.model_opts['ard_w']:
             nodes['AlphaW'].addMarkovBlanket(W=nodes['W'])
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
+
+    def createSchedule(self):
+        schedule = np.array(['Y', 'W', 'Z', 'Tau'])
+
+        # insert thetaW after W
+        if self.model_opts['sl_w']:
+            ix = self.find_node(schedule, 'W')[0][0]
+            np.insert(schedule, ix + 1, 'ThetaW')
+
+        if self.model_opts['sl_z']:
+            ix = self.find_node(schedule, 'Z')[0][0]
+            np.insert(schedule, ix + 1, 'ThetaZ')
+
+        if self.model_opts['ard_w']:
+            ix = self.find_node(schedule, 'W')[0][0]
+            np.insert(schedule, ix + 1, 'AlphaW')
+
+        if self.model_opts['ard_z']:
+            ix = self.find_node(schedule, 'Z')[0][0]
+            np.insert(schedule, ix + 1, 'AlphaZ')
+
+        self.schedule = schedule
+
+    def find_node(self, arr, nd):
+        truth_table = (arr == nd)
+        indices = np.where(truth_table)
+        if len(indices) == 0:
+            print('Warning, node', nd, 'not found')
+        if len(indices) >1 :
+            print('Warning, node', nd, 'found on multiple locations')
+        return indices
 
 
 class buildSpatialBiofam(buildBiofam):
