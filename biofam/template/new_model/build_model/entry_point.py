@@ -53,10 +53,10 @@ class entry_point():
     ):
     """ Parse I/O data options """
 
-    # TO-DO: sanity checks
+    # TODO: sanity checks
     # - Check that input file exists
     # - Check that output directory exists: warning if not
-    # TO-DO: Verbosity, print messages
+    # TODO: Verbosity, print messages
 
     self.data_opts = {}
 
@@ -67,7 +67,7 @@ class entry_point():
     self.data_opts['output_file'] = outFile
     self.data_opts['delimiter'] = delimiter
 
-    # View names
+    # View names and group names (sample groups)
     if type(views) is not list:
       views = [views]
     if type(groups) is not list:
@@ -96,7 +96,7 @@ class entry_point():
     ):
     """ Parse training options """
 
-    # TO-DO: verbosity, print more messages
+    # TODO: verbosity, print more messages
 
     self.train_opts = {}
 
@@ -135,29 +135,27 @@ class entry_point():
     self.train_opts['seed'] = int(seed)
 
 
-  def set_model(self, sl_z=False, sl_w=True, ard_z=False, ard_w=True):
+  def set_model(self, sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features'):
+    """ define the model: where to use spike and slab and where to use ARD """
     if self.model_opts is None:
-        self.model_opts={}
-
+      self.model_opts = {}
     self.model_opts['sl_z'] = sl_z
     self.model_opts['sl_w'] = sl_w
 
     self.model_opts['ard_z'] = ard_z
     self.model_opts['ard_w'] = ard_w
 
+    self.model_opts['noise_on'] = noise_on
+
 
   def set_model_options(self, factors, likelihoods, learnTheta=True, learn_intercept=False):
     """ Parse model options """
 
-    # TO-DO: SANITY CHECKS AND:
+    # TODO: SANITY CHECKS AND:
     # - learnTheta should be replaced by sparsity=True
 
     if self.model_opts is None:
         self.model_opts = {}
-
-    # TODO make that flexible everywhere but problem here is also that we cant actually have both
-    self.model_opts['feature_wise_noise'] = True
-    self.model_opts['sample_wise_noise'] = False
 
     # Define initial number of latent factors
     K = self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
@@ -201,10 +199,9 @@ class entry_point():
 
     """ Parse data processing options """
 
-    # TO-DO: more verbose messages
+    # TODO: more verbose messages
+    # TODO Sanity checks
 
-
-    # Sanity checks
     M = self.dimensionalities["M"]
     # assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
 
@@ -245,7 +242,6 @@ class entry_point():
     # Remove incomplete samples?
     self.data_opts['RemoveIncompleteSamples'] = RemoveIncompleteSamples
 
-  # TODO load other necessary things and also handle the multiple samples
   def load_data(self):
     """ Load the data """
 

@@ -445,8 +445,8 @@ class initModel(object):
 
         self.nodes["SigmaAlphaW"] = Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 
-    # TODO split this into two functions
-    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, transposed=False):
+    # TODO split this into two functions ?
+    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, on='features'):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -474,28 +474,33 @@ class initModel(object):
                 tmp = 0.25*s.amax(self.data["tot"][m],axis=0)
                 tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
             elif self.lik[m] == "gaussian":
-                if transposed:
+                if on == 'samples':
                     tau_list[m] = TauN_Node(dim=(self.N,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
                     print("Using TauN noise!")
-                else:
+                elif on == 'features':
                     tau_list[m] = TauD_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+                else:
+                    print('did not understand noise option on =', on)
+                    exit(1)
             # elif self.lik[m] == "warp":
             #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
-    def initY(self, sample_wise_noise=False):  # TODO: make independent of noise
+    # TODO: make independent of noise but the problem for that is that precompute() needs to know and is called
+    # before the markov_blanket is defined
+    def initY(self, noise_on='features'):
         """Method to initialise the observations"""
         Y_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m]=="gaussian":
-                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], sample_wise_noise=sample_wise_noise)
+                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], noise_on=noise_on)
             elif self.lik[m]=="poisson":
                 # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
-                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None, sample_wise_noise=sample_wise_noise)
+                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None, noise_on=noise_on)
             elif self.lik[m]=="bernoulli":
                 # Y_list[m] = Bernoulli_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
                 # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
-                Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None, sample_wise_noise=sample_wise_noise)
+                Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None, noise_on=noise_on)
                 # Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
             # elif self.lik[m]=="warp":
             #     print "Not implemented"

@@ -507,7 +507,7 @@ def saveModelOpts(opts, hdf5):
     hdf5:
     """
     # opts_interest = ["learnIntercept", "schedule", "likelihoods"]
-    opts_interest = ["learn_intercept", "likelihoods", "feature_wise_noise", "sl_z", "sample_wise_noise", "sl_w"]
+    opts_interest = ["learn_intercept", "likelihoods", "noise_on", "sl_z", "sl_w"]
     opts = dict((k, opts[k]) for k in opts_interest)
     grp = hdf5.create_group('model_opts')
     for k, v in opts.items():

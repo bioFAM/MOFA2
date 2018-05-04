@@ -18,7 +18,6 @@ class buildModel(object):
         self.net = None
 
 # TODO could also split in  different model: pne basic parent with no ARD, one below which would be groups biofam where you choose what ARD to use
-# TODO create schedule here too ?
 class buildBiofam(buildModel):
 
     def  __init__(self, data_opts, model_opts):
@@ -73,7 +72,7 @@ class buildBiofam(buildModel):
 
     def build_Y(self):
         # TODO enable a noise on cells instead of features with some option
-        self.init_model.initY(sample_wise_noise=False)
+        self.init_model.initY(noise_on=self.model_opts['noise_on'])
 
     def build_Z(self):
         # Initialise latent variables
@@ -95,8 +94,8 @@ class buildBiofam(buildModel):
             self.init_model.initW()
 
     def build_Tau(self):
-        # TODO sort out dimensionality of Tau
-        self.init_model.initTau(transposed=False)
+        # TODO sort out how to choose where to use Tau
+        self.init_model.initTau(on=self.model_opts['noise_on'])
 
     def build_AlphaZ(self):
         # cases to distinguish are whether there are groups or not and whether we should account for them

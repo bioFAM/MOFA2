@@ -10,9 +10,9 @@ from biofam.core.utils import dotd
 from .variational_nodes import Constant_Variational_Node
 
 class Y_Node(Constant_Variational_Node):
-    def __init__(self, dim, value, sample_wise_noise):
-        tau_d = not sample_wise_noise
-        Constant_Variational_Node.__init__(self, dim, value, {'tau_d': tau_d})
+    def __init__(self, dim, value, noise_on='features'):
+        self.noise_on = noise_on
+        Constant_Variational_Node.__init__(self, dim, value)
 
         # Create a boolean mask of the data to hide missing values
         if type(self.value) != ma.MaskedArray:
@@ -27,8 +27,9 @@ class Y_Node(Constant_Variational_Node):
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
 
         # Precompute the constant depending on the noise dimensions
-        #  TODO rewrite with no tau_d argument
-        if self.opts['tau_d']:
+        # TODO rewrite with no tau_d argument but problem is thatprecompute is
+        # called before the markov_blanket is defined so we need this info here
+        if self.noise_on == 'features':
             self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
         else:
             self.likconst = -0.5 * s.sum(self.D) * s.log(2.*s.pi)
