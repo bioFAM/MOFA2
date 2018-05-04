@@ -117,7 +117,7 @@ def loadData(data_opts, verbose=True):
 
     uniq_view_names = np.unique(data_opts['view_names'])
     M = len(uniq_view_names)
-    P = None if data_opts['group_names'] is None else len(set(data_opts['group_names']))
+    P = None if not ('group_names' in  data_opts) else len(set(data_opts['group_names']))
 
     Y =  [None] * M
     sample_groups = None

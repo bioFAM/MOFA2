@@ -17,40 +17,39 @@ class buildModel(object):
     def __init__(self):
         self.BayesNet = None
 
-# no spatial covariance in that but create child node instead
-# model_opts should mostly contain 4 T/F flags for ARD on Z/W and SL on Z/W, plus the dimension on which to put the noise ?
-# model_opts should also contain initial K
-# do we also have a noise per group on N ? do we also handle theta per group on n ?
-# data_opts should contain data, sample group labels and thats it for now
 # TODO could also split in  different model: pne basic parent with no ARD, one below which would be groups biofam where you choose what ARD to use
 # TODO create schedule here too ?
 class buildBiofam(buildModel):
 
-    def  __init__(self, data_opts, model_opts):
+    def  __init__(self, data_opts, model_opts, model_def):
         # defining model's dimensionalities
         self.data = data_opts['data']
         M = len(self.data)
-        N = self.data[0].shape[0]
-        D = s.asarray([data[m].shape[1] for m in range(M)])
-        K = model_opts["K"]
+        # TODO fix
+        M=1
+        N = self.data[0][0].shape[0]
+        import pdb; pdb.set_trace()
+        D = s.asarray([self.data[m][0].shape[1] for m in range(M)])
+        K = model_opts["factors"]
         self.dim = {'M': M, 'N': N, 'D': D, 'K': K}
 
-        # update for learning learnIntercept
-        if model_opts["learnIntercept"]:
-            dim["K"] += 1
-            if model_opts['covariatesFiles'] is not None:
+        # update for learning learn_intercept
+        if model_opts["learn_intercept"]:
+            self.dim["K"] += 1
+            if 'covariates_files' in model_opts:
                 model_opts['covariatesFiles'] = s.insert(model_opts['covariatesFiles'], obj=0, values=1, axis=1)
                 model_opts['scale_covariates'].insert(0,False)
             else:
-                model_opts['covariatesFiles'] = s.ones((dim["N"],1))
+                model_opts['covariates_files'] = s.ones((dim["N"],1))
                 model_opts['scale_covariates'] = [False]
 
         # save options in the object
         self.data_opts = data_opts
+        self.model_def = model_def
         self.model_opts = model_opts
 
         # create an instance of initModel and start buidling
-        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihood"])
+        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"])
         self.BayesNet = None
         self.build_all()
 
@@ -61,41 +60,42 @@ class buildBiofam(buildModel):
         self.build_Tau()
 
         # define ARDs
-        if self.model_opts['ard_Z']:
+        if self.model_def['ard_z']:
             self.buildAlphAZ()
-        if self.model_opts['ard_W']:
+        if self.model_def['ard_w']:
             self.buildAlphAW()
 
         # define thetas
-        if self.model_opts['sl_Z']:
+        if self.model_def['sl_z']:
             self.build_ThetaZ()
-        if self.model_opts['sl_W']:
+        if self.model_def['sl_w']:
             self.build_ThetaW()
 
         self.createMarkovBlankets()
         self.net = BayesNet(dim=self.dim, nodes=self.init_model.getNodes())
 
     def build_Y(self):
-        self.init_model.initY(transpose_noise=self.model_opts["transpose_noise"])
+        # TODO enable a noise on cells instead of features with some option
+        self.init_model.initY(transpose_noise=False)
 
     def build_Z(self):
         # Initialise latent variables
         # TODO change to 'if sl_Z in model_opts ' ? would enable to not have to
         # add all the possible options to model_opt
-        if self.model_opts['sl_Z']:
-            init.initSZ()
+        if self.model_def['sl_z']:
+            self.init_model.initSZ()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
-            init.initZ()
+            self.init_model.initZ()
 
     def build_W(self):
         #Initialise weights
-        if self.model_opts['sl_W']:
-            init.initSW()
+        if self.model_def['sl_w']:
+            self.init_model.initSW()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
             # TODO could also make sure that SZ and SW can have a Sigma covariance prior
-            init.initW()
+            self.init_model.initW()
 
     def build_Tau(self):
         self.init_model.initTau(transposed=self.model_opts["transpose_noise"])
@@ -116,7 +116,7 @@ class buildBiofam(buildModel):
         learnTheta_ix = np.ones(self.dim['K'])
 
         # TODO: this for loop cannot possibly work change
-        if model_opts["learnIntercept"]:
+        if model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
 
@@ -129,7 +129,7 @@ class buildBiofam(buildModel):
         learnTheta_ix = [np.ones(K)] * M
 
         # TODO: this for loop cannot possibly work change
-        if model_opts["learnIntercept"]:
+        if model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
 
@@ -144,18 +144,18 @@ class buildBiofam(buildModel):
         nodes['Tau'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Z=nodes["Z"])
 
         # adding theta nodes if spike and slab
-        if self.model_opts['sl_Z']:
+        if self.model_def['sl_z']:
             nodes['Z'].addMarkovBlanket(ThetaZ=nodes["ThetaZ"])
             nodes["ThetaZ"].addMarkovBlanket(Z=nodes["Z"])
-        if self.model_opts['sl_W']:
+        if self.model_def['sl_w']:
             nodes['W'].addMarkovBlanket(ThetaW=nodes["ThetaW"])
             nodes["ThetaW"].addMarkovBlanket(W=nodes["W"])
 
         # adding alpha nodes if ARD
-        if self.model_opts['ard_Z']:
+        if self.model_def['ard_z']:
             nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
             nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
-        if self.model_opts['ard_W']:
+        if self.model_def['ard_w']:
             nodes['AlphaW'].addMarkovBlanket(W=nodes['W'])
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
 
@@ -198,7 +198,7 @@ class buildSimulationBiofam(buildBiofam):
         N = model_opts['N']
         D = model_opts['D']
 
-        self.init_model = initNewModel(dim, data, model_opts["likelihood"])
+        self.init_model = initNewModel(dim, data, model_opts["likelihoods"])
 
     def build_all():
         # TODO add somewhere

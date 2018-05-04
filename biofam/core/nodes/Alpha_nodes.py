@@ -102,7 +102,7 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
         tmp = self.markov_blanket["Z"].getExpectations()
         if 'ENN' in tmp:
             EZZ = tmp["ENN"]
-        else
+        else:
             EZZ = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
