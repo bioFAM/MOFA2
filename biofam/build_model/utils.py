@@ -160,7 +160,7 @@ def loadData(data_opts, verbose=True):
     #     else:
     #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
     #         exit()
-    
+
     # if data_opts['features_in_rows']:
     #     for m in range(M): Y[m] = Y[m].T
     #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
@@ -526,9 +526,9 @@ def saveTrainingData(model, hdf5, view_names=None, group_names=None, sample_grou
     sample_names
     feature_names
     """
-    
+
     # check if there are sample groups in the model
-    
+
     # if 'AlphaZ' in nodes and isinstance(nodes["AlphaZ"], AlphaZ_Node_groups):
     #     sample_groups = nodes["AlphaZ"].groups
     #     group_names = nodes['AlphaZ'].group_names

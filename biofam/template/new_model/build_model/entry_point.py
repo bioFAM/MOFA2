@@ -5,6 +5,7 @@ import sys
 from time import sleep
 
 from build_model import *
+from biofam.build_model.train_model import train_model
 
 """
 TO-DO:
@@ -43,10 +44,10 @@ class entry_point():
     ########################################################### """
 
     print(banner)
-    sleep(2)
+    # sleep(2)
 
   def set_data_options(self,
-    inFiles, outFile, views,
+    inFiles, outFile, views, groups,
     delimiter=" ", header_cols=False, header_rows=False
     ):
     """ Parse I/O data options """
@@ -68,7 +69,10 @@ class entry_point():
     # View names
     if type(views) is not list:
       views = [views]
+    if type(groups) is not list:
+      views = [groups]
     self.data_opts['view_names'] = views
+    self.data_opts['group_names'] = groups
 
     # Headers
     if header_rows is True:
@@ -82,11 +86,12 @@ class entry_point():
       self.data_opts['colnames'] = None
 
 
-    self.dimensionalities["M"] = len(self.data_opts['input_files'])
+    self.dimensionalities['M'] = len(set(self.data_opts['view_names']))
+    self.dimensionalities['P'] = len(set(self.data_opts['group_names']))
 
   def set_train_options(self,
     iter=5000, elbofreq=1, ntrials=1, startSparsity=100, tolerance=0.01,
-    startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None
+    startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None, schedule=None
     ):
     """ Parse training options """
 
@@ -128,8 +133,13 @@ class entry_point():
       seed = 0
     self.train_opts['seed'] = int(seed)
 
+    # Define schedule of updates
+    if schedule is not None:
+      print("\nWarning... we recommend using the default training schedule\n")
+      self.train_opts['schedule'] = schedule
+    else:
+      self.train_opts['schedule'] = ( "Y", "W", "Z", "AlphaW", "ThetaW", "Tau" )
 
-  # TODO add the model choice here: spike and slab option * 2 ARD option * 2
   def set_model(self, sl_z=False, sl_w=True, ard_z=False, ard_w=True):
     self.model_def={}
 
@@ -177,18 +187,12 @@ class entry_point():
     #   self.model_opts['learnTheta'] = [ learnTheta[m]*s.ones(K) for m in range(M) ]
     else:
        print("--learnTheta has to be either 1 or 0 or a binary vector with length number of views")
-       exit()
-
-    # Define schedule of updates
-    if schedule is not None:
-      print("\nWarning... we recommend using the default training schedule\n")
-      self.model_opts['schedule'] = schedule
-    else:
-      self.model_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "Theta", "Tau" )
+       exit(1)
 
     # TODO sort that out
     self.data_opts['features_in_rows'] = False
 
+  # TODO merge with data_options ?
   def set_dataprocessing_options(self,
     center_features=False, scale_features=False, scale_views=False,
     maskAtRandom=None, maskNSamples=None, RemoveIncompleteSamples=False
@@ -201,7 +205,7 @@ class entry_point():
 
     # Sanity checks
     M = self.dimensionalities["M"]
-    assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
+    # assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
 
     # Data processing: center features
     if center_features is True:
@@ -245,7 +249,7 @@ class entry_point():
     """ Load the data """
 
     # Load observations
-    self.data = loadData(self.data_opts)
+    self.data, self.sample_groups = loadData(self.data_opts)
 
     # Remove samples with missing views
     if self.data_opts['RemoveIncompleteSamples']:
@@ -255,8 +259,8 @@ class entry_point():
     M = self.dimensionalities["M"]
 
     # TODO fix for multiple groups
-    N = self.dimensionalities["N"] = self.data[0][0].shape[0]
-    D = self.dimensionalities["D"] = [self.data[m][0].shape[1] for m in range(M)]
+    N = self.dimensionalities["N"] = self.data[0].shape[0]
+    D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
 
     # TODO  covariates_files ?
     self.data_opts['covariates'] = None
@@ -265,6 +269,7 @@ class entry_point():
     # TODO change that
     self.all_data = {}
     self.all_data['data'] = self.data
+    self.all_data['sample_groups'] = self.sample_groups
 
   def parse_covariates(self):
     """ Parse covariates """
@@ -285,7 +290,8 @@ class entry_point():
 
   def build_and_run(self):
     model_builder = buildBiofam(self.all_data, self.model_opts, self.model_def)
-    self.model = model_builder.BayesNet
+    self.model = model_builder.net
+    self.model.setTrainOptions(self.train_opts)
 
     train_model(self.model, self.train_opts)
 
@@ -297,13 +303,19 @@ class entry_point():
 
 if __name__ == '__main__':
   a = entry_point()
-  infiles = "../run/test_data/500_0.txt"
-  outfile="/tmp/test.hdf5"
-  views="a"
-  a.set_data_options(infiles, outfile, views="a", delimiter=" ", header_cols=False, header_rows=False)
+  infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
+
+  views =  ["view_A", "view_A", "view_B", "view_B"]
+  groups = ["group_A", "group_B", "group_A", "group_B"]
+
+  lik = ["gaussian", "gaussian"]
+
+  outfile ="/tmp/test.hdf5"
+
+  a.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
   a.set_train_options(iter=50, tolerance=0.01, dropR2=0.0)
   a.set_model()
-  a.set_model_options(factors=10, likelihoods="gaussian", learn_intercept=False)
+  a.set_model_options(factors=10, likelihoods=lik, learn_intercept=False)
   a.set_dataprocessing_options()
   a.load_data()
   a.build_and_run()

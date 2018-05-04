@@ -15,7 +15,7 @@ from biofam.build_model.utils import *
 # # QUESTION: do we need this ?
 class buildModel(object):
     def __init__(self):
-        self.BayesNet = None
+        self.net = None
 
 # TODO could also split in  different model: pne basic parent with no ARD, one below which would be groups biofam where you choose what ARD to use
 # TODO create schedule here too ?
@@ -25,11 +25,8 @@ class buildBiofam(buildModel):
         # defining model's dimensionalities
         self.data = data_opts['data']
         M = len(self.data)
-        # TODO fix
-        M=1
-        N = self.data[0][0].shape[0]
-        import pdb; pdb.set_trace()
-        D = s.asarray([self.data[m][0].shape[1] for m in range(M)])
+        N = self.data[0].shape[0]
+        D = s.asarray([self.data[m].shape[1] for m in range(M)])
         K = model_opts["factors"]
         self.dim = {'M': M, 'N': N, 'D': D, 'K': K}
 
@@ -50,7 +47,7 @@ class buildBiofam(buildModel):
 
         # create an instance of initModel and start buidling
         self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"])
-        self.BayesNet = None
+        self.net = None
         self.build_all()
 
     def build_all(self):
@@ -61,9 +58,9 @@ class buildBiofam(buildModel):
 
         # define ARDs
         if self.model_def['ard_z']:
-            self.buildAlphAZ()
+            self.build_AlphaZ()
         if self.model_def['ard_w']:
-            self.buildAlphAW()
+            self.build_AlphaW()
 
         # define thetas
         if self.model_def['sl_z']:
@@ -76,7 +73,7 @@ class buildBiofam(buildModel):
 
     def build_Y(self):
         # TODO enable a noise on cells instead of features with some option
-        self.init_model.initY(transpose_noise=False)
+        self.init_model.initY(sample_wise_noise=False)
 
     def build_Z(self):
         # Initialise latent variables
@@ -98,7 +95,8 @@ class buildBiofam(buildModel):
             self.init_model.initW()
 
     def build_Tau(self):
-        self.init_model.initTau(transposed=self.model_opts["transpose_noise"])
+        # TODO sort out dimensionality of Tau
+        self.init_model.initTau(transposed=False)
 
     def build_AlphaZ(self):
         # cases to distinguish are whether there are groups or not and whether we should account for them
@@ -116,7 +114,7 @@ class buildBiofam(buildModel):
         learnTheta_ix = np.ones(self.dim['K'])
 
         # TODO: this for loop cannot possibly work change
-        if model_opts["learn_intercept"]:
+        if self.model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
 
@@ -126,10 +124,10 @@ class buildBiofam(buildModel):
         # Initialise sparsity on the weights
         initTheta_a = 1.
         initTheta_b = 1.
-        learnTheta_ix = [np.ones(K)] * M
+        learnTheta_ix = [np.ones(self.dim['K'])] * self.dim['M']
 
         # TODO: this for loop cannot possibly work change
-        if model_opts["learn_intercept"]:
+        if self.model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
 
@@ -139,8 +137,9 @@ class buildBiofam(buildModel):
         nodes = self.init_model.getNodes()
 
         # basic connections
+        nodes['Y'].addMarkovBlanket(Z=nodes["Z"], W=nodes["W"], Tau=nodes["Tau"])
         nodes['Z'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Tau=nodes["Tau"])
-        nodes['W'].addMarkovBlanket(Y=nodes["Y"], W=nodes["Z"], Tau=nodes["Tau"])
+        nodes['W'].addMarkovBlanket(Y=nodes["Y"], Z=nodes["Z"], Tau=nodes["Tau"])
         nodes['Tau'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Z=nodes["Z"])
 
         # adding theta nodes if spike and slab
