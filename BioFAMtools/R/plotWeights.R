@@ -356,6 +356,8 @@ plotTopWeights <- function(object, view, factor, nfeatures = 10, abs = TRUE, sca
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+  
+  if (is.numeric(view)) view <- viewNames(object)[view]
   stopifnot(view %in% viewNames(object))
   # if(!is.null(manual_features)) { stopifnot(class(manual_features)=="list"); stopifnot(all(Reduce(intersect,manual_features) %in% featureNames(object)[[view]]))  }
   

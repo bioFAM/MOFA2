@@ -157,10 +157,10 @@ plotVarianceExplained <- function(object, views = "all", groups = "all", cluster
 
   ## Plot variance explained by factor ##
   
-  # convert matrix to data frame for ggplot2  
+  # convert matrix to data frame for ggplot2
   fvar_mk_df <- reshape2::melt(
     lapply(fvar_mk, function(gr) 
-      reshape2::melt(gr, varnames = c("factor", "view"))
+      reshape2::melt(as.matrix(gr), varnames = c("factor", "view"))
     ), id.vars=c("factor", "view", "value")
   )
   colnames(fvar_mk_df)[ncol(fvar_mk_df)] <- "group"
@@ -168,9 +168,10 @@ plotVarianceExplained <- function(object, views = "all", groups = "all", cluster
   ## Plot variance explained per view ##
   
   # Create data.frame for ggplot
-  fvar_m_df <- melt(sapply(fvar_m, function(e) sapply(e, function(x) x)), 
+  fvar_m_df <- melt(lapply(fvar_m, function(e) lapply(e, function(x) x)), 
                     varnames=c("view", "group"),
                     value.name="R2")
+  colnames(fvar_m_df)[(ncol(fvar_m_df)-1):ncol(fvar_m_df)] <- c("view", "group")
 
   hms   <- list()
   bplts <- list()
@@ -217,7 +218,7 @@ plotVarianceExplained <- function(object, views = "all", groups = "all", cluster
       )
     bplts[[gr]] <- bplt
   }
-    
+  
   # Join the two plots
   p <- plot_grid(plotlist = c(bplts, hms), align="v", nrow=2, ncol=length(unique(fvar_mk_df$group)), rel_heights=c(1/3,2/3), axis="l")
   

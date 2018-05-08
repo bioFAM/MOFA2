@@ -125,7 +125,7 @@ plotFactorBeeswarm <- function(object, factors = "all", color_by = NULL, name_co
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
 
   # Collect relevant data
-  N <- object@Dimensions[["N"]]
+  N <- sum(object@Dimensions[["N"]])
   Z <- getFactors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
   Z$factor <- as.factor(Z$factor)
   
@@ -140,10 +140,9 @@ plotFactorBeeswarm <- function(object, factors = "all", color_by = NULL, name_co
       if(color_by %in% Reduce(union,featureNames)) {
         viewidx <- which(sapply(featureNames, function(vnm) color_by %in% vnm))
         color_by <- TrainData[[viewidx]][color_by,]
-      } else if(class(object@InputData) == "MultiAssayExperiment"){
+      } else if(class(object@InputData) == "MultiAssayExperiment") {
         color_by <- getCovariates(object, color_by)
-    }
-    else stop("'color_by' was specified but it was not recognised, please read the documentation")
+      } else stop("'color_by' was specified but it was not recognised, please read the documentation")
     # It is a vector of length N
     } else if (length(color_by) > 1) {
       stopifnot(length(color_by) == N)
@@ -152,10 +151,10 @@ plotFactorBeeswarm <- function(object, factors = "all", color_by = NULL, name_co
       stop("'color_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
-    color_by <- rep(TRUE,N)
+    color_by <- rep(TRUE, N)
     colorLegend <- F
   }
-  names(color_by) <- sampleNames(object)
+  names(color_by) <- unlist(sampleNames(object))
   if(length(unique(color_by)) < 5) color_by <- as.factor(color_by)
 
   Z$color_by <- color_by[Z$sample]
