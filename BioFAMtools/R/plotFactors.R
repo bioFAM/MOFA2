@@ -232,9 +232,9 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
   stopifnot(all(factors %in% factorNames(object)))
   
   # Collect relevant data  
-  N <- object@Dimensions[["N"]]
-  Z <- getExpectations(object, "Z")
-  factors <- as.character(factors)
+  N <- sum(object@Dimensions[["N"]])
+  Z <- getFactors(object, factors = factors, include_intercept = FALSE, as.data.frame = T)
+  Z$factor <- as.factor(Z$factor)
   
   # Set color
   colorLegend <- T
@@ -292,8 +292,9 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
   
   # Create data frame to plot
   # NOTE: factor are concatenated across groupes
-  tmp <- lapply(Z, function(z) data.frame(x = z[, factors[1]], y = z[, factors[2]], shape_by = shape_by, color_by = color_by))
-  df <- do.call(rbind, tmp)
+  # tmp <- lapply(Z, function(z) data.frame(x = z[, factors[1]], y = z[, factors[2]], shape_by = shape_by, color_by = color_by))
+  # df <- do.call(rbind, tmp)
+  df <- data.frame(x = Z[Z$factor == factors[[1]],'value'], y = Z[Z$factor == factors[[2]],'value'], shape_by = shape_by, color_by = color_by)
   
   # remove values missing color or shape annotation
   if (!showMissing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
@@ -364,11 +365,6 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
 
-  # Collect relevant data
-  N <- object@Dimensions[["N"]]
-  Z <- getExpectations(object, "Z")
-  factors <- as.character(factors)
-  
   # Get factors
   if (paste0(factors, collapse="") == "all") { 
     factors <- factorNames(object) 
@@ -376,10 +372,14 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
   } else {
     stopifnot(all(factors %in% factorNames(object)))  
   }
-  Z <- Z[,factors]
+
+  # Collect relevant data
+  N <- object@Dimensions[["N"]]
+  Z <- getFactors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
+  Z$factor <- as.factor(Z$factor)
 
   # Remove constant factors 
-  tmp <- apply(Z,2,var,na.rm=T)
+  tmp <- apply(Z, 2, var,na.rm=T)
   if (any(tmp==0)) {
     # message(paste0("Removing constant factors: ", paste(which(tmp==0), collapse="")))
     Z <- Z[,!tmp==0]
