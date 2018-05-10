@@ -36,7 +36,7 @@ class buildBiofam(buildModel):
                 model_opts['covariatesFiles'] = s.insert(model_opts['covariatesFiles'], obj=0, values=1, axis=1)
                 model_opts['scale_covariates'].insert(0,False)
             else:
-                model_opts['covariates_files'] = s.ones((dim["N"],1))
+                model_opts['covariates_files'] = s.ones((self.dim["N"],1))
                 model_opts['scale_covariates'] = [False]
 
         # save options in the object
@@ -185,40 +185,62 @@ class buildBiofam(buildModel):
         if len(indices) == 0:
             print('Warning, node', nd, 'not found')
         if len(indices) >1 :
-            print('Warning, node', nd, 'found on multiple locations')
+            print('Warning, node', nd, 'found in multiple locations')
         return indices
 
 
 class buildSpatialBiofam(buildBiofam):
-    def __init__(self):
-        pass
 
-    def build_AlphaW(self):
-        # TODO adapt and same for alphaZ
-        if dataX is not None:
+    def __init__(self, data_opts, model_opts):
+        assert 'data_x' in data_opts, 'positions not found in data options'
+        super(buildSpatialBiofam, self).__init__(data_opts, model_opts)
+
+    def build_all(self):
+        # build the nodes which are missing in build_all
+        self.build_Sigma()
+        super(buildSimulationBiofam, self).build_all()
+
+    def build_Sigma(self):
+        if self.model_opts['cov_on'] == 'samples':
+            # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
+            if self.data_opts['dataClust'] is None:
+                self.init_model.initSigmaZ_k(self.data_opts['data_x'])
+            else:
+                self.init_model.initSigmaBlockZ_k(self.data_opts['data_x'], clust=self.data_opts['dataClust'])
+        else:
             params = [None] * M
             for m in range(M):
-                if view_has_covariance_prior[m]:
-                    params[m]={'X':dataX[m],'sigma_clust':dataClust[m],'n_diag':n_diag}
+                if self.data_opts['view_has_covariance_prior'][m]:
+                    params[m]={'X':self.data_opts['data_x'][m],
+                    'sigma_clust':self.data_opts['dataClust'],'n_diag':0}
                 else:
-                    params[m]={'pa': pa, 'pb':pb, 'qa':1., 'qb':1.}
-            init.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
+                    params[m]={'pa': 1e-14, 'pb':1e-14, 'qa':1., 'qb':1.}
+            self.init_model.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
 
-        if dataX is not None:
-            # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
-            if dataClust is None:
-                init.initSigmaZ_k(dataX, n_diag=n_diag)
-            else:
-                init.initSigmaBlockZ_k(dataX, clust=dataClust, n_diag=n_diag)
     def createMarkovBlankets(self):
-        # TODO adapt this code
-        if dataX is not None:
-            nodes["SigmaAlphaW"].addMarkovBlanket(W=nodes["W"])
-            nodes["W"].addMarkovBlanket(SigmaAlphaW=nodes["SigmaAlphaW"])
+        super(buildSpatialBiofam, self).createMarkovBlankets()
+        nodes = self.init_model.getNodes()
 
-        if dataX is not None:
-            nodes["SigmaZ"].addMarkovBlanket(Z=nodes["Z"])
-            nodes["Z"].addMarkovBlanket(SigmaZ=nodes["SigmaZ"])
+        # create the markov blanket for the sigma nodes
+        if self.model_opts['cov_on'] == 'samples':
+            nodes["Sigma"].addMarkovBlanket(Z=nodes["Z"])
+            nodes["Z"].addMarkovBlanket(Sigma=nodes["Sigma"])
+
+        if self.model_opts['cov_on'] == 'features':
+            nodes["Sigma"].addMarkovBlanket(W=nodes["W"])
+            nodes["W"].addMarkovBlanket(Sigma=nodes["Sigma"])
+
+    def createSchedule(self):
+        super(buildSpatialBiofam, self).createSchedule()
+
+        # add the sigma node at the right position in the schedule
+        if self.model_opts['cov_on'] == 'samples':
+            ix = self.find_node(self.schedule, 'Z')[0][0]
+            np.insert(self.schedule, ix + 1, 'Sigma')
+
+        if self.model_opts['cov_on'] == 'features':
+            ix = self.find_node(self.schedule, 'W')[0][0]
+            np.insert(self.schedule, ix + 1, 'Sigma')
 
 
 class buildSimulationBiofam(buildBiofam):
@@ -263,7 +285,7 @@ class buildSimulationBiofam(buildBiofam):
         #        dataX = s.random.normal(0, 1, [N, 2])
         #        dataClust = None
 
-        self.super().build_all()
+        super(buildSimulationBiofam, self).build_all()
         self.build_Sigma()
         # build other stuff
 

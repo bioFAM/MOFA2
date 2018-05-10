@@ -113,7 +113,6 @@ def loadData(data_opts, verbose=True):
     print ("## Loading data ##")
     print ("#"*18)
     print ("\n")
-    sleep(1)
 
     uniq_view_names = np.unique(data_opts['view_names'])
     M = len(uniq_view_names)
@@ -221,7 +220,6 @@ def loadDataX(data_opts, transpose = False):
     print ("## Loading samples positions data ##")
     print ("#"*18)
     print ("\n")
-    sleep(1)
 
     M = len(data_opts['view_names'])
 

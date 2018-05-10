@@ -25,7 +25,7 @@ CHANGE PARSE TO SET
 SET PRIORS AND VARIATIONAL DIST IN BUILD_MODEL, ONLY BIOFAM BRANCH
 """
 
-class entry_point():
+class entry_point(object):
   def __init__(self):
     self.print_banner()
     self.dimensionalities = {}
@@ -299,6 +299,62 @@ class entry_point():
     saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], train_opts=self.train_opts, model_opts=self.model_opts,
                      view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
+class entry_sfa(entry_point):
+    def __init__(self):
+        super(entry_sfa, self).__init__()
+
+    def set_data_options(self,
+      inFiles, outFile, views, groups, x_files, view_has_covariance_prior=None
+      delimiter=" ", header_cols=False, header_rows=False
+      ):
+        super(entry_sfa, self).set_data_options(inFiles, outFile, views, groups,
+          delimiter, header_cols, header_rows)
+        # Position files
+        self.data_opts['x_files'] = x_files
+
+        # Boolean to say whether the covariance prior is known for each view
+        # Only used if covariance prior on W
+        if view_has_covariance_prior is None:
+            view_has_covariance_prior = [True] * self.dimensionalities['M']
+        self.data_opts['view_has_covariance_prior'] = view_has_covariance_prior
+
+
+    def set_model(self, sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features', cov_on='samples'):
+        # sanity check for the current implementation
+        assert (cov_on == samples) or (cov_on == 'features'), 'cov_on argument not understood'
+
+        if cov_on == 'samples':
+            assert not sl_z, 'cannot put spike and slab on Z if covariance on samples'
+            assert not ard_z, 'cannot put ARD on Z if covariance on samples'
+
+        if cov_on == 'features':
+            assert not sl_z, 'cannot put spike and slab on W if covariance on features'
+            assert not ard_z, 'cannot put ARD on W if covariance on features'
+
+        # define where you put the covariance prior
+        self.model_opts['cov_on'] = cov_on
+        super(entry_sfa, self).set_model(sl_z, sl_w, ard_z, ard_w, noise_on)
+
+    def load_data(self):
+        super(entry_sfa, self).load_data()
+        self.all_data['data_x'] = loadDataX(self.data_opts)
+
+    def build_and_run(self):
+        model_builder = buildSpatialBiofam(self.all_data, self.model_opts)
+
+        self.model = model_builder.net
+        self.train_opts['schedule'] = model_builder.schedule
+        self.model.setTrainOptions(self.train_opts)
+
+        train_model(self.model, self.train_opts)
+
+        print("Saving model in %s...\n" % self.data_opts['output_file'])
+        self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
+        saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], train_opts=self.train_opts, model_opts=self.model_opts,
+                         view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
+
+
+
 if __name__ == '__main__':
   a = entry_point()
   infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
@@ -313,7 +369,7 @@ if __name__ == '__main__':
   a.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
   a.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
   a.set_model()
-  a.set_model_options(factors=10, likelihoods=lik, learn_intercept=False)
+  a.set_model_options(factors=10, likelihoods=lik, learn_intercept=True)
   a.set_dataprocessing_options()
   a.load_data()
   a.build_and_run()

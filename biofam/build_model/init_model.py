@@ -557,7 +557,7 @@ class initModel(object):
         else:
             if qE is None:
                 print("Wrong initialisation for Theta");
-                exit()
+                exit(1)
             else:
                 ConstThetaNode = ThetaZ_Constant_Node_k(dim=(self.N, s.sum(Kconst),), value=qE[:, Kconst], N_cells=1)
                 self.nodes["ThetaZ"] = ConstThetaNode
@@ -637,7 +637,7 @@ class initModel(object):
                 elif isinstance(qE[m],s.ndarray):
                     assert qE[m].shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
                 else:
-                    print("Wrong initialisation for Theta"); exit()
+                    print("Wrong initialisation for Theta"); exit(1)
 
         elif isinstance(qE,s.ndarray):
             assert qE.shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
@@ -659,7 +659,7 @@ class initModel(object):
             else:
                 if qE is None:
                     print("Wrong initialisation for Theta");
-                    exit()
+                    exit(1)
                 else:
                     ConstThetaNode = ThetaW_Constant_Node_mk(dim=(self.D[m],s.sum(Kconst),), value=qE[m][:,Kconst], N_cells=1)
                     Theta_list[m] = ConstThetaNode
