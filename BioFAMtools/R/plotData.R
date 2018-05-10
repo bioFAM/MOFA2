@@ -62,15 +62,18 @@ plotDataHeatmap <- function(object, view, factor, groups = "all", features = 50,
   
   
   if (imputed) {
-    data <- lapply(getImputedData(object, view, groups)[[1]], function(e) e[,names(Z)])
+    data <- getImputedData(object, view, groups)[[1]]
   } else {
-    data <- lapply(getTrainData(object, view, groups)[[1]], function(e) e[,names(Z)])
+    data <- getTrainData(object, view, groups)[[1]]
   }
 
   # NOTE: Currently groups are concatenated
   if (class(data) == "list") {
     data <- do.call(cbind, data)
   }
+
+  # Select respective samples
+  data <- data[,names(Z)]
   
   # Ignore samples with full missing views
   data <- data[,apply(data, 2, function(x) !all(is.na(x)))]

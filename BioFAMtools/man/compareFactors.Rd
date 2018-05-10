@@ -15,7 +15,7 @@ compareFactors(models, comparison = "all", show_rownames = FALSE,
 \item{...}{extra arguments passed to pheatmap}
 }
 \value{
-Plots a heatmap of correlation of Latent Factors in all models when 'comparison' is 'all'. 
+Plots a heatmap of correlation of Latent Factors in all models when 'comparison' is 'all'.
 Otherwise, for each pair of models, a seperate heatmap is produced comparing one model againt the other.
 The corresponding correlation matrix or list or pairwise correlation matrices is returned
 }

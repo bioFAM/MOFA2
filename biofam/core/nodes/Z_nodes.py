@@ -132,9 +132,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             else:
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k])
 
-                tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
-                for n in range(self.N):
-                    Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
+                if self.P.params["cov"][k].__class__.__name__ == 'dia_matrix':
+                    Qmean[:, k] = Qvar[:, k] * bar
+                else:
+                    tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
+                    for n in range(self.N):
+                        Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
@@ -158,8 +161,9 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # compute cross entropy term
         tmp1 = 0
-        mat_tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
-        tmp1 += QE[:, k].transpose().dot(mat_tmp).dot(QE[:, k])
+        if p_cov[k].__class__.__name__ == 'ndarray':
+            mat_tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
+            tmp1 += QE[:, k].transpose().dot(mat_tmp).dot(QE[:, k])
         tmp1 += p_cov_inv_diag[k].dot(QE2[:, k])
         tmp1 = -.5 * tmp1
         # tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2

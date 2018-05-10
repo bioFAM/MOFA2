@@ -62,9 +62,9 @@ getFactors <- function(object, groups = "all", factors = "all", as.data.frame = 
         if ("intercept" %in% colnames(Z[[h]])) Z[[h]][,colnames(Z[[h]])!="intercept"]
       })
     } else {
-      Z <- lapply(names(Z), function(h) {
-        if ("intercept" %in% unique(Z[[h]]$factor)) Z[[h]][Z[[h]]$factor!="intercept",]
-      })
+      if ("intercept" %in% unique(Z$factor)) {
+        Z <- Z[Z$factor!="intercept",]
+      }
     }
   }
   return(Z)

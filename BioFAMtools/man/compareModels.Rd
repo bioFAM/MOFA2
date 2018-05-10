@@ -2,7 +2,7 @@
 % Please edit documentation in R/compareModels.R
 \name{compareModels}
 \alias{compareModels}
-\title{Plot the robustness of the latent factors across diferent trials}
+\title{Compare different trained \code{\link{BioFAModel}} objects in terms of the final value of the ELBO statistics and number of inferred factors}
 \usage{
 compareModels(models, show_modelnames = FALSE)
 }
@@ -10,6 +10,6 @@ compareModels(models, show_modelnames = FALSE)
 \item{models}{a list containing \code{\link{BioFAModel}} objects.}
 }
 \description{
-Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics. 
+Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics.
 For model selection the model with the highest ELBO value is selected.
 }
