@@ -4,7 +4,7 @@ import scipy as s
 import sys
 from time import sleep
 
-from build_model import *
+from biofam.build_model.build_model import *
 from biofam.build_model.train_model import train_model
 
 """
@@ -304,7 +304,7 @@ class entry_sfa(entry_point):
         super(entry_sfa, self).__init__()
 
     def set_data_options(self,
-      inFiles, outFile, views, groups, x_files, view_has_covariance_prior=None
+      inFiles, outFile, views, groups, x_files, view_has_covariance_prior=None,
       delimiter=" ", header_cols=False, header_rows=False
       ):
         super(entry_sfa, self).set_data_options(inFiles, outFile, views, groups,
@@ -368,8 +368,8 @@ if __name__ == '__main__':
 
   a.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
   a.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
-  a.set_model()
-  a.set_model_options(factors=10, likelihoods=lik, learn_intercept=True)
+  a.set_model(sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features')
+  a.set_model_options(factors=10, likelihoods=lik)
   a.set_dataprocessing_options()
   a.load_data()
   a.build_and_run()

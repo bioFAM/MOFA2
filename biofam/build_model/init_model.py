@@ -526,7 +526,7 @@ class initModel(object):
         """
         self.nodes["ThetaZ"] = ThetaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
-    def initThetaMixedZ_k(self, idx, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaMixedZ_k(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
         """Method to initialise the sparsity parameter of the spike and slab factors
         In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
         in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
@@ -610,7 +610,7 @@ class initModel(object):
             Theta_list[m] = ThetaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.nodes["ThetaW"] = Multiview_Variational_Node(self.M, *Theta_list)
 
-    def initThetaMixedW_mk(self, idx, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaMixedW_mk(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
         """Method to initialise the sparsity parameter of the spike and slab weights
         In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
         in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
