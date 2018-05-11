@@ -256,6 +256,10 @@ class entry_point(object):
         # Load observations
         self.data, self.sample_groups = loadData(self.data_opts)
 
+        # save feature and sample names
+        self.sample_names = self.data[0].index
+        self.feature_names = [dt.columns for dt in self.data]
+
         # Remove samples with missing views
         if self.data_opts['RemoveIncompleteSamples']:
             self.data = removeIncompleteSamples(self.data)
@@ -353,9 +357,9 @@ class entry_point(object):
             e_melted = e_melted.reset_index()
 
             res = e_melted
-
+        import pdb; pdb.set_trace()
         return res
-        
+
 
 class entry_sfa(entry_point):
     def __init__(self):
@@ -424,7 +428,7 @@ if __name__ == '__main__':
 
     outfile ="/tmp/test.hdf5"
 
-    ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=True, header_rows=True)
     ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
     ent.set_model(sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features')
     ent.set_model_options(factors=10, likelihoods=lik)
