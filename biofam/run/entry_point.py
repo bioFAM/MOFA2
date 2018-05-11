@@ -258,7 +258,7 @@ class entry_point(object):
 
         # save feature and sample names
         self.sample_names = self.data[0].index
-        self.feature_names = [dt.columns for dt in self.data]
+        self.feature_names = dt.columns for dt in self.data
 
         # Remove samples with missing views
         if self.data_opts['RemoveIncompleteSamples']:
