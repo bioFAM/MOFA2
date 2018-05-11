@@ -339,10 +339,27 @@ class entry_point(object):
             all_dfs = []
             for view in view_names:
                 e = pd.DataFrame(exp[i], index=feature_names[i], columns=factor_names)
-                e_melted = pd.melt(e, var_name='factor', value_name='value')
+                e.index.name = 'feature'
+                e = e.reset_index()
+                e_melted = pd.melt(e, id_vars=['feature'], var_name='factor', value_name='value')
                 e_melted['view'] = view
-                e_melted.index.name = 'features'
-                e_melted = e_melted.reset_index()
+
+                all_dfs.append(e_melted)
+
+                i += 1
+
+            res = pd.concat(all_dfs)
+
+        if node == 'Y':
+            i=0
+            all_dfs = []
+            for view in view_names:
+                e = pd.DataFrame(exp[i], index=sample_names, columns=feature_names[i])
+                e['group']=sample_groups
+                e.index.name = 'sample'
+                e = e.reset_index()
+                e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='feature', value_name='value')
+                e_melted['view'] = view
 
                 all_dfs.append(e_melted)
 
@@ -353,12 +370,12 @@ class entry_point(object):
         if node == 'Z':
             e = pd.DataFrame(exp, index=sample_names, columns=factor_names)
             e['group']=sample_groups
-            e_melted = pd.melt(e, id_vars=['group'], var_name='factor', value_name='value')
-            e_melted.index.name = 'samples'
-            e_melted = e_melted.reset_index()
+            e.index.name = 'sample'
+            e = e.reset_index()
+            e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='factor', value_name='value')
 
             res = e_melted
-        import pdb; pdb.set_trace()
+
         return res
 
 
@@ -436,4 +453,4 @@ if __name__ == '__main__':
     ent.set_dataprocessing_options()
     ent.load_data()
     ent.build_and_run()
-    ent.get_df('Z')
+    ent.get_df('Y')
