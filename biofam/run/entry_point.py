@@ -258,7 +258,7 @@ class entry_point(object):
 
         # save feature and sample names
         self.sample_names = self.data[0].index
-        self.feature_names = dt.columns for dt in self.data
+        self.feature_names = [dt.columns.values for dt in self.data]
 
         # Remove samples with missing views
         if self.data_opts['RemoveIncompleteSamples']:
@@ -309,7 +309,8 @@ class entry_point(object):
         print("Saving model in %s...\n" % self.data_opts['output_file'])
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
         saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], train_opts=self.train_opts, model_opts=self.model_opts,
-                         view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
+                         view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'],
+                         sample_names=self.sample_names, feature_names=self.feature_names)
 
     def get_df(self, node):
         assert self.model is not None, 'Model is not built yet'
@@ -318,8 +319,8 @@ class entry_point(object):
         assert node in nodes, "requested node is not in the model"
 
         # TODO, we dont rertrieve sample and feature names at the moment ... to fix
-        sample_names = np.array(range(self.dimensionalities['N'])).astype(str)
-        feature_names = [np.array(range(d)).astype(str) for d in self.dimensionalities['D']]
+        sample_names = self.sample_names
+        feature_names = self.feature_names
         factor_names = np.array(range(nodes['Z'].K)).astype(str)
         view_names = np.unique(self.data_opts['view_names'])
         sample_groups=self.all_data['sample_groups']
@@ -428,7 +429,7 @@ if __name__ == '__main__':
 
     outfile ="/tmp/test.hdf5"
 
-    ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=True, header_rows=True)
+    ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
     ent.set_model(sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features')
     ent.set_model_options(factors=10, likelihoods=lik)
