@@ -3,6 +3,7 @@ import pandas as pd
 import scipy as s
 import sys
 from time import sleep
+import pandas as pd
 
 from biofam.build_model.build_model import *
 from biofam.build_model.train_model import train_model
@@ -25,11 +26,16 @@ CHANGE PARSE TO SET
 SET PRIORS AND VARIATIONAL DIST IN BUILD_MODEL, ONLY BIOFAM BRANCH
 """
 
+# TODO get the sample and feature names if any
+# TODO generally speaking I think that sample/feature names etc should be contained in nodes,
+# view names should also be contained in multiview nodes etc. if sth is not provided should
+# be set to integers converted to string or sth like that
 class entry_point(object):
     def __init__(self):
         self.print_banner()
         self.dimensionalities = {}
         self.model_opts = None
+        self.model = None
 
     def print_banner(self):
         """ Method to print the MOFA banner """
@@ -72,7 +78,7 @@ class entry_point(object):
             views = [views]
         if type(groups) is not list:
             views = [groups]
-            
+
         self.data_opts['view_names'] = views
         self.data_opts['group_names'] = groups
 
@@ -301,7 +307,55 @@ class entry_point(object):
         saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], train_opts=self.train_opts, model_opts=self.model_opts,
                          view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
+    def get_df(self, node):
+        assert self.model is not None, 'Model is not built yet'
 
+        nodes = self.model.nodes
+        assert node in nodes, "requested node is not in the model"
+
+        # TODO, we dont rertrieve sample and feature names at the moment ... to fix
+        sample_names = np.array(range(self.dimensionalities['N'])).astype(str)
+        feature_names = [np.array(range(d)).astype(str) for d in self.dimensionalities['D']]
+        factor_names = np.array(range(nodes['Z'].K)).astype(str)
+        view_names = np.unique(self.data_opts['view_names'])
+        sample_groups=self.all_data['sample_groups']
+
+        # TODO this index_opts could be passed as an argument of a get_df method implemented in each nodes.
+        # then each node would know what index option to use to build the dataframe
+        # index_opts = {'sample_names': sample_names,
+        #               'feature_names': feature_names,
+        #               'view_names': view_names,
+        #               'sample_groups':sample_groups,
+        #               'factor_names':factor_names}
+        exp = nodes[node].getExpectation()
+
+        if node == 'W':
+            i=0
+            all_dfs = []
+            for view in view_names:
+                e = pd.DataFrame(exp[i], index=feature_names[i], columns=factor_names)
+                e_melted = pd.melt(e, var_name='factor', value_name='value')
+                e_melted['view'] = view
+                e_melted.index.name = 'features'
+                e_melted = e_melted.reset_index()
+
+                all_dfs.append(e_melted)
+
+                i += 1
+
+            res = pd.concat(all_dfs)
+
+        if node == 'Z':
+            e = pd.DataFrame(exp, index=sample_names, columns=factor_names)
+            e['group']=sample_groups
+            e_melted = pd.melt(e, id_vars=['group'], var_name='factor', value_name='value')
+            e_melted.index.name = 'samples'
+            e_melted = e_melted.reset_index()
+
+            res = e_melted
+
+        return res
+        
 
 class entry_sfa(entry_point):
     def __init__(self):
@@ -360,20 +414,21 @@ class entry_sfa(entry_point):
 
 
 if __name__ == '__main__':
-  a = entry_point()
-  infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
+    ent = entry_point()
+    infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
 
-  views =  ["view_A", "view_A", "view_B", "view_B"]
-  groups = ["group_A", "group_B", "group_A", "group_B"]
+    views =  ["view_A", "view_A", "view_B", "view_B"]
+    groups = ["group_A", "group_B", "group_A", "group_B"]
 
-  lik = ["gaussian", "gaussian"]
+    lik = ["gaussian", "gaussian"]
 
-  outfile ="/tmp/test.hdf5"
+    outfile ="/tmp/test.hdf5"
 
-  a.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-  a.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
-  a.set_model(sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features')
-  a.set_model_options(factors=10, likelihoods=lik)
-  a.set_dataprocessing_options()
-  a.load_data()
-  a.build_and_run()
+    ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+    ent.set_model(sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features')
+    ent.set_model_options(factors=10, likelihoods=lik)
+    ent.set_dataprocessing_options()
+    ent.load_data()
+    ent.build_and_run()
+    ent.get_df('Z')
