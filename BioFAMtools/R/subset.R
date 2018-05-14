@@ -31,32 +31,26 @@ subsetFactors <- function(object, factors, keep_intercept=T) {
   }
   
   # Subset expectations
-  object@Expectations$Z <- sapply(object@Expectations$Z, function(x) x[,factors], simplify = F, USE.NAMES = T)
-  object@Expectations$W <- sapply(object@Expectations$W, function(x) x[,factors], simplify = F, USE.NAMES = T)
   
-  nodes=c("AlphaZ","SigmaZ","ThetaZ","AlphaW","SigmaAlphaW","ThetaW")
-  for (node in nodes){
+  for (node in c("Z","W")){
+    object@Expectations[[node]] <- sapply(object@Expectations[[node]], function(x) x[,factors], simplify = F, USE.NAMES = T)
+  }
+  
+  for (node in c("ThetaZ","AlphaZ","ThetaW","AlphaW")){
     if (node %in% names(object@Expectations)){
-      object@Expectations$node <- sapply(object@Expectations$node, function(x) x[factors], simplify = F, USE.NAMES = T)
+      object@Expectations[[node]] <- sapply(object@Expectations[[node]], function(x) x[factors], simplify = F, USE.NAMES = T)
     }
   }
   
   # TODO: adapt for 2D
   # Reordering covariance hyperparameters and "spatial signifiances" (spatialFA)
-
-  if ("SigmaZ" %in% names(object@Parameters)){
-    object@Parameters$SigmaZ$l <- object@Parameters$SigmaZ$l[factors]
-    object@Parameters$SigmaZ$sig <- object@Parameters$SigmaZ$sig[factors]
-  }
-
-  if ("SigmaAlphaW" %in% names(object@Parameters)){
-    for (m in viewNames(object)){ 
-    object@Parameters$SigmaAlphaW[[m]]$l <- object@Parameters$SigmaAlphaW[[m]]$l[factors]
-    object@Parameters$SigmaAlphaW[[m]]$sig <- object@Parameters$SigmaAlphaW[[m]]$sig[factors]
-    }
+  
+  # Warning : below, does not work if factors are not convertible to integers
+  if ("SigmaZ" %in% names(object@Expectations)){
+    object@Expectations$SigmaZ <- object@Expectations$SigmaZ[,,as.integer(factors)]
   }
   
-  # TODO : reorder parameters of other nodes ?
+  # TODO : reorder parameters of other nodes
     
   # Modify dimensionality
   object@Dimensions[["K"]] <- length(factors)

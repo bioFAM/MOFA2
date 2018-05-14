@@ -538,4 +538,43 @@ plotFactorCor <- function(object, method = "pearson", ...) {
   return(r)
 }
 
+#' @title Plot the sparsity of factors
+#' @name plotSparsityFactors
+#' @description Plot the sparsity of the factors (computed as 1-<Theta_k> for factor k)
+#' @param object a trained \code{\link{BioFAModel}} object.
+#' @param threshold_variance_explained : do not plot the factors explaining less of the variance explained than the threshold for the corresponding views
+#' @param show_variance_explained : indicate the variance explained by each of the factor in each view 
+#' @details This method enables to visualize simultaneously the factors that are active in the different views (with the use of the threshold)
+#' and their sparsity level. A sparse factor could be biologically meaningfull, while a dense one is probably a technical source of variability...
+#' @return Returns a \code{ggplot2} object
+#' @import ggplot2
+#' @export
+plotSparsityFactors <- function(object, threshold_variance_explained = 0.01, show_variance_explained = T) 
+{
+  factors = factorNames(object)
+  views = viewNames(object)
+  factor_val = rep.int(factorNames(object),length(views))
+  view_val = c()
+  theta_val = c()
+  var_val = c()
+  for (view in views){
+    view_val <- c(view_val,rep.int(view,length(factors)))
+    theta_val <- c(theta_val,object@Expectations$ThetaW[[view]])
+    var_val <- c(var_val,calculateVarianceExplained(object)$R2PerFactor[,view])
+  }
+  d = data.frame(factor_val,view_val,1-theta_val,var_val)
+  colnames(d) = c("factor","view","sparsity","variance_explained")
+  d = d[d$variance_explained>threshold_variance_explained,]
+  if (show_variance_explained){
+    p = ggplot(d, aes(x=factor, y=sparsity, fill=view, alpha=variance_explained)) +
+      geom_bar(position="dodge", stat="identity", aes(alpha=variance_explained))
+  }
+  else{
+    p = ggplot(d, aes(x=factor, y=sparsity, fill=view)) +
+      geom_bar(position="dodge", stat="identity") 
+  }
+  return(p)
+}
+
+
 
