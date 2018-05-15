@@ -443,7 +443,7 @@ if __name__ == '__main__':
 
     lik = ["gaussian", "gaussian"]
 
-    outfile ="/tmp/test.hdf5"
+    outfile ="../run/tmp/test.hdf5"
 
     ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
