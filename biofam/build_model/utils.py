@@ -372,13 +372,9 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
     """
     # Get nodes from the model
     nodes = model.getNodes()
-
     # check if there are sample groups in the model
-    if 'AlphaZ' in nodes and isinstance(nodes["AlphaZ"], AlphaZ_Node_groups):
-        sample_groups = nodes["AlphaZ"].groups
-        group_names = nodes['AlphaZ'].group_names
-    else:
-        sample_groups = np.array([0] * model.dim['N'])
+    if 'sample_groups' is None:
+        sample_groups = np.array(['all'] * model.dim['N'])
         group_names = np.array(['all'])
 
     exp_grp = hdf5.create_group("expectations")
