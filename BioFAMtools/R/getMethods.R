@@ -359,3 +359,9 @@ getELBO <- function(object) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
   return(tail(object@TrainStats$elbo, 1))
 }
+
+getGroupAnnotation <- function(object){
+  samples_list <- sampleNames(m)
+  samples <- Reduce(c,samples_list)
+  data.frame(samples=samples, group = rep(names(samples_list), times= sapply(samples_list, length)))
+}
