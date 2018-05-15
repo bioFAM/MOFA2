@@ -362,6 +362,6 @@ getELBO <- function(object) {
 
 getGroupAnnotation <- function(object){
   samples_list <- sampleNames(m)
-  samples <- Reduce(c,samples_list)
+  if(class(sampleNames)=="list") samples <- Reduce(c,samples_list)
   data.frame(samples=samples, group = rep(names(samples_list), times= sapply(samples_list, length)))
 }
