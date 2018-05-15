@@ -175,15 +175,16 @@ plotVarianceExplained <- function(object, views = "all", groups = "all", cluster
 
   hms   <- list()
   bplts <- list()
-
+  min_lim <- min(fvar_mk_df$value)
+  max_lim <- max(fvar_mk_df$value)
   for (gr in unique(fvar_mk_df$group)) {
 
     # Grid plot with the variance explained per factor and view
     hm <- ggplot(fvar_mk_df[fvar_mk_df$group == gr,], aes(view, factor)) + 
       geom_tile(aes(fill=value), color="black") +
       guides(fill=guide_colorbar("R2")) +
-      scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar") +
-      ylab("Latent factor") +
+      ylab("Latent factor") + 
+      scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_lim,max_lim)) +
       theme(
         # plot.margin = margin(5,5,5,5),
         plot.title = element_text(size=17, hjust=0.5),
