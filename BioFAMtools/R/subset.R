@@ -4,13 +4,13 @@
 ################################
 
 #' @title Subset factors
-#' @name subsetFactors
+#' @name subset_factors
 #' @description Method to subset (or sort) factors
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors.
 #' @export
 
-subsetFactors <- function(object, factors, keep_intercept=T) {
+subset_factors <- function(object, factors, keep_intercept=T) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -86,12 +86,12 @@ subsetFactors <- function(object, factors, keep_intercept=T) {
 
 
 #' @title Subset samples
-#' @name subsetSamples
+#' @name subset_samples
 #' @description Method to subset (or sort) samples
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param samples character vector with the sample names, numeric vector with the sample indices or logical vector with the samples to be kept as TRUE.
 #' @export
-subsetSamples <- function(object, samples) {
+subset_samples <- function(object, samples) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")

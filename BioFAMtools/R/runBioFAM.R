@@ -4,50 +4,50 @@
 ##############################################
 
 #' @title train an untrained BioFAModel
-#' @name runBioFAM
+#' @name run_bio_fam
 #' @description Function to train an untrained \code{\link{BioFAModel}} object.
 #' @details In this step the R package is calling the \code{BioFAM} Python package, where the the training is performed. \cr
 #' The interface with Python is not great for now. Sometimes the training might freeze, but it is running from the background, just be patient! \cr
 #' It is important the \code{biofam} executable is on your $PATH so that R can detect it. This will generally be the case, 
 #' but if it is not, then you need to specify it manually in the \code{biofam_path} argument. Please, read our FAQ for troubleshooting. \cr
 #' @param object an untrained \code{\link{BioFAModel}} object
-#' @param DirOptions list with I/O options, it should contain at least two entries: \cr
+#' @param dir_options list with I/O options, it should contain at least two entries: \cr
 #' 'dataDir' where the input matrices as stored as text files. \cr
 #' 'outFile' where the model is going to be stored as an hdf5 file.
 #' @param ... Extra options to add to the biofam command
-#' @param biofamPath Path the the biofam executable. To be modified if the \code{BioFAM} Python package is not recognised by Rstudio.
+#' @param biofam_path Path the the biofam executable. To be modified if the \code{BioFAM} Python package is not recognised by Rstudio.
 #' @return a trained \code{\link{BioFAModel}} object
 #' @export
-runBioFAM <- function(object, DirOptions, ..., biofam_path="biofam") {
+run_bio_fam <- function(object, dir_options, ..., biofam_path="biofam") {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  stopifnot(all(c("data_dir", "output_file") %in% names(DirOptions)))
+  stopifnot(all(c("data_dir", "output_file") %in% names(dir_options)))
   if (object@Status=="trained") { stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel") }
   
   arglist <- list(
-    input_files           = paste0(DirOptions$data_dir, "/", viewNames(object), ".txt"),
-    output_file           = DirOptions$output_file,
+    input_files           = paste0(dir_options$data_dir, "/", viewNames(object), ".txt"),
+    output_file           = dir_options$output_file,
     header_cols           = TRUE,
     header_rows           = TRUE,
-    delimiter             = object@DataOptions$delimiter,
+    delimiter             = object@data_options$delimiter,
     views                 = view_names(object),
     groups                = group_names(object),
 
-    likelihoods           = object@ModelOptions$likelihood,
-    factors               = object@ModelOptions$num_factors,
-    feature_wise_noise    = object@ModelOptions$feature_wise_noise,
-    feature_wise_sparsity = object@ModelOptions$feature_wise_sparsity,
-    sample_wise_noise     = object@ModelOptions$sample_wise_noise,
-    sample_wise_sparsity  = object@ModelOptions$sample_wise_sparsity,
+    likelihoods           = object@model_options$likelihood,
+    factors               = object@model_options$num_factors,
+    feature_wise_noise    = object@model_options$feature_wise_noise,
+    feature_wise_sparsity = object@model_options$feature_wise_sparsity,
+    sample_wise_noise     = object@model_options$sample_wise_noise,
+    sample_wise_sparsity  = object@model_options$sample_wise_sparsity,
 
-    iter                  = object@TrainOptions$maxiter,
-    drop_r2               = object@TrainOptions$drop_factor_threshold,
-    tolerance             = object@TrainOptions$tolerance
+    iter                  = object@training_options$maxiter,
+    drop_r2               = object@training_options$drop_factor_threshold,
+    tolerance             = object@training_options$tolerance
   )
   
   # Decide whether to learn factors
-  if (!object@TrainOptions$learn_factors) {
+  if (!object@training_options$learn_factors) {
     arglist$drop_r2 <- 0.00
   } else {
     if (arglist$drop_r2==0) { 
@@ -59,24 +59,24 @@ runBioFAM <- function(object, DirOptions, ..., biofam_path="biofam") {
   # Setting the below arguments to NULL doesn't actually add them to
   # the argument list, but reserves that argument name to prevent
   # extra.arglist from using it.
-  if (!is.null(object@ModelOptions$covariates)) {
-    arglist$covariates_file <- file.path(DirOptions$data_dir, "covariates.txt")
-    arglist$scale_covariates <- rep(1, ncol(object@ModelOptions$covariates))
+  if (!is.null(object@model_options$covariates)) {
+    arglist$covariates_file <- file.path(dir_options$data_dir, "covariates.txt")
+    arglist$scale_covariates <- rep(1, ncol(object@model_options$covariates))
   } else {
     arglist$covariates_file <- NULL
     arglist$scale_covariates <- NULL
   }
-  arglist$learn_intercept <- as.logical(object@ModelOptions$learn_intercept)
-  if (! object@ModelOptions$sparsity) {
-    arglist$learn_theta <- rep(0, object@Dimensions$M) 
+  arglist$learn_intercept <- as.logical(object@model_options$learn_intercept)
+  if (! object@model_options$sparsity) {
+    arglist$learn_theta <- rep(0, object@dimensions$M) 
   } else {
     arglist$learn_theta <- NULL
   }
 
-  arglist$center_features <- as.logical(object@DataOptions$center_features)
-  arglist$scale_views <- as.logical(object@DataOptions$scale_views)
-  if (object@DataOptions$remove_incomplete_samples == T) { command <- paste(command, "--remove-incomplete-samples", sep=" ") }
-  arglist$verbose <- as.logical(object@TrainOptions$verbose)
+  arglist$center_features <- as.logical(object@data_options$center_features)
+  arglist$scale_views <- as.logical(object@data_options$scale_views)
+  if (object@data_options$remove_incomplete_samples == T) { command <- paste(command, "--remove-incomplete-samples", sep=" ") }
+  arglist$verbose <- as.logical(object@training_options$verbose)
 
   extra.arglist <- list(...)
   
@@ -124,11 +124,11 @@ runBioFAM <- function(object, DirOptions, ..., biofam_path="biofam") {
   if (length(biofam_path) != 1) stop("Invalid biofam_path")
 
   # If output already exists, remove it
-  if (file.exists(DirOptions$output_file)) {
+  if (file.exists(dir_options$output_file)) {
     if (arglist$verbose) {
       message("Deleting old output file")
       }
-    file.remove(DirOptions$output_file)
+    file.remove(dir_options$output_file)
   }
 
   if (arglist$verbose) {
@@ -141,7 +141,7 @@ runBioFAM <- function(object, DirOptions, ..., biofam_path="biofam") {
   }
   
   # Load trained model
-  object <- loadModel(DirOptions$output_file, object)
+  object <- loadModel(dir_options$output_file, object)
   
   return(object)
 }

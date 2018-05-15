@@ -1,5 +1,5 @@
 
-.inferLikelihoods <- function(object) {
+infer_likelihoods <- function(object) {
   likelihood <- rep(x="gaussian", times=object@Dimensions$M)
   names(likelihood) <- viewNames(object)
   
@@ -16,7 +16,7 @@
   return(likelihood)
 }
 
-.updateOldModel <- function(object) {
+.update_old_model <- function(object) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
   
   # Update node names
@@ -81,7 +81,7 @@
 
 # Function to find factors that act like an intercept term for the sample, 
 # which means that they capture global mean effects
-findInterceptFactors <- function(object, cor_threshold = 0.8) {
+find_intercept_factors <- function(object, cor_threshold = 0.8) {
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
   
@@ -107,7 +107,7 @@ subset_augment <- function(mat, pats) {
 }
 
 
-detectPassengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.03) {
+detect_passengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.03) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
