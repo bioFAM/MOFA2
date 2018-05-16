@@ -182,6 +182,11 @@ def loadData(data_opts, verbose=True):
             print("Centering features for view " + str(m) + "...")
             Y[m] = (Y[m] - Y[m].mean(axis=0))
 
+        if data_opts['center_features_per_group'][m]:
+            print("Centering features per group for view " + str(m) + "...")
+            for gp_name in uniq_group_names:
+                filt = [gp == gp_name for gp in sample_groups]
+                Y[m][filt] = (Y[m][filt] - Y[m][filt].mean(axis=0))
 
         # Scale the views to unit variance
         if data_opts['scale_views'][m]:
