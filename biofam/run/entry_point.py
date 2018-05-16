@@ -318,7 +318,6 @@ class entry_point(object):
         nodes = self.model.nodes
         assert node in nodes, "requested node is not in the model"
 
-        # TODO, we dont rertrieve sample and feature names at the moment ... to fix
         sample_names = self.sample_names
         feature_names = self.feature_names
         factor_names = np.array(range(nodes['Z'].K)).astype(str)
