@@ -443,10 +443,10 @@ if __name__ == '__main__':
 
     lik = ["gaussian", "gaussian"]
 
-    outfile ="../run/tmp/test.hdf5"
+    outfile ="/tmp/test.hdf5"
 
     ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.01)
     ent.set_model(sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features')
     ent.set_model_options(factors=10, likelihoods=lik)
     ent.set_dataprocessing_options()
