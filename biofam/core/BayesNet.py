@@ -140,12 +140,8 @@ class BayesNet(object):
         #   Disadvantages: slow, doesnt work with non-gaussian data
         if by_r2 is not None:
 
-            if "SW" in self.nodes:
-                Z = self.nodes['Z'].getExpectation()
-                W = self.nodes["SW"].getExpectation()
-            else:
-                Z = self.nodes['SZ'].getExpectation()
-                W = self.nodes["W"].getExpectation()
+            Z = self.nodes['Z'].getExpectation()
+            W = self.nodes["W"].getExpectation()
 
             Y = self.nodes["Y"].getExpectation()
 
