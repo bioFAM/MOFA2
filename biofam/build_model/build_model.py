@@ -158,24 +158,23 @@ class buildBiofam(buildModel):
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
 
     def createSchedule(self):
-        schedule = np.array(['Y', 'W', 'Z', 'Tau'])
-
+        schedule = np.array(['Y', 'W', 'Z', 'Tau'], dtype='<U6')
         # insert thetaW after W
         if self.model_opts['sl_w']:
             ix = self.find_node(schedule, 'W')[0][0]
-            np.insert(schedule, ix + 1, 'ThetaW')
+            schedule = np.insert(schedule, ix + 1, 'ThetaW')
 
         if self.model_opts['sl_z']:
             ix = self.find_node(schedule, 'Z')[0][0]
-            np.insert(schedule, ix + 1, 'ThetaZ')
+            schedule = np.insert(schedule, ix + 1, 'ThetaZ')
 
         if self.model_opts['ard_w']:
             ix = self.find_node(schedule, 'W')[0][0]
-            np.insert(schedule, ix + 1, 'AlphaW')
+            schedule = np.insert(schedule, ix + 1, 'AlphaW')
 
         if self.model_opts['ard_z']:
             ix = self.find_node(schedule, 'Z')[0][0]
-            np.insert(schedule, ix + 1, 'AlphaZ')
+            schedule = np.insert(schedule, ix + 1, 'AlphaZ')
 
         self.schedule = schedule
 
