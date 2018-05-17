@@ -222,6 +222,7 @@ class entry_point(object):
             self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
         else:
             if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
+            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
             self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
 
 
@@ -310,6 +311,7 @@ class entry_point(object):
         self.model.setTrainOptions(self.train_opts)
 
         train_model(self.model, self.train_opts)
+        import pdb; pdb.set_trace()
 
         print("Saving model in %s...\n" % self.data_opts['output_file'])
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
