@@ -442,6 +442,7 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
             if only_first_moments: expectations = {'E':expectations["E"]}
 #            for samp_group in range(len(group_names)):
 #                samp_subgrp = node_subgrp.create_group(samp_group)
+            group_ix = 0
             for samp_group in np.unique(group_names):
                 # create hdf5 group for the considered sample group
                 samp_subgrp = node_subgrp.create_group(str(samp_group))
@@ -456,8 +457,13 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                     else:
 #                        df = expectations[exp_name][sample_groups,:]
 #                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
-                        df = expectations[exp_name][samp_indices,:]
+                        df = expectations[exp_name]
+                        # TODO a bit dirty here, this is if we use a thetaZ which is not per group
+                        if len(df.shape)>1:
+                            df = df[group_ix,:]
                         samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
+
+            group_ix += 1
 
 
 def saveTrainingStats(model, hdf5):

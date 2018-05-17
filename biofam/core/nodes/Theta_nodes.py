@@ -29,7 +29,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         self.factors_axis = 0
         self.Ppar = self.P.getParameters()
 
-    def getExpectations(self, expand=True):
+    def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
             D = self.markov_blanket['W'].D
@@ -41,7 +41,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         else:
             return QExp
 
-    def getExpectation(self, expand=True):
+    def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
@@ -129,7 +129,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
         self.factors_axis = 0
         self.Ppar = self.P.getParameters()
 
-    def getExpectations(self, expand=True):
+    def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
             N = self.markov_blanket['Z'].N
@@ -141,7 +141,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
         else:
             return QExp
 
-    def getExpectation(self, expand=True):
+    def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
