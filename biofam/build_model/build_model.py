@@ -158,6 +158,8 @@ class buildBiofam(buildModel):
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
 
     def createSchedule(self):
+        # TODO is there a way to change that ? here we need to specify the max length of
+        # strings in the dtype parameter to np.array or the insert function doesnt work properly
         schedule = np.array(['Y', 'W', 'Z', 'Tau'], dtype='<U6')
         # insert thetaW after W
         if self.model_opts['sl_w']:
