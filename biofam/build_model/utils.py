@@ -454,6 +454,9 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                     # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
                     if node == "SigmaZ":
                         samp_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
+                    if node == 'Z':
+                        df = expectations[exp_name][samp_indices,:]
+                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
                     else:
 #                        df = expectations[exp_name][sample_groups,:]
 #                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
