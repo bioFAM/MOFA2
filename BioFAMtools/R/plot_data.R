@@ -23,14 +23,14 @@
 #' Default is FALSE.
 #' @param ... further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}
 #' @details One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
-#' using for example \code{\link{plotWeights}} or \code{\link{plotTopWeights}}, which show you which are the top features that are driving the heterogeneity. \cr
+#' using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, which show you which are the top features that are driving the heterogeneity. \cr
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates a heatmap for selected features, which should reveal, im the original data space, the underlying pattern that is captured by the latent factor. \cr
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 #' @import pheatmap
 #' @examples
 #' # Load example of BioFAModel
-#' model <- loadModel(system.file("extdata", "model15.hdf5", package = "BioFAMtools"))
+#' model <- load_model(system.file("extdata", "model15.hdf5", package = "BioFAMtools"))
 #' 
 #' # Plot top 50 features for factor 1 in the mRNA view
 #' plot_data_heatmap(model, "mRNA", 1, 50)
@@ -139,7 +139,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' a character giving the name of a feature present in the training data, 
 #' a character giving the same of a covariate (only if using MultiAssayExperiment as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups.
-#' @details One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plotWeights}} or \code{\link{plotTopWeights}}, 
+#' @details One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, 
 #' which show you which features drive the heterogeneity of each factor. 
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates scatterplots of features against factors, so that you can observe the association between them. \cr
@@ -148,8 +148,8 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @import dplyr
 #' @export
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10,
-                            color_by=NULL, name_color="",  
-                            shape_by=NULL, name_shape="") {
+                              color_by=NULL, name_color="",  
+                              shape_by=NULL, name_shape="") {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -304,6 +304,7 @@ plot_tiles_data <- function(object, colors = NULL) {
   # Collect relevant data
   training_data <- object@training_data
   M <- get_dimensions(object)[["M"]]
+  P <- get_dimensions(object)[["P"]]
   
   # Define colors  
   if (is.null(colors)) {
@@ -314,39 +315,47 @@ plot_tiles_data <- function(object, colors = NULL) {
   }
   if (length(colors)!=M) stop("Length of 'colors' does not match the number of views")
   names(colors) <- views_names(object)
-  
+
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  ovw <- sapply(training_data, function(datgr) sapply(datgr, function(dat) apply(dat, 2, function(s) !all(is.na(s)))))
+  ovw.mx <- sapply(training_data, function(datgr) 
+    sapply(datgr, function(dat) 
+      apply(dat, 2, function(s) 
+        !all(is.na(s)))))
+
+  ovw <- as.data.frame(ovw.mx)
+  ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = sapply(samples_list, length)) )
   
   # Remove samples with no measurements
   ovw <- ovw[apply(ovw, 1, any),, drop=FALSE]
   if (is.null(rownames(ovw))) rownames(ovw) <- as.character(1:nrow(ovw))
   
   # Melt to data.frame
-  molten_ovw <- melt(ovw, varnames=c("sample", "view"))
+  ovw <- cbind(ovw, sample = rownames(ovw))
+  molten_ovw <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
   
   # order samples
-  molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw)[order(rowSums(ovw), decreasing = T)])
+  molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw)[order(rowSums(ovw.mx), decreasing = T)])
 
   n <- length(unique(molten_ovw$sample))
   
   # Add number of samples and features per view
-  molten_ovw$combi <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
-  molten_ovw$ntotal <- paste("n=", colSums(ovw)[ as.character(molten_ovw$view) ], sep="")
+  molten_ovw$combi  <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
+  molten_ovw$ntotal <- paste("n=", colSums(ovw.mx)[ as.character(molten_ovw$view) ], sep="")
   molten_ovw$ptotal <- paste("d=", sapply(training_data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
     
   # Define y-axis label
-  molten_ovw <-  mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"))
+  molten_ovw <- mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
   
   # Plot
   p <- ggplot(molten_ovw, aes(x=sample, y=view_label, fill=combi)) +
     geom_tile(width=0.7, height=0.9, col="black") +
-    geom_text(data=filter(molten_ovw, sample==levels(molten_ovw$sample)[1]),
-              aes(x=levels(molten_ovw$sample)[n/2],label=ntotal), size=6) +
+    # geom_text(data=filter(molten_ovw, sample==levels(molten_ovw$sample)[1]),
+    #           aes(x=levels(molten_ovw$sample)[n/2],label=ntotal), size=6) +
     scale_fill_manual(values = c('missing'="grey", colors)) +
     # ggtitle("Samples available for training") +
     xlab(paste0("Samples (n=", n, ")")) + ylab("") +
     guides(fill=F) + 
+    facet_wrap(~group_label, scales="free") +
     theme(
       axis.text.x = element_blank(),
       panel.background = element_rect(fill="white"),
