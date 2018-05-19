@@ -44,7 +44,9 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
     if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
     else factors <- factors_names(object)[factors]
   }
-  else { stopifnot(all(factors %in% factors_names(object))) }
+  else {
+    stopifnot(all(factors %in% factors_names(object)))
+  }
   
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
@@ -353,12 +355,18 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
 }
 
 
-#' @title getELBO
-#' @name getELBO
+#' @title get_elbo
+#' @name get_elbo
 #' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @export
-getELBO <- function(object) {
+get_elbo <- function(object) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
   return(tail(object@TrainStats$elbo, 1))
+}
+
+get_groups_annotation <- function(object){
+  samples_list <- samples_names(m)
+  if(class(samples_list)=="list") samples <- Reduce(c, samples_list) else samples <- samples_list
+  data.frame(samples=samples, group = rep(names(samples_list), times= sapply(samples_list, length)))
 }

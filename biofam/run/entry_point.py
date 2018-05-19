@@ -232,7 +232,7 @@ class entry_point(object):
             self.data_opts['scale_views'] = [ False for l in self.model_opts["likelihoods"] ]
 
         # Data processing: scale features
-        if scale_features:
+        if scale_features is True:
             assert data_opts['scale_views'] is False, "Scale either entire views or features, not both"
             self.data_opts['scale_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
         else:

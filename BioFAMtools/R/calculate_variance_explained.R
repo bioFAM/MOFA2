@@ -175,6 +175,10 @@ plot_variance_explained <- function(object, views = "all", groups = "all", clust
 
   hms   <- list()
   bplts <- list()
+  min_lim_hm <- min(fvar_mk_df$value)
+  max_lim_hm <- max(fvar_mk_df$value)
+  min_lim_bplt <- min(0, fvar_m_df$R2)
+  max_lim_bplt <- max(fvar_m_df$R2)
 
   for (gr in unique(fvar_mk_df$group)) {
 
@@ -182,8 +186,8 @@ plot_variance_explained <- function(object, views = "all", groups = "all", clust
     hm <- ggplot(fvar_mk_df[fvar_mk_df$group == gr,], aes(view, factor)) + 
       geom_tile(aes(fill=value), color="black") +
       guides(fill=guide_colorbar("R2")) +
-      scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar") +
-      ylab("Latent factor") +
+      ylab("Latent factor") + 
+      scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_lim_hm,max_lim_hm)) +
       theme(
         # plot.margin = margin(5,5,5,5),
         plot.title = element_text(size=17, hjust=0.5),
@@ -204,7 +208,7 @@ plot_variance_explained <- function(object, views = "all", groups = "all", clust
       ggtitle(paste0("Total variance explained per view\nin group ", gr)) +
       geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
       xlab("") + ylab("R2") +
-      scale_y_continuous(expand=c(0.01,0.01)) +
+      scale_y_continuous(limits=c(min_lim_bplt, max_lim_bplt), expand=c(0.01, 0.01)) +
       theme(
         plot.margin = unit(c(1,2.4,0,0), "cm"),
         panel.background = element_blank(),
