@@ -1,5 +1,5 @@
 """
-Module to build and initialise a bioFAM model
+Module to build a bioFAM model
 """
 
 from sys import path
@@ -13,13 +13,13 @@ from biofam.build_model.init_model import initModel
 from biofam.build_model.utils import *
 
 # # QUESTION: do we need this ?
+# RICARD: NOT SURE
 class buildModel(object):
     def __init__(self):
         self.net = None
 
 # TODO could also split in  different model: pne basic parent with no ARD, one below which would be groups biofam where you choose what ARD to use
 class buildBiofam(buildModel):
-
     def  __init__(self, data_opts, model_opts):
         # defining model's dimensionalities
         self.data = data_opts['data']
@@ -49,33 +49,45 @@ class buildBiofam(buildModel):
         self.build_all()
 
     def build_all(self):
+        """ General method to build all nodes """
+
+        # Build general nodes
         self.build_Y()
         self.build_Z()
         self.build_W()
         self.build_Tau()
 
-        # define ARDs
+        # define ARD sparsity per sample group (on Z)
         if self.model_opts['ard_z']:
             self.build_AlphaZ()
+
+        # define ARD sparsity per feature_group, or view (on W)
         if self.model_opts['ard_w']:
             self.build_AlphaW()
 
-        # define thetas
+        # define feature-wise spike and slab sparsity in Z
         if self.model_opts['sl_z']:
             self.build_ThetaZ()
+
+        # define feature-wise spike and slab sparsity in W
         if self.model_opts['sl_w']:
             self.build_ThetaW()
 
+        # Define markov blankets 
         self.createMarkovBlankets()
+
+        # Define training schedule
         self.createSchedule()
+
+        # Create BayesNet class
         self.net = BayesNet(dim=self.dim, nodes=self.init_model.getNodes())
 
     def build_Y(self):
-        # TODO enable a noise on cells instead of features with some option
+        """ Build node Y for the observations """
         self.init_model.initY(noise_on=self.model_opts['noise_on'])
 
     def build_Z(self):
-        # Initialise latent variables
+        """ Build node Z for the factors or latent variables """
         # TODO change to 'if sl_Z in model_opts ' ? would enable to not have to
         # add all the possible options to model_opt
         if self.model_opts['sl_z']:
@@ -85,7 +97,7 @@ class buildBiofam(buildModel):
             self.init_model.initZ()
 
     def build_W(self):
-        #Initialise weights
+        """ Build node W for the weights """
         if self.model_opts['sl_w']:
             self.init_model.initSW()
         else:
@@ -98,29 +110,44 @@ class buildBiofam(buildModel):
         self.init_model.initTau(on=self.model_opts['noise_on'])
 
     def build_AlphaZ(self):
-        # cases to distinguish are whether there are groups or not and whether we should account for them
+        """ Build node AlphaZ for the ARD prior on the factors """
+
+        # ARD prior per sample group
         if self.data_opts['sample_groups'] is not None:
             self.init_model.initAlphaZ_groups(self.data_opts['sample_groups'])
+
+        # ARD prior per factor
         else:
+            # RICARD: ANY REASON WHY initAlphaZ_k rather than initAlphaZ?
             self.init_model.initAlphaZ_k()
 
     def build_AlphaW(self):
+        """ Build node AlphaW for the ARD prior on the weights"""
+
+        # ARD prior per factor and feature_group (view)
+        # RICARD: SYMMETRISE AS IN ALPHAZ??
         self.init_model.initAlphaW_mk()
 
     def build_ThetaZ(self):
+        """ Build node ThetaZ for the Spike and Slab prior on the factors """
+
+        # Initialise hyperparameters for the ThetaZ prior
         initTheta_a = 1.
         initTheta_b = 0.001 #1.
+
+        # Specify for which factors to learn ThetaZ
         learnTheta_ix = np.ones(self.dim['K'])
 
-        # TODO: this for loop cannot possibly work change
+        # Do not learn ThetaZ for the intercept factor
         if self.model_opts["learn_intercept"]:
-            for ix in learnTheta_ix:
-                ix[0] = 0
+            learnTheta_ix[0] = 0
 
         self.init_model.initThetaMixedZ_k(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
 
     def build_ThetaW(self):
-        # Initialise sparsity on the weights
+        """ Build node ThetaW for the Spike and Slab prior on the weights """
+
+        # Initialise hyperparameters for the ThetaW prior
         initTheta_a = 1.
         initTheta_b = 1.
         learnTheta_ix = [np.ones(self.dim['K'])] * self.dim['M']
@@ -133,61 +160,71 @@ class buildBiofam(buildModel):
         self.init_model.initThetaMixedW_mk(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
 
     def createMarkovBlankets(self):
+        """ Define the markov blankets """
+
+        # Fetch all nodes
         nodes = self.init_model.getNodes()
 
-        # basic connections
+        # Define basic connections
         nodes['Y'].addMarkovBlanket(Z=nodes["Z"], W=nodes["W"], Tau=nodes["Tau"])
         nodes['Z'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Tau=nodes["Tau"])
         nodes['W'].addMarkovBlanket(Y=nodes["Y"], Z=nodes["Z"], Tau=nodes["Tau"])
         nodes['Tau'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Z=nodes["Z"])
 
-        # adding theta nodes if spike and slab
+        # Add ThetaZ in the markov blanket of Z and viceversa if Spike and Slab prior on Z
         if self.model_opts['sl_z']:
             nodes['Z'].addMarkovBlanket(ThetaZ=nodes["ThetaZ"])
             nodes["ThetaZ"].addMarkovBlanket(Z=nodes["Z"])
+
+        # Add ThetaW in the markov blanket of W and viceversa if Spike and Slab prior on Z
         if self.model_opts['sl_w']:
             nodes['W'].addMarkovBlanket(ThetaW=nodes["ThetaW"])
             nodes["ThetaW"].addMarkovBlanket(W=nodes["W"])
 
-        # adding alpha nodes if ARD
+        # Add AlphaZ in the markov blanket of Z and viceversa if ARD prior on Z
         if self.model_opts['ard_z']:
             nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
             nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
+
+        # Add AlphaW in the markov blanket of W and viceversa if ARD prior on W
         if self.model_opts['ard_w']:
             nodes['AlphaW'].addMarkovBlanket(W=nodes['W'])
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
 
     def createSchedule(self):
-        # TODO is there a way to change that ? here we need to specify the max length of
-        # strings in the dtype parameter to np.array or the insert function doesnt work properly
-        schedule = np.array(['Y', 'W', 'Z', 'Tau'], dtype='<U6')
-        # insert thetaW after W
+        """ Define the schedule of updates """
+
+        # TO-DO: 
+        # - ALLOW SCHEDULE TO BE PROVIDED AS TRAIN_OPTIONS
+        # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
+
+        # Define basic schedule of updates
+        schedule = ['Y', 'W', 'Z', 'Tau']
+
+        # Insert ThetaW after W if Spike and Slab prior on W
         if self.model_opts['sl_w']:
-            ix = self.find_node(schedule, 'W')[0][0]
-            schedule = np.insert(schedule, ix + 1, 'ThetaW')
+            ix = schedule.index("W")
+            schedule.insert(ix+1, 'ThetaW')
 
+        # Insert ThetaZ after Z if Spike and Slab prior on Z
         if self.model_opts['sl_z']:
-            ix = self.find_node(schedule, 'Z')[0][0]
-            schedule = np.insert(schedule, ix + 1, 'ThetaZ')
+            ix = schedule.index("Z")
+            schedule.insert(ix+1, 'ThetaZ')
 
+        # Insert AlphaW after W if ARD prior on W
         if self.model_opts['ard_w']:
-            ix = self.find_node(schedule, 'W')[0][0]
-            schedule = np.insert(schedule, ix + 1, 'AlphaW')
+            ix = schedule.index("W")
+            schedule.insert(ix+1, 'AlphaW')
 
+        # Insert AlphaZ after Z if ARD prior on Z
         if self.model_opts['ard_z']:
-            ix = self.find_node(schedule, 'Z')[0][0]
-            schedule = np.insert(schedule, ix + 1, 'AlphaZ')
+            ix = schedule.index("Z")
+            schedule.insert(ix+1, 'AlphaZ')
 
         self.schedule = schedule
 
-    def find_node(self, arr, nd):
-        truth_table = (arr == nd)
-        indices = np.where(truth_table)
-        if len(indices) == 0:
-            print('Warning, node', nd, 'not found')
-        if len(indices) >1 :
-            print('Warning, node', nd, 'found in multiple locations')
-        return indices
+
+## IGNORE BELOW, UNDER CONSTRUCTION ###
 
 
 class buildSpatialBiofam(buildBiofam):

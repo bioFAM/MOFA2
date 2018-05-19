@@ -1,4 +1,3 @@
-
 """
 Module to initialise a bioFAM model
 """
@@ -14,13 +13,15 @@ class initModel(object):
     def __init__(self, dim, data, lik):
         """
         PARAMETERS
-        ----------
-         dim: dictionary
-            keyworded dimensionalities: N for the number of samples, M for the number of views, K for the number of latent variables, D for the number of features per view (a list)
-         data: list of length M with ndarrays of dimensionality (N,Dm):
+        dim: dictionary with keyworded dimensionalities: 
+            N for the number of samples
+            M for the number of views
+            K for the number of factors or latent variables,
+            D for the number of features per feature group, or view (a list)
+        data: list of length M with ndarrays of dimensionality (N,Dm):
             observed data
-         lik: list of length M with strings
-            likelihood for each view
+        lik: list of strings with length M
+            likelihood for each view, choose from 'gaussian', 'poisson' or 'bernoulli'
         """
         self.data = data
         self.lik = lik
@@ -32,24 +33,28 @@ class initModel(object):
         self.nodes = {}
 
     def initZ(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
-              scale_covariates=None, precompute_pcovinv=True):
+        scale_covariates=None, precompute_pcovinv=True):
         """Method to initialise the latent variables
+
         PARAMETERS
         ----------
         pmean: mean of the prior distribution
         pcov: covariance of the prior distribution
-        qmean: initial value of the mean of the variational distribution
+        qmean: initialisation of the mean of the variational distribution
+            "random" for a random initialisation sampled from a standard normal distribution
+            "pca" for an initialisation based on PCA
+            "orthogonal" for a random initialisation with orthogonal factors
         qvar: initial value of the variance of the variational distribution
         qE: initial value of the expectation of the variational distribution
         qE2: initial value of the second moment of the variational distribution
-        covariates: covariates to be included as non-updated factors
+        (NOT IMPLEMENTED) covariates: covariates to be included as non-updated factors
             None if no covariates are present, or a ndarray covariates with dimensions (N,Kcovariates)
-        scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
+        (NOT IMPLEMENTED) scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
             None if no covariates are present, or a ndarray with dimensions (Kcov,) indicating which covariates to scale
         precompute_pcovinv: precompute the inverse of the covariance matrice of the prior of Z
         """
 
-        ## Initialise prior distribution (P) ##
+        ## Initialise prior distribution (P)
 
         # mean
         pmean = s.ones((self.N, self.K)) * pmean
@@ -58,7 +63,7 @@ class initModel(object):
         if isinstance(pcov, (int, float)):
             pcov = [s.sparse.eye(self.N) * pcov] * self.K
 
-        ## Initialise variational distribution (Q) ##
+        ## Initialise variational distribution (Q)
 
         # variance
         qvar = s.ones((self.N, self.K)) * qvar
@@ -71,7 +76,7 @@ class initModel(object):
                 if qmean == "random":
                     qmean = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
 
-                # Random and orthogonal initialisation
+                # Random initialisation with orthogonal factors
                 elif qmean == "orthogonal":
                     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
                     pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.N, 9999)).T)
@@ -95,6 +100,9 @@ class initModel(object):
 
         # Add covariates
         if covariates is not None:
+            print("Covariates are not implemented")
+            exit()
+
             assert scale_covariates != None, "If you use covariates also define data_opts['scale_covariates']"
 
             # Select indices for covariates
@@ -118,25 +126,34 @@ class initModel(object):
             idx_covariates = None
 
         # Initialise the node
-        self.nodes["Z"] = Z_Node(dim=(self.N, self.K), pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2,
-                             idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv)
+        self.nodes["Z"] = Z_Node(
+            dim=(self.N, self.K),
+            pmean=pmean, pcov=pcov, 
+            qmean=qmean, qvar=qvar, 
+            qE=qE, qE2=qE2,
+            idx_covariates=idx_covariates, 
+            precompute_pcovinv=precompute_pcovinv
+        )
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0., qvar_T0=1.,
-              qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
-        """Method to initialise the factors (spike and slab reparametrised as the product of bernoulli and gaussian variables)
+        qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
+        """Method to initialise sparse factors with a (reparametrised) spike and slab prior
         PARAMETERS
         ----------
         (...)
         """
-        # TODO : add different ways to initialise the parameters of the posterior of Z : random, random orthogonal , PCA
-        # TODO : enable covariates (increasing K)
 
-        ## Initialise prior distribution (P) ##
+        # TODO:
+        # - add different ways to initialise the expectations of the posterior: random, orthogonal, PCA
+        # - enable covaraites, currently intercept does not work
 
-        ## Initialise variational distribution (Q) ##
+
+        ## Initialise prior distribution (P)
+
+        ## Initialise variational distribution (Q)
         if isinstance(qmean_T1, str):
 
-            if qmean_T1 == "random":  # random
+            if qmean_T1 == "random":
                 qmean_T1_tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
             else:
                 print("%s initialisation not implemented for Z" % qmean_T1)
@@ -172,8 +189,9 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
-              scale_covariates=None, precompute_pcovinv=None):
+    def initW(self, pmean=0., pcov=1., qmean="random", qvar=1., 
+        qE=None, qE2=None, covariates=None,
+        scale_covariates=None, precompute_pcovinv=None):
         """Method to initialise the weights
         PARAMETERS
         ----------
@@ -183,9 +201,9 @@ class initModel(object):
         qvar: initial value of the variance of the variational distribution
         qE: initial value of the expectation of the variational distribution
         qE2: initial value of the second moment of the variational distribution
-        covariates: covariates to be included as non-updated weights
+        (NOT FUNCTIONAL) covariates: covariates to be included as non-updated weights
             None if no covariates are present, or a ndarray covariates with dimensions (N,Kcovariates)
-        scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
+        (NOT FUNCTIONAL) scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
             None if no covariates are present, or a ndarray with dimensions (Kcov,) indicating which covariates to scale
         precompute_pcovinv: precompute the inverse of the covariance matrice of the prior of W
         """
@@ -238,16 +256,16 @@ class initModel(object):
                         qmean_m = stats.norm.rvs(loc=0, scale=1, size=(self.D[m], self.K))
 
                     # Random and orthogonal initialisation
-                    elif qmean == "orthogonal":
-                        pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
-                        pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.D[m], 9999)).T)
-                        qmean_m = pca.components_.T
+                    # elif qmean == "orthogonal":
+                    #     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
+                    #     pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.D[m], 9999)).T)
+                    #     qmean_m = pca.components_.T
 
                     # PCA initialisation
-                    elif qmean == "pca":
-                        pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
-                        pca.fit(s.concatenate(self.data, axis=0).T)
-                        qmean_m = pca.components_.T
+                    # elif qmean == "pca":
+                    #     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
+                    #     pca.fit(s.concatenate(self.data, axis=0).T)
+                    #     qmean_m = pca.components_.T
 
                 elif isinstance(qmean, s.ndarray):
                     assert qmean.shape == (
@@ -266,6 +284,9 @@ class initModel(object):
 
             # Add covariates
             if covariates is not None:
+                print("Covariates not implemented")
+                exit()
+
                 qmean_m[:, idx_covariates] = covariates
 
                 # Remove prior and variational distributions from the covariates
@@ -278,24 +299,22 @@ class initModel(object):
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
-
-
-    def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1., qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1., qEW_S0=None, qEW_S1=None, qES=None):
-        """Method to initialise the weights (spike and slab reparametrized as the product of bernoulli and gaussian variables)
+    def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1., 
+        qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1., 
+        qEW_S0=None, qEW_S1=None, qES=None):
+        """Method to initialise sparse weights with a (reparametrised) spike and slab prior
 
         PARAMETERS
         ----------
         (...)
         """
-        # TODO : add different ways to initialise the parameters of the posterior of W : random, random orthogonal , PCA
-        # TODO : enable covariates (increasing K)
 
         W_list = [None]*self.M
         for m in range(self.M):
 
-            ## Initialise prior distribution (P) ##
+            ## Initialise prior distribution (P)
 
-            ## Initialise variational distribution (Q) ##
+            ## Initialise variational distribution (Q)
             if isinstance(qmean_S1,str):
 
                 if qmean_S1 == "random": # random
@@ -337,36 +356,42 @@ class initModel(object):
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
     def initAlphaZ_k(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
-        """Method to initialise the precision of the ARD prior on the factors
+        """Method to initialise the ARD prior on Z per factor
 
         PARAMETERS
         ----------
-         pa: float
+        pa: float
             'a' parameter of the prior distribution
-         pb :float
+        pb :float
             'b' parameter of the prior distribution
-         qb: float
+        qb: float
             initialisation of the 'b' parameter of the variational distribution
-         qE: float
+        qE: float
             initial expectation of the variational distribution
+        qlnE: float
+            initial log expectation of the variational distribution
         """
         self.nodes["AlphaZ"] = AlphaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
     def initAlphaZ_groups(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
-        """Method to initialise the precision of the ARD prior per sample groups on the factors
+        """Method to initialise the ARD prior on Z per sample group
 
         PARAMETERS
         ----------
-         pa: float
+        (TO-DO: ADD DESCRIPTION) groups 
+        pa: float
             'a' parameter of the prior distribution
-         pb :float
+        pb :float
             'b' parameter of the prior distribution
-         qb: float
+        qb: float
             initialisation of the 'b' parameter of the variational distribution
-         qE: float
+        qE: float
             initial expectation of the variational distribution
+        qlnE: float
+            initial log expectation of the variational distribution
         """
-        # sanity checks
+
+        # Sanity checks
         assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
         # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
@@ -377,35 +402,56 @@ class initModel(object):
         n_group = len(np.unique(groups_ix))
         assert len(groups_dic) == n_group, 'problem in np.unique'
 
-        self.nodes["AlphaZ"] = AlphaZ_Node_groups(dim=(n_group, self.K), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE, qlnE=qlnE)
+        self.nodes["AlphaZ"] = AlphaZ_Node_groups(dim=(n_group, self.K), 
+            pa=pa, pb=pb, 
+            qa=qa, qb=qb, 
+            groups=groups_ix, groups_dic=groups_dic, 
+            qE=qE, qlnE=qlnE
+        )
 
     def initSigmaZ_k(self, X, n_diag=0):
-        '''Method to initialise the covariance prior structure on Z'''
+        """Method to initialise the covariance prior structure on Z
+
+        (TO-DO) 
+        PARAMETERS
+        ----------
+        X: 
+        n_diag:
+        """
         dim = (self.K,)
         self.Sigma = SigmaGrid_Node(dim, X, n_diag=n_diag)
         self.nodes["SigmaZ"] = self.Sigma
 
     def initSigmaBlockZ_k(self, X, clust, n_diag=0):
-        '''Method to initialise the covariance prior structure on Z, for clusters assigned to samples'''
+        """Method to initialise the covariance prior structure on Z, for clusters assigned to samples
+
+        (TO-DO) 
+        PARAMETERS
+        ----------
+        X: 
+        n_diag:
+        """
         dim = (self.K,)
         self.Sigma = BlockSigmaGrid_Node(dim, X, clust, n_diag=n_diag)
         self.nodes["SigmaZ"] = self.Sigma
 
     def initAlphaW_mk(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
-        """Method to initialise the precision of the ARD prior on the weights
+        """Method to initialise the ARD prior on W
 
         PARAMETERS
         ----------
-         pa: float
+        pa: float
             'a' parameter of the prior distribution
-         pb :float
+        pb :float
             'b' parameter of the prior distribution
-         qa: float
+        qa: float
             initialisation of the 'b' parameter of the variational distribution
-         qb: float
+        qb: float
             initialisation of the 'b' parameter of the variational distribution
-         qE: float
+        qE: float
             initial expectation of the variational distribution
+        qlnE: float
+            initial log expectation of the variational distribution
         """
 
         alpha_list = [None]*self.M
@@ -445,45 +491,59 @@ class initModel(object):
 
         self.nodes["SigmaAlphaW"] = Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 
-    # TODO split this into two functions ?
     def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, on='features'):
         """Method to initialise the precision of the noise
 
         PARAMETERS
         ----------
-         pa: float
+        pa: float
             'a' parameter of the prior distribution
-         pb :float
+        pb :float
             'b' parameter of the prior distribution
-         qb: float
+        qb: float
             initialisation of the 'b' parameter of the variational distribution
-         qE: float
+        qE: float
             initial expectation of the variational distribution
+        on: string
+            'features' to define a noise per feature
+            'samples' to define a noise per sample
         """
 
         tau_list = [None]*self.M
         for m in range(self.M):
+
+            # Poisson noise model for count data
             if self.lik[m] == "poisson":
                 tmp = 0.25 + 0.17*s.amax(self.data[m],axis=0)
                 tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
+
+            # Bernoulli noise model for binary data
             elif self.lik[m] == "bernoulli":
                 # tau_list[m] = Constant_Node(dim=(self.D[m],), value=s.ones(self.D[m])*0.25)
                 # tau_list[m] = Tau_Jaakkola(dim=(self.D[m],), value=0.25)
                 tau_list[m] = Tau_Jaakkola(dim=((self.N, self.D[m])), value=1.)
+
+            # Binomial noise model for proportion data
             elif self.lik[m] == "binomial":
-                tmp = 0.25*s.amax(self.data["tot"][m],axis=0)
-                tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
+                print("Not implemented")
+                exit()
+                # tmp = 0.25*s.amax(self.data["tot"][m],axis=0)
+                # tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
+
+            # Gaussian noise model for continuous data
             elif self.lik[m] == "gaussian":
+
+                # Noise per samples
                 if on == 'samples':
                     tau_list[m] = TauN_Node(dim=(self.N,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
                     print("Using TauN noise!")
+                # Noise per feature
                 elif on == 'features':
                     tau_list[m] = TauD_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
                 else:
                     print('did not understand noise option on =', on)
                     exit(1)
-            # elif self.lik[m] == "warp":
-            #     tau_list[m] = Tau_Node(dim=(self.D[m],), pa=pa[m], pb=pb[m], qa=qa[m], qb=qb[m], qE=qE[m])
+
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
     # TODO: make independent of noise but the problem for that is that precompute() needs to know and is called
@@ -684,12 +744,13 @@ class initModel(object):
         self.nodes["ThetaW"] = self.Theta
 
     def initThetaConstW_mk(self, value=1.):
-        """Method to initialise a constant sparsity parameter of the spike and slab weights
+        """Method to initialise a constant Theta of the spike and slab on W
 
         PARAMETERS
         ----------
-         value: ndarray
-            constant value from 0 to 1 to initialise the node, 0 corresponds to complete sparsity (all weights are zero) and 1 corresponds to no sparsity
+        value: float ranging from 0 to 1, where:
+            0 corresponds to complete sparsity (all weights are zero)
+            1 corresponds to no sparsity (all weight allowed to be non-zero)
         """
         Theta_list = [None] * self.M
         for m in range(self.M):
@@ -698,11 +759,11 @@ class initModel(object):
         self.nodes["ThetaW"] = self.Theta
 
     def initExpectations(self, *nodes):
-        """ Method to initialise the expectations """
+        """ Method to initialise all expectations """
         for node in nodes:
             self.nodes[node].updateExpectations()
 
     def getNodes(self):
-        """ Get method to return the nodes"""
+        """ Get method to return the nodes """
         return self.nodes
         #return { k:v for (k,v) in self.nodes.items()}
