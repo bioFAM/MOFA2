@@ -503,7 +503,7 @@ def saveModelOpts(opts, hdf5):
     # opts_interest = ["learnIntercept", "schedule", "likelihoods"]
     opts_interest = ["learn_intercept", "likelihoods", "noise_on", "sl_z", "sl_w"]
     opts = dict((k, opts[k]) for k in opts_interest)
-    grp = hdf5.create_group('model_opts')
+    grp = hdf5.create_group('model_options')
     for k, v in opts.items():
         grp.create_dataset(k, data=np.asarray(v).astype('S'))
     grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
