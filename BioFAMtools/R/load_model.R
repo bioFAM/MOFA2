@@ -19,7 +19,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
   
   if (is.null(object)) object <- new("BioFAModel")
   
-  if(.hasSlot(object, "status") & length(object@status) !=0)
+  if(.hasSlot(object, "status") & length(object@status) != 0)
     if (object@status == "trained") warning("The specified object is already trained, over-writing training output with new results.")
   
 
@@ -30,7 +30,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
   features_data <- h5read(file, "features")
   samples_data  <- h5read(file, "samples")
 
-
   # Replace NaN by NA
   for (m in 1:length(training_data)) {
     for (h in 1:length(training_data[[m]])) {
@@ -39,13 +38,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
   }
   object@training_data <- training_data
 
-  # Specify dimensionality of the data
-  object@dimensions[["M"]] <- length(training_data)                           # number of views (groups of features)
-  object@dimensions[["P"]] <- length(training_data[[1]])                      # number of groups (groups of samples)
-  object@dimensions[["N"]] <- sapply(training_data[[1]], ncol)                # number of samples in every group
-  object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features in every view
-  object@dimensions[["K"]] <- ncol(object@expectations$W[[1]])                # number of factors
-
   # Fix sample and feature names is they are null
   if (is.null(samples_data)) {
     samples_data <- paste0("S", lapply(object@dimensions[["N"]], function(n) as.character(1:n)))
@@ -53,6 +45,39 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
   if (is.null(features_data)) {
     features_data <- paste0("G", lapply(object@dimensions[["D"]], function(d) as.character(1:d)))
   }
+
+  # Give corresponding names for rows (features) and columns (samples)
+  tryCatch( {
+    for (m in 1:length(training_data)) {  # there is always at least one view
+      for (p in 1:length(training_data[[m]])) {  # there is always at least one group
+        rownames(training_data[[m]][[p]]) <- features_data[[m]]
+        colnames(training_data[[m]][[p]]) <- samples_data[[p]]
+      }
+    }
+    object@training_data <- training_data
+  }, error = function(x) { cat("Error defining feature and sample names!..\n") })
+
+
+  # Load expectations
+  object@expectations <- h5read(file, "expectations")
+  tryCatch(object@parameters <- h5read(file, "parameters"), error = function(e) { print(paste("No parameters found in ", file)) })
+
+  # Unify names of the nodes with sparsity
+  if ("SZ" %in% names(object@expectations)) {
+    names(object@expectations)[which(names(object@expectations)=="SZ")] <- "Z"
+  }
+  if ("SW" %in% names(object@expectations)) {
+    names(object@expectations)[which(names(object@expectations)=="SW")] <- "W"
+  }
+
+
+  # Specify dimensionality of the data
+  object@dimensions[["M"]] <- length(training_data)                           # number of views (groups of features)
+  object@dimensions[["P"]] <- length(training_data[[1]])                      # number of groups (groups of samples)
+  object@dimensions[["N"]] <- sapply(training_data[[1]], ncol)                # number of samples in every group
+  object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features in every view
+  object@dimensions[["K"]] <- ncol(object@expectations$W[[1]]$E)              # number of factors
+
 
 
   # Set view and group names
@@ -68,40 +93,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
     groups_names(object) <- names(object@training_data[[1]])
   }
 
-  # Give corresponding names for rows (features) and columns (samples)
-  tryCatch( {
-    for (m in 1:length(training_data)) {  # there is always at least one view
-      for (p in 1:length(training_data[[m]])) {  # there is always at least one group
-        rownames(training_data[[m]][[p]]) <- feature_data[[m]]
-        colnames(training_data[[m]][[p]]) <- sample_data[[p]]
-      }
-    }
-    object@training_data <- training_data
-  }, error = function(x) { cat("Error defining feature and sample names!..\n") })
-
-  # Set sample, feature, and factor names
-  samples_names(object)  <- samples_data
-  features_names(object) <- features_data
-  factors_names(object)  <- paste0("F", as.character(1:object@dimensions[["K"]]))
-
-
-
-  # Load expectations
-  object@expectations <- h5read(file, "expectations")
-  tryCatch(object@parameters <- h5read(file, "parameters"), error = function(e) { print(paste("No parameters found in ", file)) })
-
-  # Unify names of the nodes with sparsity
-  if ("SZ" %in% names(object@expectations)) {
-    names(object@Expectations)[which(names(object@expectations)=="SZ")] <- "Z"
-  }
-  if ("SW" %in% names(object@expectations)) {
-    names(object@expectations)[which(names(object@expectations)=="SW")] <- "W"
-  }
-  
-
-  # Load options
-
-  # Define data options
 
   # Load model options
   
@@ -122,6 +113,21 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
   #   paste0(sapply(strsplit(e, split = "_")[[1]], function(s) 
   #     paste(toupper(substring(s, 1, 1)), substring(s, 2), sep="", collapse=" ")), collapse="")
   # )
+
+  # Define node types of the model
+  object@model_options$nodes <- list(multiview_nodes  = c("W", "AlphaW", "ThetaW", "SigmaAlphaW"),
+                                     multigroup_nodes = c("Z", "AlphaZ", "ThetaZ", "SigmaZ"),
+                                     twodim_nodes     = c("Y", "Tau"))
+
+
+  # Set sample, feature, and factor names for the data and all the expectations
+  # NOTE: The side effect is also removing the extra nestedness level (exp$E -> exp)
+  samples_names(object)  <- samples_data
+  features_names(object) <- features_data
+  factors_names(object)  <- paste0("F", as.character(1:object@dimensions[["K"]]))
+
+
+  # Define data options
 
 
   # Sanity check on the order of the likelihoods
@@ -162,16 +168,12 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
   
 
 
-
-  
   # Load training options
   if (length(object@training_options) == 0) {
     tryCatch( {
       object@training_options <- as.list(h5read(file, 'training_options', read.attributes=T))
     }, error = function(x) { print("Training opts not found, not loading it...") })
-  }
-    
-
+  }    
 
 
   # Load statistics
@@ -181,9 +183,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
     object@training_stats <- h5read(file, 'training_stats', read.attributes=T)
     colnames(object@training_stats$elbo_terms) <- attr(h5read(file,"training_stats/elbo_terms", read.attributes=T),"colnames")
   }, error = function(x) { print("Training stats not found, not loading it...") })
-
-  
-
 
 
   # # Define data options
@@ -253,18 +252,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NU
   #   object@data_options$multi_view <- TRUE
   # }
 
-  
 
-
-  
-  
-  # Update old models
   object <- .update_old_model(object)
-
-
-
-
- 
   
   
   # Rename covariates, including intercept

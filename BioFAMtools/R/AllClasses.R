@@ -45,9 +45,9 @@ setClass("BioFAModel",
 # Printing method
 setMethod("show", "BioFAModel", function(object) {
   
-  if(!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
+  if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
     stop("Error: dimensions not defined")
-  if(!.hasSlot(object, "status") | length(object@status) == 0)
+  if (!.hasSlot(object, "status") | length(object@status) == 0)
     stop("Error: status not defined")
   
   if (object@status == "trained") {
@@ -55,12 +55,13 @@ setMethod("show", "BioFAModel", function(object) {
     if (object@model_options$learn_intercept) { nfactors <- nfactors - 1 }
     cat(sprintf("Trained BioFAModel with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of groups: %d \n Group names: %s \n Number of samples per group: %s \n Number of factors: %d \n",
                 object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
-                object@dimensions[["H"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
+                object@dimensions[["P"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
                 nfactors))
   } else {
-    cat(sprintf("Untrained BioFAModel model with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of samples: %d \n",
+    cat(sprintf("Untrained BioFAModel model with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of groups: %d \n Group names: %s \n Number of samples per group: %s \n",
                 object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
-                object@dimensions[["H"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+                object@dimensions[["P"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
   }
   cat("\n")
 })
+
