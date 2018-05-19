@@ -200,7 +200,7 @@ class entry_point(object):
 
     # TODO merge with data_options ?
     def set_dataprocessing_options(self,
-        center_features=False, scale_features=False, scale_views=False,
+        center_features=False,center_features_per_group=False, scale_features=False, scale_views=False,
         maskAtRandom=None, maskNSamples=None, RemoveIncompleteSamples=False
         ):
 
@@ -213,11 +213,17 @@ class entry_point(object):
         # assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
 
         # Data processing: center features
-        if center_features is True:
+        if center_features_per_group is True:
+            self.data_opts['center_features_per_group'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
+        elif center_features is True:
+            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
             self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
         else:
             if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
             self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
+
 
         # Data processing: scale views
         if scale_views is True:
@@ -442,11 +448,11 @@ if __name__ == '__main__':
 
     lik = ["gaussian", "gaussian"]
 
-    outfile ="../run/tmp/test.hdf5"
+    outfile ="/tmp/test.hdf5"
 
     ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
-    ent.set_model(sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features')
+    ent.set_model(sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
     ent.set_model_options(factors=10, likelihoods=lik)
     ent.set_dataprocessing_options()
     ent.load_data()

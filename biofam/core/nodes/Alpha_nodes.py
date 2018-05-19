@@ -22,7 +22,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         # self.lbconst = s.sum( self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']) )
         self.factors_axis = 0
 
-    def getExpectations(self, expand=True):
+    def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
             D = self.markov_blanket['W'].D
@@ -33,7 +33,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         else:
             return QExp
 
-    def getExpectation(self, expand=True):
+    def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
@@ -81,7 +81,7 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
         # self.lbconst = s.sum( self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']) )
         self.factors_axis = 0   # TODO check that !!!!!
 
-    def getExpectations(self, expand=True):
+    def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
             N = self.markov_blanket['Z'].N
@@ -91,7 +91,7 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
         else:
             return QExp
 
-    def getExpectation(self, expand=True):
+    def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
@@ -143,7 +143,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
 
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
-    def getExpectations(self, expand=True):
+    def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
             # reshape the values to N_samples * N_factors and return
@@ -154,7 +154,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
         else:
             return {'E': QExp['E'], 'lnE': QExp['lnE']}
 
-    def getExpectation(self, expand=True):
+    def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
