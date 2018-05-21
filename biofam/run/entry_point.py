@@ -87,7 +87,7 @@ class entry_point(object):
                 # NOT TESTED data_matrix[m][p] = data_matrix[m][p][self.data_opts['feature_names'][m]]
 
         # TODO check that
-        self.data = data_matrix
+        self.data = process_data(data_matrix, self.data_opts, self.data_opts['sample_groups'])
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
@@ -438,9 +438,6 @@ class entry_point(object):
 
         return res
 
-
-
-
     def depreciated_parse_covariates(self):
         """ Parse covariates """
         print("Covariates are not implemented")
@@ -532,7 +529,8 @@ if __name__ == '__main__':
 
     outfile ="/tmp/test.hdf5"
 
-    ent.set_data_options(lik)
+    ent.set_data_options(lik, center_features=True, center_features_per_group=False,
+    scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, factors=10, likelihoods=lik)
     ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
@@ -543,18 +541,15 @@ if __name__ == '__main__':
 
 
 
-
-
-
     # # from biofam.run.entry_point import entry_point
     # file = "/Users/ricard/Downloads/test_biofam/data.txt"
     # lik = ["gaussian", "gaussian"]
+    # ent.set_data_options()
     # data = pd.read_csv(file, delimiter="\t")
     # ent = entry_point()
     # ent.set_data(data)
     # ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
     # ent.set_model(sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
     # ent.set_model_options(factors=10, likelihoods=lik)
-    # ent.set_dataprocessing_options()
     # ent.build_and_run()
     # ent.get_df('Y')

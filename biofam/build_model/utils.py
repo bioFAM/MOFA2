@@ -168,7 +168,12 @@ def loadData(data_opts, verbose=True):
     #     else:
     #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
     #         exit()
+    Y = process_data(Y, data_opts, sample_groups)
 
+    return (Y, sample_groups)
+
+def process_data(Y, data_opts, sample_groups):
+    M = len(Y)
 
     for m in range(M):
         # Removing features with no variance
@@ -205,7 +210,7 @@ def loadData(data_opts, verbose=True):
 
         print("\n")
 
-    return (Y, sample_groups)
+    return Y
 
 def loadDataGroups(data_opts):
     """
