@@ -6,9 +6,9 @@
 
   # Define what entities should be updated for which nodes
   # Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
-  node_lists_options <- list(features = list(nodes = c("Y", "Tau", "W", "AlphaW", "ThetaW"), axes = c(1, 1, 1, 1, 1)),
-                             samples  = list(nodes = c("Y", "Tau", "Z", "AlphaZ", "ThetaZ"), axes = c(2, 2, 1, 1, 1)),
-                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 2, 2, 2, 2)))
+  node_lists_options <- list(features = list(nodes = c("Y", "Tau", "W", "ThetaW"), axes = c(1, 1, 1, 1)),
+                             samples  = list(nodes = c("Y", "Tau", "Z", "ThetaZ"), axes = c(2, 2, 1, 1)),
+                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 2, 2)))
 
   if (paste0(views, collapse = "") == "all") { 
     views <- names(object@dimensions$D)

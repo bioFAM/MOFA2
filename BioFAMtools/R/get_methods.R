@@ -60,9 +60,10 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   # Remove intercept
   if (include_intercept == FALSE) {
     if (as.data.frame == FALSE) {
-      Z <- lapply(names(Z), function(h) {
-        if ("intercept" %in% colnames(Z[[h]])) Z[[h]][,colnames(Z[[h]])!="intercept"]
+      Z <- lapply(names(Z), function(p) {
+        Z[[p]][,colnames(Z[[p]])!="intercept"]
       })
+      names(Z) <- groups
     } else {
       if ("intercept" %in% unique(Z$factor)) {
         Z <- Z[Z$factor!="intercept",]

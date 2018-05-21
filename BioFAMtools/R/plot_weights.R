@@ -94,8 +94,8 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, name_color="",
-                         name_shape="", showMissing = TRUE) {
+plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, 
+                                 name_color="", name_shape="", showMissing = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -127,10 +127,11 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
     # It is the name of a covariate or a feature in the TrainData
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
+      training_data <- get_training_data(object)
       features_names <- features_names(object)
       if(color_by %in% Reduce(union, features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
-        color_by <- object@training_data[[viewidx]][[1]][color_by,]
+        color_by <- training_data[[viewidx]][[1]][color_by,]
       } else if(class(object@input_data) == "MultiAssayExperiment"){
         color_by <- getCovariates(object, color_by)
     }
@@ -154,9 +155,10 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
       features_names <- features_names(object)
+      training_data <- get_training_data(object)
       if(shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
-        shape_by <- object@training_data[[viewidx]][[1]][shape_by,]
+        shape_by <- training_data[[viewidx]][[1]][shape_by,]
       } else if(class(object@input_data) == "MultiAssayExperiment"){
         shape_by <- getCovariates(object, shape_by)
     }
