@@ -409,11 +409,10 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                 view_subgrp = node_subgrp.create_group(tmp)
 
                 # Loop through the expectations
-                if only_first_moments:
-                    if node == "SW":
-                        expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
-                    else:
-                        expectations[m] = {'E':expectations[m]["E"]}
+                
+                if node == "SW":
+                    expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
+                if only_first_moments: expectations[m] = {'E':expectations[m]["E"]} 
 
                 if expectations[m] is not None:
 

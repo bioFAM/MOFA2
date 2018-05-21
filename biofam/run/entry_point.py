@@ -19,7 +19,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = """
+        banner = r"""
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -527,7 +527,7 @@ if __name__ == '__main__':
 
     lik = ["gaussian", "gaussian"]
 
-    outfile ="/tmp/test.hdf5"
+    outfile ="tmp/test.hdf5"
 
     ent.set_data_options(lik, center_features=True, center_features_per_group=False,
     scale_features=False, scale_views=False)
