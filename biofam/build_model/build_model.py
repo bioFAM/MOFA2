@@ -32,26 +32,30 @@ class buildModel(object):
         """ Build all nodes """
         pass
 
+    def get_nodes(self):
+        """ Get all nodes """
+        assert hasattr(self, 'net'), "BayesNet has not been created"
+        return self.net.getNodes()
+
+
 class buildBiofam(buildModel):
     def  __init__(self, data, data_opts, model_opts, dimensionalities):
         buildModel.__init__(self, data, data_opts, model_opts, dimensionalities)
-
-        # TO-DO: CHECK THIS
-        # update for learning learn_intercept
-        if model_opts["learn_intercept"]:
-            self.dim["K"] += 1
-            if 'covariates_files' in model_opts:
-                model_opts['covariatesFiles'] = s.insert(model_opts['covariatesFiles'], obj=0, values=1, axis=1)
-                model_opts['scale_covariates'].insert(0,False)
-            else:
-                model_opts['covariates_files'] = s.ones((self.dim["N"],1))
-                model_opts['scale_covariates'] = [False]
 
         # create an instance of initModel
         self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"])
 
         # Build all nodes
         self.build_nodes()
+
+        # Define markov blankets 
+        self.createMarkovBlankets()
+
+        # Define training schedule
+        self.createSchedule()
+
+        # Create BayesNet class
+        self.createBayesNet()
 
     def build_nodes(self):
         """ Method to build all nodes """
@@ -78,15 +82,6 @@ class buildBiofam(buildModel):
         if self.model_opts['sl_w']:
             self.build_ThetaW()
 
-        # Define markov blankets 
-        self.createMarkovBlankets()
-
-        # Define training schedule
-        self.createSchedule()
-
-        # Create BayesNet class
-        self.net = BayesNet(dim=self.dim, nodes=self.init_model.getNodes())
-
     def build_Y(self):
         """ Build node Y for the observations """
         self.init_model.initY(noise_on=self.model_opts['noise_on'])
@@ -94,8 +89,11 @@ class buildBiofam(buildModel):
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
 
-        # TODO change to 'if sl_Z in model_opts ' ? would enable to not have to
-        # add all the possible options to model_opt
+        # if learning the intercept, add a covariate of ones to Z
+        if model_opts["learn_intercept"]:
+            model_opts['covariates'] = s.ones((self.dim["N"],1))
+            model_opts['scale_covariates'] = [False]
+
         if self.model_opts['sl_z']:
             self.init_model.initSZ()
         else:
@@ -229,6 +227,9 @@ class buildBiofam(buildModel):
 
         self.schedule = schedule
 
+    def createBayesNet(self):
+        """ Method to create the BayesNet class """
+        self.net = BayesNet(dim=self.dim, nodes=self.init_model.getNodes())
 
 
 
