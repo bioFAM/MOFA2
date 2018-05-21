@@ -21,7 +21,7 @@ class initModel(object):
         data: list of length M with ndarrays of dimensionality (N,Dm):
             observed data
         lik: list of strings with length M
-            likelihood for each view, choose from 'gaussian', 'poisson' or 'bernoulli'
+            likelihood for each view, choose from ('gaussian','poisson','bernoulli')
         """
         self.data = data
         self.lik = lik
@@ -355,7 +355,7 @@ class initModel(object):
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
-    def initAlphaZ_k(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+    def initAlphaZ(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
         """Method to initialise the ARD prior on Z per factor
 
         PARAMETERS
@@ -378,7 +378,8 @@ class initModel(object):
 
         PARAMETERS
         ----------
-        (TO-DO: ADD DESCRIPTION) groups 
+        groups: dictionary
+            a dictionariy with mapping between sample names (keys) and sample_groups (values)
         pa: float
             'a' parameter of the prior distribution
         pb :float
@@ -392,24 +393,28 @@ class initModel(object):
         """
 
         # Sanity checks
-        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
+        # assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
         # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
-        tmp = np.unique(groups, return_inverse=True)
-        groups_dic = tmp[0]
-        groups_ix = tmp[1]
+        # tmp = np.unique(groups, return_inverse=True)
+        # groups_dic = tmp[0]
+        # groups_ix = tmp[1]
+        print("Check this")
+        exit()
 
         n_group = len(np.unique(groups_ix))
         assert len(groups_dic) == n_group, 'problem in np.unique'
 
-        self.nodes["AlphaZ"] = AlphaZ_Node_groups(dim=(n_group, self.K), 
+        self.nodes["AlphaZ"] = AlphaZ_Node_groups(
+            dim=(n_group, self.K), 
             pa=pa, pb=pb, 
             qa=qa, qb=qb, 
-            groups=groups_ix, groups_dic=groups_dic, 
+            groups=groups_ix, 
+            groups_dic=groups_dic, 
             qE=qE, qlnE=qlnE
         )
 
-    def initSigmaZ_k(self, X, n_diag=0):
+    def initSigmaZ(self, X, n_diag=0):
         """Method to initialise the covariance prior structure on Z
 
         (TO-DO) 
@@ -422,7 +427,7 @@ class initModel(object):
         self.Sigma = SigmaGrid_Node(dim, X, n_diag=n_diag)
         self.nodes["SigmaZ"] = self.Sigma
 
-    def initSigmaBlockZ_k(self, X, clust, n_diag=0):
+    def initSigmaZ_Block(self, X, clust, n_diag=0):
         """Method to initialise the covariance prior structure on Z, for clusters assigned to samples
 
         (TO-DO) 
@@ -435,7 +440,7 @@ class initModel(object):
         self.Sigma = BlockSigmaGrid_Node(dim, X, clust, n_diag=n_diag)
         self.nodes["SigmaZ"] = self.Sigma
 
-    def initAlphaW_mk(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+    def initAlphaW(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
         """Method to initialise the ARD prior on W
 
         PARAMETERS
@@ -459,7 +464,7 @@ class initModel(object):
             alpha_list[m] = AlphaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initMixedSigmaAlphaW_mk(self,view_has_covariance_prior,params_views):
+    def initSigmaW_Mixed(self,view_has_covariance_prior,params_views):
         '''Method to initialise the covariance prior structure or the Gamma variance on W for each view
         For each view, we choose between a covariance prior structure or a Gamma variance.
 
@@ -570,7 +575,7 @@ class initModel(object):
         self.Y = Multiview_Mixed_Node(self.M, *Y_list)
         self.nodes["Y"] = self.Y
 
-    def initThetaLearnZ_k(self, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaZ_Learn(self, pa=1., pb=1., qa=1., qb=1., qE=None):
         """Method to initialise the sparsity parameter of the spike and slab factors
 
         PARAMETERS
@@ -586,7 +591,7 @@ class initModel(object):
         """
         self.nodes["ThetaZ"] = ThetaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
-    def initThetaMixedZ_k(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
+    def initThetaZ_Mixed(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
         """Method to initialise the sparsity parameter of the spike and slab factors
         In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
         in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
@@ -638,8 +643,7 @@ class initModel(object):
         if (ConstThetaNode is not None) and (LearnThetaNode is not None):
             self.nodes["ThetaZ"] = Mixed_ThetaZ_Nodes_k(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=idx)
 
-
-    def initThetaZConst_k(self, value=1.):
+    def initThetaZ_Const(self, value=1.):
         """Method to initialise a constant sparsity parameter of the spike and slab factors
 
         PARAMETERS
@@ -651,7 +655,7 @@ class initModel(object):
         self.nodes["ThetaZ"] = ThetaZ_Constant_Node_k(dim=(self.N, self.K,), value=s.ones((self.N, self.K)) * value,
                                                       N_cells=1.)
 
-    def initThetaLearnW_mk(self, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaW_Learn(self, pa=1., pb=1., qa=1., qb=1., qE=None):
         """Method to initialise the sparsity parameter of the spike and slab weights
 
         PARAMETERS
@@ -670,7 +674,7 @@ class initModel(object):
             Theta_list[m] = ThetaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.nodes["ThetaW"] = Multiview_Variational_Node(self.M, *Theta_list)
 
-    def initThetaMixedW_mk(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
+    def initThetaW_Mixed(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
         """Method to initialise the sparsity parameter of the spike and slab weights
         In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
         in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
@@ -743,7 +747,7 @@ class initModel(object):
         self.Theta = Multiview_Mixed_Node(self.M, *Theta_list)
         self.nodes["ThetaW"] = self.Theta
 
-    def initThetaConstW_mk(self, value=1.):
+    def initThetaW_Const(self, value=1.):
         """Method to initialise a constant Theta of the spike and slab on W
 
         PARAMETERS

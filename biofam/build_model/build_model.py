@@ -12,23 +12,31 @@ from biofam.core.BayesNet import *
 from biofam.build_model.init_model import initModel
 from biofam.build_model.utils import *
 
-# # QUESTION: do we need this ?
-# RICARD: NOT SURE
 class buildModel(object):
-    def __init__(self):
-        self.net = None
+    def __init__(self, data, data_opts, model_opts, dimensionalities):
+        self.data = data
+        self.data_opts = data_opts
+        self.model_opts = model_opts
+        self.dim = dimensionalities
+        pass
 
-# TODO could also split in  different model: pne basic parent with no ARD, one below which would be groups biofam where you choose what ARD to use
+    def createMarkovBlankets(self):
+        """ Define the markov blankets """
+        pass
+
+    def createSchedule(self):
+        """ Define the schedule of updates """
+        pass
+
+    def build_nodes(self):
+        """ Build all nodes """
+        pass
+
 class buildBiofam(buildModel):
-    def  __init__(self, data_opts, model_opts):
-        # defining model's dimensionalities
-        self.data = data_opts['data']
-        M = len(self.data)
-        N = self.data[0].shape[0]
-        D = s.asarray([self.data[m].shape[1] for m in range(M)])
-        K = model_opts["factors"]
-        self.dim = {'M': M, 'N': N, 'D': D, 'K': K}
+    def  __init__(self, data, data_opts, model_opts, dimensionalities):
+        buildModel.__init__(self, data, data_opts, model_opts, dimensionalities)
 
+        # TO-DO: CHECK THIS
         # update for learning learn_intercept
         if model_opts["learn_intercept"]:
             self.dim["K"] += 1
@@ -39,17 +47,14 @@ class buildBiofam(buildModel):
                 model_opts['covariates_files'] = s.ones((self.dim["N"],1))
                 model_opts['scale_covariates'] = [False]
 
-        # save options in the object
-        self.data_opts = data_opts
-        self.model_opts = model_opts
-
-        # create an instance of initModel and start buidling
+        # create an instance of initModel
         self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"])
-        self.net = None
-        self.build_all()
 
-    def build_all(self):
-        """ General method to build all nodes """
+        # Build all nodes
+        self.build_nodes()
+
+    def build_nodes(self):
+        """ Method to build all nodes """
 
         # Build general nodes
         self.build_Y()
@@ -88,6 +93,7 @@ class buildBiofam(buildModel):
 
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
+
         # TODO change to 'if sl_Z in model_opts ' ? would enable to not have to
         # add all the possible options to model_opt
         if self.model_opts['sl_z']:
@@ -118,15 +124,14 @@ class buildBiofam(buildModel):
 
         # ARD prior per factor
         else:
-            # RICARD: ANY REASON WHY initAlphaZ_k rather than initAlphaZ?
-            self.init_model.initAlphaZ_k()
+            self.init_model.initAlphaZ()
 
     def build_AlphaW(self):
         """ Build node AlphaW for the ARD prior on the weights"""
 
         # ARD prior per factor and feature_group (view)
         # RICARD: SYMMETRISE AS IN ALPHAZ??
-        self.init_model.initAlphaW_mk()
+        self.init_model.initAlphaW()
 
     def build_ThetaZ(self):
         """ Build node ThetaZ for the Spike and Slab prior on the factors """
@@ -195,6 +200,7 @@ class buildBiofam(buildModel):
         """ Define the schedule of updates """
 
         # TO-DO: 
+        # - RICARD: I THINK THE SCHEDULE OF UPDATES SHOULD NOT BE INSIDE BUILD_MODEL
         # - ALLOW SCHEDULE TO BE PROVIDED AS TRAIN_OPTIONS
         # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
 
@@ -224,6 +230,18 @@ class buildBiofam(buildModel):
         self.schedule = schedule
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 ## IGNORE BELOW, UNDER CONSTRUCTION ###
 
 
@@ -242,9 +260,9 @@ class buildSpatialBiofam(buildBiofam):
         if self.model_opts['cov_on'] == 'samples':
             # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
             if self.data_opts['dataClust'] is None:
-                self.init_model.initSigmaZ_k(self.data_opts['data_x'])
+                self.init_model.initSigmaZ(self.data_opts['data_x'])
             else:
-                self.init_model.initSigmaBlockZ_k(self.data_opts['data_x'], clust=self.data_opts['dataClust'])
+                self.init_model.initSigmaBlockZ(self.data_opts['data_x'], clust=self.data_opts['dataClust'])
         else:
             params = [None] * M
             for m in range(M):
@@ -253,7 +271,7 @@ class buildSpatialBiofam(buildBiofam):
                     'sigma_clust':self.data_opts['dataClust'],'n_diag':0}
                 else:
                     params[m]={'pa': 1e-14, 'pb':1e-14, 'qa':1., 'qb':1.}
-            self.init_model.initMixedSigmaAlphaW_mk(view_has_covariance_prior,params)
+            self.init_model.initMixedSigmaAlphaW(view_has_covariance_prior,params)
 
     def createMarkovBlankets(self):
         super(buildSpatialBiofam, self).createMarkovBlankets()
