@@ -8,7 +8,7 @@ import pandas as pd
 from biofam.build_model.build_model import *
 from biofam.build_model.train_model import train_model
 
-
+# TODO where do we input the out_file option ??
 class entry_point(object):
     def __init__(self):
         self.print_banner()
@@ -17,15 +17,15 @@ class entry_point(object):
         self.model = None
 
     def print_banner(self):
-        """ Method to print the MOFA banner """
+        """ Method to print the biofam banner """
 
         banner = """
-         _     _        __                 
-        | |__ (_) ___  / _| __ _ _ __ ___  
-        | '_ \| |/ _ \| |_ / _` | '_ ` _ \ 
+         _     _        __
+        | |__ (_) ___  / _| __ _ _ __ ___
+        | '_ \| |/ _ \| |_ / _` | '_ ` _ \
         | |_) | | (_) |  _| (_| | | | | | |
         |_.__/|_|\___/|_|  \__,_|_| |_| |_|
-                                           
+
         """
 
         print(banner)
@@ -60,11 +60,12 @@ class entry_point(object):
         # Define feature and sample names
         self.data_opts['sample_names'] = data["sample"].unique()
         self.data_opts['feature_names'] = [ data.loc[data['feature_group'] == m].feature.unique() for m in self.data_opts['view_names'] ]
-        
+
         # Create dictionaries with mapping between:
         #  sample names (keys) and sample_groups (values)
         #  feature names (keys) and feature groups (values)
-        self.data_opts['sample_groups'] = pd.Series(df.sample_group.values, index=df.sample).to_dict()
+        # TODO CHECK that the order is fine here ...
+        self.data_opts['sample_groups'] = pd.Series(df.sample_group.values, index=df.sample).values()
         # self.data_opts['feature_groups'] = pd.Series(df.feature_group.values, index=df.feature).to_dict()
 
         # Define dictionary with the dimensionalities
@@ -84,6 +85,73 @@ class entry_point(object):
                 # TO-DO: Reorder to match feature_names and sample_names
                 # NOT TESTED data_matrix[m][p] = data_matrix[m][p].reindex(self.data_opts['sample_names'])
                 # NOT TESTED data_matrix[m][p] = data_matrix[m][p][self.data_opts['feature_names'][m]]
+
+        # TODO check that
+        self.data = data_matrix
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
+    def set_data_from_files(self, inFiles, views, groups, header_rows=False,
+                        header_cols=False, delimiter=' '):
+        """ Load the data """
+                # inFiles, outFile, views, groups,
+                # delimiter=" ", header_cols=False, header_rows=False
+
+        # TODO: sanity checks
+        # - Check that input file exists
+        # - Check that output directory exists: warning if not
+        # TODO: Verbosity, print messages
+
+        self.io_opts = {}
+
+        # I/O
+        if type(inFiles) is not list:
+            inFiles = [inFiles]
+        self.io_opts['input_files'] = inFiles
+        self.io_opts['delimiter'] = delimiter
+
+        # View names and group names (sample groups)
+        if type(views) is not list:
+            views = [views]
+        if type(groups) is not list:
+            views = [groups]
+
+        self.io_opts['view_names'] = views
+        self.io_opts['group_names'] = groups
+
+        # Headers
+        if header_rows is True:
+            self.io_opts['rownames'] = 0
+        else:
+            self.io_opts['rownames'] = None
+
+        if header_cols is True:
+            self.io_opts['colnames'] = 0
+        else:
+            self.io_opts['colnames'] = None
+
+        # Load observations
+        self.data_opts.update(self.io_opts)
+        # TODO reindex
+        self.data, self.sample_groups = loadData(self.data_opts)
+
+        # data frame needs reindexing if no header row
+        if not header_rows:
+            self.data[0] = self.data[0].reset_index()
+        # save feature, sample names, sample groups
+
+        self.data_opts['sample_names'] = self.data[0].index
+        self.data_opts['feature_names'] = [dt.columns.values for dt in self.data]
+        # TODO check that we have the right dictionary
+        # TODO check that what is used later in the code is ok for this
+        self.data_opts['sample_groups'] = self.sample_groups
+
+        # set dimensionalities of the model
+        M = self.dimensionalities['M'] = len(set(self.io_opts['view_names']))
+        N = self.dimensionalities["N"] = self.data[0].shape[0]
+        D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
+        self.dimensionalities['P'] = len(set(self.io_opts['group_names']))
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -133,9 +201,9 @@ class entry_point(object):
         self.train_opts['seed'] = int(seed)
 
 
-    def set_model_options(self, 
+    def set_model_options(self,factors, likelihoods,
     	sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features',
-    	factors, likelihoods, learnTheta=True, learn_intercept=False):
+    	learnTheta=True, learn_intercept=False):
         """ Set model options """
 
         # TODO: SANITY CHECKS AND:
@@ -193,8 +261,8 @@ class entry_point(object):
         # TODO sort that out
         self.data_opts['features_in_rows'] = False
 
-    def set_data_options(self,
-        center_features=False, center_features_per_group=False, 
+    def set_data_options(self, lik,
+        center_features=False, center_features_per_group=False,
         scale_features=False, scale_views=False,
         maskAtRandom=None, maskNSamples=None
         ):
@@ -203,8 +271,12 @@ class entry_point(object):
 
         # TODO: more verbose messages
         # TODO Sanity checks
+        self.data_opts = {}
+        self.model_opts = {}
 
-        M = self.dimensionalities["M"]
+        self.data_opts["likelihoods"] = lik
+        self.model_opts["likelihoods"] = lik
+        M = len(self.model_opts["likelihoods"])
         # assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
 
         # Center features
@@ -216,7 +288,7 @@ class entry_point(object):
             self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
             self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
         else:
-            if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
+            # if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
             self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
             self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
 
@@ -249,24 +321,21 @@ class entry_point(object):
         else:
             self.data_opts['maskNSamples'] = [0]*M
 
-
-
     def build(self):
-    	""" Build the model """
-
-    	# Sanity checks
-    	assert hasattr(self, 'model_opts'), "Train options not defined"
-    	assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
-
-    	# Build the BioFAM model
-    	self.model = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
+        """ Build the model """
+        # Sanity checks
+        assert hasattr(self, 'model_opts'), "Train options not defined"
+        assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
+        # Build the BioFAM model
+        self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
+        self.model = self.model_builder.net
 
     def run(self):
         """ Run the model """
 
     	# Sanity checks
-    	assert hasattr(self, 'train_opts'), "Train options not defined"
-    	assert hasattr(self, 'data_opts'), "Data options not defined"
+        assert hasattr(self, 'train_opts'), "Train options not defined"
+        assert hasattr(self, 'data_opts'), "Data options not defined"
 
         # Fetch training schedule (order of updates for the different nodes)
         if 'schedule' in self.train_opts:
@@ -274,33 +343,33 @@ class entry_point(object):
             if ~all(self.model.get_nodes().keys() in self.train_opts['schedule']):
                 if self.train_opts['verbose']: print("Warning: some nodes are not in the trainign schedule and will not be updated")
         else:
-	       self.train_opts['schedule'] = self.model.schedule
+            self.train_opts['schedule'] = self.model_builder.schedule
 
         # Set training options
-	    self.model.setTrainOptions(self.train_opts)
+        self.model.setTrainOptions(self.train_opts)
 
 	    # Train the model
-	    train_model(self.model, self.train_opts)
+        train_model(self.model, self.train_opts)
 
 
-    def save(self):
+    def save(self, outfile):
         """ Save the model in an hdf5 file """
 
-        if self.train_opts["verbose"]: 
+        if self.train_opts["verbose"]:
             print("Saving model in %s...\n" % self.data_opts['output_file'])
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
 
-	    saveTrainedModel(
-            model=self.model, 
-            outfile=self.data_opts['output_file'], 
-	    	train_opts=self.train_opts, 
+        saveTrainedModel(
+            model=self.model,
+            outfile=outfile,
+	    	train_opts=self.train_opts,
             model_opts=self.model_opts,
-	    	sample_names=self.data_opts['sample_names'], 
+	    	sample_names=self.data_opts['sample_names'],
             feature_names=self.data_opts['feature_names'],
-            view_names=self.data_opts['view_names'], 
-	    	group_names=self.data_opts['group_names'], 
-            sample_groups=self.all_data['sample_groups']
+            view_names=self.data_opts['view_names'],
+	    	group_names=self.data_opts['group_names'],
+            sample_groups=self.data_opts['sample_groups']
         )
 
 
@@ -314,7 +383,7 @@ class entry_point(object):
         feature_names = self.data_opts['feature_names']
         factor_names = np.array(range(nodes['Z'].K)).astype(str)
         view_names = np.unique(self.data_opts['view_names'])
-        sample_groups=self.all_data['sample_groups']
+        sample_groups=self.data_opts['sample_groups']
 
         # TODO this index_opts could be passed as an argument of a get_df method implemented in each nodes.
         # then each node would know what index option to use to build the dataframe
@@ -391,77 +460,6 @@ class entry_point(object):
         # The mean has been initialised to the covariate values
         self.model_opts["initZ"]["var"][idx] = 0.
 
-    def depreciated_set_data_options(self,
-        inFiles, outFile, views, groups,
-        delimiter=" ", header_cols=False, header_rows=False
-        ):
-        """ Parse I/O data options """
-
-        # TODO: sanity checks
-        # - Check that input file exists
-        # - Check that output directory exists: warning if not
-        # TODO: Verbosity, print messages
-
-        self.data_opts = {}
-
-        # I/O
-        if type(inFiles) is not list:
-            inFiles = [inFiles]
-        self.data_opts['input_files'] = inFiles
-        self.data_opts['output_file'] = outFile
-        self.data_opts['delimiter'] = delimiter
-
-        # View names and group names (sample groups)
-        if type(views) is not list:
-            views = [views]
-        if type(groups) is not list:
-            views = [groups]
-
-        self.data_opts['view_names'] = views
-        self.data_opts['group_names'] = groups
-
-        # Headers
-        if header_rows is True:
-            self.data_opts['rownames'] = 0
-        else:
-            self.data_opts['rownames'] = None
-
-        if header_cols is True:
-            self.data_opts['colnames'] = 0
-        else:
-            self.data_opts['colnames'] = None
-
-
-        self.dimensionalities['M'] = len(set(self.data_opts['view_names']))
-        self.dimensionalities['P'] = len(set(self.data_opts['group_names']))
-
-    def depreciated_load_data(self):
-        """ Load the data """
-
-        # Load observations
-        self.data, self.sample_groups = loadData(self.data_opts)
-
-        # save feature and sample names
-        self.data_opts['sample_names'] = self.data[0].index
-        self.data_opts['feature_names'] = [dt.columns.values for dt in self.data]
-
-        # Calculate dimensionalities
-        M = self.dimensionalities["M"]
-
-        # TODO fix for multiple groups
-        N = self.dimensionalities["N"] = self.data[0].shape[0]
-        D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
-
-        # TODO  covariates_files ?
-        self.data_opts['covariates'] = None
-        self.data_opts['scale_covariates'] = False
-
-        # TODO change that
-        self.all_data = {}
-        self.all_data['data'] = self.data
-        self.all_data['sample_groups'] = self.sample_groups
-
-
 
 ###### IGNORE BELOW ########
 
@@ -534,29 +532,29 @@ if __name__ == '__main__':
 
     outfile ="/tmp/test.hdf5"
 
-    ent.set_data_options(infiles, outfile, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    ent.set_data_options(lik)
+    ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    ent.set_model_options(ard_z=True, factors=10, likelihoods=lik)
     ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
-    ent.set_model(sl_z=False, sl_w=True, ard_z=True, ard_w=True, noise_on='features')
-    ent.set_model_options(factors=10, likelihoods=lik)
-    ent.set_dataprocessing_options()
-    ent.load_data()
-    ent.build_and_run()
-    ent.get_df('Y')
+    ent.build()
+    ent.run()
+    ent.save(outfile)
+    # ent.get_df('Y')
 
 
 
 
 
 
-    # from biofam.run.entry_point import entry_point
-    file = "/Users/ricard/Downloads/test_biofam/data.txt"
-    lik = ["gaussian", "gaussian"]
-    data = pd.read_csv(file, delimiter="\t")
-    ent = entry_point()
-    ent.set_data(data)
-    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
-    ent.set_model(sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
-    ent.set_model_options(factors=10, likelihoods=lik)
-    ent.set_dataprocessing_options()
-    ent.build_and_run()
-    ent.get_df('Y')
+    # # from biofam.run.entry_point import entry_point
+    # file = "/Users/ricard/Downloads/test_biofam/data.txt"
+    # lik = ["gaussian", "gaussian"]
+    # data = pd.read_csv(file, delimiter="\t")
+    # ent = entry_point()
+    # ent.set_data(data)
+    # ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+    # ent.set_model(sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
+    # ent.set_model_options(factors=10, likelihoods=lik)
+    # ent.set_dataprocessing_options()
+    # ent.build_and_run()
+    # ent.get_df('Y')

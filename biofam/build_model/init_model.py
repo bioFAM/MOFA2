@@ -13,7 +13,7 @@ class initModel(object):
     def __init__(self, dim, data, lik):
         """
         PARAMETERS
-        dim: dictionary with keyworded dimensionalities: 
+        dim: dictionary with keyworded dimensionalities:
             N for the number of samples
             M for the number of views
             K for the number of factors or latent variables,
@@ -120,7 +120,7 @@ class initModel(object):
             # Remove prior and variational distributions from the covariates
             pcov[idx_covariates] = s.nan
             #pvar[:, idx_covariates] = s.nan
-            qvar[:, idx_covariates] = s.nan 
+            qvar[:, idx_covariates] = s.nan
 
         else:
             idx_covariates = None
@@ -128,10 +128,10 @@ class initModel(object):
         # Initialise the node
         self.nodes["Z"] = Z_Node(
             dim=(self.N, self.K),
-            pmean=pmean, pcov=pcov, 
-            qmean=qmean, qvar=qvar, 
+            pmean=pmean, pcov=pcov,
+            qmean=qmean, qvar=qvar,
             qE=qE, qE2=qE2,
-            idx_covariates=idx_covariates, 
+            idx_covariates=idx_covariates,
             precompute_pcovinv=precompute_pcovinv
         )
 
@@ -189,7 +189,7 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean=0., pcov=1., qmean="random", qvar=1., 
+    def initW(self, pmean=0., pcov=1., qmean="random", qvar=1.,
         qE=None, qE2=None, covariates=None,
         scale_covariates=None, precompute_pcovinv=None):
         """Method to initialise the weights
@@ -299,8 +299,8 @@ class initModel(object):
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
-    def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1., 
-        qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1., 
+    def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1.,
+        qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1.,
         qEW_S0=None, qEW_S1=None, qES=None):
         """Method to initialise sparse weights with a (reparametrised) spike and slab prior
 
@@ -393,34 +393,32 @@ class initModel(object):
         """
 
         # Sanity checks
-        # assert len(groups) == self.N, 'sample groups labels do not match number of samples'
+        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
         # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
-        # tmp = np.unique(groups, return_inverse=True)
-        # groups_dic = tmp[0]
-        # groups_ix = tmp[1]
-        print("Check this")
-        exit()
+        tmp = np.unique(groups, return_inverse=True)
+        groups_dic = tmp[0]
+        groups_ix = tmp[1]
 
         n_group = len(np.unique(groups_ix))
         assert len(groups_dic) == n_group, 'problem in np.unique'
 
         self.nodes["AlphaZ"] = AlphaZ_Node_groups(
-            dim=(n_group, self.K), 
-            pa=pa, pb=pb, 
-            qa=qa, qb=qb, 
-            groups=groups_ix, 
-            groups_dic=groups_dic, 
+            dim=(n_group, self.K),
+            pa=pa, pb=pb,
+            qa=qa, qb=qb,
+            groups=groups_ix,
+            groups_dic=groups_dic,
             qE=qE, qlnE=qlnE
         )
 
     def initSigmaZ(self, X, n_diag=0):
         """Method to initialise the covariance prior structure on Z
 
-        (TO-DO) 
+        (TO-DO)
         PARAMETERS
         ----------
-        X: 
+        X:
         n_diag:
         """
         dim = (self.K,)
@@ -430,10 +428,10 @@ class initModel(object):
     def initSigmaZ_Block(self, X, clust, n_diag=0):
         """Method to initialise the covariance prior structure on Z, for clusters assigned to samples
 
-        (TO-DO) 
+        (TO-DO)
         PARAMETERS
         ----------
-        X: 
+        X:
         n_diag:
         """
         dim = (self.K,)

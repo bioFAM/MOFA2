@@ -128,7 +128,7 @@ def loadData(data_opts, verbose=True):
             # Read files as views
             file = data_opts['input_files'][m]
             Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
-            if data_opts['features_in_rows']: Y[m] = Y[m].T
+            # if data_opts['features_in_rows']: Y[m] = Y[m].T
             group_name = data_opts['group_names'][0] if 'group_names' in data_opts else 'group_0'
             sample_groups = list([group_name for e in range(Y[m].shape[0])])
             print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
@@ -144,7 +144,7 @@ def loadData(data_opts, verbose=True):
                 file = data_opts["input_files"][i]
                 group = data_opts["group_names"][i]
                 group_y[j] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
-                if data_opts['features_in_rows']: group_y[j] = group_y[j].T
+                # if data_opts['features_in_rows']: group_y[j] = group_y[j].T
                 sample_groups.extend([group for e in range(group_y[j].shape[0])])
                 print("Loaded %s with dim (%d, %d)..." % (file, group_y[j].shape[0], group_y[j].shape[1]))
             Y[m] = pd.concat(group_y)
@@ -664,9 +664,9 @@ def overwriteExpectationsMV(MV):
             node.mask()
 
 
-def saveTrainedModel(model, outfile, 
-    train_opts, model_opts, 
-    feature_names=None, view_names=None, 
+def saveTrainedModel(model, outfile,
+    train_opts, model_opts,
+    feature_names=None, view_names=None,
     sample_names=None, group_names=None, sample_groups=None):
     """ Method to save the model in an hdf5 file
 

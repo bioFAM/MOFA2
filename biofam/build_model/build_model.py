@@ -48,7 +48,7 @@ class buildBiofam(buildModel):
         # Build all nodes
         self.build_nodes()
 
-        # Define markov blankets 
+        # Define markov blankets
         self.createMarkovBlankets()
 
         # Define training schedule
@@ -90,9 +90,9 @@ class buildBiofam(buildModel):
         """ Build node Z for the factors or latent variables """
 
         # if learning the intercept, add a covariate of ones to Z
-        if model_opts["learn_intercept"]:
-            model_opts['covariates'] = s.ones((self.dim["N"],1))
-            model_opts['scale_covariates'] = [False]
+        if self.model_opts["learn_intercept"]:
+            self.model_opts['covariates'] = s.ones((self.dim["N"],1))
+            self.model_opts['scale_covariates'] = [False]
 
         if self.model_opts['sl_z']:
             self.init_model.initSZ()
@@ -118,6 +118,7 @@ class buildBiofam(buildModel):
 
         # ARD prior per sample group
         if self.data_opts['sample_groups'] is not None:
+            # TODO check whats going on here
             self.init_model.initAlphaZ_groups(self.data_opts['sample_groups'])
 
         # ARD prior per factor
@@ -145,7 +146,7 @@ class buildBiofam(buildModel):
         if self.model_opts["learn_intercept"]:
             learnTheta_ix[0] = 0
 
-        self.init_model.initThetaMixedZ_k(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
+        self.init_model.initThetaZ_Mixed(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
 
     def build_ThetaW(self):
         """ Build node ThetaW for the Spike and Slab prior on the weights """
@@ -159,8 +160,7 @@ class buildBiofam(buildModel):
         if self.model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0
-
-        self.init_model.initThetaMixedW_mk(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
+        self.init_model.initThetaW_Mixed(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
 
     def createMarkovBlankets(self):
         """ Define the markov blankets """
@@ -197,7 +197,7 @@ class buildBiofam(buildModel):
     def createSchedule(self):
         """ Define the schedule of updates """
 
-        # TO-DO: 
+        # TO-DO:
         # - RICARD: I THINK THE SCHEDULE OF UPDATES SHOULD NOT BE INSIDE BUILD_MODEL
         # - ALLOW SCHEDULE TO BE PROVIDED AS TRAIN_OPTIONS
         # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
