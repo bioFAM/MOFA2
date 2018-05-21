@@ -13,33 +13,36 @@
 createBioFAMobject <- function(data) {
   
   if (is(data,"MultiAssayExperiment")) {
-    message("Creating BioFAM object from a MultiAssayExperiment object...")
-    object <- .createBioFAMobjectFromMAE(data)
-  } else if (is(data,"list")) {
-    message("Creating BioFAM object from list of matrices, please make sure that samples are columns and features are rows...")
-    object <- .createBioFAMobjectFromList(data)
+    stop("Not functional")
+    # message("Creating BioFAM object from a MultiAssayExperiment object...")
+    # object <- .createBioFAMobjectFromMAE(data)
+    
+  } else if (is(data,"SummarizedExperiment")) {
+    stop("Not functional")
+    
+  } else if (is(data,"data.frame")) {
+      message("Creating BioFAM object from a data.frame...")
+    
+      object <- .createBioFAMobjectFromDataFrame(data)
+      
+      # Set dimensionalities
+      object@Dimensions[["M"]] <- length(unique(object$feature_groups))
+      object@Dimensions[["N"]] <- length(unique(object$sample))
+      object@Dimensions[["D"]] <- length(unique(object$feature))
+      object@Dimensions[["K"]] <- 0
+      
+      # Set view names
+      viewNames(data) <- unique(object$feature_group)
+      
   } else {
     stop("Error: input data has to be provided either as a list of matrices or as a MultiAssayExperiment object")
-  }
-  
-  # Set dimensionalities
-  object@Dimensions[["M"]] <- length(object@TrainData)
-  object@Dimensions[["N"]] <- ncol(object@TrainData[[1]])
-  object@Dimensions[["D"]] <- sapply(object@TrainData, nrow)
-  object@Dimensions[["K"]] <- 0
-  
-  # Set view names
-  if(!is.null(names(data))) {
-    viewNames(object) <- names(data) 
-  } else { 
-    viewNames(object) <- paste("view", 1:length(object@TrainData), sep="_")
-    warning(paste0("View names are not specified in data, renaming them to: ",paste("view",1:length(object@TrainData), collapse=" "), "\n"))
   }
   
   print(object)
   
   return(object)
 }
+
 
 # (Hidden) function to initialise a BioFAModel object using a MultiAssayExperiment
 #' @import MultiAssayExperiment
@@ -71,30 +74,6 @@ createBioFAMobject <- function(data) {
 }
 
 
-# (Hidden) function to initialise a BioFAModel object using a list of matrices
-.createBioFAMobjectFromList <- function(data) {
-  
-  # Initialise BioFAM object
-  object <- new("BioFAModel")
-  object@Status <- "untrained"
-  
-  # Fetch or assign sample names
-  samples <- Reduce(union, lapply(data, colnames))
-  if (is.null(samples)) {
-    N <- unique(sapply(data,ncol))
-    if (length(N)>1) { 
-      stop("If the matrices have no column (samples) names that can be used to match the different views, all matrices must have the same number of columns")
-    }
-    samples <- as.character(1:N)
-    for (m in 1:length(data)) { colnames(data[[m]]) <- samples }
-  }
-  
-  object@TrainData <- lapply(data, function(view) .subset_augment(view, samples))
-  return(object)
-}
-
-
-
 # (Hidden) function to fill NAs for missing samples
 .subset_augment<-function(mat, pats) {
   pats <- unique(pats)
@@ -104,4 +83,39 @@ createBioFAMobject <- function(data) {
   rownames(aug_mat)<-pats
   colnames(aug_mat)<-colnames(mat)
   return(t(aug_mat))
+}
+
+# (Hidden) function to initialise a BioFAModel object using a Dataframe
+.createBioFAMFromDataFrame <- function(data) {
+  
+  # Quality controls
+  stopifnot(all(colnames(data) %in% (c("sample","feature","value","sample_group","feature_group"))))
+  stopifnot(all(is.numeric(data$value)))
+  
+  # Convert 'sample' and'feature' columns to factors
+  if (!is.factor(data$sample))
+    data$sample <- as.factor(data$sample)
+  if (!is.factor(data$feature))
+    data$feature <- as.factor(data$feature)
+  
+  # Convert 'sample_group' columns to factors
+  if (!"sample_group" %in% colnames(data)) {
+    data$sample_group <- as.factor("1")
+  } else {
+    data$sample_group <- as.factor(data$sample_group)
+  }
+  
+  # Convert 'feature_group' columns to factors
+  if (!"feature_group" %in% colnames(data)) {
+    data$feature_group <- as.factor("1")
+  } else {
+    data$feature_group <- as.factor(data$feature_group)
+  }
+  
+  # Initialise BioFAM object
+  object <- new("BioFAModel")
+  object@Status <- "untrained"
+  object@InputData <- data
+  
+  return(object)
 }

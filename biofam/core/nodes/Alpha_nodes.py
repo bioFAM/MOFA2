@@ -28,7 +28,6 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
             D = self.markov_blanket['W'].D
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], D, axis=0)
-            # import pdb; pdb.set_trace()
             return {'E': expanded_E, 'lnE': expanded_lnE}
         else:
             return QExp
@@ -161,6 +160,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
     def updateParameters(self):
         # TODO: add an if MuZ is in markov blanket ?
         tmp = self.markov_blanket["Z"].getExpectations()
+        # TODO check that in both version the ENN/E2 which are returned are the same
         if 'ENN' in tmp:
             EZZ = tmp["ENN"]
         else:
@@ -174,7 +174,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
         # Perform update
         for c in range(self.n_groups):
             mask = (self.groups == c)
-
+            # TODO check that this subsetting doesnt affect precision
             Qa[c,:] = Pa[c,:] + 0.5*EZZ[mask, :].shape[0]
             Qb[c,:] = Pb[c,:] + 0.5*EZZ[mask, :].sum(axis=0)
 
