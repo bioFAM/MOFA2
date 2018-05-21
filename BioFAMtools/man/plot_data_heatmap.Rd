@@ -39,14 +39,14 @@ usually the ones with highest loadings in a given factor.
 }
 \details{
 One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
-using for example \code{\link{plotWeights}} or \code{\link{plotTopWeights}}, which show you which are the top features that are driving the heterogeneity. \cr
+using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, which show you which are the top features that are driving the heterogeneity. \cr
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 This function generates a heatmap for selected features, which should reveal, im the original data space, the underlying pattern that is captured by the latent factor. \cr
 A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 }
 \examples{
 # Load example of BioFAModel
-model <- loadModel(system.file("extdata", "model15.hdf5", package = "BioFAMtools"))
+model <- load_model(system.file("extdata", "model15.hdf5", package = "BioFAMtools"))
 
 # Plot top 50 features for factor 1 in the mRNA view
 plot_data_heatmap(model, "mRNA", 1, 50)

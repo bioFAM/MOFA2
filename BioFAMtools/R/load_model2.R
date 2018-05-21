@@ -10,7 +10,7 @@
 #' @return a \code{\link{BioFAModel}} model
 #' @export
 
-load_model <- function(reticulate, object = NULL, sort_factors = TRUE, multi_view = NULL, multi_group = NULL) {
+load_model2 <- function(reticulate, object = NULL, sort_factors = TRUE, multi_view = NULL, multi_group = NULL) {
   
   if (is.null(object)) object <- new("BioFAModel")
   

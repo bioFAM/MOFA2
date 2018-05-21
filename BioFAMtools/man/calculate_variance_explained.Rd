@@ -5,7 +5,7 @@
 \title{Calculate variance explained by the model}
 \usage{
 calculate_variance_explained(object, views = "all", groups = "all",
-  factors = "all", include_intercept = TRUE, ...)
+  factors = "all", include_intercept = TRUE, drop_dim = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

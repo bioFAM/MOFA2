@@ -26,7 +26,8 @@ If NULL, default training options are used.}
 Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
 }
 \description{
-Function to prepare a \code{\link{BioFAModel}} object for training. It requires defining data, model and training options.
+Function to prepare a \code{\link{BioFAModel}} object for training. 
+It requires defining data, model and training options.
 }
 \examples{
 # Generate a random data set

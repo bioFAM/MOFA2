@@ -5,7 +5,7 @@
 \title{Plot variance explained by the model}
 \usage{
 plot_variance_explained(object, views = "all", groups = "all",
-  cluster = T, ...)
+  drop_dim = NULL, cluster = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFAmodel}} object.}

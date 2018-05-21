@@ -6,15 +6,15 @@
 
   # Define what entities should be updated for which nodes
   # Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
-  node_lists_options <- list(features = list(nodes = c("Y", "Tau", "W", "ThetaW"), axes = c(1, 1, 1, 1)),
-                             samples  = list(nodes = c("Y", "Tau", "Z", "ThetaZ"), axes = c(2, 2, 1, 1)),
-                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 2, 2)))
+  node_lists_options <- list(features = list(nodes = c("Y", "Tau", "W"), axes = c(1, 1, 1, 1)),
+                             samples  = list(nodes = c("Y", "Tau", "Z"), axes = c(2, 2, 1, 1)),
+                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0)))
 
   if (paste0(views, collapse = "") == "all") { 
     views <- names(object@dimensions$D)
   } else {
     stopifnot(all(views %in% names(object@dimensions$D)))
-  } 
+  }
 
   if (paste0(groups, collapse = "") == "all") {
     groups <- names(object@dimensions$N)
@@ -67,7 +67,7 @@
               object@expectations[[node]][[ind]][[ind2]] <- object@expectations[[node]][[ind]][[ind2]]$E
             }
             # Infer which index to use to iterate over a provided list of values
-            deduced_ind <- if (entity == "featues") ind else ind2  # since ind corresponds to views (groups of features)
+            deduced_ind <- if (entity == "features") ind else ind2  # since ind corresponds to views (groups of features)
             dim <- length(values[[deduced_ind]])
             # Set names for rows
             if (axis == 1) {

@@ -27,7 +27,7 @@ plot_weights(object, view, factor, nfeatures = 10, abs = FALSE,
 \description{
 An important step to annotate factors is to visualise the corresponding feature loadings. \cr
 This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
-In contrast, the function \code{\link{plotTopWeights}} displays only the top features with highest loading.
+In contrast, the function \code{\link{plot_top_weights}} displays only the top features with highest loading.
 }
 \details{
 The weights of the features within a view are relative andthey should not be interpreted in an absolute scale.

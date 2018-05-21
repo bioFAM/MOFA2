@@ -32,7 +32,7 @@ or a vector of the same length as the number of samples specifying discrete grou
 Function to do a scatterplot of the feature(s) values against the latent factor values.
 }
 \details{
-One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plotWeights}} or \code{\link{plotTopWeights}}, 
+One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, 
 which show you which features drive the heterogeneity of each factor. 
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 This function generates scatterplots of features against factors, so that you can observe the association between them. \cr

@@ -26,5 +26,5 @@ Default is 'all'}
 \description{
 Function to visualize the loadings for a given set of factors in a given view. \cr 
 This is useful to visualize the overall pattern of the weights but not to individually characterise the factors. \cr
-To inspect the loadings of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plotTopWeights}}
+To inspect the loadings of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plot_top_weights}}
 }
