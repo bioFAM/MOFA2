@@ -47,9 +47,9 @@ class initModel(object):
         qvar: initial value of the variance of the variational distribution
         qE: initial value of the expectation of the variational distribution
         qE2: initial value of the second moment of the variational distribution
-        (NOT IMPLEMENTED) covariates: covariates to be included as non-updated factors
+        covariates: covariates to be included as non-updated factors
             None if no covariates are present, or a ndarray covariates with dimensions (N,Kcovariates)
-        (NOT IMPLEMENTED) scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
+        scale_covariates: scale covariates to zero-mean and unit variance to match the prior?
             None if no covariates are present, or a ndarray with dimensions (Kcov,) indicating which covariates to scale
         precompute_pcovinv: precompute the inverse of the covariance matrice of the prior of Z
         """
@@ -100,15 +100,15 @@ class initModel(object):
 
         # Add covariates
         if covariates is not None:
-            print("Covariates are not implemented")
-            exit()
 
-            assert scale_covariates != None, "If you use covariates also define data_opts['scale_covariates']"
+            # Sanity checks
+            assert scale_covariates != None, "If you use covariates you also need define model_opts['scale_covariates']"
 
             # Select indices for covariates
             idx_covariates = s.array(range(covariates.shape[1]))
 
             # Center and scale the covariates to match the prior distribution N(0,1)
+            # Notice that if the spherical prior distribution is changed, this should also be modified
             scale_covariates = s.array(scale_covariates)
             covariates[:, scale_covariates] = (covariates[:, scale_covariates] - s.nanmean(
                 covariates[:, scale_covariates], axis=0)) / s.nanstd(covariates[:, scale_covariates], axis=0)
@@ -120,7 +120,7 @@ class initModel(object):
             # Remove prior and variational distributions from the covariates
             pcov[idx_covariates] = s.nan
             #pvar[:, idx_covariates] = s.nan
-            qvar[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
+            qvar[:, idx_covariates] = s.nan 
 
         else:
             idx_covariates = None

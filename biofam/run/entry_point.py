@@ -8,28 +8,7 @@ import pandas as pd
 from biofam.build_model.build_model import *
 from biofam.build_model.train_model import train_model
 
-"""
-TO-DO:
-- ADD DETAILED EXPLANATION OF ARGUMENTS
-- ADd sanity checks
-- Add print messages
-- Within each method, check that the pipeline order is met
 
-Pipeline
-(1) Parse data options
-(2) Parse train options or parse model options
-(3) Parse data processing options
-(4) Load the data or define priors or define variational
-(5) Train
-
-CHANGE PARSE TO SET
-SET PRIORS AND VARIATIONAL DIST IN BUILD_MODEL, ONLY BIOFAM BRANCH
-"""
-
-# TODO get the sample and feature names if any
-# TODO generally speaking I think that sample/feature names etc should be contained in nodes,
-# view names should also be contained in multiview nodes etc. if sth is not provided should
-# be set to integers converted to string or sth like that
 class entry_point(object):
     def __init__(self):
         self.print_banner()
@@ -86,7 +65,7 @@ class entry_point(object):
         #  sample names (keys) and sample_groups (values)
         #  feature names (keys) and feature groups (values)
         self.data_opts['sample_groups'] = pd.Series(df.sample_group.values, index=df.sample).to_dict()
-        self.data_opts['feature_groups'] = pd.Series(df.feature_group.values, index=df.feature).to_dict()
+        # self.data_opts['feature_groups'] = pd.Series(df.feature_group.values, index=df.feature).to_dict()
 
         # Define dictionary with the dimensionalities
         self.dimensionalities = {}
@@ -110,10 +89,10 @@ class entry_point(object):
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
 
-
     def set_train_options(self,
-        iter=5000, elbofreq=1, ntrials=1, startSparsity=100, tolerance=0.01,
-        startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None
+        iter=5000, elbofreq=1, startSparsity=100, tolerance=0.01,
+        startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
+        schedule=None
         ):
         """ Parse training options """
 
@@ -145,8 +124,9 @@ class entry_point(object):
         # Iteration to activate spike and slab sparsity
         self.train_opts['start_sparsity'] = int(startSparsity)
 
-        # Number of trials
-        # self.train_opts['trials'] = int(ntrials)
+        # Training schedule
+        if schedule is not None:
+            self.train_opts['schedule'] = schedule
 
         # Seed
         if seed is None: seed = 0
@@ -282,25 +262,46 @@ class entry_point(object):
     	self.model = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
 
     def run(self):
+        """ Run the model """
 
     	# Sanity checks
     	assert hasattr(self, 'train_opts'), "Train options not defined"
     	assert hasattr(self, 'data_opts'), "Data options not defined"
 
-    	# TO-DO: ALLOW PROVIDING SCHEDULE IN THE INPUT
-	    self.train_opts['schedule'] = model_builder.schedule
+        # Fetch training schedule (order of updates for the different nodes)
+        if 'schedule' in self.train_opts:
+            assert all(self.train_opts['schedule'] in self.model.get_nodes().keys()), "Some nodes defined in the training schedule are not present in the model"
+            if ~all(self.model.get_nodes().keys() in self.train_opts['schedule']):
+                if self.train_opts['verbose']: print("Warning: some nodes are not in the trainign schedule and will not be updated")
+        else:
+	       self.train_opts['schedule'] = self.model.schedule
+
+        # Set training options
 	    self.model.setTrainOptions(self.train_opts)
 
-	    # Trian the model
+	    # Train the model
 	    train_model(self.model, self.train_opts)
 
-	    # Save the output
-	    if self.train_opts["verbose"]: print("Saving model in %s...\n" % self.data_opts['output_file'])
-	    self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
-	    saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], 
-	    	train_opts=self.train_opts, model_opts=self.model_opts,
-	    	sample_names=self.data_opts['sample_names'], feature_names=self.data_opts['feature_names'], view_names=self.data_opts['view_names'], 
-	    	group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
+
+    def save(self):
+        """ Save the model in an hdf5 file """
+
+        if self.train_opts["verbose"]: 
+            print("Saving model in %s...\n" % self.data_opts['output_file'])
+
+        self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
+
+	    saveTrainedModel(
+            model=self.model, 
+            outfile=self.data_opts['output_file'], 
+	    	train_opts=self.train_opts, 
+            model_opts=self.model_opts,
+	    	sample_names=self.data_opts['sample_names'], 
+            feature_names=self.data_opts['feature_names'],
+            view_names=self.data_opts['view_names'], 
+	    	group_names=self.data_opts['group_names'], 
+            sample_groups=self.all_data['sample_groups']
+        )
 
 
     def get_df(self, node):

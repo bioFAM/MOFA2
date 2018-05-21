@@ -664,13 +664,16 @@ def overwriteExpectationsMV(MV):
             node.mask()
 
 
-def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, group_names=None, sample_groups=None, sample_names=None, feature_names=None):
+def saveTrainedModel(model, outfile, 
+    train_opts, model_opts, 
+    feature_names=None, view_names=None, 
+    sample_names=None, group_names=None, sample_groups=None):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
     ----------
     """
-    assert model.trained, "Model is not trained yet"
+    assert model.trained, "Model is not trained"
 
     if view_names is not None:
         uniq_view_names = np.unique(view_names)
