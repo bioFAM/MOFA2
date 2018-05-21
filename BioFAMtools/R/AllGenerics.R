@@ -3,187 +3,187 @@
 ## Factor Names ##
 ##################
 
-#' @title factorNames: set and retrieve factor names
-#' @name factorNames
-#' @rdname factorNames
+#' @title factors_names: set and retrieve factor names
+#' @name factors_names
+#' @rdname factors_names
 #' @export
-setGeneric("factorNames", function(object) {standardGeneric("factorNames")})
+setGeneric("factors_names", function(object) { standardGeneric("factors_names") })
 
-#' @name factorNames
-#' @rdname factorNames
-#' @aliases factorNames<-
+#' @name factors_names
+#' @rdname factors_names
+#' @aliases factors_names<-
 #' @export
-setGeneric("factorNames<-", function(object, value) {standardGeneric("factorNames<-")})
+setGeneric("factors_names<-", function(object, value) { standardGeneric("factors_names<-") })
 
 
 ##################
 ## Sample Names ##
 ##################
 
-#' @title sampleNames: set and retrieve sample names
-#' @name sampleNames
-#' @rdname sampleNames
+#' @title samples_names: set and retrieve sample names
+#' @name samples_names
+#' @rdname samples_names
 #' @export
-setGeneric("sampleNames", function(object) {standardGeneric("sampleNames")})
+setGeneric("samples_names", function(object) { standardGeneric("samples_names") })
 
-#' @name sampleNames
-#' @rdname sampleNames
-#' @aliases sampleNames<-
+#' @name samples_names
+#' @rdname samples_names
+#' @aliases samples_names<-
 #' @export
-setGeneric("sampleNames<-", function(object, value) {standardGeneric("sampleNames<-")})
+setGeneric("samples_names<-", function(object, value) { standardGeneric("samples_names<-") })
 
 ###################
 ## Feature Names ##
 ###################
 
-#' @title featureNames: set and retrieve feature names
-#' @name featureNames
-#' @rdname featureNames
+#' @title features_names: set and retrieve feature names
+#' @name features_names
+#' @rdname features_names
 #' @export
-setGeneric("featureNames", function(object) {standardGeneric("featureNames")})
+setGeneric("features_names", function(object) { standardGeneric("features_names") })
 
-#' @name featureNames
-#' @rdname featureNames
-#' @aliases featureNames<-
+#' @name features_names
+#' @rdname features_names
+#' @aliases features_names<-
 #' @export
-setGeneric("featureNames<-", function(object, value) {standardGeneric("featureNames<-")})
+setGeneric("features_names<-", function(object, value) { standardGeneric("features_names<-") })
 
 ################
 ## View Names ##
 ################
 
-#' @title viewNames: set and retrieve view names
-#' @name viewNames
-#' @rdname viewNames
+#' @title views_names: set and retrieve view names
+#' @name views_names
+#' @rdname views_names
 #' @export
-setGeneric("viewNames", function(object) {standardGeneric("viewNames")})
+setGeneric("views_names", function(object) { standardGeneric("views_names") })
 
-#' @name viewNames
-#' @rdname viewNames
-#' @aliases viewNames<-
+#' @name views_names
+#' @rdname views_names
+#' @aliases views_names<-
 #' @export
-setGeneric("viewNames<-", function(object, value) {standardGeneric("viewNames<-")})
+setGeneric("views_names<-", function(object, value) { standardGeneric("views_names<-") })
 
 ################
 ## group Names ##
 ################
 
-#' @title groupNames: set and retrieve view names
-#' @name groupNames
-#' @rdname groupNames
+#' @title groups_names: set and retrieve view names
+#' @name groups_names
+#' @rdname groups_names
 #' @export
-setGeneric("groupNames", function(object) {standardGeneric("groupNames")})
+setGeneric("groups_names", function(object) { standardGeneric("groups_names") })
 
-#' @name groupNames
-#' @rdname groupNames
-#' @aliases groupNames<-
+#' @name groups_names
+#' @rdname groups_names
+#' @aliases groups_names<-
 #' @export
-setGeneric("groupNames<-", function(object, value) {standardGeneric("groupNames<-")})
+setGeneric("groups_names<-", function(object, value) { standardGeneric("groups_names<-") })
 
 ################
 ## Input Data ##
 ################
 
 #' @title Set and retrieve input data
-#' @name InputData
+#' @name input_data
 #' @export
-setGeneric("InputData", function(object) {standardGeneric("InputData")})
+setGeneric("input_data", function(object) { standardGeneric("input_data") })
 
-#' @name InputData
+#' @name input_data
 #' @aliases inputData<-
 #' @export
-setGeneric(".InputData<-", function(object, value) {standardGeneric(".InputData<-")})
+setGeneric(".input_data<-", function(object, value) { standardGeneric(".input_data<-") })
 
 
 ##################
 ## Imputed Data ##
 ##################
 
-#' @title ImputedData: set and retrieve imputed data
-#' @name ImputedData
+#' @title imputed_data: set and retrieve imputed data
+#' @name imputed_data
 #' @export
-setGeneric("ImputedData", function(object) {standardGeneric("ImputedData")})
+setGeneric("imputed_data", function(object) { standardGeneric("imputed_data") })
 
-#' @name ImputedData
-#' @aliases ImputedData<-
+#' @name imputed_data
+#' @aliases imputed_data<-
 #' @export
-setGeneric(".ImputedData<-", function(object, value) {standardGeneric(".ImputedData<-")})
+setGeneric(".imputed_data<-", function(object, value) { standardGeneric(".imputed_data<-") })
 
 ################
 ## Train Data ##
 ################
 
-#' @title TrainData: set and retrieve training data
-#' @name TrainData
-#' @rdname TrainData
+#' @title training_data: set and retrieve training data
+#' @name training_data
+#' @rdname training_data
 #' @export
-setGeneric("TrainData", function(object) {standardGeneric("TrainData")})
+setGeneric("training_data", function(object) { standardGeneric("training_data") })
 
-#' @name TrainData
-#' @aliases TrainData<-
+#' @name training_data
+#' @aliases training_data<-
 #' @export
-setGeneric(".TrainData<-", function(object, value) {standardGeneric(".TrainData<-")})
+setGeneric(".training_data<-", function(object, value) { standardGeneric(".training_data<-") })
 
 
 ###################
 ## Train Options ##
 ###################
 
-#' @title TrainOptions: set and retrieve training opts
-#' @name TrainOptions
-#' @rdname TrainOptions
+#' @title training_options: set and retrieve training opts
+#' @name training_options
+#' @rdname training_options
 #' @export
-setGeneric("TrainOptions", function(object) {standardGeneric("TrainOptions")})
+setGeneric("training_options", function(object) { standardGeneric("training_options") })
 
-#' @name TrainOptions
-#' @rdname TrainOptions
-#' @aliases TrainOptions<-
+#' @name training_options
+#' @rdname training_options
+#' @aliases training_options<-
 #' @export
-setGeneric(".TrainOptions<-", function(object, value) {standardGeneric(".TrainOptions<-")})
+setGeneric(".training_options<-", function(object, value) { standardGeneric(".training_options<-") })
 
 
 ###################
 ## Model Options ##
 ###################
 
-#' @title ModelOptions: set and retrieve Model options
-#' @name ModelOptions
+#' @title model_options: set and retrieve Model options
+#' @name model_options
 #' @export
-setGeneric("ModelOptions", function(object) {standardGeneric("ModelOptions")})
+setGeneric("model_options", function(object) { standardGeneric("model_options") })
 
-#' @name ModelOptions
-#' @aliases ModelOptions<-
+#' @name model_options
+#' @aliases model_options<-
 #' @export
-setGeneric(".ModelOptions<-", function(object, value) {standardGeneric(".ModelOptions<-")})
+setGeneric(".model_options<-", function(object, value) { standardGeneric(".model_options<-") })
 
 
 ######################
 ## Train Statistics ##
 ######################
 
-#' @title TrainStats: set and retrieve training statistics
-#' @name TrainStats
+#' @title training_stats: set and retrieve training statistics
+#' @name training_stats
 #' @export
-setGeneric("TrainStats", function(object) {standardGeneric("TrainStats")})
+setGeneric("training_stats", function(object) { standardGeneric("training_stats") })
 
-#' @name TrainStats
-#' @aliases TrainStats<-
+#' @name training_stats
+#' @aliases training_stats<-
 #' @export
-setGeneric(".TrainStats<-", function(object, value) {standardGeneric(".TrainStats<-")})
+setGeneric(".training_stats<-", function(object, value) { standardGeneric(".training_stats<-") })
 
 ##################
 ## Expectations ##
 ##################
 
-#' @title Expectations: set and retrieve expectations
-#' @name Expectations
-#' @rdname Expectations
+#' @title expectations: set and retrieve expectations
+#' @name expectations
+#' @rdname expectations
 #' @export
-setGeneric("Expectations", function(object) {standardGeneric("Expectations")})
+setGeneric("expectations", function(object) { standardGeneric("expectations") })
 
-#' @name Expectations
-#' @rdname Expectations
-#' @aliases Expectations<-
+#' @name expectations
+#' @rdname expectations
+#' @aliases expectations<-
 #' @export
-setGeneric(".Expectations<-", function(object, value) {standardGeneric(".Expectations<-")})
+setGeneric(".expectations<-", function(object, value) { standardGeneric(".expectations<-") })
 

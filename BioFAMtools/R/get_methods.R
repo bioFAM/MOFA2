@@ -3,21 +3,21 @@
 ## Get functions to fetch data from the model ##
 ################################################
 
-#' @title getDimensions 
-#' @name getDimensions
+#' @title get_dimensions
+#' @name get_dimensions
 #' @description Extract dimensionalities from the model. 
 #' @details K indicates the number of factors, D indicates the number of features, 
 #' N indicates the (total) number of samples and M indicates the number of views.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @export
-getDimensions <- function(object) {
+get_dimensions <- function(object) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
-  return(object@Dimensions)
+  return(object@dimensions)
 }
 
 
-#' @title getFactors
-#' @name getFactors
+#' @title get_factors
+#' @name get_factors
 #' @description Extract the latent factors from the model.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the factor index(es).
@@ -30,7 +30,7 @@ getDimensions <- function(object) {
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (sample,factor,value).
 #' @export
 #' 
-getFactors <- function(object, groups = "all", factors = "all", as.data.frame = FALSE, include_intercept = TRUE) {
+get_factors <- function(object, groups = "all", factors = "all", as.data.frame = FALSE, include_intercept = TRUE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -39,15 +39,17 @@ getFactors <- function(object, groups = "all", factors = "all", as.data.frame = 
   groups <- .check_and_get_groups(object, groups)
 
   # Get factors
-  if (paste0(factors, collapse="") == "all") { factors <- factorNames(object) } 
+  if (paste0(factors, collapse="") == "all") { factors <- factors_names(object) } 
   else if(is.numeric(factors)) {
-    if (object@ModelOptions$LearnIntercept) factors <- factorNames(object)[factors+1]
-    else factors <- factorNames(object)[factors]
+    if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
+    else factors <- factors_names(object)[factors]
   }
-  else { stopifnot(all(factors %in% factorNames(object))) }
+  else {
+    stopifnot(all(factors %in% factors_names(object)))
+  }
   
   # Collect factors
-  Z <- getExpectations(object, "Z", as.data.frame)
+  Z <- get_expectations(object, "Z", as.data.frame)
   if (as.data.frame) {
     Z <- Z[Z$factor %in% factors,]
   } else {
@@ -71,8 +73,8 @@ getFactors <- function(object, groups = "all", factors = "all", as.data.frame = 
 }
 
 
-#' @title getWeights
-#' @name getWeights
+#' @title get_weights
+#' @name get_weights
 #' @description Extract the weights from the model.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
@@ -86,28 +88,31 @@ getFactors <- function(object, groups = "all", factors = "all", as.data.frame = 
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,factor,value).
 #' @export
 #' 
-getWeights <- function(object, views = "all", factors = "all", as.data.frame = FALSE) {
+get_weights <- function(object, views = "all", factors = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get views
-  if (paste0(views, collapse="") == "all") { views <- viewNames(object) }   else { stopifnot(all(views %in% viewNames(object))) }
+  views <- .check_and_get_views(object, views)
+  
   # Get factors
-  if (paste0(factors, collapse="") == "all") { 
-    factors <- factorNames(object) 
+  if (paste0(factors, collapse = "") == "all") { 
+    factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-      if (object@ModelOptions$LearnIntercept) {
-        factors <- factorNames(object)[factors+1]
-      } else {
-        factors <- factorNames(object)[factors]
-      }
-    } else { stopifnot(all(factors %in% factorNames(object))) }
+    if (object@model_options$learn_intercept) {
+      factors <- factors_names(object)[factors+1]
+    } else {
+      factors <- factors_names(object)[factors]
+    }
+  } else { 
+    stopifnot(all(factors %in% factors_names(object)))
+  }
   
   # Fetch weights
-  weights <- getExpectations(object, "W", as.data.frame)
+  weights <- get_expectations(object, "W", as.data.frame)
   if (as.data.frame) {
-    weights <- weights[weights$view%in%views & weights$factor%in%factors, ]
+    weights <- weights[weights$view %in% views & weights$factor %in% factors, ]
   } else {
     weights <- lapply(views, function(m) weights[[m]][,factors,drop=F])
     names(weights) <- views
@@ -117,8 +122,8 @@ getWeights <- function(object, views = "all", factors = "all", as.data.frame = F
 }
 
 
-#' @title getTrainData
-#' @name getTrainData
+#' @title get_training_data
+#' @name get_training_data
 #' @description Fetch the training data
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
@@ -131,53 +136,53 @@ getWeights <- function(object, views = "all", factors = "all", as.data.frame = F
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-getTrainData <- function(object, views = "all", groups = "all", features = "all", as.data.frame = F) {
+get_training_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = F) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
-  # Get views
-  if (paste0(views, collapse="") == "all") { views <- viewNames(object) } else { stopifnot(all(views %in% viewNames(object))) }
-  if (paste0(groups, collapse="") == "all") { groups <- groupNames(object) } else { stopifnot(all(groups %in% groupNames(object))) }
+  # Get views and groups
+  views  <- .check_and_get_views(object, views)
+  groups <- .check_and_get_groups(object, groups)
   
   # Get features
   if (class(features) == "list") {
-    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% featureNames(object)[[views[i]]]))))
+    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
   } else {
     if (paste0(features, collapse="") == "all") { 
-      features <- featureNames(object)[views]
+      features <- features_names(object)[views]
     } else {
       stop("features not recognised, please read the documentation")
     }
   }
-  
+
   # Fetch data
-  trainData <- lapply(object@TrainData[views], function(e) e[groups])
-  trainData <- lapply(1:length(trainData), function(m) lapply(1:length(trainData[[1]]), function(p) trainData[[m]][[p]][features[[m]],,drop=F]))
-  trainData <- .name_views_and_groups(trainData, views, groups)
+  train_data <- lapply(object@training_data[views], function(e) e[groups])
+  train_data <- lapply(1:length(train_data), function(m) lapply(1:length(train_data[[1]]), function(p) train_data[[m]][[p]][features[[m]],,drop=F]))
+  train_data <- .name_views_and_groups(train_data, views, groups)
   
   # Convert to long data frame
   if (as.data.frame==T) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
-        tmp <- reshape2::melt(trainData[[m]][[p]])
+        tmp <- reshape2::melt(train_data[[m]][[p]])
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = p, tmp)
         return(tmp) 
       })
     })
-    trainData <- do.call(rbind, do.call(rbind, tmp))
-    trainData[,c("view","group","feature","sample")] <- sapply(trainData[,c("view","group","feature","sample")], as.character)
+    train_data <- do.call(rbind, do.call(rbind, tmp))
+    train_data[,c("view","group","feature","sample")] <- sapply(train_data[,c("view","group","feature","sample")], as.character)
   }# else if ((length(views)==1) && (as.data.frame==F)) {
-  #  trainData <- trainData[[views]]
+  #  train_data <- train_data[[views]]
   #}
   
-  return(trainData)
+  return(train_data)
 }
 
 
-#' @title getImputedData
-#' @name getImputedData
+#' @title getimputed_data
+#' @name getimputed_data
 #' @description Function to get the imputed data. It requires the previous use of the \code{\link{imputeMissing}} method.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
@@ -189,21 +194,21 @@ getTrainData <- function(object, views = "all", groups = "all", features = "all"
 #' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-getImputedData <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
+getimputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get views and groups
-  if (paste0(views, collapse="") == "all") { views <- viewNames(object) } else { stopifnot(all(views %in% viewNames(object))) }
-  if (paste0(groups, collapse="") == "all") { groups <- groupNames(object) } else { stopifnot(all(groups %in% groupNames(object))) }
+  if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
+  if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
   # Get features
   if (class(features)=="list") {
-    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% featureNames(object)[[views[i]]]))))
+    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
   } else {
     if (paste0(features,collapse="") == "all") { 
-      features <- featureNames(object)[views]
+      features <- features_names(object)[views]
     } else {
       stop("features not recognised, please read the documentation")
     }
@@ -211,27 +216,27 @@ getImputedData <- function(object, views = "all", groups = "all", features = "al
   
 
   # Fetch data
-  ImputedData <- lapply(object@ImputedData[views], function(e) e[groups])
-  ImputedData <- lapply(1:length(ImputedData), function(m) lapply(1:length(ImputedData[[1]]), function(h) ImputedData[[m]][[h]][features[[m]],,drop=F]))
-  ImputedData <- .setViewAndgroupNames(ImputedData, views, groups)
+  imputed_data <- lapply(object@imputed_data[views], function(e) e[groups])
+  imputed_data <- lapply(1:length(imputed_data), function(m) lapply(1:length(imputed_data[[1]]), function(h) imputed_data[[m]][[h]][features[[m]],,drop=F]))
+  imputed_data <- .setViewAndgroups_names(imputed_data, views, groups)
   
   # Convert to long data frame
   if (as.data.frame==T) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(h) { 
-        tmp <- reshape2::melt(ImputedData[[m]][[h]])
+        tmp <- reshape2::melt(imputed_data[[m]][[h]])
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = h, tmp)
         return(tmp) 
       })
     })
-    ImputedData <- do.call(rbind,tmp)
-    ImputedData[,c("view","group","feature","sample")] <- sapply(ImputedData[,c("view","group","feature","sample")], as.character)
+    imputed_data <- do.call(rbind, tmp)
+    imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.character)
   } else if ((length(views)==1) && (as.data.frame==F)) {
-    ImputedData <- ImputedData[[views]]
+    imputed_data <- imputed_data[[views]]
   }
   
-  return(ImputedData)
+  return(imputed_data)
 }
 
 #' @name getCovariates
@@ -246,17 +251,17 @@ getCovariates <- function(object, covariates) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  if(class(object@InputData) != "MultiAssayExperiment") stop("To work with covariates, InputData has to be specified in form of a MultiAssayExperiment")  
-  stopifnot(all(covariates %in% colnames(colData(object@InputData))))
+  if(class(object@input_data) != "MultiAssayExperiment") stop("To work with covariates, InputData has to be specified in form of a MultiAssayExperiment")  
+  stopifnot(all(covariates %in% colnames(colData(object@input_data))))
   
   # Get covariates
-  covariates <- colData(object@InputData)[,covariates]
+  covariates <- colData(object@input_data)[,covariates]
   
   return(covariates)
 }
 
-#' @title getExpectations
-#' @name getExpectations
+#' @title get_expectations
+#' @name get_expectations
 #' @description Function to extract the expectations from the (variational) posterior distributions of a trained \code{\link{BioFAModel}} object.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param variable variable name: 'Z' for factors, 'W' for weights, 'Tau' for noise,
@@ -275,18 +280,18 @@ getCovariates <- function(object, covariates) {
 #'  \item{"Tau"}{}
 #' }
 #' @export
-getExpectations <- function(object, variable, as.data.frame = FALSE) {
+get_expectations <- function(object, variable, as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  stopifnot(variable %in% names(object@Expectations))
+  stopifnot(variable %in% names(object@expectations))
   
   # Get expectations in single matrix or list of matrices (for multi-view nodes)
-  exp <- object@Expectations[[variable]]
+  exp <- object@expectations[[variable]]
   # if (variable=="Z") {
-  #   exp <- object@Expectations$Z
+  #   exp <- object@expectations$Z
   # } else {
-  #   exp <- lapply(object@Expectations[[variable]], function(x) x$E)
+  #   exp <- lapply(object@expectations[[variable]], function(x) x$E)
   # }
   
   # Convert to long data frame
@@ -350,18 +355,18 @@ getExpectations <- function(object, variable, as.data.frame = FALSE) {
 }
 
 
-#' @title getELBO
-#' @name getELBO
+#' @title get_elbo
+#' @name get_elbo
 #' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @export
-getELBO <- function(object) {
+get_elbo <- function(object) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
   return(tail(object@TrainStats$elbo, 1))
 }
 
-getGroupAnnotation <- function(object){
-  samples_list <- sampleNames(m)
-  if(class(samples_list)=="list") samples <- Reduce(c,samples_list) else samples <- samples_list
+get_groups_annotation <- function(object){
+  samples_list <- samples_names(m)
+  if(class(samples_list)=="list") samples <- Reduce(c, samples_list) else samples <- samples_list
   data.frame(samples=samples, group = rep(names(samples_list), times= sapply(samples_list, length)))
 }

@@ -49,11 +49,14 @@ FeatureSetEnrichmentAnalysis <- function(object, view, feature.sets, factors = "
   
   # Collect observed data
   data <- object@TrainData[[view]]
+  if(class(data)=="list") data <- Reduce(cbind, data)
   data <- t(data)
-  
+
   # Collect relevant expectations
-  W <- getWeights(object, view,factors)[[view]]
-  Z <- getFactors(object,factors)
+  W <- getWeights(object, views=view, factors=factors)[[view]]
+  Z <- getFactors(object,factors=factors)
+  if(class(Z)=="list") Z <- Reduce(rbind, Z)
+  stopifnot(rownames(data) == rownames(Z))
   
   # Check that there is no constant factor
   stopifnot( all(apply(Z,2,var, na.rm=T)>0) )

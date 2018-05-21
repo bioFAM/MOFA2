@@ -5,15 +5,10 @@
   stopifnot(entity %in% c("features", "samples", "factors"))
 
   # Define what entities should be updated for which nodes
-  # Notation for axes: 2 is for columns, 1 is for rows (or vectors)
-  node_lists_options <- list(features = list(nodes = c("W", "Tau", "Y"), axes = c(1, 1, 1)),
-                             samples  = list(nodes = c("Z", "Tau", "Y"), axes = c(1, 2, 2)),
-                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 1, 1, 1, 1)))
-
-  # Define how nodes are nested
-  multiview_nodes  <- c("W")
-  multigroup_nodes <- c("Z")
-  twodim_nodes     <- c("Y", "Tau")
+  # Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
+  node_lists_options <- list(features = list(nodes = c("Y", "Tau", "W", "AlphaW", "ThetaW"), axes = c(1, 1, 1, 1, 1)),
+                             samples  = list(nodes = c("Y", "Tau", "Z", "AlphaZ", "ThetaZ"), axes = c(2, 2, 1, 1, 1)),
+                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 2, 2, 2, 2)))
 
   if (paste0(views, collapse = "") == "all") { 
     views <- names(object@dimensions$D)
@@ -33,25 +28,36 @@
   for (i in 1:length(nodes)) {
     node <- nodes[i]
     axis <- axes[i]
+    # Update the nodes for which expectations do exist
     if (node %in% names(object@expectations)) {
-      if (any(node %in% multiview_nodes, node %in% multigroup_nodes)) {
+      # Update nodes with one level of nestedness (views or groups)
+      if (any(node %in% object@model_options$nodes$multiview_node, 
+              node %in% object@model_options$nodes$multigroup_nodes)) {
         sub_dim <- length(object@expectations[[node]])
-        for (ind in 1:length(sub_dim)) {
+        for (ind in 1:sub_dim) {
           if (all(length(object@expectations[[node]][[ind]]) == 1, 
                   names(object@expectations[[node]][[ind]]) == c("E"))) {
             object@expectations[[node]][[ind]] <- object@expectations[[node]][[ind]]$E
           }
-          dim  <- length(values[[ind]])
+          # No nestedness in values if factors
           vals <- if (entity == "factors") values else values[[ind]]
+          dim  <- length(vals)
+          # Set names for rows
           if (axis == 1) {
             stopifnot(nrow(object@expectations[[node]][[ind]]) == dim)
             rownames(object@expectations[[node]][[ind]]) <- vals
-          } else {
-            stopifnot(ncol(object@expectations[[node]])[[ind]] == dim)
+          # ... or set names for columns
+          } else if (axis == 2) {
+            stopifnot(ncol(object@expectations[[node]][[ind]]) == dim)
             colnames(object@expectations[[node]][[ind]]) <- vals
+          # ... or set vector names
+          } else {
+            stopifnot(length(object@expectations[[node]][[ind]]) == dim)
+            names(object@expectations[[node]][[ind]]) <- vals
           }
         }
-      } else if (node %in% twodim_nodes) {
+      # Update nodes with two levels of nestedness (e.g. Y or Tau)
+      } else if (node %in% object@model_options$nodes$twodim_nodes) {
         sub_dim <- length(object@expectations[[node]])
         for (ind in 1:sub_dim) {
           sub_dim2 <- length(object@expectations[[node]][[ind]])
@@ -60,14 +66,21 @@
                     names(object@expectations[[node]][[ind]][[ind2]]) == c("E"))) {
               object@expectations[[node]][[ind]][[ind2]] <- object@expectations[[node]][[ind]][[ind2]]$E
             }
+            # Infer which index to use to iterate over a provided list of values
             deduced_ind <- if (entity == "featues") ind else ind2  # since ind corresponds to views (groups of features)
             dim <- length(values[[deduced_ind]])
+            # Set names for rows
             if (axis == 1) {
               stopifnot(nrow(object@expectations[[node]][[ind]][[ind2]]) == dim)
               rownames(object@expectations[[node]][[ind]][[ind2]]) <- values[[deduced_ind]]
-            } else {
-              stopifnot(ncol(object@expectations[[node]])[[ind]][[ind2]] == dim)
+            # ... or set names for columns
+            } else if (axis == 2) {
+              stopifnot(ncol(object@expectations[[node]][[ind]][[ind2]]) == dim)
               colnames(object@expectations[[node]][[ind]][[ind2]]) <- values[[deduced_ind]]
+            # ... or set vector names
+            } else {
+              stopifnot(length(object@expectations[[node]][[ind]]) == dim)
+              names(object@expectations[[node]][[ind]]) <- vals
             }
           }
         }
@@ -97,14 +110,13 @@
   } else {
     stopifnot(all(groups %in% names(object@dimensions$N)))
   }
-
   for (m in views) {
-    for (h in groups) {
-      deduced_ind <- if (entity == "featues") m else h  # since ind corresponds to views (groups of features)
+    for (p in groups) {
+      deduced_ind <- if (entity == "features") m else p  # since ind corresponds to views (groups of features)
       if (axes_options[[entity]] == 1) {
-        rownames(object@training_data[[m]][[h]]) <- values[[deduced_ind]]
+        rownames(object@training_data[[m]][[p]]) <- values[[deduced_ind]]
       } else {
-        colnames(object@training_data[[m]][[h]]) <- values[[deduced_ind]]
+        colnames(object@training_data[[m]][[p]]) <- values[[deduced_ind]]
       }
     }
   }
@@ -263,7 +275,11 @@
 #' @aliases factors_names,BioFAModel-method
 #' @return character vector with the features names
 #' @export
-setMethod("factors_names", signature(object="BioFAModel"), function(object) { colnames(object@expectations$Z[[1]]) })
+setMethod("factors_names", signature(object="BioFAModel"), 
+  function(object) {
+    colnames(object@expectations$Z[[1]]) 
+  }
+)
 
 #' @rdname factors_names
 #' @param value a character vector of factor names
@@ -276,13 +292,14 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
     if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
       if (length(value) != object@dimensions["K"])
         stop("Length of factor names does not match the dimensionality of the latent variable matrix")
-    if(length(value) != ncol(object@expectations$Z[[1]])) 
-      stop("Factor names do not match the number of columns in the latent variable matrix")
+    # DEPRECATED: If it's an old model, it should be object@expectations$Z$E
+    # if(length(value) != ncol(object@expectations$Z[[1]])) 
+    #   stop("Factor names do not match the number of columns in the latent variable matrix")
  
     object <- .set_expectations_names(object, entity = 'factors', value)
  
     object
-})
+  })
 
 
 
@@ -295,7 +312,10 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 #' @aliases samples_names,BioFAModel-method
 #' @return list of character vectors with the sample names for each group
 #' @export
-setMethod("samples_names", signature(object="BioFAModel"), function(object) { tmp <- lapply(object@training_data[[1]], colnames); names(tmp) <- groups_names(object); return(tmp) } )
+setMethod("samples_names", signature(object="BioFAModel"), 
+  function(object) { 
+    object@data_options$samples$names
+  })
 
 #' @rdname samples_names
 #' @param value list of character vectors with the sample names for every group
@@ -313,12 +333,12 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
     if (!all(sapply(value, length) == sapply(object@training_data[[1]], ncol)))
       stop("sample names do not match the dimensionality of the data (columns)")
 
-    
+    object@data_options$samples$names <- value
     object <- .set_expectations_names(object, entity = 'samples', value)
     object <- .set_data_names(object, entity = 'samples', value)
 
     object
-})
+  })
 
 ####################################
 ## Set and retrieve feature names ##
@@ -329,7 +349,10 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 #' @aliases features_names,BioFAModel-method
 #' @return list of character vectors with the feature names for each view
 #' @export
-setMethod("features_names", signature(object="BioFAModel"), function(object) { tmp <- lapply(object@training_data, function(e) rownames(e[[1]])); names(tmp) <- views_names(object); return(tmp) } )
+setMethod("features_names", signature(object="BioFAModel"), 
+  function(object) { 
+    object@data_options$features$names
+  })
 
 #' @rdname features_names
 #' @param value list of character vectors with the feature names for every view
@@ -347,12 +370,12 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
     if (!all(sapply(value, length) == sapply(object@training_data, function(e) nrow(e[[1]]))))
       stop("Feature names do not match the dimensionality of the data (rows)")
     
-    
+    object@data_options$features$names <- value
     object <- .set_expectations_names(object, entity = 'features', value)
     object <- .set_data_names(object, entity = 'features', value)
     
     return(object)
-})
+  })
 
 #################################
 ## Set and retrieve view names ##
@@ -363,7 +386,10 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
 #' @return character vector with the names for each view
 #' @rdname views_names
 #' @export
-setMethod("views_names", signature(object="BioFAModel"), function(object) { names(object@training_data) } )
+setMethod("views_names", signature(object="BioFAModel"), 
+  function(object) {
+    object@data_options$features$views
+  })
 
 
 #' @rdname views_names
@@ -379,10 +405,13 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
       stop("Length of view names does not match the dimensionality of the model")
     if (length(value) != length(object@training_data))
       stop("View names do not match the number of views in the training data")
-    
-    multiview_nodes <- c("W", "AlphaW", "Tau", "Theta", "ThetaW", "Y")
-    for (node in multiview_nodes) {
-      if (node %in% names(object@expectations)) {
+
+
+    object@data_options$features$views <- value
+
+    for (node in names(object@expectations)) {
+      if (node %in% object@model_options$nodes$multiview_nodes |
+          node %in% object@model_options$nodes$twodim_nodes) {
         if (class(object@expectations[[node]]) == "list" & 
             length(object@expectations[[node]]) == object@dimensions["M"]) {
           names(object@expectations[[node]]) <- value 
@@ -391,10 +420,10 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
     }
     
     names(object@training_data) <- value
-    names(object@dimensions$D) <- value
+    names(object@dimensions$D)  <- value
     
     return(object)
-})
+  })
 
 
 #################################
@@ -406,7 +435,10 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
 #' @return character vector with the names for each view
 #' @rdname groups_names
 #' @export
-setMethod("groups_names", signature(object="BioFAModel"), function(object) { names(object@training_data[[1]]) } )
+setMethod("groups_names", signature(object="BioFAModel"), 
+  function(object) {
+    object@data_options$samples$groups
+  })
 
 
 #' @rdname groups_names
@@ -422,17 +454,24 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
         stop("Length of group names does not match the dimensionality of the model")
     if (length(value) != length(object@training_data[[1]]))
       stop("Group names do not match the number of groups in the training data")
+
+    object@data_options$samples$groups <- value
     
-    multigroup_nodes <- c("Z", "Y", "AlphaZ")
-    for (node in multigroup_nodes) {
+    for (node in object@model_options$nodes$multigroup_nodes) {
       if (node %in% names(object@expectations)) {
-        if (node == "Y") {  # the only multi-view and multi-group node
-          for (m in 1:length(object@expectations$Y)) {
-            names(object@expectations$Y[[m]]) <- value 
-          }
-        } else if (class(object@expectations[[node]]) == "list" & 
+        if (class(object@expectations[[node]]) == "list" & 
             length(object@expectations[[node]]) == object@dimensions["P"]) {
           names(object@expectations[[node]]) <- value 
+        }
+      }
+    }
+    for (node in object@model_options$nodes$twodim_nodes) {
+      if (node %in% names(object@expectations)) {
+        for (m in 1:length(object@expectations$Y)) {
+            if (class(object@expectations[[node]][[m]]) == "list" & 
+                length(object@expectations[[node]][[m]]) == object@dimensions["P"]) {
+              names(object@expectations[[node]][[m]]) <- value 
+            }
         }
       }
     }
@@ -443,7 +482,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
     names(object@dimensions$N) <- value
     
     return(object)
-})
+  })
 
 #################################
 ## Set and retrieve input data ##
@@ -454,7 +493,10 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
 #' @param object a \code{\link{BioFAModel}} object.
 #' @rdname input_data
 #' @export
-setMethod("input_data", signature(object="BioFAModel"), function(object) { object@input_data } )
+setMethod("input_data", signature(object="BioFAModel"), 
+  function(object) {
+    object@input_data
+  })
 
 #' @title Set and retrieve input data
 #' @docType methods
@@ -464,10 +506,10 @@ setMethod("input_data", signature(object="BioFAModel"), function(object) { objec
 #' @aliases inputData<-
 #' @export
 setMethod(".input_data<-", signature(object="BioFAModel", value="MultiAssayExperiment"),
-          function(object,value) {
-            object@input_data <- value
-            object
-          })
+  function(object,value) {
+    object@input_data <- value
+    object
+  })
 
 ####################################
 ## Set and retrieve training data ##
@@ -478,7 +520,10 @@ setMethod(".input_data<-", signature(object="BioFAModel", value="MultiAssayExper
 #' @return list of numeric matrices that contain the training data
 #' @rdname training_data
 #' @export
-setMethod("training_data", signature(object="BioFAModel"), function(object) { object@training_data } )
+setMethod("training_data", signature(object="BioFAModel"),
+  function(object) {
+    object@training_data 
+  })
 
 #' @import methods
 setMethod(".training_data<-", signature(object="BioFAModel", value="list"),
@@ -495,7 +540,7 @@ setMethod(".training_data<-", signature(object="BioFAModel", value="list"),
     # }
     object@training_data <- value
     object
-})
+  })
 
 ####################################
 ## Set and retrieve imputed data ##
@@ -510,11 +555,11 @@ setMethod("imputed_data", signature(object="BioFAModel"), function(object) { obj
 
 #' @import methods
 setMethod(".imputed_data<-", signature(object="BioFAModel", value="list"),
-          function(object,value) {
-            # to do sanity checks
-            object@imputed_data <- value
-            object
-          })
+  function(object,value) {
+    # to do sanity checks
+    object@imputed_data <- value
+    object
+  })
 
 #######################################
 ## Set and retrieve training options ##
@@ -527,10 +572,10 @@ setMethod(".imputed_data<-", signature(object="BioFAModel", value="list"),
 #' @export
 setMethod("training_options", "BioFAModel", function(object) { object@training_options } )
 setMethod(".training_options<-", signature(object="BioFAModel", value="list"),
-          function(object,value) {
-            object@training_options <- value
-            object
-          })
+   function(object,value) {
+     object@training_options <- value
+     object
+   })
 
 #######################################
 ## Set and retrieve model options ##
@@ -543,10 +588,10 @@ setMethod(".training_options<-", signature(object="BioFAModel", value="list"),
 #' @export
 setMethod("model_options", "BioFAModel", function(object) { object@model_options } )
 setMethod(".model_options<-", signature(object="BioFAModel", value="list"),
-          function(object,value) {
-            object@model_options <- value
-            object
-          })
+    function(object,value) {
+      object@model_options <- value
+      object
+    })
 
 ##########################################
 ## Set and retrieve training statistics ##
@@ -561,7 +606,7 @@ setMethod(".training_stats<-", signature(object="BioFAModel", value="list"),
   function(object,value) {
     object@training_stats <- value
     object
-})
+  })
 
 ###################################
 ## Set and retrieve expectations ##
@@ -577,4 +622,4 @@ setMethod(".expectations<-", signature(object="BioFAModel", value="list"),
   function(object,value) {
     object@expectations <- value
     object
-})
+  })
