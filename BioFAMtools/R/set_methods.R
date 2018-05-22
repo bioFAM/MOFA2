@@ -170,7 +170,6 @@
         sub_dim <- length(object@parameters[[node]])
         for (ind in 1:sub_dim) {
           # No nestedness in values if factors
-          browser()
           vals <- if (entity == "factors") values else values[[ind]]
           dim  <- length(vals)
           for (par in names(object@parameters[[node]][[ind]])) {
