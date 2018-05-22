@@ -323,7 +323,7 @@ plot_tiles_data <- function(object, colors = NULL) {
         !all(is.na(s)))))
 
   ovw <- as.data.frame(ovw.mx)
-  ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = sapply(samples_list, length)) )
+  ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = P) )
   
   # Remove samples with no measurements
   ovw <- ovw[apply(ovw, 1, any),, drop=FALSE]
@@ -337,10 +337,9 @@ plot_tiles_data <- function(object, colors = NULL) {
   molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw)[order(rowSums(ovw.mx), decreasing = T)])
 
   n <- length(unique(molten_ovw$sample))
-  
-  # Add number of samples and features per view
+  # Add number of samples and features per view/group
   molten_ovw$combi  <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
-  molten_ovw$ntotal <- paste("n=", colSums(ovw.mx)[ as.character(molten_ovw$view) ], sep="")
+  molten_ovw$ntotal <- paste("n=", sapply(training_data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
   molten_ovw$ptotal <- paste("d=", sapply(training_data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
     
   # Define y-axis label
