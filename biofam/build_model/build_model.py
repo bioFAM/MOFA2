@@ -98,9 +98,7 @@ class buildBiofam(buildModel):
             self.init_model.initSZ()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
-            path = "/Users/damienarnol1/Documents/local/pro/PhD/FA/test_yonatan/transpose/biofam-biofam2/biofam/template/new_model/run/test_data/"
-            self.init_model.initZ(pmean=0,pcov=1,qmean=np.around(np.loadtxt(path+"Z_qmean_init"), decimals=3),qvar=1)
-            # self.init_model.initZ()
+            self.init_model.initZ()
 
     def build_W(self):
         """ Build node W for the weights """
