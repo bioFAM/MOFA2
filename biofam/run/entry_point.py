@@ -3,6 +3,7 @@ import pandas as pd
 import scipy as s
 import sys
 from time import sleep
+from time import time
 import pandas as pd
 
 from biofam.build_model.build_model import *
@@ -138,7 +139,7 @@ class entry_point(object):
 
         # data frame needs reindexing if no header row
         if not header_rows:
-            self.data[0] = self.data[0].reset_index()
+            self.data[0] = self.data[0].reset_index(drop=True)
         # save feature, sample names, sample groups
 
         self.data_opts['sample_names'] = self.data[0].index
@@ -197,12 +198,15 @@ class entry_point(object):
             self.train_opts['schedule'] = schedule
 
         # Seed
-        if seed is None: seed = 0
-        self.train_opts['seed'] = int(seed)
+        if seed is None or seed == 0:  # Seed for the random number generator
+            self.train_opts['seed'] = int(round(time() * 1000) % 1e6)
+        else:
+            self.train_opts['seed'] = seed
+        s.random.seed(self.train_opts['seed'])
 
 
     def set_model_options(self,factors, likelihoods,
-    	sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features',
+    	sl_z=False, sl_w=False, ard_z=False, ard_w=False, noise_on='features',
     	learnTheta=True, learn_intercept=False):
         """ Set model options """
 
@@ -351,7 +355,6 @@ class entry_point(object):
 	    # Train the model
         train_model(self.model, self.train_opts)
 
-
     def save(self, outfile):
         """ Save the model in an hdf5 file """
 
@@ -371,6 +374,7 @@ class entry_point(object):
 	    	group_names=self.data_opts['group_names'],
             sample_groups=self.data_opts['sample_groups']
         )
+
 
 
     def get_df(self, node):
@@ -400,7 +404,7 @@ class entry_point(object):
             for view in view_names:
                 e = pd.DataFrame(exp[i], index=feature_names[i], columns=factor_names)
                 e.index.name = 'feature'
-                e = e.reset_index()
+                e = e.reset_index(drop=True)
                 e_melted = pd.melt(e, id_vars=['feature'], var_name='factor', value_name='value')
                 e_melted['view'] = view
 
@@ -417,7 +421,7 @@ class entry_point(object):
                 e = pd.DataFrame(exp[i], index=sample_names, columns=feature_names[i])
                 e['group']=sample_groups
                 e.index.name = 'sample'
-                e = e.reset_index()
+                e = e.reset_index(drop=True)
                 e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='feature', value_name='value')
                 e_melted['view'] = view
 
@@ -431,7 +435,7 @@ class entry_point(object):
             e = pd.DataFrame(exp, index=sample_names, columns=factor_names)
             e['group']=sample_groups
             e.index.name = 'sample'
-            e = e.reset_index()
+            e = e.reset_index(drop=True)
             e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='factor', value_name='value')
 
             res = e_melted
@@ -517,30 +521,25 @@ class entry_sfa(entry_point):
                          view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
 
-
-
-
 if __name__ == '__main__':
-    ent = entry_point()
-    infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
 
-    views =  ["view_A", "view_A", "view_B", "view_B"]
+    ent = entry_point()
+
+    infiles = ["../run/test_data/500_0.txt", "../run/test_data/500_1.txt", "../run/test_data/500_2.txt", "../run/test_data/500_2.txt" ]
+    outfile = "tmp/test.hdf5"
+    lik = ["gaussian", "gaussian"]
+    views = ["view_1", "view_1", "view_2", "view_2"]
     groups = ["group_A", "group_B", "group_A", "group_B"]
 
-    lik = ["gaussian", "gaussian"]
-
-    outfile ="tmp/test.hdf5"
-
-    ent.set_data_options(lik, center_features=True, center_features_per_group=False,
-    scale_features=False, scale_views=False)
+    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, factors=10, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+    ent.set_model_options(sl_z=False, sl_w=True, ard_z=True, ard_w=True, noise_on='features', factors=10, likelihoods=lik)
+    ent.set_train_options(verbose=True, seed=2018, iter=10, tolerance=0.01, dropR2=0.0, startSparsity=0)
+
     ent.build()
     ent.run()
     ent.save(outfile)
     # ent.get_df('Y')
-
 
 
     # # from biofam.run.entry_point import entry_point
