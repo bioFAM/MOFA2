@@ -517,6 +517,8 @@ class entry_sfa(entry_point):
                          view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
 
+'''
+
 
 if __name__ == '__main__':
     ent = entry_point()
@@ -539,7 +541,7 @@ if __name__ == '__main__':
     ent.save(outfile)
     # ent.get_df('Y')
 
-
+'''
 
     # # from biofam.run.entry_point import entry_point
     # file = "/Users/ricard/Downloads/test_biofam/data.txt"

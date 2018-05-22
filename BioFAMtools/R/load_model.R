@@ -155,7 +155,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
 
   # Parse factors: order factors in order of variance explained
   if (sort_factors) {
-    r2 <- rowSums(sapply(calculate_variance_explained(object)$r2_per_factor, function(e) rowSums(e)))
+    r2 <- rowSums(calculate_variance_explained(object)$r2_per_factor)
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
     if (object@model_options$learn_intercept) { order_factors <- c("intercept", order_factors) }
     object <- subset_factors(object, order_factors)
