@@ -60,9 +60,10 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   # Remove intercept
   if (include_intercept == FALSE) {
     if (as.data.frame == FALSE) {
-      Z <- lapply(names(Z), function(h) {
-        if ("intercept" %in% colnames(Z[[h]])) Z[[h]][,colnames(Z[[h]])!="intercept"]
+      Z <- lapply(names(Z), function(p) {
+        Z[[p]][,colnames(Z[[p]])!="intercept"]
       })
+      names(Z) <- groups
     } else {
       if ("intercept" %in% unique(Z$factor)) {
         Z <- Z[Z$factor!="intercept",]
@@ -366,7 +367,7 @@ get_elbo <- function(object) {
 }
 
 get_groups_annotation <- function(object){
-  samples_list <- samples_names(m)
-  if(class(samples_list)=="list") samples <- Reduce(c, samples_list) else samples <- samples_list
-  data.frame(samples=samples, group = rep(names(samples_list), times= sapply(samples_list, length)))
+  samples_list <- samples_names(object)
+  if(class(samples_list) == "list") samples <- Reduce(c, samples_list) else samples <- samples_list
+  data.frame(sample = samples, group = rep(names(samples_list), times = sapply(samples_list, length)))
 }

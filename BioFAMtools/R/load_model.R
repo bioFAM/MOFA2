@@ -15,7 +15,7 @@
 #' @importFrom rhdf5 h5read
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE, multi_view = NULL, multi_group = NULL) {
+load_model <- function(file, object = NULL, sort_factors = TRUE) {
   
   if (is.null(object)) object <- new("BioFAModel")
   

@@ -5,7 +5,7 @@
 
 
 #' @title Plot histogram of latent factor values
-#' @name plotFactorHist
+#' @name plot_factor_hist
 #' @description Plot a histogram of latent factor values.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factor character vector with the factor name or numeric vector with the index of the factor.
@@ -18,38 +18,38 @@
 #' @param alpha transparency parameter. 
 #' Default is 0.5
 #' @param binwidth binwidth for histogram. Default is \code{NULL}, which uses \code{ggplot2} default calculation.
-#' @param showMissing boolean indicating whether to remove sample for which \code{group_by} is missing (default is FALSE)
+#' @param show_missing boolean indicating whether to remove sample for which \code{group_by} is missing (default is FALSE)
 #' @details One of the first steps for the annotation of factors is to visualise and color them using known covariates such as phenotypic or clinical data. \cr
 #' This method generates a histogram of the sample values in a given latent factor. \cr
-#' Similar functions are \code{\link{plotFactorScatter}} for doing scatter plots between pairs of factors 
-#' and \code{\link{plotFactorBeeswarm}} for doing Beeswarm plots of single factors.
+#' Similar functions are \code{\link{plot_factor_scatter}} for doing scatter plots between pairs of factors 
+#' and \code{\link{plot_factor_beeswarm}} for doing Beeswarm plots of single factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", alpha = 0.5, binwidth = NULL, showMissing = FALSE, ...) {
+plot_factor_hist <- function(object, factor, group_by = NULL, group_names = "", alpha = 0.5, binwidth = NULL, show_missing = FALSE, ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-  if(!factor %in% factorNames(object)) { stop("factor not recognised") }
+  if(!factor %in% factors_names(object)) { stop("factor not recognised") }
   
   # Collect relevant data
-  N <- sum(object@Dimensions[["N"]])
-  Z <- getFactors(object, factors = factor, as.data.frame = TRUE)
+  N <- sum(object@dimensions[["N"]])
+  Z <- get_factors(object, factors = factor, as.data.frame = TRUE)
   
   # get groups
-  groupLegend <- T
+  group_legend <- T
   if (!is.null(group_by)) {
     
-    # It is the name of a covariate or a feature in the TrainData
+    # It is the name of a covariate or a feature in the training_data
     if (length(group_by) == 1 & is.character(group_by)) {
       if(group_names=="") group_names <- group_by
-      TrainData <- getTrainData(object)
-      featureNames <- lapply(TrainData(object), rownames)
-      if(group_by %in% Reduce(union,featureNames)) {
-        viewidx <- which(sapply(featureNames, function(vnm) group_by %in% vnm))
-        group_by <- TrainData[[viewidx]][group_by,]
-      } else if(class(object@InputData) == "MultiAssayExperiment"){
-        group_by <- getCovariates(object, group_by)
+      training_data <- get_training_data(object)
+      features_names <- lapply(training_data(object), rownames)
+      if(group_by %in% Reduce(union,features_names)) {
+        viewidx <- which(sapply(features_names, function(vnm) group_by %in% vnm))
+        group_by <- training_data[[viewidx]][group_by,]
+      } else if(class(object@input_data) == "MultiAssayExperiment"){
+        group_by <- get_covariates(object, group_by)
       }
       else stop("'group_by' was specified but it was not recognised, please read the documentation")
       
@@ -64,14 +64,14 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
     
   } else {
     group_by <- rep(TRUE, N)
-    groupLegend <- F
+    group_legend <- F
   }
   
-  names(group_by) <- unname(do.call(c, sampleNames(object)))
+  names(group_by) <- unname(do.call(c, samples_names(object)))
   Z$group_by <- group_by[Z$sample]
 
   # Remove missing samples
-  if(!showMissing) Z <- Z[!is.na(Z$group_by),]
+  if(!show_missing) Z <- Z[!is.na(Z$group_by),]
   Z$group_by <- as.factor(Z$group_by)
   
   # Generate plot
@@ -92,14 +92,14 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
           legend.key = element_rect(fill = "white")
     )
   
-  if (!groupLegend) { p <- p + guides(fill = FALSE) }
+  if (!group_legend) { p <- p + guides(fill = FALSE) }
   
   return(p)
 }
 
 
 #' @title Beeswarm plot of latent factors
-#' @name plotFactorBeeswarm
+#' @name plot_factor_beeswarm
 #' @description Beeswarm plot of the latent factor values.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
@@ -110,38 +110,38 @@ plotFactorHist <- function(object, factor, group_by = NULL, group_names = "", al
 #' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
-#' @param showMissing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
+#' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
 #' @details One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
-#' Similar functions are \code{\link{plotFactorScatter}} for doing scatter plots and \code{\link{plotFactorHist}} for doing histogram plots
+#' Similar functions are \code{\link{plot_factor_scatter}} for doing scatter plots and \code{\link{plot_factor_hist}} for doing histogram plots
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @import ggbeeswarm
 #' @import grDevices
 #' @export
-plotFactorBeeswarm <- function(object, factors = "all", color_by = NULL, name_color = "", showMissing = FALSE) {
+plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, name_color = "", show_missing = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
 
   # Collect relevant data
-  N <- sum(object@Dimensions[["N"]])
-  Z <- getFactors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
+  N <- sum(object@dimensions[["N"]])
+  Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
   Z$factor <- as.factor(Z$factor)
   
   # Set color
-  colorLegend <- T
+  color_legend <- T
   if (!is.null(color_by)) {
-    # It is the name of a covariate or a feature in the TrainData
+    # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
-      TrainData <- getTrainData(object)
-      featureNames <- lapply(TrainData(object), rownames)
-      if(color_by %in% Reduce(union,featureNames)) {
-        viewidx <- which(sapply(featureNames, function(vnm) color_by %in% vnm))
-        color_by <- TrainData[[viewidx]][color_by,]
-      } else if(class(object@InputData) == "MultiAssayExperiment") {
-        color_by <- getCovariates(object, color_by)
+      training_data <- get_training_data(object)
+      features_names <- lapply(training_data(object), rownames)
+      if(color_by %in% Reduce(union,features_names)) {
+        viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
+        color_by <- training_data[[viewidx]][color_by,]
+      } else if(class(object@input_data) == "MultiAssayExperiment") {
+        color_by <- get_covariates(object, color_by)
       } else stop("'color_by' was specified but it was not recognised, please read the documentation")
     # It is a vector of length N
     } else if (length(color_by) > 1) {
@@ -152,15 +152,15 @@ plotFactorBeeswarm <- function(object, factors = "all", color_by = NULL, name_co
     }
   } else {
     color_by <- rep(TRUE, N)
-    colorLegend <- F
+    color_legend <- F
   }
-  names(color_by) <- unlist(sampleNames(object))
+  names(color_by) <- unlist(samples_names(object))
   if(length(unique(color_by)) < 5) color_by <- as.factor(color_by)
 
   Z$color_by <- color_by[Z$sample]
   
   # Remove samples with missing values
-  if (!showMissing) {
+  if (!show_missing) {
     Z <- Z[complete.cases(Z),]
     # Z <- Z[!is.na(Z$value),]
   }
@@ -192,13 +192,13 @@ plotFactorBeeswarm <- function(object, factors = "all", color_by = NULL, name_co
   if (is.numeric(color_by)) { p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) }
   
   # Add legend
-  if (colorLegend) { p <- p + labs(color=name_color) } else { p <- p + guides(color = FALSE) }
+  if (color_legend) { p <- p + labs(color=name_color) } else { p <- p + guides(color = FALSE) }
   
   return(p)
 }
 
 #' @title Scatterplot of two latent factors
-#' @name plotFactorScatter
+#' @name plot_factor_scatter
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
@@ -215,40 +215,40 @@ plotFactorBeeswarm <- function(object, factors = "all", color_by = NULL, name_co
 #' or a vector of the same length as the number of samples specifying discrete groups.
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
 #' @param name_shape name for shape legend (usually only used if shape_by is not a character itself)
-#' @param showMissing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
-#' Similar functions are \code{\link{plotFactorScatters}} for doing multiple scatter plots and 
-#' \code{\link{plotFactorBeeswarm}} for doing Beeswarm plots for single factors.
+#' Similar functions are \code{\link{plot_factor_scatters}} for doing multiple scatter plots and 
+#' \code{\link{plot_factor_beeswarm}} for doing Beeswarm plots for single factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL, name_color="",
-                         name_shape="", showMissing = TRUE) {
+plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NULL, name_color="",
+                         name_shape="", show_missing = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(factors)==2)
-  stopifnot(all(factors %in% factorNames(object)))
+  stopifnot(all(factors %in% factors_names(object)))
   
   # Collect relevant data  
-  N <- sum(object@Dimensions[["N"]])
-  Z <- getFactors(object, factors = factors, include_intercept = FALSE, as.data.frame = T)
+  N <- sum(object@dimensions[["N"]])
+  Z <- get_factors(object, factors = factors, include_intercept = FALSE, as.data.frame = T)
   Z$factor <- as.factor(Z$factor)
   
   # Set color
-  colorLegend <- T
+  color_legend <- T
   if (!is.null(color_by)) {
-    # It is the name of a covariate or a feature in the TrainData
+    # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
-      TrainData <- getTrainData(object)
-      featureNames <- lapply(TrainData(object), rownames)
-      if(color_by %in% Reduce(union,featureNames)) {
-        viewidx <- which(sapply(featureNames, function(vnm) color_by %in% vnm))
-        color_by <- TrainData[[viewidx]][color_by,]
-      } else if(class(object@InputData) == "MultiAssayExperiment"){
-        color_by <- getCovariates(object, color_by)
+      training_data <- get_training_data(object)
+      features_names <- lapply(training_data(object), rownames)
+      if(color_by %in% Reduce(union,features_names)) {
+        viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
+        color_by <- training_data[[viewidx]][color_by,]
+      } else if(class(object@input_data) == "MultiAssayExperiment"){
+        color_by <- get_covariates(object, color_by)
     }
     else stop("'color_by' was specified but it was not recognised, please read the documentation")
     # It is a vector of length N
@@ -260,22 +260,22 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
     }
   } else {
     color_by <- rep(TRUE,N)
-    colorLegend <- F
+    color_legend <- F
   }
 
   # Set shape
-  shapeLegend <- T
+  shape_legend <- T
   if (!is.null(shape_by)) {
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
-      TrainData <- getTrainData(object)
-      featureNames <- lapply(TrainData(object), rownames)
-      if(shape_by %in% Reduce(union,featureNames)) {
-        viewidx <- which(sapply(featureNames, function(vnm) shape_by %in% vnm))
-        shape_by <- TrainData[[viewidx]][shape_by,]
-      } else if(class(object@InputData) == "MultiAssayExperiment"){
-        shape_by <- getCovariates(object, shape_by)
+      training_data <- get_training_data(object)
+      features_names <- lapply(training_data(object), rownames)
+      if(shape_by %in% Reduce(union,features_names)) {
+        viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
+        shape_by <- training_data[[viewidx]][shape_by,]
+      } else if(class(object@input_data) == "MultiAssayExperiment"){
+        shape_by <- get_covariates(object, shape_by)
     }
     else stop("'shape_by' was specified but it was not recognised, please read the documentation")
     # It is a vector of length N
@@ -287,7 +287,7 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
     }
   } else {
     shape_by <- rep(TRUE,N)
-    shapeLegend <- F
+    shape_legend <- F
   }
   
   # Create data frame to plot
@@ -297,7 +297,7 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
   df <- data.frame(x = Z[Z$factor == factors[[1]],'value'], y = Z[Z$factor == factors[[2]],'value'], shape_by = shape_by, color_by = color_by)
   
   # remove values missing color or shape annotation
-  if (!showMissing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
+  if (!show_missing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
 
    #turn into factors
    df$shape_by[is.na(df$shape_by)] <- "NA"
@@ -326,14 +326,14 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
             legend.text = element_text(size = 16),
             legend.title = element_text(size =16)
             )
-  if (colorLegend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
-  if (shapeLegend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
+  if (color_legend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
+  if (shape_legend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
   return(p)
 }
   
   
 #' @title Pairwise scatterplots of multiple latent factors
-#' @name plotFactorScatters
+#' @name plot_factor_scatters
 #' @description Scatterplots of the sample values for pair-wise combinations of multiple latent factors.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
@@ -350,36 +350,41 @@ plotFactorScatter <- function (object, factors, color_by = NULL, shape_by = NULL
 #' or a vector of the same length as the number of samples specifying discrete groups.
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
 #' @param name_shape name for shape legend (usually only used if shape_by is not a character itself)
-#' @param showMissing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates multiple scatterplots for pairwise combinations of several latent factors.
-#' Similar functions are \code{\link{plotFactorScatter}} for doing single scatter plots and 
-#' \code{\link{plotFactorBeeswarm}} for doing Beeswarm plots for single factors.
+#' Similar functions are \code{\link{plot_factor_scatter}} for doing single scatter plots and 
+#' \code{\link{plot_factor_beeswarm}} for doing Beeswarm plots for single factors.
 #' @return \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plotFactorScatters <- function(object, factors = "all", showMissing=TRUE, 
-                         color_by=NULL, name_color="",  
-                         shape_by=NULL, name_shape="") {
+plot_factor_scatters <- function(object, factors = "all", groups = "all", 
+                                 show_missing=TRUE, color_by=NULL, name_color="",  
+                                 shape_by=NULL, name_shape="") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
 
+  groups <- .check_and_get_groups(object, groups)
+
   # Get factors
   if (paste0(factors, collapse="") == "all") { 
-    factors <- factorNames(object) 
+    factors <- factors_names(object) 
     # if(is.null(factors)) factors <- 1:ncol(Z) # old object are not compatible with factro names
   } else {
-    stopifnot(all(factors %in% factorNames(object)))  
+    stopifnot(all(factors %in% factors_names(object)))  
   }
 
+  
   # Collect relevant data
-  N <- object@Dimensions[["N"]]
-  Z <- getFactors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
-  Z$factor <- as.factor(Z$factor)
+  N <- sum(object@dimensions[["N"]])
+  # NOTE: By default concatenate all the groups
+  Z <- lapply(get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=F)[groups], 
+              function(z) z)
+  Z <- do.call(rbind, Z)
 
   # Remove constant factors 
-  tmp <- apply(Z, 2, var,na.rm=T)
+  tmp <- apply(Z, 2, var, na.rm=T)
   if (any(tmp==0)) {
     # message(paste0("Removing constant factors: ", paste(which(tmp==0), collapse="")))
     Z <- Z[,!tmp==0]
@@ -387,18 +392,18 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
   }
   
   # Set color
-  colorLegend <- T
+  color_legend <- T
   if (!is.null(color_by)) {
-    # It is the name of a covariate or a feature in the TrainData
+    # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
-      TrainData <- getTrainData(object)
-      featureNames <- lapply(TrainData(object), rownames)
-      if(color_by %in% Reduce(union,featureNames)) {
-        viewidx <- which(sapply(featureNames, function(vnm) color_by %in% vnm))
-        color_by <- TrainData[[viewidx]][color_by,]
-      } else if(class(object@InputData) == "MultiAssayExperiment"){
-        color_by <- getCovariates(object, color_by)
+      training_data <- get_training_data(object)
+      features_names <- lapply(training_data(object), rownames)
+      if(color_by %in% Reduce(union,features_names)) {
+        viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
+        color_by <- training_data[[viewidx]][color_by,]
+      } else if(class(object@input_data) == "MultiAssayExperiment"){
+        color_by <- get_covariates(object, color_by)
     }
     else stop("'color_by' was specified but it was not recognised, please read the documentation")
     # It is a vector of length N
@@ -410,22 +415,22 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
     }
   } else {
     color_by <- rep(TRUE,N)
-    colorLegend <- F
+    color_legend <- F
   }
 
   # Set shape
-  shapeLegend <- T
+  shape_legend <- T
   if (!is.null(shape_by)) {
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
-      TrainData <- getTrainData(object)
-      featureNames <- lapply(TrainData(object), rownames)
-      if (shape_by %in% Reduce(union,featureNames)) {
-        viewidx <- which(sapply(featureNames, function(vnm) shape_by %in% vnm))
-        shape_by <- TrainData[[viewidx]][shape_by,]
-      } else if(class(object@InputData) == "MultiAssayExperiment"){
-        shape_by <- getCovariates(object, shape_by)
+      training_data <- get_training_data(object)
+      features_names <- lapply(training_data(object), rownames)
+      if (shape_by %in% Reduce(union,features_names)) {
+        viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
+        shape_by <- training_data[[viewidx]][shape_by,]
+      } else if(class(object@input_data) == "MultiAssayExperiment"){
+        shape_by <- get_covariates(object, shape_by)
     }
     else stop("'shape_by' was specified but it was not recognised, please read the documentation")
     # It is a vector of length N
@@ -437,11 +442,11 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
     }
   } else {
     shape_by <- rep(TRUE,N)
-    shapeLegend <- F
+    shape_legend <- F
   }
 
   # Remove missing values
-  if(!showMissing) {
+  if(!show_missing) {
     Z <- Z[!is.na(color_by),]
     color_by <- color_by[!is.na(color_by)]
     shape_by <- shape_by[!is.na(shape_by)]
@@ -459,7 +464,7 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
   # Define title and legend of the plot
   main <- "" 
   p <- ggplot(df, aes_string(x=colnames(df)[1], y=colnames(df)[2], color="color_by", shape="shape_by")) + geom_point()
-  if (colorLegend | shapeLegend) { 
+  if (color_legend | shape_legend) { 
     p <- p +
       theme(
         legend.title=element_text(size=15, hjust=0.5, color="black"),
@@ -471,8 +476,8 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
     # If color_by is numeric, define the default gradient
     if (is.numeric(df$color_by)) { p <- p + scale_color_gradientn(colors=terrain.colors(10)) }
     
-    if (colorLegend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
-    if (shapeLegend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
+    if (color_legend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
+    if (shape_legend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
     # Extract the legend
     legend <- GGally::grab_legend(p)
   } else {
@@ -506,7 +511,7 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
 
 
 #' @title Plot correlation matrix between latent factors
-#' @name plotFactorCor
+#' @name plot_factor_cor
 #' @description Function to plot the correlation matrix between the latent factors.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param method a character indicating the type of correlation coefficient to be computed: pearson (default), kendall, or spearman.
@@ -520,16 +525,16 @@ plotFactorScatters <- function(object, factors = "all", showMissing=TRUE,
 #' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
 #' @importFrom corrplot corrplot
 #' @export
-plotFactorCor <- function(object, method = "pearson", ...) {
+plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # Fetch factors
-  Z <- getFactors(object)
+  Z <- get_factors(object)
   
   # Remove intercept
-  if(object@ModelOptions$LearnIntercept) Z <- lapply(Z, function(z) z[,-1])
+  if(object@model_options$learn_intercept) Z <- lapply(Z, function(z) z[,-1])
   
   # Compute and plot correlation
   r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))
@@ -539,33 +544,41 @@ plotFactorCor <- function(object, method = "pearson", ...) {
 }
 
 #' @title Plot the sparsity of factors
-#' @name plotSparsityFactors
+#' @name plot_sparsity_factors
 #' @description Plot the sparsity of the factors (computed as 1-<Theta_k> for factor k)
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param threshold_variance_explained : do not plot the factors explaining less of the variance explained than the threshold for the corresponding views
 #' @param show_variance_explained : indicate the variance explained by each of the factor in each view 
 #' @details This method enables to visualize simultaneously the factors that are active in the different views (with the use of the threshold)
-#' and their sparsity level. A sparse factor could be biologically meaningfull, while a dense one is probably a technical source of variability...
+#' and their sparsity level. A sparse factor could be biologically meaningful, while a dense one is probably a technical source of variability.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plotSparsityFactors <- function(object, threshold_variance_explained = 0.01, show_variance_explained = T) 
-{
-  factors = factorNames(object)
-  views = viewNames(object)
-  factor_val = rep.int(factorNames(object),length(views))
-  view_val = c()
-  theta_val = c()
-  var_val = c()
-  for (view in views){
-    view_val <- c(view_val,rep.int(view,length(factors)))
-    theta_val <- c(theta_val,object@Expectations$ThetaW[[view]])
-    var_val <- c(var_val,calculateVarianceExplained(object)$R2PerFactor[,view])
+plot_sparsity_factors <- function(object, threshold_variance_explained = 0.01, show_variance_explained = TRUE) {
+  
+  factors    <- factors_names(object)
+  views      <- views_names(object)
+  groups     <- groups_names(object)
+  factor_val <- rep(factors_names(object), length(views) + length(groups))
+
+  view_val  <- c()
+  group_val <- c()
+  theta_val <- c()
+  var_val   <- c()
+  
+  for (view in views) {
+    for (group in groups) {
+      view_val  <- c(view_val, rep(view, length(factors)))
+      group_val <- c(group_val, rep(group, length(factors)))
+      theta_val <- c(theta_val, object@expectations$ThetaW[[view]][1,])
+      var_val   <- c(var_val, calculate_variance_explained(object)$r2_per_factor[[group]][,view])
+    }
   }
-  d = data.frame(factor_val,view_val,1-theta_val,var_val)
-  colnames(d) = c("factor","view","sparsity","variance_explained")
-  d = d[d$variance_explained>threshold_variance_explained,]
-  if (show_variance_explained){
+  
+  d <- data.frame(factor_val, view_val, group_val, 1-theta_val, var_val)
+  colnames(d) <- c("factor", "view", "group", "sparsity", "variance_explained")
+  d <- d[d$variance_explained > threshold_variance_explained,]
+  if (show_variance_explained) {
     p = ggplot(d, aes(x=factor, y=sparsity, fill=view, alpha=variance_explained)) +
       geom_bar(position="dodge", stat="identity", aes(alpha=variance_explained))
   }
@@ -573,6 +586,7 @@ plotSparsityFactors <- function(object, threshold_variance_explained = 0.01, sho
     p = ggplot(d, aes(x=factor, y=sparsity, fill=view)) +
       geom_bar(position="dodge", stat="identity") 
   }
+  
   return(p)
 }
 

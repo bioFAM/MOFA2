@@ -19,7 +19,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = """
+        banner = r"""
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -517,6 +517,8 @@ class entry_sfa(entry_point):
                          view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
 
+'''
+
 
 if __name__ == '__main__':
     ent = entry_point()
@@ -531,7 +533,7 @@ if __name__ == '__main__':
     # lik = ["gaussian", "gaussian"]
     lik = ["gaussian"]
 
-    outfile ="/tmp/test.hdf5"
+    outfile ="tmp/test.hdf5"
 
     ent.set_data_options(lik, center_features=True, center_features_per_group=False,
     scale_features=False, scale_views=False)
@@ -543,7 +545,7 @@ if __name__ == '__main__':
     ent.save(outfile)
     # ent.get_df('Y')
 
-
+'''
 
     # # from biofam.run.entry_point import entry_point
     # file = "/Users/ricard/Downloads/test_biofam/data.txt"
