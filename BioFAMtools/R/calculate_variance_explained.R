@@ -16,7 +16,7 @@
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", 
-                                         include_intercept = TRUE, only = NULL, ...) {
+                                         include_intercept = TRUE, only = NULL, flatten = FALSE, ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -31,7 +31,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   views  <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
   
-  if (is.null(only)) {
+  if (is.null(only) & flatten) {
     if (length(groups) == 1) {
       only <- "views"
     } else if (length(views) == 1) {
@@ -290,7 +290,7 @@ plot_variance_explained <- function(object, views = "all", groups = "all", only 
   }
 
   # Calculate Variance Explained
-  r2_list <- calculate_variance_explained(object, views = views, groups = groups, only = only, ...)
+  r2_list <- calculate_variance_explained(object, views = views, groups = groups, only = only, flatten = TRUE, ...)
   
   if (is.null(only)) {
 
