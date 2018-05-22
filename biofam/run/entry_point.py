@@ -359,7 +359,7 @@ class entry_point(object):
         """ Save the model in an hdf5 file """
 
         if self.train_opts["verbose"]:
-            print("Saving model in %s...\n" % self.data_opts['output_file'])
+            print("Saving model in %s...\n" % outfile)
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
 
