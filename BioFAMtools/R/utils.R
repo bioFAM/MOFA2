@@ -144,7 +144,6 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
   
   # Identify factors unique to a single view by calculating relative R2 per factor
   r2 <- calculate_variance_explained(object, views = views, groups = groups, factors = factors)$r2_per_factor
-  browser()
   unique_factors <- unique(unlist(lapply(groups, function(p) names(which(rowSums(r2[[p]]>=r2_threshold)==1)) )))
   
   # Mask samples that are unique in the unique factors
