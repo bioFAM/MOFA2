@@ -171,7 +171,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
   # Load training options
   if (length(object@training_options) == 0) {
     tryCatch( {
-      object@training_options <- as.list(h5read(file, 'training_options', read.attributes=T))
+      object@training_options <- as.list(h5read(file, 'training_opts', read.attributes=T))
     }, error = function(x) { print("Training opts not found, not loading it...") })
   }    
 
