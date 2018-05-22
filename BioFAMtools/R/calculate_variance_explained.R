@@ -187,8 +187,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     }
     
     names(Y) <- lnames
-    names(Ypred_s) <- views
-    names(Ypred_sk) <- views
+    names(Ypred_s) <- lnames
+    names(Ypred_sk) <- lnames
 
     # Calulcate feature-wise means as null model
     feature_mean <- lapply(lnames, function(s) {

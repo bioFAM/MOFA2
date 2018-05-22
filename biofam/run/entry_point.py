@@ -206,7 +206,7 @@ class entry_point(object):
 
 
     def set_model_options(self,factors, likelihoods,
-    	sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features',
+    	sl_z=False, sl_w=False, ard_z=False, ard_w=False, noise_on='features',
     	learnTheta=True, learn_intercept=False):
         """ Set model options """
 
@@ -521,21 +521,20 @@ class entry_sfa(entry_point):
                          view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
 if __name__ == '__main__':
-    ent = entry_point()
-    infiles = ["../run/test_data/500_0.txt", "../run/test_data/500_1.txt", "../run/test_data/500_2.txt", "../run/test_data/500_2.txt" ]
 
-    views =  ["view_A", "view_A", "view_B", "view_B"]
+    ent = entry_point()
+
+    infiles = ["../run/test_data/500_0.txt", "../run/test_data/500_1.txt", "../run/test_data/500_2.txt", "../run/test_data/500_2.txt" ]
+    outfile = "tmp/test.hdf5"
+    lik = ["gaussian", "gaussian"]
+    views = ["view_1", "view_1", "view_2", "view_2"]
     groups = ["group_A", "group_B", "group_A", "group_B"]
 
-    lik = ["gaussian", "gaussian"]
-
-    outfile ="tmp/test.hdf5"
-
-    ent.set_data_options(lik, center_features=True, center_features_per_group=False,
-    scale_features=False, scale_views=False)
+    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(sl_z=False, sl_w=True, ard_z=True, ard_w=True, noise_on='features', factors=10, likelihoods=lik)
     ent.set_train_options(verbose=True, seed=2018, iter=10, tolerance=0.01, dropR2=0.0, startSparsity=0)
+
     ent.build()
     ent.run()
     ent.save(outfile)
