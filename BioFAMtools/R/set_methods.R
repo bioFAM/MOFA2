@@ -129,6 +129,8 @@
 # Entity is features, samples, or factors
 .set_parameters_names <- function(object, entity, values, views="all", groups="all") {
 
+  if (FALSE){
+    
   stopifnot(entity %in% c("features", "samples", "factors"))
 
   # Define what entities should be updated for which nodes
@@ -218,6 +220,8 @@
         print(paste0("DEV :: NOTE: There are no parameters for the node ", node))
       }
     }
+  }
+  
   }
 
   object
