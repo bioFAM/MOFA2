@@ -570,7 +570,7 @@ plot_sparsity_factors <- function(object, threshold_variance_explained = 0.01, s
     for (group in groups) {
       view_val  <- c(view_val, rep(view, length(factors)))
       group_val <- c(group_val, rep(group, length(factors)))
-      theta_val <- c(theta_val, object@expectations$ThetaW[[view]][1,])
+      theta_val <- c(theta_val, object@expectations$ThetaW[[view]])
       var_val   <- c(var_val, calculate_variance_explained(object)$r2_per_factor[[group]][,view])
     }
   }
