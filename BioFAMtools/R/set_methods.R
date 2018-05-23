@@ -129,7 +129,7 @@
 # Entity is features, samples, or factors
 .set_parameters_names <- function(object, entity, values, views="all", groups="all") {
 
-  if (FALSE){
+  #if (FALSE){
     
   stopifnot(entity %in% c("features", "samples", "factors"))
 
@@ -222,7 +222,7 @@
     }
   }
   
-  }
+  #}
 
   object
 }
