@@ -124,147 +124,109 @@
   object
 }
 
-# .set_names <- function(object, values, dimensionality, views="all", groups="all") {
-#   nodes <- names(object@expectations)
 
-#   if (paste0(views, collapse = "") == "all") { 
-#     views <- names(object@Dimensions$D)
-#   } else {
-#     stopifnot(all(views  %in% names(object@Dimensions$D)))
-#   } 
+# (Hidden) General function to set names
+# Entity is features, samples, or factors
+.set_parameters_names <- function(object, entity, values, views="all", groups="all") {
 
-#   if (paste0(groups, collapse = "") == "all") {
-#     groups <- names(object@Dimensions$N)
-#   } else {
-#     stopifnot(all(groups %in% names(object@Dimensions$N)))
-#   }
-  
-#   # Loop over training data
-#   for (m in views) {
-#     for (h in groups) {
-#       if (nrow(object@training_data[[m]][[h]]) == dimensionality)
-#         rownames(object@training_data[[m]][[h]]) <- values
-#       if (ncol(object@training_data[[m]][[h]]) == dimensionality)
-#         colnames(object@training_data[[m]][[h]]) <- values
-#     }
-#   }
-  
-#   # Loop over nodes
-#   for (node in nodes) {
+  if (FALSE){
     
+  stopifnot(entity %in% c("features", "samples", "factors"))
 
-#     if (node %in% c("Y")) {
+  # Define what entities should be updated for which nodes
+  # Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
+  node_lists_options <- list(features = list(nodes = c("W"), axes = c(1)),
+                             samples  = list(nodes = c("Z"), axes = c(1)),
+                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0)))
 
-#       for (m in views) {
-#         for (h in groups) {
+  views  <- .check_and_get_views(object, views)
+  groups <- .check_and_get_views(object, groups)
 
-#           # Loop over expectations
-#           if (class(object@expectations[[node]][[m]][[h]]) == "matrix") {
-#             if (nrow(object@expectations[[node]][[m]][[h]]) == dimensionality)
-#               rownames(object@expectations[[node]][[m]][[h]]) <- values
-#             if (ncol(object@expectations[[node]][[m]][[h]]) == dimensionality)
-#               colnames(object@expectations[[node]][[m]][[h]]) <- values
-#           } else if (class(object@expectations[[node]][[m]][[h]]) == "array") {
-#             if (length(object@expectations[[node]][[m]][[h]]) == dimensionality)
-#               names(object@expectations[[node]][[m]][[h]]) <- values
-#           }
-          
-#           # Loop over parameters
-#           for (Parameter in attributes(object@Parameters[[node]][[m]][[h]])$names){
-            
-#             if (class(object@Parameters[[node]][[m]][[h]][[Parameter]]) == "matrix") {
-#               if (nrow(object@Parameters[[node]][[m]][[h]][[Parameter]]) == dimensionality)
-#                 rownames(object@Parameters[[node]][[m]][[h]][[Parameter]]) <- values
-#               if (ncol(object@Parameters[[node]][[m]][[h]][[Parameter]]) == dimensionality)
-#                 colnames(object@Parameters[[node]][[m]][[h]][[Parameter]]) <- values
-#             } else if (class(object@Parameters[[node]][[m]][[h]][[Parameter]]) %in% c("array",'list')) {
-#               if (length(object@Parameters[[node]][[m]][[h]][[Parameter]]) == dimensionality)
-#                 names(object@Parameters[[node]][[m]][[h]][[Parameter]]) <- values
-#             }
-            
-#           }
+  # Define the dimensionality of noise
+  # If not found in model_options, the default setting is 
+  # having a noise parameter per feature
+  if ('noise_on' %in% names(object@model_options)) {
+    if (object@model_options$noise_on == "samples") {
+      node_lists_options$samples$nodes <- c(node_lists_options$samples$nodes, "Tau")
+      node_lists_options$samples$axes  <- c(node_lists_options$samples$axes, 0)
+    } else {
+      node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
+      node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
+    }
+  } else {
+    node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
+    node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
+  }
 
-#         }
-#       }
-    
-#     # Multi-view nodes
-#     } else if (!(node %in% c("Z", "AlphaZ", "SigmaZ", "ThetaZ"))) {
-#     #if (node != "Z") {
-      
-#     # if (setequal(names(object@expectations[[node]]),views)) {
-      
-#       # Loop over views
-#       for (m in views) {
-        
-#         # Loop over expectations
-#         if (class(object@expectations[[node]][[m]]) == "matrix") {
-#           if (nrow(object@expectations[[node]][[m]]) == dimensionality)
-#             rownames(object@expectations[[node]][[m]]) <- values
-#           if (ncol(object@expectations[[node]][[m]]) == dimensionality)
-#             colnames(object@expectations[[node]][[m]]) <- values
-#         } else if (class(object@expectations[[node]][[m]]) == "array") {
-#           if (length(object@expectations[[node]][[m]]) == dimensionality)
-#             names(object@expectations[[node]][[m]]) <- values
-#         }
-        
-#         # Loop over parameters
-#         for (Parameter in attributes(object@Parameters[[node]][[m]])$names){
-          
-#           if (class(object@Parameters[[node]][[m]][[Parameter]]) == "matrix") {
-#             if (nrow(object@Parameters[[node]][[m]][[Parameter]]) == dimensionality)
-#               rownames(object@Parameters[[node]][[m]][[Parameter]]) <- values
-#             if (ncol(object@Parameters[[node]][[m]][[Parameter]]) == dimensionality)
-#               colnames(object@Parameters[[node]][[m]][[Parameter]]) <- values
-#           } else if (class(object@Parameters[[node]][[m]][[Parameter]]) %in% c("array",'list')) {
-#             if (length(object@Parameters[[node]][[m]][[Parameter]]) == dimensionality)
-#               names(object@Parameters[[node]][[m]][[Parameter]]) <- values
-#           }
-          
-#         }
-        
-#       }
-      
-#     # Single-view nodes
-#     } else {
-
-#       # Loop over groups
-#       for (h in groups) {
-        
-#         # Loop over expectations
-#         if (class(object@expectations[[node]][[h]]) == "matrix") {
-#           if (nrow(object@expectations[[node]][[h]]) == dimensionality)
-#             rownames(object@expectations[[node]][[h]]) <- values
-#           if (ncol(object@expectations[[node]][[h]]) == dimensionality)
-#             colnames(object@expectations[[node]][[h]]) <- values
-#         } else if (class(object@expectations[[node]][[h]]) == "array") {
-#           if (length(object@expectations[[node]][[h]]) == dimensionality)
-#             names(object@expectations[[node]][[h]]) <- values
-#         }
-        
-#         # Loop over parameters
-        
-#         for (Parameter in attributes(object@Parameters[[node]][[h]])$names){
-#           if (class(object@Parameters[[node]][[h]][[Parameter]]) == "matrix") {
-#             if (nrow(object@Parameters[[node]][[h]][[Parameter]]) == dimensionality)
-#               rownames(object@Parameters[[node]][[h]][[Parameter]]) <- values
-#             if (ncol(object@Parameters[[node]][[h]][[Parameter]]) == dimensionality)
-#               colnames(object@Parameters[[node]][[h]][[Parameter]]) <- values
-#           } else if (class(object@Parameters[[node]][[h]][[Parameter]]) %in% c("array", 'list')) {
-#             if (length(object@Parameters[[node]][[h]][[Parameter]]) == dimensionality){
-#               names(object@Parameters[[node]][[h]][[Parameter]]) <- values
-#             }
-#           }
-#         }
-
-#       }
-      
-#     }
-    
-#   }
+  # Iterate over node list depending on the entity
+  nodes <- node_lists_options[[entity]]$nodes
+  axes  <- node_lists_options[[entity]]$axes
+  for (i in 1:length(nodes)) {
+    node <- nodes[i]
+    axis <- axes[i]
+    # Update the nodes for which parameters do exist
+    if (node %in% names(object@parameters)) {
+      # Update nodes with one level of nestedness (views or groups)
+      if (any(node %in% object@model_options$nodes$multiview_node, 
+              node %in% object@model_options$nodes$multigroup_nodes)) {
+        sub_dim <- length(object@parameters[[node]])
+        for (ind in 1:sub_dim) {
+          # No nestedness in values if factors
+          vals <- if (entity == "factors") values else values[[ind]]
+          dim  <- length(vals)
+          for (par in names(object@parameters[[node]][[ind]])) {
+            # Set names for rows
+            if (axis == 1) {
+              stopifnot(nrow(object@parameters[[node]][[ind]][[par]]) == dim)
+              rownames(object@parameters[[node]][[ind]][[par]]) <- vals
+            # ... or set names for columns
+            } else if (axis == 2) {
+              stopifnot(ncol(object@parameters[[node]][[ind]][[par]]) == dim)
+              colnames(object@parameters[[node]][[ind]][[par]]) <- vals
+            # ... or set vector names
+            } else {
+              stopifnot(length(object@parameters[[node]][[ind]][[par]]) == dim)
+              names(object@parameters[[node]][[ind]][[par]]) <- vals
+            }
+          }
+        }
+      # Update nodes with two levels of nestedness (e.g. Y or Tau)
+      } else if (node %in% object@model_options$nodes$twodim_nodes) {
+        sub_dim <- length(object@parameters[[node]])
+        for (ind in 1:sub_dim) {
+          sub_dim2 <- length(object@parameters[[node]][[ind]])
+          for (ind2 in 1:sub_dim2) {
+            # Infer which index to use to iterate over a provided list of values
+            deduced_ind <- if (entity == "features") ind else ind2  # since ind corresponds to views (groups of features)
+            dim <- length(values[[deduced_ind]])
+            for (par in names(object@parameters[[node]][[ind]][[ind2]])) {
+              # Set names for rows
+              if (axis == 1) {
+                stopifnot(nrow(object@parameters[[node]][[ind]][[ind2]][[par]]) == dim)
+                rownames(object@parameters[[node]][[ind]][[ind2]][[par]]) <- values[[deduced_ind]]
+              # ... or set names for columns
+              } else if (axis == 2) {
+                stopifnot(ncol(object@parameters[[node]][[ind]][[ind2]][[par]]) == dim)
+                colnames(object@parameters[[node]][[ind]][[ind2]][[par]]) <- values[[deduced_ind]]
+              # ... or set vector names
+              } else {
+                stopifnot(length(object@parameters[[node]][[ind]][[par]]) == dim)
+                names(object@parameters[[node]][[ind]][[par]]) <- vals
+              }
+            }
+          }
+        }
+      } else {
+        print(paste0("DEV :: NOTE: There are no parameters for the node ", node))
+      }
+    }
+  }
   
-  
-#   return(object)
-# }
+  }
+
+  object
+}
+
 
 ###################################
 ## Set and retrieve factor names ##
@@ -297,6 +259,7 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
     #   stop("Factor names do not match the number of columns in the latent variable matrix")
  
     object <- .set_expectations_names(object, entity = 'factors', value)
+    object <- .set_parameters_names(object, entity = 'factors', value)
  
     object
   })
@@ -335,6 +298,7 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 
     object@data_options$samples$names <- value
     object <- .set_expectations_names(object, entity = 'samples', value)
+    object <- .set_parameters_names(object, entity = 'samples', value)
     object <- .set_data_names(object, entity = 'samples', value)
 
     object
@@ -372,6 +336,7 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
     
     object@data_options$features$names <- value
     object <- .set_expectations_names(object, entity = 'features', value)
+    object <- .set_parameters_names(object, entity = 'features', value)
     object <- .set_data_names(object, entity = 'features', value)
     
     return(object)

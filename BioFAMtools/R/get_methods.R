@@ -363,7 +363,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
 #' @export
 get_elbo <- function(object) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
-  return(tail(object@TrainStats$elbo, 1))
+  return(tail(object@training_stats$elbo, 1))
 }
 
 get_groups_annotation <- function(object){

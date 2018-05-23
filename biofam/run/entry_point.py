@@ -3,6 +3,7 @@ import pandas as pd
 import scipy as s
 import sys
 from time import sleep
+from time import time
 import pandas as pd
 
 from biofam.build_model.build_model import *
@@ -197,8 +198,11 @@ class entry_point(object):
             self.train_opts['schedule'] = schedule
 
         # Seed
-        if seed is None: seed = 0
-        self.train_opts['seed'] = int(seed)
+        if seed is None or seed == 0:  # Seed for the random number generator
+            self.train_opts['seed'] = int(round(time() * 1000) % 1e6)
+        else:
+            self.train_opts['seed'] = seed
+        s.random.seed(self.train_opts['seed'])
 
 
     def set_model_options(self,factors, likelihoods,
@@ -350,12 +354,11 @@ class entry_point(object):
 	    # Train the model
         train_model(self.model, self.train_opts)
 
-
     def save(self, outfile):
         """ Save the model in an hdf5 file """
 
         if self.train_opts["verbose"]:
-            print("Saving model in %s...\n" % self.data_opts['output_file'])
+            print("Saving model in %s...\n" % outfile)
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
 
@@ -370,6 +373,7 @@ class entry_point(object):
 	    	group_names=self.data_opts['group_names'],
             sample_groups=self.data_opts['sample_groups']
         )
+
 
 
     def get_df(self, node):
@@ -540,8 +544,7 @@ if __name__ == '__main__':
 
     outfile = dir+"test_no_sl.hdf5"
 
-    ent.set_data_options(lik, center_features=True, center_features_per_group=False,
-    scale_features=False, scale_views=False)
+    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=False, sl_w=False, ard_w=True, factors=10, likelihoods=lik)
     ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
@@ -549,7 +552,6 @@ if __name__ == '__main__':
     ent.run()
     ent.save(outfile)
     # ent.get_df('Y')
-
 
 
     # # from biofam.run.entry_point import entry_point
