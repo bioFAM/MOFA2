@@ -558,25 +558,20 @@ plot_sparsity_factors <- function(object, threshold_variance_explained = 0.01, s
   
   factors    <- factors_names(object)
   views      <- views_names(object)
-  groups     <- groups_names(object)
-  factor_val <- rep(factors_names(object), length(views) + length(groups))
+  factor_val <- rep(factors_names(object), length(views))
 
   view_val  <- c()
-  group_val <- c()
   theta_val <- c()
   var_val   <- c()
   
   for (view in views) {
-    for (group in groups) {
-      view_val  <- c(view_val, rep(view, length(factors)))
-      group_val <- c(group_val, rep(group, length(factors)))
-      theta_val <- c(theta_val, object@expectations$ThetaW[[view]])
-      var_val   <- c(var_val, calculate_variance_explained(object)$r2_per_factor[[group]][,view])
-    }
+    view_val  <- c(view_val, rep(view, length(factors)))
+    theta_val <- c(theta_val, object@expectations$ThetaW[[view]])
+    var_val   <- c(var_val, calculate_variance_explained(object,only="views")$r2_per_factor[,view])
   }
-  
-  d <- data.frame(factor_val, view_val, group_val, 1-theta_val, var_val)
-  colnames(d) <- c("factor", "view", "group", "sparsity", "variance_explained")
+
+  d <- data.frame(factor_val, view_val, 1-theta_val, var_val)
+  colnames(d) <- c("factor", "view", "sparsity", "variance_explained")
   d <- d[d$variance_explained > threshold_variance_explained,]
   if (show_variance_explained) {
     p = ggplot(d, aes(x=factor, y=sparsity, fill=view, alpha=variance_explained)) +
