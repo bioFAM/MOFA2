@@ -365,29 +365,34 @@ setMethod("views_names", signature(object="BioFAModel"),
 #' @export
 setMethod("views_names<-", signature(object="BioFAModel", value="character"), 
   function(object, value) {
-    if (!methods::.hasSlot(object, "training_data") | length(object@training_data) == 0)
-      stop("Before assigning view names you have to assign the training data")
+    # if (!methods::.hasSlot(object, "training_data") | length(object@training_data) == 0)
+    #   stop("Before assigning view names you have to assign the training data")
     if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
       if (length(value) != object@dimensions["M"])
       stop("Length of view names does not match the dimensionality of the model")
-    if (length(value) != length(object@training_data))
-      stop("View names do not match the number of views in the training data")
+    # if (length(value) != length(object@training_data))
+    #   stop("View names do not match the number of views in the training data")
 
-
+    # Set view names in data options
     object@data_options$features$views <- value
-
+  
+    # Set view names in expectations
     for (node in names(object@expectations)) {
       if (node %in% object@model_options$nodes$multiview_nodes |
           node %in% object@model_options$nodes$twodim_nodes) {
-        if (class(object@expectations[[node]]) == "list" & 
-            length(object@expectations[[node]]) == object@dimensions["M"]) {
+        if (class(object@expectations[[node]]) == "list" & length(object@expectations[[node]]) == object@dimensions["M"]) {
           names(object@expectations[[node]]) <- value 
         }
       }
     }
     
-    names(object@training_data) <- value
-    names(object@dimensions$D)  <- value
+    # Set view names in the raining data
+    if (length(object@training_data)>0) {
+      names(object@training_data) <- value
+    }
+    
+    # Set view names in the dimensionalities
+    names(object@dimensions$D) <- value
     
     return(object)
   })
@@ -414,16 +419,18 @@ setMethod("groups_names", signature(object="BioFAModel"),
 #' @export
 setMethod("groups_names<-", signature(object="BioFAModel", value="character"), 
   function(object, value) {
-    if (!methods::.hasSlot(object, "training_data") | length(object@training_data) == 0)
-      stop("Before assigning group names you have to assign the training data")
+    # if (!methods::.hasSlot(object, "training_data") | length(object@training_data) == 0)
+    #   stop("Before assigning group names you have to assign the training data")
     if (methods::.hasSlot(object,"dimensions") & length(object@dimensions) != 0)
       if(length(value) != object@dimensions["P"])
         stop("Length of group names does not match the dimensionality of the model")
-    if (length(value) != length(object@training_data[[1]]))
-      stop("Group names do not match the number of groups in the training data")
-
+    # if (length(value) != length(object@training_data[[1]]))
+    #   stop("Group names do not match the number of groups in the training data")
+    
+    # Set sample group names in data options
     object@data_options$samples$groups <- value
     
+    # Set sample group names in expectations
     for (node in object@model_options$nodes$multigroup_nodes) {
       if (node %in% names(object@expectations)) {
         if (class(object@expectations[[node]]) == "list" & 
@@ -443,9 +450,13 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
       }
     }
     
-    for (m in names(object@training_data)) {
-      names(object@training_data[[m]]) <- value
+    # Set sample group names in training data
+    if (length(object@training_data)>0) {
+      for (m in names(object@training_data))
+        names(object@training_data[[m]]) <- value
     }
+    
+    # Set sample group names in dimensionalities
     names(object@dimensions$N) <- value
     
     return(object)
@@ -470,9 +481,10 @@ setMethod("input_data", signature(object="BioFAModel"),
 #' @name input_data
 #' @param object a \code{\link{BioFAModel}} object.
 #' @rdname input_data
-#' @aliases inputData<-
+#' @aliases input_data<-
 #' @export
-setMethod(".input_data<-", signature(object="BioFAModel", value="MultiAssayExperiment"),
+# setMethod(".input_data<-", signature(object="BioFAModel", value="MultiAssayExperiment"),
+setMethod(".input_data<-", signature(object="BioFAModel", value="data.frame"),
   function(object,value) {
     object@input_data <- value
     object
@@ -498,11 +510,11 @@ setMethod(".training_data<-", signature(object="BioFAModel", value="list"),
     # N <- unique(sapply(value,nrow))
     # if (length(N) > 1) 
     #   stop("Views do not have the same number of samples (rows)")
-    # if (methods::.hasSlot(object,"Dimensions")) {
-    #   if (object@Dimensions["M"] != length(value))
-    #     if (object@Dimensions["N"] != N)
+    # if (methods::.hasSlot(object,"dimensions")) {
+    #   if (object@dimensions["M"] != length(value))
+    #     if (object@dimensions["N"] != N)
     #       stop("Number of samples in the data do not match the specified dimensionality of the model")
-    #   if (all(object@Dimensions["D"] != sapply(value,ncol)))
+    #   if (all(object@dimensions["D"] != sapply(value,ncol)))
     #     stop("Number of features in the data do not match the specified dimensionality of the model")
     # }
     object@training_data <- value

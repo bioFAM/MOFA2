@@ -4,92 +4,71 @@
 #######################################################
 
 #' @title prepare a BioFAModel for training
-#' @name prepareBioFAM
+#' @name prepare_biofam
 #' @description Function to prepare a \code{\link{BioFAModel}} object for training. 
 #' It requires defining data, model and training options.
 #' @param object an untrained \code{\link{BioFAModel}}
-#' @param DirOptions list with Input/Output options, which must contain a 'data_dir' element where temporary text files will be stored 
+#' @param dir_options list with Input/Output options, which must contain a 'data_dir' element where temporary text files will be stored 
 #' and an 'outFile' with hdf5 extension where the final model will be stored.
-#' @param DataOptions list of DataOptions (see \code{\link{getDefaultDataOptions}} details). 
+#' @param data_options list of data_options (see \code{\link{get_default_data_options}} details). 
 #' If NULL, default data options are used.
-#' @param ModelOptions list of ModelOptions (see \code{\link{getDefaultModelOptions}} for details). 
+#' @param model_options list of model options (see \code{\link{get_default_model_options}} for details). 
 #' If NULL, default model options are used.
-#' @param TrainOptions list of TrainOptions (see \code{\link{getDefaultTrainOptions}} for details). 
+#' @param training_options list of training options (see \code{\link{get_default_training_options}} for details). 
 #' If NULL, default training options are used.
 #' @return Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
 #' @export
-#' @examples
-#' # Generate a random data set
-#' data <- list("gaussian_view"=matrix(rnorm(100,mean=0,sd=1),10,10), "poisson_view"=matrix(rpois(100, lambda=1),10,10))
-#' # Create a BioFAM object
-#' BioFAMobject <- createBioFAM(data)
-#' # Define I/O options
-#' DirOptions <- list("data_dir" = tempdir(), "output_file" = tempfile())
-#' # Define Data Options
-#' DataOptions <- getDefaultDataOptions()
-#' # Define Model Options
-#' ModelOptions <- getDefaultModelOptions(BioFAMobject)
-#' ModelOptions$likelihood <- ("gaussian", "poisson")
-#' ModelOptions <- getDefaultModelOptions(BioFAMobject)
-#' # Define Training Options
-#' TrainOptions <- getDefaultTrainOptions()
-#' TrainOptions$maxiter <- 100
-#' # Prepare BioFAM object for training
-#' BioFAMobject <- prepareBioFAM(BioFAMobject, DirOptions, DataOptions, ModelOptions, TrainOptions)
-#' # train a BioFAModel
-#' BioFAMobject <- runBioFAM(BioFAMobject, DirOptions)
-prepareBioFAM <- function(object, DirOptions, DataOptions = NULL, ModelOptions = NULL, TrainOptions = NULL) {
+prepare_biofam <- function(object, dir_options, data_options = NULL, model_options = NULL, training_options = NULL) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Create temporary folder to store data
-  dir.create(DirOptions$data_dir, showWarnings = FALSE)
+  # dir.create(dir_options$data_dir, showWarnings = FALSE)
   
   # Get data options
   message("Checking data options...")
-  if (is.null(DataOptions)) {
+  if (is.null(data_options)) {
     message("No data options specified, using default...")
-    object@DataOptions <- getDefaultDataOptions()
+    object@data_options <- get_default_data_options()
   } else {
-    if (!is(TrainOptions,"list") & !all(names(TrainOptions) == names(getDefaultTrainOptions())))
-      stop("DataOptions are incorrectly specified, please read the documentation in getDefaultDataOptions")
-    object@DataOptions <- DataOptions
+    if (!is(training_options,"list") & !all(names(training_options) == names(get_default_training_options())))
+      stop("data_options are incorrectly specified, please read the documentation in get_default_data_options")
+    object@data_options <- data_options
   }
   
   # Get training options
   message("Checking training options...")
-  if (is.null(TrainOptions)) {
+  if (is.null(training_options)) {
     message("No training options specified, using default...")
-    object@TrainOptions <- getDefaultTrainOptions()
+    object@training_options <- get_default_training_options()
   } else {
-    if(!is(TrainOptions,"list") & !all(names(TrainOptions) == names(getDefaultTrainOptions())))
-      stop("TrainOptions are incorrectly specified, please read the documentation in getDefaultTrainOptions")
-    object@TrainOptions <- TrainOptions
+    if(!is(training_options,"list") & !all(names(training_options) == names(get_default_training_options())))
+      stop("training_options are incorrectly specified, please read the documentation in get_default_training_options")
+    object@training_options <- training_options
   }
   
   # Get model options
   message("Checking model options...")
-  if(is.null(ModelOptions)) {
+  if(is.null(model_options)) {
     message("No model options specified, using default...")
-    object@ModelOptions <- getDefaultModelOptions(object)
+    object@model_options <- get_default_model_options(object)
   } else {
-    # (To-do) Check that ModelOptions is correct
-    if(!is(ModelOptions,"list") & !all(names(ModelOptions) == names(getDefaultModelOptions(object))))
-      stop("ModelOptions are incorrectly specified, please read the documentation in getDefaultModelOptions")
-    object@ModelOptions <- ModelOptions
+    if(!is(model_options,"list") & !all(names(model_options) == names(get_default_model_options(object))))
+      stop("model_options are incorrectly specified, please read the documentation in get_default_model_options")
+    object@model_options <- model_options
   }
   
   # Store views as matrices in .txt files
-  message(sprintf("Storing input views in %s...", DirOptions$dataDir))
-  for(view in viewNames(object)) {
-    write.table(t(object@TrainData[[view]]), file=file.path(DirOptions$dataDir, paste0(view,".txt")),
-                sep="\t", row.names=T, col.names=T, quote=F)
-  }
+  # message(sprintf("Storing input views in %s...", dir_options$data_dir))
+  # for(view in viewNames(object)) {
+  #   write.table(t(object@training_data[[view]]), file=file.path(dir_options$data_dir, paste0(view,".txt")),
+  #               sep="\t", row.names=T, col.names=T, quote=F)
+  # }
   
   # If output already exists, remove it
-  if (file.exists(DirOptions$output_file))
-    file.remove(DirOptions$output_file)
+  if (file.exists(dir_options$outfile))
+    file.remove(dir_options$outfile)
   
   return(object)
 }
@@ -97,7 +76,7 @@ prepareBioFAM <- function(object, DirOptions, DataOptions = NULL, ModelOptions =
 
 
 #' @title Get default training options
-#' @name getDefaultTrainOptions
+#' @name get_default_training_options
 #' @description Function to obtain the default training options.
 #' @details The training options are the following: \cr
 #' \itemize{
@@ -114,8 +93,8 @@ prepareBioFAM <- function(object, DirOptions, DataOptions = NULL, ModelOptions =
 #' }
 #' @return Returns a list with default training options
 #' @export
-getDefaultTrainOptions <- function() {
-  TrainOptions <- list(
+get_default_training_options <- function() {
+  training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
     tolerance = 0.1,               # (numeric) Convergence threshold based on change in the evidence lower bound
     learn_factors = TRUE,          # (logical) learn the number of factors?
@@ -123,14 +102,14 @@ getDefaultTrainOptions <- function() {
     verbose = FALSE,               # (logical) verbosity?
     seed = NULL                    # (numeric or NULL) random seed
   )
-  return(TrainOptions)
+  return(training_options)
 }
 
 
 
 
 #' @title Get default data options
-#' @name getDefaultDataOptions
+#' @name get_default_data_options
 #' @description Function to obtain the default data options.
 #' @details The data options are the following: \cr
 #' \itemize{
@@ -140,17 +119,18 @@ getDefaultTrainOptions <- function() {
 #' }
 #' @return Returns a list with the default data options, which have to be passed as an argument to \code{\link{prepareMOFA}}
 #' @export
-getDefaultDataOptions <- function() {
-  DataOptions <- list(
-    center_features = TRUE,   # (logical) Center features to zero mean (only applies to continuous data)
-    scale_views = FALSE      # (logical) Scale views to unit variance (only applies to continuous data)
+get_default_data_options <- function() {
+  data_options <- list(
+    center_features = TRUE,  # (logical) Center features to zero mean (only applies to continuous data)
+    scale_views = FALSE,      # (logical) Scale views to unit variance (only applies to continuous data)
+    center_features_per_group = FALSE
   )
-  return(DataOptions)
+  return(data_options)
 }
 
 #' @title Get default model options
-#' @name getDefaultModelOptions
-#' @param object an untrained \code{\link{MOFAmodel}} object
+#' @name get_default_model_options
+#' @param object an untrained \code{\link{BioFAModel}} object
 #' @description Function to obtain the default model options.
 #' @details The model options are the following: \cr
 #' \itemize{
@@ -164,23 +144,23 @@ getDefaultDataOptions <- function() {
 #' }
 #' @return Returns a list with the default model options, which have to be passed as an argument to \code{\link{prepareMOFA}}
 #' @export
-getDefaultModelOptions <- function(object) {
+get_default_model_options <- function(object) {
   
   # Sanity checks
-  if (!is(object, "MOFAmodel")) stop("'object' has to be an instance of MOFAmodel")
-  if (!.hasSlot(object,"Dimensions") | length(object@Dimensions) == 0) stop("Dimensions of object need to be defined before getting ModelOptions")
-  if (!.hasSlot(object,"InputData")) stop("InputData slot needs to be specified before getting ModelOptions")
-  if (!.hasSlot(object,"TrainData")) stop("TrainData slot needs to be specified before getting ModelOptions")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+  if (!.hasSlot(object,"dimensions") | length(object@dimensions) == 0) stop("dimensions of object need to be defined before getting the model options")
+  if (!.hasSlot(object,"input_data")) stop("input_data slot needs to be specified before getting the model options")
+  if (!.hasSlot(object,"training_data")) stop("training_data slot needs to be specified before getting the model options")
   
-  # Guess likelihood type
-  likelihood <- .inferLikelihoods(object)
+  # Guess likelihoods from the data
+  likelihood <- .infer_likelihoods(object)
   
   # Define default model options
-  ModelOptions <- list(
+  model_options <- list(
     likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
     learn_intercept = TRUE,     # (logical) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
     num_factors = 25            # (numeric) initial number of latent factors
   )
   
-  return(ModelOptions)
+  return(model_options)
 }

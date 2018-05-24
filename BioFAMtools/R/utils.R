@@ -1,6 +1,6 @@
 
-infer_likelihoods <- function(object) {
-  likelihood <- rep(x="gaussian", times=object@Dimensions$M)
+.infer_likelihoods <- function(object) {
+  likelihood <- rep(x="gaussian", times=object@dimensions$M)
   names(likelihood) <- views_names(object)
   
   for (view in views_names(object)) {
