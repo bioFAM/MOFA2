@@ -376,7 +376,7 @@ def saveParameters(model, hdf5, view_names=None, group_names=None, sample_groups
                         if len(df.shape) > 1:
                             df = df[group_ix,:]
                     samp_subgrp.create_dataset("%s" % (param_name), data=df.T)
-                    
+
     pass
 
 def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_groups=None, only_first_moments=True):
@@ -418,10 +418,10 @@ def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_grou
                 view_subgrp = node_subgrp.create_group(tmp)
 
                 # Loop through the expectations
-                
+
                 if node == "SW":
                     expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
-                if only_first_moments: expectations[m] = {'E':expectations[m]["E"]} 
+                if only_first_moments: expectations[m] = {'E':expectations[m]["E"]}
 
                 if expectations[m] is not None:
 
@@ -703,10 +703,10 @@ def saveTrainedModel(model, outfile,
 
     hdf5 = h5py.File(outfile,'w')
     saveExpectations(model, hdf5, view_names, group_names, sample_groups)
-    saveParameters(model, hdf5, view_names, group_names, sample_groups)
+    # saveParameters(model, hdf5, view_names, group_names, sample_groups)
     saveModelOpts(model_opts, hdf5)
     saveTrainingData(model, hdf5, view_names, group_names, sample_groups, sample_names, feature_names)
-    saveTrainingStats(model, hdf5)
+    #saveTrainingStats(model, hdf5)
     saveTrainingOpts(train_opts, hdf5)
 
     hdf5.close()

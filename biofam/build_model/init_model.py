@@ -135,7 +135,7 @@ class initModel(object):
             precompute_pcovinv=precompute_pcovinv
         )
 
-    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0., qvar_T0=1.,
+    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1='random', qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
         """Method to initialise sparse factors with a (reparametrised) spike and slab prior
         PARAMETERS
@@ -189,7 +189,7 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean=0., pcov=1., qmean="random", qvar=1.,
+    def initW(self, pmean=0., pcov=1., qmean=0, qvar=1.,
         qE=None, qE2=None, covariates=None,
         scale_covariates=None, precompute_pcovinv=None):
         """Method to initialise the weights

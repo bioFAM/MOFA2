@@ -5,7 +5,7 @@
 
 
 #' @title Plot the robustness of the latent factors across diferent trials
-#' @name compareFactors
+#' @name compare_factors
 #' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
 #' their latent factors. The correlation is calculated only on those samples which are present in all models.
 #' Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
@@ -119,17 +119,19 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
 }
 
 
-#' @title Plot the robustness of the latent factors across diferent trials
-#' @name compareFactors
+
+#' @title Plot the robustness of the loading matrices, ie. the definition of the factors (how they impact features), across diferent trials
+#' @name compare_weights
 #' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
-#' their latent factors. The correlation is calculated only on those samples which are present in all models.
-#' Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
+#' their weights matrices. The correlations are computed between the columns of the concatenation of the weights matrices, only on those features which are present in all models.
+#' Ideally, the output should look like a block diagonal matrix, suggesting that the definition of factors (how they impact features) is robust under different initialisations.
 #' If not, it suggests that some factors are weak and not captured by all models.
 #' @param models a list containing \code{\link{BioFAModel}} objects.
+#' @param views : list of views or 'all'. Correlations computed on the concatenation of the loading matrices for the given views
 #' @param comparison tye of comparison, either 'pairwise' or 'all'
 #' @param ... extra arguments passed to pheatmap
 #' @details TO-FILL
-#' @return Plots a heatmap of correlation of Latent Factors in all models when 'comparison' is 'all'.
+#' @return Plots a heatmap of correlation of weights columns in all models when 'comparison' is 'all'.
 #' Otherwise, for each pair of models, a seperate heatmap is produced comparing one model againt the other.
 #' The corresponding correlation matrix or list or pairwise correlation matrices is returned
 #' @references fill this
@@ -138,7 +140,7 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
 #' @importFrom grDevices colorRampPalette
 #' @export
 
-compare_weights <- function(models, view, comparison = "all", show_rownames=FALSE, show_colnames=FALSE,...) {
+compare_weights <- function(models, views = "all", comparison = "all", show_rownames=FALSE, show_colnames=FALSE,...) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")
@@ -153,7 +155,15 @@ compare_weights <- function(models, view, comparison = "all", show_rownames=FALS
   # get latent factors
   LFs <- lapply(seq_along(models), function(modelidx){
     model <- models[[modelidx]]
-    W <- get_weights(model)[[view]]
+    
+    W <- get_weights(model)
+    if (views == "all"){
+      W <- do.call(rbind, W)
+    }
+    else{
+      W <- do.call(rbind, W[views])
+    }
+    
     # NOTE: concatenate all groups by default
   })
   

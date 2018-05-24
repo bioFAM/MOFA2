@@ -20,7 +20,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = r"""
+        banner = """
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -159,7 +159,7 @@ class entry_point(object):
         self.data_opts['scale_covariates'] = False
 
     def set_train_options(self,
-        iter=5000, elbofreq=1, startSparsity=100, tolerance=0.01,
+        iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
         schedule=None
         ):
@@ -349,7 +349,6 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
-        # Set training options
         self.model.setTrainOptions(self.train_opts)
 
 	    # Train the model
@@ -521,21 +520,34 @@ class entry_sfa(entry_point):
                          view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
 
 
+
 if __name__ == '__main__':
-
     ent = entry_point()
+    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/sl_simulations/'
+    # infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
+    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
+    infiles = [dir+'data_0.txt']
+    # views =  ["view_0", "view_0", 'view_1', 'view_1']
+    # groups = ["group_0", "group_1", 'group_0', 'group_1']
+    views =  ["view_0"]
+    groups = ["group_0"]
 
-    infiles = ["../run/test_data/500_0.txt", "../run/test_data/500_1.txt", "../run/test_data/500_2.txt", "../run/test_data/500_2.txt" ]
-    outfile = "tmp/test.hdf5"
-    lik = ["gaussian", "gaussian"]
-    views = ["view_1", "view_1", "view_2", "view_2"]
-    groups = ["group_A", "group_B", "group_A", "group_B"]
+    # infiles = [dir+'data_all.txt']
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
+
+    # views =  ["view_0"]
+    # groups = ["group_0"]
+
+    # lik = ["gaussian", "gaussian"]
+    lik = ["gaussian"]
+
+    outfile = dir+"test_sl_z.hdf5"
 
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(sl_z=False, sl_w=True, ard_z=True, ard_w=True, noise_on='features', factors=10, likelihoods=lik)
-    ent.set_train_options(verbose=True, seed=2018, iter=10, tolerance=0.01, dropR2=0.0, startSparsity=0)
-
+    ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
+    ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
     ent.build()
     ent.run()
     ent.save(outfile)
