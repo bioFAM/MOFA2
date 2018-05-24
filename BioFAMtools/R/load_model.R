@@ -88,12 +88,22 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
     expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
   if ("Tau" %in% node_names)
     expectations[["Tau"]] <- h5read(file, "expectations/Tau")
-  if ("Z" %in% node_names)
-    expectations[["Z"]] <- h5read(file, "expectations/Z")
+  if ("Z" %in% node_names) {
+    expectations[["Z"]] <- list()
+    for (p in sample_groups) {
+      expectations[["Z"]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Z/%s/E", p)) )
+    }
+  }
   if ("SZ" %in% node_names)
     expectations[["Z"]] <- h5read(file, "expectations/SZ")
   if ("W" %in% node_names)
-    expectations[["W"]] <- h5read(file, "expectations/W")
+    expectations[["W"]] <- h5read(file, "expectations/W")    
+  # if ("W" %in% node_names) {
+  #   expectations[["W"]] <- list()
+  #   for (m in feature_groups) {
+  #     expectations[["W"]][[m]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/W/%s/E", m)) )
+  #   }
+  # }
   if ("SW" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/SW")
   if ("ThetaW" %in% node_names)
@@ -103,9 +113,9 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
   if ("Y" %in% node_names) {
     expectations[["Y"]] <- list()
     for (m in feature_groups) {
-      expectations[["Y"]] <- list()
+      expectations[["Y"]][[m]] <- list()
       for (p in sample_groups) {
-        expectations[["Y"]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("expectations/Y/%s/%s/E",m,p) ) )
+        expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s/E", m, p)) )
       }
     }
   }

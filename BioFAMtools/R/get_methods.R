@@ -30,7 +30,7 @@ get_dimensions <- function(object) {
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (sample,factor,value).
 #' @export
 #' 
-get_factors <- function(object, factors = "all", groups = "all", as.data.frame = FALSE, include_intercept = TRUE) {
+get_factors <- function(object, groups = "all", factors = "all", as.data.frame = FALSE, include_intercept = TRUE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")

@@ -14,10 +14,15 @@
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor). 
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated. 
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
+#' @importFrom DelayedArray DelayedArray
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", 
                                          include_intercept = TRUE, only = NULL, flatten = FALSE, ...) {
   
+  DelayedArray::setRealizationBackend("HDF5Array")
+  t <- DelayedArray::t
+
+
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
@@ -58,14 +63,13 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   W <- get_weights(object, views, factors)
   Z <- get_factors(object, groups, factors)
   Y <- get_expectations(object, "Y")  # for non-Gaussian likelihoods the pseudodata is considered
-  Y <- lapply(Y, function(m) lapply(m, t))
 
   if (is.null(only)) {
   
     # Calulcate feature-wise means as null model
     feature_mean <- lapply(views, function(m) {
       lapply(groups, function(h) {
-        apply(Y[[m]][[h]], 2, mean, na.rm=T) 
+        apply(Y[[m]][[h]], 1, mean, na.rm=T) 
       })
     })
     feature_mean <- .name_views_and_groups(feature_mean, views, groups)
@@ -73,7 +77,9 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     # Sweep out the feature-wise mean to calculate null model residuals
     res_null_model <- lapply(views, function(m) {
       lapply(groups, function(p) {
-        sweep(Y[[m]][[p]], 2, feature_mean[[m]][[p]], "-")
+        # See https://github.com/Bioconductor/DelayedArray/commit/55c89c4949f65ff53ba2c5f11e01e4f5d4c0ff6e
+        # sweep(Y[[m]][[p]], 1, feature_mean[[m]][[p]], "-")
+        apply(Y[[m]][[p]], 2, function(sample) sample - feature_mean[[m]][[p]])
       })
     })
     res_null_model <- .name_views_and_groups(res_null_model, views, groups)
@@ -83,8 +89,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
       
     # Calculate predictions under the BioFAModel using all (non-intercept) factors
     Ypred_m <- lapply(views, function(m) {
-      lapply(groups, function(h) {
-        Z[[h]] %*% t(W[[m]])
+      lapply(groups, function(p) {
+        W[[m]] %*% t(Z[[p]])
       })
     })
     Ypred_m <- .name_views_and_groups(Ypred_m, views, groups)
@@ -94,7 +100,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     # Calculate predictions under the BioFAModel using each (non-intercept) factor on its own
     Ypred_mk <- lapply(views, function(m) {
       lapply(groups, function(p) {
-        ltmp <- lapply(factors, function(k) Z[[p]][,k] %*% t(W[[m]][,k]) )
+        ltmp <- lapply(factors, function(k) as.matrix(W[[m]][,k]) %*% t(Z[[p]][,k]))
         names(ltmp) <- factors
         ltmp
       })
@@ -104,12 +110,12 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     # If an intercept is included, regress out the intercept from the data
     if (include_intercept) {
         intercept <- get_weights(object, views, "intercept")
-        Y <- lapply(views, function(m) lapply(groups, function(h) sweep(Y[[m]][[h]], 2, intercept[[m]], "-")))
+        Y <- lapply(views, function(m) lapply(groups, function(h) sweep(Y[[m]][[h]], 1, intercept[[m]], "-")))
         Y <- .name_views_and_groups(Y, views, groups)
     }
 
     # Calculate coefficient of determination per view
-    fvar_m <- lapply(groups, function(h) lapply(views, function(m) 1 - sum((Y[[m]][[h]]-Ypred_m[[m]][[h]])**2, na.rm=T) / sum(res_null_model[[m]][[h]]**2, na.rm=T)))
+    fvar_m <- lapply(groups, function(p) lapply(views, function(m) 1 - sum((Y[[m]][[p]]-Ypred_m[[m]][[p]])**2, na.rm=T) / sum(res_null_model[[m]][[p]]**2, na.rm=T)))
     fvar_m <- .name_views_and_groups(fvar_m, groups, views)
 
     # Calculate coefficient of determination per factor and view
@@ -138,7 +144,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
         views_list <- lapply(views, function(m) {
           Y[[m]][[p]]
         })
-        Reduce(cbind, views_list)
+        Reduce(rbind, views_list)
       })
       lnames <- groups
 
@@ -147,13 +153,13 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
       # Calculate predictions under the BioFAModel using all (non-intercept) factors
       Ypred_s <- lapply(groups, function(p) {
-        Z[[p]] %*% t(W)
+        W %*% t(Z[[p]])
       })
 
       # Calculate predictions under the BioFAModel using each (non-intercept) factors on its own
       # while combining different views
       Ypred_sk <- lapply(lnames, function(p) {
-        tmp <- lapply(factors, function(k) Z[[p]][,k] %*% t(W[,k]) )
+        tmp <- lapply(factors, function(k) W[,k] %*% t(Z[[p]][,k]) )
         names(tmp) <- factors
         tmp
       })
@@ -162,7 +168,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
       Z <- Reduce(rbind, Z)
       Y <- lapply(views, function(m) {
-        Reduce(rbind, Y[[m]])
+        Reduce(cbind, Y[[m]])
       })
       lnames <- views
 
@@ -171,14 +177,14 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
       # Calculate predictions under the BioFAModel using all (non-intercept) factors
       Ypred_s <- lapply(views, function(m) {
-        Z %*% t(W[[m]])
+        W[[m]] %*% Z
       })
       
       
       # Calculate predictions under the BioFAModel using each (non-intercept) factors on its own
       # while combining different views
       Ypred_sk <- lapply(views, function(m) {
-        tmp <- lapply(factors, function(k) Z[,k] %*% t(W[[m]][,k]) )
+        tmp <- lapply(factors, function(k) W[[m]][,k] %*% t(Z[,k]) )
         names(tmp) <- factors
         tmp
       })
@@ -192,13 +198,13 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
     # Calulcate feature-wise means as null model
     feature_mean <- lapply(lnames, function(s) {
-      apply(Y[[s]], 2, mean, na.rm=T) 
+      apply(Y[[s]], 1, mean, na.rm=T) 
     })
     names(feature_mean) <- lnames
 
     # Sweep out the feature-wise mean to calculate null model residuals
     res_null_model <- lapply(lnames, function(s) {
-      sweep(Y[[s]], 2, feature_mean[[s]], "-")
+      sweep(Y[[s]], 1, feature_mean[[s]], "-")
     })
     names(res_null_model) <- lnames
       
@@ -207,11 +213,11 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
       if (only == "groups") {
         intercept <- get_weights(object, views, "intercept")
         intercept <- Reduce(rbind, intercept)
-        Y <- lapply(groups, function(p) sweep(Y[[p]], 2, intercept, "-"))
+        Y <- lapply(groups, function(p) sweep(Y[[p]], 1, intercept, "-"))
         names(Y) <- groups
       } else {
         intercept <- get_weights(object, views, "intercept")
-        Y <- lapply(views, function(m) sweep(Y[[m]], 2, intercept[[m]], "-"))
+        Y <- lapply(views, function(m) sweep(Y[[m]], 1, intercept[[m]], "-"))
         names(Y) <- views
       }
     }
