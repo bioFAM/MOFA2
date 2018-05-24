@@ -142,8 +142,8 @@ getDefaultTrainOptions <- function() {
 #' @export
 getDefaultDataOptions <- function() {
   DataOptions <- list(
-    center_features = TRUE,   # Center features to zero mean (only applies to continuous data)
-    scale_views = FALSE,      # Scale views to unit variance (only applies to continuous data)
+    center_features = TRUE,   # (logical) Center features to zero mean (only applies to continuous data)
+    scale_views = FALSE      # (logical) Scale views to unit variance (only applies to continuous data)
   )
   return(DataOptions)
 }
@@ -178,7 +178,7 @@ getDefaultModelOptions <- function(object) {
   # Define default model options
   ModelOptions <- list(
     likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    learn_intercept = TRUE,     # (bool) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
+    learn_intercept = TRUE,     # (logical) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
     num_factors = 25            # (numeric) initial number of latent factors
   )
   
