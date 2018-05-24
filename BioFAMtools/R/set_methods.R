@@ -129,85 +129,60 @@
 # Entity is features, samples, or factors
 .set_parameters_names <- function(object, entity, values, views="all", groups="all") {
 
-  if (FALSE){
+  tryCatch({
     
-  stopifnot(entity %in% c("features", "samples", "factors"))
+    stopifnot(entity %in% c("features", "samples", "factors"))
 
-  # Define what entities should be updated for which nodes
-  # Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
-  node_lists_options <- list(features = list(nodes = c("W"), axes = c(1)),
-                             samples  = list(nodes = c("Z"), axes = c(1)),
-                             factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0)))
+    # Define what entities should be updated for which nodes
+    # Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
+    node_lists_options <- list(features = list(nodes = c("W"), axes = c(1)),
+                               samples  = list(nodes = c("Z"), axes = c(1)),
+                               factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0)))
 
-  views  <- .check_and_get_views(object, views)
-  groups <- .check_and_get_views(object, groups)
+    views  <- .check_and_get_views(object, views)
+    groups <- .check_and_get_views(object, groups)
 
-  # Define the dimensionality of noise
-  # If not found in model_options, the default setting is 
-  # having a noise parameter per feature
-  if ('noise_on' %in% names(object@model_options)) {
-    if (object@model_options$noise_on == "samples") {
-      node_lists_options$samples$nodes <- c(node_lists_options$samples$nodes, "Tau")
-      node_lists_options$samples$axes  <- c(node_lists_options$samples$axes, 0)
+    # Define the dimensionality of noise
+    # If not found in model_options, the default setting is 
+    # having a noise parameter per feature
+    if ('noise_on' %in% names(object@model_options)) {
+      if (object@model_options$noise_on == "samples") {
+        node_lists_options$samples$nodes <- c(node_lists_options$samples$nodes, "Tau")
+        node_lists_options$samples$axes  <- c(node_lists_options$samples$axes, 0)
+      } else {
+        node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
+        node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
+      }
     } else {
       node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
       node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
     }
-  } else {
-    node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
-    node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
-  }
 
-  # Iterate over node list depending on the entity
-  nodes <- node_lists_options[[entity]]$nodes
-  axes  <- node_lists_options[[entity]]$axes
-  for (i in 1:length(nodes)) {
-    node <- nodes[i]
-    axis <- axes[i]
-    # Update the nodes for which parameters do exist
-    if (node %in% names(object@parameters)) {
-      # Update nodes with one level of nestedness (views or groups)
-      if (any(node %in% object@model_options$nodes$multiview_node, 
-              node %in% object@model_options$nodes$multigroup_nodes)) {
-        sub_dim <- length(object@parameters[[node]])
-        for (ind in 1:sub_dim) {
-          # No nestedness in values if factors
-          vals <- if (entity == "factors") values else values[[ind]]
-          dim  <- length(vals)
-          for (par in names(object@parameters[[node]][[ind]])) {
-            # Set names for rows
-            if (axis == 1) {
-              stopifnot(nrow(object@parameters[[node]][[ind]][[par]]) == dim)
-              rownames(object@parameters[[node]][[ind]][[par]]) <- vals
-            # ... or set names for columns
-            } else if (axis == 2) {
-              stopifnot(ncol(object@parameters[[node]][[ind]][[par]]) == dim)
-              colnames(object@parameters[[node]][[ind]][[par]]) <- vals
-            # ... or set vector names
-            } else {
-              stopifnot(length(object@parameters[[node]][[ind]][[par]]) == dim)
-              names(object@parameters[[node]][[ind]][[par]]) <- vals
-            }
-          }
-        }
-      # Update nodes with two levels of nestedness (e.g. Y or Tau)
-      } else if (node %in% object@model_options$nodes$twodim_nodes) {
-        sub_dim <- length(object@parameters[[node]])
-        for (ind in 1:sub_dim) {
-          sub_dim2 <- length(object@parameters[[node]][[ind]])
-          for (ind2 in 1:sub_dim2) {
-            # Infer which index to use to iterate over a provided list of values
-            deduced_ind <- if (entity == "features") ind else ind2  # since ind corresponds to views (groups of features)
-            dim <- length(values[[deduced_ind]])
-            for (par in names(object@parameters[[node]][[ind]][[ind2]])) {
+    # Iterate over node list depending on the entity
+    nodes <- node_lists_options[[entity]]$nodes
+    axes  <- node_lists_options[[entity]]$axes
+    for (i in 1:length(nodes)) {
+      node <- nodes[i]
+      axis <- axes[i]
+      # Update the nodes for which parameters do exist
+      if (node %in% names(object@parameters)) {
+        # Update nodes with one level of nestedness (views or groups)
+        if (any(node %in% object@model_options$nodes$multiview_node, 
+                node %in% object@model_options$nodes$multigroup_nodes)) {
+          sub_dim <- length(object@parameters[[node]])
+          for (ind in 1:sub_dim) {
+            # No nestedness in values if factors
+            vals <- if (entity == "factors") values else values[[ind]]
+            dim  <- length(vals)
+            for (par in names(object@parameters[[node]][[ind]])) {
               # Set names for rows
               if (axis == 1) {
-                stopifnot(nrow(object@parameters[[node]][[ind]][[ind2]][[par]]) == dim)
-                rownames(object@parameters[[node]][[ind]][[ind2]][[par]]) <- values[[deduced_ind]]
+                stopifnot(nrow(object@parameters[[node]][[ind]][[par]]) == dim)
+                rownames(object@parameters[[node]][[ind]][[par]]) <- vals
               # ... or set names for columns
               } else if (axis == 2) {
-                stopifnot(ncol(object@parameters[[node]][[ind]][[ind2]][[par]]) == dim)
-                colnames(object@parameters[[node]][[ind]][[ind2]][[par]]) <- values[[deduced_ind]]
+                stopifnot(ncol(object@parameters[[node]][[ind]][[par]]) == dim)
+                colnames(object@parameters[[node]][[ind]][[par]]) <- vals
               # ... or set vector names
               } else {
                 stopifnot(length(object@parameters[[node]][[ind]][[par]]) == dim)
@@ -215,16 +190,43 @@
               }
             }
           }
+        # Update nodes with two levels of nestedness (e.g. Y or Tau)
+        } else if (node %in% object@model_options$nodes$twodim_nodes) {
+          sub_dim <- length(object@parameters[[node]])
+          for (ind in 1:sub_dim) {
+            sub_dim2 <- length(object@parameters[[node]][[ind]])
+            for (ind2 in 1:sub_dim2) {
+              # Infer which index to use to iterate over a provided list of values
+              deduced_ind <- if (entity == "features") ind else ind2  # since ind corresponds to views (groups of features)
+              dim <- length(values[[deduced_ind]])
+              for (par in names(object@parameters[[node]][[ind]][[ind2]])) {
+                # Set names for rows
+                if (axis == 1) {
+                  stopifnot(nrow(object@parameters[[node]][[ind]][[ind2]][[par]]) == dim)
+                  rownames(object@parameters[[node]][[ind]][[ind2]][[par]]) <- values[[deduced_ind]]
+                # ... or set names for columns
+                } else if (axis == 2) {
+                  stopifnot(ncol(object@parameters[[node]][[ind]][[ind2]][[par]]) == dim)
+                  colnames(object@parameters[[node]][[ind]][[ind2]][[par]]) <- values[[deduced_ind]]
+                # ... or set vector names
+                } else {
+                  stopifnot(length(object@parameters[[node]][[ind]][[par]]) == dim)
+                  names(object@parameters[[node]][[ind]][[par]]) <- vals
+                }
+              }
+            }
+          }
+        } else {
+          print(paste0("DEV :: NOTE: There are no parameters for the node ", node))
         }
-      } else {
-        print(paste0("DEV :: NOTE: There are no parameters for the node ", node))
       }
     }
-  }
   
-  }
+  }, error = function(e) { print("Oh, something is wrong with setting parameters names.") })
 
   object
+
+  
 }
 
 
