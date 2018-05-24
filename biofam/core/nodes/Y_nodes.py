@@ -10,9 +10,9 @@ from biofam.core.utils import dotd
 from .variational_nodes import Constant_Variational_Node
 
 class Y_Node(Constant_Variational_Node):
-    def __init__(self, dim, value, transpose_noise):
-        tau_d = not transpose_noise
-        Constant_Variational_Node.__init__(self, dim, value, {'tau_d': tau_d})
+    def __init__(self, dim, value, noise_on='features'):
+        self.noise_on = noise_on
+        Constant_Variational_Node.__init__(self, dim, value)
 
         # Create a boolean mask of the data to hide missing values
         if type(self.value) != ma.MaskedArray:
@@ -27,7 +27,9 @@ class Y_Node(Constant_Variational_Node):
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
 
         # Precompute the constant depending on the noise dimensions
-        if self.opts['tau_d']:
+        # TODO rewrite with no tau_d argument but problem is thatprecompute is
+        # called before the markov_blanket is defined so we need this info here
+        if self.noise_on == 'features':
             self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
         else:
             self.likconst = -0.5 * s.sum(self.D) * s.log(2.*s.pi)
@@ -48,12 +50,9 @@ class Y_Node(Constant_Variational_Node):
 
         Tau = self.markov_blanket["Tau"].getExpectations()
 
-        if "SW" in self.markov_blanket:
-            Wtmp = self.markov_blanket["SW"].getExpectations()
-            Ztmp = self.markov_blanket["Z"].getExpectations()
-        else:
-            Wtmp = self.markov_blanket["W"].getExpectations()
-            Ztmp = self.markov_blanket["SZ"].getExpectations()
+        Wtmp = self.markov_blanket["W"].getExpectations()
+        Ztmp = self.markov_blanket["Z"].getExpectations()
+
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
@@ -81,12 +80,9 @@ class Y_Node(Constant_Variational_Node):
 
     def sample(self, dist='P'):
         # Y does NOT call sample recursively but relies on previous calls
-        if "SW" in self.markov_blanket:
-            W_samp = self.markov_blanket['SW'].samp
-            Z_samp = self.markov_blanket['Z'].samp
-        else:
-            Z_samp = self.markov_blanket['SZ'].samp
-            W_samp = self.markov_blanket['W'].samp
+        Z_samp = self.markov_blanket['Z'].samp
+        W_samp = self.markov_blanket['W'].samp
+
         Tau_samp = self.markov_blanket['Tau'].samp
         F = Z_samp.dot(W_samp.transpose())
 

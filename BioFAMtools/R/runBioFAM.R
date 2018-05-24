@@ -1,140 +1,102 @@
 
-##############################################
-## Functions to run BioFAM from the R package ##
-##############################################
+###########################
+## Functions to run MOFA ##
+###########################
 
-#' @title train an untrained BioFAModel
-#' @name runBioFAM
-#' @description Function to train an untrained \code{\link{BioFAModel}} object.
-#' @details In this step the R package is calling the \code{BioFAM} Python package, where the the training is performed. \cr
-#' The interface with Python is not great for now. Sometimes the training might freeze, but it is running from the background, just be patient! \cr
-#' It is important the \code{biofam} executable is on your $PATH so that R can detect it. This will generally be the case, 
-#' but if it is not, then you need to specify it manually in the \code{biofamPath} argument. Please, read our FAQ for troubleshooting. \cr
-#' @param object an untrained \code{\link{BioFAModel}} object
+#' @title train a BioFAM model
+#' @name run_biofam
+#' @description Function to train an untrained \code{\link{bioFAMmodel}} object.
+#' @details In this step the R package is calling the \code{biofam} Python package, where the the training is performed. \cr
+#' The interface with Python is done with the \code{\link{reticulate}} package. 
+#' If you have several versions of Python installed and Rstudio is not detecting the correct one, you can change it using
+#' \code{reticulate::use_python}. \cr
+#' This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
+#' @param object an untrained \code{\link{MOFAmodel}} object
 #' @param DirOptions list with I/O options, it should contain at least two entries: \cr
-#' 'dataDir' where the input matrices as stored as text files. \cr
-#' 'outFile' where the model is going to be stored as an hdf5 file.
-#' @param ... Extra options to add to the biofam command
-#' @param biofamPath Path the the biofam executable. To be modified if the \code{BioFAM} Python package is not recognised by Rstudio.
-#' @return a trained \code{\link{BioFAModel}} object
+#' \itemize{
+#'  \item{\strong{data_dir}:}{ input directory where the matrices as stored as text files with row and column names and tab delimiter. }
+#'  \item{\strong{outfile}:}{ output file where the model is going to be stored as an hdf5 file.}
+#' }
+#' @return a trained \code{\link{MOFAmodel}} object
+#' @import reticulate
 #' @export
-runBioFAM <- function(object, DirOptions, ..., biofamPath="biofam") {
+run_biofam <- function(object, DirOptions) {
   
   # Sanity checks
-  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  stopifnot(all(c("dataDir","outFile") %in% names(DirOptions)))
-  if (object@Status=="trained") { stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel") }
+  if (!is(object, "bioFAMmodel")) 
+    stop("'object' has to be an instance of MOFAmodel")
   
-  arglist <- list(
-    inFiles = paste0(DirOptions$dataDir, "/", viewNames(object), ".txt"),
-    header_cols = TRUE,
-    header_rows = TRUE,
-    delimiter = object@DataOpts$delimiter,
-    outFile = DirOptions$outFile,
-    views = viewNames(object),
-    likelihoods = object@ModelOpts$likelihood,
-    factors = object@ModelOpts$numFactors,
-    iter = object@TrainOpts$maxiter,
-    dropR2 =  object@TrainOpts$DropFactorThreshold,
-    tolerance = object@TrainOpts$tolerance
+  stopifnot(all(c("data_dir","outfile") %in% names(DirOptions)))
+  
+  if (object@Status=="trained") 
+    stop("The model is already trained! If you want to retrain, create a new untrained MOFAmodel")
+  
+  if (object@TrainOptions$learn_factors == FALSE) {
+    object@TrainOptions$drop_factor_threshold <- 0.00
+  } else {
+    if (object@TrainOptions$drop_factor_threshold==0) { 
+      print("Warning: learn_factors is set to TRUE but drop_factor_threshold is 0, this is contradictory.")
+      print("Please read the documentation in prepareMOFA about learning the number of factors.")
+    }
+  }
+  
+  if (file.exists(DirOptions$outfile))
+    message("Warning: Output file already exists, it will be replaced")
+  
+  # Initiate reticulate
+  mofa <- import("mofa")
+  mofa_entrypoint <- mofa$core.init_asd2$entry_point()
+  
+  # Pass data options
+  mofa_entrypoint$set_data_options(
+    inFiles     = paste0(DirOptions$data_dir, "/", viewNames(object), ".txt"), 
+    outFile     = DirOptions$outfile, 
+    views       = viewNames(object), 
+    delimiter   = "\t", 
+    header_cols = TRUE, 
+    header_rows = TRUE
   )
   
-  # Decide whether to learn factors
-  if (object@TrainOpts$learnFactors == F) {
-    arglist$dropR2 <- 0.00
-  } else {
-    if (arglist$dropR2==0) { 
-      print("Warning: learnFactors is set to TRUE but dropFactorThreshold is 0, this is contradictory.")
-      print("Please read the documentation in prepareBioFAM about how to learn the number of factors.")
-    }
-  }
-
-  # Setting the below arguments to NULL doesn't actually add them to
-  # the argument list, but reserves that argument name to prevent
-  # extra.arglist from using it.
-  if (!is.null(object@ModelOpts$covariates)) {
-    arglist$covariatesFile <- file.path(DirOptions$dataDir, "covariates.txt")
-    arglist$scale_covariates <- rep(1,ncol(object@ModelOpts$covariates))
-  } else {
-    arglist$covariatesFile <- NULL
-    arglist$scale_covariates <- NULL
-  }
-  arglist$learnIntercept <- as.logical(object@ModelOpts$learnIntercept)
-  if (! object@ModelOpts$sparsity) {
-    arglist$learnTheta <- rep(0, object@Dimensions$M) 
-  } else {
-    arglist$learnTheta <- NULL
-  }
-
-  arglist$center_features <- as.logical(object@DataOpts$centerFeatures)
-  arglist$scale_views <- as.logical(object@DataOpts$scaleViews)
-  if (object@DataOpts$removeIncompleteSamples == T) { command <- paste(command, "--RemoveIncompleteSamples", sep=" ") }
-  arglist$verbose <- as.logical(object@TrainOpts$verbose)
-
-  extra.arglist <- list(...)
+  # Pass training options  
+  mofa_entrypoint$set_train_options(
+    iter       = object@TrainOptions$maxiter,
+    tolerance  = object@TrainOptions$tolerance,
+    dropR2     = object@TrainOptions$drop_factor_threshold,
+    seed       = object@TrainOptions$seed, 
+    verbose    = object@TrainOptions$verbose
+  )
   
-  # WARNING: is.na() applied to non-(list or vector) of type 'NULL
-  # if (any(is.na(names(extra.arglist)) | names(extra.arglist) == "")) {
-  #   stop("All extra options must be named")
-  # }
-
-  # Remove leading "--" from extra arg names if present (it will be
-  # added back later)
-  names(arglist) <- sub("^--", "", names(arglist))
-  conflicting.argnames <- intersect(names(extra.arglist), names(arglist))
-  if (length(conflicting.argnames) > 0)
-    stop(paste0("You cannot pass the following arguments as extra options to runBioFAM: ",
-      deparse(conflicting.argnames)))
-
-  # No conflicting argument names,
-  arglist <- c(arglist, extra.arglist)
-
-  argv <- character(0)
-  for (argname in names(arglist)) {
-    argval <- arglist[[argname]]
-    argname <- paste0("--", argname)
-
-    if (is.null(argval)) {
-      # Placeholder option; don't add it
-    }
-    if (is.logical(argval)) {
-      # Flag option
-      if (length(argval) != 1) {
-        stop(paste("Invalid argument value:", deprase(argval)))
-      } else if (argval == FALSE || is.na(argval)) {
-        # Unset flag: don't add it
-      } else if (argval == TRUE) {
-        # Set flag: add it
-        argv <- c(argv, argname)
-      }
-    } else {
-      # Option with arguments: add the option followed by it args
-      argv <- c(argv, argname, argval)
-    }
-  }
-  argv <- unlist(argv)
-
-  if (length(biofamPath) != 1) stop("Invalid biofamPath")
-
-  # If output already exists, remove it
-  if (file.exists(DirOptions$outFile)) {
-    if (arglist$verbose) {
-      message("Deleting old output file")
-      }
-    file.remove(DirOptions$outFile)
-  }
-
-  if (arglist$verbose) {
-    message("Running BioFAM command: ", paste(collapse=" ", shQuote(c(biofamPath, argv))))
-  }
-  # Run!
-  exitcode <- system2(command=biofamPath, args=shQuote(argv), wait=T)
-  if (exitcode != 0) {
-    stop(paste("biofam command failed with exit code", exitcode))
-  }
+  # Pass model options 
+  mofa_entrypoint$set_model_options(
+    factors        = object@ModelOptions$num_factors,
+    likelihoods    = unname(object@ModelOptions$likelihood),
+    learn_intercept = object@ModelOptions$learn_intercept
+  )
   
-  # Load trained model
-  object <- loadModel(DirOptions$outFile, object)
+  # Pass data processing options
+  mofa_entrypoint$set_dataprocessing_options(
+    center_features         = object@DataOptions$center_features,
+    scale_views             = object@DataOptions$scale_views
+    
+  )
+  
+  # Load data
+  mofa_entrypoint$load_data()
+  
+  # Define Priors
+  mofa_entrypoint$define_priors()
+  
+  # Initialise variational distributions
+  mofa_entrypoint$initialise_variational()
+  
+  # Parse the intercept factor
+  mofa_entrypoint$parse_intercept()
+  
+  # Train the model
+  mofa_entrypoint$train_model()
+  
+  # Load the trained model
+  object <- loadModel(DirOptions$outfile, object)
   
   return(object)
 }

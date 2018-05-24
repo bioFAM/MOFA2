@@ -22,80 +22,74 @@
 #' These representation can be used to do predictions using the equation Y = WX. This is the key step underlying imputation, see \code{\link{imputeMissing}} and Methods section of the article.
 #' @return Returns a list with data predictions, each element corresponding to a view.
 #' @export
-predict <- function(object, views = "all", factors = "all", 
-                    type = c("inRange","response", "link"), 
+predict <- function(object, views = "all", groups = "all", factors = "all", 
+                    type = c("inRange", "response", "link"), 
                     include_intercept = TRUE) {
 
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # Get views  
-  if (is.numeric(views)) {
-    stopifnot(all(views<=object@Dimensions$M))
-    views <- viewNames(object)[views] 
-  } else {
-    if (paste0(views,sep="",collapse="") =="all") { 
-      views = viewNames(object)
-    } else {
-      stopifnot(all(views%in%viewNames(object)))
-    }
-  }
+  views <- .check_and_get_views(object, views)
+  groups <- .check_and_get_groups(object, groups)
   
   # Get factors
-  if (paste0(factors,collapse="") == "all") { 
-    factors <- factorNames(object) 
+  if (paste0(factors, collapse="") == "all") { 
+    factors <- factors_names(object) 
   } else if(is.numeric(factors)) {
-      if (object@ModelOpts$learnIntercept == T) factors <- factorNames(object)[factors+1]
-      else factors <- factorNames(object)[factors]
+      if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
+      else factors <- factors_names(object)[factors]
   } else { 
-    stopifnot(all(factors %in% factorNames(object))) 
+    stopifnot(all(factors %in% factors_names(object))) 
   }
 
   # add intercept factor for prediction
-  if(!"intercept" %in% factors & object@ModelOpts$learnIntercept & include_intercept) factors <- c("intercept", factors)  
+  if(!"intercept" %in% factors & object@model_options$learn_intercept & include_intercept) factors <- c("intercept", factors)  
   if(!include_intercept & "intercept" %in% factors) factors <- factors[factors!="intercept"]
   
   # Get type of predictions wanted 
   type = match.arg(type)
   
   # Collect weights
-  W <- getWeights(object, views=views, factors=factors)
+  W <- get_weights(object, views = views, factors = factors)
 
   # Collect factors
-  Z <- getFactors(object)[,factors]
+  Z <- get_factors(object, groups = groups, factors = factors)
   Z[is.na(Z)] <- 0 # set missing values in Z to 0 to exclude from imputations
  
   # Predict data based on BioFAModel
-  # predictedData <- lapply(sapply(views, grep, viewNames(object)), function(viewidx){
-  predictedData <- lapply(views, function(i){
-    
-    # calculate terms based on linear model
-    predictedView <- t(Z%*% t(W[[i]])) 
-    
-    # make predicitons based on underlying likelihood
-    lks <- object@ModelOptions$likelihood
-    names(lks) <- viewNames(object)
-    if (type!="link") {
-      lk <- lks[i]
-      if (lk == "gaussian") { 
-        predictedView <- predictedView 
+  # predictedData <- lapply(sapply(views, grep, views_names(object)), function(viewidx){
+  predictedData <- lapply(views, function(v){
+    lapply(groups, function(g) {
+      # calculate terms based on linear model
+      pred <- t(Z[[g]] %*% t(W[[v]])) 
+      
+      # make predicitons based on underlying likelihood
+      lks <- object@model_options$likelihood
+      names(lks) <- views_names(object)
+
+      if (type != "link") {
+        lk <- lks[v]
+        if (lk == "gaussian") { 
+          pred <- pred 
+        }
+        else if (lk == "bernoulli") { 
+          pred <- (exp(pred)/(1 + exp(pred)))
+          if (type == "inRange") pred <- round(pred)
+        } else if (lk == "poisson") { 
+          # predictedView <- (exp(predictedView))
+          pred <- log(1 + exp(pred))
+          if(type == "inRange") pred <- round(pred)
+        }
+        else { 
+          stop(sprintf("Likelihood %s not implemented for imputation", lk)) 
+        }
       }
-      else if (lk == "bernoulli") { 
-        predictedView <- (exp(predictedView)/(1+exp(predictedView)))
-        if (type=="inRange") predictedView <- round(predictedView)
-      } else if (lk == "poisson") { 
-        # predictedView <- (exp(predictedView))
-        predictedView <- log(1 + exp(predictedView))
-        if(type=="inRange") predictedView <- round(predictedView)
-      }
-      else { 
-        stop(sprintf("Likelihood %s not implemented for imputation",lk)) 
-      }
-    }
-    predictedView
+      pred
+    })
   })
 
-  names(predictedData) <- views
+  predictedData <- .name_views_and_groups(predictedData, views, groups)
 
   return(predictedData)
 }

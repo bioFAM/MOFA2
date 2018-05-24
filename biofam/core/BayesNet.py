@@ -2,7 +2,6 @@
 """
 This module is used to define the class containing the entire Bayesian Network,
 and the corresponding attributes/methods to train the model, set algorithmic options, calculate lower bound, etc.
-
 """
 
 from __future__ import division
@@ -36,16 +35,27 @@ class BayesNet(object):
         self.simulated = False
 
     def setTrainOptions(self, train_opts):
-        """ set method to define training options """
+        """ Method to store training options """
+
+        # Sanity checks
+        assert "maxiter" in train_opts, "'maxiter' not found in the training options dictionary"
+        assert "start_drop" in train_opts, "'start_drop' not found in the training options dictionary"
+        assert "freq_drop" in train_opts, "'freq_drop' not found in the training options dictionary"
+        assert "verbose" in train_opts, "'verbose' not found in the training options dictionary"
+        assert "tolerance" in train_opts, "'tolerance' not found in the training options dictionary"
+        assert "forceiter" in train_opts, "'forceiter' not found in the training options dictionary"
+        assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
+        assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
+
         self.options = train_opts
 
     def getParameters(self, *nodes):
-        """Method to collect all parameters of a given set of nodes (all by default)
+        """ Method to collect all parameters of a given set of nodes 
 
         PARAMETERS
         ----------
         nodes: iterable
-            name of the nodes
+            name of the nodes (all nodes by default)
         """
 
         if len(nodes) == 0: nodes = self.nodes.keys()
@@ -56,14 +66,14 @@ class BayesNet(object):
         return params
 
     def getExpectations(self, only_first_moments=False, *nodes):
-        """Method to collect all expectations of a given set of nodes (all by default)
+        """Method to collect all expectations of a given set of nodes
 
         PARAMETERS
         ----------
         only_first_moments: bool
-            get only first moments?
+            get only first moments? (Default is False)
         nodes: list
-            name of the nodes
+            name of the nodes (Default is all nodes)
         """
 
         if len(nodes) == 0: nodes = self.nodes.keys()
@@ -97,7 +107,7 @@ class BayesNet(object):
         self.simulated = True
 
     def sampleData(self):
-        """ ADD TEXT """
+        """ Method to sample data from the prior distributions of the generative model """
         if ~self.simulated:
             self.simulate()
         return self.nodes['Y'].sample(dist='P')
@@ -106,46 +116,20 @@ class BayesNet(object):
         # TODO some function here to save simulated data
         pass
 
-    def removeInactiveFactors(self, by_norm=None, by_pvar=None, by_cor=None, by_r2=None):
+    def removeInactiveFactors(self, by_r2=None):
         """Method to remove inactive factors
 
         PARAMETERS
         ----------
-        by_norm: float
-            threshold to shut down factors based on the norm of the latent variable
-            CURRENTLY NOT IMPLEMENTED
-        by_pvar: float
-            threshold to shut down factors based on the proportion of variance explained
-            CURRENTLY NOT IMPLEMENTED
-        by_cor: float
-            threshold to shut down factors based on the correlation between latent variables
-            CURRENTLY NOT IMPLEMENTED
         by_r2: float
             threshold to shut down factors based on the coefficient of determination
         """
         drop_dic = {}
 
-        # Shut down based on norm of latent variable vectors
-        #   Advantages: independent of likelihood type, works with pseudodata
-        #   Disadvantages: it does not take into account the weights, covariates are never removed.
-        # if by_norm is not None:
-        #     Z = self.nodes["Z"].getExpectation()
-        #     # Z = Z + 1e-6*stats.norm.rvs(loc=0, scale=1, size=(Z.shape[0],Z.shape[1])) # Add some noise to remove structure (see XX)
-        #     drop_dic["by_norm"] = s.where((Z**2).mean(axis=0) < by_norm)[0]
-        #     if len(drop_dic["by_norm"]) > 0:
-        #         drop_dic["by_norm"] = [ s.random.choice(drop_dic["by_norm"]) ]
-
-        # Shut down based on coefficient of determination with respect to the residual variance
-        #   Advantages: it takes into account both weights and latent variables, is based on how well the model fits the data
-        #   Disadvantages: slow, doesnt work with non-gaussian data
         if by_r2 is not None:
 
-            if "SW" in self.nodes:
-                Z = self.nodes['Z'].getExpectation()
-                W = self.nodes["SW"].getExpectation()
-            else:
-                Z = self.nodes['SZ'].getExpectation()
-                W = self.nodes["W"].getExpectation()
+            Z = self.nodes['Z'].getExpectation()
+            W = self.nodes["W"].getExpectation()
 
             Y = self.nodes["Y"].getExpectation()
 
@@ -198,36 +182,6 @@ class BayesNet(object):
                 if len(drop_dic["by_r2"]) > 0:
                     drop_dic["by_r2"] = [ s.random.choice(drop_dic["by_r2"]) ]
 
-        # Shut down based on the proportion of residual variance explained by each factor
-        # IT DOESNT WORK, THERE IS SOME ERROR TO BE FIXED
-        #   Good: it is the proper way of doing it,
-        #   Bad: slow, does it work with non-gaussian data?
-        # if by_pvar is not None:
-        #     Z = self.nodes["Z"].getExpectation()
-        #     Y = self.nodes["Y"].getExpectation()
-        #     tau = self.nodes["Tau"].getExpectation()
-        #     alpha = self.nodes["Alpha"].getExpectation()
-
-        #     factor_pvar = s.zeros((self.dim['M'],self.dim['K']))
-        #     for m in range(self.dim['M']):
-        #         residual_var = (s.var(Y[m],axis=0) - 1/tau[m]).sum()
-        #         for k in range(self.dim["K"]):
-        #             factor_var = (self.dim["D"][m]/alpha[m][k])# * s.var(Z[:,k])
-        #             factor_pvar[m,k] = factor_var / residual_var
-        #     drop_dic['by_pvar'] = s.where( (factor_pvar>by_pvar).sum(axis=0) == 0)[0]
-
-        # Shut down factors that are highly correlated
-        # (Q) Which of the two factors should we remove? Maybe the one that explains less variation
-        # if by_cor is not None:
-        #     Z = self.nodes["Z"].getExpectation()
-        #     r = s.absolute(corr(Z.T,Z.T))
-        #     s.fill_diagonal(r,0)
-        #     r *= s.tri(*r.shape)
-        #     drop_dic["by_cor"] = s.where(r>by_cor)[0]
-        #     if len(drop_dic["by_cor"]) > 0:
-        #         # Drop just one latent variable, chosen randomly
-        #         drop_dic["by_cor"] = [ s.random.choice(drop_dic["by_cor"]) ]
-
         # Drop the factors
         drop = s.unique(s.concatenate(list(drop_dic.values())))
         if len(drop) > 0:
@@ -236,7 +190,7 @@ class BayesNet(object):
         self.dim['K'] -= len(drop)
 
         if self.dim['K']==0:
-            print("Shut down all components, no structure found in the data.")
+            print("All factors shut down, no structure found in the data.")
             exit()
 
         pass
@@ -253,7 +207,7 @@ class BayesNet(object):
         for i in range(self.options['maxiter']):
             t = time();
             # Remove inactive latent variables
-            if (i >= self.options["startdrop"]) and (i % self.options['freqdrop']) == 0:
+            if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
                 if any(self.options['drop'].values()):
                     self.removeInactiveFactors(**self.options['drop'])
                 activeK[i] = self.dim["K"]
@@ -262,7 +216,7 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 # print "Node: " + str(node)
                 # t = time()
-                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['startSparsity']:
+                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
                 self.nodes[node].update()
                 # print "time: " + str(time()-t)

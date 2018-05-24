@@ -78,7 +78,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Collect expectations from the markov blanket
         Y = deepcopy(self.markov_blanket["Y"].getExpectation())
-        SWtmp = self.markov_blanket["SW"].getExpectations()
+        SWtmp = self.markov_blanket["W"].getExpectations()
         tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
         latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
@@ -90,7 +90,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             Mu = self.P.getParameters()["mean"]
 
         if "AlphaZ" in self.markov_blanket:
-            Alpha = self.markov_blanket['AlphaZ'].getExpectation()
+            Alpha = self.markov_blanket['AlphaZ'].getExpectation(expand=True)
 
         else:
             if "SigmaZ" in self.markov_blanket:
@@ -132,9 +132,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             else:
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k])
 
-                tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
-                for n in range(self.N):
-                    Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
+                if self.P.params["cov"][k].__class__.__name__ == 'dia_matrix':
+                    Qmean[:, k] = Qvar[:, k] * bar
+                else:
+                    tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
+                    for n in range(self.N):
+                        Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
@@ -158,8 +161,9 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # compute cross entropy term
         tmp1 = 0
-        mat_tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
-        tmp1 += QE[:, k].transpose().dot(mat_tmp).dot(QE[:, k])
+        if p_cov[k].__class__.__name__ == 'ndarray':
+            mat_tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
+            tmp1 += QE[:, k].transpose().dot(mat_tmp).dot(QE[:, k])
         tmp1 += p_cov_inv_diag[k].dot(QE2[:, k])
         tmp1 = -.5 * tmp1
         # tmp1 = 0.5*QE2 - PE*QE + 0.5*PE2
@@ -208,7 +212,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.N, self.dim[1]))
 
             Alpha = self.markov_blanket[
-                'AlphaZ'].getExpectations().copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
+                'AlphaZ'].getExpectations(expand=True).copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
 
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()
@@ -307,12 +311,12 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()]
         # TODO sort that out
         if "AlphaZ" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaZ"].getExpectation().copy()
+            alpha = self.markov_blanket["AlphaZ"].getExpectation(expand=True).copy()
         else:
             # TODO implement that
             print('SZ not implemented without alphaZ')
             exit(1)
-        thetatmp = self.markov_blanket['ThetaZ'].getExpectations().copy()
+        thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True).copy()
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
         # Collect parameters and expectations from P and Q distributions of this node
@@ -376,11 +380,11 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
         T, ZZ = Qexp["EB"], Qexp["ENN"]
         Qvar = Qpar['var_B1']
-        theta = self.markov_blanket['ThetaZ'].getExpectations()
+        theta = self.markov_blanket['ThetaZ'].getExpectations(expand=True)
 
         # Get ARD sparsity or prior variance
         if "AlphaZ" in self.markov_blanket:
-            alpha = self.markov_blanket['AlphaZ'].getExpectations().copy()
+            alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True).copy()
         else:
             print("Not implemented")
             exit()

@@ -4,8 +4,8 @@
 \alias{predict}
 \title{Do predictions using a fitted BioFAModel}
 \usage{
-predict(object, views = "all", factors = "all", type = c("inRange",
-  "response", "link"), include_intercept = TRUE)
+predict(object, views = "all", groups = "all", factors = "all",
+  type = c("inRange", "response", "link"), include_intercept = TRUE)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
