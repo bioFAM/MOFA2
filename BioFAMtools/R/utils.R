@@ -149,7 +149,7 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
   # Mask samples that are unique in the unique factors
   missing <- lapply(get_training_data(object, views, groups), function(views) {
     lapply(views, function(group) {
-      samples_names(object)[apply(group, 2, function(x) all(is.na(x)))]
+      names(which(apply(group,2,function(x) all(is.na(x)))))
     })
   })
 
@@ -161,7 +161,7 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
       if (!is.null(view)) {
         missing_samples <- missing[[view]][[p]]
         if (length(missing_samples) > 0) {
-          Z[[p]][missing_samples, fctr] <- NA
+          Z[[p]][missing_samples, fctr] <- rep(NA,length(missing_samples))
         }
       }
     }
