@@ -542,11 +542,11 @@ if __name__ == '__main__':
     # lik = ["gaussian", "gaussian"]
     lik = ["gaussian"]
 
-    outfile = dir+"test_no_sl.hdf5"
+    outfile = dir+"test_sl_z.hdf5"
 
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=False, sl_w=False, ard_w=True, factors=10, likelihoods=lik)
+    ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
     ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
     ent.build()
     ent.run()

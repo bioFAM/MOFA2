@@ -137,7 +137,7 @@ class buildBiofam(buildModel):
 
         # Initialise hyperparameters for the ThetaZ prior
         initTheta_a = 1.
-        initTheta_b = 0.001 #1.
+        initTheta_b = 1.  #0.001 #1.
 
         # Specify for which factors to learn ThetaZ
         learnTheta_ix = np.ones(self.dim['K'])
