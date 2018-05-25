@@ -160,14 +160,14 @@ def loadData(data_opts, verbose=True):
     #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
     #         exit()
 
-    # if data_opts['features_in_rows']:
-    #     for m in range(M): Y[m] = Y[m].T
-    #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
-    #         print("\nWarning: Columns seem to be the shared axis, transposing the data...")
-    #         for m in range(M): Y[m] = Y[m].T
-    #     else:
-    #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
-    #         exit()
+    if data_opts.get('features_in_rows', False):
+        if len(set([Y[m].shape[1] for m in range(M)])) == 1:
+            print("\nIn the input files features are in rows, transposing the data...")
+            for m in range(M): Y[m] = Y[m].T
+        else:
+            print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
+            exit()
+
     Y = process_data(Y, data_opts, sample_groups)
 
     return (Y, sample_groups)

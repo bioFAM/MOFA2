@@ -20,7 +20,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = """
+        banner = r"""
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -254,21 +254,20 @@ class entry_point(object):
             self.model_opts['sparsity'] = True
             self.model_opts['learnTheta'] = [s.ones(self.dimensionalities["K"]) for m in range(self.dimensionalities["M"])]
         elif isinstance(learnTheta,list):
-        	print("Depreciated, '--learnTheta' has to be a boolean")
+        	print("Depreciated, '--learn-theta' has to be a boolean")
 			# self.model_opts['sparsity'] = True
 			# assert len(learnTheta)==M, "--learnTheta has to be a binary vector with length number of views"
 			# self.model_opts['learnTheta'] = [ learnTheta[m]*s.ones(K) for m in range(M) ]
         else:
-            print("Error, --learnTheta has to be a boolean")
+            print("Error, --learn-theta has to be a boolean")
             exit(1)
 
-        # TODO sort that out
-        self.data_opts['features_in_rows'] = False
 
     def set_data_options(self, lik,
         center_features=False, center_features_per_group=False,
         scale_features=False, scale_views=False,
-        maskAtRandom=None, maskNSamples=None
+        maskAtRandom=None, maskNSamples=None,
+        features_in_rows=False
         ):
 
         """ Parse data processing options """
@@ -282,6 +281,9 @@ class entry_point(object):
         self.model_opts["likelihoods"] = lik
         M = len(self.model_opts["likelihoods"])
         # assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
+
+        if features_in_rows is True:
+            self.data_opts['features_in_rows'] = features_in_rows
 
         # Center features
         # TO-DO: ITS NOT INTUITIVE TO HARD BOTH CENTER_FEATURES AND CENTER_FEATURES_PER_GROUP, WE NEEED TO FIX THIS
