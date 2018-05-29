@@ -189,7 +189,7 @@ def process_data(Y, data_opts, sample_groups):
 
         if data_opts['center_features_per_group'][m]:
             print("Centering features per group for view " + str(m) + "...")
-            for gp_name in uniq_group_names:
+            for gp_name in np.unique(data_opts['group_names']):
                 filt = [gp == gp_name for gp in sample_groups]
                 Y[m][filt] = (Y[m][filt] - Y[m][filt].mean(axis=0))
 
