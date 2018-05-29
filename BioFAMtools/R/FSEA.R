@@ -227,6 +227,7 @@ lineplot_FSEA <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adju
 #' @param fsea.out output of \link{FeatureSetEnrichmentAnalysis} function
 #' @param factors : to plot only a subset of given factors
 #' @param threshold p.value threshold to filter out unsignificant feature sets. Default is 0.05.
+#' @param max.pathways maximum number of enriched pathways to display (keeping pathways with highest pvalues reached for some factor)
 #' @param log boolean indicating whether to plot the log of the p.values.
 #' @param ... extra arguments to be passed to \link{pheatmap} function
 #' @details fill this
@@ -234,7 +235,7 @@ lineplot_FSEA <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adju
 #' @importFrom grDevices colorRampPalette
 #' @export
 
-heatmap_FSEA <- function(fsea.out, factors="all", threshold = 0.05, log = TRUE, ...) {
+heatmap_FSEA <- function(fsea.out, factors="all", threshold = 0.05, max.pathways = 25, log = TRUE, ...) {
 
   # get p-values
   p.values <- fsea.out$pval.adj
@@ -242,6 +243,10 @@ heatmap_FSEA <- function(fsea.out, factors="all", threshold = 0.05, log = TRUE, 
     p.values <- p.values[,factors]
   }
   p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=threshold)) == ncol(p.values),]
+  
+  # If there are too many pathways enriched, just keep the 'max_pathways' more significant
+  if (nrow(p.values) > max.pathways)
+    p.values <- head(p.values[order(apply(p.values, 1, function(x) min(x))),],n=max.pathways)
 
   # Apply Log transform
   if (log==T) {
@@ -253,6 +258,9 @@ heatmap_FSEA <- function(fsea.out, factors="all", threshold = 0.05, log = TRUE, 
   }
   
   # Generate heatmap
+  # hacking if pvalues are 0
+  p.values[is.infinite(p.values)] = 2*max(p.values[is.finite(p.values)])
+  
   pheatmap::pheatmap(p.values, color = col, ...)
 }
 
