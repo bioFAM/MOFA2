@@ -33,7 +33,7 @@ class entry_point(object):
         # sleep(2)
         sys.stdout.flush()
 
-    def set_data(self, data):
+    def set_data_df(self, data):
         """Method to define the data
 
         PARAMETERS
@@ -44,6 +44,7 @@ class entry_point(object):
         """
 
         # Sanity checks
+        assert hasattr(self, 'data_opts'), "Data options not defined"
         assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
         assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
         assert 'sample_group' in data.columns, "'data' has to contain the column 'sample_group'"
@@ -51,10 +52,7 @@ class entry_point(object):
         assert 'feature_group' in data.columns, "'data' has to contain the column 'feature_group'"
         assert 'value' in data.columns, "'data' has to contain the column 'value'"
 
-        # Defien data options
-        self.data_opts = {}
-
-        # Define feature groups and sample groups
+        # Define feature group names and sample group names
         self.data_opts['view_names'] = data["feature_group"].unique()
         self.data_opts['group_names'] = data["sample_group"].unique()
 
@@ -62,12 +60,15 @@ class entry_point(object):
         self.data_opts['sample_names'] = data["sample"].unique()
         self.data_opts['feature_names'] = [ data.loc[data['feature_group'] == m].feature.unique() for m in self.data_opts['view_names'] ]
 
-        # Create dictionaries with mapping between:
+        # (DEPRECIATED) Create dictionaries with mapping between:
         #  sample names (keys) and sample_groups (values)
         #  feature names (keys) and feature groups (values)
         # TODO CHECK that the order is fine here ...
-        self.data_opts['sample_groups'] = pd.Series(df.sample_group.values, index=df.sample).values()
-        # self.data_opts['feature_groups'] = pd.Series(df.feature_group.values, index=df.feature).to_dict()
+        # self.data_opts['sample_groups'] = pd.Series(data["sample_group"].values, index=data["sample"].values).to_dict()
+        # self.data_opts['feature_groups'] = pd.Series(data.feature_group.values, index=data.feature).to_dict()
+
+        # Define sample groups
+        self.data_opts['sample_groups'] = data["sample_group"].values
 
         # Define dictionary with the dimensionalities
         self.dimensionalities = {}
@@ -76,19 +77,15 @@ class entry_point(object):
         self.dimensionalities['N'] = len(self.data_opts['sample_names'])
         self.dimensionalities['P'] = len(self.data_opts['group_names'])
 
-        # Convert data frame to nested list of matrices where
-        # the first level splits by feature_group (views) and the second level splits by sample_group
-        data_matrix = [[None]*self.dimensionalities['P'] for m in range(self.dimensionalities['M'])]
+        # Convert data frame to list of matrices
+        data_matrix = [None]*self.dimensionalities['M']
         for m in range(self.dimensionalities['M']):
-            for p in range(self.dimensionalities['P']):
-                subdata = data.loc[(data['feature_group'] == self.data_opts['view_names'][m]) & (data['sample_group'] == self.data_opts['group_names'][p]) ]
-                data_matrix[m][p] = subdata.pivot(index='sample', columns='feature', values='value').values
-                # TO-DO: Reorder to match feature_names and sample_names
-                # NOT TESTED data_matrix[m][p] = data_matrix[m][p].reindex(self.data_opts['sample_names'])
-                # NOT TESTED data_matrix[m][p] = data_matrix[m][p][self.data_opts['feature_names'][m]]
+            subdata = data.loc[ data['feature_group'] == self.data_opts['view_names'][m] ]
+            data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
 
-        # TODO check that
+        # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['sample_groups'])
+
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
@@ -272,6 +269,10 @@ class entry_point(object):
 
         """ Parse data processing options """
 
+        # RICARD: LIKELIHOOD SHOULD BE IN MODEL_OPTS, NOT IN DATA_OPTIONS
+        #       WHY IS SELF_MODEL.OPTS() DEFINED HERE??????
+        # TO-DO: QC THAT LILEIHOOD IS POISSON, GAUSSIA, BERNOULLI
+
         # TODO: more verbose messages
         # TODO Sanity checks
         self.data_opts = {}
@@ -332,6 +333,7 @@ class entry_point(object):
         # Sanity checks
         assert hasattr(self, 'model_opts'), "Train options not defined"
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
+
         # Build the BioFAM model
         self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
         self.model = self.model_builder.net
@@ -524,15 +526,15 @@ class entry_sfa(entry_point):
 
 
 if __name__ == '__main__':
-    ent = entry_point()
-    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/sl_simulations/'
+    # ent = entry_point()
+    # dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/sl_simulations/'
     # infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
     # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
-    infiles = [dir+'data_0.txt']
+    # infiles = [dir+'data_0.txt']
     # views =  ["view_0", "view_0", 'view_1', 'view_1']
     # groups = ["group_0", "group_1", 'group_0', 'group_1']
-    views =  ["view_0"]
-    groups = ["group_0"]
+    # views =  ["view_0"]
+    # groups = ["group_0"]
 
     # infiles = [dir+'data_all.txt']
     # views =  ["view_A", "view_A", "view_B", "view_B"]
@@ -542,29 +544,30 @@ if __name__ == '__main__':
     # groups = ["group_0"]
 
     # lik = ["gaussian", "gaussian"]
-    lik = ["gaussian"]
+    # lik = ["gaussian"]
 
-    outfile = dir+"test_sl_z.hdf5"
+    # outfile = dir+"test_sl_z.hdf5"
 
-    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
-    ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
-    ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
+    # ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
+    # ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    # ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
+    # ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
+    # ent.build()
+    # ent.run()
+    # ent.save(outfile)
+    # ent.get_df('Y')
+
+
+    from biofam.run.entry_point import entry_point
+    import pandas as pd
+    file = "/Users/ricard/Downloads/test_biofam/data.txt"
+    lik = ["gaussian", "gaussian","gaussian","gaussian"]
+    data = pd.read_csv(file, delimiter="\t")
+    ent = entry_point()
+    ent.set_data_options(lik)
+    ent.set_data_df(data)
+    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+    ent.set_model_options(factors=10, likelihoods=lik, sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
     ent.build()
     ent.run()
-    ent.save(outfile)
-    # ent.get_df('Y')
-
-
-    # # from biofam.run.entry_point import entry_point
-    # file = "/Users/ricard/Downloads/test_biofam/data.txt"
-    # lik = ["gaussian", "gaussian"]
-    # ent.set_data_options()
-    # data = pd.read_csv(file, delimiter="\t")
-    # ent = entry_point()
-    # ent.set_data(data)
-    # ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
-    # ent.set_model(sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
-    # ent.set_model_options(factors=10, likelihoods=lik)
-    # ent.build_and_run()
-    # ent.get_df('Y')
+    ent.save(file)

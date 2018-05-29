@@ -279,7 +279,7 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 #' @export
 setMethod("samples_names", signature(object="BioFAModel"), 
   function(object) { 
-    object@data_options$samples$names
+    object@data_options$samples_names
   })
 
 #' @rdname samples_names
@@ -298,7 +298,7 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
     if (!all(sapply(value, length) == sapply(object@training_data[[1]], ncol)))
       stop("sample names do not match the dimensionality of the data (columns)")
 
-    object@data_options$samples$names <- value
+    object@data_options$samples_names <- value
     object <- .set_expectations_names(object, entity = 'samples', value)
     object <- .set_parameters_names(object, entity = 'samples', value)
     object <- .set_data_names(object, entity = 'samples', value)
@@ -317,7 +317,7 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 #' @export
 setMethod("features_names", signature(object="BioFAModel"), 
   function(object) { 
-    object@data_options$features$names
+    object@data_options$features_names
   })
 
 #' @rdname features_names
@@ -336,7 +336,7 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
     if (!all(sapply(value, length) == sapply(object@training_data, function(e) nrow(e[[1]]))))
       stop("Feature names do not match the dimensionality of the data (rows)")
     
-    object@data_options$features$names <- value
+    object@data_options$features_names <- value
     object <- .set_expectations_names(object, entity = 'features', value)
     object <- .set_parameters_names(object, entity = 'features', value)
     object <- .set_data_names(object, entity = 'features', value)
@@ -355,7 +355,7 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
 #' @export
 setMethod("views_names", signature(object="BioFAModel"), 
   function(object) {
-    object@data_options$features$views
+    object@data_options$views_names
   })
 
 
@@ -374,7 +374,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
     #   stop("View names do not match the number of views in the training data")
 
     # Set view names in data options
-    object@data_options$features$views <- value
+    object@data_options$views_names <- value
   
     # Set view names in expectations
     for (node in names(object@expectations)) {
@@ -409,7 +409,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
 #' @export
 setMethod("groups_names", signature(object="BioFAModel"), 
   function(object) {
-    object@data_options$samples$groups
+    object@data_options$samples_groups
   })
 
 
@@ -428,7 +428,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
     #   stop("Group names do not match the number of groups in the training data")
     
     # Set sample group names in data options
-    object@data_options$samples$groups <- value
+    object@data_options$samples_groups <- value
     
     # Set sample group names in expectations
     for (node in object@model_options$nodes$multigroup_nodes) {

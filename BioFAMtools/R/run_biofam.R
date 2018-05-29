@@ -58,17 +58,8 @@ run_biofam <- function(object, dir_options) {
   )
   
   # Set the data
-  biofam_entrypoint$set_data(r_to_py(object@input_data))
+  biofam_entrypoint$set_data_df(r_to_py(object@input_data))
   
-  # Pass data options
-  # biofam_entrypoint$set_data_options(
-  #   inFiles     = paste0(dir_options$data_dir, "/", viewNames(object), ".txt"), 
-  #   outFile     = dir_options$outfile, 
-  #   views       = viewNames(object), 
-  #   delimiter   = "\t", 
-  #   header_cols = TRUE, 
-  #   header_rows = TRUE
-  # )
   
   # Set training options  
   biofam_entrypoint$set_train_options(

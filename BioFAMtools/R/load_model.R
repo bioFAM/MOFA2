@@ -9,14 +9,15 @@
 #' The training of biofam is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.
 #' @param file an hdf5 file saved by the biofam Python framework
 #' @param object either NULL (default) or an an existing untrained biofam object. If NULL, the \code{\link{BioFAModel}} object is created from the scratch.
-#' @param sort_factors boolean inOdicating whether factors should be sorted by variance explained (default is TRUE)
+#' @param sort_factors boolean indicating whether factors should be sorted by variance explained (default is TRUE)
+#' @param in_disk boolean indicating whether to work from memory (FALSE) or disk (TRUE)
 #' @return a \code{\link{BioFAModel}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE) {
+load_model <- function(file, object = NULL, sort_factors = TRUE, in_disk=FALSE) {
   
   # Create new bioFAModel object  
   if (is.null(object)) object <- new("BioFAModel")
@@ -48,8 +49,13 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
   training_data <- list()
   for (m in feature_groups) {
     training_data[[m]] <- list()
-    for (p in sample_groups)
-      training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s",m,p) ) )
+    for (p in sample_groups) {
+      if (in_disk) {
+        training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s",m,p) ) )
+      } else {
+        training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s",m,p) )
+      }
+    }
   }
 
   # Replace NaN by NA
@@ -79,7 +85,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
   #######################
   
   # RICARD: THIS IS A BIT UGGLY, BUT I DON'T KNOW HOW TO DO IT BETTER.
-  # Small expectations can be loaded into memory but big matrices (Y and perhaps W,Z) should be loaded as lazy DelayedArrays
   expectations <- list()
   node_names <- foo[foo$group=="/expectations","name"]
   if ("AlphaW" %in% node_names)
@@ -91,19 +96,17 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
   if ("Z" %in% node_names) {
     expectations[["Z"]] <- list()
     for (p in sample_groups) {
-      expectations[["Z"]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Z/%s/E", p)) )
+      if (in_disk) {
+        expectations[["Z"]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Z/%s/E", p)) )
+      } else {
+        expectations[["Z"]][[p]] <- h5read(file, sprintf("expectations/Z/%s/E",p))
+      }
     }
   }
   if ("SZ" %in% node_names)
     expectations[["Z"]] <- h5read(file, "expectations/SZ")
   if ("W" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/W")    
-  # if ("W" %in% node_names) {
-  #   expectations[["W"]] <- list()
-  #   for (m in feature_groups) {
-  #     expectations[["W"]][[m]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/W/%s/E", m)) )
-  #   }
-  # }
   if ("SW" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/SW")
   if ("ThetaW" %in% node_names)
@@ -115,7 +118,11 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
     for (m in feature_groups) {
       expectations[["Y"]][[m]] <- list()
       for (p in sample_groups) {
-        expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s/E", m, p)) )
+        if (in_disk) {
+          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s/E", m, p)) )
+        } else {
+          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s/E", m, p))
+        }
       }
     }
   }
