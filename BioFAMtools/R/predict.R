@@ -27,7 +27,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
                     include_intercept = TRUE) {
 
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get views  
   views <- .check_and_get_views(object, views)
@@ -43,9 +43,15 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
     stopifnot(all(factors %in% factors_names(object))) 
   }
 
-  # add intercept factor for prediction
-  if(!"intercept" %in% factors & object@model_options$learn_intercept & include_intercept) factors <- c("intercept", factors)  
-  if(!include_intercept & "intercept" %in% factors) factors <- factors[factors!="intercept"]
+  # add/remove intercept factor for prediction
+  if (include_intercept) {
+    if (!"intercept" %in% factors & object@model_options$learn_intercept) {
+      factors <- c("intercept", factors)  
+    } else {
+      factors <- factors[factors!="intercept"]
+    }
+    
+  }
   
   # Get type of predictions wanted 
   type = match.arg(type)
@@ -57,19 +63,25 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
   Z <- get_factors(object, groups = groups, factors = factors)
   Z[is.na(Z)] <- 0 # set missing values in Z to 0 to exclude from imputations
  
+   # Coerce either W or Z to DelayedArrays and set HDF5array backend for on-disk operations
+  if (object@on_disk) {
+    Z <- lapply(Z, function(x) if (!is(x,"DelayedArray")) DelayedArray(x) else x )
+    # W <- lapply(W, function(x) if (!is(x,"DelayedArray")) DelayedArray(x) else x )
+    setRealizationBackend("HDF5Array")
+  }
+  
   # Predict data based on BioFAModel
-  # predictedData <- lapply(sapply(views, grep, views_names(object)), function(viewidx){
-  predictedData <- lapply(views, function(v){
-    lapply(groups, function(g) {
+  predictedData <- lapply(views, function(m) { lapply(groups, function(g) {
+    
       # calculate terms based on linear model
-      pred <- t(Z[[g]] %*% t(W[[v]])) 
+      pred <- t(Z[[g]] %*% t(W[[m]])) 
       
       # make predicitons based on underlying likelihood
       lks <- object@model_options$likelihood
       names(lks) <- views_names(object)
 
       if (type != "link") {
-        lk <- lks[v]
+        lk <- lks[m]
         if (lk == "gaussian") { 
           pred <- pred 
         }
@@ -77,18 +89,19 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
           pred <- (exp(pred)/(1 + exp(pred)))
           if (type == "inRange") pred <- round(pred)
         } else if (lk == "poisson") { 
-          # predictedView <- (exp(predictedView))
           pred <- log(1 + exp(pred))
-          if(type == "inRange") pred <- round(pred)
+          if (type == "inRange") pred <- round(pred)
         }
         else { 
           stop(sprintf("Likelihood %s not implemented for imputation", lk)) 
         }
       }
       pred
+      
     })
   })
 
+  # RICARD: TO CHECK IF THIS IS OK IN DELAYEDARRAYS
   predictedData <- .name_views_and_groups(predictedData, views, groups)
 
   return(predictedData)

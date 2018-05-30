@@ -43,6 +43,7 @@ setClass("BioFAModel",
                  data_options     = "list",
                  model_options    = "list",
                  dimensions       = "list",
+                 on_disk          = "logical",
                  status           = "character")
 )
 

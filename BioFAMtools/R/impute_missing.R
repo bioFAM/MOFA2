@@ -30,15 +30,14 @@ impute_missing <- function(object, views = "all", groups = "all", factors = "all
   predData <- predict(object, views = views, factors = factors, type = type)
 
   # Replace NAs with predicted values
+  # RICARD: HOW TO REPLACE SUBSET VALUES WITH DELAYEDARRAYS??
   imputedData <- get_training_data(object, views = views, groups = groups)
-  imputedData <- lapply(views, function(viewnm) {
-    lapply(groups, function(groupnm) {
-      mx <- imputedData[[viewnm]][[groupnm]]
-      non_observed <- which(is.na(mx), arr.ind = T)
-      mx[non_observed] <- predData[[viewnm]][[groupnm]][non_observed]
-      mx
-    })
-  })
+  for (m in views) {
+    for (g in groups) {
+      non_observed <- which(is.na(imputedData[[m]][[g]]), arr.ind = T)
+      imputedData[[m]][[g]][non_observed] <- predData[[m]][[g]][non_observed]
+    }
+  }
 
   # re- arrange list in accordance with other data slots in the model
   # names(imputedData) <- views

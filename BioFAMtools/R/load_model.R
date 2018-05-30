@@ -23,10 +23,11 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, in_disk=FALSE) 
   if (is.null(object)) object <- new("BioFAModel")
   
   # Sanity checks
-  if(.hasSlot(object, "status") & length(object@status) != 0)
+  if (.hasSlot(object, "status") & length(object@status) != 0)
     if (object@status == "trained") warning("The specified object is already trained, over-writing training output with new results.")
+  if (.hasSlot(object, "on_disk") & (in_disk)) object@on_disk <- TRUE
   
-  # Get groups and data set names from the hdf5 file object
+    # Get groups and data set names from the hdf5 file object
   foo <- h5ls(file, datasetinfo = F)
   
   ########################
@@ -84,31 +85,28 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, in_disk=FALSE) 
   ## Load expectations ##
   #######################
   
-  # RICARD: THIS IS A BIT UGGLY, BUT I DON'T KNOW HOW TO DO IT BETTER.
   expectations <- list()
   node_names <- foo[foo$group=="/expectations","name"]
+  
   if ("AlphaW" %in% node_names)
     expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")
   if ("AlphaZ" %in% node_names)
     expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
+  
+  # TO-DO: IF TAU IS EXPANDED IT SHOULD BE A DELAYEDARRAY
   if ("Tau" %in% node_names)
     expectations[["Tau"]] <- h5read(file, "expectations/Tau")
-  if ("Z" %in% node_names) {
-    expectations[["Z"]] <- list()
-    for (p in sample_groups) {
-      if (in_disk) {
-        expectations[["Z"]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Z/%s/E", p)) )
-      } else {
-        expectations[["Z"]][[p]] <- h5read(file, sprintf("expectations/Z/%s/E",p))
-      }
-    }
-  }
+  
+  # RICARD: I DON'T THINK Z OR W SHOULD BE DELAYED ARRAYS, THEY SHOULD FIT IN MEMORY
+  if ("Z" %in% node_names)
+    expectations[["Z"]] <- h5read(file, "expectations/Z")
   if ("SZ" %in% node_names)
     expectations[["Z"]] <- h5read(file, "expectations/SZ")
   if ("W" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/W")    
   if ("SW" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/SW")
+  
   if ("ThetaW" %in% node_names)
     expectations[["ThetaW"]] <- h5read(file, "expectations/ThetaW")
   if ("ThetaZ" %in% node_names)
