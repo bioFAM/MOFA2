@@ -50,7 +50,7 @@ class BayesNet(object):
         self.options = train_opts
 
     def getParameters(self, *nodes):
-        """ Method to collect all parameters of a given set of nodes 
+        """ Method to collect all parameters of a given set of nodes
 
         PARAMETERS
         ----------

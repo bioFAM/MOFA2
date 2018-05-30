@@ -334,7 +334,7 @@ class entry_point(object):
         self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
         self.model = self.model_builder.net
 
-    def run(self):
+    def run(self, no_theta=False):
         """ Run the model """
 
     	# Sanity checks
@@ -349,6 +349,8 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
+        if no_theta:
+            self.train_opts['schedule'].remove('ThetaW')
         self.model.setTrainOptions(self.train_opts)
 
 	    # Train the model
@@ -523,14 +525,14 @@ class entry_sfa(entry_point):
 
 if __name__ == '__main__':
     ent = entry_point()
-    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/sl_simulations/'
-    # infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
+    # dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/sl_simulations/'
+    infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
     # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
     infiles = [dir+'data_0.txt']
-    # views =  ["view_0", "view_0", 'view_1', 'view_1']
-    # groups = ["group_0", "group_1", 'group_0', 'group_1']
-    views =  ["view_0"]
-    groups = ["group_0"]
+    views =  ["view_0", "view_0", 'view_1', 'view_1']
+    groups = ["group_0", "group_1", 'group_0', 'group_1']
+    # views =  ["view_0"]
+    # groups = ["group_0"]
 
     # infiles = [dir+'data_all.txt']
     # views =  ["view_A", "view_A", "view_B", "view_B"]
@@ -539,18 +541,28 @@ if __name__ == '__main__':
     # views =  ["view_0"]
     # groups = ["group_0"]
 
-    # lik = ["gaussian", "gaussian"]
-    lik = ["gaussian"]
-
-    outfile = dir+"test_sl_z.hdf5"
-
-    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
+    lik = ["gaussian", "gaussian"]
+    # lik = ["gaussian"]
+    #
+    # outfile = dir+"test_no_sl.hdf5"
+    #
+    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
+    ent.set_model_options(ard_z=False, sl_w=False, sl_z=False, ard_w=True, factors=4, likelihoods=lik, learnTheta=False)
     ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
     ent.build()
-    ent.run()
-    ent.save(outfile)
+    ent.run(no_theta=False)
+    # ent.save(outfile)
+    #
+    # outfile2 = dir+"test_sl.hdf5"
+    # ent2 = entry_point()
+    # ent2.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
+    # ent2.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    # ent2.set_model_options(ard_z=False, sl_w=True, sl_z=False, ard_w=True, factors=4, likelihoods=lik, learnTheta=False)
+    # ent2.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
+    # ent2.build()
+    # ent2.run(no_theta=False)
+    # ent2.save(outfile2)
     # ent.get_df('Y')
 
 
