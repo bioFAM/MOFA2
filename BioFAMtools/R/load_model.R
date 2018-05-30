@@ -10,14 +10,14 @@
 #' @param file an hdf5 file saved by the biofam Python framework
 #' @param object either NULL (default) or an an existing untrained biofam object. If NULL, the \code{\link{BioFAModel}} object is created from the scratch.
 #' @param sort_factors boolean indicating whether factors should be sorted by variance explained (default is TRUE)
-#' @param in_disk boolean indicating whether to work from memory (FALSE) or disk (TRUE)
+#' @param on_disk boolean indicating whether to work from memory (FALSE) or disk (TRUE)
 #' @return a \code{\link{BioFAModel}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE, in_disk=FALSE) {
+load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk=FALSE) {
   
   # Create new bioFAModel object  
   if (is.null(object)) object <- new("BioFAModel")
@@ -25,7 +25,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, in_disk=FALSE) 
   # Sanity checks
   if (.hasSlot(object, "status") & length(object@status) != 0)
     if (object@status == "trained") warning("The specified object is already trained, over-writing training output with new results.")
-  if (.hasSlot(object, "on_disk") & (in_disk)) object@on_disk <- TRUE
+  if (.hasSlot(object, "on_disk") & (on_disk)) object@on_disk <- TRUE
   
     # Get groups and data set names from the hdf5 file object
   foo <- h5ls(file, datasetinfo = F)
@@ -51,7 +51,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, in_disk=FALSE) 
   for (m in feature_groups) {
     training_data[[m]] <- list()
     for (p in sample_groups) {
-      if (in_disk) {
+      if (on_disk) {
         training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s",m,p) ) )
       } else {
         training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s",m,p) )
@@ -116,7 +116,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, in_disk=FALSE) 
     for (m in feature_groups) {
       expectations[["Y"]][[m]] <- list()
       for (p in sample_groups) {
-        if (in_disk) {
+        if (on_disk) {
           expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s/E", m, p)) )
         } else {
           expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s/E", m, p))
