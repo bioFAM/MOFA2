@@ -68,7 +68,9 @@ class entry_point(object):
         # self.data_opts['feature_groups'] = pd.Series(data.feature_group.values, index=data.feature).to_dict()
 
         # Define sample groups
-        self.data_opts['sample_groups'] = data["sample_group"].values
+        self.data_opts['sample_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
+                                            .set_index('sample').loc[self.data_opts['sample_names']] \
+                                            .sample_group.tolist()
 
         # Define dictionary with the dimensionalities
         self.dimensionalities = {}
@@ -560,14 +562,58 @@ if __name__ == '__main__':
 
     from biofam.run.entry_point import entry_point
     import pandas as pd
-    file = "/Users/ricard/Downloads/test_biofam/data.txt"
+    file = "~/Downloads/data.txt"
     lik = ["gaussian", "gaussian","gaussian","gaussian"]
-    data = pd.read_csv(file, delimiter="\t")
+    data = pd.read_csv(file, delimiter=" ")
     ent = entry_point()
     ent.set_data_options(lik)
     ent.set_data_df(data)
-    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+    ent.set_train_options(iter=1, tolerance=0.01, dropR2=0.0)
     ent.set_model_options(factors=10, likelihoods=lik, sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
     ent.build()
     ent.run()
-    ent.save(file)
+    outfile = 'tmp/test_df.hdf5'
+    ent.save(outfile)
+
+
+# if __name__ == '__main__':
+#     ent = entry_point()
+#     dir = './'
+#     infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
+#     views =  ["view_0", "view_0", 'view_1', 'view_1']
+#     groups = ["group_0", "group_1", 'group_0', 'group_1']
+    
+#     # infiles = [dir+'data_all.txt']
+#     # views =  ["view_A", "view_A", "view_B", "view_B"]
+#     # groups = ["group_A", "group_B", "group_A", "group_B"]
+
+#     # views =  ["view_0"]
+#     # groups = ["group_0"]
+
+#     lik = ["gaussian", "gaussian"]
+#     # lik = ["gaussian"]
+
+#     outfile = "tmp/test__.hdf5"
+
+#     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=False)
+#     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+#     ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
+#     ent.set_train_options(iter=500, tolerance=10, dropR2=0.0)
+#     ent.build()
+#     ent.run()
+#     ent.save(outfile)
+
+
+#     # from biofam.run.entry_point import entry_point
+#     # import pandas as pd
+#     # file = "/Users/ricard/Downloads/test_biofam/data.txt"
+#     # lik = ["gaussian", "gaussian","gaussian","gaussian"]
+#     # data = pd.read_csv(file, delimiter="\t")
+#     # ent = entry_point()
+#     # ent.set_data_options(lik)
+#     # ent.set_data_df(data)
+#     # ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+#     # ent.set_model_options(factors=10, likelihoods=lik, sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
+#     # ent.build()
+#     # ent.run()
+#     # ent.save(file)
