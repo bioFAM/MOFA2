@@ -82,6 +82,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
+
         if ix is None:
             ix = range(self.dim[0])
 
@@ -146,13 +147,13 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # compute the update
         ########################################################################
-        up = self._updateParameters(Y, W, tau, Mu, Alpha,
+        par_up = self._updateParameters(Y, W, tau, Mu, Alpha,
                                     p_cov_inv, p_cov_inv_diag, Qmean, Qvar)
         ########################################################################
         # Do the asignment
         ########################################################################
-        Q['mean'][ix,:] = up['Qmean']
-        Q['var'][ix,:] = up['Qvar']
+        Q['mean'][ix,:] = par_up['Qmean']
+        Q['var'][ix,:] = par_up['Qvar']
         self.Q.setParameters(mean=Q['mean'], var=Q['var']) # TODO should not be necessarry
 
     def _updateParameters(self, Y, W, tau, Mu, Alpha,
@@ -347,7 +348,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         return latent_variables
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         pass
 
     def _updateParameters(self):

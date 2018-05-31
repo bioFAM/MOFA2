@@ -45,7 +45,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self, factors_selection=None):
+    def updateParameters(self, ix=None, ro=None, factors_selection=None):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes
@@ -145,7 +145,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self, factors_selection=None):
+    def updateParameters(self, ix=None, ro=None, factors_selection=None):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes

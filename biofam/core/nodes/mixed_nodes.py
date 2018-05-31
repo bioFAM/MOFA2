@@ -60,9 +60,9 @@ class Mixed_ThetaW_Nodes_mk(Variational_Node, Constant_Node):
     def updateExpectations(self):
         self.learnTheta.updateExpectations()
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         # the argument contains the indices of the non_annotated factors
-        self.learnTheta.updateParameters(s.nonzero(self.idx)[0])
+        self.learnTheta.updateParameters(ix, ro, s.nonzero(self.idx)[0])
 
     def calculateELBO(self):
         return self.learnTheta.calculateELBO()
@@ -142,9 +142,9 @@ class Mixed_ThetaZ_Nodes_k(Variational_Node, Constant_Node):
     def updateExpectations(self):
         self.learnTheta.updateExpectations()
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         # the argument contains the indices of the non_annotated factors
-        self.learnTheta.updateParameters(s.nonzero(self.idx)[0])
+        self.learnTheta.updateParameters(ix, ro, s.nonzero(self.idx)[0])
 
     def calculateELBO(self):
         return self.learnTheta.calculateELBO()

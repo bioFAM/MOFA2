@@ -35,7 +35,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
 
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation().copy()
@@ -123,7 +123,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation().copy()
         mask = ma.getmask(Y)

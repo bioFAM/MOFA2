@@ -49,6 +49,10 @@ class BayesNet(object):
 
         self.options = train_opts
 
+        # TODO for testing purpose
+        self.options['batch_size'] = 0.1
+        # self.options['batch_size'] = None
+
     def getParameters(self, *nodes):
         """ Method to collect all parameters of a given set of nodes
 
@@ -197,11 +201,14 @@ class BayesNet(object):
 
     def step_size(self, iter):
         # return the step size for the considered iterration
-        pass
+        # TODO implement
+        return 1.
 
-    def samp_mini_batch(self):
-        pass
-
+    def sample_mini_batch(self):
+        S_pc = self.options['batch_size']
+        S = S_pc * self.dim['N']
+        ix = s.random.choice(range(self.dim['N']), size= S, replace=False)
+        return ix
 
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
@@ -214,11 +221,11 @@ class BayesNet(object):
         # Start training
         ro = None
         ix = None
-        stochastic = False
+        stochastic = True
         for i in range(self.options['maxiter']):
             if stochastic: # TODO
                 ro = self.step_size(i)
-                ix = self.samp_mini_batch()
+                ix = self.sample_mini_batch()
 
             t = time();
             # Remove inactive latent variables
@@ -233,7 +240,7 @@ class BayesNet(object):
                 # t = time()
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
-                self.nodes[node].update()
+                self.nodes[node].update(ix, ro)
                 # print "time: " + str(time()-t)
 
             # Calculate Evidence Lower Bound

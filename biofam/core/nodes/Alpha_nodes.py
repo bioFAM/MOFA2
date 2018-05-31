@@ -36,7 +36,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         # Collect expectations from other nodes
         tmp = self.markov_blanket["W"].getExpectations()
         E  = tmp["E"]
@@ -94,7 +94,7 @@ class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
 
         # TODO: muZ node not accounted for here
         # Collect expectations from other node
@@ -157,7 +157,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         # TODO: add an if MuZ is in markov blanket ?
         tmp = self.markov_blanket["Z"].getExpectations()
         # TODO check that in both version the ENN/E2 which are returned are the same
