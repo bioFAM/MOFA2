@@ -119,7 +119,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         Qmean, Qvar = Q['mean'], Q['var']
 
         ########################################################################
-        # subset matrices if necessarry
+        # subset matrices for stochastic inference
         ########################################################################
         for m in range(len(Y)):
             Y[m] = Y[m].data[ix,:].copy()

@@ -50,7 +50,7 @@ class BayesNet(object):
         self.options = train_opts
 
         # TODO for testing purpose
-        self.options['batch_size'] = 0.1
+        self.options['batch_size'] = 1.
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
@@ -259,7 +259,7 @@ class BayesNet(object):
 
                     # Print ELBO monitoring
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes['Z'].covariates).sum(), self.nodes['Z'].covariates.sum() ))
-                    if delta_elbo<0:
+                    if delta_elbo<0 and not stochastic:
                         print("Warning, lower bound is decreasing..."); print('\a')
                         #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
 

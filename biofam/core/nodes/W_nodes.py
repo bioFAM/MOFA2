@@ -79,29 +79,24 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             #self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
     def updateParameters(self, ix=None, ro=None):
-        # get necessarry nodes for update
-        self._updateParameters()
+        """
+        Public function to update the nodes parameters
+        Optional arguments for stochastic updates are:
+            - ix: list of indices of the minibatch
+            - ro: step size of the natural gradient ascent
+        """
+        if ix is None:
+            ix = range(self.dim[0])
+
         ########################################################################
-        # compute a bias coefficient for update of global parameters
+        # get Expectations which are necessarry for the update
         ########################################################################
-        # if ix is not None and on == 'features':
-        #     coeff = float(self.N) / float(len(ix))
-        # else:
-        #     coeff = 1.
-
-        # else:
-        #     up['Qmean'] = ro * up['Qmean'] + (1-ro) * self.Q.getParameters()['Qmean']
-        #     up['Qvar'] = ro * up['Qvar'] + (1-ro) * self.Q.getParameters()['Qvar']
-        #     self.Q.setParameters(mean=up['Qmean'], var=up['Qvar'])
-
-    def _updateParameters(self):
-
-        # Collect expectations from the markov blanket
-        Y = deepcopy(self.markov_blanket["Y"].getExpectation())
-        SZtmp = self.markov_blanket["Z"].getExpectations()
-        tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
-        latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
+        Y = self.markov_blanket["Y"].getExpectation()
+        ZE = self.markov_blanket["Z"].getExpectations()['E']
+        ZE2 = self.markov_blanket["Z"].getExpectations()['E2']
+        tau = self.markov_blanket["Tau"].getExpectation()
         mask = ma.getmask(Y)
+        N = Y.shape[0]
 
         # Collect parameters from the prior or expectations from the markov blanket
         if "MuW" in self.markov_blanket:
@@ -111,34 +106,75 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         if "AlphaW" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaW'].getExpectation(expand=True)
-
+            p_cov_inv = None
+            p_cov_inv_diag = None
         elif "SigmaAlphaW" in self.markov_blanket:
             if self.markov_blanket["SigmaAlphaW"].__class__.__name__=="AlphaW_Node_mk":
                 Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation(expand=True)
+                p_cov_inv = None
+                p_cov_inv_diag = None
             else:
                 Sigma = self.markov_blanket['SigmaAlphaW'].getExpectations()
                 p_cov_inv = Sigma['inv']
                 p_cov_inv_diag = Sigma['inv_diag']
+                Alpha = None
         else:
+            Alpha = None
             p_cov_inv = self.p_cov_inv
             p_cov_inv_diag = self.p_cov_inv_diag
 
-        # Mask tau
-        tau[mask] = 0.
-        # Mask Y
-        Y = Y.data
-        Y[mask] = 0.
-
-        # Collect parameters from the P and Q distributions of this node
+        # Collect parameters from the Q distributions of this node
         Q = self.Q.getParameters().copy()
         Qmean, Qvar = Q['mean'], Q['var']
+
+        ########################################################################
+        # subset matrices for stochastic inference
+        ########################################################################
+        Y = Y.data[ix,:].copy()
+        mask = mask[ix,:].copy()
+        tau = tau[ix,:].copy()
+        ZE = ZE[ix,:].copy()
+        ZE2 = ZE2[ix,:].copy()
+        Z = {'E': ZE, 'E2': ZE2}
+
+        ########################################################################
+        # Masking
+        ########################################################################
+        tau[mask] = 0.
+        Y[mask] = 0.
+
+        ########################################################################
+        # compute stochastic "anti-bias" coefficient
+        ########################################################################
+        coeff = float(N) / float(len(ix))
+
+        ########################################################################
+        # compute the update
+        ########################################################################
+        par_up = self._updateParameters(Y, Z, tau, Mu, Alpha, p_cov_inv, p_cov_inv_diag,
+                               Qmean, Qvar, coeff)
+
+        ########################################################################
+        # Do the asignment
+        ########################################################################
+        if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
+            par_up['Qmean'] = ro * par_up['Qmean'] + (1-ro) * self.Q.getParameters()['mean']
+            par_up['Qvar'] = ro * par_up['Qvar'] + (1-ro) * self.Q.getParameters()['var']
+        self.Q.setParameters(mean=par_up['Qmean'], var=par_up['Qvar'])
+
+
+    # TODO: use coef where appropriate
+    def _updateParameters(self, Y, Z, tau, Mu, Alpha, p_cov_inv, p_cov_inv_diag,
+                           Qmean, Qvar, coeff):
+
+        latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
 
         for k in latent_variables:
             foo = s.zeros((self.D,))
             bar = s.zeros((self.D,))
 
-            foo += np.dot(SZtmp["E2"][:,k],tau)
-            bar += np.dot(SZtmp["E"][:,k],tau*(Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
+            foo += coeff * np.dot(Z["E2"][:,k],tau)
+            bar += coeff * np.dot(Z["E"][:,k],tau*(Y - s.dot(Z["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
@@ -158,7 +194,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                         Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])) #-Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean=Qmean, var=Qvar)
+        return {'Qmean': Qmean, 'Qvar': Qvar}
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
     def calculateELBO_k(self, k):

@@ -36,27 +36,60 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         return QExp['E']
 
     def updateParameters(self, ix=None, ro=None):
-
-        # Collect expectations from other nodes
-        Y = self.markov_blanket["Y"].getExpectation().copy()
+        """
+        Public function to update the nodes parameters
+        Optional arguments for stochastic updates are:
+            - ix: list of indices of the minibatch
+            - ro: step size of the natural gradient ascent
+        """
+        ########################################################################
+        # get Expectations which are necessarry for the update
+        ########################################################################
+        Y = self.markov_blanket["Y"].getExpectation()
         mask = ma.getmask(Y)
-
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
+        N = Y.shape[0]
 
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
-        # Collect parameters from the P and Q distributions of this node
-        P, Q = self.P.getParameters(), self.Q.getParameters()
+        # Collect parameters from the P distributions of this node
+        P = self.P.getParameters()
         Pa, Pb = P['a'], P['b']
 
-        # Mask matrices
-        Y = Y.data
+        ########################################################################
+        # subset matrices for stochastic inference
+        ########################################################################
+        Y = Y.data[ix,:].copy()
+        mask = mask[ix,:].copy()
+        Z = Z[ix,:].copy()
+        ZZ = ZZ[ix,:].copy()
+
+        ########################################################################
+        # Masking
+        ########################################################################
         Y[mask] = 0.
 
-        # Calculate terms for the update
+        ########################################################################
+        # compute stochastic "anti-bias" coefficient
+        ########################################################################
+        coeff = float(N) / float(len(ix))
 
+        ########################################################################
+        # compute the update
+        ########################################################################
+        par_up = self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff)
+
+        ########################################################################
+        # Do the asignment
+        ########################################################################
+        if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
+            par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
+            par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
+        self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
+
+    def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff):
         ZW =  ma.array(Z.dot(W.T), mask=mask)
 
         # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
@@ -69,17 +102,16 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         # dotd(WZ, WZ.T) should compute a sum for all k and k' of W_{d,k} Z_{d,k} W_{d,k'} Z_{d,k'} including for k=k', and then summed over n
         # s.dot(s.square(Z),s.square(SW).T) computes the sum over all k of wdk^2 * znk2 summed over all n too
-
         term4 = dotd(ZW.T, ZW) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0)
 
         tmp = term1 - term2 + term3 + term4
 
         # Perform updates of the Q distribution
-        Qa = Pa + (Y.shape[0] - mask.sum(axis=0))/2.
-        Qb = Pb + tmp.copy()/2.
+        Qa = Pa + coeff * .5 * (Y.shape[0] - mask.sum(axis=0))
+        Qb = Pb + coeff * tmp.copy()/2.  # TODO why copy here ?
 
-        # Save updated parameters of the Q distribution
-        self.Q.setParameters(a=Qa, b=Qb)
+        return {'Qa': Qa, 'Qb': Qb}
+
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node
