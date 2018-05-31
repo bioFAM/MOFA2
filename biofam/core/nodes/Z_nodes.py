@@ -122,7 +122,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         for m in range(len(Y)):
             Y[m] = Y[m].data[ix,:].copy()
-            mask[m] = mask[ix,:].copy()
+            mask[m] = mask[m][ix,:].copy()
             tau[m] = tau[m][ix,:].copy()
 
         Qmean = Qmean[ix,:].copy()
@@ -159,7 +159,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                           p_cov_inv, p_cov_inv_diag, Qmean, Qvar):
 
         latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
-        N = Y.shape[0]  # this is different from self.N for minibatch
+        N = Y[0].shape[0]  # this is different from self.N for minibatch
 
         M = len(Y)
         for k in latent_variables:
