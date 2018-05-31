@@ -78,7 +78,23 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             #self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
             #self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
+        # get necessarry nodes for update
+        self._updateParameters()
+        ########################################################################
+        # compute a bias coefficient for update of global parameters
+        ########################################################################
+        # if ix is not None and on == 'features':
+        #     coeff = float(self.N) / float(len(ix))
+        # else:
+        #     coeff = 1.
+
+        # else:
+        #     up['Qmean'] = ro * up['Qmean'] + (1-ro) * self.Q.getParameters()['Qmean']
+        #     up['Qvar'] = ro * up['Qvar'] + (1-ro) * self.Q.getParameters()['Qvar']
+        #     self.Q.setParameters(mean=up['Qmean'], var=up['Qvar'])
+
+    def _updateParameters(self):
 
         # Collect expectations from the markov blanket
         Y = deepcopy(self.markov_blanket["Y"].getExpectation())

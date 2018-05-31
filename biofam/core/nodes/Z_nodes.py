@@ -74,13 +74,23 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 del self.p_cov_inv[i]
                 del self.p_cov_inv_diag[i]
 
-    def updateParameters(self):
+    # TODO remove the None option
+    def updateParameters(self, ix=None, ro=None):
+        """
+        Public function to update the nodes parameters
+        Optional arguments for stochastic updates are:
+            - ix: list of indices of the minibatch
+            - ro: step size of the natural gradient ascent
+        """
+        if ix is None:
+            ix = range(self.dim[0])
 
-        # Collect expectations from the markov blanket
-        Y = deepcopy(self.markov_blanket["Y"].getExpectation())
-        SWtmp = self.markov_blanket["W"].getExpectations()
-        tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
-        latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
+        ########################################################################
+        # get Expectations which are necessarry for the update
+        ########################################################################
+        Y = self.markov_blanket["Y"].getExpectation()
+        W = self.markov_blanket["W"].getExpectations()
+        tau = self.markov_blanket["Tau"].getExpectation()
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
 
         # Collect parameters from the prior or expectations from the markov blanket
@@ -91,39 +101,75 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].getExpectation(expand=True)
-
+            p_cov_inv = None
+            p_cov_inv_diag = None
+        elif "SigmaZ" in self.markov_blanket:
+            Alpha=None
+            Sigma = self.markov_blanket['SigmaZ'].getExpectations()
+            p_cov_inv = Sigma['inv']
+            p_cov_inv_diag = Sigma['inv_diag']
         else:
-            if "SigmaZ" in self.markov_blanket:
-                Sigma = self.markov_blanket['SigmaZ'].getExpectations()
-                p_cov_inv = Sigma['inv']
-                p_cov_inv_diag = Sigma['inv_diag']
-            else:
-                p_cov_inv = self.p_cov_inv
-                p_cov_inv_diag = self.p_cov_inv_diag
-
-        # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
-        for m in range(len(Y)):
-
-            # Mask tau
-            # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
-            tau[m][mask[m]] = 0.
-            # Mask Y
-            Y[m] = Y[m].data
-            Y[m][mask[m]] = 0.
+            Alpha=None
+            p_cov_inv = self.p_cov_inv
+            p_cov_inv_diag = self.p_cov_inv_diag
 
         # Collect parameters from the P and Q distributions of this node
-        Q = self.Q.getParameters().copy()
+        Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
+
+        ########################################################################
+        # subset matrices if necessarry
+        ########################################################################
+        for m in range(len(Y)):
+            Y[m] = Y[m].data[ix,:].copy()
+            mask[m] = mask[ix,:].copy()
+            tau[m] = tau[m][ix,:].copy()
+
+        Qmean = Qmean[ix,:].copy()
+        Qvar = Qvar[ix,:].copy()
+        Mu = Mu[ix,:].copy()
+        if Alpha is not None: Alpha = Alpha[ix,:].copy()  # TODO other cases !!
+        # if Sigma is not None: Alpha = Alpha[ix,:]
+        # if p_cov_inv_diag is not None:
+        #     pass # TODO check dimensionalities
+        # if p_cov_inv is not None:
+        #     pass # TODO check dimensionalities
+
+        ########################################################################
+        # Masking
+        ########################################################################
+        for m in range(len(Y)):
+            # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau # TODO double chekc its the same thing
+            tau[m][mask[m]] = 0.
+            Y[m][mask[m]] = 0.
+
+        ########################################################################
+        # compute the update
+        ########################################################################
+        up = self._updateParameters(Y, W, tau, Mu, Alpha,
+                                    p_cov_inv, p_cov_inv_diag, Qmean, Qvar)
+        ########################################################################
+        # Do the asignment
+        ########################################################################
+        Q['mean'][ix,:] = up['Qmean']
+        Q['var'][ix,:] = up['Qvar']
+        self.Q.setParameters(mean=Q['mean'], var=Q['var']) # TODO should not be necessarry
+
+    def _updateParameters(self, Y, W, tau, Mu, Alpha,
+                          p_cov_inv, p_cov_inv_diag, Qmean, Qvar):
+
+        latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
+        N = Y.shape[0]  # this is different from self.N for minibatch
 
         M = len(Y)
         for k in latent_variables:
-            foo = s.zeros((self.N,))
-            bar = s.zeros((self.N,))
+            foo = s.zeros((N,))
+            bar = s.zeros((N,))
             for m in range(M):
-                foo += np.dot(tau[m], SWtmp[m]["E2"][:, k])
+                foo += np.dot(tau[m], W[m]["E2"][:, k])
                 bar += np.dot(tau[m] * (Y[m] - s.dot(Qmean[:, s.arange(self.dim[1]) != k],
-                                                     SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)),
-                              SWtmp[m]["E"][:, k])
+                                                     W[m]["E"][:, s.arange(self.dim[1]) != k].T)),
+                              W[m]["E"][:, k])
 
             if "AlphaZ" in self.markov_blanket:
                 Qvar[:, k] = 1. / (Alpha[:, k] + foo)
@@ -135,12 +181,13 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 if self.P.params["cov"][k].__class__.__name__ == 'dia_matrix':
                     Qmean[:, k] = Qvar[:, k] * bar
                 else:
-                    tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.N)
-                    for n in range(self.N):
+                    import pdb; pdb.set_trace()
+                    tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(N)
+                    for n in range(N):
                         Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean=Qmean, var=Qvar)
+        return {'Qmean': Qmean, 'Qvar':Qvar}
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
     def calculateELBO_k(self, k):
@@ -301,6 +348,9 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         return latent_variables
 
     def updateParameters(self):
+        pass
+
+    def _updateParameters(self):
         # Collect expectations from other nodes
         # why .copy() ?
         Wtmp = [Wtmp_m.copy() for Wtmp_m in self.markov_blanket["W"].getExpectations()]
