@@ -37,6 +37,8 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         return QExp['E']
 
     def updateParameters(self, ix=None, ro=None):
+        # TODO should we change that for stochastic ? considering that the forgetting rate already acts on W which is
+        # TODO only node in the markov blanket
         # Collect expectations from other nodes
         tmp = self.markov_blanket["W"].getExpectations()
         E  = tmp["E"]
@@ -141,6 +143,12 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
+        self.precompute()
+
+    def precompute(self):
+        self.n_per_group = np.zeros(self.n_groups)
+        for c in range(self.n_groups):
+            self.n_per_group[c] = (self.groups == c).sum()
 
     def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
@@ -160,25 +168,51 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
     def updateParameters(self, ix=None, ro=None):
         # TODO: add an if MuZ is in markov blanket ?
         tmp = self.markov_blanket["Z"].getExpectations()
-        # TODO check that in both version the ENN/E2 which are returned are the same
         if 'ENN' in tmp:
             EZZ = tmp["ENN"]
         else:
             EZZ = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
-        P,Q = self.P.getParameters(), self.Q.getParameters()
+        P,Q = self.P.getParameters(), self.Q.getParameters().copy()
         Pa, Pb = P['a'], P['b']
         Qa, Qb = Q['a'], Q['b']
 
-        # Perform update
-        for c in range(self.n_groups):
-            mask = (self.groups == c)
-            # TODO check that this subsetting doesnt affect precision
-            Qa[c,:] = Pa[c,:] + 0.5*EZZ[mask, :].shape[0]
-            Qb[c,:] = Pb[c,:] + 0.5*EZZ[mask, :].sum(axis=0)
+        ########################################################################
+        # subset matrices for stochastic inference
+        ########################################################################
+        if ix is None:
+            ix = range(EZZ.shape[0])
+        EZZ = EZZ[ix,:].copy()
+        groups = self.groups[ix].copy()
 
-        self.Q.setParameters(a=Qa, b=Qb)
+        ########################################################################
+        # compute the update
+        ########################################################################
+        par_up = self._updateParameters(Qa, Qb, Pa, Pb, EZZ, groups)
+
+        ########################################################################
+        # Do the asignment
+        ########################################################################
+        if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
+            par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
+            par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
+        self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
+
+    def _updateParameters(self, Qa, Qb, Pa, Pb, EZZ, groups):
+        for c in range(self.n_groups):
+            mask = (groups == c)
+
+            # coeff for stochastic inference
+            n_batch = mask.sum()
+            if n_batch == 0: continue
+            n_total = self.n_per_group[c]
+            coeff = n_total/n_batch
+
+            Qa[c,:] = Pa[c,:] + 0.5 * n_total  # TODO should be precomputed
+            Qb[c,:] = Pb[c,:] + 0.5 * coeff * EZZ[mask, :].sum(axis=0)
+
+        return {'Qa': Qa, 'Qb': Qb}
 
     def calculateELBO(self):
         # Collect parameters and expectations

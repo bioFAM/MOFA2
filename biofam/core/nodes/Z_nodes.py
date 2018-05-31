@@ -349,7 +349,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         return latent_variables
 
     def updateParameters(self, ix=None, ro=None):
-        pass
+        print('not implemented')
+        exit(1)
 
     def _updateParameters(self):
         # Collect expectations from other nodes

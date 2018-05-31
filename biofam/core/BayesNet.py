@@ -50,7 +50,7 @@ class BayesNet(object):
         self.options = train_opts
 
         # TODO for testing purpose
-        self.options['batch_size'] = 1.
+        self.options['batch_size'] = .1
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
@@ -205,6 +205,7 @@ class BayesNet(object):
         return 1.
 
     def sample_mini_batch(self):
+        # TODO if multiple group, do sample indices in each group evenly ? prob yes
         S_pc = self.options['batch_size']
         S = S_pc * self.dim['N']
         ix = s.random.choice(range(self.dim['N']), size= S, replace=False)

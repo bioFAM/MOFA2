@@ -156,6 +156,10 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         return QExp['E']
 
     def updateParameters(self, ix=None, ro=None):
+        if ix is not None:
+            print('stochastic inference not implemented for taud')
+            exit(1)
+            
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation().copy()
         mask = ma.getmask(Y)

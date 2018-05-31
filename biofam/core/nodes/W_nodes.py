@@ -351,6 +351,9 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.factors_axis = 1
 
     def updateParameters(self, ix=None, ro=None):
+        if ix is not None:
+            print('stochastic inference not implemented for SW node')
+            exit(1)
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
