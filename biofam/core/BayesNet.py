@@ -50,7 +50,9 @@ class BayesNet(object):
         self.options = train_opts
 
         # TODO for testing purpose
-        self.options['batch_size'] = .1
+        self.options['step_tau'] = 1.
+        self.options['forgetting_rate'] = .5
+        self.options['batch_size'] = .9
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
@@ -201,8 +203,9 @@ class BayesNet(object):
 
     def step_size(self, iter):
         # return the step size for the considered iterration
-        # TODO implement
-        return 1.
+        tau = self.options['step_tau']
+        kappa = self.options['forgetting_rate']
+        return (iter + tau)**(-kappa)
 
     def sample_mini_batch(self):
         # TODO if multiple group, do sample indices in each group evenly ? prob yes
