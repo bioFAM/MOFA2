@@ -52,7 +52,7 @@ class BayesNet(object):
         # TODO for testing purpose
         self.options['step_tau'] = 1.
         self.options['forgetting_rate'] = .5
-        self.options['batch_size'] = .9
+        self.options['batch_size'] = .5
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
@@ -208,7 +208,7 @@ class BayesNet(object):
         return (iter + tau)**(-kappa)
 
     def sample_mini_batch(self):
-        # TODO if multiple group, do sample indices in each group evenly ? prob yes
+        # TODO if multiple group, sample indices in each group evenly ? prob yes
         S_pc = self.options['batch_size']
         S = S_pc * self.dim['N']
         ix = s.random.choice(range(self.dim['N']), size= S, replace=False)

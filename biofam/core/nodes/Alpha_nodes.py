@@ -37,6 +37,15 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         return QExp['E']
 
     def updateParameters(self, ix=None, ro=None):
+        # Nothing to subset here
+        # TODO do we really need to do this for AlphaW ?
+        par_up = self._updateParameters()
+        if ro is not None:
+            par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
+            par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
+        self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
+
+    def _updateParameters(self):
         # TODO should we change that for stochastic ? considering that the forgetting rate already acts on W which is
         # TODO only node in the markov blanket
         # Collect expectations from other nodes
@@ -55,8 +64,8 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         Qa = Pa + 0.5*E.shape[0]
         Qb = Pb + 0.5*EWW.sum(axis=0)
 
-        # Save updated parameters of the Q distribution
-        self.Q.setParameters(a=Qa, b=Qb)
+        return {'Qa': Qa, 'Qb': Qb}
+
 
     def calculateELBO(self):
         # Collect parameters and expectations
@@ -70,7 +79,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
 
         return lb_p - lb_q
 
-
+# TODO: this class is probably never used. to remove ?
 class AlphaZ_Node_k(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
         # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
