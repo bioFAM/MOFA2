@@ -102,6 +102,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].getExpectation(expand=True)
+            Sigma = None
             p_cov_inv = None
             p_cov_inv_diag = None
         elif "SigmaZ" in self.markov_blanket:
@@ -111,6 +112,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             p_cov_inv_diag = Sigma['inv_diag']
         else:
             Alpha=None
+            Sigma = None
             p_cov_inv = self.p_cov_inv
             p_cov_inv_diag = self.p_cov_inv_diag
 
@@ -129,12 +131,13 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         Qmean = Qmean[ix,:].copy()
         Qvar = Qvar[ix,:].copy()
         Mu = Mu[ix,:].copy()
-        if Alpha is not None: Alpha = Alpha[ix,:].copy()  # TODO other cases !!
-        # if Sigma is not None: Alpha = Alpha[ix,:]
-        # if p_cov_inv_diag is not None:
-        #     pass # TODO check dimensionalities
-        # if p_cov_inv is not None:
-        #     pass # TODO check dimensionalities
+        if Alpha is not None: Alpha = Alpha[ix,:].copy()
+        if Sigma is not None:
+            Sigma = [sig[ix,:][:,ix] for sig in Sigma]
+        if p_cov_inv_diag is not None:
+            p_cov_inv_diag = [p_dia[ix] for p_dia in p_cov_inv_diag]
+        if p_cov_inv is not None:
+            p_cov_inv = [p_cov[ix,:][:,ix] for p_cov in p_cov_inv]
 
         ########################################################################
         # Masking
