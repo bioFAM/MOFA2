@@ -51,8 +51,8 @@ class BayesNet(object):
 
         # TODO for testing purpose
         self.options['step_tau'] = 1.
-        self.options['forgetting_rate'] = .5
-        self.options['batch_size'] = .5
+        self.options['forgetting_rate'] = 1.
+        self.options['batch_size'] = .2
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
