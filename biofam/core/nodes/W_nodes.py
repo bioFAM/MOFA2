@@ -6,6 +6,8 @@ import scipy as s
 from copy import deepcopy
 import math
 
+
+
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
@@ -79,11 +81,12 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             #self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
     def updateParameters(self):
+        # print(self.getExpectation())
 
         # Collect expectations from the markov blanket
-        Y = deepcopy(self.markov_blanket["Y"].getExpectation())
+        Y = deepcopy(self.markov_blanket["Y"].getExpectation())  # TODO critical time here 9%
         SZtmp = self.markov_blanket["Z"].getExpectations()
-        tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
+        tau = deepcopy(self.markov_blanket["Tau"].getExpectation()) # TODO critical time here 9%
         latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
         mask = ma.getmask(Y)
 
@@ -94,11 +97,13 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             Mu = self.P.getParameters()["mean"]
 
         if "AlphaW" in self.markov_blanket:
+            # TODO change that in alpha everywhere
             Alpha = self.markov_blanket['AlphaW'].getExpectation(expand=True)
 
         elif "SigmaAlphaW" in self.markov_blanket:
             if self.markov_blanket["SigmaAlphaW"].__class__.__name__=="AlphaW_Node_mk":
-                Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation(expand=True)
+                # TODO see if we can do without expndanding
+                Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation(expand=False)
             else:
                 Sigma = self.markov_blanket['SigmaAlphaW'].getExpectations()
                 p_cov_inv = Sigma['inv']
@@ -114,15 +119,15 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         Y[mask] = 0.
 
         # Collect parameters from the P and Q distributions of this node
-        Q = self.Q.getParameters().copy()
+        Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
         for k in latent_variables:
             foo = s.zeros((self.D,))
             bar = s.zeros((self.D,))
 
-            foo += np.dot(SZtmp["E2"][:,k],tau)
-            bar += np.dot(SZtmp["E"][:,k],tau*(Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))
+            foo += np.dot(SZtmp["E2"][:,k],tau)  # TODO critical time here 4%
+            bar += np.dot(SZtmp["E"][:,k],tau*(Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))  # TODO critical time here 77%
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
@@ -302,8 +307,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
-        tau = self.markov_blanket["Tau"].getExpectation(expand=True).copy()
-        Y = self.markov_blanket["Y"].getExpectation().copy()
+        tau = self.markov_blanket["Tau"].getExpectation(expand=True).copy()  # TODO critical time here 11%
+        Y = self.markov_blanket["Y"].getExpectation().copy()  # TODO critical time here 24 %
         if "AlphaW" not in self.markov_blanket:
             print("SW node not implemented wihtout ARD")
             exit(1)
@@ -329,14 +334,14 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term1 = (theta_lnE-theta_lnEInv)[:,k]
             term2 = 0.5*s.log(alpha[:,k])
 
-            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k]) # good to modify
+            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k]) # good to modify TODO critical ish time here 4.6%
             # term4_tmp1 = ma.dot((tau*Y).T,Z[:,k]).data
-            term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify
+            term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify # TODO critical time here  21 %
 
             # term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify
+            term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify # TODO critical time here  36 %
 
-            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )  # TODO critical time here  2%
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically

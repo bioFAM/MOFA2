@@ -77,9 +77,9 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
     def updateParameters(self):
 
         # Collect expectations from the markov blanket
-        Y = deepcopy(self.markov_blanket["Y"].getExpectation())
+        Y = deepcopy(self.markov_blanket["Y"].getExpectation()) # TODO critical time here 8%
         SWtmp = self.markov_blanket["W"].getExpectations()
-        tau = deepcopy(self.markov_blanket["Tau"].getExpectation())
+        tau = deepcopy(self.markov_blanket["Tau"].getExpectation())  # TODO critical time here 10%
         latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
 
@@ -121,7 +121,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             bar = s.zeros((self.N,))
             for m in range(M):
                 foo += np.dot(tau[m], SWtmp[m]["E2"][:, k])
-                bar += np.dot(tau[m] * (Y[m] - s.dot(Qmean[:, s.arange(self.dim[1]) != k],
+                bar += np.dot(tau[m] * (Y[m] - s.dot(Qmean[:, s.arange(self.dim[1]) != k],  # TODO critical time here 73%
                                                      SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)),
                               SWtmp[m]["E"][:, k])
 
@@ -307,8 +307,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         W = [Wtmp_m["E"] for Wtmp_m in Wtmp]
         WW = [Wtmp_m["E2"] for Wtmp_m in Wtmp]
 
-        tau = [tau_m.copy() for tau_m in self.markov_blanket["Tau"].getExpectation()]
-        Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()]
+        tau = [tau_m.copy() for tau_m in self.markov_blanket["Tau"].getExpectation()] # TODO critical time here  9 %
+        Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()] # TODO critical time here  26 %
         # TODO sort that out
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket["AlphaZ"].getExpectation(expand=True).copy()
@@ -344,16 +344,16 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term2 = 0.5 * s.log(alpha[:,k])
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k])  # good to modify
+            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k])  # good to modify # TODO critical time here  2 %
 
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
-            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify
+            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify # TODO critical time here  22 %
 
             # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify
+            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify  # TODO critical time here  37 %
 
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k]
+            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k]  # TODO critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
