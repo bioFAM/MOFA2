@@ -706,7 +706,7 @@ def saveTrainedModel(model, outfile,
     # saveParameters(model, hdf5, view_names, group_names, sample_groups)
     saveModelOpts(model_opts, hdf5)
     saveTrainingData(model, hdf5, view_names, group_names, sample_groups, sample_names, feature_names)
-    #saveTrainingStats(model, hdf5)
+    saveTrainingStats(model, hdf5)
     saveTrainingOpts(train_opts, hdf5)
 
     hdf5.close()
