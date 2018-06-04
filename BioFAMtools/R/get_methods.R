@@ -240,15 +240,15 @@ getimputed_data <- function(object, views = "all", groups = "all", features = "a
   return(imputed_data)
 }
 
-#' @name getCovariates
-#' @title getCovariates
+#' @name get_covariates
+#' @title get_covariates
 #' @description This function extracts covariates from the \code{colData} in the input \code{MultiAssayExperiment} object. \cr
 #' Note that if you did not use \code{MultiAssayExperiment} to create your \code{\link{createBioFAMobject}}, this function will not work.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param covariates names of the covariates
 #' @export
 #' 
-getCovariates <- function(object, covariates) {
+get_covariates <- function(object, covariates) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
