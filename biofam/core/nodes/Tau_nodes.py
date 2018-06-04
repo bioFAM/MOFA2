@@ -61,10 +61,13 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         ########################################################################
         # subset matrices for stochastic inference
         ########################################################################
-        Y = Y.data[ix,:].copy()
-        mask = mask[ix,:].copy()
-        Z = Z[ix,:].copy()
-        ZZ = ZZ[ix,:].copy()
+        if ix is None:
+            Y = Y.data.copy()
+        else:
+            Y = Y.data[ix,:]
+            mask = mask[ix,:]
+            Z = Z[ix,:]
+            ZZ = ZZ[ix,:]
 
         ########################################################################
         # Masking
@@ -74,7 +77,9 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         ########################################################################
         # compute stochastic "anti-bias" coefficient
         ########################################################################
-        coeff = float(N) / float(len(ix))
+        coeff = 1
+        if ix is not None:
+            coeff = float(N) / float(len(ix))
 
         ########################################################################
         # compute the update
@@ -159,7 +164,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
         if ix is not None:
             print('stochastic inference not implemented for taud')
             exit(1)
-            
+
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation().copy()
         mask = ma.getmask(Y)

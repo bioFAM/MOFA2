@@ -524,12 +524,12 @@ if __name__ == '__main__':
     ent = entry_point()
     dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/'
     # infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
-    infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
-    # infiles = [dir+'data_0.txt']
-    views =  ["view_0", "view_0", 'view_1', 'view_1']
-    groups = ["group_0", "group_1", 'group_0', 'group_1']
-    # views =  ["view_0"]
-    # groups = ["group_0"]
+    #infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
+    infiles = [dir+'data_0_0.txt']
+    #views =  ["view_0", "view_0", 'view_1', 'view_1']
+    #groups = ["group_0", "group_1", 'group_0', 'group_1']
+    views =  ["view_0"]
+    groups = ["group_0"]
 
     # infiles = [dir+'data_all.txt']
     # views =  ["view_A", "view_A", "view_B", "view_B"]
@@ -538,15 +538,15 @@ if __name__ == '__main__':
     # views =  ["view_0"]
     # groups = ["group_0"]
 
-    lik = ["gaussian", "gaussian"]
-    # lik = ["gaussian"]
+    #lik = ["gaussian", "gaussian"]
+    lik = ["gaussian"]
     #
     # outfile = dir+"test_no_sl.hdf5"
     #
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=False, sl_z=False, ard_w=True, factors=5, likelihoods=lik, learnTheta=False)
-    ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0, seed=2, elbofreq=10)
+    ent.set_model_options(ard_z=False, sl_w=False, sl_z=False, ard_w=False, factors=5, likelihoods=lik)
+    ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0, seed=2, elbofreq=1)
     ent.build()
     ent.run(no_theta=False)
     # ent.save(outfile)

@@ -85,15 +85,14 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
-        if ix is None:
-            ix = range(self.dim[0])
+        # if ix is None:
+        #     ix = range(self.dim[0])
 
         ########################################################################
         # get Expectations which are necessarry for the update
         ########################################################################
         Y = self.markov_blanket["Y"].getExpectation()
-        ZE = self.markov_blanket["Z"].getExpectations()['E']
-        ZE2 = self.markov_blanket["Z"].getExpectations()['E2']
+        Z = self.markov_blanket["Z"].getExpectations()
         tau = self.markov_blanket["Tau"].getExpectation()
         mask = ma.getmask(Y)
         N = Y.shape[0]
@@ -130,12 +129,21 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # subset matrices for stochastic inference
         ########################################################################
-        Y = Y.data[ix,:].copy()
-        mask = mask[ix,:].copy()
-        tau = tau[ix,:].copy()
-        ZE = ZE[ix,:].copy()
-        ZE2 = ZE2[ix,:].copy()
-        Z = {'E': ZE, 'E2': ZE2}
+        if ix is None:
+            Y = Y.data.copy()
+            tau = tau.copy()
+            # ZE = ZE[ix,:].copy()
+            # ZE2 = ZE2[ix,:].copy()
+            # Z = {'E': ZE, 'E2': ZE2}
+        else:
+            Y = Y.data[ix,:]
+            mask = mask[ix,:]
+            tau = tau[ix,:]
+            ZE = Z['E']
+            ZE2 = Z['E2']
+            ZE = ZE[ix,:]
+            ZE2 = ZE2[ix,:]
+            Z = {'E': ZE, 'E2': ZE2}
 
         ########################################################################
         # Masking
@@ -146,7 +154,9 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # compute stochastic "anti-bias" coefficient
         ########################################################################
-        coeff = float(N) / float(len(ix))
+        coeff = 1.
+        if ix is not None:
+            coeff = float(N) / float(len(ix))
 
         ########################################################################
         # compute the update

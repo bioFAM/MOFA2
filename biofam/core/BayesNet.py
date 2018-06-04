@@ -52,7 +52,9 @@ class BayesNet(object):
         # TODO for testing purpose
         self.options['step_tau'] = 1.
         self.options['forgetting_rate'] = 1.
-        self.options['batch_size'] = .2
+        self.options['batch_size'] = 1.
+        # Start training
+        self.options['stochastic'] = False
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
@@ -222,12 +224,11 @@ class BayesNet(object):
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         activeK = nans((self.options['maxiter']))
 
-        # Start training
+
         ro = None
         ix = None
-        stochastic = True
         for i in range(self.options['maxiter']):
-            if stochastic: # TODO
+            if self.options['stochastic']: # TODO
                 ro = self.step_size(i)
                 ix = self.sample_mini_batch()
 

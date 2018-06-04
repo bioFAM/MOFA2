@@ -83,8 +83,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             - ro: step size of the natural gradient ascent
         """
 
-        if ix is None:
-            ix = range(self.dim[0])
+        # if ix is None:
+        #     ix = range(self.dim[0])
 
         ########################################################################
         # get Expectations which are necessarry for the update
@@ -123,21 +123,28 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # subset matrices for stochastic inference
         ########################################################################
-        for m in range(len(Y)):
-            Y[m] = Y[m].data[ix,:].copy()
-            mask[m] = mask[m][ix,:].copy()
-            tau[m] = tau[m][ix,:].copy()
+        if ix is None:
+            for m in range(len(Y)):
+                Y[m] = Y[m].data.copy()
+                tau[m] = tau[m].copy()
+            Qmean = Qmean.copy()
+            Qvar = Qvar.copy()
+        else:
+            for m in range(len(Y)):
+                Y[m] = Y[m].data[ix,:]
+                mask[m] = mask[m][ix,:]
+                tau[m] = tau[m][ix,:]
 
-        Qmean = Qmean[ix,:].copy()
-        Qvar = Qvar[ix,:].copy()
-        Mu = Mu[ix,:].copy()
-        if Alpha is not None: Alpha = Alpha[ix,:].copy()
-        if Sigma is not None:
-            Sigma = [sig[ix,:][:,ix] for sig in Sigma]
-        if p_cov_inv_diag is not None:
-            p_cov_inv_diag = [p_dia[ix] for p_dia in p_cov_inv_diag]
-        if p_cov_inv is not None:
-            p_cov_inv = [p_cov[ix,:][:,ix] for p_cov in p_cov_inv]
+            Qmean = Qmean[ix,:]
+            Qvar = Qvar[ix,:]
+            Mu = Mu[ix,:]
+            if Alpha is not None: Alpha = Alpha[ix,:]
+            if Sigma is not None:
+                Sigma = [sig[ix,:][:,ix] for sig in Sigma]
+            if p_cov_inv_diag is not None:
+                p_cov_inv_diag = [p_dia[ix] for p_dia in p_cov_inv_diag]
+            if p_cov_inv is not None:
+                p_cov_inv = [p_cov[ix,:][:,ix] for p_cov in p_cov_inv]
 
         ########################################################################
         # Masking
@@ -155,8 +162,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # Do the asignment
         ########################################################################
-        Q['mean'][ix,:] = par_up['Qmean']
-        Q['var'][ix,:] = par_up['Qvar']
+        if ix is None:
+            Q['mean'] = par_up['Qmean']
+            Q['var'] = par_up['Qvar']
+        else:
+            Q['mean'][ix,:] = par_up['Qmean']
+            Q['var'][ix,:] = par_up['Qvar']
         self.Q.setParameters(mean=Q['mean'], var=Q['var']) # TODO should not be necessarry
 
     def _updateParameters(self, Y, W, tau, Mu, Alpha,
