@@ -18,20 +18,20 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None,precompute_pcovinv=True):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
-        self.precompute(precompute_pcovinv=precompute_pcovinv)
+        self.precompute_pcovinv = precompute_pcovinv
 
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self,precompute_pcovinv=True):
+    def precompute(self):
         # Precompute terms to speed up computation
         self.D = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-        if precompute_pcovinv:
+        if self.precompute_pcovinv:
             p_cov = self.P.params["cov"]
 
             self.p_cov_inv = []
@@ -81,12 +81,11 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             #self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
     def updateParameters(self):
-        # print(self.getExpectation())
 
         # Collect expectations from the markov blanket
-        Y = deepcopy(self.markov_blanket["Y"].getExpectation())  # TODO critical time here 9%
+        Y = self.markov_blanket["Y"].getExpectation()
         SZtmp = self.markov_blanket["Z"].getExpectations()
-        tau = deepcopy(self.markov_blanket["Tau"].getExpectation()) # TODO critical time here 9%
+        tau = self.markov_blanket["Tau"].getExpectation()
         latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
         mask = ma.getmask(Y)
 
@@ -123,11 +122,16 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         Qmean, Qvar = Q['mean'], Q['var']
 
         for k in latent_variables:
-            foo = s.zeros((self.D,))
-            bar = s.zeros((self.D,))  # TODO remove
 
-            foo += np.dot(SZtmp["E2"][:,k],tau)  # TODO critical time here 4%
-            bar += np.dot(SZtmp["E"][:,k],tau*(Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))  # TODO critical time here 77%
+            foo = np.dot(SZtmp["E2"][:,k],tau)
+
+            bar_tmp1 = SZtmp["E"][:,k]
+
+            bar_tmp2 = - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )
+            bar_tmp2 += Y
+            bar_tmp2 *= tau
+
+            bar = np.dot(bar_tmp1, bar_tmp2)  # TODO critical time here 77%
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
@@ -297,12 +301,11 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
     def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
         super().__init__(dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES)
-        self.precompute()
 
     def precompute(self):
         self.D = self.dim[0]
         self.factors_axis = 1
-        
+
     def updateParameters(self):
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
