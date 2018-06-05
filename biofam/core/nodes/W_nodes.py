@@ -124,7 +124,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         for k in latent_variables:
             foo = s.zeros((self.D,))
-            bar = s.zeros((self.D,))
+            bar = s.zeros((self.D,))  # TODO remove
 
             foo += np.dot(SZtmp["E2"][:,k],tau)  # TODO critical time here 4%
             bar += np.dot(SZtmp["E"][:,k],tau*(Y - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )))  # TODO critical time here 77%
@@ -338,7 +338,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # term4_tmp1 = ma.dot((tau*Y).T,Z[:,k]).data
             toto = tau*Y  # TODO most expensive bit
             toto2 = Z[:,k]
-            toto4 = toto.T.dot(toto2)
+            # toto4 = toto.T.dot(toto2)
             toto3 = s.dot(toto.T, toto2)
 
             term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify # TODO critical time here  21 %
@@ -347,8 +347,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             toto_tmp = SW[:,s.arange(self.dim[1])!=k].T
             toto_tmp2 = (Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T
             toto = s.dot(toto_tmp2, toto_tmp)
-            toto2 = ( tau *  toto)  # most expensive bit
-            toto3 = toto2.sum(axis=0)
+            toto *= tau  # most expensive bit
+            toto3 = toto.sum(axis=0)
 
             term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify # TODO critical time here  36 %
             term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )  # TODO critical time here  2%

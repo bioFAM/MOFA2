@@ -526,18 +526,18 @@ class entry_sfa(entry_point):
 if __name__ == '__main__':
     ent = entry_point()
     dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/'
-    infiles = [dir+'/data_0_0.txt', dir+'/data_1_0.txt']
+    # infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
+    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
+    infiles = [dir+'data_0_0.txt', dir+'data_1_0.txt']
+    # infiles = [dir+'data_0.txt']
     views =  ["view_0", "view_1"]
     groups = ["group_0", "group_0"]
-
-    # infiles = ["../run/test_data//500_0.txt", "../run/test_data//500_1.txt", "../run/test_data//500_2.txt", "../run/test_data//500_2.txt" ]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
     # views =  ["view_0"]
-
+    # groups = ["group_0"]
 
     # infiles = [dir+'data_all.txt']
-
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
 
     # views =  ["view_0"]
     # groups = ["group_0"]
