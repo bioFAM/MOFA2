@@ -75,11 +75,10 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 del self.p_cov_inv_diag[i]
 
     def updateParameters(self):
-
         # Collect expectations from the markov blanket
-        Y = deepcopy(self.markov_blanket["Y"].getExpectation()) # TODO critical time here 8%
+        Y = self.markov_blanket["Y"].getExpectation()
         SWtmp = self.markov_blanket["W"].getExpectations()
-        tau = deepcopy(self.markov_blanket["Tau"].getExpectation())  # TODO critical time here 10%
+        tau = self.markov_blanket["Tau"].getExpectation()
         latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
 
@@ -112,7 +111,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             Y[m][mask[m]] = 0.
 
         # Collect parameters from the P and Q distributions of this node
-        Q = self.Q.getParameters().copy()
+        Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
         M = len(Y)
@@ -121,9 +120,16 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             bar = s.zeros((self.N,))
             for m in range(M):
                 foo += np.dot(tau[m], SWtmp[m]["E2"][:, k])
-                bar += np.dot(tau[m] * (Y[m] - s.dot(Qmean[:, s.arange(self.dim[1]) != k],  # TODO critical time here 73%
-                                                     SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)),
-                              SWtmp[m]["E"][:, k])
+
+                bar_tmp1 = SWtmp[m]["E"][:,k]
+
+                # slow bit but hard to optimise
+                bar_tmp2 = - s.dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
+                bar_tmp2 += Y[m]
+                bar_tmp2 *= tau[m]
+                ##############################
+
+                bar += np.dot(bar_tmp2, bar_tmp1)
 
             if "AlphaZ" in self.markov_blanket:
                 Qvar[:, k] = 1. / (Alpha[:, k] + foo)

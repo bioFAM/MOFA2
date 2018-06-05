@@ -131,7 +131,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             bar_tmp2 += Y
             bar_tmp2 *= tau
 
-            bar = np.dot(bar_tmp1, bar_tmp2)  # TODO critical time here 77%
+            bar = np.dot(bar_tmp1, bar_tmp2) 
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
