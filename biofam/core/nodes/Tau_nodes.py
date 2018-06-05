@@ -43,7 +43,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation()
@@ -76,7 +75,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         term3 = np.dot(np.square(Z),np.square(W).T)
         term3[mask] = 0.
         term3 = -term3.sum(axis=0)
-        term3 += (np.square(ZW)).sum(axis=0) # TODO run with missing values
+        term3 += (np.square(ZW)).sum(axis=0)
 
         ZW *= Y  # WARNING ZW becomes ZWY
         term4 = 2.*(ZW.sum(axis=0))
