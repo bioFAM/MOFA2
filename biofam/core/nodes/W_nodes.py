@@ -302,17 +302,17 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def precompute(self):
         self.D = self.dim[0]
         self.factors_axis = 1
-    # @profile
+        
     def updateParameters(self):
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
-        tau = self.markov_blanket["Tau"].getExpectation(expand=True).copy()  # TODO critical time here 11%
-        Y = self.markov_blanket["Y"].getExpectation().copy()  # TODO critical time here 24 %
+        tau = self.markov_blanket["Tau"].getExpectation(expand=True)  # TODO might be worth expanding only once when updating expectation
+        Y = self.markov_blanket["Y"].getExpectation()
         if "AlphaW" not in self.markov_blanket:
             print("SW node not implemented wihtout ARD")
             exit(1)
-        alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True).copy()
+        alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
         thetatmp = self.markov_blanket["ThetaW"].getExpectations(expand=True)
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
         mask = ma.getmask(Y)
@@ -327,33 +327,28 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Y[mask] = 0.
         tau[mask] = 0.
 
+        # precompute terms usful for all k
+        tauYT = (tau*Y).T
+
         # Update each latent variable in turn
         for k in range(self.dim[1]):
+            # precompute k related terms
 
             # Calculate intermediate steps
             term1 = (theta_lnE-theta_lnEInv)[:,k]
             term2 = 0.5*s.log(alpha[:,k])
+            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k])
 
-            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k]) # good to modify TODO critical ish time here 4.6%
-            # term4_tmp1 = ma.dot((tau*Y).T,Z[:,k]).data
-            toto = tau*Y  # TODO most expensive bit
-            toto2 = Z[:,k]
-            # toto4 = toto.T.dot(toto2)
-            toto3 = s.dot(toto.T, toto2)
+            term4_tmp1 = s.dot(tauYT,Z[:,k])
 
-            term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify # TODO critical time here  21 %
+            term4_tmp2_1 = SW[:,s.arange(self.dim[1])!=k].T
+            term4_tmp2_2 = (Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T
+            term4_tmp2 = s.dot(term4_tmp2_2, term4_tmp2_1)
+            term4_tmp2 *= tau  # most expensive bit
+            term4_tmp2 = term4_tmp2.sum(axis=0)
 
-            # profile
-            toto_tmp = SW[:,s.arange(self.dim[1])!=k].T
-            toto_tmp2 = (Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T
-            toto = s.dot(toto_tmp2, toto_tmp)
-            toto *= tau  # most expensive bit
-            toto3 = toto.sum(axis=0)
-
-            term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify # TODO critical time here  36 %
             term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )  # TODO critical time here  2%
 
-            # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically
 
             # Update S
