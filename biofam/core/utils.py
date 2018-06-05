@@ -28,6 +28,7 @@ def dotd(A, B, out=None):
     if out is None:
         out = ma.empty((A.shape[0], ), float)
 
+    import pdb; pdb.set_trace()
     out[:] = ma.sum(A * B.T, axis=1)
     return out
 

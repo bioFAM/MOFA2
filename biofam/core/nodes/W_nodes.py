@@ -302,7 +302,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def precompute(self):
         self.D = self.dim[0]
         self.factors_axis = 1
-
+    # @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
@@ -336,11 +336,21 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k]) # good to modify TODO critical ish time here 4.6%
             # term4_tmp1 = ma.dot((tau*Y).T,Z[:,k]).data
+            toto = tau*Y  # TODO most expensive bit
+            toto2 = Z[:,k]
+            toto4 = toto.T.dot(toto2)
+            toto3 = s.dot(toto.T, toto2)
+
             term4_tmp1 = s.dot((tau*Y).T,Z[:,k]) # good to modify # TODO critical time here  21 %
 
-            # term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify # TODO critical time here  36 %
+            # profile
+            toto_tmp = SW[:,s.arange(self.dim[1])!=k].T
+            toto_tmp2 = (Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T
+            toto = s.dot(toto_tmp2, toto_tmp)
+            toto2 = ( tau *  toto)  # most expensive bit
+            toto3 = toto2.sum(axis=0)
 
+            term4_tmp2 = ( tau * s.dot((Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T, SW[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0) # good to modify # TODO critical time here  36 %
             term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )  # TODO critical time here  2%
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)

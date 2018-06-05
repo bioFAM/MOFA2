@@ -35,10 +35,13 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
+    # @profile
     def updateParameters(self):
+        # TODO check precision
 
         # Collect expectations from other nodes
-        Y = self.markov_blanket["Y"].getExpectation().copy() # TODO critical time here  23 %
+        # Y = self.markov_blanket["Y"].getExpectation().copy() # TODO critical time here  23 %
+        Y = self.markov_blanket["Y"].getExpectation()
         mask = ma.getmask(Y)
 
         Wtmp = self.markov_blanket["W"].getExpectations()
@@ -57,26 +60,40 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         # Calculate terms for the update
 
-        ZW =  ma.array(Z.dot(W.T), mask=mask)  # TODO critical time here  2 %
+        ZW =  Z.dot(W.T)  # TODO critical time here  2 %
+        ZW[mask] = 0.
 
         # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
-        term1 = s.square(Y.astype("float64")).sum(axis=0) # TODO critical time here  8 %
-
+        # term1 = s.square(Y.astype("float64")).sum(axis=0) # TODO we should make sure the conversion is done only once
+        term1 = s.square(Y).sum(axis=0)
         # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
+        toto = Y*ZW
+        toto2 = 2.*toto.sum(axis=0)
+
         term2 = 2.*(Y*ZW).sum(axis=0) # save to modify # TODO critical time here  6 %
 
-        term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=0)  # TODO critical time here  3 %
+        # term3 = ma.array(ZZ.dot(WW.T), mask=mask).sum(axis=0)  # TODO critical time here  3 %
+
+        term3 = ZZ.dot(WW.T)
+        term3[mask] = 0
+        term3 = term3.sum(axis=0)
 
         # dotd(WZ, WZ.T) should compute a sum for all k and k' of W_{d,k} Z_{d,k} W_{d,k'} Z_{d,k'} including for k=k', and then summed over n
         # s.dot(s.square(Z),s.square(SW).T) computes the sum over all k of wdk^2 * znk2 summed over all n too
 
-        term4 = dotd(ZW.T, ZW) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0) # TODO critical time here  55 %
+        # term4 = dotd(ZW.T, ZW) - ma.array(s.dot(s.square(Z),s.square(W).T), mask=mask).sum(axis=0) # TODO critical time here  55 %
+
+
+        tmp = np.dot(np.square(Z),np.square(W).T)
+        tmp[mask] = 0.
+        # term4 = dotd(SWZ, SWZ.T) - tmp.sum(axis=0)
+        term4 = (ZW * ZW).sum(axis=0) - tmp.sum(axis=0)  # TODO run with missing values
 
         tmp = term1 - term2 + term3 + term4
 
         # Perform updates of the Q distribution
         Qa = Pa + (Y.shape[0] - mask.sum(axis=0))/2.  # TODO critical time here  1.4 %
-        Qb = Pb + tmp.copy()/2.
+        Qb = Pb + tmp.copy()/2.  # TODO why copy here ?
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
