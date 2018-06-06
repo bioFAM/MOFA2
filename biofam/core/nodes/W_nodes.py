@@ -94,11 +94,11 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # get Expectations which are necessarry for the update
         ########################################################################
-        Y = self.markov_blanket["Y"].getExpectation()
-        Z = self.markov_blanket["Z"].getExpectations()
-        tau = self.markov_blanket["Tau"].getExpectation()
-        mask = ma.getmask(Y)
-        N = Y.shape[0]
+        # import pdb; pdb.set_trace()
+        Y = self.markov_blanket["Y"].get_mini_batch()
+        Z = self.markov_blanket["Z"].get_mini_batch()
+        tau = self.markov_blanket["Tau"].get_mini_batch()
+        N = self.markov_blanket["Y"].dim[0]
 
         # Collect parameters from the prior or expectations from the markov blanket
         if "MuW" in self.markov_blanket:
@@ -132,32 +132,17 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         Qmean, Qvar = Q['mean'], Q['var']
 
         ########################################################################
-        # subset matrices for stochastic inference
-        ########################################################################
-        if ix is None:
-            Y = Y.data
-        else:
-            Y = Y.data[ix,:]
-            mask = mask[ix,:]
-            tau = tau[ix,:]
-            ZE = Z['E']
-            ZE2 = Z['E2']
-            ZE = ZE[ix,:]
-            ZE2 = ZE2[ix,:]
-            Z = {'E': ZE, 'E2': ZE2}
-
-        ########################################################################
         # Masking
         ########################################################################
+        mask = ma.getmask(Y)
+        Y = Y.data
         tau[mask] = 0.
         Y[mask] = 0.
 
         ########################################################################
         # compute stochastic "anti-bias" coefficient
         ########################################################################
-        coeff = 1.
-        if ix is not None:
-            coeff = float(N) / float(len(ix))
+        coeff = float(N) / float(Y.shape[0])
 
         ########################################################################
         # compute the update

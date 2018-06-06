@@ -52,9 +52,9 @@ class BayesNet(object):
         # TODO for testing purpose
         self.options['step_tau'] = 1.
         self.options['forgetting_rate'] = 1.
-        self.options['batch_size'] = 1.
+        self.options['batch_size'] = .8
         # Start training
-        self.options['stochastic'] = False
+        self.options['stochastic'] = True
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
@@ -230,9 +230,16 @@ class BayesNet(object):
             self.nodes[n].precompute()
 
         for i in range(self.options['maxiter']):
-            if self.options['stochastic']: # TODO
+
+            if self.options['stochastic']: # TODO options in interface
                 ro = self.step_size(i)
+                # ro=1.
                 ix = self.sample_mini_batch()
+
+                self.nodes['Y'].define_mini_batch(ix)
+                self.nodes['Tau'].define_mini_batch(ix)
+                if 'AlphaZ' in self.nodes:
+                    self.nodes['AlphaZ'].define_mini_batch(ix)
 
             t = time();
             # Remove inactive latent variables
@@ -266,7 +273,7 @@ class BayesNet(object):
 
                     # Print ELBO monitoring
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes['Z'].covariates).sum(), self.nodes['Z'].covariates.sum() ))
-                    if delta_elbo<0 and not stochastic:
+                    if delta_elbo<0 and not self.options['stochastic']:
                         print("Warning, lower bound is decreasing..."); print('\a')
                         #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
 

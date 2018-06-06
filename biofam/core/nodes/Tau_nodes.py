@@ -26,6 +26,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         mask = ma.getmask(Y)
         Y = Y.data
 
+        self.mini_batch = None
+
         Qa = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
         self.Q.params['a'] = Qa
 
@@ -43,6 +45,20 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
+    def define_mini_batch(self, ix):
+        # define minibatch of data for all nodes to use
+        QExp = self.Q.getExpectations()
+
+        # expand only the size of the minibatch
+        expanded_E = s.repeat(QExp['E'][None, :], len(ix), axis=0)
+        # expanded_lnE = s.repeat(QExp['lnE'][None, :], len(ix), axis=0)
+        self.mini_batch = expanded_E
+
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectation()
+        return self.mini_batch
+
     def updateParameters(self, ix=None, ro=None):
         """
         Public function to update the nodes parameters
@@ -51,13 +67,12 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             - ro: step size of the natural gradient ascent
         """
         ########################################################################
-        # get Expectations which are necessarry for the update
+        # get full Expectations or minibatches
         ########################################################################
-        Y = self.markov_blanket["Y"].getExpectation()
-        mask = ma.getmask(Y)
+        Y = self.markov_blanket["Y"].get_mini_batch()
         Wtmp = self.markov_blanket["W"].getExpectations()
-        Ztmp = self.markov_blanket["Z"].getExpectations()
-        N = Y.shape[0]
+        Ztmp = self.markov_blanket["Z"].get_mini_batch()
+        N = self.markov_blanket["Y"].dim[0]
 
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
@@ -67,27 +82,16 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Pa, Pb = P['a'], P['b']
 
         ########################################################################
-        # subset matrices for stochastic inference
-        ########################################################################
-        if ix is None:
-            Y = Y.data
-        else:
-            Y = Y.data[ix,:]
-            mask = mask[ix,:]
-            Z = Z[ix,:]
-            ZZ = ZZ[ix,:]
-
-        ########################################################################
         # Masking
         ########################################################################
+        mask = ma.getmask(Y)
+        Y = Y.data
         Y[mask] = 0.
 
         ########################################################################
         # compute stochastic "anti-bias" coefficient
         ########################################################################
-        coeff = 1
-        if ix is not None:
-            coeff = float(N) / float(len(ix))
+        coeff = float(N) / float(Y.shape[0])
 
         ########################################################################
         # compute the update
@@ -106,13 +110,11 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         # Calculate terms for the update
         ZW =  Z.dot(W.T)
-        # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
         term1 = s.square(Y).sum(axis=0)
 
         term2 = ZZ.dot(WW.T)
-        # term2 = fast_dot(ZZ, WW.T)
         term2[mask] = 0
         term2 = term2.sum(axis=0)
 
@@ -129,7 +131,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         Qb = Pb + tmp/2.
 
-        # Save updated parameters of the Q distribution
+        # return updated parameters of the Q distribution
         return {'Qa': self.Q.params['a'], 'Qb': Qb}
 
     def calculateELBO(self):

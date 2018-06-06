@@ -151,6 +151,8 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
         self.N = len(self.groups)
         self.n_groups = len(np.unique(groups))
 
+        self.mini_batch = None
+
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
@@ -175,6 +177,18 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
     def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
+
+    def define_mini_batch(self, ix):
+        QExp = self.Q.getExpectations()
+        tmp_group = self.groups[ix]
+        expanded_expectation = QExp['E'][tmp_group, :]
+        # expanded_lnE = QExp['lnE'][tmp_group, :]
+        self.mini_batch = expanded_expectation
+
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectation()
+        return self.mini_batch
 
     def updateParameters(self, ix=None, ro=None):
         # TODO: add an if MuZ is in markov blanket ?

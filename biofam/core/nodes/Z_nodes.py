@@ -17,6 +17,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         self.precompute_pcovinv = precompute_pcovinv
 
+        self.mini_batch = None
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
@@ -75,6 +76,11 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 del self.p_cov_inv[i]
                 del self.p_cov_inv_diag[i]
 
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectations()
+        return self.mini_batch
+
     def updateParameters(self, ix=None, ro=None):
         """
         Public function to update the nodes parameters
@@ -83,72 +89,81 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             - ro: step size of the natural gradient ascent
         """
 
-        # if ix is None:
-        #     ix = range(self.dim[0])
-
         ########################################################################
-        # get Expectations which are necessarry for the update
+        # get Expectations or minibatch which are necessarry for the update
         ########################################################################
-        Y = self.markov_blanket["Y"].getExpectation()
-        W = self.markov_blanket["W"].getExpectations()
-        tau = self.markov_blanket["Tau"].getExpectation()
-        mask = [ma.getmask(Y[m]) for m in range(len(Y))]
-
-        # Collect parameters from the prior or expectations from the markov blanket
-        if "MuZ" in self.markov_blanket:
-            Mu = self.markov_blanket['MuZ'].getExpectation()
-        else:
-            Mu = self.P.getParameters()["mean"]
-
-        if "AlphaZ" in self.markov_blanket:
-            Alpha = self.markov_blanket['AlphaZ'].getExpectation(expand=True)
-            Sigma = None
-            p_cov_inv = None
-            p_cov_inv_diag = None
-        elif "SigmaZ" in self.markov_blanket:
-            Alpha=None
-            Sigma = self.markov_blanket['SigmaZ'].getExpectations()
-            p_cov_inv = Sigma['inv']
-            p_cov_inv_diag = Sigma['inv_diag']
-        else:
-            Alpha=None
-            Sigma = None
-            p_cov_inv = self.p_cov_inv
-            p_cov_inv_diag = self.p_cov_inv_diag
-
-        # Collect parameters from the P and Q distributions of this node
-        Q = self.Q.getParameters()
+        # All cases
+        Q = self.Q.getParameters()  # this is general because havent been subset yet
         Qmean, Qvar = Q['mean'], Q['var']
+        W = self.markov_blanket["W"].getExpectations()
 
-        ########################################################################
-        # subset matrices for stochastic inference
-        ########################################################################
+        # Non stochastic case  # TODO Could be merged by using only getMinibatch, which would return getExpectation if no mini_batch is defined
         if ix is None:
-            for m in range(len(Y)):
-                Y[m] = Y[m].data
-        else:
-            for m in range(len(Y)):
-                Y[m] = Y[m].data[ix,:]
-                mask[m] = mask[m][ix,:]
-                tau[m] = tau[m][ix,:]
+            Y = self.markov_blanket["Y"].getExpectation()
+            tau = self.markov_blanket["Tau"].getExpectation()
 
+            if "MuZ" in self.markov_blanket:
+                Mu = self.markov_blanket['MuZ'].getExpectation()
+            else:
+                Mu = self.P.getParameters()["mean"]
+
+            if "AlphaZ" in self.markov_blanket:
+                Alpha = self.markov_blanket['AlphaZ'].getExpectation(expand=True)
+                Sigma = None
+                p_cov_inv = None
+                p_cov_inv_diag = None
+
+            else:
+                Alpha=None
+                Sigma = None
+                p_cov_inv = self.p_cov_inv
+                p_cov_inv_diag = self.p_cov_inv_diag
+
+        # Stochastic case
+        else:
+            Y = self.markov_blanket["Y"].get_mini_batch()
+            tau = self.markov_blanket["Tau"].get_mini_batch()
+
+            if "MuZ" in self.markov_blanket:
+                Mu = self.markov_blanket['MuZ'].get_mini_batch()
+            else:
+                Mu = self.P.getParameters()["mean"][ix]
+
+            if "AlphaZ" in self.markov_blanket:
+                Alpha = self.markov_blanket['AlphaZ'].get_mini_batch()
+                Sigma = None
+                p_cov_inv = None
+                p_cov_inv_diag = None
+
+            else:
+                Alpha=None
+                Sigma = None
+                p_cov_inv = self.p_cov_inv
+                p_cov_inv = [p_inv[ix,:][:,ix] for p_inv in self.p_cov_inv]
+                p_cov_inv_diag = [p_dia[ix] for p_dia in self.p_cov_inv_diag]
+            self.mini_batch = {}
             Qmean = Qmean[ix,:]
             Qvar = Qvar[ix,:]
-            Mu = Mu[ix,:]
-            if Alpha is not None: Alpha = Alpha[ix,:]
-            if Sigma is not None:
-                Sigma = [sig[ix,:][:,ix] for sig in Sigma]
-            if p_cov_inv_diag is not None:
-                p_cov_inv_diag = [p_dia[ix] for p_dia in p_cov_inv_diag]
-            if p_cov_inv is not None:
-                p_cov_inv = [p_cov[ix,:][:,ix] for p_cov in p_cov_inv]
+
 
         ########################################################################
-        # Masking
+        # masking
         ########################################################################
+        mask = [ma.getmask(Y[m]) for m in range(len(Y))]
+        for m in range(len(Y)):
+            Y[m] = Y[m].data
+
         for m in range(len(Y)):
             tau[m][mask[m]] = 0.
-            Y[m][mask[m]] = 0.
+            Y[m][mask[m]] = 0.  # unnecessary if we have a fill at zero and just use the masked array for all?
+
+        # # Collect parameters from the prior or expectations from the markov blanket
+        # elif "SigmaZ" in self.markov_blanket:
+        #     Alpha=None
+        #     Sigma = self.markov_blanket['SigmaZ'].getExpectations()
+        #     p_cov_inv = Sigma['inv']
+        #     p_cov_inv_diag = Sigma['inv_diag']
+        #       Sigma = [sig[ix,:][:,ix] for sig in Sigma]
 
         ########################################################################
         # compute the update
@@ -162,8 +177,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             Q['mean'] = par_up['Qmean']
             Q['var'] = par_up['Qvar']
         else:
+            self.mini_batch['E'] = par_up['Qmean']
+            self.mini_batch['E2'] = s.square(par_up['Qmean']) + par_up['Qvar']
+
             Q['mean'][ix,:] = par_up['Qmean']
             Q['var'][ix,:] = par_up['Qvar']
+
         self.Q.setParameters(mean=Q['mean'], var=Q['var']) # TODO should not be necessarry
 
     def _updateParameters(self, Y, W, tau, Mu, Alpha,

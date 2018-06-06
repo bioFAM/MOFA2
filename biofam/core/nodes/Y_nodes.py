@@ -17,6 +17,9 @@ class Y_Node(Constant_Variational_Node):
         # Create a boolean mask of the data to hide missing values
         if type(self.value) != ma.MaskedArray:
             self.mask()
+        ma.set_fill_value(self.value, 0.)
+
+        self.mini_batch = None
 
         # Precompute some terms
         self.precompute()
@@ -40,6 +43,15 @@ class Y_Node(Constant_Variational_Node):
 
     def getMask(self):
         return ma.getmask(self.value)
+
+    def define_mini_batch(self, ix):
+        # define a minibatch of data for all nodes to use
+        self.mini_batch = self.value[ix,:]
+
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectation()
+        return self.mini_batch
 
     def calculateELBO(self):
         # Calculate evidence lower bound

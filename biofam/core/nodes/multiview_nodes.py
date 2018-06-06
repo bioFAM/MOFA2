@@ -104,6 +104,13 @@ class Multiview_Node(Node):
         for m in self.activeM:
             self.nodes[m].precompute()
 
+    def define_mini_batch(self, ix):
+        for m in self.activeM:
+            self.nodes[m].define_mini_batch(ix)
+
+    def get_mini_batch(self):
+        return [self.nodes[m].get_mini_batch() for m in self.activeM]
+
 
 class Multiview_Variational_Node(Multiview_Node, Variational_Node):
     """General class for multiview variational nodes."""
