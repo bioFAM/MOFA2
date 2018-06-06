@@ -128,18 +128,14 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             p_cov_inv_diag = self.p_cov_inv_diag
 
         # Collect parameters from the Q distributions of this node
-        Q = self.Q.getParameters().copy()
+        Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
         ########################################################################
         # subset matrices for stochastic inference
         ########################################################################
         if ix is None:
-            Y = Y.data.copy()
-            tau = tau.copy()
-            # ZE = ZE[ix,:].copy()
-            # ZE2 = ZE2[ix,:].copy()
-            # Z = {'E': ZE, 'E2': ZE2}
+            Y = Y.data
         else:
             Y = Y.data[ix,:]
             mask = mask[ix,:]
@@ -296,7 +292,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 name_alpha = "SigmaAlphaW"
             else:
                 name_alpha = "AlphaW"
-            Alpha = self.markov_blanket[name_alpha].getExpectations(expand=True).copy() # Notice that this Alpha is the ARD prior on Z, not on W.
+            Alpha = self.markov_blanket[name_alpha].getExpectations(expand=True)
 
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()

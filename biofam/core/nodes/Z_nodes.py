@@ -125,10 +125,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         if ix is None:
             for m in range(len(Y)):
-                Y[m] = Y[m].data.copy()
-                tau[m] = tau[m].copy()
-            Qmean = Qmean.copy()
-            Qvar = Qvar.copy()
+                Y[m] = Y[m].data
         else:
             for m in range(len(Y)):
                 Y[m] = Y[m].data[ix,:]
@@ -280,8 +277,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             else:
                 PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.N, self.dim[1]))
 
-            Alpha = self.markov_blanket[
-                'AlphaZ'].getExpectations(expand=True).copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
+            Alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True)
 
             # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
             latent_variables = self.getLvIndex()
@@ -375,7 +371,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
     def _updateParameters(self):
         # Collect expectations from other nodes
-        # why .copy() ?
         Wtmp = [Wtmp_m.copy() for Wtmp_m in self.markov_blanket["W"].getExpectations()]
         W = [Wtmp_m["E"] for Wtmp_m in Wtmp]
         WW = [Wtmp_m["E2"] for Wtmp_m in Wtmp]

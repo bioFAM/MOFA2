@@ -70,7 +70,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # subset matrices for stochastic inference
         ########################################################################
         if ix is None:
-            Y = Y.data.copy()
+            Y = Y.data
         else:
             Y = Y.data[ix,:]
             mask = mask[ix,:]
@@ -130,8 +130,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Qb = Pb + tmp/2.
 
         # Save updated parameters of the Q distribution
-	# TODO return instead of setParameters
-        # self.Q.setParameters(a=self.Q.params['a'], b=Qb)
         return {'Qa': self.Q.params['a'], 'Qb': Qb}
 
     def calculateELBO(self):
@@ -215,7 +213,7 @@ class TauN_Node(Gamma_Unobserved_Variational_Node):
 
         # Perform updates of the Q distribution
         Qa = Pa + (Y.shape[1] - mask.sum(axis=1))/2.
-        Qb = Pb + tmp.copy()/2.
+        Qb = Pb + tmp/2.
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
