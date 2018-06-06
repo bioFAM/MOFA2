@@ -4,6 +4,7 @@ import numpy as np
 import scipy as s
 from copy import deepcopy
 import math
+from biofam.core.utils import *
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
@@ -14,20 +15,20 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
-        self.precompute(precompute_pcovinv=precompute_pcovinv)
+        self.precompute_pcovinv = precompute_pcovinv
 
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self, precompute_pcovinv=True):
+    def precompute(self):
         # Precompute terms to speed up computation
         self.N = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-        if precompute_pcovinv:
+        if self.precompute_pcovinv:
             p_cov = self.P.params["cov"]
 
             self.p_cov_inv = []
@@ -74,7 +75,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 del self.p_cov_inv[i]
                 del self.p_cov_inv_diag[i]
 
-    # TODO remove the None option
     def updateParameters(self, ix=None, ro=None):
         """
         Public function to update the nodes parameters
@@ -150,7 +150,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         # Masking
         ########################################################################
         for m in range(len(Y)):
-            # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau # TODO double chekc its the same thing
             tau[m][mask[m]] = 0.
             Y[m][mask[m]] = 0.
 
@@ -182,9 +181,17 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             bar = s.zeros((N,))
             for m in range(M):
                 foo += np.dot(tau[m], W[m]["E2"][:, k])
-                bar += np.dot(tau[m] * (Y[m] - s.dot(Qmean[:, s.arange(self.dim[1]) != k],
-                                                     W[m]["E"][:, s.arange(self.dim[1]) != k].T)),
-                              W[m]["E"][:, k])
+
+                bar_tmp1 = W[m]["E"][:,k]
+
+                # NOTE slow bit but hard to optimise
+                # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
+                bar_tmp2 = - s.dot(Qmean[:, s.arange(self.dim[1]) != k], W[m]["E"][:, s.arange(self.dim[1]) != k].T)
+                bar_tmp2 += Y[m]
+                bar_tmp2 *= tau[m]
+                ##############################
+
+                bar += np.dot(bar_tmp2, bar_tmp1)
 
             if "AlphaZ" in self.markov_blanket:
                 Qvar[:, k] = 1. / (Alpha[:, k] + foo)
@@ -373,16 +380,16 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         W = [Wtmp_m["E"] for Wtmp_m in Wtmp]
         WW = [Wtmp_m["E2"] for Wtmp_m in Wtmp]
 
-        tau = [tau_m.copy() for tau_m in self.markov_blanket["Tau"].getExpectation()]
-        Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()]
+        tau = self.markov_blanket["Tau"].getExpectation()
+        Y = self.markov_blanket["Y"].getExpectation()
         # TODO sort that out
         if "AlphaZ" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaZ"].getExpectation(expand=True).copy()
+            alpha = self.markov_blanket["AlphaZ"].getExpectation(expand=True)
         else:
             # TODO implement that
             print('SZ not implemented without alphaZ')
             exit(1)
-        thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True).copy()
+        thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True)
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
         # Collect parameters and expectations from P and Q distributions of this node
@@ -410,16 +417,16 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term2 = 0.5 * s.log(alpha[:,k])
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k])  # good to modify
+            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k])  # good to modify # TODO critical time here  2 %
 
             # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
-            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify
+            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify # TODO critical time here  22 %
 
             # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify
+            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify  # TODO critical time here  37 %
 
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k]
+            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k]  # TODO critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically

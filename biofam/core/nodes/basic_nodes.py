@@ -78,6 +78,9 @@ class Node(object):
         dim[axis] = new_dim
         self.dim = tuple(dim)
 
+    def precompute(self):
+        pass
+
 
 class Constant_Node(Node):
     """ General class for a constant node in a Bayesian network

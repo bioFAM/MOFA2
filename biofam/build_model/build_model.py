@@ -95,19 +95,19 @@ class buildBiofam(buildModel):
             self.model_opts['scale_covariates'] = [False]
 
         if self.model_opts['sl_z']:
-            self.init_model.initSZ(qmean = 0)
+            self.init_model.initSZ()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
-            self.init_model.initZ(qmean = 0)
+            self.init_model.initZ()
 
     def build_W(self):
         """ Build node W for the weights """
         if self.model_opts['sl_w']:
-            self.init_model.initSW(qmean = "random")
+            self.init_model.initSW()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
             # TODO could also make sure that SZ and SW can have a Sigma covariance prior
-            self.init_model.initW(qmean = "random")
+            self.init_model.initW()
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
@@ -203,7 +203,8 @@ class buildBiofam(buildModel):
         # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
 
         # Define basic schedule of updates
-        schedule = ['Y', 'Z', 'W', 'Tau']
+        # schedule = ['Y', 'Z', 'W', 'Tau']
+        schedule = ['Y', 'W', 'Z', 'Tau']
 
         # Insert ThetaW after W if Spike and Slab prior on W
         if self.model_opts['sl_w']:

@@ -53,7 +53,7 @@ class Multiview_Node(Node):
 
     def getMarkovBlanket(self):
         print("Error: Multiview nodes do not have a markov blanket, use the single-view nodes")
-        exit()
+        exit(1)
 
     def removeFactors(self,idx):
         """Method to remove factors from the node
@@ -99,6 +99,11 @@ class Multiview_Node(Node):
         # TODO should we np.array() it ? better data type BUT problem of space efficiency ?
         self.samp = [self.nodes[m].sample(dist) for m in self.activeM]
         return self.samp
+
+    def precompute(self):
+        for m in self.activeM:
+            self.nodes[m].precompute()
+
 
 class Multiview_Variational_Node(Multiview_Node, Variational_Node):
     """General class for multiview variational nodes."""

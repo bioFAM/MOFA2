@@ -224,9 +224,11 @@ class BayesNet(object):
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         activeK = nans((self.options['maxiter']))
 
-
         ro = None
         ix = None
+        for n in self.nodes:
+            self.nodes[n].precompute()
+
         for i in range(self.options['maxiter']):
             if self.options['stochastic']: # TODO
                 ro = self.step_size(i)
