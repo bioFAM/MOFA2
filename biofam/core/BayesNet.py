@@ -203,6 +203,9 @@ class BayesNet(object):
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         activeK = nans((self.options['maxiter']))
 
+        for n in self.nodes:
+            self.nodes[n].precompute()
+
         # Start training
         for i in range(self.options['maxiter']):
             t = time();

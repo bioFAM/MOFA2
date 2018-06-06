@@ -24,6 +24,8 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
 
     def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
+        QExp['E'] = QExp['E']
+        QExp['lnE'] = QExp['lnE']
         if expand:
             D = self.markov_blanket['W'].D
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
