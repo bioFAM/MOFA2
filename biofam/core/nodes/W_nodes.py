@@ -6,6 +6,7 @@ import scipy as s
 from copy import deepcopy
 import math
 
+from biofam.core.utils import *
 
 
 # Import manually defined functions
@@ -131,7 +132,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             bar_tmp2 += Y
             bar_tmp2 *= tau
 
-            bar = np.dot(bar_tmp1, bar_tmp2) 
+            bar = np.dot(bar_tmp1, bar_tmp2)
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
@@ -341,16 +342,21 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term1 = (theta_lnE-theta_lnEInv)[:,k]
             term2 = 0.5*s.log(alpha[:,k])
             term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k])
+            # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
 
             term4_tmp1 = s.dot(tauYT,Z[:,k])
+            # term4_tmp1 = fast_dot(tauYT,Z[:,k])
 
             term4_tmp2_1 = SW[:,s.arange(self.dim[1])!=k].T
             term4_tmp2_2 = (Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T
             term4_tmp2 = s.dot(term4_tmp2_2, term4_tmp2_1)
+            # term4_tmp2 = fast_dot(term4_tmp2_2, term4_tmp2_1)
             term4_tmp2 *= tau  # most expensive bit
             term4_tmp2 = term4_tmp2.sum(axis=0)
 
-            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )  # TODO critical time here  2%
+            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
+
 
             term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically
 

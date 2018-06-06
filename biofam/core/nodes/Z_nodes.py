@@ -4,6 +4,7 @@ import numpy as np
 import scipy as s
 from copy import deepcopy
 import math
+from biofam.core.utils import *
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
@@ -14,20 +15,20 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
-        self.precompute(precompute_pcovinv=precompute_pcovinv)
+        self.precompute_pcovinv = precompute_pcovinv
 
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self, precompute_pcovinv=True):
+    def precompute(self):
         # Precompute terms to speed up computation
         self.N = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
-        if precompute_pcovinv:
+        if self.precompute_pcovinv:
             p_cov = self.P.params["cov"]
 
             self.p_cov_inv = []
@@ -102,7 +103,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
-
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.
@@ -123,7 +123,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
                 bar_tmp1 = SWtmp[m]["E"][:,k]
 
-                # slow bit but hard to optimise
+                # NOTE slow bit but hard to optimise
+                # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
                 bar_tmp2 = - s.dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
                 bar_tmp2 += Y[m]
                 bar_tmp2 *= tau[m]
@@ -313,16 +314,16 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         W = [Wtmp_m["E"] for Wtmp_m in Wtmp]
         WW = [Wtmp_m["E2"] for Wtmp_m in Wtmp]
 
-        tau = [tau_m.copy() for tau_m in self.markov_blanket["Tau"].getExpectation()] # TODO critical time here  9 %
-        Y = [Y_m.copy() for Y_m in self.markov_blanket["Y"].getExpectation()] # TODO critical time here  26 %
+        tau = self.markov_blanket["Tau"].getExpectation()
+        Y = self.markov_blanket["Y"].getExpectation()
         # TODO sort that out
         if "AlphaZ" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaZ"].getExpectation(expand=True).copy()
+            alpha = self.markov_blanket["AlphaZ"].getExpectation(expand=True)
         else:
             # TODO implement that
             print('SZ not implemented without alphaZ')
             exit(1)
-        thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True).copy()
+        thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True)
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
         # Collect parameters and expectations from P and Q distributions of this node

@@ -4,7 +4,7 @@ import numpy as np
 import scipy as s
 import scipy.special as special
 
-from biofam.core.utils import dotd
+from biofam.core.utils import *
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
@@ -64,11 +64,13 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         # Calculate terms for the update
         ZW =  Z.dot(W.T)
+        # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
         term1 = s.square(Y).sum(axis=0)
 
         term2 = ZZ.dot(WW.T)
+        # term2 = fast_dot(ZZ, WW.T)
         term2[mask] = 0
         term2 = term2.sum(axis=0)
 
