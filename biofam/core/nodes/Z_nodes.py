@@ -92,59 +92,37 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # get Expectations or minibatch which are necessarry for the update
         ########################################################################
-        # All cases
-        Q = self.Q.getParameters()  # this is general because havent been subset yet
-        Qmean, Qvar = Q['mean'], Q['var']
         W = self.markov_blanket["W"].getExpectations()
+        Y = self.markov_blanket["Y"].get_mini_batch()
+        tau = self.markov_blanket["Tau"].get_mini_batch()
 
-        # Non stochastic case  # TODO Could be merged by using only getMinibatch, which would return getExpectation if no mini_batch is defined
-        if ix is None:
-            Y = self.markov_blanket["Y"].getExpectation()
-            tau = self.markov_blanket["Tau"].getExpectation()
-
-            if "MuZ" in self.markov_blanket:
-                Mu = self.markov_blanket['MuZ'].getExpectation()
-            else:
-                Mu = self.P.getParameters()["mean"]
-
-            if "AlphaZ" in self.markov_blanket:
-                Alpha = self.markov_blanket['AlphaZ'].getExpectation(expand=True)
-                Sigma = None
-                p_cov_inv = None
-                p_cov_inv_diag = None
-
-            else:
-                Alpha=None
-                Sigma = None
-                p_cov_inv = self.p_cov_inv
-                p_cov_inv_diag = self.p_cov_inv_diag
-
-        # Stochastic case
+        if "MuZ" in self.markov_blanket:
+            Mu =  self.markov_blanket['MuZ'].get_mini_batch()
         else:
-            Y = self.markov_blanket["Y"].get_mini_batch()
-            tau = self.markov_blanket["Tau"].get_mini_batch()
+            Mu = self.P.getParameters()["mean"]
+            if ix is not None:
+                Mu = Mu[ix]
 
-            if "MuZ" in self.markov_blanket:
-                Mu = self.markov_blanket['MuZ'].get_mini_batch()
-            else:
-                Mu = self.P.getParameters()["mean"][ix]
-
-            if "AlphaZ" in self.markov_blanket:
-                Alpha = self.markov_blanket['AlphaZ'].get_mini_batch()
-                Sigma = None
-                p_cov_inv = None
-                p_cov_inv_diag = None
-
-            else:
-                Alpha=None
-                Sigma = None
-                p_cov_inv = self.p_cov_inv
+        if "AlphaZ" in self.markov_blanket:
+            Alpha = self.markov_blanket['AlphaZ'].get_mini_batch()
+            Sigma = None
+            p_cov_inv = None
+            p_cov_inv_diag = None
+        else:
+            Alpha=None
+            Sigma = None
+            p_cov_inv = self.p_cov_inv
+            p_cov_inv_diag = self.p_cov_inv_diag
+            if ix is not None:
                 p_cov_inv = [p_inv[ix,:][:,ix] for p_inv in self.p_cov_inv]
                 p_cov_inv_diag = [p_dia[ix] for p_dia in self.p_cov_inv_diag]
+
+        Q = self.Q.getParameters()
+        Qmean, Qvar = Q['mean'], Q['var']
+        if ix is not None:
             self.mini_batch = {}
             Qmean = Qmean[ix,:]
             Qvar = Qvar[ix,:]
-
 
         ########################################################################
         # masking
