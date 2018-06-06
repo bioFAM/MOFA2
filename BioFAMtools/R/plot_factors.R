@@ -223,7 +223,7 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, name_
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NULL, name_color="",
+plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL, shape_by = NULL, name_color="",
                          name_shape="", show_missing = TRUE) {
   
   # Sanity checks
@@ -231,10 +231,11 @@ plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NUL
   stopifnot(length(factors)==2)
   stopifnot(all(factors %in% factors_names(object)))
   
+  groups <- .check_and_get_groups(object, groups)
+  
   # Collect relevant data  
   N <- sum(object@dimensions[["N"]])
-  Z <- get_factors(object, factors = factors, include_intercept = FALSE, as.data.frame = T)
-  Z$factor <- as.factor(Z$factor)
+  Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=TRUE)
   
   # Set color
   color_legend <- T
@@ -242,8 +243,8 @@ plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NUL
     # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if(color_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
         color_by <- training_data[[viewidx]][color_by,]
@@ -269,8 +270,8 @@ plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NUL
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if(shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
         shape_by <- training_data[[viewidx]][shape_by,]
@@ -290,26 +291,28 @@ plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NUL
     shape_legend <- F
   }
   
-  # Create data frame to plot
-  # NOTE: factor are concatenated across groupes
-  # tmp <- lapply(Z, function(z) data.frame(x = z[, factors[1]], y = z[, factors[2]], shape_by = shape_by, color_by = color_by))
-  # df <- do.call(rbind, tmp)
-  df <- data.frame(x = Z[Z$factor == factors[[1]],'value'], y = Z[Z$factor == factors[[2]],'value'], shape_by = shape_by, color_by = color_by)
+  df_aes <- data.frame(sample=Reduce(c,samples_names(object)), color_by = color_by, shape_by = shape_by) 
+  df <- left_join(Z, df_aes, by="sample")
   
-  # remove values missing color or shape annotation
-  if (!show_missing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
-
-   #turn into factors
-   df$shape_by[is.na(df$shape_by)] <- "NA"
-   df$shape_by <- as.factor(df$shape_by)
-   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
- 
+  # Remove missing values
+  if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
+  
+  # Subset to relevant groups
+  df <- filter(df, group %in% groups)
+  
+  #turn into factors
+  df$shape_by[is.na(df$shape_by)] <- "NA"
+  df$shape_by <- as.factor(df$shape_by)
+  if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
   
   xlabel <- paste("Latent factor", factors[1])
   ylabel <- paste("Latent factor", factors[2])
                                 
-  p <- ggplot(df, aes_string(x = "x", y = "y")) + 
-      geom_point(aes_string(color = "color_by", shape = "shape_by")) + xlab(xlabel) + ylab(ylabel) +
+  df_mat <- df %>% spread(key="factor", value="value")
+  df_mat <-  set_colnames(df_mat,c(colnames(df_mat)[1:4], "x", "y"))
+  
+  p <- ggplot(df_mat, aes(x = x, y = y)) + 
+      geom_point(aes(color = color_by, shape = shape_by)) + xlab(xlabel) + ylab(ylabel) +
       # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
       theme(plot.margin = margin(20, 20, 10, 10), 
             axis.text = element_text(size = rel(1), color = "black"), 
@@ -378,17 +381,13 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   
   # Collect relevant data
   N <- sum(object@dimensions[["N"]])
-  # NOTE: By default concatenate all the groups
-  Z <- lapply(get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=F)[groups], 
-              function(z) z)
-  Z <- do.call(rbind, Z)
+  Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=TRUE)
 
   # Remove constant factors 
-  tmp <- apply(Z, 2, var, na.rm=T)
-  if (any(tmp==0)) {
-    # message(paste0("Removing constant factors: ", paste(which(tmp==0), collapse="")))
-    Z <- Z[,!tmp==0]
-    factors <- factors[!tmp==0]
+  tmp <- group_by(Z, factor) %>% mutate(var=var(value, na.rm = TRUE)) %>% ungroup()
+  if (any(tmp$var==0)) {
+    Z <- filter(Z, var>0)
+    factors <-  unqiue(Z$factor)
   }
   
   # Set color
@@ -397,8 +396,8 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
     # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if(color_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
         color_by <- training_data[[viewidx]][color_by,]
@@ -424,8 +423,8 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if (shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
         shape_by <- training_data[[viewidx]][shape_by,]
@@ -444,18 +443,16 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
     shape_by <- rep(TRUE,N)
     shape_legend <- F
   }
+  
+  df_aes <- data.frame(sample=Reduce(c,samples_names(object)), color_by = color_by, shape_by = shape_by) 
+  df <- left_join(Z, df_aes, by="sample")
 
   # Remove missing values
-  if(!show_missing) {
-    Z <- Z[!is.na(color_by),]
-    color_by <- color_by[!is.na(color_by)]
-    shape_by <- shape_by[!is.na(shape_by)]
-  }
+  if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
 
-  # Crete data.frame
-  df <- as.data.frame(Z); colnames(df) <- paste0("LF_",colnames(df))
-  df <- cbind(df, color_by=color_by, shape_by=shape_by)
-
+  # Subset to relevant groups
+  df <- filter(df, group %in% groups)
+  
   #turn into factors
   df$shape_by[is.na(df$shape_by)] <- "NA"
   df$shape_by <- as.factor(df$shape_by)
@@ -485,7 +482,8 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   }
   
   # Generate plot
-  p <- GGally::ggpairs(df, columns = colnames(df[,!colnames(df) %in% c("color_by","shape_by")]), 
+  df_mat <- df %>% spread(key="factor", value="value")
+  p <- GGally::ggpairs(df_mat, columns = colnames(df_mat[,!colnames(df_mat) %in% c("sample","group","color_by","shape_by")]), 
                   lower=list(continuous="points"), diag=list(continuous='blankDiag'), upper=list(continuous='points'),
           mapping=aes(color=color_by, shape=shape_by), title=main, legend=legend) +
     theme_bw() +
