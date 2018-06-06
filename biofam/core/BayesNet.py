@@ -51,10 +51,10 @@ class BayesNet(object):
 
         # TODO for testing purpose
         self.options['step_tau'] = 1.
-        self.options['forgetting_rate'] = 1.
-        self.options['batch_size'] = 1.
+        self.options['forgetting_rate'] = .99
+        self.options['batch_size'] = .2
         # Start training
-        self.options['stochastic'] = False
+        self.options['stochastic'] = True
         # self.options['batch_size'] = None
 
     def getParameters(self, *nodes):
@@ -233,7 +233,6 @@ class BayesNet(object):
 
             if self.options['stochastic']: # TODO options in interface
                 ro = self.step_size(i)
-                ro=1.
                 ix = self.sample_mini_batch()
 
                 self.nodes['Y'].define_mini_batch(ix)
