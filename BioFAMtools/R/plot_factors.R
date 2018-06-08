@@ -343,6 +343,7 @@ plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL
 #' Default is 'all'
 #' @param color_by specifies groups or values used to color the samples. 
 #' This can be either: 
+#' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 #' a character giving the name of a feature present in the training data, 
 #' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
@@ -377,7 +378,6 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   } else {
     stopifnot(all(factors %in% factors_names(object)))  
   }
-
   
   # Collect relevant data
   N <- sum(object@dimensions[["N"]])
@@ -388,6 +388,13 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   if (any(tmp$var==0)) {
     Z <- filter(Z, var>0)
     factors <-  unqiue(Z$factor)
+  }
+  
+  if (color_by == "group"){
+    color_by = c()
+    for (name in names(samples_names(object))){
+      color_by <- c(color_by,rep(name,length(samples_names(object)[[name]])))
+    }
   }
   
   # Set color
