@@ -390,10 +390,12 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
     factors <-  unqiue(Z$factor)
   }
   
-  if (color_by == "group"){
-    color_by = c()
-    for (name in names(samples_names(object))){
-      color_by <- c(color_by,rep(name,length(samples_names(object)[[name]])))
+  if (!is.null(color_by)){
+    if (color_by == "group"){
+      color_by = c()
+      for (name in names(samples_names(object))){
+        color_by <- c(color_by,rep(name,length(samples_names(object)[[name]])))
+      }
     }
   }
   
