@@ -2,9 +2,10 @@
 % Please edit documentation in R/get_methods.R
 \name{getimputed_data}
 \alias{getimputed_data}
+\alias{get_imputed_data}
 \title{getimputed_data}
 \usage{
-getimputed_data(object, views = "all", groups = "all", features = "all",
+get_imputed_data(object, views = "all", groups = "all", features = "all",
   as.data.frame = FALSE)
 }
 \arguments{
