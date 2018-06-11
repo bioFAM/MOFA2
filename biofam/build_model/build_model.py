@@ -137,7 +137,7 @@ class buildBiofam(buildModel):
 
         # Initialise hyperparameters for the ThetaZ prior
         initTheta_a = 1.
-        initTheta_b = 1.  #0.001 #1.
+        initTheta_b = 1.#0.001  #0.001 #1.
 
         # Specify for which factors to learn ThetaZ
         learnTheta_ix = np.ones(self.dim['K'])
@@ -153,7 +153,7 @@ class buildBiofam(buildModel):
 
         # Initialise hyperparameters for the ThetaW prior
         initTheta_a = 1.
-        initTheta_b = 1.
+        initTheta_b = 1.#.001  #0.001 #1.
         learnTheta_ix = [np.ones(self.dim['K'])] * self.dim['M']
 
         # TODO: this for loop cannot possibly work change

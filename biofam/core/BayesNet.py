@@ -50,7 +50,7 @@ class BayesNet(object):
         self.options = train_opts
 
     def getParameters(self, *nodes):
-        """ Method to collect all parameters of a given set of nodes 
+        """ Method to collect all parameters of a given set of nodes
 
         PARAMETERS
         ----------
@@ -202,6 +202,9 @@ class BayesNet(object):
         nodes = list(self.getVariationalNodes().keys())
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         activeK = nans((self.options['maxiter']))
+
+        for n in self.nodes:
+            self.nodes[n].precompute()
 
         # Start training
         for i in range(self.options['maxiter']):
