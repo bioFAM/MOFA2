@@ -195,7 +195,7 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
 #' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-getimputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
+get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -240,15 +240,15 @@ getimputed_data <- function(object, views = "all", groups = "all", features = "a
   return(imputed_data)
 }
 
-#' @name getCovariates
-#' @title getCovariates
+#' @name get_covariates
+#' @title get_covariates
 #' @description This function extracts covariates from the \code{colData} in the input \code{MultiAssayExperiment} object. \cr
 #' Note that if you did not use \code{MultiAssayExperiment} to create your \code{\link{createBioFAMobject}}, this function will not work.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param covariates names of the covariates
 #' @export
 #' 
-getCovariates <- function(object, covariates) {
+get_covariates <- function(object, covariates) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
