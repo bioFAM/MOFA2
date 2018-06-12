@@ -66,8 +66,16 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     # Calulcate feature-wise means as null model
     feature_mean <- lapply(views, function(m) {
       lapply(groups, function(h) {
-        if(groupwise) apply(Y[[m]][[h]], 2, mean, na.rm=T) 
-        else  apply(Reduce(rbind,Y[[m]]), 2, mean, na.rm=T) 
+        
+       if (groupwise) {
+         apply(Y[[m]][[h]], 2, mean, na.rm=T) 
+         #apply(Reduce(rbind, Y[[m]]), 2, mean, na.rm=T)
+       } 
+       else {
+         apply(Reduce(rbind,Y[[m]]), 2, mean, na.rm=T) 
+         #apply(Y[[m]][[h]], 2, mean, na.rm=T)
+       }
+      
       })
     })
     feature_mean <- .name_views_and_groups(feature_mean, views, groups)
