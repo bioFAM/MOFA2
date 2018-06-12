@@ -17,7 +17,7 @@
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", 
-                                         include_intercept = TRUE, only = NULL, flatten = FALSE, groupwise=FALSE, ...) {
+                                         include_intercept = TRUE, only = NULL, flatten = FALSE, groupwise = FALSE, ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -66,16 +66,14 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     # Calulcate feature-wise means as null model
     feature_mean <- lapply(views, function(m) {
       lapply(groups, function(h) {
-        
        if (groupwise) {
-         apply(Y[[m]][[h]], 2, mean, na.rm=T) 
-         #apply(Reduce(rbind, Y[[m]]), 2, mean, na.rm=T)
+         #apply(Y[[m]][[h]], 2, mean, na.rm=T) 
+         apply(Reduce(rbind, Y[[m]]), 2, mean, na.rm=T)
        } 
        else {
-         apply(Reduce(rbind,Y[[m]]), 2, mean, na.rm=T) 
-         #apply(Y[[m]][[h]], 2, mean, na.rm=T)
+         #apply(Reduce(rbind,Y[[m]]), 2, mean, na.rm=T) 
+         apply(Y[[m]][[h]], 2, mean, na.rm=T)
        }
-      
       })
     })
     feature_mean <- .name_views_and_groups(feature_mean, views, groups)
