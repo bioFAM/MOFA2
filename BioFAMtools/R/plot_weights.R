@@ -28,16 +28,20 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   stopifnot(all(view %in% views_names(object)))  
   
   # Get factors
-  if (paste0(factors, collapse="") == "all") { factors <- factors_names(object) } 
-    else if(is.numeric(factors)) {
-      if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
-      else factors <- factors_names(object)[factors]
-    }
-      else{ stopifnot(all(factors %in% factors_names(object))) }
+  if (paste0(factors, collapse="") == "all") { 
+  	factors <- factors_names(object)
+  } else if (is.numeric(factors)) {
+  	if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
+  	else factors <- factors_names(object)[factors]
+  } else { 
+  	stopifnot(all(factors %in% factors_names(object)))
+  }
   
   # Define features
-  if (paste(features,collapse="")=="all") { 
+  if (paste(features, collapse="") =="all") { 
     features <- features_names(object)[[view]]
+  } else if (is.numeric(features)) {
+  	features <- features_names(object)[[view]][features]
   } else {
     stopifnot(all(features %in% features_names(object)[[view]]))  
   }

@@ -10,14 +10,14 @@
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @param include_intercept include the intercept factor for calculation of variance explained (only used when an intercept was learned)
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
-#' @param groupwise boolean indicating whether the variance explained is calculated using a groupwise intercept for the features or an overall
+#' @param groupwise_intercept boolean indicating whether the variance explained is calculated using a groupwise intercept for the features or an overall
 #' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor). 
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated. 
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", 
-                                         include_intercept = TRUE, only = NULL, flatten = FALSE, groupwise = FALSE, ...) {
+                                         include_intercept = TRUE, only = NULL, flatten = FALSE, groupwise_intercept = TRUE, ...) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -66,10 +66,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     # Calulcate feature-wise means as null model
     feature_mean <- lapply(views, function(m) {
       lapply(groups, function(h) {
-        if (groupwise) {
-          apply(Reduce(rbind, Y[[m]]), 2, mean, na.rm=T)
-        } else {
+        if (groupwise_intercept) {
           apply(Y[[m]][[h]], 2, mean, na.rm=T)
+        } else {
+          apply(Reduce(rbind, Y[[m]]), 2, mean, na.rm=T)
         }
       })
     })
