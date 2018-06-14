@@ -47,15 +47,15 @@ class BayesNet(object):
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
         assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
 
-        self.options = train_opts
+        if 'stochastic' in train_opts:
+            self.stochastic = True
+            assert 'tau' in train_opts, "tau not found for stochastic training"
+            assert 'forgetting_rate' in train_opts, "forgetting_rate not found for stochastic training"
+            assert 'batch_size' in train_opts, "batch size not found for stochastic training"
+        else:
+            self.stochastic = False
 
-        # TODO for testing purpose
-        self.options['step_tau'] = 1.
-        self.options['forgetting_rate'] = .99
-        self.options['batch_size'] = .2
-        # Start training
-        self.options['stochastic'] = True
-        # self.options['batch_size'] = None
+        self.options = train_opts
 
     def getParameters(self, *nodes):
         """ Method to collect all parameters of a given set of nodes
@@ -205,7 +205,7 @@ class BayesNet(object):
 
     def step_size(self, iter):
         # return the step size for the considered iterration
-        tau = self.options['step_tau']
+        tau = self.options['tau']
         kappa = self.options['forgetting_rate']
         return (iter + tau)**(-kappa)
 
@@ -231,7 +231,7 @@ class BayesNet(object):
 
         for i in range(self.options['maxiter']):
 
-            if self.options['stochastic']: # TODO options in interface
+            if self.stochastic:
                 ro = self.step_size(i)
                 ix = self.sample_mini_batch()
 
@@ -272,7 +272,7 @@ class BayesNet(object):
 
                     # Print ELBO monitoring
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes['Z'].covariates).sum(), self.nodes['Z'].covariates.sum() ))
-                    if delta_elbo<0 and not self.options['stochastic']:
+                    if delta_elbo<0 and not self.stochastic:
                         print("Warning, lower bound is decreasing..."); print('\a')
                         #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
 
