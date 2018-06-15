@@ -205,9 +205,9 @@ class entry_point(object):
         s.random.seed(self.train_opts['seed'])
 
     def set_stochasticity_options(self,
-                                  tau=1.,
+                                  tau=10.,
                                   forgetting_rate=.99,
-                                  batch_size=.1):
+                                  batch_size=.2):
 
         # snaity checks
         assert tau > 0, 'tau must be greater thn zero'
@@ -363,9 +363,10 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
+        # TODO this was for testing, should be removed at some point
         if no_theta:
             self.train_opts['schedule'].remove('ThetaW')
-        self.model.setTrainOptions(self.train_opts)
+        # self.model.setTrainOptions(self.train_opts)
 
 	    # Train the model
         train_model(self.model, self.train_opts)
@@ -536,10 +537,10 @@ class entry_sfa(entry_point):
 
 if __name__ == '__main__':
     ent = entry_point()
-    # dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/'
-    # infiles = [dir+'data_0_0.txt', dir+'data_1_0.txt']
-    # views =  ["view_0", "view_1"]
-    # groups = ["group_0", "group_0"]
+    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/'
+    infiles = [dir+'data_0_0.txt', dir+'data_1_0.txt']
+    views =  ["view_0", "view_1"]
+    groups = ["group_0", "group_0"]
 
     # infiles = [dir+'data_0.txt']
     # views =  ["view_0"]
@@ -547,9 +548,9 @@ if __name__ == '__main__':
     # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
     # infiles = [dir+'data_all.txt']
 
-    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    views =  ["view_A", "view_A", "view_B", "view_B"]
-    groups = ["group_A", "group_B", "group_A", "group_B"]
+    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
 
     # views =  ["view_0"]
     # groups = ["group_0"]
@@ -557,17 +558,17 @@ if __name__ == '__main__':
     lik = ["gaussian", "gaussian"]
     # lik = ["gaussian", "gaussian"]
     #
-    # outfile = dir+"test_no_sl.hdf5"
+    outfile = dir+"test_stochastic.hdf5"
     #
     stochastic=True
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=False, sl_z=False, ard_w=True, factors=5, likelihoods=lik)
-    ent.set_train_options(iter=9, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=10)
+    ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0, seed=2, elbofreq=10)
     if stochastic: ent.set_stochasticity_options()
     ent.build()
     ent.run(no_theta=False)
-    # ent.save(outfile)
+    ent.save(outfile)
     #
     # outfile2 = dir+"test_sl.hdf5"
     # ent2 = entry_point()

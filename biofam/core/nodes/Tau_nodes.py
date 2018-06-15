@@ -34,7 +34,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            N = self.markov_blanket['Z'].N
+            N = self.markov_blanket['Z'].dim[0]
             expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
             return {'E': expanded_E, 'lnE': expanded_lnE}
@@ -92,21 +92,24 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # compute stochastic "anti-bias" coefficient
         ########################################################################
         coeff = float(N) / float(Y.shape[0])
+        # TODO fix that in BayesNet instead
+        if ro is None:
+            ro =1.
 
         ########################################################################
         # compute the update
         ########################################################################
-        par_up = self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff)
+        par_up = self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff, ro)
 
         ########################################################################
         # Do the asignment
-        ########################################################################
-        if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
-            par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
-            par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
-        self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
+        # ########################################################################
+        # if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
+        #     par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
+        #     par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
+        # self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
 
-    def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff):
+    def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff, ro):
 
         # Calculate terms for the update
         ZW =  Z.dot(W.T)
@@ -128,11 +131,13 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         tmp = term1 + term2 + term3 - term4
 
-
-        Qb = Pb + tmp/2.
-
-        # return updated parameters of the Q distribution
-        return {'Qa': self.Q.params['a'], 'Qb': Qb}
+        Qb = self.Q.getParameters()['b']
+        Qb *= (1-ro)
+        Qb += ro * (Pb + tmp/2.)
+        # Qb = Pb + tmp/2.
+        #
+        # # return updated parameters of the Q distribution
+        # return {'Qa': self.Q.params['a'], 'Qb': Qb}
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node

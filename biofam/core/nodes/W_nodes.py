@@ -145,23 +145,31 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         coeff = float(N) / float(Y.shape[0])
 
         ########################################################################
+        # make sure ro is not None
+        ########################################################################
+        # TODO fix that in BayesNet instead
+        if ro is None:
+            ro = 1.
+
+        ########################################################################
         # compute the update
         ########################################################################
         par_up = self._updateParameters(Y, Z, tau, Mu, Alpha, p_cov_inv, p_cov_inv_diag,
-                               Qmean, Qvar, coeff)
+                               Qmean, Qvar, coeff, ro)
 
         ########################################################################
         # Do the asignment
         ########################################################################
-        if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
-            par_up['Qmean'] = ro * par_up['Qmean'] + (1-ro) * self.Q.getParameters()['mean']
-            par_up['Qvar'] = ro * par_up['Qvar'] + (1-ro) * self.Q.getParameters()['var']
-        self.Q.setParameters(mean=par_up['Qmean'], var=par_up['Qvar'])
+        # TODO this is wrong. Fix
+        # if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
+        #     par_up['Qmean'] = ro * par_up['Qmean'] + (1-ro) * self.Q.getParameters()['mean']
+        #     par_up['Qvar'] = ro * par_up['Qvar'] + (1-ro) * self.Q.getParameters()['var']
+        # self.Q.setParameters(mean=par_up['Qmean'], var=par_up['Qvar'])
 
 
     # TODO: use coef where appropriate
     def _updateParameters(self, Y, Z, tau, Mu, Alpha, p_cov_inv, p_cov_inv_diag,
-                           Qmean, Qvar, coeff):
+                           Qmean, Qvar, coeff, ro):
 
         latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
 
@@ -181,10 +189,16 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
             b = b or ("AlphaW" in self.markov_blanket)
             if b:
-                Qvar[:,k] = 1./(Alpha[:,k]+foo)
-                Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
+                # stochastic update of W
+                Qvar[:,k] *= (1 - ro)
+                Qvar[:,k] += ro/(Alpha[:,k]+foo)
+
+                Qmean[:,k] *= (1 - ro)
+                Qmean[:,k] += ro * Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
 
             else:
+                print('not implemented') # TODO need to fix that anyway for stochastic because of the matrix thing 
+                exit(1)
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k])
 
                 if self.P.params["cov"][k].__class__.__name__ == 'dia_matrix':
@@ -195,7 +209,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                         Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])) #-Qmean[:, k]))
 
         # Save updated parameters of the Q distribution
-        return {'Qmean': Qmean, 'Qvar': Qvar}
+        # return {'Qmean': Qmean, 'Qvar': Qvar}
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
     def calculateELBO_k(self, k):

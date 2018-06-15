@@ -50,7 +50,7 @@ class BayesNet(object):
         if 'stochastic' in train_opts:
             self.stochastic = True
             assert 'tau' in train_opts, "tau not found for stochastic training"
-            assert 'forgetting_rate' in train_opts, "forgetting_rate not found for stochastic training"
+            # assert 'forgetting_rate' in train_opts, "forgetting_rate not found for stochastic training"
             assert 'batch_size' in train_opts, "batch size not found for stochastic training"
         else:
             self.stochastic = False
