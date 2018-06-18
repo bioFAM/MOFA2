@@ -209,12 +209,36 @@ class BayesNet(object):
         kappa = self.options['forgetting_rate']
         return (iter + tau)**(-kappa)
 
-    def sample_mini_batch(self):
+    def step_size2(self, iter):
+        # return the step size for the considered iterration
+        tau = self.options['tau']
+        kappa = self.options['forgetting_rate']
+        return tau / ((1 + tau * kappa * iter)**(3./4.))
+
+    def sample_mini_batch_replace(self):
         # TODO if multiple group, sample indices in each group evenly ? prob yes
         S_pc = self.options['batch_size']
         S = S_pc * self.dim['N']
         ix = s.random.choice(range(self.dim['N']), size= S, replace=False)
         return ix
+
+    def sample_mini_batch_no_replace(self, i):
+        # TODO if multiple group, sample indices in each group evenly ? prob yes
+        # shuffle the data at the beginnign of every epoch
+        n_batches = 1./self.options['batch_size']
+        S = self.options['batch_size'] * self.dim['N']
+        batch_ix = i % n_batches
+
+        if batch_ix == 0:
+            self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
+
+        min = S * batch_ix
+        max = S * (batch_ix + 1)
+        if max > self.dim['N']:
+            max = self.dim['N']
+
+        return self.shuffled_ix[min:max]
+
 
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
@@ -232,8 +256,8 @@ class BayesNet(object):
         for i in range(self.options['maxiter']):
 
             if self.stochastic:
-                ro = self.step_size(i)
-                ix = self.sample_mini_batch()
+                ro = self.step_size2(i)
+                ix = self.sample_mini_batch_no_replace(i)
 
                 self.nodes['Y'].define_mini_batch(ix)
                 self.nodes['Tau'].define_mini_batch(ix)

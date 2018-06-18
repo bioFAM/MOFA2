@@ -205,14 +205,14 @@ class entry_point(object):
         s.random.seed(self.train_opts['seed'])
 
     def set_stochasticity_options(self,
-                                  tau=10.,
-                                  forgetting_rate=.99,
+                                  tau=1.,
+                                  forgetting_rate=1.,
                                   batch_size=.2):
 
         # snaity checks
-        assert tau > 0, 'tau must be greater thn zero'
-        assert .5 < forgetting_rate <= 1., 'Choose .5 < forgetting_rate <= 1'
-        assert 0. < batch_size <= 1., 'Choose 0. < batch_size <= 1'
+        # assert tau > 0, 'tau must be greater thn zero'
+        # assert .5 < forgetting_rate <= 1., 'Choose .5 < forgetting_rate <= 1'
+        # assert 0. < batch_size <= 1., 'Choose 0. < batch_size <= 1'
 
         self.train_opts['stochastic'] = True
         self.train_opts['tau'] = tau
@@ -564,8 +564,8 @@ if __name__ == '__main__':
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=False, sl_z=False, ard_w=True, factors=5, likelihoods=lik)
-    ent.set_train_options(iter=500, tolerance=0.01, dropR2=0.0, seed=2, elbofreq=10)
-    if stochastic: ent.set_stochasticity_options()
+    ent.set_train_options(iter=20, tolerance=0.01, dropR2=0.0, seed=2, elbofreq=1)
+    if stochastic: ent.set_stochasticity_options(tau=0.3, forgetting_rate=0.2, batch_size=.2)
     ent.build()
     ent.run(no_theta=False)
     ent.save(outfile)
