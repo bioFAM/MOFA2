@@ -197,10 +197,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     
     # Calulcate feature-wise means as null model
     feature_mean <- lapply(lnames, function(s) {
-      if ((only == "groups") & (groupwise_intercept)) {
-        apply(Y[[s]], 2, mean, na.rm=T)
-      } else {
+      if ((only == "groups") & (!groupwise_intercept)) {
         apply(Reduce(rbind, Y), 2, mean, na.rm=T)
+      } else {
+        apply(Y[[s]], 2, mean, na.rm=T)
       }
     })
     names(feature_mean) <- lnames
