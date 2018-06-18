@@ -1,15 +1,10 @@
-
-###########################################
-## Functions to visualise latent factors ##
-###########################################
-
 #' @title Plot summary of informative plots relative to a specific factor
-#' @name plot_factor_card
+#' @name plot_factor_summary
 
 library(gridExtra)
 library(grid)
 
-plot_factor_card <- function(object, factor, groupwise=FALSE, fseas=NULL, gene_sets=NULL, color_by="group") {
+plot_factor_summary <- function(object, factor, groupwise=FALSE, fseas=NULL, gene_sets=NULL, color_by="group") {
   
   #TODO plot2 : add var explained in groups and views (bar plor : x = group, y = var explained, hue = view)
   #TODO possible : add quantitative sparsity
