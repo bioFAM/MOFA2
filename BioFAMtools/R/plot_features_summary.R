@@ -36,7 +36,7 @@ plot_features_summary <- function(object, features) {
       }
     }
     df_weights = data.frame(factors_values,views_values,weights)
-    name_value = paste(feature,"_weight",sep="")
+    name_value = "weight" #paste(feature,"_weight",sep="")
     colnames(df_weights) =  c("factor", "view", name_value)
     plotW = ggplot(df_weights, aes_string(x="factor", y=name_value, fill="view")) +
       geom_bar(position="dodge", stat="identity")
@@ -58,7 +58,7 @@ plot_features_summary <- function(object, features) {
         }
       }
       df_corrs = data.frame(factors_values,views_values,corrs)
-      name_value = paste("corr_",feature,"_expression_with_factor_within_",group,sep="")
+      name_value = "corr" # paste("corr_",feature,"_expression_with_factor_within_",group,sep="")
       colnames(df_corrs) =  c("factor", "view", name_value)
       plotCor = ggplot(df_corrs, aes_string(x="factor", y=name_value, fill="view")) +
         geom_bar(position="dodge", stat="identity")
@@ -68,6 +68,19 @@ plot_features_summary <- function(object, features) {
     }
     
   }
+  
+  # Create row and column titles
+  row.titles = features
+  col.titles = c("weight")
+  for (group in groups){
+    col.titles = c(col.titles,paste("corr_within_",group,sep=""))
+  }
+  list_plots[1:N_groups+1] = lapply(1:N_groups+1, function(i) arrangeGrob(list_plots[[i]], top=col.titles[[i]]))
+  list_idx = c()
+  for (k in seq(1,N_features)){
+    list_idx = c(list_idx,1+(k-1)*(N_groups+1))
+  }
+  list_plots[list_idx] = lapply(1:N_features, function(i) arrangeGrob(list_plots[[(i-1)*(N_groups+1)+1]], left=row.titles[[i]]))
 
   do.call("grid.arrange", c(list_plots,ncol= N_groups+1,nrow=N_features))    
   
