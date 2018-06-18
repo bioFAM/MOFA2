@@ -9,7 +9,7 @@
 library(gridExtra)
 library(grid)
 
-plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, fseas=NULL) {
+plot_factor_card <- function(object, factor, groupwise=FALSE, fseas=NULL, gene_sets=NULL, color_by="group") {
   
   #TODO plot2 : add var explained in groups and views (bar plor : x = group, y = var explained, hue = view)
   #TODO possible : add quantitative sparsity
@@ -20,7 +20,7 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
   #plot 1 : variance explained
   #TODO : bar plor : x = group, y = var explained, hue = view
   
-  var_res = calculate_variance_explained(object, views = "all", groups = "all", factors = factor)
+  var_res = calculate_variance_explained(object, views = "all", groups = "all", factors = factor, groupwise=groupwise)
   groups_values = c()
   views_values = c()
   var_explained = c()
@@ -58,12 +58,15 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
     
     if(!(is.null(fseas))){
       
-      if (length(fseas)!=length(views)){
+      if (length(fseas)!=length(views)){ #no pathways found
         print("fsea should contain as many FSEA objects as there are views")
         tmp[[2]] = grid.rect(gp=gpar(col="white"))
       }
       else{
         tmp[[2]] = lineplot_FSEA(fseas[[idx]], factor, threshold=0.05, max.pathways=25)
+        if (length(tmp)==1){
+          tmp[[2]] = grid.rect(gp=gpar(col="white"))
+        }
       }
       
     }
@@ -77,15 +80,18 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
         
         metric_expr = "loading"
         statistic = "mean.diff" # "rank.sum" 
-        sig_test = "parametric" #cor.adj.parametric" # "permutation"
-        fsea=FSEA(object, view, data.matrix(gene_sets_subset), local.statistic=metric_expr,global.statistic=statistic,statistical.test=sig_test)
+        sig_test = "parametric" #"cor.adj.parametric" # "permutation" # 
         
         #fsea=FSEA(object, view, data.matrix(gene_sets_subset),factors=factor,local.statistic=metric_expr,global.statistic=statistic,statistical.test=sig_test)
         #does not work for some reason
-        
+        fsea=FSEA(object, view, data.matrix(gene_sets_subset), local.statistic=metric_expr,global.statistic=statistic,statistical.test=sig_test)
         tmp[[2]]  = lineplot_FSEA(fsea, factor, threshold=0.05, max.pathways=25)
+        if (length(tmp)==1){ #no pathways found
+          tmp[[2]] = grid.rect(gp=gpar(col="white"))
+        }
+        
       }
-      else{
+      else{ 
         tmp[[2]] = grid.rect(gp=gpar(col="white"))
       }
     }
