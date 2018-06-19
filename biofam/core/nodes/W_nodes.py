@@ -194,10 +194,10 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 Qvar[:,k] += ro/(Alpha[:,k]+foo)
 
                 Qmean[:,k] *= (1 - ro)
-                Qmean[:,k] += ro * Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
+                Qmean[:,k] += ro * 1/(Alpha[:,k]+foo) * (bar + Alpha[:,k]*Mu[:,k])
 
             else:
-                print('not implemented') # TODO need to fix that anyway for stochastic because of the matrix thing 
+                print('not implemented') # TODO need to fix that anyway for stochastic because of the matrix thing
                 exit(1)
                 Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k])
 

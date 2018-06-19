@@ -109,13 +109,16 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             p_cov_inv = None
             p_cov_inv_diag = None
         else:
+            # TODO URGENT get rid of these covariance -> memory and time explosion and uselesss
             Alpha=None
             Sigma = None
             p_cov_inv = self.p_cov_inv
             p_cov_inv_diag = self.p_cov_inv_diag
             if ix is not None:
-                p_cov_inv = [p_inv[ix,:][:,ix] for p_inv in self.p_cov_inv]
-                p_cov_inv_diag = [p_dia[ix] for p_dia in self.p_cov_inv_diag]
+                p_cov_inv = [np.eye(len(ix)) for k in range(self.K)]
+                p_cov_inv_diag = [np.diagonal(mat) for mat in p_cov_inv]
+                # p_cov_inv = [p_inv[ix,:][:,ix] for p_inv in self.p_cov_inv]
+                # p_cov_inv_diag = [p_dia[ix] for p_dia in self.p_cov_inv_diag]
 
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']

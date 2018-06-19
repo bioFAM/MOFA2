@@ -28,8 +28,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         self.mini_batch = None
 
-        Qa = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
-        self.Q.params['a'] = Qa
+        self.Qa_pre = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
 
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
@@ -134,6 +133,10 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Qb = self.Q.getParameters()['b']
         Qb *= (1-ro)
         Qb += ro * (Pb + tmp/2.)
+
+        Qa = self.Q.getParameters()['a']
+        Qa *= (1-ro)
+        Qa += ro * self.Qa_pre
         # Qb = Pb + tmp/2.
         #
         # # return updated parameters of the Q distribution

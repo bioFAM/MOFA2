@@ -213,7 +213,7 @@ class BayesNet(object):
         # return the step size for the considered iterration
         tau = self.options['tau']
         kappa = self.options['forgetting_rate']
-        return tau / ((1 + tau * kappa * iter)**(3./4.))
+        return tau / ((1 +  kappa * iter)**(3./4.))
 
     def sample_mini_batch_replace(self):
         # TODO if multiple group, sample indices in each group evenly ? prob yes
@@ -253,8 +253,8 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute()
 
+        print('elbo before training: ', self.calculateELBO())
         for i in range(self.options['maxiter']):
-
             if self.stochastic:
                 ro = self.step_size2(i)
                 ix = self.sample_mini_batch_no_replace(i)
