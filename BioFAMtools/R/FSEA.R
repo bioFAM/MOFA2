@@ -3,7 +3,7 @@
 ##########################################################
 
 #' @title Feature Set Enrichment Analysis
-#' @name FeatureSetEnrichmentAnalysis 
+#' @name feature_set_enrichment_analysis 
 #' @description Method to perform feature set enrichment analysis. Here we use a slightly modified version of the \link[PCGSE]{pcgse} function.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param view name of the view
@@ -25,7 +25,7 @@
 #' @importFrom stats p.adjust
 #' @export
 
-FeatureSetEnrichmentAnalysis <- function(object, view, feature.sets, factors = "all", local.statistic = c("loading", "cor", "z"),
+FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = c("loading", "cor", "z"),
                                          global.statistic = c("mean.diff", "rank.sum"), statistical.test = c("parametric", "cor.adj.parametric", "permutation"),
                                          transformation = c("abs.value", "none"), min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH", alpha=0.1) {
   
@@ -37,23 +37,36 @@ FeatureSetEnrichmentAnalysis <- function(object, view, feature.sets, factors = "
 
 
   # Define factors
-  if (paste0(factors,collapse="") == "all") { factors <- factorNames(object) } 
-    else if(is.numeric(factors)) {
-      if (object@ModelOpts$learnIntercept == T) factors <- factorNames(object)[factors+1]
-      else factors <- factorNames(object)[factors]
-    }
-      else{ stopifnot(all(factors %in% factorNames(object))) }
+  if (paste0(factors,collapse="") == "all") { 
+    factors <- factors_names(object) 
+  } 
+  else { 
+      if (is.numeric(factors)) {
+          if (object@model_options$learn_intercept) {
+            factors <- factors_names(object)[factors+1]
+          }
+          else {
+            factors <- factors_names(object)[factors]
+          }
+      }
+      else { 
+        stopifnot(all(factors %in% factors_names(object))) 
+      }
+  }
 
   # remove intercept factors
   factors <- factors[factors!="intercept"]
   
   # Collect observed data
-  data <- object@TrainData[[view]]
+  data <- object@training_data[[view]]
+  if(class(data)=="list") data <- Reduce(cbind, data)
   data <- t(data)
-  
+
   # Collect relevant expectations
-  W <- getWeights(object, view,factors)[[view]]
-  Z <- getFactors(object,factors)
+  W <- get_weights(object, views=view, factors=factors)[[view]]
+  Z <- get_factors(object, factors=factors)
+  if(class(Z)=="list") Z <- Reduce(rbind, Z)
+  stopifnot(rownames(data) == rownames(Z))
   
   # Check that there is no constant factor
   stopifnot( all(apply(Z,2,var, na.rm=T)>0) )
@@ -130,12 +143,14 @@ FeatureSetEnrichmentAnalysis <- function(object, view, feature.sets, factors = "
 	rownames(p.values) <- rownames(s.true); colnames(p.values) <- factors
 
 # parametric version
-  } else {
+  }
+  
+  else {
     p.values <- pcgse(data=data, prcomp.output=list(rotation=W, x=Z), pc.indexes=1:length(factors), feature.sets=feature.sets, feature.statistic=local.statistic,
                       transformation=transformation, feature.set.statistic=global.statistic, feature.set.test=statistical.test, nperm=nperm)$p.values
     colnames(p.values) <- factors
     rownames(p.values) <- rownames(feature.sets)
-    }
+  }
   
   # adjust for multiple testing per factor
   if(!p.adj.method %in%  p.adjust.methods) stop("p.adj.method needs to be an element of p.adjust.methods")
@@ -154,10 +169,10 @@ FeatureSetEnrichmentAnalysis <- function(object, view, feature.sets, factors = "
 
 
 #' @title Line plot of Feature Set Enrichment Analysis results
-#' @name LinePlot_FeatureSetEnrichmentAnalysis
+#' @name lineplot_FSEA
 #' @description Line plot of the Feature Set Enrichment Analyisis results for a specific latent variable
 #' @param fsea.out output of \link{FeatureSetEnrichmentAnalysis} function
-#' @param factor Factor for which to show wnriched pathways in the lineplot
+#' @param factor Factor for which to show enriched pathways in the lineplot
 #' @param threshold p.value threshold to filter out feature sets
 #' @param max.pathways maximum number of enriched pathways to display
 #' @param adjust use multiple testing correction
@@ -165,7 +180,7 @@ FeatureSetEnrichmentAnalysis <- function(object, view, feature.sets, factors = "
 #' @return nothing
 #' @import ggplot2
 #' @export
-LinePlot_FeatureSetEnrichmentAnalysis <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adjust=T) {
+lineplot_FSEA <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adjust=T) {
   
   # Sanity checks
   # (...)
@@ -219,22 +234,32 @@ LinePlot_FeatureSetEnrichmentAnalysis <- function(fsea.out, factor, threshold=0.
 }
 
 #' @title Heatmap of Feature Set Enrichment Analysis results
-#' @name Heatmap_FeatureSetEnrichmentAnalysis
+#' @name heatmap_FSEA
 #' @description this method generates a heatmap with the adjusted p.values that result from the the feature set enrichment analysis. Rows are feature sets and columns are factors.
 #' @param fsea.out output of \link{FeatureSetEnrichmentAnalysis} function
+#' @param factors : to plot only a subset of given factors
 #' @param threshold p.value threshold to filter out unsignificant feature sets. Default is 0.05.
+#' @param max.pathways maximum number of enriched pathways to display (keeping pathways with highest pvalues reached for some factor)
 #' @param log boolean indicating whether to plot the log of the p.values.
 #' @param ... extra arguments to be passed to \link{pheatmap} function
 #' @details fill this
 #' @import pheatmap
 #' @importFrom grDevices colorRampPalette
 #' @export
-Heatmap_FeatureSetEnrichmentAnalysis <- function(fsea.out, threshold = 0.05, log = TRUE, ...) {
+
+heatmap_FSEA <- function(fsea.out, factors="all", threshold = 0.05, max.pathways = 25, log = TRUE, ...) {
 
   # get p-values
   p.values <- fsea.out$pval.adj
+  if (factors!="all"){
+    p.values <- p.values[,factors]
+  }
   p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=threshold)) == ncol(p.values),]
   
+  # If there are too many pathways enriched, just keep the 'max_pathways' more significant
+  if (nrow(p.values) > max.pathways)
+    p.values <- head(p.values[order(apply(p.values, 1, function(x) min(x))),],n=max.pathways)
+
   # Apply Log transform
   if (log==T) {
     p.values <- -log10(p.values)
@@ -245,12 +270,15 @@ Heatmap_FeatureSetEnrichmentAnalysis <- function(fsea.out, threshold = 0.05, log
   }
   
   # Generate heatmap
+  # hacking if pvalues are 0
+  p.values[is.infinite(p.values)] = 2*max(p.values[is.finite(p.values)])
+  
   pheatmap::pheatmap(p.values, color = col, ...)
 }
 
 
 #' @title Barplot of Feature Set Enrichment Analysis results
-#' @name Barplot_FeatureSetEnrichmentAnalysis
+#' @name barplot_FSEA
 #' @description this method generates a barplot with the number of enriched feature sets per factor
 #' @param fsea.out output of \link{FeatureSetEnrichmentAnalysis} function
 #' @param alpha FDR threshold for calling enriched feature sets. Default is 0.05
@@ -259,7 +287,7 @@ Heatmap_FeatureSetEnrichmentAnalysis <- function(fsea.out, threshold = 0.05, log
 #' @import ggplot2
 #' @importFrom grDevices colorRampPalette
 #' @export
-Barplot_FeatureSetEnrichmentAnalysis <- function(fsea.out, alpha = 0.05) {
+barplot_FSEA <- function(fsea.out, alpha = 0.05) {
 
   # Get enriched pathways at FDR of alpha
   pathwayList <- apply(fsea.out$pval.adj, 2, function(f) names(f)[f<=alpha])
@@ -339,7 +367,7 @@ pcgse = function(data,
   # Turn the feature set matrix into list form if feature.set.test is not "permutation"
   feature.set.indexes = feature.sets  
   if (is.matrix(feature.sets)) {
-    feature.set.indexes = createVarGroupList(var.groups=feature.sets)  
+    feature.set.indexes = create_var_group_list(var.groups=feature.sets)  
   }
   
   n = nrow(data)
@@ -349,16 +377,16 @@ pcgse = function(data,
   feature.statistics = matrix(0, nrow=p, ncol=length(pc.indexes))
   for (i in 1:length(pc.indexes)) {
     pc.index = pc.indexes[i]
-    feature.statistics[,i] = computefeatureStatistics(data=data, prcomp.output=prcomp.output, pc.index=pc.index, feature.statistic, transformation)
+    feature.statistics[,i] = compute_feature_statistics(data=data, prcomp.output=prcomp.output, pc.index=pc.index, feature.statistic, transformation)
   }
   
   # Perform the specified feature set test for each feature set on each specified PC using the feature-level statistics
   if (feature.set.test == "parametric" | feature.set.test == "cor.adj.parametric") {
     if (feature.set.statistic == "mean.diff") {
-      results = pcgseViaTTest(data=data, prcomp.output=prcomp.output, pc.indexes=pc.indexes, feature.set.indexes=feature.set.indexes,
+      results = pcgse_via_ttest(data=data, prcomp.output=prcomp.output, pc.indexes=pc.indexes, feature.set.indexes=feature.set.indexes,
                               feature.statistics=feature.statistics, cor.adjustment=(feature.set.test == "cor.adj.parametric"))      
     } else if (feature.set.statistic == "rank.sum") {
-      results = pcgseViaWMW(data=data, prcomp.output=prcomp.output, pc.indexes=pc.indexes, feature.set.indexes=feature.set.indexes,
+      results = pcgse_via_WMW(data=data, prcomp.output=prcomp.output, pc.indexes=pc.indexes, feature.set.indexes=feature.set.indexes,
                             feature.statistics=feature.statistics, cor.adjustment=(feature.set.test == "cor.adj.parametric"))
     }     
   } else if (feature.set.test == "permutation") {
@@ -375,7 +403,7 @@ pcgse = function(data,
 
 
 # Turn the annotation matrix into a list of var group indexes for the valid sized var groups
-createVarGroupList = function(var.groups) {
+create_var_group_list = function(var.groups) {
   var.group.indexes = list()  
   for (i in 1:nrow(var.groups)) {
     member.indexes = which(var.groups[i,]==1)
@@ -386,7 +414,7 @@ createVarGroupList = function(var.groups) {
 }
 
 # Computes the feature-level statistics
-computefeatureStatistics = function(data, prcomp.output, pc.index, feature.statistic, transformation) {
+compute_feature_statistics = function(data, prcomp.output, pc.index, feature.statistic, transformation) {
   p = ncol(data)
   n = nrow(data)
   feature.statistics = rep(0, p)
@@ -412,7 +440,7 @@ computefeatureStatistics = function(data, prcomp.output, pc.index, feature.stati
 }
 
 # Compute enrichment via t-test
-pcgseViaTTest = function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
+pcgse_via_ttest = function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
   
   num.feature.sets = length(feature.set.indexes)
   n= nrow(data)
@@ -468,7 +496,7 @@ pcgseViaTTest = function(data, prcomp.output, pc.indexes, feature.set.indexes, f
 }
 
 # Compute enrichment via Wilcoxon Mann Whitney 
-pcgseViaWMW = function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
+pcgse_via_WMW = function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
   
   num.feature.sets = length(feature.set.indexes)
   n= nrow(data)

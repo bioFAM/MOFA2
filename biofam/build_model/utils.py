@@ -53,16 +53,16 @@ def maskData(data, data_opts):
     """
     print("Masking data with the following options:")
     print("at random:")
-    print(data_opts['maskAtRandom'])
+    print(data_opts['mask_at_random'])
     print("full cases:")
-    print(data_opts['maskNSamples'])
+    print(data_opts['mask_n_samples'])
 
     for m in range(len(data)):
 
         # Mask values at random
         D = data[m].shape[1]
         N = data[m].shape[0]
-        p2Mask = data_opts['maskAtRandom'][m]
+        p2Mask = data_opts['mask_at_random'][m]
         if p2Mask != 0:
             idxMask = np.zeros(N*D)
             idxMask[:int(round(N*D*p2Mask))] = 1
@@ -71,7 +71,7 @@ def maskData(data, data_opts):
             data[m] = data[m].mask(idxMask==1)
 
         # Mask samples in a complete view
-        Nsamples2Mask = data_opts['maskNSamples'][m]
+        Nsamples2Mask = data_opts['mask_n_samples'][m]
         if Nsamples2Mask != 0:
             idxMask = np.random.choice(N, size=Nsamples2Mask, replace = False)
             # idxMask = np.arange(Nsamples2Mask)
@@ -113,28 +113,67 @@ def loadData(data_opts, verbose=True):
     print ("## Loading data ##")
     print ("#"*18)
     print ("\n")
-    sleep(1)
 
-    M = len(data_opts['input_files'])
+    uniq_view_names = np.unique(data_opts['view_names'])
+    M = len(uniq_view_names)
+    P = None if not ('group_names' in  data_opts) else len(set(data_opts['group_names']))
 
-    Y =  [None]*M
-    for m in range(M):
+    Y =  [None] * M
+    sample_groups = None
 
-        # Read file
-        file = data_opts['input_files'][m]
-        Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
 
-        # Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"])
-        print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
+    if P is None or P == 1:
+        assert len(data_opts['input_files']) == len(uniq_view_names) == len(data_opts['view_names']), "View names should be unique if there are no groups"
+        for m, vname in enumerate(uniq_view_names):
+            # Read files as views
+            file = data_opts['input_files'][m]
+            Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
+            # if data_opts['features_in_rows']: Y[m] = Y[m].T
+            group_name = data_opts['group_names'][0] if 'group_names' in data_opts else 'group_0'
+            sample_groups = list([group_name for e in range(Y[m].shape[0])])
+            print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
+    else:  # there are multiple groups
+        for m, vname in enumerate(uniq_view_names):
+            uniq_group_names = np.unique(data_opts['group_names'])
+            group_y = [None] * len(uniq_group_names)
+            indices = np.where(np.array(data_opts['view_names']) == vname)[0]
+            group_names = [data_opts['group_names'][e] for e in indices]
+            assert len(group_names) == len(uniq_group_names), "Group names for one view should be unique"
+            sample_groups = list()
+            for j, i in enumerate(indices):
+                file = data_opts["input_files"][i]
+                group = data_opts["group_names"][i]
+                group_y[j] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
+                # if data_opts['features_in_rows']: group_y[j] = group_y[j].T
+                sample_groups.extend([group for e in range(group_y[j].shape[0])])
+                print("Loaded %s with dim (%d, %d)..." % (file, group_y[j].shape[0], group_y[j].shape[1]))
+            Y[m] = pd.concat(group_y)
 
+
+    # Deprecated for 2d models
     # Check that the dimensions match
-    if len(set([Y[m].shape[0] for m in range(M)])) != 1:
-        if len(set([Y[m].shape[1] for m in range(M)])) == 1:
-            print("\nWarning: Columns seem to be the shared axis, transposing the data...")
-            for m in range(M): Y[m] = Y[m].T
-        else:
-            print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
-            exit()
+    # if len(set([Y[m].shape[0] for m in range(M)])) != 1:
+    #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
+    #         print("\nWarning: Columns seem to be the shared axis, transposing the data...")
+    #         for m in range(M): Y[m] = Y[m].T
+    #     else:
+    #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
+    #         exit()
+
+    # if data_opts['features_in_rows']:
+    #     for m in range(M): Y[m] = Y[m].T
+    #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
+    #         print("\nWarning: Columns seem to be the shared axis, transposing the data...")
+    #         for m in range(M): Y[m] = Y[m].T
+    #     else:
+    #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
+    #         exit()
+    Y = process_data(Y, data_opts, sample_groups)
+
+    return (Y, sample_groups)
+
+def process_data(Y, data_opts, sample_groups):
+    M = len(Y)
 
     for m in range(M):
         # Removing features with no variance
@@ -148,6 +187,11 @@ def loadData(data_opts, verbose=True):
             print("Centering features for view " + str(m) + "...")
             Y[m] = (Y[m] - Y[m].mean(axis=0))
 
+        if data_opts['center_features_per_group'][m]:
+            print("Centering features per group for view " + str(m) + "...")
+            for gp_name in np.unique(data_opts['group_names']):
+                filt = [gp == gp_name for gp in sample_groups]
+                Y[m][filt] = (Y[m][filt] - Y[m][filt].mean(axis=0))
 
         # Scale the views to unit variance
         if data_opts['scale_views'][m]:
@@ -172,9 +216,9 @@ def loadDataGroups(data_opts):
     """
     method to load the labels of the samples when there are groups of samples
     """
-    if data_opts['sampleGroups'] is None:
+    if data_opts['sample_groups_file'] is None:
         return None
-    sample_labels = np.genfromtxt(data_opts['sampleGroups'], dtype='str')
+    sample_labels = np.genfromtxt(data_opts['sample_groups_file'], dtype='str')
     return sample_labels
 
 def loadDataX(data_opts, transpose = False):
@@ -186,11 +230,10 @@ def loadDataX(data_opts, transpose = False):
     print ("## Loading samples positions data ##")
     print ("#"*18)
     print ("\n")
-    sleep(1)
 
     M = len(data_opts['view_names'])
 
-    if data_opts['X_Files'] is None:
+    if data_opts['x_files'] is None:
 
         X = None
         sigma_clust = None
@@ -199,12 +242,12 @@ def loadDataX(data_opts, transpose = False):
 
         if transpose:
 
-            assert M == len(data_opts['X_Files']), "Length of view names and samples positions input files does not match"
+            assert M == len(data_opts['x_files']), "Length of view names and samples positions input files does not match"
 
             X = [None] * M
             sigma_clust = [None] * M
             for m in range(M):
-                file = data_opts['X_Files'][m]
+                file = data_opts['x_files'][m]
                 if file != "None":
                     try:
                         X[m] = np.loadtxt(file, delimiter=',')
@@ -217,10 +260,10 @@ def loadDataX(data_opts, transpose = False):
                     X[m] = X[m][perm, :]
 
             # load sigma cluster if among arguments
-            if data_opts['sigmaClusterFiles'] is not None:
-                assert M == len(data_opts['sigmaClusterFiles']), "Length of view names and samples clusters input files does not match"
+            if data_opts['sigma_clusters_file'] is not None:
+                assert M == len(data_opts['sigma_clusters_file']), "Length of view names and samples clusters input files does not match"
                 for m in range(M):
-                    file = data_opts['sigmaClusterFiles'][m]
+                    file = data_opts['sigma_clusters_file'][m]
                     if file != "None":
                         sigma_clust[m] = np.loadtxt(file)
 
@@ -230,9 +273,9 @@ def loadDataX(data_opts, transpose = False):
 
         else:
 
-            assert 1 == len(data_opts['X_Files']), "Length of view names and samples positions input files does not match"
+            assert 1 == len(data_opts['x_files']), "Length of view names and samples positions input files does not match"
 
-            file = data_opts['X_Files'][0]
+            file = data_opts['x_files'][0]
             if file != "None":
                 try:
                     X = np.loadtxt(file, delimiter=',')
@@ -244,9 +287,9 @@ def loadDataX(data_opts, transpose = False):
                     X = X[perm, :]
 
                 # load sigma cluster if among arguments
-                if data_opts['sigmaClusterFiles'] is not None:
-                    assert 1 == len(data_opts['sigmaClusterFiles']), "Length of view names and samples clusters input files does not match"
-                    sigma_clust = np.loadtxt(data_opts['sigmaClusterFiles'][0])
+                if data_opts['sigma_clusters_file'] is not None:
+                    assert 1 == len(data_opts['sigma_clusters_file']), "Length of view names and samples clusters input files does not match"
+                    sigma_clust = np.loadtxt(data_opts['sigma_clusters_file'][0])
                 else:
                     sigma_clust = None
 
@@ -277,7 +320,7 @@ def corr(A,B):
     # Finally get corr coeff
     return np.dot(A_mA, B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))
 
-def saveParameters(model, hdf5, view_names=None):
+def saveParameters(model, hdf5, view_names=None, group_names=None, sample_groups=None):
     """ Method to save the parameters of the model in an hdf5 file
 
     PARAMETERS
@@ -306,10 +349,8 @@ def saveParameters(model, hdf5, view_names=None):
         if type(parameters) == list:
             # Loop through the views
             for m in range(len(parameters)):
-                if view_names is not None:
-                    tmp = view_names[m]
-                else:
-                    tmp = "%d" % m
+                tmp = np.unique(view_names)[m] if view_names is not None else "view_" + str(m)
+
                 # Create subsubgroup for the view
                 view_subgrp = node_subgrp.create_group(tmp)
                 # Loop through the parameters of the view
@@ -325,11 +366,20 @@ def saveParameters(model, hdf5, view_names=None):
 
         # Single-view nodes
         else:
-            for param_name in parameters.keys():
-                node_subgrp.create_dataset("%s" % (param_name), data=parameters[param_name].T)
+            for group_ix, samp_group in enumerate(np.unique(group_names)):
+                samp_subgrp = node_subgrp.create_group(str(samp_group))
+                samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
+                for param_name in parameters.keys():
+                    if node == 'Z':
+                        df = parameters[param_name][samp_indices,:]
+                    else:
+                        if len(df.shape) > 1:
+                            df = df[group_ix,:]
+                    samp_subgrp.create_dataset("%s" % (param_name), data=df.T)
+
     pass
 
-def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
+def saveExpectations(model, hdf5, view_names=None, group_names=None, sample_groups=None, only_first_moments=True):
     """ Method to save the expectations of the model in an hdf5 file
 
     PARAMETERS
@@ -341,6 +391,10 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
     """
     # Get nodes from the model
     nodes = model.getNodes()
+    # check if there are sample groups in the model
+    if 'sample_groups' is None:
+        sample_groups = np.array(['all'] * model.dim['N'])
+        group_names = np.array(['all'])
 
     exp_grp = hdf5.create_group("expectations")
 
@@ -358,20 +412,16 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
 
             # Iterate over views
             for m in range(len(expectations)):
-                if view_names is not None:
-                    tmp = view_names[m]
-                else:
-                    tmp = "%d" % m
+                tmp = np.unique(view_names)[m] if view_names is not None else "view_" + str(m)
 
                 # Create subsubgroup for the view
                 view_subgrp = node_subgrp.create_group(tmp)
 
                 # Loop through the expectations
-                if only_first_moments:
-                    if node == "SW":
-                        expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
-                    else:
-                        expectations[m] = {'E':expectations[m]["E"]}
+
+                if node == "SW":
+                    expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
+                if only_first_moments: expectations[m] = {'E':expectations[m]["E"]}
 
                 if expectations[m] is not None:
 
@@ -379,32 +429,58 @@ def saveExpectations(model, hdf5, view_names=None, only_first_moments=True):
                     SigmaNode = node == "SigmaAlphaW" and nodes[node].getNodes()[m].__class__.__name__ != "AlphaW_Node_mk"
 
                     for exp_name in expectations[m].keys():
-                        if type(expectations[m][exp_name]) == ma.core.MaskedArray:
-                            tmp = ma.filled(expectations[m][exp_name], fill_value=np.nan)
+
+                        tmp = expectations[m][exp_name]
+                        if type(tmp) == ma.core.MaskedArray:
+                            tmp = ma.filled(tmp, fill_value=np.nan)
+
+                        # Expectations for the node like Y and Tau have both view and group structure
+                        if node == "Y" or node == "Tau":
+                            for samp_group in np.unique(group_names):
+                                # create hdf5 group for the considered sample group
+                                samp_subgrp = view_subgrp.create_group(str(samp_group))
+                                samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
+                                df = tmp[samp_indices,:]
+                                samp_subgrp.create_dataset(str(exp_name), data=df)
+                        else:
                             if SigmaNode:
                                 view_subgrp.create_dataset(exp_name, data=tmp)
                             else:
                                 view_subgrp.create_dataset(exp_name, data=tmp.T)
-
-                        else:
-                            if SigmaNode:
-                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name])
-                            else:
-                                view_subgrp.create_dataset(exp_name, data=expectations[m][exp_name].T)
-
 
         # Single-view nodes
         else:
             if node == "SZ":
                 expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
             if only_first_moments: expectations = {'E':expectations["E"]}
-            for exp_name in expectations.keys():
+#            for samp_group in range(len(group_names)):
+#                samp_subgrp = node_subgrp.create_group(samp_group)
+            group_ix = 0
+            for samp_group in np.unique(group_names):
+                # create hdf5 group for the considered sample group
+                samp_subgrp = node_subgrp.create_group(str(samp_group))
 
-                # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
-                if node == "SigmaZ":
-                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
-                else:
-                    node_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name].T)
+                samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
+
+                # iterate over expectation names
+                for exp_name in expectations.keys():
+                    # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
+                    if node == "SigmaZ":
+                        samp_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
+                    if node == 'Z':
+                        df = expectations[exp_name][samp_indices,:]
+                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
+                    else:
+#                        df = expectations[exp_name][sample_groups,:]
+#                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
+                        df = expectations[exp_name]
+                        # TODO a bit dirty here, this is if we use a thetaZ which is not per group
+                        if len(df.shape)>1:
+                            df = df[group_ix,:]
+                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
+
+                group_ix += 1
+
 
 def saveTrainingStats(model, hdf5):
     """ Method to save the training statistics in an hdf5 file
@@ -451,15 +527,15 @@ def saveModelOpts(opts, hdf5):
     opts:
     hdf5:
     """
-    # opts_interest = ["learnIntercept", "schedule", "likelihood"]
-    opts_interest = ["learnIntercept", "likelihood", "transpose_noise", "transpose_sparsity"]
+    # opts_interest = ["learnIntercept", "schedule", "likelihoods"]
+    opts_interest = ["learn_intercept", "likelihoods", "noise_on", "sl_z", "sl_w"]
     opts = dict((k, opts[k]) for k in opts_interest)
-    grp = hdf5.create_group('model_opts')
+    grp = hdf5.create_group('model_options')
     for k, v in opts.items():
         grp.create_dataset(k, data=np.asarray(v).astype('S'))
     grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
-def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_names=None, shared_features=False):
+def saveTrainingData(model, hdf5, view_names=None, group_names=None, sample_groups=None, sample_names=None, feature_names=None):
     """ Method to save the training data in an hdf5 file
 
     PARAMETERS
@@ -467,33 +543,47 @@ def saveTrainingData(model, hdf5, view_names=None, sample_names=None, feature_na
     model: a BayesNet instance
     hdf5:
     view_names
+    group_names
     sample_names
     feature_names
     """
-    data = model.getTrainingData()
+
+    # check if there are sample groups in the model
+
+    # if 'AlphaZ' in nodes and isinstance(nodes["AlphaZ"], AlphaZ_Node_groups):
+    #     sample_groups = nodes["AlphaZ"].groups
+    #     group_names = nodes['AlphaZ'].group_names
+    # else:
+    #     sample_groups = np.array([0] * model.dim['N'])
+    #     group_names = np.array(['all'])
+
+    data     = model.getTrainingData()
     data_grp = hdf5.create_group("data")
-    if shared_features:
-        # Save features (shared between views)
+
+    # Save features per view and samples per group
+    featuredata_grp = hdf5.create_group("features")
+    sampledata_grp  = hdf5.create_group("samples")
+
+    for m in range(len(data)):
+        view = np.unique(view_names)[m] if view_names is not None else "view_" + str(m)
+
+        # Save features for the view
         if feature_names is not None:
-            hdf5.create_dataset("features", data=[str(f).encode('utf8') for f in feature_names])
-        # Save samples (per view)
-        sampledata_grp = hdf5.create_group("samples")
-        for m in range(len(data)):
-            view = view_names[m] if view_names is not None else str(m)
-            data_grp.create_dataset(view, data=data[m].data.T)
-            if sample_names is not None:
-                sampledata_grp.create_dataset(view, data=[str(s).encode('utf8') for s in sample_names[m]])
-    else:
-        # Save samples (shared between views)
+            featuredata_grp.create_dataset(view, data=[str(f).encode('utf8') for f in feature_names[m]])
+
+        view_subgrp = data_grp.create_group(view)
+
+        # Save data for the view and the group
+        for samp_group in np.unique(group_names):
+            samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
+            view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:].data)
+
+    # Save samples for the group
+    for samp_group in np.unique(group_names):
+        samp_indices = np.where(np.array(sample_groups) == samp_group)[0]
         if sample_names is not None:
-            hdf5.create_dataset("samples", data=[str(s).encode('utf8') for s in sample_names])
-        # Save features (per view)
-        featuredata_grp = hdf5.create_group("features")
-        for m in range(len(data)):
-            view = view_names[m] if view_names is not None else str(m)
-            data_grp.create_dataset(view, data=data[m].data.T)
-            if feature_names is not None:
-                featuredata_grp.create_dataset(view, data=[str(f).encode('utf8') for f in feature_names[m]])
+            sampledata_grp.create_dataset(samp_group, data=[str(s).encode('utf8') for s in [sample_names[e] for e in samp_indices]])
+
 
 def saveDataTxt(model, outDir, view_names=None, sample_names=None, feature_names=None, shared_features=False):
     """ Method to save the training data in text files
@@ -587,40 +677,40 @@ def overwriteExpectationsMV(MV):
             node.mask()
 
 
-def saveTrainedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None, shared_features=False):
+def saveTrainedModel(model, outfile,
+    train_opts, model_opts,
+    feature_names=None, view_names=None,
+    sample_names=None, group_names=None, sample_groups=None):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
     ----------
     """
-    assert model.trained, "Model is not trained yet"
+    assert model.trained, "Model is not trained"
 
     if view_names is not None:
-        assert len(np.unique(view_names)) == len(view_names), 'View names must be unique'
+        uniq_view_names = np.unique(view_names)
 
         # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
         idx = sorted(range(len(view_names)), key=lambda k: view_names[k])
-        tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
-        model_opts["likelihood"] = tmp
+        tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
+        model_opts["likelihoods"] = tmp
 
-    if shared_features:
-        if feature_names is not None:
-            assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
-    else:
-        if sample_names is not None:
-            assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
+    # if feature_names is not None:
+    #     assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
+    # if sample_names is not None:
+    #     assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
     hdf5 = h5py.File(outfile,'w')
-    saveExpectations(model,hdf5,view_names)
-    saveParameters(model,hdf5, view_names)
+    saveExpectations(model, hdf5, view_names, group_names, sample_groups)
+    # saveParameters(model, hdf5, view_names, group_names, sample_groups)
     saveModelOpts(model_opts, hdf5)
-    saveTrainingData(model, hdf5, view_names, sample_names, feature_names, shared_features)
+    saveTrainingData(model, hdf5, view_names, group_names, sample_groups, sample_names, feature_names)
     saveTrainingStats(model, hdf5)
     saveTrainingOpts(train_opts, hdf5)
-
     hdf5.close()
 
-def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, sample_names=None, feature_names=None,  shared_features=False):
+def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, group_names=None, sample_names=None, feature_names=None):
     """ Method to save the model in an hdf5 file
 
     PARAMETERS
@@ -633,27 +723,26 @@ def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, 
 
         # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
         idx = sorted(range(len(view_names)), key=lambda k: view_names[k])
-        tmp = [model_opts["likelihood"][idx[m]] for m in range(len(model_opts["likelihood"]))]
-        model_opts["likelihood"] = tmp
+        tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
+        model_opts["likelihoods"] = tmp
 
-    if shared_features:
-        if feature_names is not None:
-            assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
-    else:
-        if sample_names is not None:
-            assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
+    # if feature_names is not None:
+    #         assert len(np.unique(feature_names)) == len(feature_names), 'Feature names must be unique'
+    if sample_names is not None:
+        assert len(np.unique(sample_names)) == len(sample_names), 'Sample names must be unique'
 
     overwriteExpectations(model)
     if 'outDir' in model_opts:
-        saveDataTxt(model, model_opts['outDir'], view_names=view_names, sample_names=sample_names, feature_names=feature_names, shared_features=shared_features)
+        saveDataTxt(model, model_opts['output_dir'], view_names, group_names, sample_names, feature_names)
 
-        if model_opts['sample_X']:
-            saveDataXTxt(model, model_opts['outDir'], model_opts["transpose_sparsity"], view_names=view_names) #, sample_names=sample_names)
+        if model_opts['sample_x']:
+            #saveDataXTxt(model, model_opts['outDir'], model_opts["transpose_sparsity"], view_names=view_names) #, sample_names=sample_names)
+            saveDataXTxt(model, model_opts['output_dir'], view_names=view_names) #, sample_names=sample_names)
 
     hdf5 = h5py.File(outfile,'w')
-    saveExpectations(model,hdf5,view_names)
-    saveParameters(model,hdf5,view_names)
-    saveModelOpts(model_opts,hdf5)
-    saveTrainingData(model, hdf5, view_names, sample_names, feature_names, shared_features)
+    saveExpectations(model, hdf5, view_names, group_names)
+    saveParameters(model,hdf5, view_names, group_names, sample_groups)
+    saveModelOpts(model_opts, hdf5)
+    saveTrainingData(model, hdf5, view_names, group_names, sample_names, feature_names)
 
     hdf5.close()

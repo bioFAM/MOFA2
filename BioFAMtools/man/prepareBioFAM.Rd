@@ -10,23 +10,24 @@ prepareBioFAM(object, DirOptions, DataOptions = NULL, ModelOptions = NULL,
 \arguments{
 \item{object}{an untrained \code{\link{BioFAModel}}}
 
-\item{DirOptions}{list with Input/Output options, which must contain a 'dataDir' element where temporary text files will be stored 
+\item{DirOptions}{list with Input/Output options, which must contain a 'data_dir' element where temporary text files will be stored 
 and an 'outFile' with hdf5 extension where the final model will be stored.}
 
-\item{DataOptions}{list of DataOptions (see \code{\link{getDefaultDataOpts}} details). 
+\item{DataOptions}{list of DataOptions (see \code{\link{getDefaultDataOptions}} details). 
 If NULL, default data options are used.}
 
-\item{ModelOptions}{list of ModelOptions (see \code{\link{getDefaultModelOpts}} for details). 
+\item{ModelOptions}{list of ModelOptions (see \code{\link{getDefaultModelOptions}} for details). 
 If NULL, default model options are used.}
 
-\item{TrainOptions}{list of TrainOptions (see \code{\link{getDefaultTrainOpts}} for details). 
+\item{TrainOptions}{list of TrainOptions (see \code{\link{getDefaultTrainOptions}} for details). 
 If NULL, default training options are used.}
 }
 \value{
 Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
 }
 \description{
-Function to prepare a \code{\link{BioFAModel}} object for training. It requires defining data, model and training options.
+Function to prepare a \code{\link{BioFAModel}} object for training. 
+It requires defining data, model and training options.
 }
 \examples{
 # Generate a random data set
@@ -34,15 +35,15 @@ data <- list("gaussian_view"=matrix(rnorm(100,mean=0,sd=1),10,10), "poisson_view
 # Create a BioFAM object
 BioFAMobject <- createBioFAM(data)
 # Define I/O options
-DirOptions <- list("dataDir" = tempdir(), "outFile" = tempfile())
+DirOptions <- list("data_dir" = tempdir(), "output_file" = tempfile())
 # Define Data Options
-DataOptions <- getDefaultDataOpts()
+DataOptions <- getDefaultDataOptions()
 # Define Model Options
-ModelOptions <- getDefaultModelOpts(BioFAMobject)
-ModelOptions$likelihood <- ("gaussian","poisson")
-ModelOptions <- getDefaultModelOpts(BioFAMobject)
+ModelOptions <- getDefaultModelOptions(BioFAMobject)
+ModelOptions$likelihood <- ("gaussian", "poisson")
+ModelOptions <- getDefaultModelOptions(BioFAMobject)
 # Define Training Options
-TrainOptions <- getDefaultTrainOpts()
+TrainOptions <- getDefaultTrainOptions()
 TrainOptions$maxiter <- 100
 # Prepare BioFAM object for training
 BioFAMobject <- prepareBioFAM(BioFAMobject, DirOptions, DataOptions, ModelOptions, TrainOptions)

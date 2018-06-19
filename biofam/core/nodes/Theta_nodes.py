@@ -29,13 +29,10 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         self.factors_axis = 0
         self.Ppar = self.P.getParameters()
 
-    def getExpectations(self, expand=True):
+    def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
-            if 'SW' in self.markov_blanket:
-                D = self.markov_blanket['SW'].D
-            else:
-                D = self.markov_blanket['W'].D
+            D = self.markov_blanket['W'].D
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], D, axis=0)
             expanded_lnEInv = s.repeat(QExp['lnEInv'][None, :], D, axis=0)
@@ -44,7 +41,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         else:
             return QExp
 
-    def getExpectation(self, expand=True):
+    def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
@@ -52,7 +49,7 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes
-        S = self.markov_blanket['SW'].getExpectations()["EB"]
+        S = self.markov_blanket['W'].getExpectations()["EB"]
 
         # Precompute terms
         if factors_selection is not None:
@@ -132,13 +129,10 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
         self.factors_axis = 0
         self.Ppar = self.P.getParameters()
 
-    def getExpectations(self, expand=True):
+    def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
-            if 'SZ' in self.markov_blanket:
-                N = self.markov_blanket['SZ'].N
-            else:
-                N = self.markov_blanket['Z'].N
+            N = self.markov_blanket['Z'].N
             expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
             expanded_lnEInv = s.repeat(QExp['lnEInv'][None, :], N, axis=0)
@@ -147,7 +141,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
         else:
             return QExp
 
-    def getExpectation(self, expand=True):
+    def getExpectation(self, expand=False):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
@@ -155,7 +149,7 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes
-        S = self.markov_blanket['SZ'].getExpectations()["EB"]
+        S = self.markov_blanket['Z'].getExpectations()["EB"]
 
         # Precompute terms
         if factors_selection is not None:

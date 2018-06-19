@@ -11,8 +11,9 @@ from biofam.core.BayesNet import BayesNet
 
 def train_model(bayesnet, train_opts):
 
-    # QC on the Bayesian Network
-    assert type(bayesnet)==BayesNet, "'bayesnet' has to be a BayesNet class"
+    # Sanity check on the Bayesian Network
+    # assert type(bayesnet)==BayesNet, "'bayesnet' has to be a BayesNet class"
+    assert isinstance(bayesnet, BayesNet), "'bayesnet' has to be a BayesNet class"
 
     # Define training options
     bayesnet.setTrainOptions(train_opts)
@@ -28,7 +29,6 @@ def train_model(bayesnet, train_opts):
     print ("\n")
 
     bayesnet.iterate()
-
 
     print("\n")
     print("#"*43)

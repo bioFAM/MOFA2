@@ -4,53 +4,125 @@
 ################################
 
 #' @title Subset factors
-#' @name subsetFactors
+#' @name subset_factors
 #' @description Method to subset (or sort) factors
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors.
 #' @export
 
-subsetFactors <- function(object, factors) {
+subset_factors <- function(object, factors, keep_intercept = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-  stopifnot(length(factors) <= object@Dimensions[["K"]])
-  if (is.character(factors)) stopifnot(all(factors %in% factorNames(object)))
-  if (is.numeric(factors)) stopifnot(all(factors %in% 1:object@Dimensions[["K"]]))
+  stopifnot(length(factors) <= object@dimensions[["K"]])
+  if (is.character(factors)) stopifnot(all(factors %in% factors_names(object)))
+  
+  # Get factors
+  if(is.numeric(factors)) {
+    if (object@model_options$learn_intercept == T) factors <- factors_names(object)[factors+1]
+    else factors <- factors_names(object)[factors]
+  } else { 
+    stopifnot(all(factors %in% factors_names(object)))
+  }
+  if (keep_intercept & object@model_options$learn_intercept & !"intercept" %in% factors) {
+    factors <- c("intercept", factors)
+  }
   
   # Subset expectations
-  object@Expectations$Z <- object@Expectations$Z[,factors]
-  object@Expectations$W <- sapply(object@Expectations$W, function(x) x[,factors], simplify = F, USE.NAMES = T)
   
-  nodes=c("AlphaZ","SigmaZ","ThetaZ","AlphaW","SigmaAlphaW","ThetaW")
-  for (node in nodes){
-    if (node %in% names(object@Expectations)){
-      object@Expectations$node <- sapply(object@Expectations$node, function(x) x[factors], simplify = F, USE.NAMES = T)
+  nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
+  stopifnot(all(nodes_with_factors$axes %in% c(0, 1, 2)))
+
+  for (i in 1:length(nodes_with_factors$nodes)) {
+    node <- nodes_with_factors$nodes[i]
+    axis <- nodes_with_factors$axes[i]
+    if (node %in% names(object@expectations)) {
+      if (axis == 1) {
+        object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors,], simplify = F, USE.NAMES = T)
+      } else if (axis == 2) {
+        object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[,factors], simplify = F, USE.NAMES = T)
+      } else {
+        object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors], simplify = F, USE.NAMES = T)
+      }
     }
   }
+  
+  # TODO for everything below : adapt for 2D
   
   # Reordering covariance hyperparameters and "spatial signifiances" (spatialFA)
-  if ("SigmaZ" %in% names(object@Parameters)){
-    object@Parameters$SigmaZ$l <- object@Parameters$SigmaZ$l[factors]
-    object@Parameters$SigmaZ$sig <- object@Parameters$SigmaZ$sig[factors]
+  
+  # Warning : below, does not work if factors are not convertible to integers
+  if ("SigmaZ" %in% names(object@expectations)){
+    object@expectations$SigmaZ <- object@expectations$SigmaZ[,,as.integer(factors)]
   }
-
-  if ("SigmaAlphaW" %in% names(object@Parameters)){
-    for (m in viewNames(object)){ 
-    object@Parameters$SigmaAlphaW[[m]]$l <- object@Parameters$SigmaAlphaW[[m]]$l[factors]
-    object@Parameters$SigmaAlphaW[[m]]$sig <- object@Parameters$SigmaAlphaW[[m]]$sig[factors]
+  
+  # Warning : below, does not work if factors are not convertible to integers
+  # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
+  if ("SigmaAlphaW" %in% names(object@expectations)) {
+    for (m in views_names(object)){ 
+      object@expectations$SigmaAlphaW[[m]]<- object@expectations$SigmaAlphaW[[m]][,,as.integer(factors)]
     }
   }
   
-  # TODO : reorder parameters of other nodes ?
+  if ("SigmaZ" %in% names(object@parameters)){
+    object@parameters$SigmaZ$l <- object@parameters$SigmaZ$l[factors]
+    object@parameters$SigmaZ$sig <- object@parameters$SigmaZ$sig[factors]
+  }
+  
+  # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
+  if ("SigmaAlphaW" %in% names(object@parameters)){
+    for (m in views_names(object)){ 
+      object@parameters$SigmaAlphaW[[m]]$l <- object@parameters$SigmaAlphaW[[m]]$l[factors]
+      object@parameters$SigmaAlphaW[[m]]$sig <- object@parameters$SigmaAlphaW[[m]]$sig[factors]
+    }
+  }
+  
+  # TODO : reorder parameters of other nodes
     
   # Modify dimensionality
-  object@Dimensions[["K"]] <- length(factors)
+  object@dimensions[["K"]] <- length(factors)
   
   # Modify factor names
-  factorNames(object) <- as.character(1:object@Dimensions[["K"]])
+  factors_names(object) <- paste0("F", as.character(1:object@dimensions[["K"]]))
   
   return(object)
 }
 
+
+
+#' @title Subset samples
+#' @name subset_samples
+#' @description Method to subset (or sort) samples
+#' @param object a \code{\link{BioFAModel}} object.
+#' @param samples character vector with the sample names, numeric vector with the sample indices or logical vector with the samples to be kept as TRUE.
+#' @export
+subset_samples <- function(object, samples) {
+  
+  # Sanity checks
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  stopifnot(length(samples) <= object@dimensions[["N"]])
+  warning("Removing samples a posteriori is fine for an exploratory analysis, but we recommend removing them before training!")
+  
+  # Get samples
+  if (is.character(samples)) {
+    stopifnot(all(samples %in% samples_names(object)))
+  } else {
+    samples <- samples_names(object)[samples]
+  }
+  
+  # Subset relevant slots
+  object@expectations$Z <- sapply(object@expectations$Z, function(x) x[samples,, drop=F])
+  object@expectations$Y <- sapply(object@expectations$Y, function(x) x[samples,], simplify = F, USE.NAMES = T)
+  object@TrainData <- sapply(object@TrainData, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T))
+  object@InputData <- object@InputData[,samples,,] 
+  if (length(object@ImputedData)==0) { object@ImputedData <- sapply(object@ImputedData, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) }
+
+  # Modify dimensionality
+  object@dimensions[["N"]] <- length(samples)
+  
+  # Modify sample names in the MOFAobject
+  samples_names(object) <- samples
+  
+  return(object)
+}
 

@@ -78,21 +78,22 @@ class Node(object):
         dim[axis] = new_dim
         self.dim = tuple(dim)
 
+    def precompute(self):
+        pass
+
 
 class Constant_Node(Node):
     """ General class for a constant node in a Bayesian network
     Constant nodes do not have expectations or parameters but just values.
     However, for technical reasons the constant cvalues are defined as expectations
     """
-    def __init__(self, dim, value, opts):
+    def __init__(self, dim, value):
         self.dim = dim
         if isinstance(value,(int,float)):
             self.value = value * s.ones(dim)
         else:
             assert value.shape == dim, "dimensionality mismatch"
             self.value = value
-
-        self.opts = opts
 
     def getValue(self):
         """ Method to return the values of the node """
