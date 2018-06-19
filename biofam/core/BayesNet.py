@@ -253,6 +253,8 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute()
 
+        print(self.options['schedule'])
+
         print('elbo before training: ', self.calculateELBO())
         for i in range(self.options['maxiter']):
             if self.stochastic:

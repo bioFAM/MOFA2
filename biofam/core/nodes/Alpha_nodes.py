@@ -39,13 +39,8 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         return QExp['E']
 
     def updateParameters(self, ix=None, ro=None):
-        # Nothing to subset here
-        # TODO do we really need to do this for AlphaW ?
-        par_up = self._updateParameters()
-        if ro is not None:
-            par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
-            par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
-        self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
+        # NOTE Here we use a step of 1 because higher in the hierarchy means useless to decay the step size as W would converge anyway
+        self._updateParameters()
 
     def _updateParameters(self):
         # TODO should we change that for stochastic ? considering that the forgetting rate already acts on W which is
@@ -66,7 +61,7 @@ class AlphaW_Node_mk(Gamma_Unobserved_Variational_Node):
         Qa = Pa + 0.5*E.shape[0]
         Qb = Pb + 0.5*EWW.sum(axis=0)
 
-        return {'Qa': Qa, 'Qb': Qb}
+        # return {'Qa': Qa, 'Qb': Qb}
 
 
     def calculateELBO(self):
@@ -220,6 +215,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
         # Do the asignment
         ########################################################################
         if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
+        # TODO also change. do no deep copy but instead the same as in the other nodes
             par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
             par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
         self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
@@ -233,6 +229,7 @@ class AlphaZ_Node_groups(Gamma_Unobserved_Variational_Node):
             if n_batch == 0: continue
             n_total = self.n_per_group[c]
             coeff = n_total/n_batch
+
 
             Qa[c,:] = Pa[c,:] + 0.5 * n_total  # TODO should be precomputed
             Qb[c,:] = Pb[c,:] + 0.5 * coeff * EZZ[mask, :].sum(axis=0)

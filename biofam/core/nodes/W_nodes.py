@@ -175,7 +175,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         for k in latent_variables:
 
-            foo = np.dot(Z["E2"][:,k],tau)
+            foo = coeff * np.dot(Z["E2"][:,k],tau)
 
             bar_tmp1 = Z["E"][:,k]
 
@@ -183,7 +183,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             bar_tmp2 += Y
             bar_tmp2 *= tau
 
-            bar = np.dot(bar_tmp1, bar_tmp2)
+            bar = coeff * np.dot(bar_tmp1, bar_tmp2)
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")

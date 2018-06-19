@@ -28,6 +28,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         self.mini_batch = None
 
+        # TODO is it ok to do that with stochastic ? here we kind of assume that missing values are evenly distributed
         self.Qa_pre = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
 
     def getExpectations(self, expand=True):
@@ -129,6 +130,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         term4 = 2.*(ZW.sum(axis=0))
 
         tmp = term1 + term2 + term3 - term4
+        tmp *= coeff
 
         Qb = self.Q.getParameters()['b']
         Qb *= (1-ro)
