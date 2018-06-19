@@ -12,21 +12,23 @@
 ## inFiles=( "$inFolder/WT.txt" "$inFolder/KO.txt" )
 #inFiles=( "$inFolder/all_data.txt" )
 #sampleGroups="$inFolder/z_groups.txt"
-inFolder="test_data"
-inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" )
+inFolder=$1
+run_ix=$2
+inFiles=( "$1/dfm.txt" )
+X_Files=( "$1/positions.txt" )
 
 # Options for the input files
 delimiter=" " # delimiter, such as "\t", "" or " "
-header_rows=0 # set to 1 if the files contain row names
-header_cols=0 # set to 1 if the files contain column names
+header_rows=1 # set to 1 if the files contain row names
+header_cols=1 # set to 1 if the files contain column names
 
 # Output file path, please use the .hdf5 extension
-outFolder="test_results"
-outFile=( "$outFolder/test.hdf5" )
+outFolder=$1
+outFile=( "$outFolder/sfa_out_$2.hdf5" )
 
 # Data options
 center_features=1   # center the features to zero-mean? (not necessary as long as learnMean=1)
-scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
+scale_views=1 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 transpose_sparsity=0
@@ -39,10 +41,10 @@ transpose_noise=0
 ## Define view names
 ## views=( wt ko )
 #views=( unique )
-likelihoods=( gaussian gaussian gaussian )
+likelihoods=( gaussian )
 
 # Define view names
-views=( view_A view_B view_C )
+views=( unique )
 
 # Define file with covariates (not implemented yet, please ignore)
 # covariatesFile="/tmp/covariates.txt"
@@ -52,7 +54,7 @@ iter=5000 # we recommend to set this to a large enough value (>1000)
 
 # Convergence criterion
 # Recommendation: a 'tolerance' of 0.01 is quite strict and can take a bit of time, for initial testing we recommend increasing it to 0.1
-tolerance=.001 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
+tolerance=.01 # training will stop when the change in the evidence lower bound (deltaELBO) is smaller than 0.01
 nostop=0       # if nostop=1 the training will complete all iterations even if the convergence criterion is met
 
 # Define the initial number of factors and how inactive factors are dropped during training.
@@ -68,7 +70,7 @@ dropR2=0.0  # threshold on fraction of variance explained
 # Define hyperparameters for the feature-wise spike-and-slab sparsity prior
 # learnTheta=( 1 1 1 ) 	# 1 means that sparsity is active whereas 0 means the sparsity is inactivated; each element of the vector corresponds to a view
 # initTheta=( 1 1 1 ) 	# initial value of sparsity levels (1 corresponds to a dense model, 0.5 corresponds to factors ); each element of the vector corresponds to a view
-startSparsity=1 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
+startSparsity=150 		# initial iteration to activate the spike and slab, we recommend this to be significantly larger than 1.
 
 # Learn an intercept term (feature-wise means)?
 # Recommendation: always leave it active. If all your views are gaussian you can set this to 0 and center the features, it does not matter.
@@ -76,7 +78,7 @@ startSparsity=1 		# initial iteration to activate the spike and slab, we recomme
 learnIntercept=0
 
 # Random seed
-seed=2 # if 0, the seed is automatically generated using the current time
+seed=0 # if 0, the seed is automatically generated using the current time
 
 
 ####################
@@ -98,6 +100,7 @@ cmd='python ../build_model/entry_point.py
 	--freqDrop $freqDrop
 	--dropR2 $dropR2
 	--seed $seed
+	--X_Files ${X_Files[@]}
 '
 #
 #--sampleGroups $sampleGroups
