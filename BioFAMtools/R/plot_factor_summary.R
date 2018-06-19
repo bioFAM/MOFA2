@@ -4,7 +4,7 @@
 library(gridExtra)
 library(grid)
 
-plot_factor_summary <- function(object, factor, groupwise=FALSE, fseas=NULL, gene_sets=NULL, color_by="group") {
+plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas=NULL, gene_sets=NULL, color_by="group") {
   
   #TODO plot2 : add var explained in groups and views (bar plor : x = group, y = var explained, hue = view)
   #TODO possible : add quantitative sparsity
@@ -15,7 +15,7 @@ plot_factor_summary <- function(object, factor, groupwise=FALSE, fseas=NULL, gen
   #plot 1 : variance explained
   #TODO : bar plor : x = group, y = var explained, hue = view
   
-  var_res = calculate_variance_explained(object, views = "all", groups = "all", factors = factor, groupwise=groupwise)
+  var_res = calculate_variance_explained(object, views = "all", groups = "all", factors = factor, groupwise_intercept=groupwise_intercept, only=NULL)
   groups_values = c()
   views_values = c()
   var_explained = c()
