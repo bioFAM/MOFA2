@@ -136,7 +136,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         for m in range(len(Y)):
             tau[m][mask[m]] = 0.
-            Y[m][mask[m]] = 0.  # unnecessary if we have a fill at zero and just use the masked array for all?
+            Y[m][mask[m]] = 0.
 
         # # Collect parameters from the prior or expectations from the markov blanket
         # elif "SigmaZ" in self.markov_blanket:
@@ -164,7 +164,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             Q['mean'][ix,:] = par_up['Qmean']
             Q['var'][ix,:] = par_up['Qvar']
 
-        self.Q.setParameters(mean=Q['mean'], var=Q['var']) # TODO should not be necessarry
+        self.Q.setParameters(mean=Q['mean'], var=Q['var'])  # NOTE should not be necessary but safer to keep for now
 
     def _updateParameters(self, Y, W, tau, Mu, Alpha,
                           p_cov_inv, p_cov_inv_diag, Qmean, Qvar):
@@ -200,7 +200,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 if self.P.params["cov"][k].__class__.__name__ == 'dia_matrix':
                     Qmean[:, k] = Qvar[:, k] * bar
                 else:
-                    import pdb; pdb.set_trace()
                     tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(N)
                     for n in range(N):
                         Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
