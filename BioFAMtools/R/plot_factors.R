@@ -617,6 +617,10 @@ plot_sparsity_factors <- function(object, threshold_variance_explained = 0.01, s
 
   d <- data.frame(factor_val, view_val, 1-theta_val, var_val)
   colnames(d) <- c("factor", "view", "sparsity", "variance_explained")
+  
+  #sort factors by names (work only if factors are int encoded by strings)
+  d$factor <- factor(d$factor, levels=seq(1,max(as.integer(levels(d$factor)))))
+  
   d <- d[d$variance_explained > threshold_variance_explained,]
   if (show_variance_explained) {
     p = ggplot(d, aes(x=factor, y=sparsity, fill=view, alpha=variance_explained)) +
