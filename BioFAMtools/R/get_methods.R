@@ -195,7 +195,7 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
 #' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-getimputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
+get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")

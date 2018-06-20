@@ -708,7 +708,6 @@ def saveTrainedModel(model, outfile,
     saveTrainingData(model, hdf5, view_names, group_names, sample_groups, sample_names, feature_names)
     saveTrainingStats(model, hdf5)
     saveTrainingOpts(train_opts, hdf5)
-
     hdf5.close()
 
 def saveSimulatedModel(model, outfile, train_opts, model_opts, view_names=None, group_names=None, sample_names=None, feature_names=None):

@@ -37,12 +37,22 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
 
 
   # Define factors
-  if (paste0(factors,collapse="") == "all") { factors <- factors_names(object) } 
-    else if(is.numeric(factors)) {
-      if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
-      else factors <- factors_names(object)[factors]
-    }
-      else{ stopifnot(all(factors %in% factors_names(object))) }
+  if (paste0(factors,collapse="") == "all") { 
+    factors <- factors_names(object) 
+  } 
+  else { 
+      if (is.numeric(factors)) {
+          if (object@model_options$learn_intercept) {
+            factors <- factors_names(object)[factors+1]
+          }
+          else {
+            factors <- factors_names(object)[factors]
+          }
+      }
+      else { 
+        stopifnot(all(factors %in% factors_names(object))) 
+      }
+  }
 
   # remove intercept factors
   factors <- factors[factors!="intercept"]
@@ -133,12 +143,14 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
 	rownames(p.values) <- rownames(s.true); colnames(p.values) <- factors
 
 # parametric version
-  } else {
+  }
+  
+  else {
     p.values <- pcgse(data=data, prcomp.output=list(rotation=W, x=Z), pc.indexes=1:length(factors), feature.sets=feature.sets, feature.statistic=local.statistic,
                       transformation=transformation, feature.set.statistic=global.statistic, feature.set.test=statistical.test, nperm=nperm)$p.values
     colnames(p.values) <- factors
     rownames(p.values) <- rownames(feature.sets)
-    }
+  }
   
   # adjust for multiple testing per factor
   if(!p.adj.method %in%  p.adjust.methods) stop("p.adj.method needs to be an element of p.adjust.methods")
