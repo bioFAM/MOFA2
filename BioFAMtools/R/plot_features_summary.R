@@ -1,48 +1,84 @@
-#' @title Plot weights and correlations bewteen factors and expressions of the features in each view for both groups. 
-#' @name plot_features_summary
+#' @title Plot weights and correlations bewteen factors and expressions of the variables in each view for both groups. 
+#' @name plot_variables_factors_corrs
+#' @param variables : list of features names of the biofam model, or named vector where names are names of variables (covariates) and values are named vectors storing the values of the variables for each sample
+#' @param viz_weight : option relevant only if variables are features names of the biofam model. If true, plot weights and not correlation across all groups in the first figures
 
 library(gridExtra)
 library(grid)
 
-plot_features_summary <- function(object, features) {
+plot_variables_factors_corrs <- function(object, variables, viz_weight=FALSE) {
 
   groups = groups_names(object)
   views = views_names(object)
   factors = factors_names(object)
   
   N_groups = length(groups)
-  N_features = length(features)
+  N_variables = length(variables)
 
   list_plots = list()
   
-  idx_feature=0
+  if (class(variables[[1]])=="character"){
+    names_variables = variables
+  } else {
+    names_variables = names(variables)
+  }
   
-  for (feature in features){
+  idx_variable=0
+  
+  for (variable in variables){
     
-    idx_feature= idx_feature+1
+    idx_variable = idx_variable+1
+    name_variable = names_variables[[idx_variable]]
+    
+    #removing sample with missing values from variable if it is a named vector
+    variable <- variable[names(which(!(is.na(variable))))]
+    
+    #first plot 
     idx_column = 1
-  
-    #first plot : weights
+    
+    #first plot : correlation across all groups (or weights if viz_weigth is True and if variables are biofam features)
     factors_values = c()
     views_values = c()
-    weights = c()
+    corrs = c()
     for (factor in factors){
       for (view in views){
-        if (feature %in% features_names(object)[[view]]){
+        if (class(variable)=="character"){ #biofam feature
+          if (name_variable %in% features_names(object)[[view]]){
+            factors_values = c(factors_values,factor)
+            views_values = c(views_values,view)
+            Z <- Reduce(rbind, object@expectations$Z)
+            Y <- Reduce(rbind, object@training_data[[view]])
+            if (viz_weight){
+              corrs = c(corrs,object@expectations$W[[view]][name_variable,factor]) 
+            }
+            else{
+              corrs = c(corrs,cor(Z[,factor],Y[name_variable,rownames(Z)]))
+            }
+          }
+        }
+        else{ #covariate
           factors_values = c(factors_values,factor)
           views_values = c(views_values,view)
-          weights=c(weights,object@expectations$W[[view]][feature,factor])
+          Z <- Reduce(rbind, object@expectations$Z)
+          corrs=c(corrs,cor(Z[names(variable),factor],variable))
         }
       }
     }
-    df_weights = data.frame(factors_values,views_values,weights)
-    name_value = "weight" #paste(feature,"_weight",sep="")
-    colnames(df_weights) =  c("factor", "view", name_value)
-    plotW = ggplot(df_weights, aes_string(x="factor", y=name_value, fill="view")) +
+    df_corrs = data.frame(factors_values,views_values,corrs)
+    if ((class(variable)=="character")&(viz_weight)){
+      name_value = "weight"  
+    }
+    else{
+      name_value = "corr"
+    }
+    colnames(df_corrs) =  c("factor", "view", name_value)
+    df_corrs$factor <- factor(df_weights$factor,levels=seq(1,max(as.integer(levels(df_corrs$factor)))))
+    plotCor = ggplot(df_corrs, aes_string(x="factor", y=name_value, fill="view")) +
       geom_bar(position="dodge", stat="identity")
-    list_plots[[(idx_feature-1)*(N_groups+1)+idx_column]] = plotW
     
-    #following plots : correlations 
+    list_plots[[(idx_variable-1)*(N_groups+1)+idx_column]] = plotCor
+    
+    #following plots : correlations within each group
     
     for (group in groups){
       factors_values = c()
@@ -50,38 +86,49 @@ plot_features_summary <- function(object, features) {
       corrs = c()
       for (factor in factors){
         for (view in views){
-          if (feature %in% features_names(object)[[view]]){
+          if (class(variable)=="character"){ #biofam feature
+            if (name_variable %in% features_names(object)[[view]]){
+              factors_values = c(factors_values,factor)
+              views_values = c(views_values,view)
+              corrs=c(corrs,cor(object@expectations$Z[[group]][,factor],object@training_data[[view]][[group]][name_variable,]))
+            }
+          }
+          else{ #covariate
             factors_values = c(factors_values,factor)
             views_values = c(views_values,view)
-            corrs=c(corrs,cor(object@expectations$Z[[group]][,factor],object@training_data[[view]][[group]][feature,]))
+            Z <- object@expectations$Z[[group]]
+            corrs=c(corrs,cor(Z[names(variable),factor],variable))
           }
         }
       }
       df_corrs = data.frame(factors_values,views_values,corrs)
-      name_value = "corr" # paste("corr_",feature,"_expression_with_factor_within_",group,sep="")
+      name_value = "corr" 
       colnames(df_corrs) =  c("factor", "view", name_value)
+      df_corrs$factor <- factor(df_weights$factor,levels=seq(1,max(as.integer(levels(df_corrs$factor)))))
       plotCor = ggplot(df_corrs, aes_string(x="factor", y=name_value, fill="view")) +
         geom_bar(position="dodge", stat="identity")
       
       idx_column = idx_column + 1
-      list_plots[[(idx_feature-1)*(N_groups+1)+idx_column]] = plotCor
+      list_plots[[(idx_variable-1)*(N_groups+1)+idx_column]] = plotCor
     }
     
   }
   
+  browser()
+  
   # Create row and column titles
-  row.titles = features
+  row.titles = names_variables
   col.titles = c("weight")
   for (group in groups){
     col.titles = c(col.titles,paste("corr_within_",group,sep=""))
   }
   list_plots[1:N_groups+1] = lapply(1:N_groups+1, function(i) arrangeGrob(list_plots[[i]], top=col.titles[[i]]))
   list_idx = c()
-  for (k in seq(1,N_features)){
+  for (k in seq(1,N_variables)){
     list_idx = c(list_idx,1+(k-1)*(N_groups+1))
   }
-  list_plots[list_idx] = lapply(1:N_features, function(i) arrangeGrob(list_plots[[(i-1)*(N_groups+1)+1]], left=row.titles[[i]]))
+  list_plots[list_idx] = lapply(1:N_variables, function(i) arrangeGrob(list_plots[[(i-1)*(N_groups+1)+1]], left=row.titles[[i]]))
 
-  do.call("grid.arrange", c(list_plots,ncol= N_groups+1,nrow=N_features))    
+  do.call("grid.arrange", c(list_plots,ncol= N_groups+1,nrow=N_variables))    
   
 }
