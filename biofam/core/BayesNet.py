@@ -206,6 +206,8 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute()
 
+        print('elbo before training: ', self.calculateELBO())
+
         # Start training
         for i in range(self.options['maxiter']):
             t = time();
