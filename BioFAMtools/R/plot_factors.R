@@ -110,7 +110,7 @@ plot_factor_hist <- function(object, factor, group_by = NULL, group_names = "", 
 #' a character giving the name of a feature, 
 #' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' or a dataframe with two columns : "sample" (names of the samples) and "color_by" (values of the groups)
+#' or a dataframe with two columns : "sample" (names of the samples) and "grouped_by" (values of the groups)
 #' @param superimpose_groups : if FALSE, plot the values for the factors expressions in one graph per group
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
 #' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
@@ -177,7 +177,7 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
   }
   
   if (class(color_by)!="data.frame"){
-    df <- data.frame("sample"=Reduce(c,samples_names(object)),"color_by"= color_by)
+    df <- data.frame("sample"=Reduce(c,samples_names(object)),"grouped_by"= color_by)
     df <- left_join(Z, df, by="sample")
   }
   else{
@@ -185,12 +185,14 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
   }
   
   if (!(superimpose_groups)){
-    p <- ggplot(df, aes(x=color_by, y=value)) +
-      geom_beeswarm(aes(color=color_by))
+    p <- ggplot(df, aes(x=grouped_by, y=value)) +
+       #geom_violin(aes(color=grouped_by)) +  
+       geom_beeswarm(aes(color=grouped_by)) 
+       #geom_boxplot(width=0.1)
   }
   else{
     p <- ggplot(df, aes(x=0, y=value)) + 
-      ggbeeswarm::geom_quasirandom(aes(color=color_by)) +
+      ggbeeswarm::geom_quasirandom(aes(color=grouped_by)) +
       scale_x_continuous(breaks=NULL)
   }
   
@@ -213,7 +215,7 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
       legend.position = "right", 
       legend.direction = "vertical",
       legend.key = element_blank()
-      ) + facet_wrap(~factor, scales="free")
+    ) + facet_wrap(~factor, scales="free")
   
   # If color_by is numeric, define the default gradient
   # if (is.numeric(color_by)) { p <- p + scale_color_gradientn(colors=terrain.colors(10)) }
