@@ -310,7 +310,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def updateParameters(self):
         # Collect expectations from other nodes
         # why .copy() ?
-        Wtmp = [Wtmp_m.copy() for Wtmp_m in self.markov_blanket["W"].getExpectations()]
+
+        Wtmp = [Wtmp_m for Wtmp_m in self.markov_blanket["W"].getExpectations()]
         W = [Wtmp_m["E"] for Wtmp_m in Wtmp]
         WW = [Wtmp_m["E2"] for Wtmp_m in Wtmp]
 
@@ -325,6 +326,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             exit(1)
         thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True)
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
+
+        # print(theta_lnEInv)
 
         # Collect parameters and expectations from P and Q distributions of this node
         SZ = self.Q.getExpectations()["E"]
@@ -342,6 +345,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # TODO : remove loops working with tensors ?
         # Update each latent variable in turn
+        # import pdb; pdb.set_trace()
         for k in range(self.dim[1]):
             # Calculate intermediate stept
             term1 = (theta_lnE - theta_lnEInv)[:, k]
@@ -368,6 +372,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
             Qtheta[:, k] = 1. / (1. + s.exp(-(term1 + term2 - term3 + term4)))
+            # import pdb; pdb.set_trace()
             Qtheta[:,k] = np.nan_to_num(Qtheta[:,k])
 
             # Update Z
@@ -378,6 +383,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             SZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]
 
         # Save updated parameters of the Q distribution
+        # import pdb; pdb.set_trace()
         self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=1. / alpha,
                              mean_B1=Qmean_T1, var_B1=Qvar_T1, theta=Qtheta)
 

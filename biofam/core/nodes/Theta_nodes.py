@@ -221,6 +221,7 @@ class ThetaZ_Node_groups(Beta_Unobserved_Variational_Node):
         return QExp['E']
 
     def updateParameters(self, factors_selection=None):
+        # print(self.getExpectation())
         # factors_selection (np array or list): indices of factors that are non-annotated
         # collect local parameters
         Q = self.Q.getParameters()

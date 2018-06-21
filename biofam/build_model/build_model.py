@@ -138,7 +138,7 @@ class buildBiofam(buildModel):
 
         # Initialise hyperparameters for the ThetaZ prior
         initTheta_a = 1.
-        initTheta_b = 1.#0.001  #0.001 #1.
+        initTheta_b = 1. #0.001  #0.001 #1.
 
         # Specify for which factors to learn ThetaZ
         learnTheta_ix = np.ones(self.dim['K'])
@@ -150,7 +150,9 @@ class buildBiofam(buildModel):
             # learnTheta_ix[0] = 0
 
         if self.data_opts['sample_groups'] is not None:
-            self.init_model.initThetaZ_groups(self.data_opts['sample_groups'], qa=initTheta_a, qb=initTheta_b)
+            # TODO debug
+            # self.init_model.initThetaZ_groups(self.data_opts['sample_groups'], qa=initTheta_a, qb=initTheta_b)
+            self.init_model.initThetaZ_Mixed(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
         else:
             self.init_model.initThetaZ_Learn(qa=initTheta_a, qb=initTheta_b)
 
@@ -208,7 +210,7 @@ class buildBiofam(buildModel):
         # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
 
         # Define basic schedule of updates
-        schedule = ['Y', 'W', 'Z', 'Tau']
+        schedule = ['Y', 'Z', 'W', 'Tau']
 
         # Insert ThetaW after W if Spike and Slab prior on W
         if self.model_opts['sl_w']:

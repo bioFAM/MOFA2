@@ -82,7 +82,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             #self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
 
     def updateParameters(self):
-
+        # print(self.getExpectations())
         # Collect expectations from the markov blanket
         Y = self.markov_blanket["Y"].getExpectation()
         SZtmp = self.markov_blanket["Z"].getExpectations()
@@ -319,6 +319,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
         thetatmp = self.markov_blanket["ThetaW"].getExpectations(expand=True)
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
+
+        
         mask = ma.getmask(Y)
 
         # Collect parameters and expectations from P and Q distributions of this node
