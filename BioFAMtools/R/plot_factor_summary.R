@@ -4,7 +4,7 @@
 library(gridExtra)
 library(grid)
 
-plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas=NULL, gene_sets=NULL, color_by="group") {
+plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas=NULL, gene_sets=NULL, group_by="group") {
   
   #TODO plot2 : add var explained in groups and views (bar plor : x = group, y = var explained, hue = view)
   #TODO possible : add quantitative sparsity
@@ -33,7 +33,7 @@ plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas
   
   #plot 2 : expression across samples
   
-  plotZ = plot_factor_beeswarm(object, factors = factor, color_by = color_by, superimpose_groups = FALSE)
+  plotZ = plot_factor_beeswarm(object, factors = factor, group_by = group_by)
   
   plotViews = list()
   
