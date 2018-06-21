@@ -422,4 +422,23 @@ plot_variance_explained <- function(object, views = "all", groups = "all", only 
   return(p)
 }
 
+#' @title Selecting factors explaining more variance than a given threshold
+#' @name select_factors
+
+select_factors <- function(object,threshold_variance_explained=0,plot=FALSE) {
+  
+  r2 <- rowSums(sapply(calculate_variance_explained(object)$r2_per_factor, function(e) rowSums(e)))
+  selected_factors <- names(which(r2>threshold_variance_explained))
+  
+  if (plot){
+    df = as.data.frame(r2)
+    df$factor <- factor(rownames(df), levels=seq(1,max(as.integer(rownames(df)))))
+    p = ggplot(df, aes(x=factor, y=r2)) +
+      geom_bar(position="dodge", stat="identity")
+  }
+  
+  return(selected_factors)
+  
+}
+
 
