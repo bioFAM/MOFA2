@@ -46,33 +46,33 @@ plot_variables_factors_corrs <- function(object, variables, viz_weight=FALSE) {
           if (name_variable %in% features_names(object)[[view]]){
             factors_values = c(factors_values,factor)
             views_values = c(views_values,view)
-            Z <- Reduce(rbind, object@expectations$Z)
-            Y <- Reduce(rbind, object@training_data[[view]])
             if (viz_weight){
               corrs = c(corrs,object@expectations$W[[view]][name_variable,factor]) 
             }
             else{
-              corrs = c(corrs,cor(Z[,factor],Y[name_variable,rownames(Z)]))
+              Z <- Reduce(rbind, object@expectations$Z)[,factor]
+              Y <- do.call(c,lapply(t(object@training_data[[view]]),function(Y_group) Y_group[name_variable,]))
+              common_samples <- intersect(names(which(!(is.na(Y)))),names(Z)) #removing samples with missing values
+              corrs = c(corrs,cor(Z[common_samples],Y[common_samples]))
             }
           }
         }
         else{ #covariate
           factors_values = c(factors_values,factor)
           views_values = c(views_values,view)
-          Z <- Reduce(rbind, object@expectations$Z)
-          corrs=c(corrs,cor(Z[names(variable),factor],variable))
+          Z <- Reduce(rbind, object@expectations$Z)[,factor]
+          corrs=c(corrs,cor(Z[names(variable)],variable))
         }
       }
     }
     df_corrs = data.frame(factors_values,views_values,corrs)
     if ((class(variable)=="character")&(viz_weight)){
       name_value = "weight"  
-    }
-    else{
+    } else{
       name_value = "corr"
     }
     colnames(df_corrs) =  c("factor", "view", name_value)
-    df_corrs$factor <- factor(df_weights$factor,levels=seq(1,max(as.integer(levels(df_corrs$factor)))))
+    df_corrs$factor <- factor(df_corrs$factor,levels=seq(1,max(as.integer(levels(df_corrs$factor)))))
     plotCor = ggplot(df_corrs, aes_string(x="factor", y=name_value, fill="view")) +
       geom_bar(position="dodge", stat="identity")
     
@@ -90,21 +90,24 @@ plot_variables_factors_corrs <- function(object, variables, viz_weight=FALSE) {
             if (name_variable %in% features_names(object)[[view]]){
               factors_values = c(factors_values,factor)
               views_values = c(views_values,view)
-              corrs=c(corrs,cor(object@expectations$Z[[group]][,factor],object@training_data[[view]][[group]][name_variable,]))
+              Z <- object@expectations$Z[[group]][,factor]
+              Y <- object@training_data[[view]][[group]][name_variable,]
+              common_samples <- intersect(names(which(!(is.na(Y)))),names(Z)) #removing samples with missing values
+              corrs=c(corrs,cor(Z[common_samples],Y[common_samples]))
             }
           }
           else{ #covariate
             factors_values = c(factors_values,factor)
             views_values = c(views_values,view)
-            Z <- object@expectations$Z[[group]]
-            corrs=c(corrs,cor(Z[names(variable),factor],variable))
+            Z <- object@expectations$Z[[group]][,factor]
+            corrs=c(corrs,cor(Z[names(variable)],variable))
           }
         }
       }
       df_corrs = data.frame(factors_values,views_values,corrs)
       name_value = "corr" 
       colnames(df_corrs) =  c("factor", "view", name_value)
-      df_corrs$factor <- factor(df_weights$factor,levels=seq(1,max(as.integer(levels(df_corrs$factor)))))
+      df_corrs$factor <- factor(df_corrs$factor,levels=seq(1,max(as.integer(levels(df_corrs$factor)))))
       plotCor = ggplot(df_corrs, aes_string(x="factor", y=name_value, fill="view")) +
         geom_bar(position="dodge", stat="identity")
       
@@ -114,14 +117,13 @@ plot_variables_factors_corrs <- function(object, variables, viz_weight=FALSE) {
     
   }
   
-  browser()
-  
   # Create row and column titles
   row.titles = names_variables
   col.titles = c("weight")
   for (group in groups){
     col.titles = c(col.titles,paste("corr_within_",group,sep=""))
   }
+  
   list_plots[1:N_groups+1] = lapply(1:N_groups+1, function(i) arrangeGrob(list_plots[[i]], top=col.titles[[i]]))
   list_idx = c()
   for (k in seq(1,N_variables)){
