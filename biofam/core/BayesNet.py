@@ -257,6 +257,7 @@ class BayesNet(object):
 
         print('elbo before training: ', self.calculateELBO())
         for i in range(self.options['maxiter']):
+            t = time();
             if self.stochastic:
                 ro = self.step_size2(i)
                 ix = self.sample_mini_batch_no_replace(i)
@@ -265,8 +266,6 @@ class BayesNet(object):
                 self.nodes['Tau'].define_mini_batch(ix)
                 if 'AlphaZ' in self.nodes:
                     self.nodes['AlphaZ'].define_mini_batch(ix)
-
-            t = time();
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
                 if any(self.options['drop'].values()):
