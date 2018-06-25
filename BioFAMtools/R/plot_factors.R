@@ -125,7 +125,8 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-
+  if (length(factors)>9) warning("Printing more than 10 factors at the same time is not recommended")
+  
   # Collect relevant data
   N <- sum(object@dimensions[["N"]])
   Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
@@ -398,7 +399,9 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-
+  if (length(factors)>10) warning("Printing more than 10 factors at the same time is not recommended")
+  
+  # Get groups
   groups <- .check_and_get_groups(object, groups)
 
   # Get factors

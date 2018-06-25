@@ -6,11 +6,10 @@
 
 #' @title loading a trained BioFAModel
 #' @name load_model
-#' @description Method to load a trained BioFAModel \cr
-#' The training of biofam is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.
-#' @param file an hdf5 file saved by the biofam Python framework
-#' @param object either NULL (default) or an an existing untrained biofam object. If NULL, the \code{\link{BioFAModel}} object is created from the scratch.
-#' @param sort_factors boolean inOdicating whether factors should be sorted by variance explained (default is TRUE)
+#' @description TO-FILL
+#' @param file TO-FILL
+#' @param object TO-FILL
+#' @param sort_factors TO-FILL
 #' @return a \code{\link{BioFAModel}} model
 #' @importFrom rhdf5 h5read
 #' @export
@@ -108,11 +107,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
     }
   }
 
-  # DEPRECATED: Convert snakecase to camelcase  
-  # names(object@model_options) <- sapply(names(object@model_options), function(e)
-  #   paste0(sapply(strsplit(e, split = "_")[[1]], function(s) 
-  #     paste(toupper(substring(s, 1, 1)), substring(s, 2), sep="", collapse=" ")), collapse="")
-  # )
 
   # Define node types of the model
   object@model_options$nodes <- list(multiview_nodes  = c("W", "AlphaW", "ThetaW", "SigmaAlphaW"),
@@ -177,85 +171,14 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
   }    
 
 
-  # Load statistics
-
   # Load training statistics
   tryCatch( {
     object@training_stats <- h5read(file, 'training_stats', read.attributes=T)
     colnames(object@training_stats$elbo_terms) <- attr(h5read(file,"training_stats/elbo_terms", read.attributes=T),"colnames")
   }, error = function(x) { print("Training stats not found, not loading it...") })
 
-
-  # # Define data options
-
-  # object@data_options <- list()
-
-  # tryCatch( {
-  #   # Specify if multiple views are present
-  #   if (is.null(multi_view)) {
-  #     object@data_options$multi_view <- is.list(feature_data)
-  #   } else {
-  #     object@data_options$multi_view <- multi_view
-  #   }
-
-  #   # Specify if multiple groups are present
-  #   if (is.null(multi_group)) {
-  #     object@data_options$multi_group <- is.list(sample_data)
-  #   } else {
-  #     object@data_options$multi_group <- multi_group
-  #   }
-  # }, error = function(x) { print("Error defining data options...") })
-
-  # # To keep reverse-compatibility with models without groups (e.g. MOFA models)
-  # if (!object@data_options$multi_group) {
-  #   sample_data <- list("T1" = sample_data)
-  #   # Samples should be in columns
-  #   if (length(unique(sapply(training_data, nrow))) == 1 && length(unique(sapply(training_data, ncol))) > 1) {
-  #     training_data <- lapply(training_data, t)
-  #   }
-  #   if ((ncol(training_data[[1]]) != length(sample_data[[1]])) & (nrow(training_data[[1]]) == length(sample_data[[1]]))) {
-  #     training_data <- lapply(training_data, t)
-  #   }
-  #   training_data  <- lapply(training_data, function(e) list("B1" = e))
-  #   # Expectations for multi-group and multi-view nodes should be nested lists
-  #   if (("E" %in% names(object@expectations$Y[[1]]))    & (class(object@expectations$Y[[1]]$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$Y[[1]]))) & (class(object@expectations$Y[[1]])   != "list")) {
-  #     tmp <- lapply(names(training_data), function(m) {
-  #       list("B1" = object@expectations$Y[[m]])
-  #     })
-  #     names(tmp) <- names(training_data)
-  #     object@expectations$Y <- tmp
-  #   }
-  #   if (("E" %in% names(object@expectations$Z))    & (class(object@expectations$Z$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$Z))) & (class(object@expectations$Z)   != "list")) {
-  #     object@expectations$Z <- list("B1" = object@expectations$Z)
-  #   }
-  #   object@data_options$multi_group <- TRUE
-  # }
-
-  # # To keep reverse-compatibility with models having views as groups (e.g. transposed MOFA)
-  # if (!object@data_options$multi_view) {
-  #   feature_data <- list("V1" = feature_data)
-  #   # Features should be in rows
-  #   if (length(unique(sapply(training_data, ncol))) == 1 && length(unique(sapply(training_data, nrow))) > 1) {
-  #     training_data <- lapply(training_data, t)
-  #   }
-  #   training_data <- list("V1" = training_data)
-  #   # Expectations for multi-group and multi-view nodes should be nested lists
-  #   if (("E" %in% names(object@expectations$Y[[1]]))    & (class(object@expectations$Y[[1]]$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$Y[[1]]))) & (class(object@expectations$Y[[1]])   != "list")) {
-  #     object@Expectations$Y <- list("V1" = object@Expectations$Y)
-  #   }
-  #   if (("E" %in% names(object@expectations$W[[1]]))    & (class(object@expectations$W[[1]]$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$W[[1]]))) & (class(object@expectations$W[[1]])   != "list")) {
-  #     object@expectations$W <- list("V1" = object@expectations$W)
-  #   }
-  #   object@data_options$multi_view <- TRUE
-  # }
-
-
+  # Update old models
   object <- .update_old_model(object)
-  
   
   # Rename covariates, including intercept
   # if (object@ModelOptions$LearnIntercept == TRUE) factorNames(object) <- c("intercept",as.character(1:(object@Dimensions[["K"]]-1)))
@@ -268,14 +191,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
   # }
   
   
-  
   # Parse factors: Mask passenger samples
-  object <- detect_passengers(object)
-
-  
-  
-  # Check for intercept factors
-  # findInterceptFactors(object)
+  # object <- detect_passengers(object)
   
   # Do quality control on the model
   # qualityControl(object)
