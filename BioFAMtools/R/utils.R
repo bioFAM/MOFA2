@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 
 .infer_likelihoods <- function(object) {
+=======
+infer_likelihoods <- function(object) {
+>>>>>>> 6b3371e17a492df2456182b8a7903314c44268a9
   likelihood <- rep(x="gaussian", times=object@Dimensions$M)
   names(likelihood) <- views_names(object)
   

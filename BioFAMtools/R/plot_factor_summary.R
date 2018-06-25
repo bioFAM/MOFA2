@@ -1,15 +1,10 @@
-
-###########################################
-## Functions to visualise latent factors ##
-###########################################
-
 #' @title Plot summary of informative plots relative to a specific factor
-#' @name plot_factor_card
+#' @name plot_factor_summary
 
 library(gridExtra)
 library(grid)
 
-plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, fseas=NULL) {
+plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas=NULL, gene_sets=NULL, group_by="group") {
   
   #TODO plot2 : add var explained in groups and views (bar plor : x = group, y = var explained, hue = view)
   #TODO possible : add quantitative sparsity
@@ -20,7 +15,7 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
   #plot 1 : variance explained
   #TODO : bar plor : x = group, y = var explained, hue = view
   
-  var_res = calculate_variance_explained(object, views = "all", groups = "all", factors = factor)
+  var_res = calculate_variance_explained(object, views = "all", groups = "all", factors = factor, groupwise_intercept=groupwise_intercept, only=NULL)
   groups_values = c()
   views_values = c()
   var_explained = c()
@@ -38,7 +33,7 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
   
   #plot 2 : expression across samples
   
-  plotZ = plot_factor_beeswarm(object, factors = factor, color_by = color_by, superimpose_groups = FALSE)
+  plotZ = plot_factor_beeswarm(object, factors = factor, group_by = group_by)
   
   plotViews = list()
   
@@ -58,12 +53,15 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
     
     if(!(is.null(fseas))){
       
-      if (length(fseas)!=length(views)){
+      if (length(fseas)!=length(views)){ #no pathways found
         print("fsea should contain as many FSEA objects as there are views")
         tmp[[2]] = grid.rect(gp=gpar(col="white"))
       }
       else{
         tmp[[2]] = lineplot_FSEA(fseas[[idx]], factor, threshold=0.05, max.pathways=25)
+        if (length(tmp)==1){
+          tmp[[2]] = grid.rect(gp=gpar(col="white"))
+        }
       }
       
     }
@@ -77,15 +75,18 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
         
         metric_expr = "loading"
         statistic = "mean.diff" # "rank.sum" 
-        sig_test = "parametric" #cor.adj.parametric" # "permutation"
-        fsea=FSEA(object, view, data.matrix(gene_sets_subset), local.statistic=metric_expr,global.statistic=statistic,statistical.test=sig_test)
+        sig_test = "parametric" #"cor.adj.parametric" # "permutation" # 
         
         #fsea=FSEA(object, view, data.matrix(gene_sets_subset),factors=factor,local.statistic=metric_expr,global.statistic=statistic,statistical.test=sig_test)
         #does not work for some reason
-        
+        fsea=FSEA(object, view, data.matrix(gene_sets_subset), local.statistic=metric_expr,global.statistic=statistic,statistical.test=sig_test)
         tmp[[2]]  = lineplot_FSEA(fsea, factor, threshold=0.05, max.pathways=25)
+        if (length(tmp)==1){ #no pathways found
+          tmp[[2]] = grid.rect(gp=gpar(col="white"))
+        }
+        
       }
-      else{
+      else{ 
         tmp[[2]] = grid.rect(gp=gpar(col="white"))
       }
     }
@@ -102,16 +103,16 @@ plot_factor_card <- function(object, factor, color_by="group", gene_sets=NULL, f
   else{
     if  (N_views==2){
       list_plots = list(plotVar,plotViews[[1]][[1]],plotViews[[1]][[2]])
-      list_plots = append(list_plots,plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
+      list_plots[seq(4,6)] = list(plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
       do.call("grid.arrange", c(list_plots,ncol=3,nrow=2))
     }
     else{
       list_plots = list(plotVar,plotViews[[1]][[1]],plotViews[[1]][[2]])
-      list_plots = append(list_plots,plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
+      list_plots[seq(4,6)] = list(plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
       idx=3
       for (view in views[seq(3,N_views)]){
         blankPlot = grid.rect(gp=gpar(col="white"))
-        list_plots = append(list_plots,blankPlot,plotViews[idx][[1]],plotViews[idx][[2]])
+        list_plots[seq((idx-1)*3+1,idx*3)] = list(blankPlot,plotViews[idx][[1]],plotViews[idx][[2]])
         idx= idx+1
       }
       do.call("grid.arrange", c(list_plots,ncol=3,nrow=N_views))    

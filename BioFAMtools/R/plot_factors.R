@@ -104,13 +104,20 @@ plot_factor_hist <- function(object, factor, group_by = NULL, group_names = "", 
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
 #' Default is 'all'
-#' @param color_by specifies groups or values used to color the samples. 
+#' @param color_by specifies groups or values (discrete or continuous) used to color the samples
 #' This can be either: 
 #' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 #' a character giving the name of a feature, 
 #' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' @param superimpose_groups : if FALSE, plot the values for the factors expressions in one graph per group
+#' or a dataframe with two columns : "sample" (names of the samples) and "color" (values for each sample)
+#' @param group_by specifies groups used to separate the samples : one plot per group 
+#' This can be either: 
+#' the string "group" : in this case, the plot will separate samples with respect to the groups they belong to
+#' a character giving the name of a feature, 
+#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
+#' or a vector of the same length as the number of samples specifying discrete groups.
+#' or a dataframe with two columns : "sample" (names of the samples) and "group" (groups for each sample)
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
 #' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
 #' @details One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
@@ -121,7 +128,7 @@ plot_factor_hist <- function(object, factor, group_by = NULL, group_names = "", 
 #' @import ggbeeswarm
 #' @import grDevices
 #' @export
-plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, superimpose_groups = TRUE ,name_color = "", show_missing = FALSE) {
+plot_factor_beeswarm <- function(object, factors = "all", group_by = NULL, color_by = NULL, name_color = "", show_missing = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -131,6 +138,42 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
   N <- sum(object@dimensions[["N"]])
   Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
   Z$factor <- as.factor(Z$factor)
+  
+  if (!is.null(group_by)){
+    if (group_by == "group"){
+      group_by = c()
+      for (group in names(samples_names(object))){
+        group_by <- c(group_by,rep(group,length(samples_names(object)[[group]])))
+      }
+    }
+  }
+  
+  # Set color
+  if (!is.null(group_by)) {
+    if (class(group_by)!="data.frame"){
+      # It is the name of a covariate or a feature in the training_data
+      if (length(group_by) == 1 & is.character(group_by)) {
+        if(name_color=="") name_color <- group_by
+        training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+        features_names <- lapply(training_data, rownames)
+        if(group_by %in% Reduce(union,features_names)) {
+          viewidx <- which(sapply(features_names, function(vnm) group_by %in% vnm))
+          group_by <- training_data[[viewidx]][group_by,]
+        } else if(class(object@input_data) == "MultiAssayExperiment"){
+          group_by <- get_covariates(object, group_by)
+        }
+        else stop("'group_by' was specified but it was not recognised, please read the documentation")
+        # It is a vector of length N
+      } else if (length(group_by) > 1) {
+        stopifnot(length(group_by) == N)
+        # group_by <- as.factor(group_by)
+      } else {
+        stop("'group_by' was specified but it was not recognised, please read the documentation")
+      }
+    }
+  } else {
+    group_by <- rep(TRUE,N)
+  }
   
   if (!is.null(color_by)){
     if (color_by == "group"){
@@ -144,24 +187,26 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
   # Set color
   color_legend <- T
   if (!is.null(color_by)) {
-    # It is the name of a covariate or a feature in the training_data
-    if (length(color_by) == 1 & is.character(color_by)) {
-      if(name_color=="") name_color <- color_by
-      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
-      features_names <- lapply(training_data, rownames)
-      if(color_by %in% Reduce(union,features_names)) {
-        viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
-        color_by <- training_data[[viewidx]][color_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment"){
-        color_by <- get_covariates(object, color_by)
+    if (class(color_by)!="data.frame"){
+      # It is the name of a covariate or a feature in the training_data
+      if (length(color_by) == 1 & is.character(color_by)) {
+        if(name_color=="") name_color <- color_by
+        training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+        features_names <- lapply(training_data, rownames)
+        if(color_by %in% Reduce(union,features_names)) {
+          viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
+          color_by <- training_data[[viewidx]][color_by,]
+        } else if(class(object@input_data) == "MultiAssayExperiment"){
+          color_by <- get_covariates(object, color_by)
+        }
+        else stop("'color_by' was specified but it was not recognised, please read the documentation")
+        # It is a vector of length N
+      } else if (length(color_by) > 1) {
+        stopifnot(length(color_by) == N)
+        # color_by <- as.factor(color_by)
+      } else {
+        stop("'color_by' was specified but it was not recognised, please read the documentation")
       }
-      else stop("'color_by' was specified but it was not recognised, please read the documentation")
-      # It is a vector of length N
-    } else if (length(color_by) > 1) {
-      stopifnot(length(color_by) == N)
-      # color_by <- as.factor(color_by)
-    } else {
-      stop("'color_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
     color_by <- rep(TRUE,N)
@@ -173,20 +218,29 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
     Z <- Z[complete.cases(Z),]
     # Z <- Z[!is.na(Z$value),]
   }
-
-  df <- data.frame("sample"=Reduce(c,samples_names(object)),"color_by"= color_by)
-  df <- left_join(Z, df, by="sample")
   
-  if (!(superimpose_groups)){
-    p <- ggplot(df, aes(x=color_by, y=value)) +
-      geom_beeswarm(aes(color=color_by))
+  if (class(color_by)!="data.frame"){
+    df <- data.frame("sample"=Reduce(c,samples_names(object)),"color_name"= color_by)
+    df <- left_join(Z, df, by="sample")
   }
   else{
-    p <- ggplot(df, aes(x=0, y=value)) + 
-      ggbeeswarm::geom_quasirandom(aes(color=color_by)) +
-      scale_x_continuous(breaks=NULL)
+    df <- merge(Z,color_by,by="sample")
   }
   
+  if (class(group_by)!="data.frame"){
+    df2 <- data.frame("sample"=Reduce(c,samples_names(object)),"group_name"= group_by)
+    df <- left_join(df, df2, by="sample")
+  }
+  else{
+    df <- merge(df,group_by,by="sample")
+  }
+  
+  p <- ggplot(df, aes(x=group_name, y=value)) +
+     #geom_violin(aes(color=grouped_by)) +  
+     ggbeeswarm::geom_quasirandom(aes(color=color_name)) 
+     #geom_boxplot(width=0.1) +
+     #scale_x_continuous(breaks=NULL)
+
   # Generate plot
   
   p <- p +
@@ -206,7 +260,7 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, super
       legend.position = "right", 
       legend.direction = "vertical",
       legend.key = element_blank()
-      ) + facet_wrap(~factor, scales="free")
+    ) + facet_wrap(~factor, scales="free")
   
   # If color_by is numeric, define the default gradient
   # if (is.numeric(color_by)) { p <- p + scale_color_gradientn(colors=terrain.colors(10)) }
@@ -338,7 +392,7 @@ plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL
   
   xlabel <- paste("Latent factor", factors[1])
   ylabel <- paste("Latent factor", factors[2])
-                                
+  
   df_mat <- df %>% spread(key="factor", value="value")
   df_mat <-  set_colnames(df_mat,c(colnames(df_mat)[1:4], "x", "y"))
   
@@ -431,7 +485,7 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
       }
     }
   }
-  
+    
   # Set color
   color_legend <- T
   if (!is.null(color_by)) {
@@ -612,6 +666,10 @@ plot_sparsity_factors <- function(object, threshold_variance_explained = 0.01, s
 
   d <- data.frame(factor_val, view_val, 1-theta_val, var_val)
   colnames(d) <- c("factor", "view", "sparsity", "variance_explained")
+  
+  #sort factors by names (work only if factors are int encoded by strings)
+  d$factor <- factor(d$factor, levels=seq(1,max(as.integer(levels(d$factor)))))
+  
   d <- d[d$variance_explained > threshold_variance_explained,]
   if (show_variance_explained) {
     p = ggplot(d, aes(x=factor, y=sparsity, fill=view, alpha=variance_explained)) +
