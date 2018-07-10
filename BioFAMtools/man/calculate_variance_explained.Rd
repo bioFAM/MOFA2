@@ -5,8 +5,7 @@
 \title{Calculate variance explained by the model}
 \usage{
 calculate_variance_explained(object, views = "all", groups = "all",
-  factors = "all", include_intercept = TRUE, only = NULL,
-  flatten = FALSE, groupwise_intercept = TRUE, ...)
+  factors = "all", include_intercept = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
@@ -18,17 +17,9 @@ calculate_variance_explained(object, views = "all", groups = "all",
 \item{factors}{character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'}
 
 \item{include_intercept}{include the intercept factor for calculation of variance explained (only used when an intercept was learned)}
-
-\item{groupwise_intercept}{boolean indicating whether the variance explained is calculated using a groupwise intercept for the features or an overall}
 }
 \value{
 a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
-}
-\description{
-Method to calculate variance explained by the BioFAModel for each view and latent factor. \cr
-As a measure of variance explained for gaussian data we adopt the coefficient of determination (R2). \cr
-For non-gaussian views the calculations are based on the normally-distributed pseudo-data 
-(for more information on the non-gaussian model see Supplementary Methods of the MOFA paper or Seeger & Bouchard, 2012).
 }
 \details{
 This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),

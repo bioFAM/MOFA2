@@ -4,8 +4,8 @@
 \alias{plot_factor_beeswarm}
 \title{Beeswarm plot of latent factors}
 \usage{
-plot_factor_beeswarm(object, factors = "all", color_by = NULL,
-  superimpose_groups = TRUE, name_color = "", show_missing = FALSE)
+plot_factor_beeswarm(object, factors = "all", group_by = NULL,
+  color_by = NULL, name_color = "", show_missing = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
@@ -13,15 +13,21 @@ plot_factor_beeswarm(object, factors = "all", color_by = NULL,
 \item{factors}{character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
 Default is 'all'}
 
-\item{color_by}{specifies groups or values used to color the samples. 
+\item{group_by}{specifies groups used to separate the samples : one plot per group 
+This can be either: 
+the string "group" : in this case, the plot will separate samples with respect to the groups they belong to
+a character giving the name of a feature, 
+a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
+or a vector of the same length as the number of samples specifying discrete groups.
+or a dataframe with two columns : "sample" (names of the samples) and "group" (groups for each sample)}
+
+\item{color_by}{specifies groups or values (discrete or continuous) used to color the samples
 This can be either: 
 the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 a character giving the name of a feature, 
 a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-or a dataframe with two columns : "sample" (names of the samples) and "color_by" (values of the groups)}
-
-\item{superimpose_groups}{: if FALSE, plot the values for the factors expressions in one graph per group}
+or a dataframe with two columns : "sample" (names of the samples) and "color" (values for each sample)}
 
 \item{name_color}{name for color legend (usually only used if color_by is not a character itself)}
 

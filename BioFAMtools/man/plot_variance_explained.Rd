@@ -4,8 +4,7 @@
 \alias{plot_variance_explained}
 \title{Plot variance explained by the model}
 \usage{
-plot_variance_explained(object, views = "all", groups = "all",
-  only = NULL, split_by = NULL, cluster = TRUE, ...)
+plot_variance_explained(object, cluster = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFAmodel}} object.}
@@ -16,9 +15,4 @@ plot_variance_explained(object, views = "all", groups = "all",
 }
 \value{
 ggplot object
-}
-\description{
-Method to plot variance explained (R-squared) by the MOFA model for each view, each group, and latent factor. \cr
-As a measure of variance explained for gaussian data we adopt the coefficient of determination (R2). \cr
-For details on the computation see the help of the \code{\link{calculate_variance_explained}} function
 }
