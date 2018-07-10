@@ -18,6 +18,7 @@ Default is 'all'}
 
 \item{color_by}{specifies groups or values used to color the samples. 
 This can be either: 
+the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 a character giving the name of a feature present in the training data, 
 a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}

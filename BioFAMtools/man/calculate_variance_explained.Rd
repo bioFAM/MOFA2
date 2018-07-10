@@ -6,7 +6,7 @@
 \usage{
 calculate_variance_explained(object, views = "all", groups = "all",
   factors = "all", include_intercept = TRUE, only = NULL,
-  flatten = FALSE, ...)
+  flatten = FALSE, groupwise_intercept = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
@@ -18,6 +18,8 @@ calculate_variance_explained(object, views = "all", groups = "all",
 \item{factors}{character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'}
 
 \item{include_intercept}{include the intercept factor for calculation of variance explained (only used when an intercept was learned)}
+
+\item{groupwise_intercept}{boolean indicating whether the variance explained is calculated using a groupwise intercept for the features or an overall}
 }
 \value{
 a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone

@@ -5,7 +5,7 @@
 \title{Beeswarm plot of latent factors}
 \usage{
 plot_factor_beeswarm(object, factors = "all", color_by = NULL,
-  name_color = "", show_missing = FALSE)
+  superimpose_groups = TRUE, name_color = "", show_missing = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
@@ -15,9 +15,13 @@ Default is 'all'}
 
 \item{color_by}{specifies groups or values used to color the samples. 
 This can be either: 
+the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 a character giving the name of a feature, 
 a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
+or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
+or a dataframe with two columns : "sample" (names of the samples) and "color_by" (values of the groups)}
+
+\item{superimpose_groups}{: if FALSE, plot the values for the factors expressions in one graph per group}
 
 \item{name_color}{name for color legend (usually only used if color_by is not a character itself)}
 

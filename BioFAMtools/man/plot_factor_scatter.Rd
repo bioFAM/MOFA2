@@ -4,8 +4,9 @@
 \alias{plot_factor_scatter}
 \title{Scatterplot of two latent factors}
 \usage{
-plot_factor_scatter(object, factors, color_by = NULL, shape_by = NULL,
-  name_color = "", name_shape = "", show_missing = TRUE)
+plot_factor_scatter(object, factors, groups = "all", color_by = NULL,
+  shape_by = NULL, name_color = "", name_shape = "",
+  show_missing = TRUE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
@@ -15,6 +16,7 @@ using the factor names, or as numeric with the index of the factors}
 
 \item{color_by}{specifies groups or values used to color the samples. 
 This can be either 
+the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 a character giving the name of a feature present in the training data, 
 a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
