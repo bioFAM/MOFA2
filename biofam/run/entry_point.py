@@ -116,7 +116,7 @@ class entry_point(object):
         if type(views) is not list:
             views = [views]
         if type(groups) is not list:
-            views = [groups]
+            groups = [groups]
 
         self.io_opts['view_names'] = views
         self.io_opts['group_names'] = groups
