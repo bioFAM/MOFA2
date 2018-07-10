@@ -39,12 +39,15 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   groups <- .check_and_get_groups(object, groups)
 
   # Get factors
-  if (paste0(factors, collapse="") == "all") { factors <- factors_names(object) } 
-  else if(is.numeric(factors)) {
-    if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
-    else factors <- factors_names(object)[factors]
-  }
-  else {
+  if (paste0(factors, collapse="") == "all") { 
+    factors <- factors_names(object) 
+  } else if (is.numeric(factors)) {
+    if (object@model_options$learn_intercept) {
+      factors <- factors_names(object)[factors+1]
+    } else {
+      factors <- factors_names(object)[factors]
+    }
+  } else {
     stopifnot(all(factors %in% factors_names(object)))
   }
   

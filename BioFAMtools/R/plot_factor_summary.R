@@ -4,7 +4,7 @@
 library(gridExtra)
 library(grid)
 
-plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas=NULL, gene_sets=NULL, color_by="group") {
+plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas=NULL, gene_sets=NULL, group_by="group") {
   
   #TODO plot2 : add var explained in groups and views (bar plor : x = group, y = var explained, hue = view)
   #TODO possible : add quantitative sparsity
@@ -33,7 +33,7 @@ plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas
   
   #plot 2 : expression across samples
   
-  plotZ = plot_factor_beeswarm(object, factors = factor, color_by = color_by, superimpose_groups = FALSE)
+  plotZ = plot_factor_beeswarm(object, factors = factor, group_by = group_by)
   
   plotViews = list()
   
@@ -103,16 +103,16 @@ plot_factor_summary <- function(object, factor, groupwise_intercept=FALSE, fseas
   else{
     if  (N_views==2){
       list_plots = list(plotVar,plotViews[[1]][[1]],plotViews[[1]][[2]])
-      list_plots = append(list_plots,plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
+      list_plots[seq(4,6)] = list(plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
       do.call("grid.arrange", c(list_plots,ncol=3,nrow=2))
     }
     else{
       list_plots = list(plotVar,plotViews[[1]][[1]],plotViews[[1]][[2]])
-      list_plots = append(list_plots,plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
+      list_plots[seq(4,6)] = list(plotZ,plotViews[[2]][[1]],plotViews[[2]][[2]])
       idx=3
       for (view in views[seq(3,N_views)]){
         blankPlot = grid.rect(gp=gpar(col="white"))
-        list_plots = append(list_plots,blankPlot,plotViews[idx][[1]],plotViews[idx][[2]])
+        list_plots[seq((idx-1)*3+1,idx*3)] = list(blankPlot,plotViews[idx][[1]],plotViews[idx][[2]])
         idx= idx+1
       }
       do.call("grid.arrange", c(list_plots,ncol=3,nrow=N_views))    
