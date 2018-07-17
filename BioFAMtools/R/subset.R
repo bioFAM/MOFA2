@@ -126,3 +126,48 @@ subset_samples <- function(object, samples) {
   return(object)
 }
 
+
+#' @title Subset features
+#' @name subset_features
+#' @description Method to subset (or sort) features
+#' @param object a \code{\link{BioFAModel}} object.
+#' @param view view name or view index
+#' @param features character vector with the sample names, numeric vector with the feature indices or logical vector with the samples to be kept as TRUE.
+#' @export
+subset_features <- function(object, view, features) {
+  
+  # Sanity checks
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  stopifnot(length(features) <= sapply(object@dimensions[["D"]], sum))
+  warning("Removing features a posteriori is fine for an exploratory analysis, but we recommend removing them before training!")
+
+  if (is.numeric(view)) view <- views_names(object)[view]
+  stopifnot(all(view %in% views_names(object)))  
+
+  
+  # Get samples
+  if (is.character(features)) {
+    stopifnot(all(features %in% features_names(object)[[view]]))
+  } else {
+    features <- features_names(object)[[view]][features]
+  }
+  
+  # Subset relevant slots
+  object@expectations$W <- lapply(object@expectations$W, function(x) x[features,, drop=F])
+  object@expectations$Y[[view]] <- lapply(object@expectations$Y[[view]], function(x) x[features,])
+  object@expectations$Tau[[view]] <- lapply(object@expectations$Tau[[view]], function(x) x[features,])
+  object@training_data <- lapply(object@training_data, function(x) sapply(x, function(y) y[features,], simplify = F, USE.NAMES = T))
+  # object@input_data <- object@input_data[,,,] 
+  if (length(object@imputed_data) != 0) {
+    object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
+  }
+
+  # Modify dimensionality
+  object@dimensions[["D"]][[view]] <- length(features)
+  
+  # Modify featuers names in the MOFAobject
+  features_names(object)[[view]] <- features
+  
+  return(object)
+}
+

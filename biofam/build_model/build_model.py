@@ -117,9 +117,9 @@ class buildBiofam(buildModel):
         """ Build node AlphaZ for the ARD prior on the factors """
 
         # ARD prior per sample group
-        if self.data_opts['sample_groups'] is not None:
+        if self.data_opts['samples_groups'] is not None:
             # TODO check whats going on here
-            self.init_model.initAlphaZ_groups(self.data_opts['sample_groups'])
+            self.init_model.initAlphaZ_groups(self.data_opts['samples_groups'])
 
         # ARD prior per factor
         else:
@@ -149,8 +149,8 @@ class buildBiofam(buildModel):
             exit(1)
             # learnTheta_ix[0] = 0
 
-        if self.data_opts['sample_groups'] is not None:
-            self.init_model.initThetaZ_groups(self.data_opts['sample_groups'], qa=initTheta_a, qb=initTheta_b)
+        if self.data_opts['samples_groups'] is not None:
+            self.init_model.initThetaZ_groups(self.data_opts['samples_groups'], qa=initTheta_a, qb=initTheta_b)
         else:
             self.init_model.initThetaZ_Learn(qa=initTheta_a, qb=initTheta_b)
 
