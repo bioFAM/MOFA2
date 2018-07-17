@@ -687,13 +687,19 @@ def saveTrainedModel(model, outfile,
     ----------
     """
     assert model.trained, "Model is not trained"
-
     if views_names is not None:
-        uniq_views_names = np.unique(views_names)
 
-        # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
-        idx = sorted(range(len(views_names)), key=lambda k: views_names[k])
-        tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
+        #uniq_views_names = np.unique(views_names)
+        #idx = sorted(range(len(views_names)), key=lambda k: views_names[k])
+        #tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
+
+        # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly        uniq_views_names = np.unique(views_names)
+
+        uniq_views_names = np.unique(views_names).tolist()
+        sorted_views = sorted(uniq_views_names) #alphabetical sort
+        idx = {view:i for (i,view) in enumerate(uniq_views_names)}
+        idx_sorted = [idx[view] for view in sorted_views] #idx of the views sorted alphabetically
+        tmp = [model_opts["likelihoods"][idx_sorted[m]] for m in range(len(model_opts["likelihoods"]))]
         model_opts["likelihoods"] = tmp
 
     # if features_names is not None:
