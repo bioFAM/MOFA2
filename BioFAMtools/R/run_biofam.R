@@ -89,7 +89,7 @@ run_biofam <- function(object, dir_options) {
   )
   
   # Load the trained model
-  object <- loadModel(dir_options$outfile, object)
+  object <- load_model(dir_options$outfile, object)
   
   return(object)
 }

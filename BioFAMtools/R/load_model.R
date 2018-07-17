@@ -248,7 +248,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk=FALSE) 
   }
   
   # Mask passenger samples
-  object <- detect_passengers(object)
+  # object <- detect_passengers(object)
   
   # Rename covariates, including intercept
   # if (object@ModelOptions$LearnIntercept == TRUE) factorNames(object) <- c("intercept",as.character(1:(object@Dimensions[["K"]]-1)))
