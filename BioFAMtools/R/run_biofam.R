@@ -49,15 +49,18 @@ run_biofam <- function(object, dir_options) {
   # Call entry point
   biofam_entrypoint <- biofam$run.entry_point$entry_point()
   
+  # Pass data
+  
   # Set data options
   biofam_entrypoint$set_data_options(
-    lik = object@model_options$likelihood,
+    lik = unname(object@model_options$likelihood),
     center_features = object@data_options$center_features,
     center_features_per_group = object@data_options$center_features_per_group,
     scale_views     = object@data_options$scale_views
   )
   
   # Set the data
+  # biofam_entrypoint$set_data_df(data=unname(lapply(object@input_data, function(x) r_to_py(t(x)))))
   biofam_entrypoint$set_data_df(r_to_py(object@input_data))
   
   
@@ -74,7 +77,11 @@ run_biofam <- function(object, dir_options) {
   biofam_entrypoint$set_model_options(
     factors         = object@model_options$num_factors,
     likelihoods     = unname(object@model_options$likelihood),
-    learn_intercept = object@model_options$learn_intercept
+    learn_intercept = object@model_options$learn_intercept,
+    sl_z=object@model_options$sl_z, 
+    sl_w=object@model_options$sl_w, 
+    ard_w=object@model_options$ard_w, 
+    ard_z=object@model_options$ard_z
   )
   
   # Build the model

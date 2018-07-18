@@ -28,10 +28,10 @@ create_biofam <- function(data) {
       object@dimensions[["K"]] <- 0
       
       # Set view names
-      views_names(object) <- unique(data$feature_group)
+      views_names(object) <- as.character(unique(data$feature_group))
       
       # Set sample group names
-      groups_names(object) <- unique(data$sample_group)
+      groups_names(object) <- as.character(unique(data$sample_group))
       
   } else {
     stop("Error: input data has to be provided either as .....")

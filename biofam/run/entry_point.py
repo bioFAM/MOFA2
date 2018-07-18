@@ -273,15 +273,20 @@ class entry_point(object):
 
         # RICARD: LIKELIHOOD SHOULD BE IN MODEL_OPTS, NOT IN DATA_OPTIONS
         #       WHY IS SELF_MODEL.OPTS() DEFINED HERE??????
-        # TO-DO: QC THAT LILEIHOOD IS POISSON, GAUSSIA, BERNOULLI
 
         # TODO: more verbose messages
         # TODO Sanity checks
         self.data_opts = {}
         self.model_opts = {}
 
-        self.data_opts["likelihoods"] = lik
-        self.model_opts["likelihoods"] = lik
+        # Define likelihoods
+        self.model_opts['likelihoods'] = lik
+        if type(self.model_opts['likelihoods']) is not list:
+          self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
+        # assert len(self.model_opts['likelihoods'])==M, "Please specify one likelihood for each view"
+        assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"]))
+        self.data_opts["likelihoods"] = self.model_opts['likelihoods'] 
+        
         M = len(self.model_opts["likelihoods"])
         # assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
 
