@@ -12,14 +12,25 @@ To install biofam with `pip` run:
 pip install git+https://github.com/bioFAM/biofam.git --user
 ```
 
+The easiest way to install the BioFAMtools package is with `devtools`:
 
-An alternative way is to clone the repository and install biofam from source:
+```
+devtools::install_github("bioFAM/biofam", subdir="BioFAMtools")
+```
+
+An alternative way is to clone the repository and install biofam library and BioFAMtools package from source:
 
 ```
 git clone git@github.com:bioFAM/biofam.git
 cd biofam
+
 python setup.py install
+
+R CMD build BioFAMtools
+R CMD install BioFAMtools
 ```
+
+
 
 ## Authors
 
