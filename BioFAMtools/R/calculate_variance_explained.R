@@ -11,7 +11,7 @@
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", 
-                                         include_intercept = TRUE, ...) {
+                                         include_intercept = FALSE, ...) {
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
@@ -22,7 +22,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     }
     # warning("No intercept was learned in BioFAM.\n Intercept is not included in the model prediction.")
   }
-  
+    
   # Define views and groups
   views  <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
@@ -61,7 +61,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     for (m in views) {
       for (p in groups) {
         if (!all(colMeans(Y[[m]][[p]])<1e-2,na.rm=T))
-          cat(sprintf("Warning: data for view %d is not centered and no intercept term was learnt",m)) 
+          cat(sprintf("Warning: data for view %s is not centered and no intercept term was learnt",m)) 
       }
     }
   }
@@ -118,10 +118,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 plot_variance_explained <- function(object, cluster = TRUE, ...) {
   
   # Calculate variance explained
-  R2_list <- calculateVarianceExplained(object, ...)
+  r2_list <- calculate_variance_explained(object, ...)
   
-  fvar_m <- R2_list$r2_total
-  fvar_mk <- R2_list$r2_per_factor
+  fvar_m <- r2_list$r2_total
+  fvar_mk <- r2_list$r2_per_factor
   # fvar_m  <- lapply(r2_list$r2_total[groups], function(e) e[views])
   # fvar_mk <- lapply(r2_list$r2_per_factor[groups], function(e) e[,views])
   
@@ -133,6 +133,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
   )
   colnames(fvar_mk_df)[ncol(fvar_mk_df)] <- "group"
   fvar_mk_df$factor <- factor(fvar_mk_df$factor)
+  fvar_mk_df$group <- factor(fvar_mk_df$group)
   
   fvar_m_df <- reshape2::melt(lapply(fvar_m, function(x) lapply(x, function(z) z)), 
                               varnames=c("view", "group"), value.name="R2")
@@ -157,7 +158,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
   max_lim_bplt <- max(fvar_m_df$R2)
   
   # Detect whether to split by group or by view 
-  groups <- names(r2_list)
+  groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
   if ( length(groups)>1  & length(views)==1 ) { x="group"; split_by="view" }
   if ( length(groups)==1 & length(views)>1  ) { x="view";  split_by="group" }
@@ -204,8 +205,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
         axis.ticks =  element_blank(),
         panel.background = element_blank()
       )
-    hm <- hm + ggtitle(mk_title)  + 
-      guides(fill=guide_colorbar("R2"))
+    hm <- hm + ggtitle(mk_title) + guides(fill=guide_colorbar("R2"))
     hms[[i]] <- hm
   }
   
@@ -219,4 +219,6 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
   )
   return(p)
 }
+
+
 

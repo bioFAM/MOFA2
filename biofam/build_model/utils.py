@@ -1,6 +1,6 @@
 from __future__ import division
 from time import sleep
-
+from copy import deepcopy
 import numpy as np
 import scipy as s
 import pandas as pd
@@ -174,43 +174,50 @@ def loadData(data_opts, verbose=True):
 
 def process_data(Y, data_opts, samples_groups):
     M = len(Y)
+    parsed_Y = deepcopy(Y)
 
     for m in range(M):
-        # Removing features with no variance
-        var = Y[m].std(axis=0)
-        if np.any(var==0.):
-            print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
-            Y[m].drop(Y[m].columns[np.where(var==0.)], axis=1, inplace=True)
 
-        # Center the features
+        # Convert to float32
+        parsed_Y[m] = parsed_Y[m].astype(np.float32)
+
+        # For some reason, reticulate stores missing values in integer matrices as -2147483648
+        parsed_Y[m][parsed_Y[m] == -2147483648] = np.nan
+
+        # Removing features with no variance
+        # var = parsed_Y[m].std(axis=0)
+        # if np.any(var==0.):
+        #     print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
+        #     parsed_Y[m].drop(parsed_Y[m].columns[np.where(var==0.)], axis=1, inplace=True)
+
         if data_opts['center_features'][m]:
             print("Centering features for view " + str(m) + "...")
-            Y[m] = (Y[m] - Y[m].mean(axis=0))
+            parsed_Y[m] -= - np.nanmean(parsed_Y[m],axis=0)
 
         if data_opts['center_features_per_group'][m]:
             print("Centering features per group for view " + str(m) + "...")
-            for gp_name in np.unique(data_opts["groups_names"]):
+            for gp_name in data_opts['groups_names']:
                 filt = [gp == gp_name for gp in samples_groups]
-                Y[m][filt] = (Y[m][filt] - Y[m][filt].mean(axis=0))
+                parsed_Y[m][filt] -= np.nanmean(parsed_Y[m][filt],axis=0)
 
         # Scale the views to unit variance
         if data_opts['scale_views'][m]:
             print("Scaling view " + str(m) + " to unit variance...")
-            Y[m] = Y[m] / np.nanstd(Y[m].as_matrix())
+            parsed_Y[m] /= np.nanstd(parsed_Y[m])
 
         # quantile normalise features
         # if data_opts['gaussianise_features'][m]:
         #     print("Gaussianising features for view " + str(m) + "...")
-        #     Y[m] = gaussianise(Y[m])
+        #     parsed_Y[m] = gaussianise(parsed_Y[m])
 
         # Scale the features to unit variance
         if data_opts['scale_features'][m]:
             print("Scaling features for view " + str(m) + " to unit variance...")
-            Y[m] = Y[m] / np.std(Y[m], axis=0, )
+            parsed_Y[m] /= np.nanstd(parsed_Y[m], axis=0)
 
         print("\n")
 
-    return Y
+    return parsed_Y
 
 def loadDataGroups(data_opts):
     """

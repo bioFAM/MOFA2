@@ -379,7 +379,7 @@ class initModel(object):
         PARAMETERS
         ----------
         groups: dictionary
-            a dictionariy with mapping between sample names (keys) and sample_groups (values)
+            a dictionariy with mapping between sample names (keys) and samples_groups (values)
         pa: float
             'a' parameter of the prior distribution
         pb :float
@@ -647,7 +647,7 @@ class initModel(object):
         PARAMETERS
         ----------
         groups: dictionary
-            a dictionariy with mapping between sample names (keys) and sample_groups (values)
+            a dictionariy with mapping between sample names (keys) and samples_groups (values)
         pa: float
             'a' parameter of the prior distribution
         pb :float

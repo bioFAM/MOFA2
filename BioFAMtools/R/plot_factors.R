@@ -242,7 +242,6 @@ plot_factor_beeswarm <- function(object, factors = "all", group_by = NULL, color
      #scale_x_continuous(breaks=NULL)
 
   # Generate plot
-  
   p <- p +
     ylab("Factor value") + xlab("") +
     theme(

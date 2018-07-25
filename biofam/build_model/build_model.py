@@ -117,10 +117,8 @@ class buildBiofam(buildModel):
         """ Build node AlphaZ for the ARD prior on the factors """
 
         # ARD prior per sample group
-        if self.data_opts['samples_groups'] is not None:
-            # TODO check whats going on here
+        if len(np.unique(self.data_opts['samples_groups']))>1:
             self.init_model.initAlphaZ_groups(self.data_opts['samples_groups'])
-
         # ARD prior per factor
         else:
             self.init_model.initAlphaZ()

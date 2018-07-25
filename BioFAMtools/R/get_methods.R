@@ -38,13 +38,13 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   # Get groups
   groups <- .check_and_get_groups(object, groups)
 
-  # Get factors
+  # Get factor names
   if (paste0(factors, collapse="") == "all") { 
     factors <- factors_names(object) 
   } else if (is.numeric(factors)) {
     if (object@model_options$learn_intercept) {
       factors <- factors_names(object)[factors+1]
-    } else {
+    } else { 
       factors <- factors_names(object)[factors]
     }
   } else {
@@ -73,6 +73,7 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
       }
     }
   }
+  
   return(Z)
 }
 
@@ -120,7 +121,6 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   } else {
     weights <- lapply(views, function(m) weights[[m]][,factors,drop=F])
     names(weights) <- views
-    # if (length(views)==1) { weights <- weights[[1]] }
   }
   return(weights)
 }
@@ -243,26 +243,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   return(imputed_data)
 }
 
-#' @name get_covariates
-#' @title get_covariates
-#' @description This function extracts covariates from the \code{colData} in the input \code{MultiAssayExperiment} object. \cr
-#' Note that if you did not use \code{MultiAssayExperiment} to create your \code{\link{createBioFAMobject}}, this function will not work.
-#' @param object a \code{\link{BioFAModel}} object.
-#' @param covariates names of the covariates
-#' @export
-#' 
-get_covariates <- function(object, covariates) {
-  
-  # Sanity checks
-  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  if(class(object@input_data) != "MultiAssayExperiment") stop("To work with covariates, InputData has to be specified in form of a MultiAssayExperiment")  
-  stopifnot(all(covariates %in% colnames(colData(object@input_data))))
-  
-  # Get covariates
-  covariates <- colData(object@input_data)[,covariates]
-  
-  return(covariates)
-}
 
 #' @title get_expectations
 #' @name get_expectations
@@ -292,11 +272,6 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   
   # Get expectations in single matrix or list of matrices (for multi-view nodes)
   exp <- object@expectations[[variable]]
-  # if (variable=="Z") {
-  #   exp <- object@expectations$Z
-  # } else {
-  #   exp <- lapply(object@expectations[[variable]], function(x) x$E)
-  # }
   
   # Convert to long data frame
   if (as.data.frame) {
@@ -362,6 +337,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
 #' @title get_elbo
 #' @name get_elbo
 #' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
+#' @details This can be useful for model selection.
 #' @param object a \code{\link{BioFAModel}} object.
 #' @export
 get_elbo <- function(object) {
