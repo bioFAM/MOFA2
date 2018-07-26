@@ -560,7 +560,7 @@ if __name__ == '__main__':
     #
     outfile = dir+"test_no_stochastic.hdf5"
     #
-    stochastic=True
+    stochastic=False
     ent.set_data_options(lik, center_features=False, center_features_per_group=True, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=False, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
