@@ -60,8 +60,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   } else {
     for (m in views) {
       for (p in groups) {
-        if (!all(colMeans(Y[[m]][[p]])<1e-2,na.rm=T))
-          cat(sprintf("Warning: data for view %s is not centered and no intercept term was learnt",m)) 
+        if (!all(colMeans(Y[[m]][[p]]) < 1e-2, na.rm=T))
+          cat(sprintf("Warning: data for view %s is not centered and no intercept term was learnt", m)) 
       }
     }
   }

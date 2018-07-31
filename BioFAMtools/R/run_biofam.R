@@ -19,13 +19,14 @@
 #' @return a trained \code{\link{bioFAMmodel}} object
 #' @import reticulate
 #' @export
-run_biofam <- function(object, dir_options) {
+run_biofam <- function(object, dir_options, samples_groups = NULL) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) 
     stop("'object' has to be an instance of BioFAModel")
   
-  stopifnot(all(c("data_dir","outfile") %in% names(dir_options)))
+  # stopifnot(all(c("data_dir", "outfile") %in% names(dir_options)))
+  stopifnot(all(c("outfile") %in% names(dir_options)))
   
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")
@@ -55,12 +56,18 @@ run_biofam <- function(object, dir_options) {
     lik = unname(object@model_options$likelihood),
     center_features = object@data_options$center_features,
     center_features_per_group = object@data_options$center_features_per_group,
-    scale_views     = object@data_options$scale_views
+    scale_views = object@data_options$scale_views
   )
   
   # Set the data
   # biofam_entrypoint$set_data_df(data=unname(lapply(object@input_data, function(x) r_to_py(t(x)))))
-  biofam_entrypoint$set_data_df(r_to_py(object@input_data))
+  if (.hasSlot(object, "training_data")) {
+    biofam_entrypoint$set_data_matrix(r_to_py(object@training_data), 
+                                      # r_to_py(names(object@training_data)), r_to_py(names(object@training_data[[1]])),
+                                      r_to_py(lapply(object@training_data[[1]], rownames)), r_to_py(lapply(object@training_data, function(m) colnames(m[[1]]))))
+  } else {
+    biofam_entrypoint$set_data_df(r_to_py(object@input_data))
+  }
   
   
   # Set training options  

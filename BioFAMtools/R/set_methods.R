@@ -318,12 +318,12 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 #' @export
 setMethod("samples_groups", signature(object="BioFAModel"), 
   function(object, format = "default") {
-  	samples <- object@data_options$samples
-    tmp <- data.frame(sample = unlist(samples$names),
-    				  group = rep(samples$groups, sapply(samples$names, length)),
-    				  row.names = c())
+  	samples <- object@data_options$samples_names
+    tmp <- data.frame(sample = unlist(samples),
+    				          group = rep(names(samples), sapply(samples, length)),
+    				          row.names = c())
     if (format == "pheatmap") {
-    	rownames(tmp) <- unlist(samples$names)
+    	rownames(tmp) <- unlist(samples)
     	tmp <- tmp[,"group", drop = FALSE]
     	colnames(tmp) <- "ID"
     }

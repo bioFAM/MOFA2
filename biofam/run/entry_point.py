@@ -35,7 +35,7 @@ class entry_point(object):
         # sleep(2)
         sys.stdout.flush()
     
-    def set_data_matrix(self, data):
+    def set_data_matrix_flat(self, data, views_names, groups_names):
         """ Method to set the data 
 
         PARAMETERS
@@ -59,6 +59,62 @@ class entry_point(object):
           if isinstance(data[m], dict):
             data[m] = list(data[m].values())
 
+        groups_names = len(sorted(set(samples_groups), key=samples_groups.index))
+
+        assert s.all([ isinstance(data[m], s.ndarray) or isinstance(data[m], pd.DataFrame) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
+
+        # Verbose message
+        for m in range(len(data)):
+          for p in range(len(data[0])):
+            print("Loaded view %d with %d samples and %d features..." % (m+1, data[m].shape[0], data[m].shape[1]))
+
+        # Save dimensionalities
+        self.dimensionalities["M"] = len(data)
+        self.dimensionalities["P"] = len(groups_names)
+        self.dimensionalities["N"] = [np.sum([s == i for s in samples_groups]) for i in groups_names]
+        self.dimensionalities["D"] = [data[m].shape[1] for m in range(len(data))]
+
+        # Define feature group names and sample group names
+        self.data_opts['views_names']  = views_names
+        self.data_opts['groups_names'] = groups_names
+
+        # Define feature and sample names
+        self.data_opts['samples_names']  = data[0].index.values()
+        self.data_opts['features_names'] = [ data[m].columns for m in range(len(data)) ]
+
+        self.data = data
+    
+    def set_data_matrix(self, data, samples_names_dict, features_names_dict):
+        """ Method to set the data 
+
+        PARAMETERS
+        ----------
+        data: several options:
+        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
+        - a list where each element is a numpy array or a pandas data frame
+        """
+
+        # Sanity check
+        if isinstance(data, dict):
+          data = list(data.values())
+        elif isinstance(data, list):
+          pass
+        else:
+          print("Error: Data not recognised")
+          sys.stdout.flush()
+          exit()
+          
+        views_names    = [k for k in features_names_dict.keys()]
+        groups_names   = [k for k in samples_names_dict.keys()]
+        samples_groups = [list(samples_names_dict.keys())[i] for i in range(len(groups_names)) for n in range(len(list(samples_names_dict.values())[i]))]
+
+        features_names = [v for v in features_names_dict.values()]
+        samples_names  = [v for l in samples_names_dict.values() for v in l]  # flattened list of samples names
+
+        for m in range(len(data)):
+          if isinstance(data[m], dict):
+            data[m] = list(data[m].values())
+
         assert s.all([ isinstance(data[m][p], s.ndarray) or isinstance(data[m][p], pd.DataFrame) for p in range(len(data[0])) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
 
         # Verbose message
@@ -72,7 +128,23 @@ class entry_point(object):
         self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
-        self.data = data
+        # Define feature group names and sample group names
+        self.data_opts['views_names']  = views_names
+        self.data_opts['groups_names'] = groups_names
+
+        # Define feature and sample names
+        self.data_opts['samples_names']  = samples_names
+        self.data_opts['features_names'] = features_names
+
+        # Set samples groups
+        self.data_opts['samples_groups'] = samples_groups
+
+        # Concatenate groups
+        for m in range(len(data)):
+            data[m] = np.concatenate(data[m])
+        self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
+
+        self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
         """ Load the data """

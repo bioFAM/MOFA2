@@ -177,7 +177,7 @@ get_default_model_options <- function(object) {
   # Define default model options
   model_options <- list(
     likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    learn_intercept = TRUE,     # (logical) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
+    learn_intercept = FALSE,     # (logical) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
     num_factors = 25            # (numeric) initial number of latent factors
   )
   
