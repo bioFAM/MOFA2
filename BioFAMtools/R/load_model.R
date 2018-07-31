@@ -251,7 +251,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   
   # Order factors in order of variance explained
   if (sort_factors) {
-    r2 <- rowSums(sapply(calculate_variance_explained(object)$r2_per_factor, function(e) rowSums(e)))
+    object <- cache_variance_explained(object)
+    r2 <- rowSums(sapply(object@cache$variance_explained$r2_per_factor, function(e) rowSums(e)))
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
     if (object@model_options$learn_intercept) { order_factors <- c("intercept", order_factors) }
     object <- subset_factors(object, order_factors)
