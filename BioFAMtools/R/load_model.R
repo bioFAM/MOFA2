@@ -17,7 +17,7 @@
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk=FALSE) {
+load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE) {
   
   # Create new bioFAModel object  
   if (is.null(object)) object <- new("BioFAModel")
@@ -27,7 +27,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk=FALSE) 
     if (object@status == "trained") warning("The specified object is already trained, over-writing training output with new results.")
   if (.hasSlot(object, "on_disk") & (on_disk)) object@on_disk <- TRUE
   
-    # Get groups and data set names from the hdf5 file object
+  # Get groups and data set names from the hdf5 file object
   foo <- h5ls(file, datasetinfo = F)
   
   ########################
@@ -40,21 +40,29 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk=FALSE) 
   feature_groups <- foo[foo$group=="/data","name"]
   sample_groups <- foo[foo$group==paste0("/data/",feature_groups[1]),"name"]
   
-  # Fix sample and feature names is they are null
-  if (is.null(sample_names))
-    sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample",as.character(1:n)))
-  if (is.null(feature_names))
-    feature_names <- lapply(object@dimensions[["D"]], function(d) paste0("feature",as.character(1:d)))
-  
-  # Load data matrices as DelayedArrays
+  # Load data matrices
   training_data <- list()
-  for (m in feature_groups) {
-    training_data[[m]] <- list()
-    for (p in sample_groups) {
-      if (on_disk) {
-        training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s",m,p) ) )
-      } else {
-        training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s",m,p) )
+  if (load_training_data) {
+    for (m in feature_groups) {
+      training_data[[m]] <- list()
+      for (p in sample_groups) {
+        if (on_disk) {
+          # as DelayedArrays
+          training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, p) ) )
+        } else {
+          # as matrices
+          training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s", m, p) )
+        }
+      }
+    }
+  } else {
+    # Do not load matrices
+    n_features <- lapply(feature_names, length)
+    n_samples  <- lapply(sample_names, length)
+    for (m in feature_groups) {
+      training_data[[m]] <- list()
+      for (p in sample_groups) {
+        training_data[[m]][[p]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[p]])
       }
     }
   }
@@ -145,6 +153,13 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk=FALSE) 
   object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features per feature_group (view)
   object@dimensions[["K"]] <- ncol(object@expectations$W[[1]]$E)              # number of factors
 
+
+  # Fix sample and feature names is they are null
+  if (is.null(sample_names))
+    sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
+  if (is.null(feature_names))
+    feature_names <- lapply(object@dimensions[["D"]], function(d) paste0("feature", as.character(1:d)))
+  
 
   # Set feature_group names
   if (is.null(names(object@training_data))) {
