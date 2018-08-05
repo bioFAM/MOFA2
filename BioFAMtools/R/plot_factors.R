@@ -470,11 +470,7 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=TRUE)
 
   # Remove constant factors 
-  tmp <- group_by(Z, factor) %>% mutate(var=var(value, na.rm = TRUE)) %>% ungroup()
-  if (any(tmp$var==0)) {
-    Z <- filter(Z, var>0)
-    factors <-  unqiue(Z$factor)
-  }
+  Z <- group_by(Z, factor) %>% mutate(var=var(value, na.rm = TRUE)) %>% ungroup() %>% filter(var>0) %>% select(-var)
   
   if (!is.null(color_by)){
     if (color_by == "group"){
