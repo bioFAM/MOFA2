@@ -392,7 +392,7 @@ plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL
   xlabel <- paste("Latent factor", factors[1])
   ylabel <- paste("Latent factor", factors[2])
   
-  df_mat <- df %>% spread(key="factor", value="value")
+  df_mat <- df %>% tidyr::spread(key="factor", value="value")
   df_mat <-  set_colnames(df_mat,c(colnames(df_mat)[1:4], "x", "y"))
   
   p <- ggplot(df_mat, aes(x = x, y = y)) + 
@@ -470,11 +470,7 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=TRUE)
 
   # Remove constant factors 
-  tmp <- group_by(Z, factor) %>% mutate(var=var(value, na.rm = TRUE)) %>% ungroup()
-  if (any(tmp$var==0)) {
-    Z <- filter(Z, var>0)
-    factors <-  unqiue(Z$factor)
-  }
+  Z <- group_by(Z, factor) %>% mutate(var=var(value, na.rm = TRUE)) %>% ungroup() %>% filter(var>0) %>% select(-var)
   
   if (!is.null(color_by)){
     if (color_by == "group"){
@@ -577,7 +573,7 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   }
   
   # Generate plot
-  df_mat <- df %>% spread(key="factor", value="value")
+  df_mat <- df %>% tidyr::spread(key="factor", value="value")
   p <- GGally::ggpairs(df_mat, columns = colnames(df_mat[,!colnames(df_mat) %in% c("sample","group","color_by","shape_by")]), 
                   lower=list(continuous="points"), diag=list(continuous='blankDiag'), upper=list(continuous='points'),
           mapping=aes(color=color_by, shape=shape_by), title=main, legend=legend) +
