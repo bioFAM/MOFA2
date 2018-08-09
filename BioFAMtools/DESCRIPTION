@@ -14,6 +14,7 @@ Description: A collection of tools for running and analysing models trained with
 Encoding: UTF-8
 Depends: R (>= 3.4)
 Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, corrplot, ggplot2, ggbeeswarm, methods, scales, GGally, doParallel, RColorBrewer, cowplot, ggrepel, foreach, MultiAssayExperiment, reticulate, HDF5Array, DelayedArray
+biocViews:
 Suggests: knitr, pcaMethods
 VignetteBuilder: knitr
 LazyData: true
