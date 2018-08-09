@@ -164,9 +164,8 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
   # Detect whether to split by group or by view 
   groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
-  if ( length(groups)>1  & length(views)==1 ) { x="group"; split_by="view" }
-  if ( length(groups)==1 & length(views)>1  ) { x="view";  split_by="group" }
-  if ( length(groups)>1  & length(views)>1  ) { x="group"; split_by="view" }
+  x="view";  split_by="group"
+  if ( length(groups)>1 ) { x="group"; split_by="view" }
   
   
   for (i in levels(fvar_mk_df[[split_by]])) {
