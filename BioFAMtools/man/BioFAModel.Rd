@@ -4,27 +4,31 @@
 \name{BioFAModel}
 \alias{BioFAModel}
 \alias{BioFAModel-class}
-\title{Class to store a model with biofam}
+\title{Class to store a biofam model}
 \description{
 The \code{BioFAModel} is an S4 class used to store all relevant data to analyse a BioFAModel
 }
 \section{Slots}{
 
  \itemize{
-   \item{\code{input_data}:}{ the input data before being parsed to Training Data. 
-   Either a MultiAssayExperiment object or a list of matrices, one per view.}
-   \item{\code{training_data}:}{ the parsed data used to fit the BioFAModel 
-   A list with one matrix per view.}
-   \item{\code{imputed_data}:}{ the parsed data with the missing values imputed using the BioFAModel 
-   A list with one matrix per view.}
-   \item{\code{expectations}:}{ expected values of the different variables of the model. }
-   A list of matrices, one per variable. The most relevant are "W" for weights and "Z" for factors.
-   \item{\code{training_stats}:}{ list with training statistics such as evidence lower bound (ELBO), number of active factors, etc.}
+   \item{\code{input_data}:}{ TO SPECIFY, the input data before being parsed to Training Data. 
+   }
+   \item{\code{training_data}:}{ TO SPECIFY the parsed data used to fit the BioFAModel 
+   }
+   \item{\code{imputed_data}:}{ TO SPECIFY the parsed data with the missing values imputed using the BioFAModel 
+   }
+   \item{\code{expectations}:}{ expected values of the different nodes of the model. }
+   
+   \item{\code{training_stats}:}{ list with training statistics such as evidence lower bound (ELBO) and number of factors per iteration}
    \item{\code{data_options}:}{ list with the data processing options such as whether to center or scale the data.}
    \item{\code{training_options}:}{ list with the training options such as maximum number of iterations, tolerance for convergence, etc.}
-   \item{\code{model_options}:}{ list with the model options such as likelihoods, whether an intercept factors was learnt, etc.}
-   \item{\code{dimensions}:}{ list with the relevant dimensionalities of the model. N for the number of samples, 
-   M for the number of views, D for the number of features of each view and K for the number of infered latent factors.}
+   \item{\code{model_options}:}{ list with the model options such as likelihoods, whether the intercept was learnt, etc.}
+   \item{\code{dimensions}:}{ list with the relevant dimensionalities of the model. 
+   N for the number of samples, 
+   P for the number of sample groups, 
+   D for the number of features of each view,
+   M for the number of feature_grups (views), 
+   K for the number of factors.}
    \item{\code{status}:}{Auxiliary variable indicating whether the model has been trained.}
 }
 }

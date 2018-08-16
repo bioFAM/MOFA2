@@ -8,9 +8,9 @@
 \alias{BioFAModel-method}
 \title{samples_groups: retrieve sample names and groups}
 \usage{
-samples_groups(object)
+samples_groups(object, format)
 
-\S4method{samples_groups}{BioFAModel}(object)
+\S4method{samples_groups}{BioFAModel}(object, format = "default")
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
