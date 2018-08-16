@@ -693,6 +693,7 @@ def saveTrainedModel(model, outfile,
 
         # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
         idx = sorted(range(len(view_names)), key=lambda k: view_names[k])
+        import pdb; pdb.set_trace()
         tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
         model_opts["likelihoods"] = tmp
 
