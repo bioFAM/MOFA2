@@ -93,6 +93,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   }); names(fvar_mk) <- groups
   
   # Store results
+  # fvar_mk = lapply(fvar_mk, function(x){x[x < 0] = 0; return(x)})
   r2_list <- list(r2_total = fvar_m, r2_per_factor = fvar_mk)
   
   return(r2_list)

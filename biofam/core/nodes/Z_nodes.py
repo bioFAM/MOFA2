@@ -17,14 +17,15 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         self.precompute_pcovinv = precompute_pcovinv
 
+        self.N = self.dim[0]
+        self.K = self.dim[1]
+
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
     def precompute(self):
         # Precompute terms to speed up computation
-        self.N = self.dim[0]
-        self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
 
