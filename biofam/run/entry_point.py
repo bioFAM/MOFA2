@@ -613,7 +613,7 @@ if __name__ == '__main__':
 
     ent.build()
     ent.run(no_theta=False)
-    ent.save(outfile)
+    # ent.save(outfile)
     #
     # outfile2 = dir+"test_sl.hdf5"
     # ent2 = entry_point()

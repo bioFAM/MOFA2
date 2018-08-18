@@ -18,6 +18,8 @@ class Y_Node(Constant_Variational_Node):
         if type(self.value) != ma.MaskedArray:
             self.mask()
 
+
+
         # Precompute some terms
         self.precompute()
 
