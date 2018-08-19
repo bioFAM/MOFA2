@@ -5,6 +5,7 @@ import scipy as s
 from copy import deepcopy
 import math
 from biofam.core.utils import *
+import cupy as cp
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
@@ -120,18 +121,20 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             foo = s.zeros((self.N,))
             bar = s.zeros((self.N,))
             for m in range(M):
-                foo += np.dot(tau[m], SWtmp[m]["E2"][:, k])
+                foo += s.dot(tau[m], SWtmp[m]["E2"][:, k])
 
-                bar_tmp1 = SWtmp[m]["E"][:,k]
+                bar_tmp1 = cp.array(SWtmp[m]["E"][:,k])
 
                 # NOTE slow bit but hard to optimise
                 # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 = - s.dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 += Y[m]
-                bar_tmp2 *= tau[m]
+                tmp_cp1 = cp.array(Qmean[:, s.arange(self.dim[1]) != k])
+                tmp_cp2 = SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T
+                bar_tmp2 = - cp.dot(tmp_cp1, tmp_cp2)
+                bar_tmp2 += cp.array(Y[m])
+                bar_tmp2 *= cp.array(tau[m])
                 ##############################
 
-                bar += np.dot(bar_tmp2, bar_tmp1)
+                bar += cp.asnumpy(cp.dot(bar_tmp2, bar_tmp1))
 
             if "AlphaZ" in self.markov_blanket:
                 Qvar[:, k] = 1. / (Alpha[:, k] + foo)
