@@ -1,345 +1,443 @@
 import argparse
 import pandas as pd
 import scipy as s
+import sys
+from time import sleep
 from time import time
+import pandas as pd
 
-from build_model import build_model
+from typing import List, Union, Dict, TypeVar
+
+from biofam.build_model.build_model import *
 from biofam.build_model.train_model import train_model
-from biofam.build_model.utils import *
 
-#TODO : enable covariatesFiles
-# TODO change the names coming from spatialFA
-def entry_point():
+# TODO where do we input the out_file option ??
+class entry_point(object):
+    def __init__(self):
+        self.print_banner()
+        self.dimensionalities = {}
+        self.model_opts = None
+        self.model = None
 
-    # Read arguments
-    p = argparse.ArgumentParser( description='Basic run script for BioFAM' )
+    def print_banner(self):
+        """ Method to print the biofam banner """
 
-    # I/O: Main files
-    p.add_argument('--input-files',           type=str, nargs='+', required=True,  help='Input data files (including extension)')
-    p.add_argument('--output-file',           type=str, required=True,             help='Output data file (hdf5 format)')
+        banner = r"""
+         _     _        __
+        | |__ (_) ___  / _| __ _ _ __ ___
+        | '_ \| |/ _ \| |_ / _` | '_ ` _ \
+        | |_) | | (_) |  _| (_| | | | | | |
+        |_.__/|_|\___/|_|  \__,_|_| |_| |_|
 
-    # I/O: Files descriptions
-    p.add_argument('--views',                 type=str, nargs='+', required=False, help='View names')
-    p.add_argument('--groups',                type=str, nargs='+', required=False, help='Group names')
-    p.add_argument('--treat-as-views',        action='store_true',                 help='Treat all the input files as views')
-    p.add_argument('--treat-as-groups',       action='store_true',                 help='Treat all the input files as groups')
+        """
 
-    # Data files format options
-    p.add_argument('--delimiter',             type=str, default=" ",               help='Delimiter for input files')
-    p.add_argument('--header-cols',           action='store_true',                 help='Treat first row as of input files as column names')
-    p.add_argument('--header-rows',           action='store_true',                 help='Treat first column of input files as row names')
-    p.add_argument('--samples-in-rows',       action="store_true",                 help='Samples are in rows of the input files (default)')
-    p.add_argument('--features-in-rows',      action="store_true", default=False,  help='Features (e.g. genes) are in rows of the input files')
+        print(banner)
+        # sleep(2)
+        sys.stdout.flush()
+    
+    def set_data_matrix(self, data):
+        """ Method to set the data 
 
-    # Data normalisation options
-    p.add_argument('--center-features',       action="store_true",                 help='Center the features to zero-mean')
-    p.add_argument('--scale-features',        action="store_true",                 help='Scale the features to unit variance')
-    p.add_argument('--scale-views',           action="store_true",                 help='Scale the views to unit variance')
-    # p.add_argument('--scale-groups',          action="store_true",                 help='Scale sample groups to unit variance')  # TODO: implement per-group scaling
-    p.add_argument('--scale-covariates',      type=int, nargs='+', default=0,      help='Scale covariates' )
+        PARAMETERS
+        ----------
+        data: several options:
+        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
+        - a list where each element is a numpy array or a pandas data frame
+        """
 
-    # I/O: Additional files
-    p.add_argument('--sample-groups-file',    type=str, default=None,              help='If samples contain groups, file containing the labels of the samples')
-    p.add_argument('--covariates-files',      type=str, nargs='+', default=None,   help='Input data file for covariates')
-    p.add_argument('--x-files',               type=str, nargs='+', default=None,   help='Use positions of samples for covariance prior structure per factor')
-    p.add_argument('--sigma-cluster-files',   type=str, nargs='+', default=None,   help='Use clusters assigned to samples for a block covariance prior structure per factor')
-
-    # Model options
-    p.add_argument('--feature-wise-noise',    action='store_true', default=True,   help='Noise parameter per feature (e.g. gene)' )
-    p.add_argument('--sample-wise-noise',     action='store_true', default=False,  help='Noise parameter per sample')
-    p.add_argument('--feature-wise-sparsity', action='store_true', default=True,   help='Sparsity across features (e.g. genes)')
-    p.add_argument('--sample-wise-sparsity',  action='store_true', default=False,  help='Sparsity across samples')
-    p.add_argument('--factors',               type=int, default=10,                help='Initial number of latent variables')
-    p.add_argument('--likelihoods',           type=str, nargs='+', required=True,  help='Likelihood per view, current options are bernoulli, gaussian, poisson')
-    p.add_argument('--learn-intercept',       action='store_true',                 help='Learn the feature-wise mean?')
-    p.add_argument('--ard-per-view',          action='store_false',                help='ARD prior per view (relevant option if --sample-wise-sparsity, no x_files, and no sample_x)')  # TODO: add symmetry with ard-per-group?
-
-    # Training options
-    p.add_argument('--elbofreq',              type=int, default=1,                 help='Frequency of computation of ELBO')
-    p.add_argument('--iter',                  type=int, default=5000,              help='Maximum number of iterations')
-    p.add_argument('--start-sparsity',        type=int, default=100,               help='Iteration to activate the spike-and-slab')
-    p.add_argument('--tolerance',             type=float, default=0.01 ,           help='Tolerance for convergence (based on the change in ELBO)')
-    p.add_argument('--start-drop',            type=int, default=1 ,                help='First iteration to start dropping factors')
-    p.add_argument('--freq-drop',             type=int, default=1 ,                help='Frequency for dropping factors')
-    p.add_argument('--drop-r2',               type=float, default=None ,           help='Threshold to drop latent variables based on coefficient of determination')
-    p.add_argument('--non-stop',              action='store_true',                 help='Do not stop when convergence criterion is met')
-    p.add_argument('--verbose',               action='store_true',                 help='Use more detailed log messages')
-    p.add_argument('--seed',                  type=int, default=0 ,                help='Random seed' )
-
-
-    # TODO: put options below into respective categories
-    # TODO: adapt options below for having clusters on Z
-
-    # Misc
-    p.add_argument( '--permute-samples',      action='store_true', default=False,  help='Permute samples positions in the data')
-
-    # Simulations
-    p.add_argument( '--sample_x',             action='store_true', default=False,  help='Sample the positions of the samples to test covariance prior structure per factor' )
-
-    args = p.parse_args()
-
-
-    #############################
-    ## Define the data options ##
-    #############################
-
-    data_opts = {}
-
-    # I/O
-    data_opts['input_files'] = args.input_files
-    data_opts['output_file'] = args.output_file
-
-    # Views and groups options
-    data_opts['view_names']  = args.views
-    data_opts['group_names'] = args.groups
-
-    # File format
-    data_opts['delimiter'] = args.delimiter
-    data_opts['rownames'] = 0 if args.header_rows else None
-    data_opts['colnames'] = 0 if args.header_rows else None
-    data_opts['features_in_rows'] = args.features_in_rows if args.features_in_rows else not args.samples_in_rows
-
-
-    #####################
-    ## Views & groups ###
-    #####################
-
-    if args.sample_groups_file:
-        data_opts['sample_groups_file'] = args.sample_groups_file
-        data_opts['sample_groups'] = loadDataGroups(data_opts)
-
-    if data_opts['group_names'] is None and not args.treat_as_groups:
-        # All the files are views
-        # Please note that this asymmetry is provided in order to keep reverse-compatibility with MOFA software behaviour
-        if data_opts['view_names'] is None:
-            data_opts['view_names'] = ["view_".format(i) for i in range(len(data_opts['input_files']))]
+        # Sanity check
+        if isinstance(data, dict):
+          data = list(data.values())
+        elif isinstance(data, list):
+          pass
         else:
-            assert len(data_opts["view_names"]) == len(data_opts['input_files']), "The number of view names and the number of input files do not match."
-        if args.sample_groups_file is None:
-            # No group annotation provided, then there's only one group of samples
-            data_opts['group_names'] = ['group_0']
+          print("Error: Data not recognised")
+          sys.stdout.flush()
+          exit()
+
+        for m in range(len(data)):
+          if isinstance(data[m], dict):
+            data[m] = list(data[m].values())
+
+        assert s.all([ isinstance(data[m][p], s.ndarray) or isinstance(data[m][p], pd.DataFrame) for p in range(len(data[0])) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
+
+        # Verbose message
+        for m in range(len(data)):
+          for p in range(len(data[0])):
+            print("Loaded view %d group %d with %d samples and %d features..." % (m+1, p+1, data[m][p].shape[0], data[m][p].shape[1]))
+
+        # Save dimensionalities
+        self.dimensionalities["M"] = len(data)
+        self.dimensionalities["P"] = len(data[0])
+        self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
+        self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
+
+        self.data = data
+
+    def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
+        """ Load the data """
+
+        # TODO: sanity checks
+        # - Check that input file exists
+        # - Check that output directory exists: warning if not
+        # TODO: Verbosity, print messages
+
+        self.io_opts = {}
+
+        # I/O
+        if type(inFiles) is not list:
+            inFiles = [inFiles]
+        self.io_opts['input_files'] = inFiles
+        self.io_opts['delimiter'] = delimiter
+
+        # View names and group names (sample groups)
+        if type(views) is not list:
+            views = [views]
+        if type(groups) is not list:
+            groups = [groups]
+
+        self.io_opts['views_names'] = views
+        self.io_opts['groups_names'] = groups
+
+        # Headers
+        if header_rows is True:
+            self.io_opts['rownames'] = 0
         else:
-            # Group annotation provided in a separate file
-            # Group names will be obtained from the annotation file
-            print("All files are treated as views since group annotation is provided in {}".format(data_opts['sample_groups_file']))
-            assert data_opts['group_names'] is None, "Both group names and a file with sample group names are provided. Please provide group as separate files or define group annotation for samples in a separate file while keeping samples for all the groups in one file per view."
-            assert args.treat_as_groups is None, "The option --treat-as-groups is not available since group annotation for samples is provided in {}".format(data_opts['sample_groups_file'])
-    elif not args.treat_as_groups:
-        # group_names do exist in data_opts
-        assert len(data_opts['group_names']) == len(data_opts['input_files']), "The number of group names and the number of input files do not match"
-    else:  # data_opts['group_names'] is None
-        data_opts['group_names'] = ["group_".format(i) for i in range(len(data_opts["input_files"]))]
+            self.io_opts['rownames'] = None
 
-
-
-    # data_opts['multi_group'] = not (data_opts['group_names'] is None or data_opts['sample_groups_file'] is None)
-
-    # # Fill missing group info in
-    # if data_opts['multi_group']:
-    #     if data_opts['group_names'] is not None and data_opts['sample_groups'] is not None:
-    #         print("Warning: both group names and sample groups are provided.")
-    #     if data_opts['group_names'] is None:
-    #         data_opts['group_names'] = list(set(data_opts['sample_groups']))
-    #     if data_opts['sample_groups'] is None:
-    #         data_opts['sample_groups'] =
-
-    # data_opts['sample_groups_file'] = args.sample_groups
-
-
-
-    #####################
-    ## Data processing ##
-    #####################
-
-    # Check that the likelihood is provided for every input file
-    assert len(args.input_files) == len(args.likelihoods), "Please specify one likelihood for each input file"
-
-    # Data processing: center features
-    if args.center_features:
-        data_opts['center_features'] = [ True if l=="gaussian" else False for l in args.likelihoods ]
-    else:
-        if not args.learn_intercept: print("\nWarning... you are not centering the data and not learning the mean...\n")
-        data_opts['center_features'] = [ False for l in args.likelihoods ]
-
-    # Data processing: scale views
-    if args.scale_views:
-        data_opts['scale_views'] = [ True if l=="gaussian" else False for l in args.likelihoods ]
-    else:
-        data_opts['scale_views'] = [ False for l in args.likelihoods ]
-
-    # Data processing: scale features
-    if args.scale_features:
-        assert args.scale_views==False, "Scale either entire views or features, not both"
-        data_opts['scale_features'] = [ True if l=="gaussian" else False for l in args.likelihoods ]
-    else:
-        data_opts['scale_features'] = [ False for l in args.likelihoods ]
-
-    # Data options: if features are in rows or in columns
-    if not args.samples_in_rows and not args.features_in_rows: args.samples_in_rows = True
-    assert args.features_in_rows != args.samples_in_rows, "Please choose if features or samples are in rows"
-    data_opts['features_in_rows'] = args.features_in_rows
-
-
-    ###############
-    ## Load data ##
-    ###############
-
-    data, sample_groups = loadData(data_opts)
-
-    if 'sample_groups' not in data_opts:
-        data_opts['sample_groups'] = sample_groups
-
-    # Calculate dimensionalities
-    M = len(set(data_opts['view_names']))
-    P = len(set(data_opts['group_names']))
-    N = data[0].shape[0]
-    D = [data[m].shape[1] for m in range(M)]
-
-    # Extract sample and features names
-    # if (data_opts['shared_features']):
-    #     data_opts['feature_names']  = data[0].index.tolist()
-    #     data_opts['sample_names'] = [ data[m].columns.values.tolist() for m in range(len(data)) ]
-    # else:
-
-    data_opts['sample_names']  = data[0].index.tolist()
-    data_opts['feature_names'] = [ data[m].columns.values.tolist() for m in range(len(data)) ]
-
-
-    #####################
-    ## Load covariates ##
-    #####################
-
-    model_opts = {}
-
-    if args.covariates_files is not None:
-        if args.transpose_sparsity:
-            assert M == len(args.covariates_files), "Length of view names and covariates input files does not match"
+        if header_cols is True:
+            self.io_opts['colnames'] = 0
         else:
-            assert 1 == len(args.covariates_files), "Length of view names and covariates input files does not match"
+            self.io_opts['colnames'] = None
 
-    model_opts['learn_intercept'] = args.learn_intercept
+        # Load observations
+        self.data_opts.update(self.io_opts)
+        # TODO reindex
+        self.data, self.samples_groups = loadData(self.data_opts)
 
-    # TODO : create a function loadDataCovariates in utils.py as loadData or loadDataX, and call it below
-    if args.covariates_files is not None:
-        model_opts['covariates_files'] = pd.read_csv(args.covariatesFiles, delimiter=" ", header=None).as_matrix()
-        print("Loaded covariates from " + args.covariates_files + "with shape " + str(model_opts['covariates_files'].shape) + "...")
-        model_opts['scale_covariates'] = 1
-        args.factors += model_opts['covariates_files'].shape[1]
-    else:
-        model_opts['scale_covariates'] = False
-        model_opts['covariates_files'] = None
+        # data frame needs reindexing if no header row
+        if not header_rows:
+            self.data[0] = self.data[0].reset_index(drop=True)
+        # save feature, sample names, sample groups
 
-    ##############################
-    ## Load X and cluster files ##
-    ##############################
+        self.data_opts['samples_names'] = self.data[0].index
+        self.data_opts['features_names'] = [dt.columns.values for dt in self.data]
+        # TODO check that we have the right dictionary
+        # TODO check that what is used later in the code is ok for this
+        self.data_opts['samples_groups'] = self.samples_groups
 
-    data_opts['x_files'] = args.x_files
-    data_opts['sigma_cluster_files'] = args.sigma_cluster_files
-    data_opts['permute_samples'] = args.permute_samples
-    # TODO: load file here and add to data_opts
-    # same for dataX etc
+        # set dimensionalities of the model
+        M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
+        N = self.dimensionalities["N"] = self.data[0].shape[0]
+        D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
+        self.dimensionalities['P'] = len(set(self.io_opts['groups_names']))
 
-    dataX, dataClust = loadDataX(data_opts)
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
 
-    ##############################
-    ## Define the model options ##
-    ##############################
+    def set_data_df(self, data):
+        """Method to define the data
 
-    # Choose between MOFA (view = omic) and transposed MOFA (view = group of samples or cell population)
-    # model_opts['transpose'] = args.transpose
-    # model_opts['transpose_noise'] = args.transpose_noise
-    # model_opts['transpose_sparsity'] = args.transpose_sparsity
-    # # To keep reverse-compatibility
-    # if model_opts['transpose']:
-    #     model_opts['transpose_noise'] = True
-    #     model_opts['transpose_sparsity'] = True
-    # if model_opts['transpose']: print("Using features as a shared dimension...")
+        PARAMETERS
+        ----------
+        data: pd.DataFrame
+            a pandas DataFrame with columns ("sample","sample_group","feature","feature_group","value")
+            the order is irrelevant
+        """
 
-    # Sparsity settings
-    model_opts['feature_wise_sparsity'] = args.feature_wise_sparsity
-    model_opts['sample_wise_sparsity'] = args.sample_wise_sparsity
+        # Sanity checks
+        assert hasattr(self, 'data_opts'), "Data options not defined"
+        assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
+        assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
+        assert 'sample_group' in data.columns, "'data' has to contain the column 'sample_group'"
+        assert 'feature' in data.columns, "'data' has to contain the column 'feature'"
+        assert 'feature_group' in data.columns, "'data' has to contain the column 'feature_group'"
+        assert 'value' in data.columns, "'data' has to contain the column 'value'"
 
-    # Noise settings
-    model_opts['feature_wise_noise'] = args.feature_wise_noise
-    model_opts['sample_wise_noise'] = args.sample_wise_noise
+        # Define feature group names and sample group names
+        self.data_opts['views_names'] = data["feature_group"].unique()
+        self.data_opts['groups_names'] = data["sample_group"].unique()
 
-    # Choose or not to simulate the positions of samples
-    model_opts['sample_x'] = args.sample_x
+        # Define feature and sample names
+        self.data_opts['samples_names'] = data["sample"].unique()
+        self.data_opts['features_names'] = [ data.loc[data['feature_group'] == m].feature.unique() for m in self.data_opts['views_names'] ]
+
+        # (DEPRECIATED) Create dictionaries with mapping between:
+        #  sample names (keys) and samples_groups (values)
+        #  feature names (keys) and feature groups (values)
+        # TODO CHECK that the order is fine here ...
+        # self.data_opts['samples_groups'] = pd.Series(data["sample_group"].values, index=data["sample"].values).to_dict()
+        # self.data_opts['feature_groups'] = pd.Series(data.feature_group.values, index=data.feature).to_dict()
+
+        # Define sample groups
+        self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
+                                            .set_index('sample').loc[self.data_opts['samples_names']] \
+                                            .sample_group.tolist()
+
+        # Define dictionary with the dimensionalities
+        self.dimensionalities = {}
+        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
+        self.dimensionalities['M'] = len(self.data_opts['views_names'])
+        self.dimensionalities['N'] = len(self.data_opts['samples_names'])
+        self.dimensionalities['P'] = len(self.data_opts['groups_names'])
+
+        # Convert data frame to list of matrices
+        data_matrix = [None]*self.dimensionalities['M']
+        for m in range(self.dimensionalities['M']):
+            subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
+            data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
+
+        # Process the data (i.e center, scale, etc.)
+        self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
+
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
+    def set_train_options(self,
+        iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
+        startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
+        schedule=None
+        ):
+        """ Parse training options """
+
+        # TODO: verbosity, print more messages
+
+        self.train_opts = {}
+
+        # Maximum number of iterations
+        self.train_opts['maxiter'] = int(iter)
+
+        # Lower bound computation frequency
+        self.train_opts['elbofreq'] = int(elbofreq)
+
+        # Verbosity
+        self.train_opts['verbose'] = verbose
+
+        # Minimum Variance explained threshold to drop inactive factors
+        self.train_opts['drop'] = { "by_r2":float(dropR2) }
+        self.train_opts['start_drop'] = int(startDrop)
+        self.train_opts['freq_drop'] = int(freqDrop)
+        if (dropR2>0 & verbose==True): print("\nDropping factors with minimum threshold of {0}% variance explained".format(dropR2))
+
+        # Tolerance level for convergence
+        self.train_opts['tolerance'] = float(tolerance)
+
+        # Do no stop even when convergence criteria is met
+        self.train_opts['forceiter'] = nostop
+
+        # Iteration to activate spike and slab sparsity
+        self.train_opts['start_sparsity'] = int(startSparsity)
+
+        # Training schedule
+        if schedule is not None:
+            self.train_opts['schedule'] = schedule
+
+        # Seed
+        if seed is None or seed == 0:  # Seed for the random number generator
+            self.train_opts['seed'] = int(round(time() * 1000) % 1e6)
+        else:
+            self.train_opts['seed'] = seed
+        s.random.seed(self.train_opts['seed'])
+
+    def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False, noise_on='features', learnTheta=True, learn_intercept=False):
+        """ Set model options """
+
+        # TODO: SANITY CHECKS AND:
+        # - learnTheta should be replaced by learn_sparsity
 
 
-    # Define initial number of latent factors
-    model_opts['K'] = args.factors
+        if self.model_opts is None:
+            self.model_opts = {}
 
-    # Define likelihoods
-    model_opts['likelihood'] = args.likelihoods
-    assert set(model_opts['likelihood']).issubset(set(["gaussian", "bernoulli", "poisson"]))
+        # Define whether to use sample-wise spike and slab prior for Z
+        self.model_opts['sl_z'] = sl_z
 
-    model_opts["ard_per_view"] = args.ard_per_view
+        # Define whether to use feature-wise spike and slab prior for W
+        self.model_opts['sl_w'] = sl_w
 
-    #################################
-    ## Define the training options ##
-    #################################
+        # Define whether to use sample_group and factor-wise ARD prior for Z
+        self.model_opts['ard_z'] = ard_z
 
-    train_opts = {}
-    train_opts['maxiter'] = args.iter                            # Maximum number of iterations
-    train_opts['elbofreq'] = args.elbofreq                       # Lower bound computation frequency
-    train_opts['verbose'] = args.verbose if args.verbose else 2  # Verbosity
-    train_opts['drop'] = { "by_r2":args.drop_r2 }                # Minimum fraction of variance explained to drop latent variables while training
-    train_opts['start_drop'] = args.start_drop                   # Initial iteration to start dropping factors
-    train_opts['freq_drop'] = args.freq_drop                     # Frequency of dropping factors
-    train_opts['tolerance'] = args.tolerance                     # Tolerance level for convergence
-    train_opts['forceiter'] = args.non_stop                      # Do no stop even when convergence criteria is met
-    train_opts['start_sparsity'] = args.start_sparsity           # Iteration to activate spike and slab sparsity
-    if args.seed is None or args.seed==0:                        # Seed for the random number generator
-        train_opts['seed'] = int(round(time()*1000)%1e6)
-    else:
-        train_opts['seed'] = args.seed
-    s.random.seed(train_opts['seed'])
+        # Define whether to use view and factor-wise ARD prior for W
+        self.model_opts['ard_w'] = ard_w
 
-    # Define schedule of updates
-    # Think to its importance ?
-    # if model_opts['transpose_sparsity']:
-        # if (dataX is not None) or (model_opts['sample_x']):
-        #     train_opts['schedule'] = ( "Y", "SZ", "W", "SigmaAlphaW", "AlphaZ", "ThetaZ", "Tau" )
-        # else:
-        #     if model_opts["ard_per_view"]:
-        #         train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaW", "AlphaZ", "ThetaZ", "Tau")
-        #     else:
-        #         train_opts['schedule'] = ( "Y", "SZ", "W", "AlphaZ", "ThetaZ", "Tau")
-    # else:
-    # TODO: reflect noise, sparsity, etc. in the schedule
-    if (dataX is not None) or (model_opts['sample_x']):
-        train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "SigmaZ", "ThetaW", "Tau" )
-    elif model_opts['sample_wise_sparsity']:
-        train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaZ", "AlphaW", "ThetaW", "Tau" )
-    else:
-        train_opts['schedule'] = ( "Y", "SW", "Z", "AlphaW", "ThetaW", "Tau" )
+        # Define whether to add noise terms on the features or on the samples
+        self.model_opts['noise_on'] = noise_on
 
-    # print("transposed sparsity : ", model_opts['transpose_sparsity'])
-    # print("transposed noise : ", model_opts['transpose_noise'])
-    print("schedule for train : ", train_opts["schedule"])
+        # Define initial number of latent factors
+        self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
 
-    #####################
-    ## Build the model ##
-    #####################
+        # Define likelihoods
+        self.model_opts['likelihoods'] = likelihoods
+        if isinstance(self.model_opts['likelihoods'], str):
+            self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
 
-    model = build_model(model_opts, data=data, dataX=dataX, dataClust=dataClust, data_groups=sample_groups)
+        assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli' and 'poisson'"
 
-    #####################
-    ## Train the model ##
-    #####################
+        # Define whether to learn the feature-wise means
+        self.model_opts["learn_intercept"] = learn_intercept
+        if learn_intercept:
+            self.model_opts['factors'] += 1
+            self.dimensionalities["K"] += 1
 
-    train_model(model, train_opts)
+        # Define for which factors and views should we learn the sparsity levels
+        if isinstance(learnTheta, bool):
+            self.model_opts['sparsity'] = True
+            self.model_opts['learnTheta'] = [s.ones(self.dimensionalities["K"]) for m in range(self.dimensionalities["M"])]
+        elif isinstance(learnTheta,list):
+        	print("Depreciated, '--learn-theta' has to be a boolean")
+			# self.model_opts['sparsity'] = True
+			# assert len(learnTheta)==M, "--learnTheta has to be a binary vector with length number of views"
+			# self.model_opts['learnTheta'] = [ learnTheta[m]*s.ones(K) for m in range(M) ]
+        else:
+            print("Error, --learn-theta has to be a boolean")
+            exit(1)
 
-    ################
-    ## Save model ##
-    ################
+    def set_data_options(self, lik,
+        center_features=False, center_features_per_group=False,
+        scale_features=False, scale_views=False,
+        maskAtRandom=None, maskNSamples=None,
+        features_in_rows=False
+        ):
 
-    print("Saving model in %s...\n" % data_opts['output_file'])
-    train_opts['schedule'] = '_'.join(train_opts['schedule'])
-    saveTrainedModel(model=model, outfile=data_opts['output_file'], train_opts=train_opts, model_opts=model_opts,
-                     view_names=data_opts['view_names'], group_names=data_opts['group_names'], sample_groups=data_opts['sample_groups'], sample_names=data_opts['sample_names'], feature_names=data_opts['feature_names'])
+        """ Parse data processing options """
 
+        # RICARD: LIKELIHOOD SHOULD BE IN MODEL_OPTS, NOT IN DATA_OPTIONS
+        #       WHY IS SELF_MODEL.OPTS() DEFINED HERE??????
+
+        # TODO: more verbose messages
+        # TODO Sanity checks
+        self.data_opts = {}
+        self.model_opts = {}
+
+        # Define likelihoods
+        self.model_opts['likelihoods'] = lik
+        if type(self.model_opts['likelihoods']) is not list:
+          self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
+        # assert len(self.model_opts['likelihoods'])==M, "Please specify one likelihood for each view"
+        assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"]))
+        self.data_opts["likelihoods"] = self.model_opts['likelihoods'] 
+        
+        M = len(self.model_opts["likelihoods"])
+        # assert len(self.data_opts['views_names'])==M, "Length of view names and input files does not match"
+
+        if features_in_rows is True:
+            self.data_opts['features_in_rows'] = features_in_rows
+
+        # Center features
+        # TO-DO: ITS NOT INTUITIVE TO HARD BOTH CENTER_FEATURES AND CENTER_FEATURES_PER_GROUP, WE NEEED TO FIX THIS
+        if center_features_per_group is True:
+            self.data_opts['center_features_per_group'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
+        elif center_features is True:
+            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+        else:
+            # if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
+            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
+
+
+        # Scale views
+        if scale_views is True:
+            self.data_opts['scale_views'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+        else:
+            self.data_opts['scale_views'] = [ False for l in self.model_opts["likelihoods"] ]
+
+        # Scale features
+        if scale_features is True:
+            assert self.data_opts['scale_views'][0] is False, "Scale either entire views or features, not both"
+            self.data_opts['scale_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+        else:
+            self.data_opts['scale_features'] = [ False for l in self.model_opts["likelihoods"] ]
+
+
+        # Mask values at random
+        if maskAtRandom is not None:
+            self.data_opts['maskAtRandom'] = data_opts['maskAtRandom']
+            assert len(self.data_opts['maskAtRandom'])==M, "Length of MaskAtRandom and input files does not match"
+        else:
+            self.data_opts['maskAtRandom'] = [0]*M
+
+       # Mask entire samples
+        if maskNSamples is not None:
+            self.data_opts['maskNSamples'] = data_opts['maskNSamples']
+            assert len(self.data_opts['maskNSamples'])==M, "Length of MaskAtRandom and input files does not match"
+        else:
+            self.data_opts['maskNSamples'] = [0]*M
+
+    def build(self):
+        """ Build the model """
+        # Sanity checks
+        assert hasattr(self, 'model_opts'), "Train options not defined"
+        assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
+
+        # Build the BioFAM model
+        self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
+        self.model = self.model_builder.net
+
+    def run(self):
+        """ Run the model """
+
+        # Sanity checks
+        assert hasattr(self, 'train_opts'), "Train options not defined"
+        assert hasattr(self, 'data_opts'), "Data options not defined"
+
+        # Fetch training schedule (order of updates for the different nodes)
+        if 'schedule' in self.train_opts:
+            assert all(self.train_opts['schedule'] in self.model.get_nodes().keys()), "Some nodes defined in the training schedule are not present in the model"
+            if ~all(self.model.get_nodes().keys() in self.train_opts['schedule']):
+                if self.train_opts['verbose']: print("Warning: some nodes are not in the trainign schedule and will not be updated")
+        else:
+            self.train_opts['schedule'] = self.model_builder.schedule
+
+        self.model.setTrainOptions(self.train_opts)
+
+        # Train the model
+        train_model(self.model, self.train_opts)
+
+    def save(self, outfile):
+        """ Save the model in an hdf5 file """
+
+        if self.train_opts["verbose"]:
+            print("Saving model in %s...\n" % outfile)
+
+        self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
+
+        saveTrainedModel(
+            model=self.model,
+            outfile=outfile,
+            train_opts=self.train_opts,
+            model_opts=self.model_opts,
+            samples_names=self.data_opts['samples_names'],
+            features_names=self.data_opts['features_names'],
+            views_names=self.data_opts['views_names'],
+            groups_names=self.data_opts['groups_names'],
+            samples_groups=self.data_opts['samples_groups']
+        )
 
 if __name__ == '__main__':
-  entry_point()
+    ent = entry_point()
+
+    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    views =  ["view_A", "view_A", "view_B", "view_B"]
+    groups = ["group_A", "group_B", "group_A", "group_B"]
+
+    # views =  ["view_0"]
+    # groups = ["group_0"]
+
+    lik = ["gaussian", "gaussian"]
+    # lik = ["gaussian"]
+    #
+    # outfile = dir+"test_no_sl.hdf5"
+    #
+    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
+    ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=15, likelihoods=lik, learnTheta=False)
+    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=1)
+
+    ent.build()
+    ent.run()
