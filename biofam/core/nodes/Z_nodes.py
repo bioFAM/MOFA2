@@ -16,7 +16,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
 
-        self.precompute_pcovinv = precompute_pcovinv
+        self.precompute_pcovinv = False
 
         self.N = self.dim[0]
         self.K = self.dim[1]
@@ -37,25 +37,26 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             self.p_cov_inv_diag = []
 
             for k in range(self.K):
-                if p_cov[k].__class__.__name__ == 'dia_matrix':
-                    diag_inv = 1 / p_cov[k].data
-                    diag_inv = diag_inv.flatten()
-                    inv = np.diag(diag_inv)
-                elif p_cov[k].__class__.__name__ == 'ndarray':
-                    diagonal = np.diagonal(p_cov[k])
-                    if np.all(np.diag(diagonal) == p_cov[k]):
-                        diag_inv = 1. / diagonal
-                        inv = np.diag(diag_inv)
-                    else:
-                        inv = np.linalg.inv(p_cov[k])
-                        diag_inv = np.diagonal(inv)
-                else:
-                    #TODO : deal with sparse non diagonal input matrices as pcov
-                    print("Not implemented yet")
-                    exit()
+		    #if p_cov[k].__class__.__name__ == 'dia_matrix':
+		    #	#diag_inv = 1 / p_cov[k].data
+		    #    #diag_inv = diag_inv.flatten()
+                    #    inv = np.eye(p_cov[k].shape[0])
+		    #    #inv = np.diag(diag_inv)
+                    #elif p_cov[k].__class__.__name__ == 'ndarray':
+                    #    diagonal = np.diagonal(p_cov[k])
+                    #    if np.all(np.diag(diagonal) == p_cov[k]):
+                    #        diag_inv = 1. / diagonal
+                    #        inv = np.diag(diag_inv)
+                    #    else:
+                    #        inv = np.linalg.inv(p_cov[k])
+                    #        diag_inv = np.diagonal(inv)
+                    #else:
+                    #    #TODO : deal with sparse non diagonal input matrices as pcov
+                    #    print("Not implemented yet")
+                    #    exit()
 
-                self.p_cov_inv.append(inv)
-                self.p_cov_inv_diag.append(diag_inv)
+                self.p_cov_inv.append(np.eye(p_cov[0].shape[0]))
+                self.p_cov_inv_diag.append(np.ones(p_cov[0].shape[0]))
 
         else:
             self.p_cov_inv = None
@@ -128,7 +129,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 # NOTE slow bit but hard to optimise
                 # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
                 tmp_cp1 = cp.array(Qmean[:, s.arange(self.dim[1]) != k])
-                tmp_cp2 = SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T
+                tmp_cp2 = cp.array(SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
                 bar_tmp2 = - cp.dot(tmp_cp1, tmp_cp2)
                 bar_tmp2 += cp.array(Y[m])
                 bar_tmp2 *= cp.array(tau[m])
