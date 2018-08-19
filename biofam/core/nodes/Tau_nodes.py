@@ -26,8 +26,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         mask = ma.getmask(Y)
         Y = Y.data
 
-        Qa = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
-        self.Q.params['a'] = Qa
+        self.Qa_pre = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
 
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
@@ -88,7 +87,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Qb = Pb + tmp/2.
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(a=self.Q.params['a'], b=Qb)
+        self.Q.setParameters(a=self.Qa_pre, b=Qb)
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node

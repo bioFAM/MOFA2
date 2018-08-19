@@ -12,3 +12,6 @@ get_elbo(object)
 \description{
 Extract the value of the ELBO statistics after model training. This can be useful for model selection.
 }
+\details{
+This can be useful for model selection.
+}

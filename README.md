@@ -6,25 +6,41 @@ Biology Factor Analysis Models (biofam) is a flexible framework for biological d
 
 ### Installing
 
-In order to install biofam, clone the repository
+To install biofam with `pip` run:
+
+```
+pip install git+https://github.com/bioFAM/biofam.git --user
+```
+
+The BioFAMtools R package can be installed with `devtools`:
+
+```
+devtools::install_github("bioFAM/biofam", subdir="BioFAMtools")
+```
+
+An alternative way is to clone the repository and install biofam library and BioFAMtools package from source:
 
 ```
 git clone git@github.com:bioFAM/biofam.git
-```
+cd biofam
 
-then navigate to the root directory of biofam and run
-
-```
 python setup.py install
+
+R CMD build BioFAMtools
+R CMD install BioFAMtools
 ```
+
+
 
 ## Authors
 
 In alphabetical order:
 
-* Britta Velten
-* Damien Arnol
 * Ricard Argelaguet
+* Damien Arnol
+* Danila Bredikhin
+* Yonatan Deloro
+* Britta Velten
 
 
 [StatGenomics group on Twitter](https://twitter.com/statgenomics).

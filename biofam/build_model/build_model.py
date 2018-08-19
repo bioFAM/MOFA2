@@ -117,10 +117,8 @@ class buildBiofam(buildModel):
         """ Build node AlphaZ for the ARD prior on the factors """
 
         # ARD prior per sample group
-        if self.data_opts['sample_groups'] is not None:
-            # TODO check whats going on here
-            self.init_model.initAlphaZ_groups(self.data_opts['sample_groups'])
-
+        if len(np.unique(self.data_opts['samples_groups']))>1:
+            self.init_model.initAlphaZ_groups(self.data_opts['samples_groups'])
         # ARD prior per factor
         else:
             self.init_model.initAlphaZ()
@@ -133,6 +131,7 @@ class buildBiofam(buildModel):
         self.init_model.initAlphaW()
 
     def build_ThetaZ(self):
+        # TODO use mixed theta node instead when fixed in update and init -> should be ok then for intercept
         """ Build node ThetaZ for the Spike and Slab prior on the factors """
 
         # Initialise hyperparameters for the ThetaZ prior
@@ -144,9 +143,14 @@ class buildBiofam(buildModel):
 
         # Do not learn ThetaZ for the intercept factor
         if self.model_opts["learn_intercept"]:
-            learnTheta_ix[0] = 0
+            print('not implemented')
+            exit(1)
+            # learnTheta_ix[0] = 0
 
-        self.init_model.initThetaZ_Mixed(learnTheta_ix, qa=initTheta_a, qb=initTheta_b)
+        if self.data_opts['samples_groups'] is not None:
+            self.init_model.initThetaZ_groups(self.data_opts['samples_groups'], qa=initTheta_a, qb=initTheta_b)
+        else:
+            self.init_model.initThetaZ_Learn(qa=initTheta_a, qb=initTheta_b)
 
     def build_ThetaW(self):
         """ Build node ThetaW for the Spike and Slab prior on the weights """
@@ -156,7 +160,6 @@ class buildBiofam(buildModel):
         initTheta_b = 1.#.001  #0.001 #1.
         learnTheta_ix = [np.ones(self.dim['K'])] * self.dim['M']
 
-        # TODO: this for loop cannot possibly work change
         if self.model_opts["learn_intercept"]:
             for ix in learnTheta_ix:
                 ix[0] = 0

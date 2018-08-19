@@ -206,6 +206,8 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute()
 
+        print('elbo before training: ', self.calculateELBO())
+
         # Start training
         for i in range(self.options['maxiter']):
             t = time();
@@ -217,12 +219,9 @@ class BayesNet(object):
 
             # Update node by node, with E and M step merged
             for node in self.options['schedule']:
-                # print "Node: " + str(node)
-                # t = time()
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
                 self.nodes[node].update()
-                # print "time: " + str(time()-t)
 
             # Set the proper name of the Z node
             if "SZ" in self.nodes:

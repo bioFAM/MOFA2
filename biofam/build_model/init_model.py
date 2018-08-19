@@ -379,7 +379,7 @@ class initModel(object):
         PARAMETERS
         ----------
         groups: dictionary
-            a dictionariy with mapping between sample names (keys) and sample_groups (values)
+            a dictionariy with mapping between sample names (keys) and samples_groups (values)
         pa: float
             'a' parameter of the prior distribution
         pb :float
@@ -589,7 +589,7 @@ class initModel(object):
         """
         self.nodes["ThetaZ"] = ThetaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
-    def initThetaZ_Mixed(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
+    def initThetaZ_Mixed(self, idx, groups = None, pa=1., pb=1., qa=1., qb=1., qE=1.):
         """Method to initialise the sparsity parameter of the spike and slab factors
         In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
         in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
@@ -640,6 +640,105 @@ class initModel(object):
         # Initialise mixed node
         if (ConstThetaNode is not None) and (LearnThetaNode is not None):
             self.nodes["ThetaZ"] = Mixed_ThetaZ_Nodes_k(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=idx)
+
+    def initThetaZ_groups(self, groups, pa=1, pb=1, qa=1., qb=1., qE=None, Klearn = None):
+        """Method to initialise the ARD prior on Z per sample group
+
+        PARAMETERS
+        ----------
+        groups: dictionary
+            a dictionariy with mapping between sample names (keys) and samples_groups (values)
+        pa: float
+            'a' parameter of the prior distribution
+        pb :float
+            'b' parameter of the prior distribution
+        qb: float
+            initialisation of the 'b' parameter of the variational distribution
+        qE: float
+            initial expectation of the variational distribution
+        qlnE: float
+            initial log expectation of the variational distribution
+        K: number of factors for which we learn theta. If no argument is given, we'll just use the
+            total number of factors
+        """
+
+        # Sanity checks
+        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
+
+        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        tmp = np.unique(groups, return_inverse=True)
+        groups_dic = tmp[0]
+        groups_ix = tmp[1]
+
+        n_group = len(np.unique(groups_ix))
+        assert len(groups_dic) == n_group, 'problem in np.unique'
+
+        # number of factors for which we learn theta
+        if Klearn is None:
+            Klearn = self.K
+
+        self.nodes["ThetaZ"] = ThetaZ_Node_groups(
+            dim=(n_group, Klearn),
+            pa=pa, pb=pb,
+            qa=qa, qb=qb,
+            groups=groups_ix,
+            groups_dic=groups_dic,
+            qE=qE)
+
+    # TODO fix that to account for groups when learning the theta
+    def initThetaZ_Mixed_groups(self, idx, groups, pa=1., pb=1., qa=1., qb=1., qE=1.):
+        """Method to initialise the sparsity parameter of the spike and slab factors
+        In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
+        in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
+
+        PARAMETERS
+        ----------
+         pa: float
+            'a' parameter of the prior distribution
+         pb :float
+            'b' parameter of the prior distribution
+         qb: float
+            initialisation of the 'b' parameter of the variational distribution
+         qE: (...)
+        idx:list with binary matrices with dim (N,K)
+
+        """
+
+        # Do some sanity checks on the arguments
+        if isinstance(qE, (int, float)):
+            qE = s.ones((self.N, self.K)) * qE
+        elif isinstance(qE, s.ndarray):
+            assert qE.shape == (self.N, self.K), "Wrong dimensionality of Theta"
+
+        # Initialise constant node
+        Kconst = idx == 0
+        if Kconst.sum() == 0:
+            ConstThetaNode = None
+        else:
+            if qE is None:
+                print("Wrong initialisation for Theta");
+                exit(1)
+            else:
+                ConstThetaNode = ThetaZ_Constant_Node_k(dim=(self.N, s.sum(Kconst),), value=qE[:, Kconst], N_cells=1)
+                self.nodes["ThetaZ"] = ConstThetaNode
+
+        # Initialise non-constant node
+        Klearn = idx == 1
+        if Klearn.sum() == 0:
+            LearnThetaNode = None
+        else:
+            # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED, THIS IS UGLY
+            if qE is None:
+                LearnThetaNode = ThetaZ_Node_groups(groups, K=Klearn, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+            else:
+                # TODO not sure that works here
+                LearnThetaNode = ThetaZ_Node_groups(groups, K=Klearn, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[0, Klearn])
+            self.nodes["ThetaZ"]=LearnThetaNode
+
+        # Initialise mixed node
+        if (ConstThetaNode is not None) and (LearnThetaNode is not None):
+            self.nodes["ThetaZ"] = Mixed_ThetaZ_Nodes_k(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=idx)
+
 
     def initThetaZ_Const(self, value=1.):
         """Method to initialise a constant sparsity parameter of the spike and slab factors

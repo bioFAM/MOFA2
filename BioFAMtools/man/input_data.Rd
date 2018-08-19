@@ -7,7 +7,7 @@
 \alias{inputData<-}
 \alias{input_data}
 \alias{input_data}
-\alias{inputData<-}
+\alias{input_data<-}
 \title{Set and retrieve input data}
 \usage{
 input_data(object)
@@ -16,7 +16,7 @@ input_data(object)
 
 \S4method{input_data}{BioFAModel}(object)
 
-\S4method{.input_data}{BioFAModel,MultiAssayExperiment}(object) <- value
+\S4method{.input_data}{BioFAModel,data.frame}(object) <- value
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
