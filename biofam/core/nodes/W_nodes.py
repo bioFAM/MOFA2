@@ -5,6 +5,7 @@ import numpy as np
 import scipy as s
 from copy import deepcopy
 import math
+import cupy as cp
 
 from biofam.core.utils import *
 
