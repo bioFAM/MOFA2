@@ -177,7 +177,6 @@ class entry_point(object):
 
         # Define dictionary with the dimensionalities
         self.dimensionalities = {}
-        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
         self.dimensionalities['M'] = len(self.data_opts['views_names'])
         self.dimensionalities['N'] = len(self.data_opts['samples_names'])
         self.dimensionalities['P'] = len(self.data_opts['groups_names'])
@@ -187,6 +186,9 @@ class entry_point(object):
         for m in range(self.dimensionalities['M']):
             subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
             data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
+
+        self.data_opts['features_names'] = [ y.columns.values for y in data_matrix ]
+        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
