@@ -42,6 +42,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
+    # @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].getExpectation()
