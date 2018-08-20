@@ -124,15 +124,18 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         for k in latent_variables:
 
-            foo = np.dot(SZtmp["E2"][:,k],tau)
+            foo = s.dot(SZtmp["E2"][:,k], tau)
 
-            bar_tmp1 = SZtmp["E"][:,k]
+            # GPU bit --------------------------------------------------------
+            bar_tmp1 = cp.array(SZtmp["E"][:,k])
 
-            bar_tmp2 = - s.dot(SZtmp["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )
-            bar_tmp2 += Y
-            bar_tmp2 *= tau
+            bar_tmp2 = - cp.dot(cp.array(SZtmp["E"][:,s.arange(self.dim[1])!=k]),
+                               cp.array(Qmean[:,s.arange(self.dim[1])!=k].T))
+            bar_tmp2 += cp.array(Y)
+            bar_tmp2 *= cp.array(tau)
 
-            bar = np.dot(bar_tmp1, bar_tmp2)
+            bar = cp.asnumpy(cp.dot(bar_tmp1, bar_tmp2))
+            # ----------------------------------------------------------------
 
             b = ("SigmaAlphaW" in self.markov_blanket) and (
                     self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
@@ -320,7 +323,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         thetatmp = self.markov_blanket["ThetaW"].getExpectations(expand=True)
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
 
-        
+
         mask = ma.getmask(Y)
 
         # Collect parameters and expectations from P and Q distributions of this node
