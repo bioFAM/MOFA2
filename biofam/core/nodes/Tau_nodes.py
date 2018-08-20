@@ -63,26 +63,26 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
-        ZW =  cp.array(Z).dot(cp.array(W.T))
+        ZW =  Z.dot(W.T)
         # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
-        term1 = cp.square(c.array(Y)).sum(axis=0)
+        term1 = s.square(Y).sum(axis=0)
 
-        term2 = cp.array(ZZ).dot(cp.array(WW.T))
+        term2 = ZZ.dot(WW.T)
         # term2 = fast_dot(ZZ, WW.T)
         term2[mask] = 0
         term2 = term2.sum(axis=0)
 
-        term3 = cp.dot(cp.square(cp.array(Z)),cp.square(cp.array(W)).T)
+        term3 = np.dot(np.square(Z),np.square(W).T)
         term3[mask] = 0.
         term3 = -term3.sum(axis=0)
-        term3 += (cp.square(ZW)).sum(axis=0)
+        term3 += (np.square(ZW)).sum(axis=0)
 
-        ZW *= cp.array(Y)  # WARNING ZW becomes ZWY
+        ZW *= Y  # WARNING ZW becomes ZWY
         term4 = 2.*(ZW.sum(axis=0))
 
-        tmp = cp.asnumpy(term1 + term2 + term3 - term4)
+        tmp = term1 + term2 + term3 - term4
 
         # Perform updates of the Q distribution
         Qb = Pb + tmp/2.
