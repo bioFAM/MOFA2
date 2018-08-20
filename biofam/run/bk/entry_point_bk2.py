@@ -22,7 +22,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = r"""
+        banner = """
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -34,9 +34,9 @@ class entry_point(object):
         print(banner)
         # sleep(2)
         sys.stdout.flush()
-    
+
     def set_data_matrix(self, data):
-        """ Method to set the data 
+        """ Method to set the data
 
         PARAMETERS
         ----------
@@ -177,6 +177,7 @@ class entry_point(object):
 
         # Define dictionary with the dimensionalities
         self.dimensionalities = {}
+        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
         self.dimensionalities['M'] = len(self.data_opts['views_names'])
         self.dimensionalities['N'] = len(self.data_opts['samples_names'])
         self.dimensionalities['P'] = len(self.data_opts['groups_names'])
@@ -186,9 +187,6 @@ class entry_point(object):
         for m in range(self.dimensionalities['M']):
             subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
             data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
-
-        self.data_opts['features_names'] = [ y.columns.values for y in data_matrix ]
-        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
@@ -321,8 +319,8 @@ class entry_point(object):
           self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
         # assert len(self.model_opts['likelihoods'])==M, "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"]))
-        self.data_opts["likelihoods"] = self.model_opts['likelihoods'] 
-        
+        self.data_opts["likelihoods"] = self.model_opts['likelihoods']
+
         M = len(self.model_opts["likelihoods"])
         # assert len(self.data_opts['views_names'])==M, "Length of view names and input files does not match"
 
@@ -381,7 +379,7 @@ class entry_point(object):
         self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
         self.model = self.model_builder.net
 
-    def run(self):
+    def run(self, no_theta=False):
         """ Run the model """
 
         # Sanity checks
@@ -396,6 +394,9 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
+        if no_theta:
+            self.train_opts['schedule'].remove('ThetaZ')
+        print(self.train_opts['schedule'])
         self.model.setTrainOptions(self.train_opts)
 
         # Train the model
@@ -409,37 +410,232 @@ class entry_point(object):
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
 
+        # import pdb; pdb.set_trace()
         saveTrainedModel(
             model=self.model,
             outfile=outfile,
             train_opts=self.train_opts,
             model_opts=self.model_opts,
-            samples_names=self.data_opts['samples_names'],
+	    	samples_names=self.data_opts['samples_names'],
             features_names=self.data_opts['features_names'],
             views_names=self.data_opts['views_names'],
-            groups_names=self.data_opts['groups_names'],
+	    	groups_names=self.data_opts['groups_names'],
             samples_groups=self.data_opts['samples_groups']
         )
 
+
+
+    def get_df(self, node):
+        assert self.model is not None, 'Model is not built yet'
+
+        nodes = self.model.nodes
+        assert node in nodes, "requested node is not in the model"
+
+        sample_names = self.data_opts['sample_names']
+        feature_names = self.data_opts['feature_names']
+        factor_names = np.array(range(nodes['Z'].K)).astype(str)
+        view_names = np.unique(self.data_opts['view_names'])
+        sample_groups=self.data_opts['sample_groups']
+
+        # TODO this index_opts could be passed as an argument of a get_df method implemented in each nodes.
+        # then each node would know what index option to use to build the dataframe
+        # index_opts = {'sample_names': sample_names,
+        #               'feature_names': feature_names,
+        #               'view_names': view_names,
+        #               'sample_groups':sample_groups,
+        #               'factor_names':factor_names}
+        exp = nodes[node].getExpectation()
+
+        if node == 'W':
+            i=0
+            all_dfs = []
+            for view in view_names:
+                e = pd.DataFrame(exp[i], index=feature_names[i], columns=factor_names)
+                e.index.name = 'feature'
+                e = e.reset_index(drop=True)
+                e_melted = pd.melt(e, id_vars=['feature'], var_name='factor', value_name='value')
+                e_melted['view'] = view
+
+                all_dfs.append(e_melted)
+
+                i += 1
+
+            res = pd.concat(all_dfs)
+
+        if node == 'Y':
+            i=0
+            all_dfs = []
+            for view in view_names:
+                e = pd.DataFrame(exp[i], index=sample_names, columns=feature_names[i])
+                e['group']=sample_groups
+                e.index.name = 'sample'
+                e = e.reset_index(drop=True)
+                e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='feature', value_name='value')
+                e_melted['view'] = view
+
+                all_dfs.append(e_melted)
+
+                i += 1
+
+            res = pd.concat(all_dfs)
+
+        if node == 'Z':
+            e = pd.DataFrame(exp, index=sample_names, columns=factor_names)
+            e['group']=sample_groups
+            e.index.name = 'sample'
+            e = e.reset_index(drop=True)
+            e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='factor', value_name='value')
+
+            res = e_melted
+
+        return res
+
+    def depreciated_parse_covariates(self):
+        """ Parse covariates """
+        print("Covariates are not implemented")
+        exit()
+
+        K = self.dimensionalities["K"]
+        M = self.dimensionalities["M"]
+
+        # Define idx for covariate factors
+        idx = range(self.data_opts['covariates'].shape[1])
+
+        # Ignore mean and variance in the prior distribution of Z
+        # self.model_opts["priorZ"]["mean"][idx] = s.nan
+        self.model_opts["priorZ"]["var"][idx] = s.nan
+
+        # Ignore variance in the variational distribution of Z
+        # The mean has been initialised to the covariate values
+        self.model_opts["initZ"]["var"][idx] = 0.
+
+
+###### IGNORE BELOW ########
+
+
+
+class entry_sfa(entry_point):
+    def __init__(self):
+        super(entry_sfa, self).__init__()
+
+    def set_data_options(self,
+      inFiles, outFile, views, groups, x_files, view_has_covariance_prior=None,
+      delimiter=" ", header_cols=False, header_rows=False
+      ):
+        super(entry_sfa, self).set_data_options(inFiles, outFile, views, groups,
+          delimiter, header_cols, header_rows)
+        # Position files
+        self.data_opts['x_files'] = x_files
+
+        # Boolean to say whether the covariance prior is known for each view
+        # Only used if covariance prior on W
+        if view_has_covariance_prior is None:
+            view_has_covariance_prior = [True] * self.dimensionalities['M']
+        self.data_opts['view_has_covariance_prior'] = view_has_covariance_prior
+
+
+    def set_model(self, sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features', cov_on='samples'):
+        # sanity check for the current implementation
+        assert (cov_on == samples) or (cov_on == 'features'), 'cov_on argument not understood'
+
+        if cov_on == 'samples':
+            assert not sl_z, 'cannot put spike and slab on Z if covariance on samples'
+            assert not ard_z, 'cannot put ARD on Z if covariance on samples'
+
+        if cov_on == 'features':
+            assert not sl_z, 'cannot put spike and slab on W if covariance on features'
+            assert not ard_z, 'cannot put ARD on W if covariance on features'
+
+        # define where you put the covariance prior
+        self.model_opts['cov_on'] = cov_on
+        super(entry_sfa, self).set_model(sl_z, sl_w, ard_z, ard_w, noise_on)
+
+    def load_data(self):
+        super(entry_sfa, self).load_data()
+        self.all_data['data_x'] = loadDataX(self.data_opts)
+
+    def build_and_run(self):
+        model_builder = buildSpatialBiofam(self.all_data, self.model_opts)
+
+        self.model = model_builder.net
+        self.train_opts['schedule'] = model_builder.schedule
+        self.model.setTrainOptions(self.train_opts)
+
+        train_model(self.model, self.train_opts)
+
+        print("Saving model in %s...\n" % self.data_opts['output_file'])
+        self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
+        saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], train_opts=self.train_opts, model_opts=self.model_opts,
+                         view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
+
+
+
 if __name__ == '__main__':
     ent = entry_point()
+    dir = 'test_data/'
+    # infiles = [dir+'/data_0_0.txt', dir+'/data_1_0.txt', dir+'/data_0_1.txt', dir+'/data_1_1.txt']
+    # # infiles = [dir+'/data_all.txt']
+    # views =  ["view_0", "view_1", "view_0", "view_1"]
+    # groups = ["group_0", "group_0", "group_1", "group_1"]
+    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_0_2.txt',
+    #             dir+'data_1_0.txt', dir+'data_1_1.txt', dir+'data_1_2.txt']
+    # views =  ["view_0", "view_0", 'view_0', 'view_1', 'view_1', 'view_1']
+    # groups = ["group_0", "group_1", "group_2", "group_0", "group_1", "group_2"]
+    infiles = [dir+'/view_0.txt', dir+'/view_1.txt', dir+'/view_2.txt']
+    views =  ["view_0", "view_1", "view_2"]
+    groups = ["group_0", "group_0", "group_0"]
 
-    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    views =  ["view_A", "view_A", "view_B", "view_B"]
-    groups = ["group_A", "group_B", "group_A", "group_B"]
+    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
+
+    #infiles = ["../run/test_data/with_nas/500_0.txt"]
+    #views =  ["view_A"]
+    #groups = ["group_A"]
+
+    # infiles = ["../run/test_data/with_nas/500_0.txt",  "../run/test_data/with_nas/500_2.txt",  ]
+    # views =  ["view_A", "view_B"]
+    # groups = ["group_A", "group_A"]
+
 
     # views =  ["view_0"]
     # groups = ["group_0"]
 
-    lik = ["gaussian", "gaussian"]
-    # lik = ["gaussian"]
+    # lik = ["gaussian", "gaussian"]
+    lik = ["gaussian", "gaussian", "gaussian"]
     #
-    # outfile = dir+"test_no_sl.hdf5"
+    outfile = dir+"test.hdf5"
     #
-    ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
+    ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=15, likelihoods=lik, learnTheta=False)
-    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=1)
+    ent.set_model_options(ard_z=True, sl_w=True , sl_z=False, ard_w=True, factors=30, likelihoods=lik)
+    ent.set_train_options(iter=3, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
 
     ent.build()
-    ent.run()
+    ent.run(no_theta=False)
+    #ent.save(outfile)
+    #
+    # outfile2 = dir+"test_sl.hdf5"
+    # ent2 = entry_point()
+    # ent2.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
+    # ent2.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
+    # ent2.set_model_options(ard_z=False, sl_w=True, sl_z=False, ard_w=True, factors=4, likelihoods=lik, learnTheta=False)
+    # ent2.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
+    # ent2.build()
+    # ent2.run(no_theta=False)
+    # ent2.save(outfile2)
+    # ent.get_df('Y')
+
+
+    # # from biofam.run.entry_point import entry_point
+    # file = "/Users/ricard/Downloads/test_biofam/data.txt"
+    # lik = ["gaussian", "gaussian"]
+    # ent.set_data_options()
+    # data = pd.read_csv(file, delimiter="\t")
+    # ent = entry_point()
+    # ent.set_data(data)
+    # ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
+    # ent.set_model(sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
+    # ent.set_model_options(factors=10, likelihoods=lik)
+    # ent.build_and_run()
+    # ent.get_df('Y')
