@@ -337,33 +337,41 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         tau[mask] = 0.
 
         # precompute terms usful for all k
-        tauYT = (tau*Y).T
+        tauYT = (cp.array(tau)*cp.array(Y)).T
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
-            # precompute k related terms
-
             # Calculate intermediate steps
             term1 = (theta_lnE-theta_lnEInv)[:,k]
-            term2 = 0.5*s.log(alpha[:,k])
-            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k])
-            # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
 
-            term4_tmp1 = s.dot(tauYT,Z[:,k])
+            # GPU --------------------------------------------------------------
+            # Variables used in multiple operations snhould be loaded on GPU only once
+            Zk_cp = cp.array(Z[:,k])
+            tau_cp = sp.array(tau)
+            ZZk_cp = cp.array(ZZ[:,k])
+            alphak_cp = cp.array(alpha[:,k])
+
+            term2 = cp.asnumpy(0.5*cp.log(alphak_cp))
+            # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
+            term3 = cp.asnumpy(0.5*cp.log(cp.dot(ZZk_cp, tau_cp) + alphak_cp))
+
+            term4_tmp1 = cp.dot(tauYT, Zk_cp)
             # term4_tmp1 = fast_dot(tauYT,Z[:,k])
 
-            term4_tmp2_1 = SW[:,s.arange(self.dim[1])!=k].T
-            term4_tmp2_2 = (Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T
-            term4_tmp2 = s.dot(term4_tmp2_2, term4_tmp2_1)
+            term4_tmp2_1 = cp.array(SW[:,s.arange(self.dim[1])!=k].T)
+            term4_tmp2_2 = (Zk_cp * cp.array(Z[:,s.arange(self.dim[1])!=k]).T).T
+            term4_tmp2 = cp.dot(term4_tmp2_2, term4_tmp2_1)
             # term4_tmp2 = fast_dot(term4_tmp2_2, term4_tmp2_1)
-            term4_tmp2 *= tau  # most expensive bit
+            term4_tmp2 *= tau_cp  # most expensive bit
             term4_tmp2 = term4_tmp2.sum(axis=0)
 
-            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            term4_tmp3 = s.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
             # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
 
 
-            term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically
+            term4 = cp.asnumpy(0.5*cp.divide(cp.square(term4_tmp1-term4_tmp2),term4_tmp3)) # good to modify, awsnt checked numerically
+
+            # ------------------------------------------------------------------
 
             # Update S
             # NOTE there could be some precision issues in S --> loads of 1s in result
