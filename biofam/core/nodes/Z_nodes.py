@@ -76,7 +76,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 del self.p_cov_inv[i]
                 del self.p_cov_inv_diag[i]
 
-    @profile
     def updateParameters(self):
         # Collect expectations from the markov blanket
         Y = self.markov_blanket["Y"].getExpectation()
@@ -152,7 +151,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.Q.setParameters(mean=Qmean, var=Qvar)
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
-    @profile
     def calculateELBO_k(self, k):
         '''Compute the ELBO for factor k in absence of Alpha node in the markov blanket of Z'''
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
@@ -198,7 +196,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         return lb_p - lb_q
 
-    @profile
     def calculateELBO(self):
         if not ("AlphaZ" in self.markov_blanket):
             latent_variables = self.getLvIndex()
@@ -311,6 +308,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         return latent_variables
 
+    @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         # why .copy() ?

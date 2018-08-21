@@ -80,7 +80,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                 del self.p_cov_inv_diag[i]
             #self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
             #self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
-    @profile
+
     def updateParameters(self):
         # print(self.getExpectations())
         # Collect expectations from the markov blanket
@@ -155,7 +155,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         self.Q.setParameters(mean=Qmean, var=Qvar)
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
-    @profile
     def calculateELBO_k(self, k):
         '''Compute the ELBO for factor k in absence of Alpha node in the markov blanket of W'''
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
@@ -205,7 +204,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         return lb_p - lb_q
 
-    @profile
     def calculateELBO(self):
         b = ("SigmaAlphaW" in self.markov_blanket) and (
                 self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
@@ -309,6 +307,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.D = self.dim[0]
         self.factors_axis = 1
 
+    @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
