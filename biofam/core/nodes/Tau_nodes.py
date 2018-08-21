@@ -5,6 +5,7 @@ import scipy as s
 import scipy.special as special
 
 from biofam.core.utils import *
+import cupy as cp 
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
@@ -67,7 +68,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
-        term1 = cp.square(c.array(Y)).sum(axis=0)
+        term1 = cp.square(cp.array(Y)).sum(axis=0)
 
         term2 = cp.array(ZZ).dot(cp.array(WW.T))
         # term2 = fast_dot(ZZ, WW.T)

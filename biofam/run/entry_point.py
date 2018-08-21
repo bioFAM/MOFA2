@@ -572,7 +572,7 @@ class entry_sfa(entry_point):
 
 if __name__ == '__main__':
     ent = entry_point()
-    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/sl_simulations_2/simul_01_30//'
+    dir = '/gpfs/nobackup/stegle/users/arnol/biofam/stochastic_simul_2/'
     # infiles = [dir+'/data_0_0.txt', dir+'/data_1_0.txt', dir+'/data_0_1.txt', dir+'/data_1_1.txt']
     # # infiles = [dir+'/data_all.txt']
     # views =  ["view_0", "view_1", "view_0", "view_1"]
@@ -581,7 +581,7 @@ if __name__ == '__main__':
     #             dir+'data_1_0.txt', dir+'data_1_1.txt', dir+'data_1_2.txt']
     # views =  ["view_0", "view_0", 'view_0', 'view_1', 'view_1', 'view_1']
     # groups = ["group_0", "group_1", "group_2", "group_0", "group_1", "group_2"]
-    infiles = [dir+'/data_0.txt']
+    infiles = [dir+'/data_0_0.txt']
     views =  ["view_0"]
     groups = ["group_0"]
 
@@ -608,8 +608,8 @@ if __name__ == '__main__':
     #
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=False, sl_w=True , sl_z=False, ard_w=True, factors=30, likelihoods=lik)
-    ent.set_train_options(iter=1000, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
+    ent.set_model_options(ard_z=True, sl_w=False , sl_z=False, ard_w=True, factors=15, likelihoods=lik)
+    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
 
     ent.build()
     ent.run(no_theta=False)
