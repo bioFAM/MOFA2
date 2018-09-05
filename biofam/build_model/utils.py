@@ -192,7 +192,7 @@ def process_data(Y, data_opts, samples_groups):
 
         if data_opts['center_features'][m]:
             print("Centering features for view " + str(m) + "...")
-            parsed_Y[m] -= - np.nanmean(parsed_Y[m],axis=0)
+            parsed_Y[m] -= np.nanmean(parsed_Y[m],axis=0)
 
         if data_opts['center_features_per_group'][m]:
             print("Centering features per group for view " + str(m) + "...")

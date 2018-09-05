@@ -3,7 +3,6 @@ import pandas as pd
 import scipy as s
 from time import time
 
-from build_model import build_model
 from biofam.build_model.train_model import train_model
 from biofam.build_model.utils import *
 
