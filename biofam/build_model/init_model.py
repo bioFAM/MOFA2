@@ -32,14 +32,14 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pcov=1., qmean='random', qvar=1., qE=None, qE2=None, covariates=None,
+    def initZ(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None, covariates=None,
         scale_covariates=None, precompute_pcovinv=True):
         """Method to initialise the latent variables
 
         PARAMETERS
         ----------
         pmean: mean of the prior distribution
-        pcov: covariance of the prior distribution
+        pcov: covariance of the prior distribution # NOTE was changed to pvar -> univariate
         qmean: initialisation of the mean of the variational distribution
             "random" for a random initialisation sampled from a standard normal distribution
             "pca" for an initialisation based on PCA
@@ -60,8 +60,8 @@ class initModel(object):
         pmean = s.ones((self.N, self.K)) * pmean
 
         # TODO add sanity check if not float (dim of the matrices)
-        if isinstance(pcov, (int, float)):
-            pcov = [s.sparse.eye(self.N) * pcov] * self.K
+        # if isinstance(pcov, (int, float)):
+        #     pcov = [s.sparse.eye(self.N) * pcov] * self.K
 
         ## Initialise variational distribution (Q)
 
@@ -118,7 +118,7 @@ class initModel(object):
             qmean[:, idx_covariates] = covariates
 
             # Remove prior and variational distributions from the covariates
-            pcov[idx_covariates] = s.nan
+            # pcov[idx_covariates] = s.nan
             #pvar[:, idx_covariates] = s.nan
             qvar[:, idx_covariates] = s.nan
 
@@ -128,12 +128,20 @@ class initModel(object):
         # Initialise the node
         self.nodes["Z"] = Z_Node(
             dim=(self.N, self.K),
-            pmean=pmean, pcov=pcov,
+            pmean=pmean, pvar=pvar,
             qmean=qmean, qvar=qvar,
             qE=qE, qE2=qE2,
-            idx_covariates=idx_covariates,
-            precompute_pcovinv=precompute_pcovinv
+            idx_covariates=idx_covariates
         )
+
+        # self.nodes["Z"] = Z_Node(
+        #     dim=(self.N, self.K),
+        #     pmean=pmean, pcov=pcov,
+        #     qmean=qmean, qvar=qvar,
+        #     qE=qE, qE2=qE2,
+        #     idx_covariates=idx_covariates,
+        #     precompute_pcovinv=precompute_pcovinv
+        # )
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1='random', qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
