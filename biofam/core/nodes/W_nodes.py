@@ -5,9 +5,9 @@ import numpy as np
 import scipy as s
 from copy import deepcopy
 import math
-import cupy as cp
 
 from biofam.core.utils import *
+from biofam.core import gpu_utils
 
 
 # Import manually defined functions
@@ -77,14 +77,14 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             foo = s.dot(SZtmp["E2"][:,k], tau)
 
             # GPU bit --------------------------------------------------------
-            bar_tmp1 = cp.array(SZtmp["E"][:,k])
+            bar_tmp1 = gpu_utils.array(SZtmp["E"][:,k])
 
-            bar_tmp2 = - cp.dot(cp.array(SZtmp["E"][:,s.arange(self.dim[1])!=k]),
-                               cp.array(Qmean[:,s.arange(self.dim[1])!=k].T))
-            bar_tmp2 += cp.array(Y)
-            bar_tmp2 *= cp.array(tau)
+            bar_tmp2 = - gpu_utils.dot(gpu_utils.array(SZtmp["E"][:,s.arange(self.dim[1])!=k]),
+                               gpu_utils.array(Qmean[:,s.arange(self.dim[1])!=k].T))
+            bar_tmp2 += gpu_utils.array(Y)
+            bar_tmp2 *= gpu_utils.array(tau)
 
-            bar = cp.asnumpy(cp.dot(bar_tmp1, bar_tmp2))
+            bar = gpu_utils.asnumpy(gpu_utils.dot(bar_tmp1, bar_tmp2))
             # ----------------------------------------------------------------
 
             Qvar[:,k] = 1./(Alpha[:,k]+foo)
@@ -215,7 +215,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         tau[mask] = 0.
 
         # precompute terms usful for all k
-        tauYT = (cp.array(tau)*cp.array(Y)).T
+        tauYT = (gpu_utils.array(tau)*gpu_utils.array(Y)).T
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
@@ -224,30 +224,30 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             # GPU --------------------------------------------------------------
             # Variables used in multiple operations snhould be loaded on GPU only once
-            Zk_cp = cp.array(Z[:,k])
-            tau_cp = cp.array(tau)
-            ZZk_cp = cp.array(ZZ[:,k])
-            alphak_cp = cp.array(alpha[:,k])
+            Zk_cp = gpu_utils.array(Z[:,k])
+            tau_cp = gpu_utils.array(tau)
+            ZZk_cp = gpu_utils.array(ZZ[:,k])
+            alphak_cp = gpu_utils.array(alpha[:,k])
 
-            term2 = cp.asnumpy(0.5*cp.log(alphak_cp))
+            term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
             # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
-            term3 = cp.asnumpy(0.5*cp.log(cp.dot(ZZk_cp, tau_cp) + alphak_cp))
+            term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_cp) + alphak_cp))
 
-            term4_tmp1 = cp.dot(tauYT, Zk_cp)
+            term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
             # term4_tmp1 = fast_dot(tauYT,Z[:,k])
 
-            term4_tmp2_1 = cp.array(SW[:,s.arange(self.dim[1])!=k].T)
-            term4_tmp2_2 = (Zk_cp * cp.array(Z[:,s.arange(self.dim[1])!=k]).T).T
-            term4_tmp2 = cp.dot(term4_tmp2_2, term4_tmp2_1)
+            term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
+            term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z[:,s.arange(self.dim[1])!=k]).T).T
+            term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)
             # term4_tmp2 = fast_dot(term4_tmp2_2, term4_tmp2_1)
             term4_tmp2 *= tau_cp  # most expensive bit
             term4_tmp2 = term4_tmp2.sum(axis=0)
 
-            term4_tmp3 = cp.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
             # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
 
 
-            term4 = cp.asnumpy(0.5*cp.divide(cp.square(term4_tmp1-term4_tmp2),term4_tmp3)) # good to modify, awsnt checked numerically
+            term4 = gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3)) # good to modify, awsnt checked numerically
 
             # ------------------------------------------------------------------
 
@@ -256,8 +256,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta[:,k] = 1./(1.+s.exp(-(term1+term2-term3+term4)))
 
             # Update W
-            Qvar_S1[:,k] = cp.asnumpy(1./term4_tmp3)
-            Qmean_S1[:,k] = Qvar_S1[:,k]*cp.asnumpy(term4_tmp1-term4_tmp2)
+            Qvar_S1[:,k] = gpu_utils.asnumpy(1./term4_tmp3)
+            Qmean_S1[:,k] = Qvar_S1[:,k]*gpu_utils.asnumpy(term4_tmp1-term4_tmp2)
 
             # Update Expectations for the next iteration
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]

@@ -5,7 +5,7 @@ import scipy as s
 from copy import deepcopy
 import math
 from biofam.core.utils import *
-import cupy as cp
+from biofam.core import gpu_utils
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
@@ -76,21 +76,21 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             foo = s.zeros((self.N,))
             bar = s.zeros((self.N,))
             for m in range(M):
-                tau_cp = cp.array(tau[m])
-                foo += cp.asnumpy(cp.dot(tau_cp, cp.array(SWtmp[m]["E2"][:, k])))
+                tau_cp = gpu_utils.array(tau[m])
+                foo += gpu_utils.asnumpy(gpu_utils.dot(tau_cp, gpu_utils.array(SWtmp[m]["E2"][:, k])))
 
-                bar_tmp1 = cp.array(SWtmp[m]["E"][:,k])
+                bar_tmp1 = gpu_utils.array(SWtmp[m]["E"][:,k])
 
                 # NOTE slow bit but hard to optimise
                 # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                tmp_cp1 = cp.array(Qmean[:, s.arange(self.dim[1]) != k])
-                tmp_cp2 = cp.array(SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 = - cp.dot(tmp_cp1, tmp_cp2)
-                bar_tmp2 += cp.array(Y[m])
+                tmp_cp1 = gpu_utils.array(Qmean[:, s.arange(self.dim[1]) != k])
+                tmp_cp2 = gpu_utils.array(SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
+                bar_tmp2 = - gpu_utils.dot(tmp_cp1, tmp_cp2)
+                bar_tmp2 += gpu_utils.array(Y[m])
                 bar_tmp2 *= tau_cp
                 ##############################
 
-                bar += cp.asnumpy(cp.dot(bar_tmp2, bar_tmp1))
+                bar += gpu_utils.asnumpy(gpu_utils.dot(bar_tmp2, bar_tmp1))
 
             Qvar[:, k] = 1. / (Alpha[:, k] + foo)
             Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
@@ -249,39 +249,39 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # TODO modify everywhere else
             # GPU --------------------------------------------------------------
             # load variables on GPUs
-            alphak_cp = cp.array(alpha[:,k])
+            alphak_cp = gpu_utils.array(alpha[:,k])
 
-            term2 = cp.asnumpy(0.5 * cp.log(alphak_cp))
+            term2 = gpu_utils.asnumpy(0.5 * gpu_utils.log(alphak_cp))
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
 
-            # term3 = cp.zeros((self.N,))
-            term4_tmp1 = cp.zeros((self.N,))
-            term4_tmp2 = cp.zeros((self.N,))
-            term4_tmp3 = cp.zeros((self.N,))
+            # term3 = gpu_utils.zeros((self.N,))
+            term4_tmp1 = gpu_utils.zeros((self.N,))
+            term4_tmp2 = gpu_utils.zeros((self.N,))
+            term4_tmp3 = gpu_utils.zeros((self.N,))
             for m in range(M):
                 # TODO repeats to optimise
-                tau_cp = cp.array(tau[m])
-                WWk_cp = cp.array(WW[m][:, k])
-                Wk_cp = cp.array(W[m][:, k])
+                tau_cp = gpu_utils.array(tau[m])
+                WWk_cp = gpu_utils.array(WW[m][:, k])
+                Wk_cp = gpu_utils.array(W[m][:, k])
 
-                # term3 += cp.dot(tau_cp, WWk_cp)  # good to modify # TODO critical time here  2 %
+                # term3 += gpu_utils.dot(tau_cp, WWk_cp)  # good to modify # TODO critical time here  2 %
                 # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
-                term4_tmp1 += cp.dot(tau_cp * cp.array(Y[m]), Wk_cp) # good to modify # TODO critical time here  22 %
+                term4_tmp1 += gpu_utils.dot(tau_cp * gpu_utils.array(Y[m]), Wk_cp) # good to modify # TODO critical time here  22 %
 
                 # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-                term4_tmp2 += (tau_cp * cp.dot(cp.array(SZ[:, s.arange(self.dim[1]) != k]),
-                                             (Wk_cp * cp.array(W[m][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)  # good to modify  # TODO critical time here  37 %
+                term4_tmp2 += (tau_cp * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(self.dim[1]) != k]),
+                                             (Wk_cp * gpu_utils.array(W[m][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)  # good to modify  # TODO critical time here  37 %
 
                 # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-                term4_tmp3 += cp.dot(tau_cp, WWk_cp) # TODO critical time here  3 %
+                term4_tmp3 += gpu_utils.dot(tau_cp, WWk_cp) # TODO critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
-            term3 =cp.asnumpy(0.5 * cp.log(term4_tmp3 + alphak_cp))
+            term3 =gpu_utils.asnumpy(0.5 * gpu_utils.log(term4_tmp3 + alphak_cp))
 
             term4_tmp3 += alphak_cp
-            term4 = 0.5 * cp.divide(cp.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
-            term4 = cp.asnumpy(term4)
+            term4 = 0.5 * gpu_utils.divide(gpu_utils.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
+            term4 = gpu_utils.asnumpy(term4)
 
             # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
@@ -290,8 +290,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta[:,k] = np.nan_to_num(Qtheta[:,k])
 
             # Update Z
-            Qvar_T1[:, k] = 1. / cp.asnumpy(term4_tmp3)
-            Qmean_T1[:, k] = Qvar_T1[:, k] * cp.asnumpy(term4_tmp1 - term4_tmp2)
+            Qvar_T1[:, k] = 1. / gpu_utils.asnumpy(term4_tmp3)
+            Qmean_T1[:, k] = Qvar_T1[:, k] * gpu_utils.asnumpy(term4_tmp1 - term4_tmp2)
 
             # Update Expectations for the next iteration
             SZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]

@@ -5,7 +5,7 @@ import scipy as s
 import scipy.special as special
 
 from biofam.core.utils import *
-import cupy as cp 
+from biofam.core import gpu_utils
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
@@ -64,26 +64,26 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
-        ZW =  cp.array(Z).dot(cp.array(W.T))
+        ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
         # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
-        term1 = cp.square(cp.array(Y)).sum(axis=0)
+        term1 = gpu_utils.square(gpu_utils.array(Y)).sum(axis=0)
 
-        term2 = cp.array(ZZ).dot(cp.array(WW.T))
+        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
         # term2 = fast_dot(ZZ, WW.T)
         term2[mask] = 0
         term2 = term2.sum(axis=0)
 
-        term3 = cp.dot(cp.square(cp.array(Z)),cp.square(cp.array(W)).T)
+        term3 = gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
         term3[mask] = 0.
         term3 = -term3.sum(axis=0)
-        term3 += (cp.square(ZW)).sum(axis=0)
+        term3 += (gpu_utils.square(ZW)).sum(axis=0)
 
-        ZW *= cp.array(Y)  # WARNING ZW becomes ZWY
+        ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
         term4 = 2.*(ZW.sum(axis=0))
 
-        tmp = cp.asnumpy(term1 + term2 + term3 - term4)
+        tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
 
         # Perform updates of the Q distribution
         Qb = Pb + tmp/2.
