@@ -322,9 +322,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket["AlphaZ"].getExpectation(expand=True)
         else:
-            # TODO implement that
-            print('SZ not implemented without alphaZ')
-            exit(1)
+            alpha = 1./self.P.params['var_B1']
         thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True)
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
@@ -400,8 +398,9 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True).copy()
         else:
-            print("Not implemented")
-            exit()
+            alpha = dict()
+            alpha['E'] = 1./self.P.params['var_B1']
+            alpha['lnE'] = s.log(1./self.P.params['var_B1'])
 
         # This ELBO term contains only cross entropy between Q and P, and entropy of Q. So the covariates should not intervene at all
         latent_variables = self.getLvIndex()

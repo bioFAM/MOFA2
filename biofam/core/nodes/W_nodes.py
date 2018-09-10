@@ -313,10 +313,10 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
         tau = self.markov_blanket["Tau"].getExpectation(expand=True)  # TODO might be worth expanding only once when updating expectation
         Y = self.markov_blanket["Y"].getExpectation()
-        if "AlphaW" not in self.markov_blanket:
-            print("SW node not implemented wihtout ARD")
-            exit(1)
-        alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
+        if "AlphaW" in self.markov_blanket:
+            alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
+        else:
+            alpha = 1./self.P.params['var_B1']
         thetatmp = self.markov_blanket["ThetaW"].getExpectations(expand=True)
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
 
@@ -388,10 +388,12 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Get ARD sparsity or prior variance
         if "AlphaW" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy()
+            alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy()  # TODO is this copy necessarry ??
         else:
-            print("Not implemented")
-            exit(1)
+            alpha = dict()
+            alpha['E'] = 1./self.P.params['var_B1']
+            alpha['lnE'] = s.log(1./self.P.params['var_B1'])
+
 
         # Calculate ELBO for W
         # import pdb; pdb.set_trace()
