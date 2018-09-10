@@ -22,7 +22,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = """
+        banner = r"""
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -35,7 +35,7 @@ class entry_point(object):
         # sleep(2)
         sys.stdout.flush()
     
-    def set_data_matrix_flat(self, data, views_names, groups_names):
+    def set_data_matrix(self, data):
         """ Method to set the data 
 
         PARAMETERS
@@ -54,62 +54,6 @@ class entry_point(object):
           print("Error: Data not recognised")
           sys.stdout.flush()
           exit()
-
-        for m in range(len(data)):
-          if isinstance(data[m], dict):
-            data[m] = list(data[m].values())
-
-        groups_names = len(sorted(set(samples_groups), key=samples_groups.index))
-
-        assert s.all([ isinstance(data[m], s.ndarray) or isinstance(data[m], pd.DataFrame) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
-
-        # Verbose message
-        for m in range(len(data)):
-          for p in range(len(data[0])):
-            print("Loaded view %d with %d samples and %d features..." % (m+1, data[m].shape[0], data[m].shape[1]))
-
-        # Save dimensionalities
-        self.dimensionalities["M"] = len(data)
-        self.dimensionalities["P"] = len(groups_names)
-        self.dimensionalities["N"] = [np.sum([s == i for s in samples_groups]) for i in groups_names]
-        self.dimensionalities["D"] = [data[m].shape[1] for m in range(len(data))]
-
-        # Define feature group names and sample group names
-        self.data_opts['views_names']  = views_names
-        self.data_opts['groups_names'] = groups_names
-
-        # Define feature and sample names
-        self.data_opts['samples_names']  = data[0].index.values()
-        self.data_opts['features_names'] = [ data[m].columns for m in range(len(data)) ]
-
-        self.data = data
-    
-    def set_data_matrix(self, data, samples_names_dict, features_names_dict):
-        """ Method to set the data 
-
-        PARAMETERS
-        ----------
-        data: several options:
-        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
-        - a list where each element is a numpy array or a pandas data frame
-        """
-
-        # Sanity check
-        if isinstance(data, dict):
-          data = list(data.values())
-        elif isinstance(data, list):
-          pass
-        else:
-          print("Error: Data not recognised")
-          sys.stdout.flush()
-          exit()
-          
-        views_names    = [k for k in features_names_dict.keys()]
-        groups_names   = [k for k in samples_names_dict.keys()]
-        samples_groups = [list(samples_names_dict.keys())[i] for i in range(len(groups_names)) for n in range(len(list(samples_names_dict.values())[i]))]
-
-        features_names = [v for v in features_names_dict.values()]
-        samples_names  = [v for l in samples_names_dict.values() for v in l]  # flattened list of samples names
 
         for m in range(len(data)):
           if isinstance(data[m], dict):
@@ -128,23 +72,7 @@ class entry_point(object):
         self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
-        # Define feature group names and sample group names
-        self.data_opts['views_names']  = views_names
-        self.data_opts['groups_names'] = groups_names
-
-        # Define feature and sample names
-        self.data_opts['samples_names']  = samples_names
-        self.data_opts['features_names'] = features_names
-
-        # Set samples groups
-        self.data_opts['samples_groups'] = samples_groups
-
-        # Concatenate groups
-        for m in range(len(data)):
-            data[m] = np.concatenate(data[m])
-        self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
-
-        self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
+        self.data = data
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
         """ Load the data """
@@ -249,6 +177,7 @@ class entry_point(object):
 
         # Define dictionary with the dimensionalities
         self.dimensionalities = {}
+        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
         self.dimensionalities['M'] = len(self.data_opts['views_names'])
         self.dimensionalities['N'] = len(self.data_opts['samples_names'])
         self.dimensionalities['P'] = len(self.data_opts['groups_names'])
@@ -258,9 +187,6 @@ class entry_point(object):
         for m in range(self.dimensionalities['M']):
             subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
             data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
-
-        self.data_opts['features_names'] = [ y.columns.values for y in data_matrix ]
-        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
@@ -393,8 +319,8 @@ class entry_point(object):
           self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
         # assert len(self.model_opts['likelihoods'])==M, "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"]))
-        self.data_opts["likelihoods"] = self.model_opts['likelihoods']
-
+        self.data_opts["likelihoods"] = self.model_opts['likelihoods'] 
+        
         M = len(self.model_opts["likelihoods"])
         # assert len(self.data_opts['views_names'])==M, "Length of view names and input files does not match"
 
@@ -453,7 +379,7 @@ class entry_point(object):
         self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
         self.model = self.model_builder.net
 
-    def run(self, no_theta=False):
+    def run(self):
         """ Run the model """
 
         # Sanity checks
@@ -468,9 +394,6 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
-        if no_theta:
-            self.train_opts['schedule'].remove('ThetaZ')
-        print(self.train_opts['schedule'])
         self.model.setTrainOptions(self.train_opts)
 
         # Train the model
@@ -484,16 +407,15 @@ class entry_point(object):
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
 
-        # import pdb; pdb.set_trace()
         saveTrainedModel(
             model=self.model,
             outfile=outfile,
             train_opts=self.train_opts,
             model_opts=self.model_opts,
-	    	samples_names=self.data_opts['samples_names'],
+            samples_names=self.data_opts['samples_names'],
             features_names=self.data_opts['features_names'],
             views_names=self.data_opts['views_names'],
-	    	groups_names=self.data_opts['groups_names'],
+            groups_names=self.data_opts['groups_names'],
             samples_groups=self.data_opts['samples_groups']
         )
 

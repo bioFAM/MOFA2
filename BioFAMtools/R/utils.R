@@ -218,6 +218,34 @@ return(model)
 }
 
 
+setClass("matrix_placeholder", 
+         slots=c(rownames = "ANY",
+                 colnames = "ANY",
+                 nrow     = "integer",
+                 ncol     = "integer")
+)
+
+setMethod("rownames", "matrix_placeholder", function(x) { x@rownames })
+setMethod("colnames", "matrix_placeholder", function(x) { x@colnames })
+setMethod("nrow", "matrix_placeholder", function(x) { x@nrow })
+setMethod("ncol", "matrix_placeholder", function(x) { x@ncol })
+
+setReplaceMethod("rownames", signature(x = "matrix_placeholder"),
+  function(x, value) { x@rownames <- value; x@nrow <- length(value); x })
+setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
+  function(x, value) { x@colnames <- value; x@ncol <- length(value); x })
+
+.create_matrix_placeholder <- function(rownames, colnames) {
+  mx <- new("matrix_placeholder")
+  mx@rownames <- rownames
+  mx@colnames <- colnames
+  mx@nrow <- length(rownames)
+  mx@ncol <- length(colnames)
+  mx
+}
+
+
+
 
 .rep_string <- function(times, string, collapse = "") {
   paste(replicate(times, string), collapse = collapse)
