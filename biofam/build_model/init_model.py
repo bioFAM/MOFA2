@@ -197,9 +197,9 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean=0., pcov=1., qmean=0, qvar=1.,
+    def initW(self, pmean=0., pvar=1., qmean=0, qvar=1.,
         qE=None, qE2=None, covariates=None,
-        scale_covariates=None, precompute_pcovinv=None):
+        scale_covariates=None):
         """Method to initialise the weights
         PARAMETERS
         ----------
@@ -217,8 +217,8 @@ class initModel(object):
         """
 
         # Precompute the inverse of the covariance matrix of the gaussian prior of W
-        if precompute_pcovinv is None:
-            precompute_pcovinv = [True] * self.M
+        # if precompute_pcovinv is None:
+        #     precompute_pcovinv = [True] * self.M
 
         # Add covariates
         if covariates is not None:
@@ -246,9 +246,9 @@ class initModel(object):
             pmean_m = s.ones((self.D[m], self.K)) * pmean
 
             # covariance
-            if isinstance(pcov, (int, float)):
-                pcov_mk = s.sparse.eye(self.D[m]) * pcov
-                pcov_m = [pcov_mk] * self.K
+            # if isinstance(pcov, (int, float)):
+            #     pcov_mk = s.sparse.eye(self.D[m]) * pcov
+            #     pcov_m = [pcov_mk] * self.K
 
             ## Initialise variational distribution (Q) ##
 
@@ -298,12 +298,12 @@ class initModel(object):
                 qmean_m[:, idx_covariates] = covariates
 
                 # Remove prior and variational distributions from the covariates
-                pcov_m[idx_covariates] = s.nan
+                # pcov_m[idx_covariates] = s.nan
                 qvar_m[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
             # Initialise the node
-            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean_m, pcov=pcov_m, qmean=qmean_m, qvar=qvar_m, qE=qE, qE2=qE2,
-                               idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv[m])
+            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean_m, pvar=pvar, qmean=qmean_m, qvar=qvar_m, qE=qE, qE2=qE2,
+                               idx_covariates=idx_covariates)
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 

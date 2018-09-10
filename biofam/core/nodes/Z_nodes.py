@@ -54,7 +54,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].getExpectation(expand=True)
-
         else:
             Alpha = 1./self.P.params['var']
 
