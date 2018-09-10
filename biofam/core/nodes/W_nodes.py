@@ -307,7 +307,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.D = self.dim[0]
         self.factors_axis = 1
 
-    @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()

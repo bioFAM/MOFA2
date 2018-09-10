@@ -308,7 +308,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         return latent_variables
 
-    @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         # why .copy() ?
