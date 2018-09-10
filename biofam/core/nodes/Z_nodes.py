@@ -255,7 +255,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
 
-            term3 = cp.zeros((self.N,))
+            # term3 = cp.zeros((self.N,))
             term4_tmp1 = cp.zeros((self.N,))
             term4_tmp2 = cp.zeros((self.N,))
             term4_tmp3 = cp.zeros((self.N,))
