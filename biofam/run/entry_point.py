@@ -514,8 +514,8 @@ if __name__ == '__main__':
     #
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=False, sl_w=False, sl_z=True, ard_w=False, factors=15, likelihoods=lik, learnTheta=False)
-    ent.set_train_options(iter=1000, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=1)
+    ent.set_model_options(ard_z=False, sl_w=False, sl_z=False, ard_w=False, factors=15, likelihoods=lik, learnTheta=False)
+    ent.set_train_options(iter=1000, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=1, verbose=True)
 
     ent.build()
     ent.run()
