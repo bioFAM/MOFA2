@@ -246,19 +246,20 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term2 = 0.5 * s.log(alpha[:,k])
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            term3 = 0.5 * s.log(np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k])  # good to modify # TODO critical time here  2 %
-
-            # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
-            term4_tmp1 = np.sum(np.array([s.dot(tau[m] * Y[m], W[m][:, k]) for m in range(M)]), axis=0)  # good to modify # TODO critical time here  22 %
-
-            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = np.sum(np.array([(tau[m] * s.dot(SZ[:, s.arange(self.dim[1]) != k], (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify  # TODO critical time here  37 %
-
-            # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-            term4_tmp3 = np.sum(np.array([s.dot(tau[m], WW[m][:, k]) for m in range(M)]), axis=0) + alpha[:,k]  # TODO critical time here  3 %
+            term4_tmp1 = np.zeros((self.N,))
+            term4_tmp2 = np.zeros((self.N,))
+            term4_tmp3 = np.zeros((self.N,))
+            for m in range(M):
+                term4_tmp1 += np.dot(tau[m] * Y[m], W[m][:, k]) # good to modify # TODO critical time here  22 %
+                term4_tmp2 += (tau[m] * np.dot(SZ[:, s.arange(self.dim[1]) != k],
+                                             (W[m][:, k] * W[m][:, s.arange(self.dim[1]) != k].T))).sum(axis=1)  # good to modify  # TODO critical time here  37 %
+                term4_tmp3 += np.dot(tau[m], WW[m][:, k]) # TODO critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
-            term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
+            term3 = 0.5 * np.log(term4_tmp3 + alpha[:,k])
+
+            term4_tmp3 += alpha[:,k]
+            term4 = 0.5 * np.divide(np.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
             # import pdb; pdb.set_trace()
             # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
