@@ -265,7 +265,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                 WWk_cp = cp.array(WW[m][:, k])
                 Wk_cp = cp.array(W[m][:, k])
 
-                term3 += cp.dot(tau_cp, WWk_cp)  # good to modify # TODO critical time here  2 %
+                # term3 += cp.dot(tau_cp, WWk_cp)  # good to modify # TODO critical time here  2 %
                 # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
                 term4_tmp1 += cp.dot(tau_cp * cp.array(Y[m]), Wk_cp) # good to modify # TODO critical time here  22 %
 
@@ -277,7 +277,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                 term4_tmp3 += cp.dot(tau_cp, WWk_cp) # TODO critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
-            term3 =cp.asnumpy(0.5 * cp.log(term3 + alphak_cp))
+            term3 =cp.asnumpy(0.5 * cp.log(term4_tmp3 + alphak_cp))
 
             term4_tmp3 += alphak_cp
             term4 = 0.5 * cp.divide(cp.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
