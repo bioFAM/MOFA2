@@ -46,6 +46,7 @@ class BayesNet(object):
         assert "forceiter" in train_opts, "'forceiter' not found in the training options dictionary"
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
         assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
+        assert "gpu_mode" in train_opts, "'gpu_mode' not found in the training options dictionary"
 
         self.options = train_opts
 
@@ -204,7 +205,7 @@ class BayesNet(object):
         activeK = nans((self.options['maxiter']))
 
         for n in self.nodes:
-            self.nodes[n].precompute()
+            self.nodes[n].precompute(self.options)
 
         print('elbo before training: ', self.calculateELBO())
 

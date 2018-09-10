@@ -34,9 +34,9 @@ class entry_point(object):
         print(banner)
         # sleep(2)
         sys.stdout.flush()
-    
+
     def set_data_matrix_flat(self, data, views_names, groups_names):
-        """ Method to set the data 
+        """ Method to set the data
 
         PARAMETERS
         ----------
@@ -83,9 +83,9 @@ class entry_point(object):
         self.data_opts['features_names'] = [ data[m].columns for m in range(len(data)) ]
 
         self.data = data
-    
+
     def set_data_matrix(self, data, samples_names_dict, features_names_dict):
-        """ Method to set the data 
+        """ Method to set the data
 
         PARAMETERS
         ----------
@@ -103,7 +103,7 @@ class entry_point(object):
           print("Error: Data not recognised")
           sys.stdout.flush()
           exit()
-          
+
         views_names    = [k for k in features_names_dict.keys()]
         groups_names   = [k for k in samples_names_dict.keys()]
         samples_groups = [list(samples_names_dict.keys())[i] for i in range(len(groups_names)) for n in range(len(list(samples_names_dict.values())[i]))]
@@ -272,7 +272,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
-        schedule=None
+        schedule=None, gpu_mode=False
         ):
         """ Parse training options """
 
@@ -288,6 +288,9 @@ class entry_point(object):
 
         # Verbosity
         self.train_opts['verbose'] = verbose
+
+        # GPU mode
+        self.train_opts['gpu_mode'] = gpu_mode
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }

@@ -23,10 +23,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self):
+    def precompute(self, options):
         # Precompute terms to speed up computation
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
+
+        gpu_utils.gpu_mode = options['gpu_mode']
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -182,16 +184,17 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                  qEZ_T0=None, qEZ_T1=None, qET=None, idx_covariates=None):
         super().__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
                                       qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
-        self.precompute()
 
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self):
+    def precompute(self, options):
         self.N = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
+
+        gpu_utils.gpu_mode = options['gpu_mode']
 
         self.factors_axis = 1
 

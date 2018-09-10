@@ -24,12 +24,13 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self):
+    def precompute(self, options):
         # Precompute terms to speed up computation
         self.D = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
+        gpu_utils.gpu_mode = options['gpu_mode']
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)
@@ -184,9 +185,10 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
         super().__init__(dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES)
 
-    def precompute(self):
+    def precompute(self, options):
         self.D = self.dim[0]
         self.factors_axis = 1
+        gpu_utils.gpu_mode = options['gpu_mode']
 
     def updateParameters(self):
         # Collect expectations from other nodes

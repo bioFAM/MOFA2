@@ -18,12 +18,7 @@ class Y_Node(Constant_Variational_Node):
         if type(self.value) != ma.MaskedArray:
             self.mask()
 
-
-
-        # Precompute some terms
-        self.precompute()
-
-    def precompute(self):
+    def precompute(self, options=None):
         # Precompute some terms to speed up the calculations
         self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)

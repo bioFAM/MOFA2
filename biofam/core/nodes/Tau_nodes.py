@@ -16,11 +16,11 @@ from biofam.core.distributions import *
 class TauD_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        # self.precompute()
 
-    def precompute(self):
+    def precompute(self, options):
         self.N = self.dim[0]
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+        gpu_utils.gpu_mode = options['gpu_mode']
 
         # update of Qa
         Y = self.markov_blanket["Y"].getExpectation()
@@ -113,9 +113,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 class TauN_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options=None):
         self.D = self.dim[0]
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
 
