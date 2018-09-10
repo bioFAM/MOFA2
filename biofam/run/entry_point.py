@@ -5,6 +5,7 @@ import sys
 from time import sleep
 from time import time
 import pandas as pd
+import imp
 
 from typing import List, Union, Dict, TypeVar
 
@@ -291,6 +292,15 @@ class entry_point(object):
 
         # GPU mode
         self.train_opts['gpu_mode'] = gpu_mode
+        if gpu_mode:
+            try:
+                imp.find_module('cupy')
+            except ImportError:
+                print('For GPU mode, you need to install the CUPY library')
+                print ('1 - Make sure that you are running BIOFAM on a machine with an NVIDIA GPU')
+                print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
+                print ('Alternatively, deselect GPU mode')
+                exit(1)
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
