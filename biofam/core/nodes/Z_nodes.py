@@ -250,27 +250,36 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # GPU --------------------------------------------------------------
             # load variables on GPUs
             alphak_cp = cp.array(alpha[:,k])
-            tau_cp = cp.array(tau[m])
-            WWk_cp = cp.array(WW[m][:, k])
-            Wk_cp = cp.array(W[m][:, k])
 
             term2 = cp.asnumpy(0.5 * cp.log(alphak_cp))
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            term3 = 0.5 * cp.log(cp.sum(cp.stack([cp.dot(tau_cp, WWk_cp) for m in range(M)]), axis=0) + alphak_cp)  # good to modify # TODO critical time here  2 %
-            term3 = cp.asnumpy(term3)
 
-            # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
-            term4_tmp1 = cp.sum(cp.stack([cp.dot(tau_cp * cp.array(Y[m]), Wk_cp) for m in range(M)]), axis=0)  # good to modify # TODO critical time here  22 %
+            term3 = cp.zeros((self.N,))
+            term4_tmp1 = cp.zeros((self.N,))
+            term4_tmp1 = cp.zeros((self.N,))
+            term4_tmp1 = cp.zeros((self.N,))
+            for m in range(M):
+                # TODO repeats to optimise
+                tau_cp = cp.array(tau[m])
+                WWk_cp = cp.array(WW[m][:, k])
+                Wk_cp = cp.array(W[m][:, k])
 
-            # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
-            term4_tmp2 = cp.sum(cp.stack([(tau_cp * cp.dot(cp.array(SZ[:, s.arange(self.dim[1]) != k]),
-                                                        (Wk_cp * cp.array(W[m][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify  # TODO critical time here  37 %
+                term3 += cp.dot(tau_cp, WWk_cp)  # good to modify # TODO critical time here  2 %
+                # term4_tmp1 = ma.dot((tau*Y).T,W[:,k]).data
+                term4_tmp1 += cp.dot(tau_cp * cp.array(Y[m]), Wk_cp) # good to modify # TODO critical time here  22 %
 
-            # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-            term4_tmp3 = cp.sum(cp.stack([cp.dot(tau_cp, WWk_cp) for m in range(M)]), axis=0) + alphak_cp  # TODO critical time here  3 %
+                # term4_tmp2 = ( tau * s.dot((W[:,k]*W[:,s.arange(self.dim[1])!=k].T).T, SZ[:,s.arange(self.dim[1])!=k].T) ).sum(axis=0)
+                term4_tmp2 = (tau_cp * cp.dot(cp.array(SZ[:, s.arange(self.dim[1]) != k]),
+                                             (Wk_cp * cp.array(W[m][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)  # good to modify  # TODO critical time here  37 %
+
+                # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+                term4_tmp3 = cp.dot(tau_cp, WWk_cp) # TODO critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
+            term3 =cp.asnumpy(0.5 * cp.log(term3) + alphak_cp)
+
+            term4_tmp3 += alphak_cp
             term4 = 0.5 * cp.divide(cp.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
             term4 = cp.asnumpy(term4)
 
