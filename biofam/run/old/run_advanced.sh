@@ -8,34 +8,43 @@
 
 
 # Input files as plain text format
-inFolder="test_data"
-inFiles=( "$inFolder/500_0.txt" "$inFolder/500_1.txt" "$inFolder/500_2.txt" "$inFolder/500_2.txt" )
-# X_Files = ( "$inFolder/positions.txt" )
+#inFolder="/Users/damienarnol1/Documents/local/pro/PhD/FA/results/results_tmofa/merged/"
+## inFiles=( "$inFolder/WT.txt" "$inFolder/KO.txt" )
+#inFiles=( "$inFolder/all_data.txt" )
+#sampleGroups="$inFolder/z_groups.txt"
+inFolder=$1
+run_ix=$2
+inFiles=( "$1/dfm.txt" )
+X_Files=( "$1/positions.txt" )
 
 # Options for the input files
 delimiter=" " # delimiter, such as "\t", "" or " "
-header_rows=0 # set to 1 if the files contain row names
-header_cols=0 # set to 1 if the files contain column names
-features_in_rows=0  # set to 1 if features (e.g. genes) are in rows, by default samples are in rows
+header_rows=1 # set to 1 if the files contain row names
+header_cols=1 # set to 1 if the files contain column names
 
 # Output file path, please use the .hdf5 extension
-outFolder="test_results"
-outFile=( "$outFolder/test.hdf5" )
+outFolder=$1
+outFile=( "$outFolder/sfa_out_$2.hdf5" )
 
 # Data options
 center_features=1   # center the features to zero-mean? (not necessary as long as learnMean=1)
-scale_views=0 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
+scale_views=1 	    # scale the views to unit variance (not necessary as long as there no massive differences in scale)
 
 # Tell if the multi-view MOFA model is used transposed (1 : Yes, 0 : No)
 sample_wise_sparsity=0
 sample_wise_noise=0
 
 # Define likelihoods ('gaussian' for continuous data, 'bernoulli' for binary data or 'poisson' for count data)
-likelihoods=( gaussian gaussian gaussian gaussian )
+# likelihoods=( gaussian gaussian )
+#likelihoods=( gaussian )
+#
+## Define view names
+## views=( wt ko )
+#views=( unique )
+likelihoods=( gaussian )
 
 # Define view names
-views=( view_A view_A view_B view_B )
-groups=( group_A group_B group_A group_B )
+views=( unique )
 
 # Define file with covariates (not implemented yet, please ignore)
 # covariatesFile="/tmp/covariates.txt"
@@ -92,6 +101,7 @@ cmd='python ../build_model/entry_point.py
 	--freq-drop $freqDrop
 	--drop-r2 $dropR2
 	--seed $seed
+	--X_Files ${X_Files[@]}
 '
 #
 #--sampleGroups $sampleGroups

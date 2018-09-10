@@ -5,17 +5,16 @@
 #' @param data TO SPECIFY
 #' @return Returns an untrained \code{\link{BioFAModel}} object
 #' @export
-create_biofam <- function(data) {
+create_biofam <- function(data, samples_groups = NULL) {
   
-  if (is(data,"MultiAssayExperiment")) {
-    stop("Not functional")
+  if (is(data, "MultiAssayExperiment")) {stop("Not functional")
     # message("Creating BioFAM object from a MultiAssayExperiment object...")
     # object <- .createBioFAMobjectFromMAE(data)
     
-  } else if (is(data,"SummarizedExperiment")) {
+  } else if (is(data, "SummarizedExperiment")) {
     stop("Not functional")
     
-  } else if (is(data,"data.frame")) {
+  } else if (is(data, "data.frame")) {
       message("Creating BioFAM object from a dataframe...")
     
       object <- .create_biofam_from_dataframe(data)
@@ -33,6 +32,39 @@ create_biofam <- function(data) {
       # Set sample group names
       groups_names(object) <- as.character(unique(data$sample_group))
       
+  } else if (is(data, "list") && 
+             (length(data) > 0) && 
+             (all(sapply(data, function(x) is(x, "matrix"))) || 
+              all(sapply(data, function(x) is(x, "dgCMatrix"))) || 
+              all(sapply(data, function(x) is(x, "dgTMatrix"))))) {
+
+      message("Creating BioFAM object from a list of matrices...")
+
+      # Quality controls
+      stopifnot(all(sapply(data, function(p) all(is.numeric(p)))))
+
+      if (is.null(samples_groups)) {
+        warning("When providing a list of matrices, one matrix per view, samples annotation (groups) can be provided via samples_groups argument.")
+        warning("No samples_groups provided. Considering samples are coming from one group.")
+        samples_groups <- rep("group1", nrow(data[0]))
+      }
+    
+      object <- .create_biofam_from_list(.split_into_groups(data, samples_groups))
+      groups_names <- as.character(unique(samples_groups))
+      
+      # Set dimensionalities
+      object@dimensions[["M"]] <- length(data)
+      object@dimensions[["P"]] <- length(groups_names)
+      object@dimensions[["D"]] <- sapply(data, function(m) ncol(m))
+      object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(samples_groups == x))
+      object@dimensions[["K"]] <- 0
+      
+      # Set view names
+      views_names(object) <- as.character(names(data))
+      
+      # Set sample group names
+      groups_names(object) <- groups_names
+      
   } else {
     stop("Error: input data has to be provided either as .....")
   }
@@ -42,6 +74,32 @@ create_biofam <- function(data) {
   return(object)
 }
 
+
+
+# (Hidden) function to initialise a BioFAModel object using a matrix
+.create_biofam_from_list <- function(data) {
+  
+  # Initialise BioFAM object
+  object <- new("BioFAModel")
+  object@status <- "untrained"
+  object@training_data <- data
+  
+  return(object)
+}
+
+
+.split_into_groups <- function(data, samples_groups) {
+  groups_names <- unique(samples_groups)
+  tmp <- lapply(data, function(view) {
+    tmp_view <- lapply(groups_names, function(p) {
+      view[samples_groups == p,]
+    })
+    names(tmp_view) <- groups_names
+    tmp_view
+  })
+  names(tmp) <- names(data)
+  tmp
+}
 
 
 # (Hidden) function to initialise a BioFAModel object using a Dataframe
