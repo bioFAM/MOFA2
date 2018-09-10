@@ -268,7 +268,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                                                         (Wk_cp * cp.array(W[m][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1) for m in range(M)]), axis=0)  # good to modify  # TODO critical time here  37 %
 
             # term4_tmp3 = s.dot(WW[:,k].T,tau) + alpha[k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-            term4_tmp3 = cp.sum(cp.stack([s.dot(tau_cp, WWk_cp) for m in range(M)]), axis=0) + alphak_cp  # TODO critical time here  3 %
+            term4_tmp3 = cp.sum(cp.stack([cp.dot(tau_cp, WWk_cp) for m in range(M)]), axis=0) + alphak_cp  # TODO critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5 * cp.divide(cp.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
@@ -281,8 +281,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta[:,k] = np.nan_to_num(Qtheta[:,k])
 
             # Update Z
-            Qvar_T1[:, k] = 1. / term4_tmp3
-            Qmean_T1[:, k] = Qvar_T1[:, k] * (term4_tmp1 - term4_tmp2)
+            Qvar_T1[:, k] = 1. / cp.asnumpy(term4_tmp3)
+            Qmean_T1[:, k] = Qvar_T1[:, k] * cp.asnumpy(term4_tmp1 - term4_tmp2)
 
             # Update Expectations for the next iteration
             SZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]

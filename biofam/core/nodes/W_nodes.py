@@ -225,7 +225,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # GPU --------------------------------------------------------------
             # Variables used in multiple operations snhould be loaded on GPU only once
             Zk_cp = cp.array(Z[:,k])
-            tau_cp = sp.array(tau)
+            tau_cp = cp.array(tau)
             ZZk_cp = cp.array(ZZ[:,k])
             alphak_cp = cp.array(alpha[:,k])
 
@@ -243,7 +243,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term4_tmp2 *= tau_cp  # most expensive bit
             term4_tmp2 = term4_tmp2.sum(axis=0)
 
-            term4_tmp3 = s.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            term4_tmp3 = cp.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
             # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
 
 
@@ -256,8 +256,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta[:,k] = 1./(1.+s.exp(-(term1+term2-term3+term4)))
 
             # Update W
-            Qvar_S1[:,k] = 1./term4_tmp3
-            Qmean_S1[:,k] = Qvar_S1[:,k]*(term4_tmp1-term4_tmp2)
+            Qvar_S1[:,k] = cp.asnumpy(1./term4_tmp3)
+            Qmean_S1[:,k] = Qvar_S1[:,k]*cp.asnumpy(term4_tmp1-term4_tmp2)
 
             # Update Expectations for the next iteration
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
