@@ -201,6 +201,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         return latent_variables
 
     def updateParameters(self):
+        import pdb; pdb.set_trace()
         # Collect expectations from other nodes
         # why .copy() ?
 
