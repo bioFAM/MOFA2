@@ -259,7 +259,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term4 = 0.5 * s.divide(s.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
             Qtheta[:, k] = 1. / (1. + s.exp(-(term1 + term2 - term3 + term4)))
