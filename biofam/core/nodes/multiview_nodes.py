@@ -100,9 +100,9 @@ class Multiview_Node(Node):
         self.samp = [self.nodes[m].sample(dist) for m in self.activeM]
         return self.samp
 
-    def precompute(self):
+    def precompute(self, options):
         for m in self.activeM:
-            self.nodes[m].precompute()
+            self.nodes[m].precompute(options)
 
 
 class Multiview_Variational_Node(Multiview_Node, Variational_Node):

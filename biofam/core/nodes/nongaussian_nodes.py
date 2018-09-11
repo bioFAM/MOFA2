@@ -55,9 +55,6 @@ class PseudoY(Unobserved_Variational_Node):
         if type(self.obs) != ma.MaskedArray:
             self.mask()
 
-        # Precompute some terms
-        # self.precompute()
-
         # Initialise expectation
         if E is not None:
             assert E.shape == dim, "Problems with the dimensionalities"
@@ -76,7 +73,7 @@ class PseudoY(Unobserved_Variational_Node):
     def getMask(self):
         return ma.getmask(self.obs)
 
-    def precompute(self):
+    def precompute(self, options=None):
         # Precompute some terms to speed up the calculations
         pass
 

@@ -5,6 +5,7 @@ import sys
 from time import sleep
 from time import time
 import pandas as pd
+import imp
 
 from typing import List, Union, Dict, TypeVar
 
@@ -34,9 +35,9 @@ class entry_point(object):
         print(banner)
         # sleep(2)
         sys.stdout.flush()
-    
+
     def set_data_matrix_flat(self, data, views_names, groups_names):
-        """ Method to set the data 
+        """ Method to set the data
 
         PARAMETERS
         ----------
@@ -83,9 +84,9 @@ class entry_point(object):
         self.data_opts['features_names'] = [ data[m].columns for m in range(len(data)) ]
 
         self.data = data
-    
+
     def set_data_matrix(self, data, samples_names_dict, features_names_dict):
-        """ Method to set the data 
+        """ Method to set the data
 
         PARAMETERS
         ----------
@@ -103,7 +104,7 @@ class entry_point(object):
           print("Error: Data not recognised")
           sys.stdout.flush()
           exit()
-          
+
         views_names    = [k for k in features_names_dict.keys()]
         groups_names   = [k for k in samples_names_dict.keys()]
         samples_groups = [list(samples_names_dict.keys())[i] for i in range(len(groups_names)) for n in range(len(list(samples_names_dict.values())[i]))]
@@ -272,7 +273,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
-        schedule=None
+        schedule=None, gpu_mode=False
         ):
         """ Parse training options """
 
@@ -288,6 +289,18 @@ class entry_point(object):
 
         # Verbosity
         self.train_opts['verbose'] = verbose
+
+        # GPU mode
+        self.train_opts['gpu_mode'] = gpu_mode
+        if gpu_mode:
+            try:
+                imp.find_module('cupy')
+            except ImportError:
+                print('For GPU mode, you need to install the CUPY library')
+                print ('1 - Make sure that you are running BIOFAM on a machine with an NVIDIA GPU')
+                print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
+                print ('Alternatively, deselect GPU mode')
+                exit(1)
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
@@ -499,6 +512,30 @@ class entry_point(object):
 
 if __name__ == '__main__':
     ent = entry_point()
+    dir = '/gpfs/nobackup/stegle/users/arnol/biofam/stochastic_simul_2/'
+    # infiles = [dir+'/data_0_0.txt', dir+'/data_1_0.txt', dir+'/data_0_1.txt', dir+'/data_1_1.txt']
+    # # infiles = [dir+'/data_all.txt']
+    # views =  ["view_0", "view_1", "view_0", "view_1"]
+    # groups = ["group_0", "group_0", "group_1", "group_1"]
+    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_0_2.txt',
+    #             dir+'data_1_0.txt', dir+'data_1_1.txt', dir+'data_1_2.txt']
+    # views =  ["view_0", "view_0", 'view_0', 'view_1', 'view_1', 'view_1']
+    # groups = ["group_0", "group_1", "group_2", "group_0", "group_1", "group_2"]
+    infiles = [dir+'/data_0_0.txt']
+    views =  ["view_0"]
+    groups = ["group_0"]
+
+    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
+
+    #infiles = ["../run/test_data/with_nas/500_0.txt"]
+    #views =  ["view_A"]
+    #groups = ["group_A"]
+
+    # infiles = ["../run/test_data/with_nas/500_0.txt",  "../run/test_data/with_nas/500_2.txt",  ]
+    # views =  ["view_A", "view_B"]
+    # groups = ["group_A", "group_A"]
 
     infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
     views =  ["view_A", "view_A", "view_B", "view_B"]
@@ -514,8 +551,7 @@ if __name__ == '__main__':
     #
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=False, sl_w=True, sl_z=True, ard_w=False, factors=15, likelihoods=lik, learnTheta=False)
-    ent.set_train_options(iter=1000, tolerance=0.01, dropR2=0.0, seed=4, elbofreq=1, verbose=True)
-
+    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
+    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     ent.build()
     ent.run()

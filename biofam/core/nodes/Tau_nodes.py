@@ -5,6 +5,7 @@ import scipy as s
 import scipy.special as special
 
 from biofam.core.utils import *
+from biofam.core import gpu_utils
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
@@ -15,11 +16,11 @@ from biofam.core.distributions import *
 class TauD_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        # self.precompute()
 
-    def precompute(self):
+    def precompute(self, options):
         self.N = self.dim[0]
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+        gpu_utils.gpu_mode = options['gpu_mode']
 
         # update of Qa
         Y = self.markov_blanket["Y"].getExpectation()
@@ -63,26 +64,26 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         # Calculate terms for the update
-        ZW =  Z.dot(W.T)
+        ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
         # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
-        term1 = s.square(Y).sum(axis=0)
+        term1 = gpu_utils.square(gpu_utils.array(Y)).sum(axis=0)
 
-        term2 = ZZ.dot(WW.T)
+        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
         # term2 = fast_dot(ZZ, WW.T)
         term2[mask] = 0
         term2 = term2.sum(axis=0)
 
-        term3 = np.dot(np.square(Z),np.square(W).T)
+        term3 = gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
         term3[mask] = 0.
         term3 = -term3.sum(axis=0)
-        term3 += (np.square(ZW)).sum(axis=0)
+        term3 += (gpu_utils.square(ZW)).sum(axis=0)
 
-        ZW *= Y  # WARNING ZW becomes ZWY
+        ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
         term4 = 2.*(ZW.sum(axis=0))
 
-        tmp = term1 + term2 + term3 - term4
+        tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
 
         # Perform updates of the Q distribution
         Qb = Pb + tmp/2.
@@ -112,9 +113,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 class TauN_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options=None):
         self.D = self.dim[0]
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
 

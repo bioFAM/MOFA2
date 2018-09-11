@@ -23,9 +23,8 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         # Beta_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options=None):
         self.factors_axis = 0
         self.Ppar = self.P.getParameters()
 
@@ -91,9 +90,8 @@ class ThetaW_Constant_Node_mk(Constant_Variational_Node):
     def __init__(self, dim, value, N_cells=1):
         super().__init__(dim, value)
         self.N_cells = N_cells
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options=None):
         self.E = self.value
         # TODO this is wrong with missing values -> need to correct N_cells to account for the cells in which a given gene is missing
         self.lnE = self.N_cells * s.log(self.value)
@@ -123,9 +121,8 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None):
         # Beta_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options=None):
         self.factors_axis = 0
         self.Ppar = self.P.getParameters()
 
@@ -200,9 +197,8 @@ class ThetaZ_Node_groups(Beta_Unobserved_Variational_Node):
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options=None):
         self.factors_axis = 1
         self.Ppar = self.P.getParameters()
 
@@ -274,9 +270,8 @@ class ThetaZ_Constant_Node_k(Constant_Variational_Node):
     def __init__(self, dim, value, N_cells=1):
         super().__init__(dim, value)
         self.N_cells = N_cells
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options=None):
         self.E = self.value
         # TODO this is wrong with missing values -> need to correct N_cells to account for the cells in which a given gene is missing
         self.lnE = self.N_cells * s.log(self.value)
