@@ -106,13 +106,14 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         else:
             PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.D,self.dim[1]))
 
-        if "SigmaAlphaW" in self.markov_blanket:
-            name_alpha = "SigmaAlphaW"
-        else:
-            name_alpha = "AlphaW"
+        # if "SigmaAlphaW" in self.markov_blanket:
+        #     name_alpha = "SigmaAlphaW"
+        # else:
+        #     name_alpha = "AlphaW"
 
-        if 'AlphaZ' in self.markov_blanket:
-            Alpha = self.markov_blanket[name_alpha].getExpectations(expand=True).copy() # Notice that this Alpha is the ARD prior on Z, not on W.
+        # import pdb; pdb.set_trace()
+        if 'AlphaW' in self.markov_blanket:
+            Alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy() # Notice that this Alpha is the ARD prior on Z, not on W.
         else:
             Alpha = dict()
             Alpha['E'] = 1./self.P.params['var']
@@ -135,7 +136,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         lb_p = tmp1 + tmp2
         # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
         lb_q = -(s.log(Qvar).sum() + self.D * len(latent_variables)) / 2.
-
+        # import pdb; pdb.set_trace()
         return lb_p-lb_q
 
 
