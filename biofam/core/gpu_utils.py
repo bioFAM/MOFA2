@@ -1,16 +1,14 @@
-gpu_mode = False
-
 import sys
 import numpy as np
 try:
     import cupy as cp
 except ImportError:
-    if gpu_mode:
-        print("To use GPU mode, make sure that you are working with a machine equiped with an NVIDIA GPU and that cupy is properly installed")
-        exit(1)
-    else:
-        pass
+    pass
 
+# --------------------------------------------------------
+# Defalut is to use numpy, not cupy
+# --------------------------------------------------------
+gpu_mode = False
 
 # --------------------------------------------------------
 # operations on single matrices
