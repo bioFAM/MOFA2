@@ -54,9 +54,9 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
   if (as.data.frame) {
-    Z <- Z[Z$factor %in% factors,]
+    Z <- Z[Z$factor%in%factors & Z$group%in%groups,]
   } else {
-    Z <- lapply(Z, function(z) z[,factors, drop=FALSE])
+    Z <- lapply(Z[groups], function(z) z[,factors, drop=FALSE])
     names(Z) <- groups
   }
 

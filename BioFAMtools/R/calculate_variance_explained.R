@@ -3,26 +3,17 @@
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
-#' @param include_intercept include the intercept factor for calculation of variance explained (only used when an intercept was learned)
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
 #' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor). 
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated. 
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @export
-calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", 
-                                         include_intercept = FALSE, ...) {
+calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", ...) {
+  
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
-  # check whether the intercept was learned
-  if (include_intercept) {
-    if (object@model_options$learn_intercept) {
-      include_intercept <- TRUE
-    }
-    # warning("No intercept was learned in BioFAM.\n Intercept is not included in the model prediction.")
-  }
-    
   # Define views and groups
   views  <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
@@ -31,15 +22,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   if (paste0(factors, collapse="") == "all") { 
     factors <- factors_names(object) 
   } else if (is.numeric(factors)) {
-    if (include_intercept == T) {
-      factors <- factors_names(object)[factors+1] 
-    } else {
       factors <- factors_names(object)[factors]
-    }
   } else { 
     stopifnot(all(factors %in% factors_names(object))) 
   }
-  factors <- factors[factors!="intercept"]
   K <- length(factors)
   
   # Collect relevant expectations
@@ -53,26 +39,19 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     Z[[p]][is.na(Z[[p]])] <- 0 
   }
   
-  # If an intercept is included, regress it out from the data
-  if (include_intercept) {
-    intercept <- get_weights(object, views, "intercept")
-    Y <- lapply(views, function(m) lapply(groups, function(p) sweep(Y[[m]][[p]], 2, intercept[[m]], "-")))
-  } else {
-    for (m in views) {
-      for (p in groups) {
-        if (!all(colMeans(Y[[m]][[p]]) < 1e-2, na.rm=T))
-          cat(sprintf("Warning: data for view %s is not centered and no intercept term was learnt", m)) 
-      }
-    }
-  }
+  for (m in views) { for (p in groups) {
+    if (!all(colMeans(Y[[m]][[p]],na.rm=T)<1e-2,na.rm=T))
+      cat(sprintf("Warning: data for view %s is not centered\n",m)) 
+  }}
   
   Y <- .name_views_and_groups(Y, views, groups)
   
   # Calculate coefficient of determination per group and view
   fvar_m <- lapply(groups, function(p)
     lapply(views, function(m) {
-      a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]],W[[m]]))**2, na.rm=T);
-      b <- sum(scale(Y[[m]][[p]], center=T, scale=F)**2, na.rm=T);
+      a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]],W[[m]]))**2, na.rm=T)
+      # b <- sum(scale(Y[[m]][[p]], center=T, scale=F)**2, na.rm=T)
+      b <- sum(Y[[m]][[p]]**2, na.rm=T)
       return(1 - a/b) 
     }
     ))
@@ -83,7 +62,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     tmp <- sapply(views, function(m) {
       sapply(factors, function(k) {
         a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]][,k],W[[m]][,k]))**2, na.rm=T)
-        b <- sum(scale(Y[[m]][[p]],center=T, scale=F)**2, na.rm=T)
+        # b <- sum(scale(Y[[m]][[p]],center=T, scale=F)**2, na.rm=T)
+        b <- sum(Y[[m]][[p]]**2, na.rm=T)
         return(1 - a/b)
       })
     })

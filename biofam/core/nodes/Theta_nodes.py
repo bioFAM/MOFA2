@@ -35,7 +35,6 @@ class ThetaW_Node_mk(Beta_Unobserved_Variational_Node):
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], D, axis=0)
             expanded_lnEInv = s.repeat(QExp['lnEInv'][None, :], D, axis=0)
-            # import pdb; pdb.set_trace()
             return {'E': expanded_E, 'lnE': expanded_lnE, 'lnEInv': expanded_lnEInv}
         else:
             return QExp
@@ -133,7 +132,6 @@ class ThetaZ_Node_k(Beta_Unobserved_Variational_Node):
             expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
             expanded_lnEInv = s.repeat(QExp['lnEInv'][None, :], N, axis=0)
-            # import pdb; pdb.set_trace()
             return {'E': expanded_E, 'lnE': expanded_lnE, 'lnEInv': expanded_lnEInv}
         else:
             return QExp

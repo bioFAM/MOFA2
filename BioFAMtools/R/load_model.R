@@ -256,7 +256,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
     if (object@model_options$learn_intercept) { order_factors <- c("intercept", order_factors) }
     object <- subset_factors(object, order_factors)
-    print(order_factors)
     if (object@model_options$learn_intercept) { 
      factors_names(object) <- c("intercept", 1:(object@dimensions$K-1))
     } else {
