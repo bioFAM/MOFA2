@@ -269,6 +269,7 @@ class entry_point(object):
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
+        import pdb; pdb.set_trace()
 
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
@@ -551,7 +552,7 @@ if __name__ == '__main__':
     #
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
+    ent.set_model_options(ard_z=True, sl_w=False , sl_z=False, ard_w=False, factors=15, likelihoods=lik)
     ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     ent.build()
     ent.run()
