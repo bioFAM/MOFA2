@@ -269,7 +269,6 @@ class entry_point(object):
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
-        import pdb; pdb.set_trace()
 
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
@@ -498,7 +497,6 @@ class entry_point(object):
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
 
-        # import pdb; pdb.set_trace()
         saveTrainedModel(
             model=self.model,
             outfile=outfile,

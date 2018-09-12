@@ -167,9 +167,9 @@ get_default_model_options <- function(object) {
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   if (!.hasSlot(object,"dimensions") | length(object@dimensions) == 0) stop("dimensions of object need to be defined before getting the model options")
   if (!.hasSlot(object,"input_data")) stop("input_data slot needs to be specified before getting the model options")
-  if (!.hasSlot(object,"training_data")) stop("training_data slot needs to be specified before getting the model options")
   
   # Guess likelihoods from the data
+  # if (!.hasSlot(object,"training_data")) stop("training_data slot needs to be specified before getting the model options")
   # THIS DOES NOT WORK BECAUSE TRAINING_DATA IS NOT DEFINED UNTIL LOADING THE MODEL
   # likelihood <- .infer_likelihoods(object)
   likelihood <- rep(x="gaussian", times=object@dimensions$M)

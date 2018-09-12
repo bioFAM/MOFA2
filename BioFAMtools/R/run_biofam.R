@@ -60,6 +60,7 @@ run_biofam <- function(object, dir_options, samples_groups = NULL) {
   )
   
   # Set the data
+  FIX THIS
   # biofam_entrypoint$set_data_df(data=unname(lapply(object@input_data, function(x) r_to_py(t(x)))))
   if (.hasSlot(object, "training_data")) {
     biofam_entrypoint$set_data_matrix(r_to_py(object@training_data), 

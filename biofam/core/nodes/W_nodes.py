@@ -111,7 +111,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         # else:
         #     name_alpha = "AlphaW"
 
-        # import pdb; pdb.set_trace()
         if 'AlphaW' in self.markov_blanket:
             Alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy() # Notice that this Alpha is the ARD prior on Z, not on W.
         else:
@@ -136,7 +135,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         lb_p = tmp1 + tmp2
         # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
         lb_q = -(s.log(Qvar).sum() + self.D * len(latent_variables)) / 2.
-        # import pdb; pdb.set_trace()
         return lb_p-lb_q
 
 
@@ -269,7 +267,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=1./alpha, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
 
     def calculateELBO(self):
-        # import pdb; pdb.set_trace()
         # Collect parameters and expectations
         Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
         S,WW = Qexp["EB"], Qexp["ENN"]
@@ -288,7 +285,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
 
         # Calculate ELBO for W
-        # import pdb; pdb.set_trace()
         lb_pw = (alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
         lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
         # #NOT SURE ABOUT THE FORMULA for lb_qw (brackets of expectation propagating inside the log ?)
@@ -598,7 +594,6 @@ class MuW_Node(UnivariateGaussian_Unobserved_Variational_Node):
 #         # compute term from the precision factor in front of the Gaussian
 #         tmp2 = 0  # constant here
 #         # if self.n_iter> 4:
-#         #     import pdb; pdb.set_trace()
 #         if p_cov[k].__class__.__name__ == 'dia_matrix':
 #             tmp2 += np.sum(np.log(p_cov[k].data.flatten()))
 #         elif p_cov[k].__class__.__name__ == 'ndarray':
@@ -612,7 +607,6 @@ class MuW_Node(UnivariateGaussian_Unobserved_Variational_Node):
 #         lb_p = tmp1 + tmp2
 #         # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
 #         lb_q = -.5 * s.log(Qvar[:, k]).sum()
-#         # import pdb; pdb.set_trace()
 #
 #         #print("d")
 #
