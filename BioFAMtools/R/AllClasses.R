@@ -44,6 +44,7 @@ setClass("BioFAModel",
                  model_options    = "list",
                  dimensions       = "list",
                  on_disk          = "logical",
+                 cache            = "list",
                  status           = "character")
 )
 
@@ -69,4 +70,5 @@ setMethod("show", "BioFAModel", function(object) {
   }
   cat("\n")
 })
+
 

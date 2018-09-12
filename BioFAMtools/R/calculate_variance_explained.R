@@ -73,6 +73,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   }); names(fvar_mk) <- groups
   
   # Store results
+  # fvar_mk = lapply(fvar_mk, function(x){x[x < 0] = 0; return(x)})
   r2_list <- list(r2_total = fvar_m, r2_per_factor = fvar_mk)
   
   return(r2_list)
@@ -98,7 +99,11 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 plot_variance_explained <- function(object, cluster = TRUE, ...) {
   
   # Calculate variance explained
-  r2_list <- calculate_variance_explained(object, ...)
+  if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+    r2_list <- object@cache[["variance_explained"]]
+  } else {
+    r2_list <- calculate_variance_explained(object, ...)
+  }
   
   fvar_m <- r2_list$r2_total
   fvar_mk <- r2_list$r2_per_factor
@@ -201,3 +206,9 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
 
 
 
+# Cache results
+cache_variance_explained <- function(object, ...) {
+  r2_list <- calculate_variance_explained(object, ...)
+  .cache_variance_explained(object) <- r2_list
+  object
+}

@@ -5,6 +5,7 @@ import sys
 from time import sleep
 from time import time
 import pandas as pd
+import imp
 
 from typing import List, Union, Dict, TypeVar
 
@@ -22,7 +23,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = r"""
+        banner = """
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -34,9 +35,9 @@ class entry_point(object):
         print(banner)
         # sleep(2)
         sys.stdout.flush()
-    
-    def set_data_matrix(self, data):
-        """ Method to set the data 
+
+    def set_data_matrix_flat(self, data, views_names, groups_names):
+        """ Method to set the data
 
         PARAMETERS
         ----------
@@ -59,6 +60,62 @@ class entry_point(object):
           if isinstance(data[m], dict):
             data[m] = list(data[m].values())
 
+        groups_names = len(sorted(set(samples_groups), key=samples_groups.index))
+
+        assert s.all([ isinstance(data[m], s.ndarray) or isinstance(data[m], pd.DataFrame) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
+
+        # Verbose message
+        for m in range(len(data)):
+          for p in range(len(data[0])):
+            print("Loaded view %d with %d samples and %d features..." % (m+1, data[m].shape[0], data[m].shape[1]))
+
+        # Save dimensionalities
+        self.dimensionalities["M"] = len(data)
+        self.dimensionalities["P"] = len(groups_names)
+        self.dimensionalities["N"] = [np.sum([s == i for s in samples_groups]) for i in groups_names]
+        self.dimensionalities["D"] = [data[m].shape[1] for m in range(len(data))]
+
+        # Define feature group names and sample group names
+        self.data_opts['views_names']  = views_names
+        self.data_opts['groups_names'] = groups_names
+
+        # Define feature and sample names
+        self.data_opts['samples_names']  = data[0].index.values()
+        self.data_opts['features_names'] = [ data[m].columns for m in range(len(data)) ]
+
+        self.data = data
+
+    def set_data_matrix(self, data, samples_names_dict, features_names_dict):
+        """ Method to set the data
+
+        PARAMETERS
+        ----------
+        data: several options:
+        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
+        - a list where each element is a numpy array or a pandas data frame
+        """
+
+        # Sanity check
+        if isinstance(data, dict):
+          data = list(data.values())
+        elif isinstance(data, list):
+          pass
+        else:
+          print("Error: Data not recognised")
+          sys.stdout.flush()
+          exit()
+
+        views_names    = [k for k in features_names_dict.keys()]
+        groups_names   = [k for k in samples_names_dict.keys()]
+        samples_groups = [list(samples_names_dict.keys())[i] for i in range(len(groups_names)) for n in range(len(list(samples_names_dict.values())[i]))]
+
+        features_names = [v for v in features_names_dict.values()]
+        samples_names  = [v for l in samples_names_dict.values() for v in l]  # flattened list of samples names
+
+        for m in range(len(data)):
+          if isinstance(data[m], dict):
+            data[m] = list(data[m].values())
+
         assert s.all([ isinstance(data[m][p], s.ndarray) or isinstance(data[m][p], pd.DataFrame) for p in range(len(data[0])) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
 
         # Verbose message
@@ -72,7 +129,23 @@ class entry_point(object):
         self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
-        self.data = data
+        # Define feature group names and sample group names
+        self.data_opts['views_names']  = views_names
+        self.data_opts['groups_names'] = groups_names
+
+        # Define feature and sample names
+        self.data_opts['samples_names']  = samples_names
+        self.data_opts['features_names'] = features_names
+
+        # Set samples groups
+        self.data_opts['samples_groups'] = samples_groups
+
+        # Concatenate groups
+        for m in range(len(data)):
+            data[m] = np.concatenate(data[m])
+        self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
+
+        self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
         """ Load the data """
@@ -196,11 +269,12 @@ class entry_point(object):
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
+        import pdb; pdb.set_trace()
 
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
-        schedule=None
+        schedule=None, gpu_mode=False
         ):
         """ Parse training options """
 
@@ -216,6 +290,18 @@ class entry_point(object):
 
         # Verbosity
         self.train_opts['verbose'] = verbose
+
+        # GPU mode
+        self.train_opts['gpu_mode'] = gpu_mode
+        if gpu_mode:
+            try:
+                imp.find_module('cupy')
+            except ImportError:
+                print('For GPU mode, you need to install the CUPY library')
+                print ('1 - Make sure that you are running BIOFAM on a machine with an NVIDIA GPU')
+                print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
+                print ('Alternatively, deselect GPU mode')
+                exit(1)
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
@@ -321,8 +407,8 @@ class entry_point(object):
           self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
         # assert len(self.model_opts['likelihoods'])==M, "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"]))
-        self.data_opts["likelihoods"] = self.model_opts['likelihoods'] 
-        
+        self.data_opts["likelihoods"] = self.model_opts['likelihoods']
+
         M = len(self.model_opts["likelihoods"])
         # assert len(self.data_opts['views_names'])==M, "Length of view names and input files does not match"
 
@@ -381,7 +467,7 @@ class entry_point(object):
         self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
         self.model = self.model_builder.net
 
-    def run(self):
+    def run(self, no_theta=False):
         """ Run the model """
 
         # Sanity checks
@@ -396,6 +482,9 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
+        if no_theta:
+            self.train_opts['schedule'].remove('ThetaZ')
+        print(self.train_opts['schedule'])
         self.model.setTrainOptions(self.train_opts)
 
         # Train the model
@@ -409,20 +498,45 @@ class entry_point(object):
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
 
+        # import pdb; pdb.set_trace()
         saveTrainedModel(
             model=self.model,
             outfile=outfile,
             train_opts=self.train_opts,
             model_opts=self.model_opts,
-            samples_names=self.data_opts['samples_names'],
+	    	samples_names=self.data_opts['samples_names'],
             features_names=self.data_opts['features_names'],
             views_names=self.data_opts['views_names'],
-            groups_names=self.data_opts['groups_names'],
+	    	groups_names=self.data_opts['groups_names'],
             samples_groups=self.data_opts['samples_groups']
         )
 
 if __name__ == '__main__':
     ent = entry_point()
+    dir = '/gpfs/nobackup/stegle/users/arnol/biofam/stochastic_simul_2/'
+    # infiles = [dir+'/data_0_0.txt', dir+'/data_1_0.txt', dir+'/data_0_1.txt', dir+'/data_1_1.txt']
+    # # infiles = [dir+'/data_all.txt']
+    # views =  ["view_0", "view_1", "view_0", "view_1"]
+    # groups = ["group_0", "group_0", "group_1", "group_1"]
+    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_0_2.txt',
+    #             dir+'data_1_0.txt', dir+'data_1_1.txt', dir+'data_1_2.txt']
+    # views =  ["view_0", "view_0", 'view_0', 'view_1', 'view_1', 'view_1']
+    # groups = ["group_0", "group_1", "group_2", "group_0", "group_1", "group_2"]
+    infiles = [dir+'/data_0_0.txt']
+    views =  ["view_0"]
+    groups = ["group_0"]
+
+    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
+
+    #infiles = ["../run/test_data/with_nas/500_0.txt"]
+    #views =  ["view_A"]
+    #groups = ["group_A"]
+
+    # infiles = ["../run/test_data/with_nas/500_0.txt",  "../run/test_data/with_nas/500_2.txt",  ]
+    # views =  ["view_A", "view_B"]
+    # groups = ["group_A", "group_A"]
 
     infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
     views =  ["view_A", "view_A", "view_B", "view_B"]
@@ -438,8 +552,7 @@ if __name__ == '__main__':
     #
     ent.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=True, sl_z=False, ard_w=True, factors=15, likelihoods=lik, learnTheta=False)
-    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=1)
-
+    ent.set_model_options(ard_z=True, sl_w=False , sl_z=False, ard_w=False, factors=15, likelihoods=lik)
+    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     ent.build()
     ent.run()

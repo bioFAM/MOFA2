@@ -32,14 +32,14 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
+    def initZ(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None, covariates=None,
         scale_covariates=None, precompute_pcovinv=True):
         """Method to initialise the latent variables
 
         PARAMETERS
         ----------
         pmean: mean of the prior distribution
-        pcov: covariance of the prior distribution
+        pcov: covariance of the prior distribution # NOTE was changed to pvar -> univariate
         qmean: initialisation of the mean of the variational distribution
             "random" for a random initialisation sampled from a standard normal distribution
             "pca" for an initialisation based on PCA
@@ -60,8 +60,8 @@ class initModel(object):
         pmean = s.ones((self.N, self.K)) * pmean
 
         # TODO add sanity check if not float (dim of the matrices)
-        if isinstance(pcov, (int, float)):
-            pcov = [s.sparse.eye(self.N) * pcov] * self.K
+        # if isinstance(pcov, (int, float)):
+        #     pcov = [s.sparse.eye(self.N) * pcov] * self.K
 
         ## Initialise variational distribution (Q)
 
@@ -118,7 +118,7 @@ class initModel(object):
             qmean[:, idx_covariates] = covariates
 
             # Remove prior and variational distributions from the covariates
-            pcov[idx_covariates] = s.nan
+            # pcov[idx_covariates] = s.nan
             #pvar[:, idx_covariates] = s.nan
             qvar[:, idx_covariates] = s.nan
 
@@ -128,12 +128,20 @@ class initModel(object):
         # Initialise the node
         self.nodes["Z"] = Z_Node(
             dim=(self.N, self.K),
-            pmean=pmean, pcov=pcov,
+            pmean=pmean, pvar=pvar,
             qmean=qmean, qvar=qvar,
             qE=qE, qE2=qE2,
-            idx_covariates=idx_covariates,
-            precompute_pcovinv=precompute_pcovinv
+            idx_covariates=idx_covariates
         )
+
+        # self.nodes["Z"] = Z_Node(
+        #     dim=(self.N, self.K),
+        #     pmean=pmean, pcov=pcov,
+        #     qmean=qmean, qvar=qvar,
+        #     qE=qE, qE2=qE2,
+        #     idx_covariates=idx_covariates,
+        #     precompute_pcovinv=precompute_pcovinv
+        # )
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1='random', qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
@@ -189,9 +197,9 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean=0., pcov=1., qmean=0, qvar=1.,
+    def initW(self, pmean=0., pvar=1., qmean=0, qvar=1.,
         qE=None, qE2=None, covariates=None,
-        scale_covariates=None, precompute_pcovinv=None):
+        scale_covariates=None):
         """Method to initialise the weights
         PARAMETERS
         ----------
@@ -209,8 +217,8 @@ class initModel(object):
         """
 
         # Precompute the inverse of the covariance matrix of the gaussian prior of W
-        if precompute_pcovinv is None:
-            precompute_pcovinv = [True] * self.M
+        # if precompute_pcovinv is None:
+        #     precompute_pcovinv = [True] * self.M
 
         # Add covariates
         if covariates is not None:
@@ -238,9 +246,9 @@ class initModel(object):
             pmean_m = s.ones((self.D[m], self.K)) * pmean
 
             # covariance
-            if isinstance(pcov, (int, float)):
-                pcov_mk = s.sparse.eye(self.D[m]) * pcov
-                pcov_m = [pcov_mk] * self.K
+            # if isinstance(pcov, (int, float)):
+            #     pcov_mk = s.sparse.eye(self.D[m]) * pcov
+            #     pcov_m = [pcov_mk] * self.K
 
             ## Initialise variational distribution (Q) ##
 
@@ -253,7 +261,7 @@ class initModel(object):
 
                     # Random initialisation
                     if qmean == "random":
-                        qmean_m = stats.norm.rvs(loc=0, scale=1, size=(self.D[m], self.K))
+                        qmean_m = stats.norm.rvs(loc=0, scale=1., size=(self.D[m], self.K))
 
                     # Random and orthogonal initialisation
                     # elif qmean == "orthogonal":
@@ -290,17 +298,17 @@ class initModel(object):
                 qmean_m[:, idx_covariates] = covariates
 
                 # Remove prior and variational distributions from the covariates
-                pcov_m[idx_covariates] = s.nan
+                # pcov_m[idx_covariates] = s.nan
                 qvar_m[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
             # Initialise the node
-            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean_m, pcov=pcov_m, qmean=qmean_m, qvar=qvar_m, qE=qE, qE2=qE2,
-                               idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv[m])
+            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean_m, pvar=pvar, qmean=qmean_m, qvar=qvar_m, qE=qE, qE2=qE2,
+                               idx_covariates=idx_covariates)
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
     def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1.,
-        qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1.,
+        qmean_S0=0., qmean_S1=0, qvar_S0=1., qvar_S1=1., qtheta=1.,
         qEW_S0=None, qEW_S1=None, qES=None):
         """Method to initialise sparse weights with a (reparametrised) spike and slab prior
 
@@ -318,7 +326,7 @@ class initModel(object):
             if isinstance(qmean_S1,str):
 
                 if qmean_S1 == "random": # random
-                    qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
+                    qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
                 else:
                     print("%s initialisation not implemented for W" % qmean_S1)
                     exit()
