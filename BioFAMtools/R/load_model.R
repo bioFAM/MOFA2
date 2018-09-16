@@ -69,11 +69,11 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
 
   # Replace NaN by NA
   # RICARD: I THINK THIS REALISES EVERYTHING INTO MEMORY, TO CHECK
-  # for (m in feature_groups) {
-  #   for (p in sample_groups) {
-  #     training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA
-  #   }
-  # }
+  for (m in feature_groups) {
+    for (p in sample_groups) {
+      training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA
+    }
+  }
 
   # Give corresponding names for rows (features) and columns (samples)
   # RICARD: I THINK THIS REALISES EVERYTHING INTO MEMORY, TO CHECK

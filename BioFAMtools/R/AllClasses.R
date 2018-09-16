@@ -33,7 +33,7 @@
 #' @aliases BioFAModel-class
 #' @exportClass BioFAModel
 setClass("BioFAModel", 
-         slots=c(input_data       = "data.frame",
+         slots=c(input_data       = "list",
                  training_data    = "list",
                  imputed_data     = "list",
                  parameters       = "list",

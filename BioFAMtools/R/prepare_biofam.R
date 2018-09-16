@@ -32,7 +32,7 @@ prepare_biofam <- function(object, dir_options, data_options = NULL, model_optio
     message("No data options specified, using default...")
     object@data_options <- get_default_data_options(object)
   } else {
-    if (!is(training_options,"list") & !all(names(training_options) == names(get_default_training_options(object))))
+    if (!is(training_options,"list") | !setequal(names(training_options), names(get_default_training_options(object)) ))
       stop("data_options are incorrectly specified, please read the documentation in get_default_data_options")
     object@data_options <- data_options
   }
@@ -43,18 +43,18 @@ prepare_biofam <- function(object, dir_options, data_options = NULL, model_optio
     message("No training options specified, using default...")
     object@training_options <- get_default_training_options(object)
   } else {
-    if(!is(training_options,"list") & !all(names(training_options) == names(get_default_training_options(object))))
+    if(!is(training_options,"list") | !setequal(names(training_options), names(get_default_training_options(object)) ))
       stop("training_options are incorrectly specified, please read the documentation in get_default_training_options")
     object@training_options <- training_options
   }
   
   # Get model options
   message("Checking model options...")
-  if(is.null(model_options)) {
+  if (is.null(model_options)) {
     message("No model options specified, using default...")
     object@model_options <- get_default_model_options(object)
   } else {
-    if(!is(model_options,"list") & !all(names(model_options) == names(get_default_model_options(object))))
+    if (!is(model_options,"list") | !setequal(names(model_options), names(get_default_model_options(object)) ))
       stop("model_options are incorrectly specified, please read the documentation in get_default_model_options")
     object@model_options <- model_options
   }
@@ -90,7 +90,7 @@ prepare_biofam <- function(object, dir_options, data_options = NULL, model_optio
 #'  \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
-#'  \item{\strong{seed}:}{ random seed for reproducibility (default is NULL, which samples a random seed).}
+#'  \item{\strong{seed}:}{ random seed for reproducibility (default is 0, random seed).}
 #' }
 #' @return Returns a list with default training options
 #' @export
@@ -103,7 +103,7 @@ get_default_training_options <- function(object) {
     learn_factors = TRUE,          # (logical) learn the number of factors?
     drop_factor_threshold = 0.02,  # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity?
-    seed = NULL                    # (numeric or NULL) random seed
+    seed = 0                       # (numeric or NULL) random seed
   )
   
   # if training_options already exist, replace the default values but keep the additional ones
@@ -155,9 +155,6 @@ get_default_data_options <- function(object) {
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the initial number of factors. 
 #'  If you want to learn the number of factors automatically we recommend setting this to a large value, around 50. Default is 25.}
-#'  \item{\strong{learn_intercept}:}{ logical indicating whether to learn an intercept term to capture differences in feature means.
-#'  This prevents you from having to center the data, so this option is always recommended. Default is TRUE.}
-#' }
 #' @return Returns a list with the default model options, which have to be passed as an argument to \code{\link{prepareMOFA}}
 #' @export
 get_default_model_options <- function(object) {
@@ -169,18 +166,19 @@ get_default_model_options <- function(object) {
   if (!.hasSlot(object,"input_data")) stop("input_data slot needs to be specified before getting the model options")
   
   # Guess likelihoods from the data
-  # if (!.hasSlot(object,"training_data")) stop("training_data slot needs to be specified before getting the model options")
-  # THIS DOES NOT WORK BECAUSE TRAINING_DATA IS NOT DEFINED UNTIL LOADING THE MODEL
-  # likelihood <- .infer_likelihoods(object)
+  # likelihood <- .infer_likelihoods(object) THIS DOES NOT WORK 
   likelihood <- rep(x="gaussian", times=object@dimensions$M)
   
   # Define default model options
   model_options <- list(
     likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    learn_intercept = FALSE,     # (logical) include a constant factor of 1s to learn the mean of features (intercept)? If not, you need to center the data
-    num_factors = 25            # (numeric) initial number of latent factors
+    num_factors = 25,            # (numeric) initial number of latent factors
+    sl_z = TRUE,
+    sl_w = TRUE,
+    ard_w = TRUE,
+    ard_z = TRUE
   )
-  
+
   # if model_options already exist, replace the default values but keep the additional ones
   if (length(object@model_options)>0)
     model_options <- modifyList(model_options, object@model_options)

@@ -116,7 +116,15 @@ class entry_point(object):
           if isinstance(data[m], dict):
             data[m] = list(data[m].values())
 
-        assert s.all([ isinstance(data[m][p], s.ndarray) or isinstance(data[m][p], pd.DataFrame) for p in range(len(data[0])) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
+        for m in range(len(data)):
+          for p in range(len(data[0])):
+            if isinstance(data[m][p], pd.DataFrame):
+              data[m][p] = data[m][p].values
+            elif isinstance(data[m][p], np.ndarray):
+              pass
+            else:
+              print("Error, input data is not a numpy.ndarray or a pandas dataframe")
+              exit()
 
         # Verbose message
         for m in range(len(data)):
@@ -232,35 +240,28 @@ class entry_point(object):
         self.data_opts['views_names'] = data["feature_group"].unique()
         self.data_opts['groups_names'] = data["sample_group"].unique()
 
-        # Define feature and sample names
-        self.data_opts['samples_names'] = data["sample"].unique()
-        self.data_opts['features_names'] = [ data.loc[data['feature_group'] == m].feature.unique() for m in self.data_opts['views_names'] ]
+        # Convert data frame to list of matrices
+        data_matrix = [None]*len(self.data_opts['views_names'])
+        for m in range(len(self.data_opts['views_names'])):
+            subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
+            data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
 
-        # (DEPRECIATED) Create dictionaries with mapping between:
-        #  sample names (keys) and samples_groups (values)
-        #  feature names (keys) and feature groups (values)
-        # TODO CHECK that the order is fine here ...
-        # self.data_opts['samples_groups'] = pd.Series(data["sample_group"].values, index=data["sample"].values).to_dict()
-        # self.data_opts['feature_groups'] = pd.Series(data.feature_group.values, index=data.feature).to_dict()
+        # Define (unique) sample names
+        self.data_opts['samples_names'] = data_matrix[0].index.tolist()
+        
+        # Define feature names
+        self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
                                             .set_index('sample').loc[self.data_opts['samples_names']] \
                                             .sample_group.tolist()
 
-        # Define dictionary with the dimensionalities
+        # Define dimensionalities
         self.dimensionalities = {}
         self.dimensionalities['M'] = len(self.data_opts['views_names'])
         self.dimensionalities['N'] = len(self.data_opts['samples_names'])
         self.dimensionalities['P'] = len(self.data_opts['groups_names'])
-
-        # Convert data frame to list of matrices
-        data_matrix = [None]*self.dimensionalities['M']
-        for m in range(self.dimensionalities['M']):
-            subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
-            data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
-
-        self.data_opts['features_names'] = [ y.columns.values for y in data_matrix ]
         self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
         # Process the data (i.e center, scale, etc.)
@@ -322,10 +323,9 @@ class entry_point(object):
             self.train_opts['schedule'] = schedule
 
         # Seed
-        if seed is None or seed == 0:  # Seed for the random number generator
-            self.train_opts['seed'] = int(round(time() * 1000) % 1e6)
-        else:
-            self.train_opts['seed'] = seed
+        if seed is None:  # Seed for the random number generator
+            seed = 0
+        self.train_opts['seed'] = int(seed)
         s.random.seed(self.train_opts['seed'])
 
     def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False, noise_on='features', learnTheta=True, learn_intercept=False):
@@ -483,7 +483,6 @@ class entry_point(object):
 
         if no_theta:
             self.train_opts['schedule'].remove('ThetaZ')
-        print(self.train_opts['schedule'])
         self.model.setTrainOptions(self.train_opts)
 
         # Train the model
@@ -496,10 +495,10 @@ class entry_point(object):
             print("Saving model in %s...\n" % outfile)
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
-
         saveTrainedModel(
             model=self.model,
             outfile=outfile,
+            data=self.data,
             train_opts=self.train_opts,
             model_opts=self.model_opts,
 	    	samples_names=self.data_opts['samples_names'],
