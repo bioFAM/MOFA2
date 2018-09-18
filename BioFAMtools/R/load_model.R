@@ -18,28 +18,28 @@
 #' @export
 
 load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE) {
-  
-  # Create new bioFAModel object  
+
+  # Create new bioFAModel object
   if (is.null(object)) object <- new("BioFAModel")
-  
+
   # Sanity checks
   if (.hasSlot(object, "status") & length(object@status) != 0)
     if (object@status == "trained") warning("The specified object is already trained, over-writing training output with new results.")
   if (.hasSlot(object, "on_disk") & (on_disk)) object@on_disk <- TRUE
-  
+
   # Get groups and data set names from the hdf5 file object
   foo <- h5ls(file, datasetinfo = F)
-  
+
   ########################
   ## Load training data ##
   ########################
-  
+
   # Load identity of features and samples
   feature_names <- h5read(file, "features")
   sample_names  <- h5read(file, "samples")
   feature_groups <- foo[foo$group=="/data","name"]
   sample_groups <- foo[foo$group==paste0("/data/",feature_groups[1]),"name"]
-  
+
   # Load data matrices
   training_data <- list()
   if (load_training_data) {
@@ -88,33 +88,33 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   # }, error = function(x) { cat("Error defining feature and sample names\n") })
 
   object@training_data <- training_data
-  
+
   #######################
   ## Load expectations ##
   #######################
-  
+
   expectations <- list()
   node_names <- foo[foo$group=="/expectations","name"]
-  
+
   if ("AlphaW" %in% node_names)
     expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")
   if ("AlphaZ" %in% node_names)
     expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
-  
+
   # TO-DO: IF TAU IS EXPANDED IT SHOULD BE A DELAYEDARRAY
   if ("Tau" %in% node_names)
     expectations[["Tau"]] <- h5read(file, "expectations/Tau")
-  
+
   # RICARD: I DON'T THINK Z OR W SHOULD BE DELAYED ARRAYS, THEY SHOULD FIT IN MEMORY
   if ("Z" %in% node_names)
     expectations[["Z"]] <- h5read(file, "expectations/Z")
   if ("SZ" %in% node_names)
     expectations[["Z"]] <- h5read(file, "expectations/SZ")
   if ("W" %in% node_names)
-    expectations[["W"]] <- h5read(file, "expectations/W")    
+    expectations[["W"]] <- h5read(file, "expectations/W")
   if ("SW" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/SW")
-  
+
   if ("ThetaW" %in% node_names)
     expectations[["ThetaW"]] <- h5read(file, "expectations/ThetaW")
   if ("ThetaZ" %in% node_names)
@@ -132,13 +132,13 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
       }
     }
   }
-    
+
   object@expectations <- expectations
-    
+
   #####################
   ## Load parameters ##
   #####################
-  
+
   # Load parameters
   # tryCatch(object@parameters <- h5read(file, "parameters"), error = function(e) { print(paste("No parameters found in ", file)) })
 
@@ -159,7 +159,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
   if (is.null(feature_names))
     feature_names <- lapply(object@dimensions[["D"]], function(d) paste0("feature", as.character(1:d)))
-  
+
 
   # Set feature_group names
   if (is.null(names(object@training_data))) {
@@ -167,7 +167,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   } else {
     views_names(object) <- names(object@training_data)
   }
-  
+
   # Set sample_group names
   if (is.null(names(object@training_data[[1]]))) {
     groups_names(object) <- paste0("sample_group", as.character(1:object@dimensions[["P"]]))
@@ -179,11 +179,11 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   ########################
   ## Load model options ##
   ########################
-  
+
   tryCatch( {
     object@model_options <- as.list(h5read(file, 'model_options', read.attributes=T))
   }, error = function(x) { print("Model opts not found, not loading it...") })
-  
+
   # Convert True/False Strings to logical values
   for (opt in names(object@model_options)) {
     if (object@model_options[opt] == "False" | object@model_options[opt] == "True") {
@@ -222,24 +222,24 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   ##########################################
   ## Load training options and statistics ##
   ##########################################
-  
+
   # Load training options
   if (length(object@training_options) == 0) {
     tryCatch( {
       object@training_options <- as.list(h5read(file, 'training_opts', read.attributes=T))
     }, error = function(x) { print("Training opts not found, not loading it...") })
-  }    
-  
+  }
+
   # Load training statistics
   tryCatch( {
     object@training_stats <- h5read(file, 'training_stats', read.attributes=T)
     colnames(object@training_stats$elbo_terms) <- attr(h5read(file,"training_stats/elbo_terms", read.attributes=T),"colnames")
   }, error = function(x) { print("Training stats not found, not loading it...") })
-  
+
   ###################
   ## Parse factors ##
   ###################
-  
+
   # Rename factors if intercept is included
   if (object@model_options$learn_intercept) {
     intercept_idx <- names(which(sapply(apply(object@expectations$Z, 2, unique),length)==1))
@@ -248,7 +248,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     factors_names(object) <- new_factornames
     # object@Dimensions[["K"]] <- object@Dimensions[["K"]] - 1
   }
-  
+
   # Order factors in order of variance explained
   if (sort_factors) {
     object <- cache_variance_explained(object)
@@ -256,28 +256,27 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
     if (object@model_options$learn_intercept) { order_factors <- c("intercept", order_factors) }
     object <- subset_factors(object, order_factors)
-    if (object@model_options$learn_intercept) { 
+    if (object@model_options$learn_intercept) {
      factors_names(object) <- c("intercept", 1:(object@dimensions$K-1))
     } else {
-     factors_names(object) <- c(1:object@dimensions$K) 
+     factors_names(object) <- c(1:object@dimensions$K)
     }
   }
-  
+
   # Parse factors: Mask passenger samples
   # object <- detect_passengers(object)
 
   ############################
   ## Update previous models ##
   ############################
-  
+
   object <- .update_old_model(object)
-  
+
   ######################
   ## Quality controls ##
   ######################
-  
+
   # qualityControl(object)
 
   return(object)
 }
-

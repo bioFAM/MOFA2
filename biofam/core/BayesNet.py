@@ -207,6 +207,7 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute(self.options)
 
+        import pdb; pdb.set_trace()
         print('elbo before training: ', self.calculateELBO())
 
         # Start training
