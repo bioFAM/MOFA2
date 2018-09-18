@@ -85,8 +85,6 @@ prepare_biofam <- function(object, dir_options, data_options = NULL, model_optio
 #'  Default is 5000, but we recommend using the 'tolerance' as convergence criteria.}
 #'  \item{\strong{tolerance}:}{ numeric value indicating the convergence threshold based on the change in Evidence Lower Bound (deltaELBO). 
 #'  For quick exploration we recommend this to be around 1.0, and for a thorough training we recommend a value of 0.01. Default is 0.1}
-#'  \item{\strong{learn_factors}:}{ logical indicating whether to learn the number of factors. 
-#'  The criteria to shut down factors is based on a minimum fraction of variance explained, defined in the \code{DropFactorThreshold} option}
 #'  \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
@@ -100,7 +98,6 @@ get_default_training_options <- function(object) {
   training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
     tolerance = 0.1,               # (numeric) Convergence threshold based on change in the evidence lower bound
-    learn_factors = TRUE,          # (logical) learn the number of factors?
     drop_factor_threshold = 0.02,  # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity?
     seed = 0                       # (numeric or NULL) random seed

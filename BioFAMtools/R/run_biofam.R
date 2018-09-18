@@ -31,15 +31,6 @@ run_biofam <- function(object, dir_options) {
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")
   
-  if (object@training_options$learn_factors == FALSE) {
-    object@training_options$drop_factor_threshold <- 0.00
-  } else {
-    if (object@training_options$drop_factor_threshold==0) { 
-      print("Warning: learn_factors is set to TRUE but drop_factor_threshold is 0, this is contradictory.")
-      print("Please read the documentation in prepare_biofam about learning the number of factors.")
-    }
-  }
-  
   if (file.exists(dir_options$outfile))
     message("Warning: Output file already exists, it will be replaced")
   
@@ -62,7 +53,8 @@ run_biofam <- function(object, dir_options) {
   # Set the data
   # (only for DF) biofam_entrypoint$set_data_df(r_to_py(object@input_data))
   biofam_entrypoint$set_data_matrix(
-    data = r_to_py(object@input_data),
+    # data = r_to_py(object@input_data),
+    data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
     samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
     features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
   )

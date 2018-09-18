@@ -116,7 +116,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   
   data_matrix <- lapply(split(df,df$feature_group), 
     function(x) lapply(split(x,x$sample_group),
-      function(y) .matrix.please( reshape2::dcast(y, sample~feature, value.var="value", fill=NA)
+      function(y) .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE)
   )))
   object <- .create_biofam(data_matrix)
   
@@ -137,7 +137,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   tmp
 }
 
-.matrix.please <- function(x) {
+.df_to_matrix <- function(x) {
   m <- as.matrix(x[,-1])
   rownames(m) <- x[[1]]
   m

@@ -173,7 +173,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
     
     # Grid plot with the variance explained per factor and view/group
     mk_title <- paste0("Variance explained per factor")
-    hm <- ggplot(fvar_mk_df[fvar_mk_df[[split_by]] == i,], aes_string(x=x, "factor")) + 
+    hm <- ggplot(fvar_mk_df[fvar_mk_df[[split_by]] == i,], aes_string(x=x, y="factor")) + 
       geom_tile(aes(fill=value), color="black") +
       guides(fill=guide_colorbar("R2")) +
       ylab("Latent factor") + 
