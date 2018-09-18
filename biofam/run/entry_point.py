@@ -12,7 +12,6 @@ from typing import List, Union, Dict, TypeVar
 from biofam.build_model.build_model import *
 from biofam.build_model.train_model import train_model
 
-# TODO where do we input the out_file option ??
 class entry_point(object):
     def __init__(self):
         self.print_banner()
@@ -96,27 +95,22 @@ class entry_point(object):
         """
 
         # Sanity check
-        if isinstance(data, dict):
-          data = list(data.values())
-        elif isinstance(data, list):
-          pass
-        else:
-          print("Error: Data not recognised")
-          sys.stdout.flush()
-          exit()
+        if not isinstance(data, list):
+          if isinstance(data, dict):
+            data = list(data.values())
+          else:
+            print("Error: Data not recognised"); sys.stdout.flush(); exit()
 
-        views_names    = [k for k in features_names_dict.keys()]
-        groups_names   = [k for k in samples_names_dict.keys()]
-        samples_groups = [list(samples_names_dict.keys())[i] for i in range(len(groups_names)) for n in range(len(list(samples_names_dict.values())[i]))]
-
-        features_names = [v for v in features_names_dict.values()]
-        samples_names  = [v for l in samples_names_dict.values() for v in l]  # flattened list of samples names
-
+        # Convert input data to numpy array format
         for m in range(len(data)):
           if isinstance(data[m], dict):
             data[m] = list(data[m].values())
-
-        assert s.all([ isinstance(data[m][p], s.ndarray) or isinstance(data[m][p], pd.DataFrame) for p in range(len(data[0])) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
+        for p in range(len(data[0])):
+          if not isinstance(data[m][p], np.ndarray):
+              if isinstance(data[m][p], pd.DataFrame): 
+                  data[m][p] = data[m][p].values
+              else: 
+                  print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
 
         # Verbose message
         for m in range(len(data)):
@@ -130,21 +124,24 @@ class entry_point(object):
         self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
         # Define feature group names and sample group names
-        self.data_opts['views_names']  = views_names
-        self.data_opts['groups_names'] = groups_names
+        self.data_opts['views_names']  = [k for k in features_names_dict.keys()]
+        self.data_opts['groups_names'] = [k for k in samples_names_dict.keys()]
 
         # Define feature and sample names
-        self.data_opts['samples_names']  = samples_names
-        self.data_opts['features_names'] = features_names
+        self.data_opts['samples_names']  = [v for l in samples_names_dict.values() for v in l]
+        self.data_opts['features_names'] = [v for v in features_names_dict.values()]
 
         # Set samples groups
-        self.data_opts['samples_groups'] = samples_groups
+        # FIX THIS
+        self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
 
         # Concatenate groups
         for m in range(len(data)):
             data[m] = np.concatenate(data[m])
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
+        import pdb
+        pdb.set_trace()
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
@@ -232,39 +229,42 @@ class entry_point(object):
         self.data_opts['views_names'] = data["feature_group"].unique()
         self.data_opts['groups_names'] = data["sample_group"].unique()
 
-        # Define feature and sample names
-        self.data_opts['samples_names'] = data["sample"].unique()
-        self.data_opts['features_names'] = [ data.loc[data['feature_group'] == m].feature.unique() for m in self.data_opts['views_names'] ]
+        # Convert data frame to list of matrices
+        data_matrix = [None]*len(self.data_opts['views_names'])
+        for m in range(len(self.data_opts['views_names'])):
+            subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
+            data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
 
-        # (DEPRECIATED) Create dictionaries with mapping between:
-        #  sample names (keys) and samples_groups (values)
-        #  feature names (keys) and feature groups (values)
-        # TODO CHECK that the order is fine here ...
-        # self.data_opts['samples_groups'] = pd.Series(data["sample_group"].values, index=data["sample"].values).to_dict()
-        # self.data_opts['feature_groups'] = pd.Series(data.feature_group.values, index=data.feature).to_dict()
+        # Define (unique) sample names
+        self.data_opts['samples_names'] = data_matrix[0].index.tolist()
+        
+        # Define feature names
+        self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
                                             .set_index('sample').loc[self.data_opts['samples_names']] \
                                             .sample_group.tolist()
 
-        # Define dictionary with the dimensionalities
+        # Define dimensionalities
         self.dimensionalities = {}
         self.dimensionalities['M'] = len(self.data_opts['views_names'])
         self.dimensionalities['N'] = len(self.data_opts['samples_names'])
         self.dimensionalities['P'] = len(self.data_opts['groups_names'])
-
-        # Convert data frame to list of matrices
-        data_matrix = [None]*self.dimensionalities['M']
-        for m in range(self.dimensionalities['M']):
-            subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
-            data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
-
-        self.data_opts['features_names'] = [ y.columns.values for y in data_matrix ]
         self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
         # Process the data (i.e center, scale, etc.)
-        self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
+        data_matrix = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
+
+        # Convert input data to numpy array format
+        for m in range(len(data_matrix)):
+            if not isinstance(data_matrix[m], np.ndarray):
+                if isinstance(data_matrix[m], pd.DataFrame): 
+                    data_matrix[m] = data_matrix[m].values
+                else: 
+                    print("Error, input data is not a numpy.ndarray or a pandas dataframe"); exit()
+
+        self.data = data_matrix
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -322,10 +322,9 @@ class entry_point(object):
             self.train_opts['schedule'] = schedule
 
         # Seed
-        if seed is None or seed == 0:  # Seed for the random number generator
-            self.train_opts['seed'] = int(round(time() * 1000) % 1e6)
-        else:
-            self.train_opts['seed'] = seed
+        if seed is None:  # Seed for the random number generator
+            seed = 0
+        self.train_opts['seed'] = int(seed)
         s.random.seed(self.train_opts['seed'])
 
     def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False, noise_on='features', learnTheta=True, learn_intercept=False):
@@ -483,7 +482,6 @@ class entry_point(object):
 
         if no_theta:
             self.train_opts['schedule'].remove('ThetaZ')
-        print(self.train_opts['schedule'])
         self.model.setTrainOptions(self.train_opts)
 
         # Train the model
@@ -493,20 +491,20 @@ class entry_point(object):
         """ Save the model in an hdf5 file """
 
         if self.train_opts["verbose"]:
-            print("Saving model in %s...\n" % outfile)
+          print("Saving model in %s...\n" % outfile)
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
-
         saveTrainedModel(
-            model=self.model,
-            outfile=outfile,
-            train_opts=self.train_opts,
-            model_opts=self.model_opts,
-	    	samples_names=self.data_opts['samples_names'],
-            features_names=self.data_opts['features_names'],
-            views_names=self.data_opts['views_names'],
-	    	groups_names=self.data_opts['groups_names'],
-            samples_groups=self.data_opts['samples_groups']
+          model=self.model,
+          outfile=outfile,
+          data=self.data,
+          train_opts=self.train_opts,
+          model_opts=self.model_opts,
+    	    samples_names=self.data_opts['samples_names'],
+          features_names=self.data_opts['features_names'],
+          views_names=self.data_opts['views_names'],
+    	    groups_names=self.data_opts['groups_names'],
+          samples_groups=self.data_opts['samples_groups']
         )
 
 if __name__ == '__main__':

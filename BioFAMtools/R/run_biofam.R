@@ -19,7 +19,7 @@
 #' @return a trained \code{\link{bioFAMmodel}} object
 #' @import reticulate
 #' @export
-run_biofam <- function(object, dir_options, samples_groups = NULL) {
+run_biofam <- function(object, dir_options) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) 
@@ -30,15 +30,6 @@ run_biofam <- function(object, dir_options, samples_groups = NULL) {
   
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")
-  
-  if (object@training_options$learn_factors == FALSE) {
-    object@training_options$drop_factor_threshold <- 0.00
-  } else {
-    if (object@training_options$drop_factor_threshold==0) { 
-      print("Warning: learn_factors is set to TRUE but drop_factor_threshold is 0, this is contradictory.")
-      print("Please read the documentation in prepare_biofam about learning the number of factors.")
-    }
-  }
   
   if (file.exists(dir_options$outfile))
     message("Warning: Output file already exists, it will be replaced")
@@ -60,15 +51,13 @@ run_biofam <- function(object, dir_options, samples_groups = NULL) {
   )
   
   # Set the data
-  # FIX THIS
-  # biofam_entrypoint$set_data_df(data=unname(lapply(object@input_data, function(x) r_to_py(t(x)))))
-  if (.hasSlot(object, "training_data")) {
-    biofam_entrypoint$set_data_matrix(r_to_py(object@training_data), 
-                                      # r_to_py(names(object@training_data)), r_to_py(names(object@training_data[[1]])),
-                                      r_to_py(lapply(object@training_data[[1]], rownames)), r_to_py(lapply(object@training_data, function(m) colnames(m[[1]]))))
-  } else {
-    biofam_entrypoint$set_data_df(r_to_py(object@input_data))
-  }
+  # (only for DF) biofam_entrypoint$set_data_df(r_to_py(object@input_data))
+  biofam_entrypoint$set_data_matrix(
+    # data = r_to_py(object@input_data),
+    data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
+    samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
+    features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
+  )
   
   
   # Set training options  
@@ -84,7 +73,6 @@ run_biofam <- function(object, dir_options, samples_groups = NULL) {
   biofam_entrypoint$set_model_options(
     factors         = object@model_options$num_factors,
     likelihoods     = unname(object@model_options$likelihood),
-    learn_intercept = object@model_options$learn_intercept,
     sl_z=object@model_options$sl_z, 
     sl_w=object@model_options$sl_w, 
     ard_w=object@model_options$ard_w, 

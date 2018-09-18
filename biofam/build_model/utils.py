@@ -356,7 +356,7 @@ def saveParameters(model, hdf5, views_names=None, groups_names=None, samples_gro
         if type(parameters) == list:
             # Loop through the views
             for m in range(len(parameters)):
-                tmp = np.unique(views_names)[m] if views_names is not None else "view_" + str(m)
+                tmp = views_names[m] if views_names is not None else "view_" + str(m)
 
                 # Create subsubgroup for the view
                 view_subgrp = node_subgrp.create_group(tmp)
@@ -373,7 +373,7 @@ def saveParameters(model, hdf5, views_names=None, groups_names=None, samples_gro
 
         # Single-view nodes
         else:
-            for group_ix, samp_group in enumerate(np.unique(groups_names)):
+            for group_ix, samp_group in enumerate(groups_names):
                 samp_subgrp = node_subgrp.create_group(str(samp_group))
                 samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
                 for param_name in parameters.keys():
@@ -419,7 +419,7 @@ def saveExpectations(model, hdf5, views_names=None, groups_names=None, samples_g
 
             # Iterate over views
             for m in range(len(expectations)):
-                tmp = np.unique(views_names)[m] if views_names is not None else "view_" + str(m)
+                tmp = views_names[m] if views_names is not None else "view_" + str(m)
 
                 # Create subsubgroup for the view
                 view_subgrp = node_subgrp.create_group(tmp)
@@ -443,7 +443,7 @@ def saveExpectations(model, hdf5, views_names=None, groups_names=None, samples_g
 
                         # Expectations for the node like Y and Tau have both view and group structure
                         if node == "Y" or node == "Tau":
-                            for samp_group in np.unique(groups_names):
+                            for samp_group in groups_names:
                                 # create hdf5 group for the considered sample group
                                 samp_subgrp = view_subgrp.create_group(str(samp_group))
                                 samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
@@ -463,7 +463,7 @@ def saveExpectations(model, hdf5, views_names=None, groups_names=None, samples_g
 #            for samp_group in range(len(groups_names)):
 #                samp_subgrp = node_subgrp.create_group(samp_group)
             group_ix = 0
-            for samp_group in np.unique(groups_names):
+            for samp_group in groups_names:
                 # create hdf5 group for the considered sample group
                 samp_subgrp = node_subgrp.create_group(str(samp_group))
 
@@ -542,7 +542,7 @@ def saveModelOpts(opts, hdf5):
         grp.create_dataset(k, data=np.asarray(v).astype('S'))
     grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
-def saveTrainingData(model, hdf5, views_names=None, groups_names=None, samples_groups=None, samples_names=None, features_names=None):
+def saveTrainingData(model, hdf5, data, views_names=None, groups_names=None, samples_groups=None, samples_names=None, features_names=None):
     """ Method to save the training data in an hdf5 file
 
     PARAMETERS
@@ -564,7 +564,6 @@ def saveTrainingData(model, hdf5, views_names=None, groups_names=None, samples_g
     #     samples_groups = np.array([0] * model.dim['N'])
     #     groups_names = np.array(['all'])
 
-    data     = model.getTrainingData()
     data_grp = hdf5.create_group("data")
 
     # Save features per view and samples per group
@@ -572,25 +571,24 @@ def saveTrainingData(model, hdf5, views_names=None, groups_names=None, samples_g
     sampledata_grp  = hdf5.create_group("samples")
 
     for m in range(len(data)):
-        view = np.unique(views_names)[m] if views_names is not None else "view_" + str(m)
+        view = views_names[m] if views_names is not None else "view_" + str(m)
 
-        # Save features for the view
+        # Save features names
         if features_names is not None:
             featuredata_grp.create_dataset(view, data=[str(f).encode('utf8') for f in features_names[m]])
 
+        # Save data
         view_subgrp = data_grp.create_group(view)
-
-        # Save data for the view and the group
-        for samp_group in np.unique(groups_names):
+        for samp_group in groups_names:
             samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
-            view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:].data)
+            # view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:].data)
+            view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:])
 
-    # Save samples for the group
-    for samp_group in np.unique(groups_names):
+    # Save samples names
+    for samp_group in groups_names:
         samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
         if samples_names is not None:
             sampledata_grp.create_dataset(samp_group, data=[str(s).encode('utf8') for s in [samples_names[e] for e in samp_indices]])
-
 
 def saveDataTxt(model, outDir, views_names=None, samples_names=None, features_names=None, shared_features=False):
     """ Method to save the training data in text files
@@ -684,7 +682,7 @@ def overwriteExpectationsMV(MV):
             node.mask()
 
 
-def saveTrainedModel(model, outfile,
+def saveTrainedModel(model, outfile, data,
     train_opts, model_opts,
     features_names=None, views_names=None,
     samples_names=None, groups_names=None, samples_groups=None):
@@ -694,14 +692,9 @@ def saveTrainedModel(model, outfile,
     ----------
     """
     assert model.trained, "Model is not trained"
+
+    # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
     if views_names is not None:
-
-        #uniq_views_names = np.unique(views_names)
-        #idx = sorted(range(len(views_names)), key=lambda k: views_names[k])
-        #tmp = [model_opts["likelihoods"][idx[m]] for m in range(len(model_opts["likelihoods"]))]
-
-        # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly        uniq_views_names = np.unique(views_names)
-
         uniq_views_names = np.unique(views_names).tolist()
         sorted_views = sorted(uniq_views_names) #alphabetical sort
         idx = {view:i for (i,view) in enumerate(uniq_views_names)}
@@ -718,7 +711,7 @@ def saveTrainedModel(model, outfile,
     saveExpectations(model, hdf5, views_names, groups_names, samples_groups)
     # saveParameters(model, hdf5, views_names, groups_names, samples_groups)
     saveModelOpts(model_opts, hdf5)
-    saveTrainingData(model, hdf5, views_names, groups_names, samples_groups, samples_names, features_names)
+    saveTrainingData(model, hdf5, data, views_names, groups_names, samples_groups, samples_names, features_names)
     # saveTrainingStats(model, hdf5)
     # saveTrainingOpts(train_opts, hdf5)
     hdf5.close()
