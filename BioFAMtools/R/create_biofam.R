@@ -102,22 +102,34 @@ create_biofam <- function(data, samples_groups = NULL) {
   
   # Convert 'sample_group' columns to factors
   if (!"sample_group" %in% colnames(df)) {
-    df$sample_group <- as.factor("sample_group1")
+    df$sample_group <- factor("sample_group1")
   } else {
-    df$sample_group <- as.factor(df$sample_group)
+    df$sample_group <- factor(df$sample_group)
   }
   
   # Convert 'feature_group' columns to factors
   if (!"feature_group" %in% colnames(df)) {
-    df$feature_group <- as.factor("feature_group1")
+    df$feature_group <- factor("feature_group1")
   } else {
-    df$feature_group <- as.factor(df$feature_group)
+    df$feature_group <- factor(df$feature_group)
   }
   
-  data_matrix <- lapply(split(df,df$feature_group), 
-    function(x) lapply(split(x,x$sample_group),
-      function(y) .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE)
-  )))
+  # samples <- as.character(unique(df$sample))
+  # data_matrix <- lapply(split(df,df$feature_group), 
+  #   function(x) lapply(split(x,x$sample_group),
+  #     function(y) {
+  #       y <- .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE))
+  #       y <- .subset_augment(y,samples)
+  #       y
+  #     }
+  # ))
+  
+  data_matrix <- lapply(split(df,df$feature_group),
+      function(x) lapply(split(x,x$sample_group), 
+        function(y) .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE))
+    )
+  )
+  
   object <- .create_biofam(data_matrix)
   
   return(object)
@@ -141,4 +153,13 @@ create_biofam <- function(data, samples_groups = NULL) {
   m <- as.matrix(x[,-1])
   rownames(m) <- x[[1]]
   m
+}
+
+# (Hidden) function to fill NAs for missing samples
+.subset_augment<-function(mat, samples) {
+  aug_mat <- matrix(NA, ncol=ncol(mat), nrow=length(samples))
+  aug_mat <- mat[match(samples,rownames(mat)),,drop=FALSE]
+  rownames(aug_mat) <- samples
+  colnames(aug_mat) <- colnames(mat)
+  return(aug_mat)
 }

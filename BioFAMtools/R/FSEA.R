@@ -223,7 +223,7 @@ lineplot_FSEA <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adju
     ylab("-log pvalue") +
     coord_flip() +
     theme(
-      axis.text.y = element_text(size=rel(1.2), hjust=1, color='black'),
+      axis.text.y = element_text(size=rel(1.0), hjust=1, color='black'),
       axis.text.x = element_text(size=rel(1.2), vjust=0.5, color='black'),
       axis.title.y=element_blank(),
       legend.position='none',

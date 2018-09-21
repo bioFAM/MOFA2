@@ -22,15 +22,13 @@ get_dimensions <- function(object) {
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the factor index(es).
 #' Default is "all".
-#' @param include_intercept logical indicating where to include the intercept term of the model, if present. 
-#' Default is \code{TRUE}.
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a matrix.
 #' Default is \code{FALSE}.
 #' @return By default it returns the latent factor matrix of dimensionality (N,K), where N is number of samples and K is number of factors. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (sample,factor,value).
 #' @export
 #' 
-get_factors <- function(object, groups = "all", factors = "all", as.data.frame = FALSE, include_intercept = TRUE) {
+get_factors <- function(object, groups = "all", factors = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -42,11 +40,7 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   if (paste0(factors, collapse="") == "all") { 
     factors <- factors_names(object) 
   } else if (is.numeric(factors)) {
-    if (object@model_options$learn_intercept) {
-      factors <- factors_names(object)[factors+1]
-    } else { 
-      factors <- factors_names(object)[factors]
-    }
+    factors <- factors_names(object)[factors]
   } else {
     stopifnot(all(factors %in% factors_names(object)))
   }
@@ -60,20 +54,6 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
     names(Z) <- groups
   }
 
-  # Remove intercept
-  if (include_intercept == FALSE) {
-    if (as.data.frame == FALSE) {
-      Z <- lapply(names(Z), function(p) {
-        Z[[p]][,colnames(Z[[p]])!="intercept"]
-      })
-      names(Z) <- groups
-    } else {
-      if ("intercept" %in% unique(Z$factor)) {
-        Z <- Z[Z$factor!="intercept",]
-      }
-    }
-  }
-  
   return(Z)
 }
 
@@ -105,11 +85,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   if (paste0(factors, collapse = "") == "all") { 
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-    if (object@model_options$learn_intercept) {
-      factors <- factors_names(object)[factors+1]
-    } else {
-      factors <- factors_names(object)[factors]
-    }
+    factors <- factors_names(object)[factors]
   } else { 
     stopifnot(all(factors %in% factors_names(object)))
   }

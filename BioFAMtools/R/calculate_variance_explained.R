@@ -152,7 +152,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
   for (i in levels(fvar_mk_df[[split_by]])) {
     
     # Barplot with variance explained per view/group (across all factors)
-    m_title <- paste0("Total variance explained per ", x)
+    m_title <- sprintf("%s\nTotal variance explained per %s", i, x)
     bplt <- ggplot(fvar_m_df[fvar_m_df[[split_by]] == i,], aes_string(x=x, y="R2")) + 
       ggtitle(m_title) +
       geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
@@ -169,7 +169,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
         axis.title.y = element_text(size=13, color="black"),
         axis.line = element_line(size=rel(1.0), color="black")
       )
-    bplts[[i]] <- bplt
+    # bplts[[i]] <- bplt
     
     # Grid plot with the variance explained per factor and view/group
     mk_title <- paste0("Variance explained per factor")
@@ -190,18 +190,19 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
         panel.background = element_blank()
       )
     hm <- hm + ggtitle(mk_title) + guides(fill=guide_colorbar("R2"))
-    hms[[i]] <- hm
-  }
-  
+    # hms[[i]] <- hm
+    
   # Join the two plots
   p <- plot_grid(
-    plotlist = c(bplts, hms), 
+    plotlist = list(bplt, hm), 
     align = "v", 
-    nrow = 2, 
-    ncol = length(unique(fvar_mk_df[[split_by]])), 
-    rel_heights = c(1/3,2/3), axis="l"
+    nrow = 2, ncol = 1, 
+    rel_heights = c(1/3,2/3), 
+    axis="l"
   )
-  return(p)
+  print(p)
+  }
+  
 }
 
 

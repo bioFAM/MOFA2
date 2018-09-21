@@ -197,7 +197,7 @@ def process_data(Y, data_opts, samples_groups):
         if data_opts['center_features_per_group'][m]:
             print("Centering features per group for view " + str(m) + "...")
             for gp_name in data_opts['groups_names']:
-                filt = [gp == gp_name for gp in samples_groups]
+                filt = [gp==gp_name for gp in samples_groups]
                 parsed_Y[m][filt] -= np.nanmean(parsed_Y[m][filt],axis=0)
 
         # Scale the views to unit variance
@@ -466,7 +466,6 @@ def saveExpectations(model, hdf5, views_names=None, groups_names=None, samples_g
             for samp_group in groups_names:
                 # create hdf5 group for the considered sample group
                 samp_subgrp = node_subgrp.create_group(str(samp_group))
-
                 samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
 
                 # iterate over expectation names
