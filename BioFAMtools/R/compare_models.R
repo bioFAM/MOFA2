@@ -6,7 +6,7 @@
 
 #' @title Plot the robustness of the latent factors across diferent trials
 #' @name compare_factors
-#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
+#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between
 #' their latent factors. The correlation is calculated only on those samples which are present in all models.
 #' Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
 #' If not, it suggests that some factors are weak and not captured by all models.
@@ -52,7 +52,7 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
     Z <- get_factors(model)
     # NOTE: concatenate all groups by default
     Z <- do.call(rbind, Z)
-    if (model@model_options$learn_intercept) 
+    if (model@model_options$learn_intercept)
       Z <- Z[,-1, drop=FALSE]
     Z
     })
@@ -82,7 +82,7 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
     # if(is.null(main)) main <- "Absolute correlation between latent factors"
     if(length(unique(as.numeric(abs(corLFs))))>1){
     pheatmap(abs(corLFs), show_rownames = show_rownames,show_colnames = show_colnames,
-             color = colorRampPalette(c("white",RColorBrewer::brewer.pal(n = 7, name = "YlOrRd")))(length(breaksList)),  
+             color = colorRampPalette(c("white",RColorBrewer::brewer.pal(n = 7, name = "YlOrRd")))(length(breaksList)),
              # color=colorRampPalette(c("white", "orange" ,"red"))(100),
              # annotation_col = modelAnnot, main= main , ...)
              ...)
@@ -114,7 +114,7 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
         names(sublist) <- names(models)[(i+1):length(LFs)]
         sublist
     })
-    
+
     names(PairWiseCor) <- names(models[-length(models)])
     return(NULL)
     #return(PairWiseCor)
@@ -125,7 +125,7 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
 
 #' @title Plot the robustness of the loading matrices, ie. the definition of the factors (how they impact features), across diferent trials
 #' @name compare_weights
-#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
+#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between
 #' their weights matrices. The correlations are computed between the columns of the concatenation of the weights matrices, only on those features which are present in all models.
 #' Ideally, the output should look like a block diagonal matrix, suggesting that the definition of factors (how they impact features) is robust under different initialisations.
 #' If not, it suggests that some factors are weak and not captured by all models.
@@ -152,14 +152,14 @@ compare_weights <- function(models, views = "all", comparison = "all", show_rown
     stop("Each element of the the list 'models' has to be an instance of BioFAModel")
   if (!comparison %in% c("all", "pairwise"))
     stop("'comparison' has to be either 'all' or 'pairwise'")
-  
+
   # give generic names if no names present
   if(is.null(names(models))) names(models) <- paste("model", 1: length(models), sep="")
-  
+
   # get latent factors
   LFs <- lapply(seq_along(models), function(modelidx){
     model <- models[[modelidx]]
-    
+
     W <- get_weights(model)
     if (views == "all"){
       W <- do.call(rbind, W)
@@ -167,43 +167,43 @@ compare_weights <- function(models, views = "all", comparison = "all", show_rown
     else{
       W <- do.call(rbind, W[views])
     }
-    
+
     # NOTE: concatenate all groups by default
   })
-  
+
   for (i in seq_along(LFs))
     colnames(LFs[[i]]) <- paste(names(models)[i], colnames(LFs[[i]]), sep="_")
-  
+
   if (comparison=="all") {
     #get common samples between models
     common_features <- Reduce(intersect,lapply(LFs, rownames))
     if(is.null(common_features))
       stop("No common features in all models for comparison for the specified view")
-    
+
     #subset LFs to common samples
     LFscommon <- Reduce(cbind, lapply(LFs, function(W) W[common_features,, drop=FALSE]))
-    
+
     # calculate correlation
     corLFs <- cor(LFscommon, use="complete.obs")
-    
+
     #annotation by model
     # modelAnnot <- data.frame(model = rep(names(models), times=sapply(LFs, ncol)))
     # rownames(modelAnnot) <- colnames(LFscommon)
-    
+
     #plot heatmap
     # TODO find a better way to plot heatmap with NAs
     corLFs[is.na(corLFs)]  = 0
     # if(is.null(main)) main <- "Absolute correlation between latent factors"
     if(length(unique(as.numeric(abs(corLFs))))>1){
       pheatmap(abs(corLFs), show_rownames = show_rownames,show_colnames = show_colnames,
-               color = colorRampPalette(c("white",RColorBrewer::brewer.pal(9,name="YlOrRd")))(100),
+               color = colorRampPalette(c("white",RColorBrewer::brewer.pal(n = 7, name = "YlOrRd")))(length(breaksList)),
                # color=colorRampPalette(c("white", "orange" ,"red"))(100),
                # annotation_col = modelAnnot, main= main , ...)
                ...)
     } else warning("No plot produced as correlations consist of only one value")
     # return(corLFs)
   }
-  
+
   if(comparison=="pairwise"){
     PairWiseCor <- lapply(seq_along(LFs[-length(LFs)]), function(i){
       LFs1<-LFs[[i]]
@@ -230,7 +230,7 @@ compare_weights <- function(models, views = "all", comparison = "all", show_rown
       names(sublist) <- names(models)[(i+1):length(LFs)]
       sublist
     })
-    
+
     names(PairWiseCor) <- names(models[-length(models)])
     return(NULL)
     #return(PairWiseCor)
@@ -268,7 +268,7 @@ compare_models <- function(models, show_modelnames = FALSE) {
 
 #' @title Select a model from a list of trained \code{\link{BioFAModel}} objects based on the best ELBO value
 #' @name select_model
-#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics 
+#' @description Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics
 
 #' and the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{BioFAModel}} objects.
