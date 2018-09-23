@@ -136,7 +136,7 @@ plot_factor_beeswarm <- function(object, factors = "all", group_by = NULL, color
   
   # Collect relevant data
   N <- sum(object@dimensions[["N"]])
-  Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
+  Z <- get_factors(object, factors=factors, as.data.frame=T)
   Z$factor <- as.factor(Z$factor)
   
   if (!is.null(group_by)){
@@ -304,14 +304,25 @@ plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(factors)==2)
-  stopifnot(all(factors %in% factors_names(object)))
   
+  # Get factors
+  if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors]
+  } else { 
+    stopifnot(all(factors %in% factors_names(object)))
+  }
+  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
+  Z$factor <- as.factor(Z$factor)
+  
+  # Get groups  
   groups <- .check_and_get_groups(object, groups)
-  
-  # Collect relevant data  
   N <- sum(object@dimensions[["N"]])
-  Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=TRUE)
   
+  # Set color
+  
+  color_legend <- T
+  
+  # MERGE THIS WITH THE SECTION BELOW
   if (!is.null(color_by)){
     if (color_by == "group"){
       color_by = c()
@@ -321,8 +332,6 @@ plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL
     }
   }
   
-  # Set color
-  color_legend <- T
   if (!is.null(color_by)) {
     # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
@@ -389,8 +398,8 @@ plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL
   df$shape_by <- as.factor(df$shape_by)
   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
   
-  xlabel <- paste("Latent factor", factors[1])
-  ylabel <- paste("Latent factor", factors[2])
+  xlabel <- factors[1]
+  ylabel <- factors[2]
   
   df_mat <- df %>% tidyr::spread(key="factor", value="value")
   df_mat <-  set_colnames(df_mat,c(colnames(df_mat)[1:4], "x", "y"))
@@ -467,7 +476,7 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   
   # Collect relevant data
   N <- sum(object@dimensions[["N"]])
-  Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=TRUE)
+  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
 
   # Remove constant factors 
   Z <- group_by(Z, factor) %>% mutate(var=var(value, na.rm = TRUE)) %>% ungroup() %>% filter(var>0) %>% select(-var)
@@ -621,9 +630,6 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Fetch factors
   Z <- get_factors(object)
-  
-  # Remove intercept
-  if(object@model_options$learn_intercept) Z <- lapply(Z, function(z) z[,-1])
   
   # Compute and plot correlation
   r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))

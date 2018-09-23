@@ -32,7 +32,7 @@ prepare_biofam <- function(object, dir_options, data_options = NULL, model_optio
     message("No data options specified, using default...")
     object@data_options <- get_default_data_options(object)
   } else {
-    if (!is(training_options,"list") | !setequal(names(training_options), names(get_default_training_options(object)) ))
+    if (!is(data_options,"list") | !setequal(names(data_options), names(get_default_data_options(object)) ))
       stop("data_options are incorrectly specified, please read the documentation in get_default_data_options")
     object@data_options <- data_options
   }

@@ -140,8 +140,6 @@ class entry_point(object):
             data[m] = np.concatenate(data[m])
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
-        import pdb
-        pdb.set_trace()
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
