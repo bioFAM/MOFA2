@@ -537,7 +537,7 @@ class entry_sfa(entry_point):
 
 if __name__ == '__main__':
     ent = entry_point()
-    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/'
+    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/data/'
     infiles = [dir+'data_0_0.txt']
     views =  ["view_0"]
     groups = ["group_0"]
@@ -564,7 +564,7 @@ if __name__ == '__main__':
     ent.set_data_options(lik, center_features=False, center_features_per_group=True, scale_features=False, scale_views=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=False, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
-    ent.set_train_options(iter=100, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=10, verbose=True)
+    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=10, verbose=True)
     if stochastic: ent.set_stochasticity_options(tau=.8, forgetting_rate=0.01, batch_size=.1)  # TODO fix problem batch size > .5
     ent.build()
     ent.run(no_theta=False)
