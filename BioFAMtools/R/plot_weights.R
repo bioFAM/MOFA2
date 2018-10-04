@@ -99,7 +99,7 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' @import ggplot2
 #' @export
 plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, 
-                                 name_color="", name_shape="", showMissing = TRUE) {
+                                 name_color="", name_shape="", showMissing = TRUE, abs=T) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -190,6 +190,10 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
   df$shape_by <- as.factor(df$shape_by)
   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
  
+  if (abs) {
+    df$x <- abs(df$x)
+    df$y <- abs(df$y)
+  }
   
   xlabel <- paste("Latent factor", factors[1])
   ylabel <- paste("Latent factor", factors[2])
