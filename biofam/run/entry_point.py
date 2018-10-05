@@ -537,7 +537,7 @@ class entry_sfa(entry_point):
 
 if __name__ == '__main__':
     ent = entry_point()
-    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/data/'
+    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/data_100/'
     infiles = [dir+'data_0_0.txt']
     views =  ["view_0"]
     groups = ["group_0"]

@@ -12,56 +12,6 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# TODO put back in the class as a static method
-# @jit(nopython=True, nogil=True)
-def compute_bar(w_tmp_e, w_tmp_e2, y_tmp, tau_tmp, Qmean, foo, bar, k, dim):
-
-    bar_tmp1 = w_tmp_e[:,k]
-
-    # NOTE slow bit but hard to optimise
-    # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-    bar_tmp2 = - np.dot(Qmean[:, np.arange(dim[1]) != k], w_tmp_e[:, np.arange(dim[1]) != k].T)
-    bar_tmp2 += y_tmp
-    bar_tmp2 *= tau_tmp
-    ##############################
-
-    return np.dot(bar_tmp2, bar_tmp1)
-
-# @profile
-def _updateParametersZ(Y, W, tau, Mu, Alpha,
-                      p_cov_inv, p_cov_inv_diag, Qmean, Qvar,
-                      latent_variables, markov_blanket, dim, P):
-
-    # latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
-    N = Y[0].shape[0]  # this is different from self.N for minibatch
-
-    M = len(Y)
-    for k in latent_variables:
-        foo = np.zeros((N,))
-        bar = np.zeros((N,))
-        for m in range(M):
-            w_tmp = W[m]
-            foo += np.dot(tau[m], w_tmp['E2'][:, k])
-            bar += compute_bar(w_tmp['E'], w_tmp['E2'], Y[m], tau[m], Qmean, foo, bar, k, dim)
-
-        if "AlphaZ" in markov_blanket:
-            Qvar[:, k] = 1. / (Alpha[:, k] + foo)
-            Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
-
-        else:
-            Qvar[:, k] = 1. / (foo + p_cov_inv_diag[k])
-
-            if P.params["cov"][k].__class__.__name__ == 'dia_matrix':
-                Qmean[:, k] = Qvar[:, k] * bar
-            else:
-                tmp = p_cov_inv[k] - p_cov_inv_diag[k] * np.eye(N)
-                for n in range(N):
-                    Qmean[n, k] = Qvar[n, k] * (bar[n] + np.dot(tmp[n, :], Mu[:, k] - Qmean[:, k]))
-
-    # Save updated parameters of the Q distribution
-    return {'Qmean': Qmean, 'Qvar':Qvar}
-
-
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior):
     def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_covariates=None, precompute_pcovinv=True):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, axis_cov=0, qE=qE, qE2=qE2)
@@ -200,13 +150,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # compute the update
         ########################################################################
-        latent_variables = self.getLvIndex()
-        markov_blanket = self.markov_blanket
-        dim = self.dim
-        P = self.P
-        par_up = _updateParametersZ(Y, W, tau, Mu, Alpha,
-                                    p_cov_inv, p_cov_inv_diag, Qmean, Qvar,
-                                    latent_variables, markov_blanket, dim, P)
+        par_up = self._updateParameters(Y, W, tau, Mu, Alpha,
+                                    p_cov_inv, p_cov_inv_diag, Qmean, Qvar)
         ########################################################################
         # Do the asignment
         ########################################################################
@@ -233,18 +178,9 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
             foo = s.zeros((N,))
             bar = s.zeros((N,))
             for m in range(M):
-                foo += np.dot(tau[m], W[m]["E2"][:, k])
-
-                bar_tmp1 = W[m]["E"][:,k]
-
-                # NOTE slow bit but hard to optimise
-                # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 = - s.dot(Qmean[:, s.arange(self.dim[1]) != k], W[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 += Y[m]
-                bar_tmp2 *= tau[m]
-                ##############################
-
-                bar += np.dot(bar_tmp2, bar_tmp1)
+                w_tmp = W[m]
+                foo += np.dot(tau[m], w_tmp['E2'][:, k])
+                bar += self._compute_bar(w_tmp['E'], w_tmp['E2'], Y[m], tau[m], Qmean, k, self.dim)
 
             if "AlphaZ" in self.markov_blanket:
                 Qvar[:, k] = 1. / (Alpha[:, k] + foo)
@@ -262,6 +198,22 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
 
         # Save updated parameters of the Q distribution
         return {'Qmean': Qmean, 'Qvar':Qvar}
+
+    @staticmethod
+    @jit(nopython=True, nogil=True)
+    def _compute_bar(w_tmp_e, w_tmp_e2, y_tmp, tau_tmp, Qmean, k, dim):
+
+        bar_tmp1 = w_tmp_e[:,k]
+
+        # NOTE slow bit but hard to optimise
+        # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
+        bar_tmp2 = - np.dot(Qmean[:,  np.arange(dim[1]) != k], w_tmp_e[:, np.arange(dim[1]) != k].T)
+        bar_tmp2 += y_tmp
+        bar_tmp2 *= tau_tmp
+        ##############################
+
+        ret = np.dot(bar_tmp2, bar_tmp1)
+        return ret
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
     def calculateELBO_k(self, k):

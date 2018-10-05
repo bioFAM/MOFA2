@@ -86,6 +86,7 @@ class Y_Node(Constant_Variational_Node):
 
         tmp = 0.5 * (term1 - term2 + term3 + term4)
 
+        Tau["lnE"][mask] = 0
         lik = self.likconst + 0.5 * s.sum(Tau["lnE"]) - s.sum(s.multiply(Tau["E"], tmp))
 
         return lik
