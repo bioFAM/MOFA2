@@ -175,6 +175,9 @@ def loadData(data_opts, verbose=True):
 def process_data(Y, data_opts, samples_groups):
     M = len(Y)
     parsed_Y = deepcopy(Y)
+    assert len(data_opts['center_features']) == M, "data_opts['center_features'] is not length M"
+    assert len(data_opts['scale_features']) == M, "data_opts['scale_features'] is not length M"
+    assert len(data_opts['scale_views']) == M, "data_opts['scale_views'] is not length M"
 
     for m in range(M):
 

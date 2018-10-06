@@ -99,11 +99,12 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 plot_variance_explained <- function(object, cluster = TRUE, ...) {
 
   # Calculate variance explained
-  if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
-    r2_list <- object@cache[["variance_explained"]]
-  } else {
-    r2_list <- calculate_variance_explained(object, ...)
-  }
+  r2_list <- calculate_variance_explained(object, ...)
+  # if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+  #   r2_list <- object@cache[["variance_explained"]]
+  # } else {
+  #   r2_list <- calculate_variance_explained(object, ...)
+  # }
 
   fvar_m <- r2_list$r2_total
   fvar_mk <- r2_list$r2_per_factor
@@ -148,7 +149,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
   x="view";  split_by="group"
   if ( length(groups)>1 ) { x="group"; split_by="view" }
 
-
+  plot_list <- list()
   for (i in levels(fvar_mk_df[[split_by]])) {
 
     # Barplot with variance explained per view/group (across all factors)
@@ -192,17 +193,17 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
     hm <- hm + ggtitle(mk_title) + guides(fill=guide_colorbar("R2"))
     # hms[[i]] <- hm
     
-  # Join the two plots
-  p <- plot_grid(
-    plotlist = list(bplt, hm), 
-    align = "v", 
-    nrow = 2, ncol = 1, 
-    rel_heights = c(1/3,2/3), 
-    axis="l"
-  )
-  print(p)
+    # Join the two plots
+    plot_list[[i]] <- plot_grid(
+      plotlist = list(bplt, hm), 
+      align = "v", 
+      nrow = 2, ncol = 1, 
+      rel_heights = c(1/3,2/3), 
+      axis="l"
+    )
+    print(plot_list[[i]])
   }
-  
+  return(plot_list)
 }
 
 
