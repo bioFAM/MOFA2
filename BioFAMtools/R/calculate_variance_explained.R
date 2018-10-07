@@ -97,13 +97,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 plot_variance_explained <- function(object, cluster = TRUE, ...) {
 
   # Calculate variance explained
-  # r2_list <- calculate_variance_explained(object, ...)
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
     r2_list <- object@cache[["variance_explained"]]
-    if (!all(rownames(r2_list$r2_per_factor[[1]])==factors_names(object)) | 
-        !all(colnames(r2_list$r2_per_factor[[1]])==views_names(object))) {
-      r2_list <- calculate_variance_explained(object, ...)
-    }
   } else {
     r2_list <- calculate_variance_explained(object, ...)
   }

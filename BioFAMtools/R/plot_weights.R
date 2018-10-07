@@ -31,8 +31,7 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   if (paste0(factors, collapse="") == "all") { 
   	factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-  	if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
-  	else factors <- factors_names(object)[factors]
+  	factors <- factors_names(object)[factors]
   } else { 
   	stopifnot(all(factors %in% factors_names(object)))
   }
@@ -111,11 +110,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
 
   # Get factor
   if(is.numeric(factors)) {
-      if (object@model_options$learn_intercept == T) {
-        factors <- factors_names(object)[factor+1]
-      } else {
-        factors <- factors_names(object)[factors]
-      }
+    factors <- factors_names(object)[factors]
   } else { 
     stopifnot(factors %in% factors_names(object))
   }
@@ -248,10 +243,11 @@ plot_weights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual =
   stopifnot(all(view %in% views_names(object))) 
 
   # Get factor
-  if(is.numeric(factor)) {
-      if (object@model_options$learn_intercept == T) factor <- factors_names(object)[factor+1]
-      else factor <- factors_names(object)[factor]
-    } else{ stopifnot(factor %in% factors_names(object)) }
+  if (is.numeric(factor)) {
+    factor <- factors_names(object)[factor]
+  } else { 
+    stopifnot(factor %in% factors_names(object)) 
+  }
 
   if(!is.null(manual)) { stopifnot(class(manual)=="list"); stopifnot(all(Reduce(intersect, manual) %in% features_names(object)[[view]]))  }
   
@@ -458,9 +454,6 @@ plot_weight_cor <- function(object, view, method = "pearson", ...) {
   
   # Fetch factors
   W <- get_weights(object)[[view]]
-  
-  # Remove intercept
-  if(object@model_options$learn_intercept==TRUE) W <- W[,-1]
   
   # Compute and plot correlation
   r <- abs(cor(x=W, y=W, method=method, use = "complete.obs"))
