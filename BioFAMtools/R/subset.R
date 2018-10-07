@@ -18,18 +18,13 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   if (is.character(factors)) stopifnot(all(factors %in% factors_names(object)))
   
   # Get factors
-  if(is.numeric(factors)) {
-    if (object@model_options$learn_intercept == T) factors <- factors_names(object)[factors+1]
-    else factors <- factors_names(object)[factors]
+  if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors]
   } else { 
     stopifnot(all(factors %in% factors_names(object)))
   }
-  if (keep_intercept & object@model_options$learn_intercept & !"intercept" %in% factors) {
-    factors <- c("intercept", factors)
-  }
   
   # Subset expectations
-  
   nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
   stopifnot(all(nodes_with_factors$axes %in% c(0, 1, 2)))
 
@@ -58,11 +53,11 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   
   # Warning : below, does not work if factors are not convertible to integers
   # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
-  if ("SigmaAlphaW" %in% names(object@expectations)) {
-    for (m in views_names(object)){ 
-      object@expectations$SigmaAlphaW[[m]]<- object@expectations$SigmaAlphaW[[m]][,,as.integer(factors)]
-    }
-  }
+  # if ("SigmaAlphaW" %in% names(object@expectations)) {
+  #   for (m in views_names(object)){ 
+  #     object@expectations$SigmaAlphaW[[m]]<- object@expectations$SigmaAlphaW[[m]][,,as.integer(factors)]
+  #   }
+  # }
   
   if ("SigmaZ" %in% names(object@parameters)){
     object@parameters$SigmaZ$l <- object@parameters$SigmaZ$l[factors]
@@ -70,20 +65,18 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   }
   
   # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
-  if ("SigmaAlphaW" %in% names(object@parameters)){
-    for (m in views_names(object)){ 
-      object@parameters$SigmaAlphaW[[m]]$l <- object@parameters$SigmaAlphaW[[m]]$l[factors]
-      object@parameters$SigmaAlphaW[[m]]$sig <- object@parameters$SigmaAlphaW[[m]]$sig[factors]
-    }
-  }
+  # if ("SigmaAlphaW" %in% names(object@parameters)){
+  #   for (m in views_names(object)){ 
+  #     object@parameters$SigmaAlphaW[[m]]$l <- object@parameters$SigmaAlphaW[[m]]$l[factors]
+  #     object@parameters$SigmaAlphaW[[m]]$sig <- object@parameters$SigmaAlphaW[[m]]$sig[factors]
+  #   }
+  # }
   
-  # TODO : reorder parameters of other nodes
-    
   # Modify dimensionality
   object@dimensions[["K"]] <- length(factors)
   
   # Modify factor names
-  factors_names(object) <- paste0("F", as.character(1:object@dimensions[["K"]]))
+  factors_names(object) <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
   
   return(object)
 }

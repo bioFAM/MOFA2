@@ -50,7 +50,6 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   fvar_m <- lapply(groups, function(p)
     lapply(views, function(m) {
       a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]],W[[m]]))**2, na.rm=T)
-      # b <- sum(scale(Y[[m]][[p]], center=T, scale=F)**2, na.rm=T)
       b <- sum(Y[[m]][[p]]**2, na.rm=T)
       return(1 - a/b)
     }
@@ -62,7 +61,6 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     tmp <- sapply(views, function(m) {
       sapply(factors, function(k) {
         a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]][,k],W[[m]][,k]))**2, na.rm=T)
-        # b <- sum(scale(Y[[m]][[p]],center=T, scale=F)**2, na.rm=T)
         b <- sum(Y[[m]][[p]]**2, na.rm=T)
         return(1 - a/b)
       })
@@ -99,12 +97,16 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 plot_variance_explained <- function(object, cluster = TRUE, ...) {
 
   # Calculate variance explained
-  r2_list <- calculate_variance_explained(object, ...)
-  # if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
-  #   r2_list <- object@cache[["variance_explained"]]
-  # } else {
-  #   r2_list <- calculate_variance_explained(object, ...)
-  # }
+  # r2_list <- calculate_variance_explained(object, ...)
+  if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+    r2_list <- object@cache[["variance_explained"]]
+    if (!all(rownames(r2_list$r2_per_factor[[1]])==factors_names(object)) | 
+        !all(colnames(r2_list$r2_per_factor[[1]])==views_names(object))) {
+      r2_list <- calculate_variance_explained(object, ...)
+    }
+  } else {
+    r2_list <- calculate_variance_explained(object, ...)
+  }
 
   fvar_m <- r2_list$r2_total
   fvar_mk <- r2_list$r2_per_factor
@@ -125,13 +127,13 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
                               varnames=c("view", "group"), value.name="R2")
   colnames(fvar_m_df)[(ncol(fvar_m_df)-1):ncol(fvar_m_df)] <- c("view", "group")
 
-  # If multiple views, sort factors according to hierarchical clustering
-  # TO-DO...
-  # if (cluster & ncol(fvar_mk)>1) {
-  #   hc <- hclust(dist(t(fvar_mk)))
-  #   fvar_mk_df$view <- factor(fvar_mk_df$view, levels = colnames(fvar_mk)[hc$order])
-  # }
-
+  # sort views according to hierarchical clustering on the variance explained pattern
+  g <- which.max(sapply(fvar_m, function(x) sum(unlist(x)))) # use group with the highest variance explained
+  if (cluster & ncol(fvar_mk[[g]])>1) {
+    hc <- hclust(dist(t(fvar_mk[[g]])))
+    fvar_mk_df$view <- factor(fvar_mk_df$view, levels = colnames(fvar_mk[[g]])[hc$order])
+    fvar_m_df$view <- factor(fvar_m_df$view, levels = colnames(fvar_mk[[g]])[hc$order])
+  }
 
   # Heatmaps (grid plots) for fvar_mk
   hms   <- list()
@@ -201,7 +203,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
       rel_heights = c(1/3,2/3), 
       axis="l"
     )
-    print(plot_list[[i]])
+    # print(plot_list[[i]])
   }
   return(plot_list)
 }
@@ -209,7 +211,7 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
 
 
 # Cache results
-cache_variance_explained <- function(object, ...) {
+.cache_variance_explained <- function(object, ...) {
   r2_list <- calculate_variance_explained(object, ...)
   .cache_variance_explained(object) <- r2_list
   return(object)
