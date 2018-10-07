@@ -239,6 +239,9 @@ class entry_point(object):
         tmp = data.groupby(['feature_group'])['feature'].nunique()
         nfeatures = tmp.loc[self.data_opts['views_names']]
 
+        # Make sure there are no duplicated feature names before pivoting
+        data['feature'] = data['feature'] + data['feature_group']
+
         # Convert data frame to list of matrices
         data_matrix = data.pivot(index='sample', columns='feature', values='value')
 
