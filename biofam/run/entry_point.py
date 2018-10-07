@@ -246,9 +246,9 @@ class entry_point(object):
         data_matrix = data.pivot(index='sample', columns='feature', values='value')
 
         # Sort rows and columns according to the sample and feature names
-        features_names.tmp = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        features_names_tmp = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
         data_matrix = data_matrix.loc[self.data_opts['samples_names']]
-        data_matrix = data_matrix[[y for x in features_names.tmp for y in x]]
+        data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
         # Split into a list of views, each view being a matrix
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
