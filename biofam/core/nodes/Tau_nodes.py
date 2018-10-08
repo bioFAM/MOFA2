@@ -100,7 +100,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
         lb_q = s.sum(Qa*s.log(Qb)) + s.sum((Qa-1.)*QlnE) - s.sum(Qb*QE) - s.sum(special.gammaln(Qa))
-
+        
         return lb_p - lb_q
 
     def sample(self, distrib='P'):
