@@ -104,6 +104,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             g_mask = (self.groups == g)
             Qb[g,:] = Pb[g,:] + .5 * tmp[g_mask,:].sum(axis=0)
 
+        if s.sum(Qb<0)> 0:
+            import pdb; pdb.set_trace()
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=self.Qa_pre, b=Qb)
 
@@ -116,7 +118,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # Do the calculations
         lb_p = self.lbconst + s.sum((Pa-1.)*QlnE) - s.sum(Pb*QE)
         lb_q = s.sum(Qa*s.log(Qb)) + s.sum((Qa-1.)*QlnE) - s.sum(Qb*QE) - s.sum(special.gammaln(Qa))
-        
+
         return lb_p - lb_q
 
     def sample(self, distrib='P'):
