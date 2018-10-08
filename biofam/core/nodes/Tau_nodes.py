@@ -41,14 +41,12 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             Y_tmp = Y[g_mask, :]
             mask_tmp = mask[g_mask, :]
             self.Qa_pre[g,:] += (Y_tmp.shape[0] - mask_tmp.sum(axis=0))/2.
-        import pdb; pdb.set_trace()
-        
+
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
             expanded_E = QExp['E'][self.groups, :]
             expanded_lnE = QExp['lnE'][self.groups, :]
-            import pdb; pdb.set_trace()
             return {'E': expanded_E, 'lnE': expanded_lnE}
         else:
             return QExp
@@ -105,11 +103,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         for g in range(self.n_groups):
             g_mask = (self.groups == g)
             Qb[g,:] = Pb[g,:] + .5 * tmp[g_mask,:].sum(axis=0)
-
-        # Qb[Qb<=0] = 1e-5
-
-        if s.sum(Qb<0)> 0:
-            import pdb; pdb.set_trace()
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=self.Qa_pre, b=Qb)
@@ -188,7 +181,6 @@ class TauD_Node_bk(Gamma_Unobserved_Variational_Node):
         # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
-        import pdb; pdb.set_trace()
         term1 = gpu_utils.square(gpu_utils.array(Y)).sum(axis=0)
 
         term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))

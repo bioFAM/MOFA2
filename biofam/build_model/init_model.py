@@ -502,7 +502,7 @@ class initModel(object):
 
         self.nodes["SigmaAlphaW"] = Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 
-    def initTau(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, on='features'):
+    def initTau(self, groups, pa=1., pb=1., qa=1., qb=1., qE=None, on='features'):
         """Method to initialise the precision of the noise
 
         PARAMETERS
