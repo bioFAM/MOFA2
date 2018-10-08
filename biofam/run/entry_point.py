@@ -107,9 +107,9 @@ class entry_point(object):
             data[m] = list(data[m].values())
         for p in range(len(data[0])):
           if not isinstance(data[m][p], np.ndarray):
-              if isinstance(data[m][p], pd.DataFrame): 
+              if isinstance(data[m][p], pd.DataFrame):
                   data[m][p] = data[m][p].values
-              else: 
+              else:
                   print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
 
         # Verbose message
@@ -235,7 +235,7 @@ class entry_point(object):
 
         # Define (unique) sample names
         self.data_opts['samples_names'] = data_matrix[0].index.tolist()
-        
+
         # Define feature names
         self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
 
@@ -257,9 +257,9 @@ class entry_point(object):
         # Convert input data to numpy array format
         for m in range(len(data_matrix)):
             if not isinstance(data_matrix[m], np.ndarray):
-                if isinstance(data_matrix[m], pd.DataFrame): 
+                if isinstance(data_matrix[m], pd.DataFrame):
                     data_matrix[m] = data_matrix[m].values
-                else: 
+                else:
                     print("Error, input data is not a numpy.ndarray or a pandas dataframe"); exit()
 
         self.data = data_matrix
@@ -547,7 +547,7 @@ if __name__ == '__main__':
     #
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=False, factors=15, likelihoods=lik, noise_on='samples')
+    ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=False, factors=15, likelihoods=lik, noise_on='features')
     ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     ent.build()
     ent.run()

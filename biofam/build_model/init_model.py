@@ -502,7 +502,7 @@ class initModel(object):
 
         self.nodes["SigmaAlphaW"] = Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
 
-    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, on='features'):
+    def initTau(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, on='features'):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -521,6 +521,18 @@ class initModel(object):
         """
 
         tau_list = [None]*self.M
+
+        # Sanity checks
+        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
+
+        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        tmp = np.unique(groups, return_inverse=True)
+        groups_dic = tmp[0]
+        groups_ix = tmp[1]
+
+        n_group = len(np.unique(groups_ix))
+        assert len(groups_dic) == n_group, 'problem in np.unique'
+
         for m in range(self.M):
 
             # Poisson noise model for count data
@@ -550,7 +562,7 @@ class initModel(object):
                     print("Using TauN noise!")
                 # Noise per feature
                 elif on == 'features':
-                    tau_list[m] = TauD_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+                    tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
                 else:
                     print('did not understand noise option on =', on)
                     exit(1)
