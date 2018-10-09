@@ -8,6 +8,7 @@ from biofam.core.spatial_utils import *
 import scipy as s
 
 # TODO we need to deal with covariates too
+# TODO could remove
 class SigmaGrid_Node(Node):
     # dim should be the number of latent variables
     def __init__(self, dim, X, start_opt=10, n_grid=10, n_diag=0):

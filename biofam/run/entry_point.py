@@ -22,7 +22,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = r"""
+        banner = """
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -138,12 +138,16 @@ class entry_point(object):
         if not header_rows:
             self.data[0] = self.data[0].reset_index(drop=True)
         # save feature, sample names, sample groups
-
         self.data_opts['samples_names'] = self.data[0].index
         self.data_opts['features_names'] = [dt.columns.values for dt in self.data]
         # TODO check that we have the right dictionary
         # TODO check that what is used later in the code is ok for this
         self.data_opts['samples_groups'] = self.samples_groups
+        # taking unique view and group names in the
+        ix = np.unique(self.data_opts['views_names'], return_index=True)[1]
+        self.data_opts['views_names'] = (np.array(self.data_opts['views_names'])[ix]).tolist()
+        ix = np.unique(self.data_opts['groups_names'], return_index=True)[1]
+        self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
 
         # set dimensionalities of the model
         M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
@@ -154,6 +158,8 @@ class entry_point(object):
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
+
+        self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
     def set_data_df(self, data):
         """Method to define the data
@@ -190,7 +196,7 @@ class entry_point(object):
         tmp = data.groupby(['feature_group'])['feature'].nunique()
         nfeatures = tmp.loc[self.data_opts['views_names']]
 
-        
+
 
         # Convert data frame to list of matrices
         data['feature'] = data['feature'] + data['feature_group'] # make sure there are no duplicated feature names before pivoting
@@ -203,10 +209,7 @@ class entry_point(object):
 
         # Split into a list of views, each view being a matrix
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
-        
-        # Define (unique) sample names
-        # self.data_opts['samples_names'] = data_matrix[0].index.tolist()
-        
+
         # Define feature names
         # self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
 
@@ -228,9 +231,9 @@ class entry_point(object):
         # Convert input data to numpy array format
         for m in range(len(data_matrix)):
             if not isinstance(data_matrix[m], np.ndarray):
-                if isinstance(data_matrix[m], pd.DataFrame): 
+                if isinstance(data_matrix[m], pd.DataFrame):
                     data_matrix[m] = data_matrix[m].values
-                else: 
+                else:
                     print("Error, input data is not a numpy.ndarray or a pandas dataframe"); exit()
 
         self.data = data_matrix
@@ -460,15 +463,15 @@ if __name__ == '__main__':
 
     ent = entry_point()
 
-    infiles = ["../run/test_data/with_nas/500_0_T.txt", "../run/test_data/with_nas/500_1_T.txt"]
-    views =  ["view_0", "view_0"]
-    groups = ["group_0", "group_1"]
+    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    views =  ["view_A", "view_A", "view_B", "view_B"]
+    groups = ["group_A", "group_B", "group_A", "group_B"]
 
-    lik = ["gaussian"]
+    lik = ["gaussian", "gaussian"]
 
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=False, factors=15, likelihoods=lik, noise_on='samples')
+    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
     ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     ent.build()
     ent.run()

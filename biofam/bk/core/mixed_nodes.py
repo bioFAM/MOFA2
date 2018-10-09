@@ -36,7 +36,7 @@ class Mixed_ThetaW_Nodes_mk(Variational_Node, Constant_Node):
     def getExpectations(self):
         # TODO fix for intercept etc:
         # 1 - make sure that getExpectations takes an expand argument which it doesnt use (to be compatible with other theta nodes )
-        # 2 - make sure that instead of expanding here from theta_learn we just use expand=True as argument, to make it compatible to both per group and not 
+        # 2 - make sure that instead of expanding here from theta_learn we just use expand=True as argument, to make it compatible to both per group and not
         # Get expectations from ConstTheta nodes (D,Kconst)
         Econst = self.constTheta.getExpectations().copy()
 
@@ -93,7 +93,7 @@ class Mixed_ThetaW_Nodes_mk(Variational_Node, Constant_Node):
         self.samp = samp
         return self.samp
 
-
+# TODO could remove
 class Mixed_ThetaZ_Nodes_k(Variational_Node, Constant_Node):
     """
     Class for a mixture of LearningThetaZ and ConstantThetaZ nodes.
