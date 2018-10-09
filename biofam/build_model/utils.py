@@ -508,7 +508,10 @@ def saveTrainingData(model, hdf5, data, views_names=None, groups_names=None, sam
         for samp_group in groups_names:
             samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
             # view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:].data)
-            view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:])
+            if type(data[m]) == pd.DataFrame:
+                view_subgrp.create_dataset(samp_group, data=data[m].iloc[samp_indices,:])
+            else:
+                view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:])
 
     # Save samples names
     for samp_group in groups_names:
