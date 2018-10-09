@@ -202,12 +202,3 @@ plot_variance_explained <- function(object, cluster = TRUE, ...) {
   }
   return(plot_list)
 }
-
-
-
-# Cache results
-.cache_variance_explained <- function(object, ...) {
-  r2_list <- calculate_variance_explained(object, ...)
-  .cache_variance_explained(object) <- r2_list
-  return(object)
-}

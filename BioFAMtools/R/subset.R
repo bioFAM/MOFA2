@@ -39,7 +39,7 @@ subset_views <- function(object, views) {
   views_names(object) <- views
   
   # Re-compute variance explained
-  object <- .cache_variance_explained(object)
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
@@ -120,7 +120,7 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   factors_names(object) <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
   
   # Re-compute variance explained
-  object <- .cache_variance_explained(object)
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
@@ -161,7 +161,7 @@ subset_samples <- function(object, samples) {
   samples_names(object) <- samples
   
   # Re-compute variance explained
-  object <- .cache_variance_explained(object)
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
@@ -209,7 +209,7 @@ subset_features <- function(object, view, features) {
   features_names(object)[[view]] <- features
   
   # Re-compute variance explained
-  object <- .cache_variance_explained(object)
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }

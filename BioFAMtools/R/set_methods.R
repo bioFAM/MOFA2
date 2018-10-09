@@ -627,13 +627,3 @@ setMethod(".expectations<-", signature(object="BioFAModel", value="list"),
     object@expectations <- value
     object
   })
-
-
-
-# Misc.
-
-setMethod(".cache_variance_explained<-", signature(object="BioFAModel", value="list"),
-  function(object,value) {
-    object@cache[["variance_explained"]] <- value
-    object
-  })
