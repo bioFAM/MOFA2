@@ -3,13 +3,54 @@
 ## Functions to do subsetting ##
 ################################
 
+#' @title Subset views
+#' @name subset_views
+#' @description Method to subset (or sort) views
+#' @param object a \code{\link{BioFAModel}} object.
+#' @param views character vector with the views names, numeric vector with the views indices or logical vector with the views to be kept as TRUE.
+#' @export
+subset_views <- function(object, views) {
+  
+  # Sanity checks
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  stopifnot(length(views) <= object@dimensions[["M"]])
+  # warning("Removing views a posteriori is fine for an exploratory analysis, but you should removing them before training!")
+  
+  if (is.numeric(views) | is.logical(views))  {
+    views <- views_names(object)[views] 
+  } else {
+    stopifnot(all(views %in% views_names(object)))
+  }
+  
+  # Subset relevant slots
+  object@expectations$W <- object@expectations$W[views]
+  object@expectations$Y <- object@expectations$Y[views]
+  object@expectations$Tau <- object@expectations$Tau[views]
+  object@training_data <- object@training_data[views]
+  # object@input_data <- object@input_data[,,,]
+  # if (length(object@imputed_data) != 0) {
+  #   object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
+  # }
+  
+  # Update dimensionality
+  object@dimensions[["M"]] <- length(views)
+  
+  # Update view names
+  views_names(object) <- views
+  
+  # Re-compute variance explained
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  
+  return(object)
+}
+
+
 #' @title Subset factors
 #' @name subset_factors
 #' @description Method to subset (or sort) factors
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors.
 #' @export
-
 subset_factors <- function(object, factors, keep_intercept = TRUE) {
   
   # Sanity checks
@@ -18,18 +59,13 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   if (is.character(factors)) stopifnot(all(factors %in% factors_names(object)))
   
   # Get factors
-  if(is.numeric(factors)) {
-    if (object@model_options$learn_intercept == T) factors <- factors_names(object)[factors+1]
-    else factors <- factors_names(object)[factors]
+  if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors]
   } else { 
     stopifnot(all(factors %in% factors_names(object)))
   }
-  if (keep_intercept & object@model_options$learn_intercept & !"intercept" %in% factors) {
-    factors <- c("intercept", factors)
-  }
   
   # Subset expectations
-  
   nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
   stopifnot(all(nodes_with_factors$axes %in% c(0, 1, 2)))
 
@@ -58,11 +94,11 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   
   # Warning : below, does not work if factors are not convertible to integers
   # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
-  if ("SigmaAlphaW" %in% names(object@expectations)) {
-    for (m in views_names(object)){ 
-      object@expectations$SigmaAlphaW[[m]]<- object@expectations$SigmaAlphaW[[m]][,,as.integer(factors)]
-    }
-  }
+  # if ("SigmaAlphaW" %in% names(object@expectations)) {
+  #   for (m in views_names(object)){ 
+  #     object@expectations$SigmaAlphaW[[m]]<- object@expectations$SigmaAlphaW[[m]][,,as.integer(factors)]
+  #   }
+  # }
   
   if ("SigmaZ" %in% names(object@parameters)){
     object@parameters$SigmaZ$l <- object@parameters$SigmaZ$l[factors]
@@ -70,20 +106,21 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   }
   
   # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
-  if ("SigmaAlphaW" %in% names(object@parameters)){
-    for (m in views_names(object)){ 
-      object@parameters$SigmaAlphaW[[m]]$l <- object@parameters$SigmaAlphaW[[m]]$l[factors]
-      object@parameters$SigmaAlphaW[[m]]$sig <- object@parameters$SigmaAlphaW[[m]]$sig[factors]
-    }
-  }
+  # if ("SigmaAlphaW" %in% names(object@parameters)){
+  #   for (m in views_names(object)){ 
+  #     object@parameters$SigmaAlphaW[[m]]$l <- object@parameters$SigmaAlphaW[[m]]$l[factors]
+  #     object@parameters$SigmaAlphaW[[m]]$sig <- object@parameters$SigmaAlphaW[[m]]$sig[factors]
+  #   }
+  # }
   
-  # TODO : reorder parameters of other nodes
-    
-  # Modify dimensionality
+  # Update dimensionality
   object@dimensions[["K"]] <- length(factors)
   
-  # Modify factor names
-  factors_names(object) <- paste0("F", as.character(1:object@dimensions[["K"]]))
+  # Update factor names
+  factors_names(object) <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
+  
+  # Re-compute variance explained
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
@@ -117,11 +154,14 @@ subset_samples <- function(object, samples) {
   object@InputData <- object@InputData[,samples,,] 
   if (length(object@ImputedData)==0) { object@ImputedData <- sapply(object@ImputedData, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) }
 
-  # Modify dimensionality
+  # Update dimensionality
   object@dimensions[["N"]] <- length(samples)
   
-  # Modify sample names in the MOFAobject
+  # Update sample names
   samples_names(object) <- samples
+  
+  # Re-compute variance explained
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
@@ -162,12 +202,14 @@ subset_features <- function(object, view, features) {
     object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
   }
 
-  # Modify dimensionality
+  # Update dimensionality
   object@dimensions[["D"]][[view]] <- length(features)
   
-  # Modify featuers names in the MOFAobject
+  # Update features names
   features_names(object)[[view]] <- features
+  
+  # Re-compute variance explained
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
-

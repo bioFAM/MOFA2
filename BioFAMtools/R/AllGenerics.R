@@ -196,6 +196,3 @@ setGeneric("expectations", function(object) { standardGeneric("expectations") })
 #' @aliases expectations<-
 #' @export
 setGeneric(".expectations<-", function(object, value) { standardGeneric(".expectations<-") })
-
-# Misc.
-setGeneric(".cache_variance_explained<-", function(object, value) { standardGeneric(".cache_variance_explained<-") })

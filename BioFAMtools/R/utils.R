@@ -59,14 +59,6 @@
   }
   
   
-  # update learn_mean to learn_intercept
-  if ("learn_mean" %in% names(object@model_options)) {
-    tmp <- names(object@model_options)
-    tmp[tmp=="learn_mean"] <- "learn_intercept"
-    names(object@model_options) <- tmp
-  }
-  object@model_options$learn_intercept <- as.logical(object@model_options$learn_intercept)
-
   # Set the status as trained if it wasn't set before
   if((!.hasSlot(object, "status")) | (length(object@status) == 0))
     object@status <- "trained"
@@ -81,23 +73,6 @@
   for (view in view_names) { names(nested_list[[view]]) <- group_names }
   nested_list
 }
-
-# Function to find factors that act like an intercept term for the sample, 
-# which means that they capture global mean effects
-find_intercept_factors <- function(object, cor_threshold = 0.8) {
-  # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
-  
-  data <- get_training_data(object)
-  factors <- get_factors(object, include_intercept = F)
-  
-  r <- lapply(data, function(x) abs(cor(apply(x,2,mean),factors, use="complete.obs")))
-  for (i in names(r)) {
-    if (any(r[[i]]>cor_threshold))
-      cat(paste0("Warning: factor ",which(r[[i]]>cor_threshold)," is capturing a size factor effect in ", i, " view, which indicates that input data might not be properly normalised...\n"))
-  }
-}
-
 
 subset_augment <- function(mat, pats) {
   pats <- unique(pats)

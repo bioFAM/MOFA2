@@ -35,55 +35,6 @@ class entry_point(object):
         # sleep(2)
         sys.stdout.flush()
 
-    def set_data_matrix_flat(self, data, views_names, groups_names):
-        """ Method to set the data
-
-        PARAMETERS
-        ----------
-        data: several options:
-        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
-        - a list where each element is a numpy array or a pandas data frame
-        """
-
-        # Sanity check
-        if isinstance(data, dict):
-          data = list(data.values())
-        elif isinstance(data, list):
-          pass
-        else:
-          print("Error: Data not recognised")
-          sys.stdout.flush()
-          exit()
-
-        for m in range(len(data)):
-          if isinstance(data[m], dict):
-            data[m] = list(data[m].values())
-
-        groups_names = len(sorted(set(samples_groups), key=samples_groups.index))
-
-        assert s.all([ isinstance(data[m], s.ndarray) or isinstance(data[m], pd.DataFrame) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
-
-        # Verbose message
-        for m in range(len(data)):
-          for p in range(len(data[0])):
-            print("Loaded view %d with %d samples and %d features..." % (m+1, data[m].shape[0], data[m].shape[1]))
-
-        # Save dimensionalities
-        self.dimensionalities["M"] = len(data)
-        self.dimensionalities["P"] = len(groups_names)
-        self.dimensionalities["N"] = [np.sum([s == i for s in samples_groups]) for i in groups_names]
-        self.dimensionalities["D"] = [data[m].shape[1] for m in range(len(data))]
-
-        # Define feature group names and sample group names
-        self.data_opts['views_names']  = views_names
-        self.data_opts['groups_names'] = groups_names
-
-        # Define feature and sample names
-        self.data_opts['samples_names']  = data[0].index.values()
-        self.data_opts['features_names'] = [ data[m].columns for m in range(len(data)) ]
-
-        self.data = data
-
     def set_data_matrix(self, data, samples_names_dict, features_names_dict):
         """ Method to set the data
 
@@ -96,26 +47,26 @@ class entry_point(object):
 
         # Sanity check
         if not isinstance(data, list):
-          if isinstance(data, dict):
-            data = list(data.values())
-          else:
-            print("Error: Data not recognised"); sys.stdout.flush(); exit()
+            if isinstance(data, dict):
+                data = list(data.values())
+            else:
+                print("Error: Data not recognised"); sys.stdout.flush(); exit()
 
         # Convert input data to numpy array format
         for m in range(len(data)):
-          if isinstance(data[m], dict):
-            data[m] = list(data[m].values())
+            if isinstance(data[m], dict):
+                data[m] = list(data[m].values())
         for p in range(len(data[0])):
-          if not isinstance(data[m][p], np.ndarray):
-              if isinstance(data[m][p], pd.DataFrame):
-                  data[m][p] = data[m][p].values
-              else:
-                  print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
+            if not isinstance(data[m][p], np.ndarray):
+                if isinstance(data[m][p], pd.DataFrame): 
+                    data[m][p] = data[m][p].values
+                else: 
+                    print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
 
         # Verbose message
         for m in range(len(data)):
-          for p in range(len(data[0])):
-            print("Loaded view %d group %d with %d samples and %d features..." % (m+1, p+1, data[m][p].shape[0], data[m][p].shape[1]))
+            for p in range(len(data[0])):
+                print("Loaded view %d group %d with %d samples and %d features..." % (m+1, p+1, data[m][p].shape[0], data[m][p].shape[1]))
 
         # Save dimensionalities
         self.dimensionalities["M"] = len(data)
@@ -187,12 +138,16 @@ class entry_point(object):
         if not header_rows:
             self.data[0] = self.data[0].reset_index(drop=True)
         # save feature, sample names, sample groups
-
         self.data_opts['samples_names'] = self.data[0].index
         self.data_opts['features_names'] = [dt.columns.values for dt in self.data]
         # TODO check that we have the right dictionary
         # TODO check that what is used later in the code is ok for this
         self.data_opts['samples_groups'] = self.samples_groups
+        # taking unique view and group names in the
+        ix = np.unique(self.data_opts['views_names'], return_index=True)[1]
+        self.data_opts['views_names'] = (np.array(self.data_opts['views_names'])[ix]).tolist()
+        ix = np.unique(self.data_opts['groups_names'], return_index=True)[1]
+        self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
 
         # set dimensionalities of the model
         M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
@@ -203,6 +158,8 @@ class entry_point(object):
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
+
+        self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
     def set_data_df(self, data):
         """Method to define the data
@@ -226,18 +183,35 @@ class entry_point(object):
         # Define feature group names and sample group names
         self.data_opts['views_names'] = data["feature_group"].unique()
         self.data_opts['groups_names'] = data["sample_group"].unique()
+        self.data_opts['features_names'] = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        self.data_opts['samples_names'] = data["sample"].unique()
+
+        # data_matrix = [None]*len(self.data_opts['views_names'])
+        # for m in range(len(self.data_opts['views_names'])):
+        #     subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
+        #     data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
+        # data_matrix = data.pivot(index='sample', columns='feature', values='value').split().tolist()
+
+        # Count the number of feature per view
+        tmp = data.groupby(['feature_group'])['feature'].nunique()
+        nfeatures = tmp.loc[self.data_opts['views_names']]
+
+
 
         # Convert data frame to list of matrices
-        data_matrix = [None]*len(self.data_opts['views_names'])
-        for m in range(len(self.data_opts['views_names'])):
-            subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
-            data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
+        data['feature'] = data['feature'] + data['feature_group'] # make sure there are no duplicated feature names before pivoting
+        data_matrix = data.pivot(index='sample', columns='feature', values='value')
 
-        # Define (unique) sample names
-        self.data_opts['samples_names'] = data_matrix[0].index.tolist()
+        # Sort rows and columns according to the sample and feature names
+        features_names_tmp = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        data_matrix = data_matrix.loc[self.data_opts['samples_names']]
+        data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
+
+        # Split into a list of views, each view being a matrix
+        data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
 
         # Define feature names
-        self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
+        # self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
@@ -321,11 +295,11 @@ class entry_point(object):
 
         # Seed
         if seed is None:  # Seed for the random number generator
-            seed = 0
+            seed = int(round(time()*1000)%1e6)
         self.train_opts['seed'] = int(seed)
         s.random.seed(self.train_opts['seed'])
 
-    def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False, noise_on='features', learnTheta=True, learn_intercept=False):
+    def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False):
         """ Set model options """
 
         # TODO: SANITY CHECKS AND:
@@ -348,7 +322,7 @@ class entry_point(object):
         self.model_opts['ard_w'] = ard_w
 
         # Define whether to add noise terms on the features or on the samples
-        self.model_opts['noise_on'] = noise_on
+        self.model_opts['noise_on'] = "features"
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
@@ -357,30 +331,17 @@ class entry_point(object):
         self.model_opts['likelihoods'] = likelihoods
         if isinstance(self.model_opts['likelihoods'], str):
             self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
-
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli' and 'poisson'"
 
         # Define whether to learn the feature-wise means
-        self.model_opts["learn_intercept"] = learn_intercept
-        if learn_intercept:
-            self.model_opts['factors'] += 1
-            self.dimensionalities["K"] += 1
+        self.model_opts["learn_intercept"] = False
 
         # Define for which factors and views should we learn the sparsity levels
-        if isinstance(learnTheta, bool):
-            self.model_opts['sparsity'] = True
-            self.model_opts['learnTheta'] = [s.ones(self.dimensionalities["K"]) for m in range(self.dimensionalities["M"])]
-        elif isinstance(learnTheta,list):
-        	print("Depreciated, '--learn-theta' has to be a boolean")
-			# self.model_opts['sparsity'] = True
-			# assert len(learnTheta)==M, "--learnTheta has to be a binary vector with length number of views"
-			# self.model_opts['learnTheta'] = [ learnTheta[m]*s.ones(K) for m in range(M) ]
-        else:
-            print("Error, --learn-theta has to be a boolean")
-            exit(1)
+        self.model_opts['sparsity'] = True
+        self.model_opts['learnTheta'] = [s.ones(self.dimensionalities["K"]) for m in range(self.dimensionalities["M"])]
 
-    def set_data_options(self, lik,
+    def set_data_options(self, likelihoods,
         center_features=False, center_features_per_group=False,
         scale_features=False, scale_views=False,
         maskAtRandom=None, maskNSamples=None,
@@ -389,54 +350,47 @@ class entry_point(object):
 
         """ Parse data processing options """
 
-        # RICARD: LIKELIHOOD SHOULD BE IN MODEL_OPTS, NOT IN DATA_OPTIONS
-        #       WHY IS SELF_MODEL.OPTS() DEFINED HERE??????
-
         # TODO: more verbose messages
         # TODO Sanity checks
         self.data_opts = {}
-        self.model_opts = {}
-
-        # Define likelihoods
-        self.model_opts['likelihoods'] = lik
-        if type(self.model_opts['likelihoods']) is not list:
-          self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
-        # assert len(self.model_opts['likelihoods'])==M, "Please specify one likelihood for each view"
-        assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"]))
-        self.data_opts["likelihoods"] = self.model_opts['likelihoods']
-
-        M = len(self.model_opts["likelihoods"])
-        # assert len(self.data_opts['views_names'])==M, "Length of view names and input files does not match"
 
         if features_in_rows is True:
             self.data_opts['features_in_rows'] = features_in_rows
 
+        # Define likelihoods
+        if type(likelihoods) is not list:
+          print("You only specified one likelihood, we assume that you only have a single view")
+          likelihoods = [likelihoods]
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"]))
+        self.data_opts["likelihoods"] = likelihoods
+        M = len(likelihoods)
+
         # Center features
         # TO-DO: ITS NOT INTUITIVE TO HARD BOTH CENTER_FEATURES AND CENTER_FEATURES_PER_GROUP, WE NEEED TO FIX THIS
         if center_features_per_group is True:
-            self.data_opts['center_features_per_group'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
-            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features_per_group'] = [ True if l=="gaussian" else False for l in likelihoods ]
+            self.data_opts['center_features'] = [ False for l in likelihoods ]
         elif center_features is True:
-            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
-            self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features_per_group'] = [ False for l in likelihoods ]
+            self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in likelihoods ]
         else:
             # if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
-            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
-            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features'] = [ False for l in likelihoods ]
+            self.data_opts['center_features_per_group'] = [ False for l in likelihoods ]
 
 
         # Scale views
         if scale_views is True:
-            self.data_opts['scale_views'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['scale_views'] = [ True if l=="gaussian" else False for l in likelihoods ]
         else:
-            self.data_opts['scale_views'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['scale_views'] = [ False for l in likelihoods ]
 
         # Scale features
         if scale_features is True:
             assert self.data_opts['scale_views'][0] is False, "Scale either entire views or features, not both"
-            self.data_opts['scale_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['scale_features'] = [ True if l=="gaussian" else False for l in likelihoods ]
         else:
-            self.data_opts['scale_features'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['scale_features'] = [ False for l in likelihoods ]
 
 
         # Mask values at random
@@ -498,56 +452,26 @@ class entry_point(object):
           data=self.data,
           train_opts=self.train_opts,
           model_opts=self.model_opts,
-    	    samples_names=self.data_opts['samples_names'],
+            samples_names=self.data_opts['samples_names'],
           features_names=self.data_opts['features_names'],
           views_names=self.data_opts['views_names'],
-    	    groups_names=self.data_opts['groups_names'],
+            groups_names=self.data_opts['groups_names'],
           samples_groups=self.data_opts['samples_groups']
         )
 
 if __name__ == '__main__':
+
     ent = entry_point()
-    # dir = '/gpfs/nobackup/stegle/users/arnol/biofam/stochastic_simul_2/'
-    # infiles = [dir+'/data_0_0.txt', dir+'/data_1_0.txt', dir+'/data_0_1.txt', dir+'/data_1_1.txt']
-    # # infiles = [dir+'/data_all.txt']
-    # views =  ["view_0", "view_1", "view_0", "view_1"]
-    # groups = ["group_0", "group_0", "group_1", "group_1"]
-    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_0_2.txt',
-    #             dir+'data_1_0.txt', dir+'data_1_1.txt', dir+'data_1_2.txt']
-    # views =  ["view_0", "view_0", 'view_0', 'view_1', 'view_1', 'view_1']
-    # groups = ["group_0", "group_1", "group_2", "group_0", "group_1", "group_2"]
-    # infiles = [dir+'/data_0_0.txt']
-    # views =  ["view_0"]
-    # groups = ["group_0"]
 
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
+    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    views =  ["view_A", "view_A", "view_B", "view_B"]
+    groups = ["group_A", "group_B", "group_A", "group_B"]
 
-    #infiles = ["../run/test_data/with_nas/500_0.txt"]
-    #views =  ["view_A"]
-    #groups = ["group_A"]
+    lik = ["gaussian", "gaussian"]
 
-    # infiles = ["../run/test_data/with_nas/500_0.txt",  "../run/test_data/with_nas/500_2.txt",  ]
-    # views =  ["view_A", "view_B"]
-    # groups = ["group_A", "group_A"]
-
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    infiles = ["../run/test_data/with_nas/500_0_T.txt", "../run/test_data/with_nas/500_1_T.txt"]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
-
-    views =  ["view_0", "view_0"]
-    groups = ["group_0", "group_1"]
-
-    # lik = ["gaussian", "gaussian"]
-    lik = ["gaussian"]
-    #
-    # outfile = dir+"test_no_sl.hdf5"
-    #
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=False, factors=15, likelihoods=lik, noise_on='features')
+    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
     ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     ent.build()
     ent.run()
