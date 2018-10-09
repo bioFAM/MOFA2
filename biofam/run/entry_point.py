@@ -35,55 +35,6 @@ class entry_point(object):
         # sleep(2)
         sys.stdout.flush()
 
-    def set_data_matrix_flat(self, data, views_names, groups_names):
-        """ Method to set the data
-
-        PARAMETERS
-        ----------
-        data: several options:
-        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
-        - a list where each element is a numpy array or a pandas data frame
-        """
-
-        # Sanity check
-        if isinstance(data, dict):
-          data = list(data.values())
-        elif isinstance(data, list):
-          pass
-        else:
-          print("Error: Data not recognised")
-          sys.stdout.flush()
-          exit()
-
-        for m in range(len(data)):
-          if isinstance(data[m], dict):
-            data[m] = list(data[m].values())
-
-        groups_names = len(sorted(set(samples_groups), key=samples_groups.index))
-
-        assert s.all([ isinstance(data[m], s.ndarray) or isinstance(data[m], pd.DataFrame) for m in range(len(data)) ]), "Error, input data is not a numpy.ndarray"
-
-        # Verbose message
-        for m in range(len(data)):
-          for p in range(len(data[0])):
-            print("Loaded view %d with %d samples and %d features..." % (m+1, data[m].shape[0], data[m].shape[1]))
-
-        # Save dimensionalities
-        self.dimensionalities["M"] = len(data)
-        self.dimensionalities["P"] = len(groups_names)
-        self.dimensionalities["N"] = [np.sum([s == i for s in samples_groups]) for i in groups_names]
-        self.dimensionalities["D"] = [data[m].shape[1] for m in range(len(data))]
-
-        # Define feature group names and sample group names
-        self.data_opts['views_names']  = views_names
-        self.data_opts['groups_names'] = groups_names
-
-        # Define feature and sample names
-        self.data_opts['samples_names']  = data[0].index.values()
-        self.data_opts['features_names'] = [ data[m].columns for m in range(len(data)) ]
-
-        self.data = data
-
     def set_data_matrix(self, data, samples_names_dict, features_names_dict):
         """ Method to set the data
 
@@ -96,26 +47,26 @@ class entry_point(object):
 
         # Sanity check
         if not isinstance(data, list):
-          if isinstance(data, dict):
-            data = list(data.values())
-          else:
-            print("Error: Data not recognised"); sys.stdout.flush(); exit()
+            if isinstance(data, dict):
+                data = list(data.values())
+            else:
+                print("Error: Data not recognised"); sys.stdout.flush(); exit()
 
         # Convert input data to numpy array format
         for m in range(len(data)):
-          if isinstance(data[m], dict):
-            data[m] = list(data[m].values())
+            if isinstance(data[m], dict):
+                data[m] = list(data[m].values())
         for p in range(len(data[0])):
-          if not isinstance(data[m][p], np.ndarray):
-              if isinstance(data[m][p], pd.DataFrame): 
-                  data[m][p] = data[m][p].values
-              else: 
-                  print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
+            if not isinstance(data[m][p], np.ndarray):
+                if isinstance(data[m][p], pd.DataFrame): 
+                    data[m][p] = data[m][p].values
+                else: 
+                    print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
 
         # Verbose message
         for m in range(len(data)):
-          for p in range(len(data[0])):
-            print("Loaded view %d group %d with %d samples and %d features..." % (m+1, p+1, data[m][p].shape[0], data[m][p].shape[1]))
+            for p in range(len(data[0])):
+                print("Loaded view %d group %d with %d samples and %d features..." % (m+1, p+1, data[m][p].shape[0], data[m][p].shape[1]))
 
         # Save dimensionalities
         self.dimensionalities["M"] = len(data)
@@ -341,7 +292,7 @@ class entry_point(object):
 
         # Seed
         if seed is None:  # Seed for the random number generator
-            seed = 0
+            seed = int(round(time()*1000)%1e6)
         self.train_opts['seed'] = int(seed)
         s.random.seed(self.train_opts['seed'])
 
@@ -498,53 +449,23 @@ class entry_point(object):
           data=self.data,
           train_opts=self.train_opts,
           model_opts=self.model_opts,
-    	    samples_names=self.data_opts['samples_names'],
+            samples_names=self.data_opts['samples_names'],
           features_names=self.data_opts['features_names'],
           views_names=self.data_opts['views_names'],
-    	    groups_names=self.data_opts['groups_names'],
+            groups_names=self.data_opts['groups_names'],
           samples_groups=self.data_opts['samples_groups']
         )
 
 if __name__ == '__main__':
+
     ent = entry_point()
-    # dir = '/gpfs/nobackup/stegle/users/arnol/biofam/stochastic_simul_2/'
-    # infiles = [dir+'/data_0_0.txt', dir+'/data_1_0.txt', dir+'/data_0_1.txt', dir+'/data_1_1.txt']
-    # # infiles = [dir+'/data_all.txt']
-    # views =  ["view_0", "view_1", "view_0", "view_1"]
-    # groups = ["group_0", "group_0", "group_1", "group_1"]
-    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_0_2.txt',
-    #             dir+'data_1_0.txt', dir+'data_1_1.txt', dir+'data_1_2.txt']
-    # views =  ["view_0", "view_0", 'view_0', 'view_1', 'view_1', 'view_1']
-    # groups = ["group_0", "group_1", "group_2", "group_0", "group_1", "group_2"]
-    # infiles = [dir+'/data_0_0.txt']
-    # views =  ["view_0"]
-    # groups = ["group_0"]
 
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
-
-    #infiles = ["../run/test_data/with_nas/500_0.txt"]
-    #views =  ["view_A"]
-    #groups = ["group_A"]
-
-    # infiles = ["../run/test_data/with_nas/500_0.txt",  "../run/test_data/with_nas/500_2.txt",  ]
-    # views =  ["view_A", "view_B"]
-    # groups = ["group_A", "group_A"]
-
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
     infiles = ["../run/test_data/with_nas/500_0_T.txt", "../run/test_data/with_nas/500_1_T.txt"]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
-
     views =  ["view_0", "view_0"]
     groups = ["group_0", "group_1"]
 
-    # lik = ["gaussian", "gaussian"]
     lik = ["gaussian"]
-    #
-    # outfile = dir+"test_no_sl.hdf5"
-    #
+
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=False, factors=15, likelihoods=lik, noise_on='samples')
