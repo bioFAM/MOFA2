@@ -22,7 +22,7 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = r"""
+        banner = """
          _     _        __
         | |__ (_) ___  / _| __ _ _ __ ___
         | '_ \| |/ _ \| |_ / _` | '_ ` _ \
@@ -187,12 +187,16 @@ class entry_point(object):
         if not header_rows:
             self.data[0] = self.data[0].reset_index(drop=True)
         # save feature, sample names, sample groups
-
         self.data_opts['samples_names'] = self.data[0].index
         self.data_opts['features_names'] = [dt.columns.values for dt in self.data]
         # TODO check that we have the right dictionary
         # TODO check that what is used later in the code is ok for this
         self.data_opts['samples_groups'] = self.samples_groups
+        # taking unique view and group names in the
+        ix = np.unique(self.data_opts['views_names'], return_index=True)[1]
+        self.data_opts['views_names'] = (np.array(self.data_opts['views_names'])[ix]).tolist()
+        ix = np.unique(self.data_opts['groups_names'], return_index=True)[1]
+        self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
 
         # set dimensionalities of the model
         M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
@@ -203,6 +207,8 @@ class entry_point(object):
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
+
+        self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
     def set_data_df(self, data):
         """Method to define the data
@@ -239,7 +245,7 @@ class entry_point(object):
         tmp = data.groupby(['feature_group'])['feature'].nunique()
         nfeatures = tmp.loc[self.data_opts['views_names']]
 
-        
+
 
         # Convert data frame to list of matrices
         data['feature'] = data['feature'] + data['feature_group'] # make sure there are no duplicated feature names before pivoting
@@ -252,7 +258,7 @@ class entry_point(object):
 
         # Split into a list of views, each view being a matrix
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
-        
+
         # Define feature names
         # self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
 

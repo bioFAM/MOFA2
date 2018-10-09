@@ -168,7 +168,8 @@ def loadData(data_opts, verbose=True):
     #     else:
     #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
     #         exit()
-    Y = process_data(Y, data_opts, samples_groups)
+
+    # Y = process_data(Y, data_opts, samples_groups)
 
     return (Y, samples_groups)
 
@@ -186,7 +187,6 @@ def process_data(Y, data_opts, samples_groups):
 
         # For some reason, reticulate stores missing values in integer matrices as -2147483648
         parsed_Y[m][parsed_Y[m] == -2147483648] = np.nan
-
         # Removing features with no variance
         # var = parsed_Y[m].std(axis=0)
         # if np.any(var==0.):
@@ -219,6 +219,8 @@ def process_data(Y, data_opts, samples_groups):
             parsed_Y[m] /= np.nanstd(parsed_Y[m], axis=0)
 
         print("\n")
+
+        parsed_Y[m]  = parsed_Y[m].values
 
     return parsed_Y
 
