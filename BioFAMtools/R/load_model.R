@@ -135,13 +135,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
 
   object@expectations <- expectations
 
-  #####################
-  ## Load parameters ##
-  #####################
-
-  # Load parameters
-  # tryCatch(object@parameters <- h5read(file, "parameters"), error = function(e) { print(paste("No parameters found in ", file)) })
-
   ##############################
   ## Specify dimensionalities ##
   ##############################
@@ -240,28 +233,12 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   ## Parse factors ##
   ###################
 
-  # Rename factors if intercept is included
-  if (object@model_options$learn_intercept) {
-    intercept_idx <- names(which(sapply(apply(object@expectations$Z, 2, unique),length)==1))
-    new_factornames <- as.character(1:(object@dimensions[["K"]]))
-    new_factornames[new_factornames == intercept_idx] <- "intercept"
-    factors_names(object) <- new_factornames
-    # object@Dimensions[["K"]] <- object@Dimensions[["K"]] - 1
-  }
-
   # Order factors in order of variance explained
   if (sort_factors) {
-    # object <- cache_variance_explained(object)
-    # r2 <- rowSums(sapply(object@cache$variance_explained$r2_per_factor, function(e) rowSums(e)))
-    r2 <- rowSums(sapply(calculate_variance_explained(object)$r2_per_factor, function(e) rowSums(e)))
+    object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e)))
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
-    if (object@model_options$learn_intercept) { order_factors <- c("intercept", order_factors) }
     object <- subset_factors(object, order_factors)
-    if (object@model_options$learn_intercept) {
-     factors_names(object) <- c("intercept", 1:(object@dimensions$K-1))
-    } else {
-     factors_names(object) <- c(1:object@dimensions$K)
-    }
   }
 
   # Parse factors: Mask passenger samples

@@ -52,8 +52,6 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
     Z <- get_factors(model)
     # NOTE: concatenate all groups by default
     Z <- do.call(rbind, Z)
-    if (model@model_options$learn_intercept)
-      Z <- Z[,-1, drop=FALSE]
     Z
     })
 
@@ -252,11 +250,7 @@ compare_models <- function(models, show_modelnames = FALSE) {
     stop("Each element of the the list 'models' has to be an instance of BioFAModel")
 
   elbo_vals <- sapply(models, get_elbo)
-  n_factors <- sapply(models, function(m) {
-    n_fac <- get_dimensions(m)$K
-    if(m@model_options$learn_intercept) n_fac <- n_fac - 1
-    n_fac
-    })
+  n_factors <- sapply(models, function(m) get_dimensions(m)$K)
   if(is.null(names(models))) names(models) <- paste0("model_", seq_along(models))
   df <- data.frame(ELBO=elbo_vals, model = names(models))
   gg <- ggplot(df, aes(x=model,y=n_factors, fill=ELBO)) + geom_bar(stat="identity")+

@@ -26,17 +26,16 @@ cluster_samples <- function(object, k, factors = "all", ...) {
   
 
   # Define factors
-  if (paste0(factors, collapse="") == "all") { factors <- factors_names(object) } 
-  else if(is.numeric(factors)) {
-    if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
-    else factors <- factors_names(object)[factors]
-  }
-  else {
+  if (paste0(factors, collapse="") == "all") { 
+    factors <- factors_names(object) 
+  } else if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors]
+  } else {
     stopifnot(all(factors %in% factors_names(object)))
   }
   
   # Collect relevant data
-  Z <- get_factors(object, factors=factors, include_intercept=F)
+  Z <- get_factors(object, factors=factors)
   if (class(Z) == "list") Z <- do.call(rbind, Z)
   N <- nrow(Z)
   
