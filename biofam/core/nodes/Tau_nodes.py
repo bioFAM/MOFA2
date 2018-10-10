@@ -13,13 +13,20 @@ from biofam.core.distributions import *
 
 
 class TauD_Node(Gamma_Unobserved_Variational_Node):
-    def __init__(self, dim, pa, pb, qa, qb, qE=None):
+    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic, qE=None):
+
+        self.groups = groups
+        self.group_names = groups_dic
+        self.N = len(self.groups)
+        self.n_groups = len(np.unique(groups))
+
+        assert self.n_groups == dim[0], "node dimension does not match number of groups"
+
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-        # self.precompute()
 
     def precompute(self, options):
-        self.N = self.dim[0]
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+        # gpu_utils.gpu_mode = options['gpu_mode']
 
         # update of Qa
         Y = self.markov_blanket["Y"].getExpectation()
@@ -29,14 +36,19 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         self.mini_batch = None
 
         # TODO is it ok to do that with stochastic ? here we kind of assume that missing values are evenly distributed
-        self.Qa_pre = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
+        self.Qa_pre = self.P.getParameters()['a'].copy()
+
+        for g in range(self.n_groups):
+            g_mask = (self.groups == g)
+            Y_tmp = Y[g_mask, :]
+            mask_tmp = mask[g_mask, :]
+            self.Qa_pre[g,:] += (Y_tmp.shape[0] - mask_tmp.sum(axis=0))/2.
 
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            N = self.markov_blanket['Z'].dim[0]
-            expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
-            expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
+            expanded_E = QExp['E'][self.groups, :]
+            expanded_lnE = QExp['lnE'][self.groups, :]
             return {'E': expanded_E, 'lnE': expanded_lnE}
         else:
             return QExp
@@ -50,7 +62,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.Q.getExpectations()
 
         # expand only the size of the minibatch
-        expanded_E = s.repeat(QExp['E'][None, :], len(ix), axis=0)
+        self.groups_batch = self.groups[ix]
+        expanded_E = QExp['E'][self.groups_batch, :]
         # expanded_lnE = s.repeat(QExp['lnE'][None, :], len(ix), axis=0)
         self.mini_batch = expanded_E
 
@@ -89,6 +102,14 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Y[mask] = 0.
 
         ########################################################################
+        # subsetting
+        ########################################################################
+        # TODO check that a deep copy is made for the subsetting
+        groups = self.groups
+        if ix is not None:
+            groups = groups[ix]
+
+        ########################################################################
         # compute stochastic "anti-bias" coefficient
         ########################################################################
         coeff = float(N) / float(Y.shape[0])
@@ -99,7 +120,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         ########################################################################
         # compute the update
         ########################################################################
-        par_up = self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff, ro)
+        self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff, ro, groups)
 
         ########################################################################
         # Do the asignment
@@ -109,42 +130,43 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         #     par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
         # self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
 
-    def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff, ro):
+    def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff, ro, groups):
 
         # Calculate terms for the update
         ZW =  Z.dot(W.T)
         ZW[mask] = 0.
 
-        term1 = s.square(Y).sum(axis=0)
+        term1 = s.square(Y)
 
         term2 = ZZ.dot(WW.T)
         term2[mask] = 0
-        term2 = term2.sum(axis=0)
+        term2 = term2
 
-        term3 = np.dot(np.square(Z),np.square(W).T)
+        term3 = - np.dot(np.square(Z),np.square(W).T)
         term3[mask] = 0.
-        term3 = -term3.sum(axis=0)
-        term3 += (np.square(ZW)).sum(axis=0)
+        term3 += (np.square(ZW))
 
         ZW *= Y  # WARNING ZW becomes ZWY
-        term4 = 2.*(ZW.sum(axis=0))
+        term4 = 2.*ZW
 
         tmp = term1 + term2 + term3 - term4
         tmp *= coeff
 
+        # weighted update (TODO check that ro default is 1)
         Qb = self.Q.getParameters()['b']
         Qb *= (1-ro)
-        Qb += ro * (Pb + tmp/2.)
 
+        # TODO check that this is fine
+        for g in range(self.n_groups):
+            g_mask = (groups == g)
+            # TODO check what happens if tmp[g_mask,:] is empty for a group
+            Qb[g,:] += ro * (Pb[g,:] + .5 * tmp[g_mask,:].sum(axis=0))
 
+        # TODO this should be completly useless
         Qa = self.Q.getParameters()['a']
         Qa *= (1 - ro)
         Qa += ro * self.Qa_pre
 
-        # Qb = Pb + tmp/2.
-        #
-        # # return updated parameters of the Q distribution
-        # return {'Qa': self.Q.params['a'], 'Qb': Qb}
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node
