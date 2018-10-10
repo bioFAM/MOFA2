@@ -123,18 +123,21 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             foo = s.zeros((N,))
             bar = s.zeros((N,))
             for m in range(M):
-                foo += np.dot(tau[m], W[m]["E2"][:, k])
+                tau_cp = gpu_utils.array(tau[m])
+                foo += gpu_utils.asnumpy(gpu_utils.dot(tau_cp, gpu_utils.array(W[m]["E2"][:, k])))
 
-                bar_tmp1 = W[m]["E"][:,k]
+                bar_tmp1 = gpu_utils.array(W[m]["E"][:,k])
 
                 # NOTE slow bit but hard to optimise
                 # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 = - s.dot(Qmean[:, s.arange(self.dim[1]) != k], W[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 += Y[m]
-                bar_tmp2 *= tau[m]
+                tmp_cp1 = gpu_utils.array(Qmean[:, s.arange(self.dim[1]) != k])
+                tmp_cp2 = gpu_utils.array(W[m]["E"][:, s.arange(self.dim[1]) != k].T)
+                bar_tmp2 = - gpu_utils.dot(tmp_cp1, tmp_cp2)
+                bar_tmp2 += gpu_utils.array(Y[m])
+                bar_tmp2 *= tau_cp
                 ##############################
 
-                bar += np.dot(bar_tmp2, bar_tmp1)
+                bar += gpu_utils.asnumpy(gpu_utils.dot(bar_tmp2, bar_tmp1))
 
             Qvar[:, k] = 1. / (Alpha[:, k] + foo)
             Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])

@@ -115,13 +115,14 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             foo = coeff * np.dot(Z["E2"][:,k],tau)
 
-            bar_tmp1 = Z["E"][:,k]
+            bar_tmp1 = gpu_utils.array(Z["E"][:,k])
 
-            bar_tmp2 = - s.dot(Z["E"][:,s.arange(self.dim[1])!=k], Qmean[:,s.arange(self.dim[1])!=k].T )
-            bar_tmp2 += Y
-            bar_tmp2 *= tau
+            bar_tmp2 = - gpu_utils.dot(gpu_utils.array(Z["E"][:,s.arange(self.dim[1])!=k]),
+                               gpu_utils.array(Qmean[:,s.arange(self.dim[1])!=k].T))
+            bar_tmp2 += gpu_utils.array(Y)
+            bar_tmp2 *= gpu_utils.array(tau)
 
-            bar = coeff * np.dot(bar_tmp1, bar_tmp2)
+            bar = coeff * gpu_utils.asnumpy(gpu_utils.dot(bar_tmp1, bar_tmp2))
 
             # stochastic update of W
             Qvar[:,k] *= (1 - ro)
