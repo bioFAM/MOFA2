@@ -7,6 +7,7 @@ from copy import deepcopy
 import math
 
 from biofam.core.utils import *
+from biofam.core import gpu_utils
 
 
 # Import manually defined functions
@@ -29,7 +30,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
-        # gpu_utils.gpu_mode = options['gpu_mode']
+
+        gpu_utils.gpu_mode = options['gpu_mode']
 
     def getLvIndex(self):
         # Method to return the index of the latent variables (without covariates)

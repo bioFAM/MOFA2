@@ -5,6 +5,7 @@ import scipy as s
 import scipy.special as special
 
 from biofam.core.utils import *
+from biofam.core import gpu_utils
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
@@ -26,7 +27,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
     def precompute(self, options):
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
-        # gpu_utils.gpu_mode = options['gpu_mode']
+        gpu_utils.gpu_mode = options['gpu_mode']
 
         # update of Qa
         Y = self.markov_blanket["Y"].getExpectation()
@@ -136,20 +137,19 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         ZW =  Z.dot(W.T)
         ZW[mask] = 0.
 
-        term1 = s.square(Y)
+        term1 = gpu_utils.square(gpu_utils.array(Y))
 
-        term2 = ZZ.dot(WW.T)
+        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
         term2[mask] = 0
-        term2 = term2
 
-        term3 = - np.dot(np.square(Z),np.square(W).T)
+        term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
         term3[mask] = 0.
-        term3 += (np.square(ZW))
+        term3 += gpu_utils.square(ZW)
 
-        ZW *= Y  # WARNING ZW becomes ZWY
+        ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
         term4 = 2.*ZW
 
-        tmp = term1 + term2 + term3 - term4
+        tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
         tmp *= coeff
 
         # weighted update (TODO check that ro default is 1)
