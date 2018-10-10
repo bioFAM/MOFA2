@@ -87,9 +87,9 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             bar = gpu_utils.asnumpy(gpu_utils.dot(bar_tmp1, bar_tmp2))
             # ----------------------------------------------------------------
-            import pdb; pdb.set_trace()
             Qvar[:,k] = 1./(Alpha[:,k]+foo)
             Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
+            import pdb; pdb.set_trace()
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
