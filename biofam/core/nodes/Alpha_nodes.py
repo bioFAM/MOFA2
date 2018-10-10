@@ -90,9 +90,8 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
-        self.precompute()
 
-    def precompute(self):
+    def precompute(self, options):
         self.n_per_group = np.zeros(self.n_groups)
         for c in range(self.n_groups):
             self.n_per_group[c] = (self.groups == c).sum()

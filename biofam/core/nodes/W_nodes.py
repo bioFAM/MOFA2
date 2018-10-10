@@ -25,7 +25,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
-    def precompute(self):
+    def precompute(self, options):
         # Precompute terms to speed up computation
         self.D = self.dim[0]
         self.K = self.dim[1]
@@ -347,7 +347,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
         super().__init__(dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES)
 
-    def precompute(self):
+    def precompute(self, options):
         self.D = self.dim[0]
         self.factors_axis = 1
 

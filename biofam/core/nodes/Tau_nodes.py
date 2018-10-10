@@ -17,7 +17,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         # self.precompute()
 
-    def precompute(self):
+    def precompute(self, options):
         self.N = self.dim[0]
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
 

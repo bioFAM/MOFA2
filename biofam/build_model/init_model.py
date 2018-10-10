@@ -488,7 +488,8 @@ class initModel(object):
                     print("Using TauN noise!")
                 # Noise per feature
                 elif on == 'features':
-                    tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
+                    # tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
+                    tau_list[m] = TauD_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
                 else:
                     print('did not understand noise option on =', on)
                     exit(1)

@@ -95,7 +95,7 @@ class buildBiofam(buildModel):
             self.model_opts['scale_covariates'] = [False]
 
         if self.model_opts['sl_z']:
-            self.init_model.initSZ(qmean_S1=0)
+            self.init_model.initSZ(qmean_T1=0)
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
             self.init_model.initZ(qmean=0)
@@ -109,7 +109,7 @@ class buildBiofam(buildModel):
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
-        self.init_model.initTau(self.data_opts['samples_groups'], on=self.model_opts['noise_on'])
+        self.init_model.initTau(self.data_opts['samples_groups'])
 
     def build_AlphaZ(self):
         """ Build node AlphaZ for the ARD prior on the factors """
