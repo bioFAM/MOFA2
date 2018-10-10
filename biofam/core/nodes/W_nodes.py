@@ -121,6 +121,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             bar = coeff * np.dot(bar_tmp1, bar_tmp2)
 
+            import pdb; pdb.set_trace()
             # stochastic update of W
             Qvar[:,k] *= (1 - ro)
             Qvar[:,k] += ro/(Alpha[:,k]+foo)
