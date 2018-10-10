@@ -127,7 +127,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             Qmean[:,k] *= (1 - ro)
             Qmean[:,k] += ro * (1/(Alpha[:,k]+foo)) * (bar + Alpha[:,k]*Mu[:,k])
-            import pdb; pdb.set_trace()
 
     def calculateELBO(self):
 

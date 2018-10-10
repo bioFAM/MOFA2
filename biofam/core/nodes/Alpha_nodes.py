@@ -55,6 +55,7 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
         # Collect parameters from the P and Q distributions of this node
         P,Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb = P['a'], P['b']
+        Qa, Qb = Q['a'], Q['b']
 
         # Perform updates
         Qa = Pa + 0.5*E.shape[0]
