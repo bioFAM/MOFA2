@@ -72,6 +72,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         # Collect parameters from the P and Q distributions of this node
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
+        import pdb; pdb.set_trace()
 
         for k in latent_variables:
 
@@ -89,7 +90,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             # ----------------------------------------------------------------
             Qvar[:,k] = 1./(Alpha[:,k]+foo)
             Qmean[:,k] = Qvar[:,k] * (bar + Alpha[:,k]*Mu[:,k])
-            import pdb; pdb.set_trace()
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
