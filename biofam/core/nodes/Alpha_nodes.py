@@ -98,10 +98,8 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
     def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
-            # reshape the values to N_samples * N_factors and return
             expanded_expectation = QExp['E'][self.groups, :]
             expanded_lnE = QExp['lnE'][self.groups, :]
-            # do we need to expand the variance as well -> not used I think
             return {'E': expanded_expectation, 'lnE': expanded_lnE}
         else:
             return {'E': QExp['E'], 'lnE': QExp['lnE']}

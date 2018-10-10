@@ -269,6 +269,8 @@ class BayesNet(object):
                 self.nodes['Tau'].define_mini_batch(ix)
                 if 'AlphaZ' in self.nodes:
                     self.nodes['AlphaZ'].define_mini_batch(ix)
+                if 'ThetaZ' in self.nodes:
+                    self.nodes['ThetaZ'].define_mini_batch(ix)
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
                 if any(self.options['drop'].values()):
