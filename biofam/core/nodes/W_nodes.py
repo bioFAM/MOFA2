@@ -121,13 +121,13 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             bar = coeff * np.dot(bar_tmp1, bar_tmp2)
 
-            import pdb; pdb.set_trace()
             # stochastic update of W
             Qvar[:,k] *= (1 - ro)
             Qvar[:,k] += ro/(Alpha[:,k]+foo)
 
             Qmean[:,k] *= (1 - ro)
             Qmean[:,k] += ro * (1/(Alpha[:,k]+foo)) * (bar + Alpha[:,k]*Mu[:,k])
+            import pdb; pdb.set_trace()
 
     def calculateELBO(self):
 
