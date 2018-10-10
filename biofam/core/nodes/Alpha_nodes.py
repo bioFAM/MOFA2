@@ -53,16 +53,14 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
             EWW = tmp["E2"]
 
         # Collect parameters from the P and Q distributions of this node
-        P,Q = self.P.getParameters(), self.Q.getParameters()
+        P = self.P.getParameters()
         Pa, Pb = P['a'], P['b']
-        Qa, Qb = Q['a'], Q['b']
 
         # Perform updates
         Qa = Pa + 0.5*E.shape[0]
         Qb = Pb + 0.5*EWW.sum(axis=0)
 
-        # return {'Qa': Qa, 'Qb': Qb}
-
+        self.Q.setParameters(a=Qa, b=Qb)
 
     def calculateELBO(self):
         # Collect parameters and expectations
