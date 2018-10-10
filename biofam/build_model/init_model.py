@@ -262,7 +262,7 @@ class initModel(object):
                     # Random initialisation
                     if qmean == "random":
                         # TODO check effect of scale here
-                        qmean_m = stats.norm.rvs(loc=0, scale=.1, size=(self.D[m], self.K))
+                        qmean_m = stats.norm.rvs(loc=0, scale=1., size=(self.D[m], self.K))
 
                     # Random and orthogonal initialisation
                     # elif qmean == "orthogonal":
