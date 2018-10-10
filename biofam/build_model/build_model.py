@@ -98,14 +98,14 @@ class buildBiofam(buildModel):
             self.init_model.initSZ()
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
-            self.init_model.initZ(qmean='random')
+            self.init_model.initZ(qmean=0)
 
     def build_W(self):
         """ Build node W for the weights """
         if self.model_opts['sl_w']:
             self.init_model.initSW()
         else:
-            self.init_model.initW(qmean=0)
+            self.init_model.initW(qmean='random')
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
