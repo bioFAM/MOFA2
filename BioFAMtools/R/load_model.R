@@ -3,103 +3,181 @@
 ## Functions to load a trained BioFAModel ##
 ############################################
 
-
 #' @title loading a trained BioFAModel
 #' @name load_model
 #' @description Method to load a trained BioFAModel \cr
 #' The training of biofam is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.
 #' @param file an hdf5 file saved by the biofam Python framework
 #' @param object either NULL (default) or an an existing untrained biofam object. If NULL, the \code{\link{BioFAModel}} object is created from the scratch.
-#' @param sort_factors boolean inOdicating whether factors should be sorted by variance explained (default is TRUE)
+#' @param sort_factors boolean indicating whether factors should be sorted by variance explained (default is TRUE)
+#' @param on_disk boolean indicating whether to work from memory (FALSE) or disk (TRUE)
 #' @return a \code{\link{BioFAModel}} model
-#' @importFrom rhdf5 h5read
+#' @importFrom rhdf5 h5read h5ls
+#' @importFrom HDF5Array HDF5ArraySeed
+#' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE) {
-  
+load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE) {
+
+  # Create new bioFAModel object
   if (is.null(object)) object <- new("BioFAModel")
-  
-  if(.hasSlot(object, "status") & length(object@status) != 0)
+
+  # Sanity checks
+  if (.hasSlot(object, "status") & length(object@status) != 0)
     if (object@status == "trained") warning("The specified object is already trained, over-writing training output with new results.")
-  
+  if (.hasSlot(object, "on_disk") & (on_disk)) object@on_disk <- TRUE
 
-  # Load data
+  # Get groups and data set names from the hdf5 file object
+  foo <- h5ls(file, datasetinfo = F)
 
-  # Load training data and the identity of features and samples
-  training_data <- h5read(file, "data")
-  features_data <- h5read(file, "features")
-  samples_data  <- h5read(file, "samples")
+  ########################
+  ## Load training data ##
+  ########################
 
-  # Replace NaN by NA
-  for (m in 1:length(training_data)) {
-    for (h in 1:length(training_data[[m]])) {
-      training_data[[m]][[h]][is.nan(training_data[[m]][[h]])] <- NA
+  # Load identity of features and samples
+  feature_names <- h5read(file, "features")
+  sample_names  <- h5read(file, "samples")
+  feature_groups <- foo[foo$group=="/data","name"]
+  sample_groups <- foo[foo$group==paste0("/data/",feature_groups[1]),"name"]
+
+  # Load data matrices
+  training_data <- list()
+  if (load_training_data) {
+    for (m in feature_groups) {
+      training_data[[m]] <- list()
+      for (p in sample_groups) {
+        if (on_disk) {
+          # as DelayedArrays
+          training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, p) ) )
+        } else {
+          # as matrices
+          training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s", m, p) )
+        }
+      }
+    }
+  } else {
+    # Do not load matrices
+    n_features <- lapply(feature_names, length)
+    n_samples  <- lapply(sample_names, length)
+    for (m in feature_groups) {
+      training_data[[m]] <- list()
+      for (p in sample_groups) {
+        training_data[[m]][[p]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[p]])
+      }
     }
   }
-  object@training_data <- training_data
 
-  # Fix sample and feature names is they are null
-  if (is.null(samples_data)) {
-    samples_data <- paste0("S", lapply(object@dimensions[["N"]], function(n) as.character(1:n)))
-  }
-  if (is.null(features_data)) {
-    features_data <- paste0("G", lapply(object@dimensions[["D"]], function(d) as.character(1:d)))
+  # Replace NaN by NA
+  # RICARD: I THINK THIS REALISES EVERYTHING INTO MEMORY, TO CHECK
+  for (m in feature_groups) {
+    for (p in sample_groups) {
+      training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA
+    }
   }
 
   # Give corresponding names for rows (features) and columns (samples)
-  tryCatch( {
-    for (m in 1:length(training_data)) {  # there is always at least one view
-      for (p in 1:length(training_data[[m]])) {  # there is always at least one group
-        rownames(training_data[[m]][[p]]) <- features_data[[m]]
-        colnames(training_data[[m]][[p]]) <- samples_data[[p]]
+  # RICARD: I THINK THIS REALISES EVERYTHING INTO MEMORY, TO CHECK
+  # tryCatch( {
+  #   for (m in 1:length(training_data)) {
+  #     for (p in 1:length(training_data[[m]])) {
+  #       rownames(training_data[[m]][[p]]) <- feature_names[[m]]
+  #       colnames(training_data[[m]][[p]]) <- sample_names[[p]]
+  #     }
+  #   }
+  #   object@training_data <- training_data
+  # }, error = function(x) { cat("Error defining feature and sample names\n") })
+
+  object@training_data <- training_data
+
+  #######################
+  ## Load expectations ##
+  #######################
+
+  expectations <- list()
+  node_names <- foo[foo$group=="/expectations","name"]
+
+  if ("AlphaW" %in% node_names)
+    expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")
+  if ("AlphaZ" %in% node_names)
+    expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
+
+  # TO-DO: IF TAU IS EXPANDED IT SHOULD BE A DELAYEDARRAY
+  if ("Tau" %in% node_names)
+    expectations[["Tau"]] <- h5read(file, "expectations/Tau")
+
+  # RICARD: I DON'T THINK Z OR W SHOULD BE DELAYED ARRAYS, THEY SHOULD FIT IN MEMORY
+  if ("Z" %in% node_names)
+    expectations[["Z"]] <- h5read(file, "expectations/Z")
+  if ("SZ" %in% node_names)
+    expectations[["Z"]] <- h5read(file, "expectations/SZ")
+  if ("W" %in% node_names)
+    expectations[["W"]] <- h5read(file, "expectations/W")
+  if ("SW" %in% node_names)
+    expectations[["W"]] <- h5read(file, "expectations/SW")
+
+  if ("ThetaW" %in% node_names)
+    expectations[["ThetaW"]] <- h5read(file, "expectations/ThetaW")
+  if ("ThetaZ" %in% node_names)
+    expectations[["ThetaZ"]] <- h5read(file, "expectations/ThetaZ")
+  if ("Y" %in% node_names) {
+    expectations[["Y"]] <- list()
+    for (m in feature_groups) {
+      expectations[["Y"]][[m]] <- list()
+      for (p in sample_groups) {
+        if (on_disk) {
+          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s/E", m, p)) )
+        } else {
+          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s/E", m, p))
+        }
       }
     }
-    object@training_data <- training_data
-  }, error = function(x) { cat("Error defining feature and sample names!..\n") })
-
-
-  # Load expectations
-  object@expectations <- h5read(file, "expectations")
-  tryCatch(object@parameters <- h5read(file, "parameters"), error = function(e) { print(paste("No parameters found in ", file)) })
-
-  # Unify names of the nodes with sparsity
-  if ("SZ" %in% names(object@expectations)) {
-    names(object@expectations)[which(names(object@expectations)=="SZ")] <- "Z"
-  }
-  if ("SW" %in% names(object@expectations)) {
-    names(object@expectations)[which(names(object@expectations)=="SW")] <- "W"
   }
 
+  object@expectations <- expectations
+
+  ##############################
+  ## Specify dimensionalities ##
+  ##############################
 
   # Specify dimensionality of the data
   object@dimensions[["M"]] <- length(training_data)                           # number of views (groups of features)
   object@dimensions[["P"]] <- length(training_data[[1]])                      # number of groups (groups of samples)
-  object@dimensions[["N"]] <- sapply(training_data[[1]], ncol)                # number of samples in every group
-  object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features in every view
+  object@dimensions[["N"]] <- sapply(training_data[[1]], ncol)                # number of samples per sample_group
+  object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features per feature_group (view)
   object@dimensions[["K"]] <- ncol(object@expectations$W[[1]]$E)              # number of factors
 
 
+  # Fix sample and feature names is they are null
+  if (is.null(sample_names))
+    sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
+  if (is.null(feature_names))
+    feature_names <- lapply(object@dimensions[["D"]], function(d) paste0("feature", as.character(1:d)))
 
-  # Set view and group names
+
+  # Set feature_group names
   if (is.null(names(object@training_data))) {
-    views_names(object) <- paste0("V", as.character(1:object@dimensions[["M"]]))
+    views_names(object) <- paste0("feature_group", as.character(1:object@dimensions[["M"]]))
   } else {
     views_names(object) <- names(object@training_data)
   }
 
+  # Set sample_group names
   if (is.null(names(object@training_data[[1]]))) {
-    groups_names(object) <- paste0("T", as.character(1:object@dimensions[["P"]]))
+    groups_names(object) <- paste0("sample_group", as.character(1:object@dimensions[["P"]]))
   } else {
     groups_names(object) <- names(object@training_data[[1]])
   }
 
 
-  # Load model options
-  
+  ########################
+  ## Load model options ##
+  ########################
+
   tryCatch( {
     object@model_options <- as.list(h5read(file, 'model_options', read.attributes=T))
   }, error = function(x) { print("Model opts not found, not loading it...") })
 
+  # Convert True/False Strings to logical values
   for (opt in names(object@model_options)) {
     if (object@model_options[opt] == "False" | object@model_options[opt] == "True") {
       object@model_options[opt] <- as.logical(object@model_options[opt])
@@ -108,12 +186,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
     }
   }
 
-  # DEPRECATED: Convert snakecase to camelcase  
-  # names(object@model_options) <- sapply(names(object@model_options), function(e)
-  #   paste0(sapply(strsplit(e, split = "_")[[1]], function(s) 
-  #     paste(toupper(substring(s, 1, 1)), substring(s, 2), sep="", collapse=" ")), collapse="")
-  # )
-
   # Define node types of the model
   object@model_options$nodes <- list(multiview_nodes  = c("W", "AlphaW", "ThetaW", "SigmaAlphaW"),
                                      multigroup_nodes = c("Z", "AlphaZ", "ThetaZ", "SigmaZ"),
@@ -121,63 +193,35 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
 
 
   # Set sample, feature, and factor names for the data and all the expectations
-  # NOTE: The side effect is also removing the extra nestedness level (exp$E -> exp)
-  samples_names(object)  <- samples_data
-  features_names(object) <- features_data
-  factors_names(object)  <- paste0("F", as.character(1:object@dimensions[["K"]]))
-
-
-  # Define data options
+  samples_names(object)  <- sample_names
+  features_names(object) <- feature_names
+  factors_names(object)  <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
 
 
   # Sanity check on the order of the likelihoods
-  if (!is.null(attr(training_data, "likelihood"))) {
-    lik <- attr(training_data, "likelihood")
-    if (!all(object@model_options$likelihood == lik)) {
-      object@model_options$likelihood <- lik
-      names(object@model_options$likelihood) <- names(training_data)
-    }
-  }
+  # if (!is.null(attr(training_data, "likelihood"))) {
+  #   lik <- attr(training_data, "likelihood")
+  #   if (!all(object@model_options$likelihood == lik)) {
+  #     object@model_options$likelihood <- lik
+  #     names(object@model_options$likelihood) <- names(training_data)
+  #   }
+  # }
 
   # Add names to likelihood vector
-  if (!is.null(names(object@model_options$likelihood))) {
+  if (is.null(names(object@model_options$likelihood))) {
     names(object@model_options$likelihood) <- views_names(object)
   }
 
-  # Rename factors if intercept is included
-  if (object@model_options$learn_intercept) {
-    intercept_idx <- names(which(sapply(apply(object@expectations$Z, 2, unique),length)==1))
-    new_factornames <- as.character(1:(object@dimensions[["K"]]))
-    new_factornames[new_factornames == intercept_idx] <- "intercept"
-    factors_names(object) <- new_factornames
-    # object@Dimensions[["K"]] <- object@Dimensions[["K"]] - 1
-  }
-
-  # Parse factors: order factors in order of variance explained
-  if (sort_factors) {
-    r2 <- rowSums(sapply(calculate_variance_explained(object)$r2_per_factor, function(e) rowSums(e)))
-    order_factors <- c(names(r2)[order(r2, decreasing = T)])
-    if (object@model_options$learn_intercept) { order_factors <- c("intercept", order_factors) }
-    object <- subset_factors(object, order_factors)
-    print(order_factors)
-    if (object@model_options$learn_intercept) { 
-     factors_names(object) <- c("intercept", 1:(object@dimensions$K-1))
-    } else {
-     factors_names(object) <- c(1:object@dimensions$K) 
-    }
-  }
-  
-
+  ##########################################
+  ## Load training options and statistics ##
+  ##########################################
 
   # Load training options
   if (length(object@training_options) == 0) {
     tryCatch( {
       object@training_options <- as.list(h5read(file, 'training_opts', read.attributes=T))
     }, error = function(x) { print("Training opts not found, not loading it...") })
-  }    
-
-
-  # Load statistics
+  }
 
   # Load training statistics
   tryCatch( {
@@ -185,101 +229,32 @@ load_model <- function(file, object = NULL, sort_factors = TRUE) {
     colnames(object@training_stats$elbo_terms) <- attr(h5read(file,"training_stats/elbo_terms", read.attributes=T),"colnames")
   }, error = function(x) { print("Training stats not found, not loading it...") })
 
+  ###################
+  ## Parse factors ##
+  ###################
 
-  # # Define data options
+  # Order factors in order of variance explained
+  if (sort_factors) {
+    object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e)))
+    order_factors <- c(names(r2)[order(r2, decreasing = T)])
+    object <- subset_factors(object, order_factors)
+  }
 
-  # object@data_options <- list()
+  # Parse factors: Mask passenger samples
+  # object <- detect_passengers(object)
 
-  # tryCatch( {
-  #   # Specify if multiple views are present
-  #   if (is.null(multi_view)) {
-  #     object@data_options$multi_view <- is.list(feature_data)
-  #   } else {
-  #     object@data_options$multi_view <- multi_view
-  #   }
-
-  #   # Specify if multiple groups are present
-  #   if (is.null(multi_group)) {
-  #     object@data_options$multi_group <- is.list(sample_data)
-  #   } else {
-  #     object@data_options$multi_group <- multi_group
-  #   }
-  # }, error = function(x) { print("Error defining data options...") })
-
-  # # To keep reverse-compatibility with models without groups (e.g. MOFA models)
-  # if (!object@data_options$multi_group) {
-  #   sample_data <- list("T1" = sample_data)
-  #   # Samples should be in columns
-  #   if (length(unique(sapply(training_data, nrow))) == 1 && length(unique(sapply(training_data, ncol))) > 1) {
-  #     training_data <- lapply(training_data, t)
-  #   }
-  #   if ((ncol(training_data[[1]]) != length(sample_data[[1]])) & (nrow(training_data[[1]]) == length(sample_data[[1]]))) {
-  #     training_data <- lapply(training_data, t)
-  #   }
-  #   training_data  <- lapply(training_data, function(e) list("B1" = e))
-  #   # Expectations for multi-group and multi-view nodes should be nested lists
-  #   if (("E" %in% names(object@expectations$Y[[1]]))    & (class(object@expectations$Y[[1]]$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$Y[[1]]))) & (class(object@expectations$Y[[1]])   != "list")) {
-  #     tmp <- lapply(names(training_data), function(m) {
-  #       list("B1" = object@expectations$Y[[m]])
-  #     })
-  #     names(tmp) <- names(training_data)
-  #     object@expectations$Y <- tmp
-  #   }
-  #   if (("E" %in% names(object@expectations$Z))    & (class(object@expectations$Z$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$Z))) & (class(object@expectations$Z)   != "list")) {
-  #     object@expectations$Z <- list("B1" = object@expectations$Z)
-  #   }
-  #   object@data_options$multi_group <- TRUE
-  # }
-
-  # # To keep reverse-compatibility with models having views as groups (e.g. transposed MOFA)
-  # if (!object@data_options$multi_view) {
-  #   feature_data <- list("V1" = feature_data)
-  #   # Features should be in rows
-  #   if (length(unique(sapply(training_data, ncol))) == 1 && length(unique(sapply(training_data, nrow))) > 1) {
-  #     training_data <- lapply(training_data, t)
-  #   }
-  #   training_data <- list("V1" = training_data)
-  #   # Expectations for multi-group and multi-view nodes should be nested lists
-  #   if (("E" %in% names(object@expectations$Y[[1]]))    & (class(object@expectations$Y[[1]]$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$Y[[1]]))) & (class(object@expectations$Y[[1]])   != "list")) {
-  #     object@Expectations$Y <- list("V1" = object@Expectations$Y)
-  #   }
-  #   if (("E" %in% names(object@expectations$W[[1]]))    & (class(object@expectations$W[[1]]$E) != "list") | 
-  #       (!("E" %in% names(object@expectations$W[[1]]))) & (class(object@expectations$W[[1]])   != "list")) {
-  #     object@expectations$W <- list("V1" = object@expectations$W)
-  #   }
-  #   object@data_options$multi_view <- TRUE
-  # }
-
+  ############################
+  ## Update previous models ##
+  ############################
 
   object <- .update_old_model(object)
-  
-  
-  # Rename covariates, including intercept
-  # if (object@ModelOptions$LearnIntercept == TRUE) factorNames(object) <- c("intercept",as.character(1:(object@Dimensions[["K"]]-1)))
-  # if (!is.null(object@ModelOptions$covariates)) {
-  #   if (object@ModelOptions$LearnIntercept == TRUE) {
-  #     factorNames(object) <- c("intercept", colnames(object@ModelOptions$covariates), as.character((ncol(object@ModelOptions$covariates)+1:(object@Dimensions[["K"]]-1-ncol(object@ModelOptions$covariates)))))
-  #   } else {
-  #     factorNames(object) <- c(colnames(object@ModelOptions$covariates), as.character((ncol(object@ModelOptions$covariates)+1:(object@Dimensions[["K"]]-1))))
-  #   }
-  # }
-  
-  
-  
-  # Parse factors: Mask passenger samples
-  object <- detect_passengers(object)
 
-  
-  
-  # Check for intercept factors
-  # findInterceptFactors(object)
-  
-  # Do quality control on the model
+  ######################
+  ## Quality controls ##
+  ######################
+
   # qualityControl(object)
 
   return(object)
 }
-

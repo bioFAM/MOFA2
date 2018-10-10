@@ -94,7 +94,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # get Expectations which are necessarry for the update
         ########################################################################
-        # import pdb; pdb.set_trace()
         Y = self.markov_blanket["Y"].get_mini_batch()
         Z = self.markov_blanket["Z"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
@@ -154,17 +153,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
         ########################################################################
         # compute the update
         ########################################################################
-        par_up = self._updateParameters(Y, Z, tau, Mu, Alpha, p_cov_inv, p_cov_inv_diag,
+        self._updateParameters(Y, Z, tau, Mu, Alpha, p_cov_inv, p_cov_inv_diag,
                                Qmean, Qvar, coeff, ro)
-
-        ########################################################################
-        # Do the asignment
-        ########################################################################
-        # TODO this is wrong. Fix
-        # if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
-        #     par_up['Qmean'] = ro * par_up['Qmean'] + (1-ro) * self.Q.getParameters()['mean']
-        #     par_up['Qvar'] = ro * par_up['Qvar'] + (1-ro) * self.Q.getParameters()['var']
-        # self.Q.setParameters(mean=par_up['Qmean'], var=par_up['Qvar'])
 
 
     # TODO: use coef where appropriate
@@ -207,9 +197,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGau
                     tmp = p_cov_inv[k] - p_cov_inv_diag[k] * s.eye(self.D)
                     for d in range(self.D):
                         Qmean[d, k] = Qvar[d, k] * (bar[d] + np.dot(tmp[d, :],Mu[:,k]-Qmean[:, k])) #-Qmean[:, k]))
-
-        # Save updated parameters of the Q distribution
-        # return {'Qmean': Qmean, 'Qvar': Qvar}
 
     # TODO, problem here is that we need to make sure k is in the latent variables first
     def calculateELBO_k(self, k):
@@ -494,100 +481,3 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         self.samp = bernoulli_s * w_hat
         return self.samp
-
-
-class MuW_Node(UnivariateGaussian_Unobserved_Variational_Node):
-    """ """
-
-    def __init__(self, pmean, pvar, qmean, qvar, clusters, n_W, cluster_dic=None, qE=None, qE2=None):
-        # compute dim from numbers of clusters (n_clusters * W)
-        self.clusters = clusters
-        self.D = len(self.clusters)
-        self.n_clusters = len(np.unique(clusters))
-        dim = (self.n_clusters, n_W)
-        self.factors_axis = 1
-        super(Cluster_Node_Gaussian, self).__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE,
-                                                    qE2=qE2)
-
-    def getExpectations(self):
-        # reshape the values to N_samples * N_factors and return
-        QExp = self.Q.getExpectations()
-        expanded_expectation = QExp['E'][self.clusters, :]
-        expanded_E2 = QExp['E2'][self.clusters, :]
-        # do we need to expand the variance as well -> not used I think
-        return {'E': expanded_expectation, 'E2': expanded_E2}
-
-    def updateParameters(self):
-        Ppar = self.P.getParameters()
-        W = self.markov_blanket['W'].Q.getExpectation()
-
-        if "SigmaAlphaW" in self.markov_blanket:
-            if self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk":
-                Alpha = self.markov_blanket['SigmaAlphaW'].getExpectation().copy()  # Notice that this Alpha is the ARD prior on W, not on W.
-            else:
-                Sigma = self.markov_blanket['SigmaAlphaW'].getExpectation().copy()
-        else:
-            Sigma = self.markov_blanket['W'].P.getParameters()["cov"]
-
-        Qmean, Qvar = self.Q.getParameters()['mean'], self.Q.getParameters()['var']
-
-
-        b = ("SigmaAlphaW" in self.markov_blanket) and (
-                self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk")
-
-        # update of the variance
-
-        for c in range(self.n_clusters):
-            mask = (self.clusters == c)
-            if b:
-                tmp = (Alpha[mask, :]).sum(axis=0)
-            else:
-                tmp = np.matrix.trace(Sigma[:, mask, mask])
-            Qvar[c, :] = tmp
-        Qvar += 1. / Ppar['var']
-        Qvar = 1. / Qvar
-
-        # update of the mean
-
-        if b:
-            tmp = W * Alpha
-        else:
-            # TODO : check below if we should ask the mask
-            tmp = np.zeros(self.dim)
-            for k in range(self.dim[1]):
-                tmp[:, k] = np.dot(Sigma[k, :, :] - np.diag(Sigma[k, :, :]), W[:, k])
-
-        for c in range(self.n_clusters):
-            mask = (self.clusters == c)
-            tmp = (tmp[mask, :]).sum(axis=0)
-            Qmean[c, :] = tmp
-        Qmean = Qmean + Ppar['mean'] / Ppar['var']
-        Qmean *= Qvar
-
-        self.Q.setParameters(mean=Qmean, var=Qvar)
-
-    def calculateELBO(self):
-        PParam = self.P.getParameters()
-        PVar, Pmean = PParam['var'], PParam['mean']
-
-        QExp = self.Q.getExpectations()
-        QE2, QE = QExp['E2'], QExp['E']
-
-        Qvar = self.Q.getParameters()['var']
-
-        # Cluster terms corresponding to covariates should not intervene
-        # filtering the covariates out
-        latent_variables = self.markov_blanket['W'].getLvIndex()
-        PVar, Pmean = PVar[:, latent_variables], Pmean[:, latent_variables]
-        QE2, QE = QE2[:, latent_variables], QE[:, latent_variables]
-        Qvar = Qvar[:, latent_variables]
-
-        # minus cross entropy
-        tmp = -(0.5 * s.log(PVar)).sum()
-        tmp2 = - ((0.5 / PVar) * (QE2 - 2. * QE * Pmean + Pmean ** 2.)).sum()
-
-        # entropy of Q
-        tmp3 = 0.5 * (s.log(Qvar)).sum()
-        tmp3 += 0.5 * self.dim[0] * len(latent_variables)
-
-        return tmp + tmp2 + tmp3

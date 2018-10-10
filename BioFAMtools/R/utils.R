@@ -1,10 +1,10 @@
 
-infer_likelihoods <- function(object) {
-  likelihood <- rep(x="gaussian", times=object@Dimensions$M)
+.infer_likelihoods <- function(object) {
+  likelihood <- rep(x="gaussian", times=object@dimensions$M)
   names(likelihood) <- views_names(object)
   
   for (view in views_names(object)) {
-    data <- get_training_data(object, view)[[1]]
+    data <- get_training_data(object, view)[[1]][[1]]  # take only first group
     # if (all(data %in% c(0,1,NA))) {
     if (length(unique(data[!is.na(data)]))==2) {
       likelihood[view] <- "bernoulli"
@@ -59,14 +59,6 @@ infer_likelihoods <- function(object) {
   }
   
   
-  # update learn_mean to learn_intercept
-  if ("learn_mean" %in% names(object@model_options)) {
-    tmp <- names(object@model_options)
-    tmp[tmp=="learn_mean"] <- "learn_intercept"
-    names(object@model_options) <- tmp
-  }
-  object@model_options$learn_intercept <- as.logical(object@model_options$learn_intercept)
-
   # Set the status as trained if it wasn't set before
   if((!.hasSlot(object, "status")) | (length(object@status) == 0))
     object@status <- "trained"
@@ -81,23 +73,6 @@ infer_likelihoods <- function(object) {
   for (view in view_names) { names(nested_list[[view]]) <- group_names }
   nested_list
 }
-
-# Function to find factors that act like an intercept term for the sample, 
-# which means that they capture global mean effects
-find_intercept_factors <- function(object, cor_threshold = 0.8) {
-  # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
-  
-  data <- get_training_data(object)
-  factors <- get_factors(object, include_intercept = F)
-  
-  r <- lapply(data, function(x) abs(cor(apply(x,2,mean),factors, use="complete.obs")))
-  for (i in names(r)) {
-    if (any(r[[i]]>cor_threshold))
-      cat(paste0("Warning: factor ",which(r[[i]]>cor_threshold)," is capturing a size factor effect in ", i, " view, which indicates that input data might not be properly normalised...\n"))
-  }
-}
-
 
 subset_augment <- function(mat, pats) {
   pats <- unique(pats)
@@ -216,6 +191,34 @@ return(model)
     }
   }
 }
+
+
+setClass("matrix_placeholder", 
+         slots=c(rownames = "ANY",
+                 colnames = "ANY",
+                 nrow     = "integer",
+                 ncol     = "integer")
+)
+
+setMethod("rownames", "matrix_placeholder", function(x) { x@rownames })
+setMethod("colnames", "matrix_placeholder", function(x) { x@colnames })
+setMethod("nrow", "matrix_placeholder", function(x) { x@nrow })
+setMethod("ncol", "matrix_placeholder", function(x) { x@ncol })
+
+setReplaceMethod("rownames", signature(x = "matrix_placeholder"),
+  function(x, value) { x@rownames <- value; x@nrow <- length(value); x })
+setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
+  function(x, value) { x@colnames <- value; x@ncol <- length(value); x })
+
+.create_matrix_placeholder <- function(rownames, colnames) {
+  mx <- new("matrix_placeholder")
+  mx@rownames <- rownames
+  mx@colnames <- colnames
+  mx@nrow <- length(rownames)
+  mx@ncol <- length(colnames)
+  mx
+}
+
 
 
 

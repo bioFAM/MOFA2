@@ -104,11 +104,20 @@ plot_factor_hist <- function(object, factor, group_by = NULL, group_names = "", 
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
 #' Default is 'all'
-#' @param color_by specifies groups or values used to color the samples. 
+#' @param color_by specifies groups or values (discrete or continuous) used to color the samples
 #' This can be either: 
+#' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 #' a character giving the name of a feature, 
 #' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
+#' or a dataframe with two columns : "sample" (names of the samples) and "color" (values for each sample)
+#' @param group_by specifies groups used to separate the samples : one plot per group 
+#' This can be either: 
+#' the string "group" : in this case, the plot will separate samples with respect to the groups they belong to
+#' a character giving the name of a feature, 
+#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
+#' or a vector of the same length as the number of samples specifying discrete groups.
+#' or a dataframe with two columns : "sample" (names of the samples) and "group" (groups for each sample)
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
 #' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
 #' @details One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
@@ -119,45 +128,90 @@ plot_factor_hist <- function(object, factor, group_by = NULL, group_names = "", 
 #' @import ggbeeswarm
 #' @import grDevices
 #' @export
-plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, name_color = "", show_missing = FALSE) {
+plot_factor_beeswarm <- function(object, factors = "all", group_by = NULL, color_by = NULL, name_color = "", show_missing = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-
+  if (length(factors)>9) warning("Printing more than 10 factors at the same time is not recommended")
+  
   # Collect relevant data
   N <- sum(object@dimensions[["N"]])
-  Z <- get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=T)
+  Z <- get_factors(object, factors=factors, as.data.frame=T)
   Z$factor <- as.factor(Z$factor)
+  
+  if (!is.null(group_by)){
+    if (group_by == "group"){
+      group_by = c()
+      for (group in names(samples_names(object))){
+        group_by <- c(group_by,rep(group,length(samples_names(object)[[group]])))
+      }
+    }
+  }
+  
+  # Set color
+  if (!is.null(group_by)) {
+    if (class(group_by)!="data.frame"){
+      # It is the name of a covariate or a feature in the training_data
+      if (length(group_by) == 1 & is.character(group_by)) {
+        if(name_color=="") name_color <- group_by
+        training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+        features_names <- lapply(training_data, rownames)
+        if(group_by %in% Reduce(union,features_names)) {
+          viewidx <- which(sapply(features_names, function(vnm) group_by %in% vnm))
+          group_by <- training_data[[viewidx]][group_by,]
+        } else if(class(object@input_data) == "MultiAssayExperiment"){
+          group_by <- get_covariates(object, group_by)
+        }
+        else stop("'group_by' was specified but it was not recognised, please read the documentation")
+        # It is a vector of length N
+      } else if (length(group_by) > 1) {
+        stopifnot(length(group_by) == N)
+        # group_by <- as.factor(group_by)
+      } else {
+        stop("'group_by' was specified but it was not recognised, please read the documentation")
+      }
+    }
+  } else {
+    group_by <- rep(TRUE,N)
+  }
+  
+  if (!is.null(color_by)){
+    if (color_by == "group"){
+      color_by = c()
+      for (group in names(samples_names(object))){
+        color_by <- c(color_by,rep(group,length(samples_names(object)[[group]])))
+      }
+    }
+  }
   
   # Set color
   color_legend <- T
   if (!is.null(color_by)) {
-    # It is the name of a covariate or a feature in the training_data
-    if (length(color_by) == 1 & is.character(color_by)) {
-      if(name_color=="") name_color <- color_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
-      if(color_by %in% Reduce(union,features_names)) {
-        viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
-        color_by <- training_data[[viewidx]][color_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment") {
-        color_by <- get_covariates(object, color_by)
-      } else stop("'color_by' was specified but it was not recognised, please read the documentation")
-    # It is a vector of length N
-    } else if (length(color_by) > 1) {
-      stopifnot(length(color_by) == N)
-      # color_by <- as.factor(color_by)
-    } else {
-      stop("'color_by' was specified but it was not recognised, please read the documentation")
+    if (class(color_by)!="data.frame"){
+      # It is the name of a covariate or a feature in the training_data
+      if (length(color_by) == 1 & is.character(color_by)) {
+        if(name_color=="") name_color <- color_by
+        training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+        features_names <- lapply(training_data, rownames)
+        if(color_by %in% Reduce(union,features_names)) {
+          viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
+          color_by <- training_data[[viewidx]][color_by,]
+        } else if(class(object@input_data) == "MultiAssayExperiment"){
+          color_by <- get_covariates(object, color_by)
+        }
+        else stop("'color_by' was specified but it was not recognised, please read the documentation")
+        # It is a vector of length N
+      } else if (length(color_by) > 1) {
+        stopifnot(length(color_by) == N)
+        # color_by <- as.factor(color_by)
+      } else {
+        stop("'color_by' was specified but it was not recognised, please read the documentation")
+      }
     }
   } else {
-    color_by <- rep(TRUE, N)
+    color_by <- rep(TRUE,N)
     color_legend <- F
   }
-  names(color_by) <- unlist(samples_names(object))
-  if(length(unique(color_by)) < 5) color_by <- as.factor(color_by)
-
-  Z$color_by <- color_by[Z$sample]
   
   # Remove samples with missing values
   if (!show_missing) {
@@ -165,11 +219,31 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, name_
     # Z <- Z[!is.na(Z$value),]
   }
   
+  if (class(color_by)!="data.frame"){
+    df <- data.frame("sample"=Reduce(c,samples_names(object)),"color_name"= color_by)
+    df <- left_join(Z, df, by="sample")
+  }
+  else{
+    df <- merge(Z,color_by,by="sample")
+  }
+  
+  if (class(group_by)!="data.frame"){
+    df2 <- data.frame("sample"=Reduce(c,samples_names(object)),"group_name"= group_by)
+    df <- left_join(df, df2, by="sample")
+  }
+  else{
+    df <- merge(df,group_by,by="sample")
+  }
+  
+  p <- ggplot(df, aes(x=group_name, y=value)) +
+     #geom_violin(aes(color=grouped_by)) +  
+     ggbeeswarm::geom_quasirandom(aes(color=color_name)) 
+     #geom_boxplot(width=0.1) +
+     #scale_x_continuous(breaks=NULL)
+
   # Generate plot
-  p <- ggplot(Z, aes_string(x=0, y="value")) + 
-    ggbeeswarm::geom_quasirandom(aes(color=color_by)) +
+  p <- p +
     ylab("Factor value") + xlab("") +
-    scale_x_continuous(breaks=NULL) +
     theme(
       axis.text.y = element_text(size = rel(1.5), color = "black"),
       axis.title.y = element_text(size = rel(1.5), color = "black"),
@@ -185,7 +259,7 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, name_
       legend.position = "right", 
       legend.direction = "vertical",
       legend.key = element_blank()
-      ) + facet_wrap(~factor, scales="free")
+    ) + facet_wrap(~factor, scales="free")
   
   # If color_by is numeric, define the default gradient
   # if (is.numeric(color_by)) { p <- p + scale_color_gradientn(colors=terrain.colors(10)) }
@@ -205,6 +279,7 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, name_
 #' using the factor names, or as numeric with the index of the factors
 #' @param color_by specifies groups or values used to color the samples. 
 #' This can be either 
+#' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 #' a character giving the name of a feature present in the training data, 
 #' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
@@ -223,27 +298,46 @@ plot_factor_beeswarm <- function(object, factors = "all", color_by = NULL, name_
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NULL, name_color="",
+plot_factor_scatter <- function(object, factors, groups = "all", color_by = NULL, shape_by = NULL, name_color="",
                          name_shape="", show_missing = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(factors)==2)
-  stopifnot(all(factors %in% factors_names(object)))
   
-  # Collect relevant data  
-  N <- sum(object@dimensions[["N"]])
-  Z <- get_factors(object, factors = factors, include_intercept = FALSE, as.data.frame = T)
+  # Get factors
+  if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors]
+  } else { 
+    stopifnot(all(factors %in% factors_names(object)))
+  }
+  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
   Z$factor <- as.factor(Z$factor)
   
+  # Get groups  
+  groups <- .check_and_get_groups(object, groups)
+  N <- sum(object@dimensions[["N"]])
+  
   # Set color
+  
   color_legend <- T
+  
+  # MERGE THIS WITH THE SECTION BELOW
+  if (!is.null(color_by)){
+    if (color_by == "group"){
+      color_by = c()
+      for (group in names(samples_names(object))){
+        color_by <- c(color_by,rep(group,length(samples_names(object)[[group]])))
+      }
+    }
+  }
+  
   if (!is.null(color_by)) {
     # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if(color_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
         color_by <- training_data[[viewidx]][color_by,]
@@ -269,8 +363,8 @@ plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NUL
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if(shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
         shape_by <- training_data[[viewidx]][shape_by,]
@@ -290,26 +384,28 @@ plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NUL
     shape_legend <- F
   }
   
-  # Create data frame to plot
-  # NOTE: factor are concatenated across groupes
-  # tmp <- lapply(Z, function(z) data.frame(x = z[, factors[1]], y = z[, factors[2]], shape_by = shape_by, color_by = color_by))
-  # df <- do.call(rbind, tmp)
-  df <- data.frame(x = Z[Z$factor == factors[[1]],'value'], y = Z[Z$factor == factors[[2]],'value'], shape_by = shape_by, color_by = color_by)
+  df_aes <- data.frame(sample=Reduce(c,samples_names(object)), color_by = color_by, shape_by = shape_by) 
+  df <- left_join(Z, df_aes, by="sample")
   
-  # remove values missing color or shape annotation
-  if (!show_missing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
-
-   #turn into factors
-   df$shape_by[is.na(df$shape_by)] <- "NA"
-   df$shape_by <- as.factor(df$shape_by)
-   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
- 
+  # Remove missing values
+  if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   
-  xlabel <- paste("Latent factor", factors[1])
-  ylabel <- paste("Latent factor", factors[2])
-                                
-  p <- ggplot(df, aes_string(x = "x", y = "y")) + 
-      geom_point(aes_string(color = "color_by", shape = "shape_by")) + xlab(xlabel) + ylab(ylabel) +
+  # Subset to relevant groups
+  df <- filter(df, group %in% groups)
+  
+  #turn into factors
+  df$shape_by[is.na(df$shape_by)] <- "NA"
+  df$shape_by <- as.factor(df$shape_by)
+  if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
+  
+  xlabel <- factors[1]
+  ylabel <- factors[2]
+  
+  df_mat <- df %>% tidyr::spread(key="factor", value="value")
+  df_mat <-  set_colnames(df_mat,c(colnames(df_mat)[1:4], "x", "y"))
+  
+  p <- ggplot(df_mat, aes(x = x, y = y)) + 
+      geom_point(aes(color = color_by, shape = shape_by)) + xlab(xlabel) + ylab(ylabel) +
       # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
       theme(plot.margin = margin(20, 20, 10, 10), 
             axis.text = element_text(size = rel(1), color = "black"), 
@@ -340,6 +436,7 @@ plot_factor_scatter <- function(object, factors, color_by = NULL, shape_by = NUL
 #' Default is 'all'
 #' @param color_by specifies groups or values used to color the samples. 
 #' This can be either: 
+#' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
 #' a character giving the name of a feature present in the training data, 
 #' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
@@ -364,7 +461,9 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-
+  if (length(factors)>10) warning("Printing more than 10 factors at the same time is not recommended")
+  
+  # Get groups
   groups <- .check_and_get_groups(object, groups)
 
   # Get factors
@@ -374,31 +473,31 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   } else {
     stopifnot(all(factors %in% factors_names(object)))  
   }
-
   
   # Collect relevant data
   N <- sum(object@dimensions[["N"]])
-  # NOTE: By default concatenate all the groups
-  Z <- lapply(get_factors(object, factors=factors, include_intercept=FALSE, as.data.frame=F)[groups], 
-              function(z) z)
-  Z <- do.call(rbind, Z)
+  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
 
   # Remove constant factors 
-  tmp <- apply(Z, 2, var, na.rm=T)
-  if (any(tmp==0)) {
-    # message(paste0("Removing constant factors: ", paste(which(tmp==0), collapse="")))
-    Z <- Z[,!tmp==0]
-    factors <- factors[!tmp==0]
-  }
+  Z <- group_by(Z, factor) %>% mutate(var=var(value, na.rm = TRUE)) %>% ungroup() %>% filter(var>0) %>% select(-var)
   
+  if (!is.null(color_by)){
+    if (color_by == "group"){
+      color_by = c()
+      for (group in names(samples_names(object))){
+        color_by <- c(color_by,rep(group,length(samples_names(object)[[group]])))
+      }
+    }
+  }
+    
   # Set color
   color_legend <- T
   if (!is.null(color_by)) {
     # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if(color_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
         color_by <- training_data[[viewidx]][color_by,]
@@ -424,8 +523,8 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(training_data, rownames)
       if (shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
         shape_by <- training_data[[viewidx]][shape_by,]
@@ -444,18 +543,16 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
     shape_by <- rep(TRUE,N)
     shape_legend <- F
   }
+  
+  df_aes <- data.frame(sample=Reduce(c,samples_names(object)), color_by = color_by, shape_by = shape_by) 
+  df <- left_join(Z, df_aes, by="sample")
 
   # Remove missing values
-  if(!show_missing) {
-    Z <- Z[!is.na(color_by),]
-    color_by <- color_by[!is.na(color_by)]
-    shape_by <- shape_by[!is.na(shape_by)]
-  }
+  if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
 
-  # Crete data.frame
-  df <- as.data.frame(Z); colnames(df) <- paste0("LF_",colnames(df))
-  df <- cbind(df, color_by=color_by, shape_by=shape_by)
-
+  # Subset to relevant groups
+  df <- filter(df, group %in% groups)
+  
   #turn into factors
   df$shape_by[is.na(df$shape_by)] <- "NA"
   df$shape_by <- as.factor(df$shape_by)
@@ -485,7 +582,8 @@ plot_factor_scatters <- function(object, factors = "all", groups = "all",
   }
   
   # Generate plot
-  p <- GGally::ggpairs(df, columns = colnames(df[,!colnames(df) %in% c("color_by","shape_by")]), 
+  df_mat <- df %>% tidyr::spread(key="factor", value="value")
+  p <- GGally::ggpairs(df_mat, columns = colnames(df_mat[,!colnames(df_mat) %in% c("sample","group","color_by","shape_by")]), 
                   lower=list(continuous="points"), diag=list(continuous='blankDiag'), upper=list(continuous='points'),
           mapping=aes(color=color_by, shape=shape_by), title=main, legend=legend) +
     theme_bw() +
@@ -533,9 +631,6 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Fetch factors
   Z <- get_factors(object)
   
-  # Remove intercept
-  if(object@model_options$learn_intercept) Z <- lapply(Z, function(z) z[,-1])
-  
   # Compute and plot correlation
   r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))
   p <- corrplot(r, tl.col="black", ...)
@@ -572,6 +667,10 @@ plot_sparsity_factors <- function(object, threshold_variance_explained = 0.01, s
 
   d <- data.frame(factor_val, view_val, 1-theta_val, var_val)
   colnames(d) <- c("factor", "view", "sparsity", "variance_explained")
+  
+  #sort factors by names (work only if factors are int encoded by strings)
+  d$factor <- factor(d$factor, levels=seq(1,max(as.integer(levels(d$factor)))))
+  
   d <- d[d$variance_explained > threshold_variance_explained,]
   if (show_variance_explained) {
     p = ggplot(d, aes(x=factor, y=sparsity, fill=view, alpha=variance_explained)) +

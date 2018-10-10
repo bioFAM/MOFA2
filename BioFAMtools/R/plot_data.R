@@ -49,9 +49,9 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   groups <- .check_and_get_groups(object, groups)
 
   if(is.numeric(factor)) {
-      if (object@model_options$learn_intercept) factor <- factors_names(object)[factor+1]
-      else factor <- factors_names(object)[factor]
-    } else{ stopifnot(factor %in% factors_names(object)) }
+  	if (object@model_options$learn_intercept) factor <- factors_names(object)[factor+1]
+  	else factor <- factors_names(object)[factor]
+  } else { stopifnot(factor %in% factors_names(object)) }
 
   # Collect relevant data
   W <- get_weights(object)[[view]][,factor]

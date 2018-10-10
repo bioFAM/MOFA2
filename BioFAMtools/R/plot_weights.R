@@ -28,16 +28,19 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   stopifnot(all(view %in% views_names(object)))  
   
   # Get factors
-  if (paste0(factors, collapse="") == "all") { factors <- factors_names(object) } 
-    else if(is.numeric(factors)) {
-      if (object@model_options$learn_intercept) factors <- factors_names(object)[factors+1]
-      else factors <- factors_names(object)[factors]
-    }
-      else{ stopifnot(all(factors %in% factors_names(object))) }
+  if (paste0(factors, collapse="") == "all") { 
+  	factors <- factors_names(object)
+  } else if (is.numeric(factors)) {
+  	factors <- factors_names(object)[factors]
+  } else { 
+  	stopifnot(all(factors %in% factors_names(object)))
+  }
   
   # Define features
-  if (paste(features,collapse="")=="all") { 
+  if (paste(features, collapse="") =="all") { 
     features <- features_names(object)[[view]]
+  } else if (is.numeric(features)) {
+  	features <- features_names(object)[[view]][features]
   } else {
     stopifnot(all(features %in% features_names(object)[[view]]))  
   }
@@ -95,7 +98,7 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' @import ggplot2
 #' @export
 plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, 
-                                 name_color="", name_shape="", showMissing = TRUE) {
+                                 name_color="", name_shape="", showMissing = TRUE, abs=T) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -107,11 +110,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
 
   # Get factor
   if(is.numeric(factors)) {
-      if (object@model_options$learn_intercept == T) {
-        factors <- factors_names(object)[factor+1]
-      } else {
-        factors <- factors_names(object)[factors]
-      }
+    factors <- factors_names(object)[factors]
   } else { 
     stopifnot(factors %in% factors_names(object))
   }
@@ -186,6 +185,10 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
   df$shape_by <- as.factor(df$shape_by)
   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
  
+  if (abs) {
+    df$x <- abs(df$x)
+    df$y <- abs(df$y)
+  }
   
   xlabel <- paste("Latent factor", factors[1])
   ylabel <- paste("Latent factor", factors[2])
@@ -240,10 +243,11 @@ plot_weights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual =
   stopifnot(all(view %in% views_names(object))) 
 
   # Get factor
-  if(is.numeric(factor)) {
-      if (object@model_options$learn_intercept == T) factor <- factors_names(object)[factor+1]
-      else factor <- factors_names(object)[factor]
-    } else{ stopifnot(factor %in% factors_names(object)) }
+  if (is.numeric(factor)) {
+    factor <- factors_names(object)[factor]
+  } else { 
+    stopifnot(factor %in% factors_names(object)) 
+  }
 
   if(!is.null(manual)) { stopifnot(class(manual)=="list"); stopifnot(all(Reduce(intersect, manual) %in% features_names(object)[[view]]))  }
   
@@ -425,4 +429,35 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   else p <- p + ylab(paste("Loading on factor", factor))
   return(p)
   
+}
+
+
+#' @title Plot correlation matrix between the columns of the weights (1 column = 1 factor) for a given view
+#' @name plot_weight_cor
+#' @description Function to plot the correlation matrix between the columns of the weights
+#' @param object a trained \code{\link{BioFAModel}} object.
+#' @param method a character indicating the type of correlation coefficient to be computed: pearson (default), kendall, or spearman.
+#' @param ... arguments passed to \code{\link[corrplot]{corrplot}}
+#' @details This method plots the correlation matrix between the weights columns. \cr 
+#' The model encourages the factors to be uncorrelated, so this function usually yields a diagonal correlation matrix. \cr 
+#' However, it is not a hard constraint such as in Principal Component Analysis and correlations between factors can occur, 
+#' particularly with large number factors. \cr
+#' Generally, correlated factors are redundant and should be avoided, as they make interpretation harder. Therefore, 
+#' if you have too many correlated factors we suggest you try reducing the number of factors.
+#' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
+#' @importFrom corrplot corrplot
+#' @export
+plot_weight_cor <- function(object, view, method = "pearson", ...) {
+  
+  # Sanity checks
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  
+  # Fetch factors
+  W <- get_weights(object)[[view]]
+  
+  # Compute and plot correlation
+  r <- abs(cor(x=W, y=W, method=method, use = "complete.obs"))
+  p <- corrplot(r, tl.col="black", ...)
+  
+  return(r)
 }

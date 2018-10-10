@@ -32,14 +32,14 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pcov=1., qmean="random", qvar=1., qE=None, qE2=None, covariates=None,
+    def initZ(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None, covariates=None,
         scale_covariates=None, precompute_pcovinv=True):
         """Method to initialise the latent variables
 
         PARAMETERS
         ----------
         pmean: mean of the prior distribution
-        pcov: covariance of the prior distribution
+        pcov: covariance of the prior distribution # NOTE was changed to pvar -> univariate
         qmean: initialisation of the mean of the variational distribution
             "random" for a random initialisation sampled from a standard normal distribution
             "pca" for an initialisation based on PCA
@@ -60,8 +60,8 @@ class initModel(object):
         pmean = s.ones((self.N, self.K)) * pmean
 
         # TODO add sanity check if not float (dim of the matrices)
-        if isinstance(pcov, (int, float)):
-            pcov = [s.sparse.eye(self.N) * pcov] * self.K
+        # if isinstance(pcov, (int, float)):
+        #     pcov = [s.sparse.eye(self.N) * pcov] * self.K
 
         ## Initialise variational distribution (Q)
 
@@ -118,7 +118,7 @@ class initModel(object):
             qmean[:, idx_covariates] = covariates
 
             # Remove prior and variational distributions from the covariates
-            pcov[idx_covariates] = s.nan
+            # pcov[idx_covariates] = s.nan
             #pvar[:, idx_covariates] = s.nan
             qvar[:, idx_covariates] = s.nan
 
@@ -128,12 +128,20 @@ class initModel(object):
         # Initialise the node
         self.nodes["Z"] = Z_Node(
             dim=(self.N, self.K),
-            pmean=pmean, pcov=pcov,
+            pmean=pmean, pvar=pvar,
             qmean=qmean, qvar=qvar,
             qE=qE, qE2=qE2,
-            idx_covariates=idx_covariates,
-            precompute_pcovinv=precompute_pcovinv
+            idx_covariates=idx_covariates
         )
+
+        # self.nodes["Z"] = Z_Node(
+        #     dim=(self.N, self.K),
+        #     pmean=pmean, pcov=pcov,
+        #     qmean=qmean, qvar=qvar,
+        #     qE=qE, qE2=qE2,
+        #     idx_covariates=idx_covariates,
+        #     precompute_pcovinv=precompute_pcovinv
+        # )
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1='random', qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
@@ -189,9 +197,9 @@ class initModel(object):
             qEZ_T1=qEZ_T1,
         )
 
-    def initW(self, pmean=0., pcov=1., qmean=0, qvar=1.,
+    def initW(self, pmean=0., pvar=1., qmean=0, qvar=1.,
         qE=None, qE2=None, covariates=None,
-        scale_covariates=None, precompute_pcovinv=None):
+        scale_covariates=None):
         """Method to initialise the weights
         PARAMETERS
         ----------
@@ -209,8 +217,8 @@ class initModel(object):
         """
 
         # Precompute the inverse of the covariance matrix of the gaussian prior of W
-        if precompute_pcovinv is None:
-            precompute_pcovinv = [True] * self.M
+        # if precompute_pcovinv is None:
+        #     precompute_pcovinv = [True] * self.M
 
         # Add covariates
         if covariates is not None:
@@ -238,9 +246,9 @@ class initModel(object):
             pmean_m = s.ones((self.D[m], self.K)) * pmean
 
             # covariance
-            if isinstance(pcov, (int, float)):
-                pcov_mk = s.sparse.eye(self.D[m]) * pcov
-                pcov_m = [pcov_mk] * self.K
+            # if isinstance(pcov, (int, float)):
+            #     pcov_mk = s.sparse.eye(self.D[m]) * pcov
+            #     pcov_m = [pcov_mk] * self.K
 
             ## Initialise variational distribution (Q) ##
 
@@ -291,17 +299,17 @@ class initModel(object):
                 qmean_m[:, idx_covariates] = covariates
 
                 # Remove prior and variational distributions from the covariates
-                pcov_m[idx_covariates] = s.nan
+                # pcov_m[idx_covariates] = s.nan
                 qvar_m[:, idx_covariates] = s.nan  # MAYBE SET IT TO 0
 
             # Initialise the node
-            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean_m, pcov=pcov_m, qmean=qmean_m, qvar=qvar_m, qE=qE, qE2=qE2,
-                               idx_covariates=idx_covariates, precompute_pcovinv=precompute_pcovinv[m])
+            W_list[m] = W_Node(dim=(self.D[m], self.K), pmean=pmean_m, pvar=pvar, qmean=qmean_m, qvar=qvar_m, qE=qE, qE2=qE2,
+                               idx_covariates=idx_covariates)
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
     def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1.,
-        qmean_S0=0., qmean_S1=0., qvar_S0=1., qvar_S1=1., qtheta=1.,
+        qmean_S0=0., qmean_S1=0, qvar_S0=1., qvar_S1=1., qtheta=1.,
         qEW_S0=None, qEW_S1=None, qES=None):
         """Method to initialise sparse weights with a (reparametrised) spike and slab prior
 
@@ -319,7 +327,7 @@ class initModel(object):
             if isinstance(qmean_S1,str):
 
                 if qmean_S1 == "random": # random
-                    qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1, size=(self.D[m],self.K))
+                    qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
                 else:
                     print("%s initialisation not implemented for W" % qmean_S1)
                     exit()
@@ -356,31 +364,14 @@ class initModel(object):
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
-    def initAlphaZ(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
-        """Method to initialise the ARD prior on Z per factor
 
-        PARAMETERS
-        ----------
-        pa: float
-            'a' parameter of the prior distribution
-        pb :float
-            'b' parameter of the prior distribution
-        qb: float
-            initialisation of the 'b' parameter of the variational distribution
-        qE: float
-            initial expectation of the variational distribution
-        qlnE: float
-            initial log expectation of the variational distribution
-        """
-        self.nodes["AlphaZ"] = AlphaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
-
-    def initAlphaZ_groups(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+    def initAlphaZ(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
         """Method to initialise the ARD prior on Z per sample group
 
         PARAMETERS
         ----------
         groups: dictionary
-            a dictionariy with mapping between sample names (keys) and sample_groups (values)
+            a dictionariy with mapping between sample names (keys) and samples_groups (values)
         pa: float
             'a' parameter of the prior distribution
         pb :float
@@ -404,7 +395,7 @@ class initModel(object):
         n_group = len(np.unique(groups_ix))
         assert len(groups_dic) == n_group, 'problem in np.unique'
 
-        self.nodes["AlphaZ"] = AlphaZ_Node_groups(
+        self.nodes["AlphaZ"] = AlphaZ_Node(
             dim=(n_group, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
@@ -412,32 +403,6 @@ class initModel(object):
             groups_dic=groups_dic,
             qE=qE, qlnE=qlnE
         )
-
-    def initSigmaZ(self, X, n_diag=0):
-        """Method to initialise the covariance prior structure on Z
-
-        (TO-DO)
-        PARAMETERS
-        ----------
-        X:
-        n_diag:
-        """
-        dim = (self.K,)
-        self.Sigma = SigmaGrid_Node(dim, X, n_diag=n_diag)
-        self.nodes["SigmaZ"] = self.Sigma
-
-    def initSigmaZ_Block(self, X, clust, n_diag=0):
-        """Method to initialise the covariance prior structure on Z, for clusters assigned to samples
-
-        (TO-DO)
-        PARAMETERS
-        ----------
-        X:
-        n_diag:
-        """
-        dim = (self.K,)
-        self.Sigma = BlockSigmaGrid_Node(dim, X, clust, n_diag=n_diag)
-        self.nodes["SigmaZ"] = self.Sigma
 
     def initAlphaW(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
         """Method to initialise the ARD prior on W
@@ -460,42 +425,10 @@ class initModel(object):
 
         alpha_list = [None]*self.M
         for m in range(self.M):
-            alpha_list[m] = AlphaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
+            alpha_list[m] = AlphaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initSigmaW_Mixed(self,view_has_covariance_prior,params_views):
-        '''Method to initialise the covariance prior structure or the Gamma variance on W for each view
-        For each view, we choose between a covariance prior structure or a Gamma variance.
-
-        PARAMETERS :
-        -----------
-        view_has_covariance_prior : list with for each view a boolean which takes value True if a covariance prior
-        structure is choosen (or False if Gamma variance choosen)
-
-        params_views : list with for each view the dict {pa ; pb ; qa ; qb; qE} of the Gamma variance
-        or the dict {X, clust, n_diag} of the covariance prior structure
-        '''
-
-        AlphaSigmaNodes = [None] * self.M
-
-        for m in range(self.M):
-
-            params = params_views[m]
-            dim = (self.K,)
-
-            if view_has_covariance_prior[m]:
-                # TODO add a if statement to check if there is a sigma_clust argument to see if blockSigma is needed
-                if params['sigma_clust'] is None:
-                    AlphaSigmaNodes[m]=SigmaGrid_Node(dim,params['X'], n_diag = params['n_diag'])
-                else:
-                    AlphaSigmaNodes[m]=SigmaBlockW_k(dim,params['X'], clust = params['sigma_clust'], n_diag = params['n_diag'])
-
-            else:
-                AlphaSigmaNodes[m] = AlphaW_Node_mk(dim,pa = params['pa'], pb = params['pb'], qa = params['qa'], qb = params['qb'])
-
-        self.nodes["SigmaAlphaW"] = Multiview_Mixed_Node(self.M, *AlphaSigmaNodes)
-
-    def initTau(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, on='features'):
+    def initTau(self, groups, pa=1., pb=1., qa=1., qb=1., qE=None, on='features'):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -514,6 +447,18 @@ class initModel(object):
         """
 
         tau_list = [None]*self.M
+
+        # Sanity checks
+        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
+
+        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        tmp = np.unique(groups, return_inverse=True)
+        groups_dic = tmp[0]
+        groups_ix = tmp[1]
+
+        n_group = len(np.unique(groups_ix))
+        assert len(groups_dic) == n_group, 'problem in np.unique'
+
         for m in range(self.M):
 
             # Poisson noise model for count data
@@ -543,7 +488,7 @@ class initModel(object):
                     print("Using TauN noise!")
                 # Noise per feature
                 elif on == 'features':
-                    tau_list[m] = TauD_Node(dim=(self.D[m],), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+                    tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
                 else:
                     print('did not understand noise option on =', on)
                     exit(1)
@@ -559,102 +504,58 @@ class initModel(object):
             if self.lik[m]=="gaussian":
                 Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], noise_on=noise_on)
             elif self.lik[m]=="poisson":
-                # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
                 Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None, noise_on=noise_on)
             elif self.lik[m]=="bernoulli":
                 # Y_list[m] = Bernoulli_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
-                # tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N,self.D[m]))
                 Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None, noise_on=noise_on)
-                # Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
-            # elif self.lik[m]=="warp":
-            #     print "Not implemented"
-            #     exit()
-            #     Y_list[m] = Warped_PseudoY_Node(dim=(self.N,self.D[m]), obs=self.data[m], func_type='tanh', I=3, E=None)
-            #     Y_list[m] = Warped_PseudoY_Node(dim=(self.N,self.D[m]), obs=self.data[m], func_type='logistic', I=1, E=None)
         self.Y = Multiview_Mixed_Node(self.M, *Y_list)
         self.nodes["Y"] = self.Y
 
-    def initThetaZ_Learn(self, pa=1., pb=1., qa=1., qb=1., qE=None):
-        """Method to initialise the sparsity parameter of the spike and slab factors
+    def initThetaZ(self, groups, pa=1, pb=1, qa=1., qb=1., qE=None, Klearn = None):
+        """Method to initialise the ARD prior on Z per sample group
 
         PARAMETERS
         ----------
-         pa: float
+        groups: dictionary
+            a dictionariy with mapping between sample names (keys) and samples_groups (values)
+        pa: float
             'a' parameter of the prior distribution
-         pb :float
+        pb :float
             'b' parameter of the prior distribution
-         qb: float
+        qb: float
             initialisation of the 'b' parameter of the variational distribution
-         qE: float
+        qE: float
             initial expectation of the variational distribution
-        """
-        self.nodes["ThetaZ"] = ThetaZ_Node_k(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-
-    def initThetaZ_Mixed(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
-        """Method to initialise the sparsity parameter of the spike and slab factors
-        In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
-        in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
-
-        PARAMETERS
-        ----------
-         pa: float
-            'a' parameter of the prior distribution
-         pb :float
-            'b' parameter of the prior distribution
-         qb: float
-            initialisation of the 'b' parameter of the variational distribution
-         qE: (...)
-        idx:list with binary matrices with dim (N,K)
-
+        qlnE: float
+            initial log expectation of the variational distribution
+        K: number of factors for which we learn theta. If no argument is given, we'll just use the
+            total number of factors
         """
 
-        # Do some sanity checks on the arguments
-        if isinstance(qE, (int, float)):
-            qE = s.ones((self.N, self.K)) * qE
-        elif isinstance(qE, s.ndarray):
-            assert qE.shape == (self.N, self.K), "Wrong dimensionality of Theta"
+        # Sanity checks
+        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
-        # Initialise constant node
-        Kconst = idx == 0
-        if Kconst.sum() == 0:
-            ConstThetaNode = None
-        else:
-            if qE is None:
-                print("Wrong initialisation for Theta");
-                exit(1)
-            else:
-                ConstThetaNode = ThetaZ_Constant_Node_k(dim=(self.N, s.sum(Kconst),), value=qE[:, Kconst], N_cells=1)
-                self.nodes["ThetaZ"] = ConstThetaNode
+        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        tmp = np.unique(groups, return_inverse=True)
+        groups_dic = tmp[0]
+        groups_ix = tmp[1]
 
-        # Initialise non-constant node
-        Klearn = idx == 1
-        if Klearn.sum() == 0:
-            LearnThetaNode = None
-        else:
-            # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED, THIS IS UGLY
-            if qE is None:
-                LearnThetaNode = ThetaZ_Node_k(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-            else:
-                LearnThetaNode = ThetaZ_Node_k(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[0, Klearn])
-            self.nodes["ThetaZ"]=LearnThetaNode
+        n_group = len(np.unique(groups_ix))
+        assert len(groups_dic) == n_group, 'problem in np.unique'
 
-        # Initialise mixed node
-        if (ConstThetaNode is not None) and (LearnThetaNode is not None):
-            self.nodes["ThetaZ"] = Mixed_ThetaZ_Nodes_k(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=idx)
+        # number of factors for which we learn theta
+        if Klearn is None:
+            Klearn = self.K
 
-    def initThetaZ_Const(self, value=1.):
-        """Method to initialise a constant sparsity parameter of the spike and slab factors
+        self.nodes["ThetaZ"] = ThetaZ_Node(
+            dim=(n_group, Klearn),
+            pa=pa, pb=pb,
+            qa=qa, qb=qb,
+            groups=groups_ix,
+            groups_dic=groups_dic,
+            qE=qE)
 
-        PARAMETERS
-        ----------
-         value: ndarray
-            constant value from 0 to 1 to initialise the node, 0 corresponds to complete sparsity (all weights are zero) and 1 corresponds to no sparsity
-        """
-
-        self.nodes["ThetaZ"] = ThetaZ_Constant_Node_k(dim=(self.N, self.K,), value=s.ones((self.N, self.K)) * value,
-                                                      N_cells=1.)
-
-    def initThetaW_Learn(self, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaW(self, pa=1., pb=1., qa=1., qb=1., qE=None):
         """Method to initialise the sparsity parameter of the spike and slab weights
 
         PARAMETERS
@@ -670,96 +571,8 @@ class initModel(object):
         """
         Theta_list = [None] * self.M
         for m in range(self.M):
-            Theta_list[m] = ThetaW_Node_mk(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
+            Theta_list[m] = ThetaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         self.nodes["ThetaW"] = Multiview_Variational_Node(self.M, *Theta_list)
-
-    def initThetaW_Mixed(self, idx, pa=1., pb=1., qa=1., qb=1., qE=1.):
-        """Method to initialise the sparsity parameter of the spike and slab weights
-        In contrast with initThetaLearn, where a sparsity parameter is learnt by each feature and factor, and initThetaConst, where the sparsity is not learnt,
-        in initThetaMixed the sparsity parameter is learnt by a subset of factors and features
-
-        PARAMETERS
-        ----------
-         pa: float
-            'a' parameter of the prior distribution
-         pb :float
-            'b' parameter of the prior distribution
-         qb: float
-            initialisation of the 'b' parameter of the variational distribution
-         qE: (...)
-        idx:list with binary matrices with dim (D[m],K)
-
-        """
-
-        # Do some sanity checks on the arguments
-        if isinstance(qE,list):
-            assert len(qE) == self.M, "Wrong dimensionality"
-            for m in range(self.M):
-                if isinstance(qE[m],(int,float)):
-                    qE[m] = s.ones((self.D[m],self.K)) * qE[m]
-                elif isinstance(qE[m],s.ndarray):
-                    assert qE[m].shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
-                else:
-                    print("Wrong initialisation for Theta"); exit(1)
-
-        elif isinstance(qE,s.ndarray):
-            assert qE.shape == (self.D[m],self.K), "Wrong dimensionality of Theta"
-            tmp = [ qE for m in range(self.M)]
-            qE = tmp # IS THIS REQUIRED????
-
-
-        elif isinstance(qE,(int,float)):
-            tmp = [ s.ones((self.D[m],self.K)) * qE for m in range(self.M)]
-            qE = tmp # IS THIS REQUIRED????
-
-        Theta_list = [None] * self.M
-        for m in range(self.M):
-
-            # Initialise constant node
-            Kconst = idx[m]==0
-            if Kconst.sum() == 0:
-                ConstThetaNode = None
-            else:
-                if qE is None:
-                    print("Wrong initialisation for Theta");
-                    exit(1)
-                else:
-                    ConstThetaNode = ThetaW_Constant_Node_mk(dim=(self.D[m],s.sum(Kconst),), value=qE[m][:,Kconst], N_cells=1)
-                    Theta_list[m] = ConstThetaNode
-
-            # Initialise non-constant node
-            Klearn = idx[m]==1
-            if Klearn.sum() == 0:
-                LearnThetaNode = None
-            else:
-                if qE is None:
-                    LearnThetaNode = ThetaW_Node_mk(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
-                else:
-                    # FOR NOW WE JUST TAKE THE FIRST ROW BECAUSE IT IS EXPANDED, THIS IS UGLY
-                    LearnThetaNode = ThetaW_Node_mk(dim=(s.sum(Klearn),), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE[m][0,Klearn])
-                Theta_list[m] = LearnThetaNode
-
-            # Initialise mixed node
-            if (ConstThetaNode is not None) and (LearnThetaNode is not None):
-                Theta_list[m] = Mixed_ThetaW_Nodes_mk(LearnTheta=LearnThetaNode, ConstTheta=ConstThetaNode, idx=idx[m])
-
-        self.Theta = Multiview_Mixed_Node(self.M, *Theta_list)
-        self.nodes["ThetaW"] = self.Theta
-
-    def initThetaW_Const(self, value=1.):
-        """Method to initialise a constant Theta of the spike and slab on W
-
-        PARAMETERS
-        ----------
-        value: float ranging from 0 to 1, where:
-            0 corresponds to complete sparsity (all weights are zero)
-            1 corresponds to no sparsity (all weight allowed to be non-zero)
-        """
-        Theta_list = [None] * self.M
-        for m in range(self.M):
-            Theta_list[m] = ThetaW_Constant_Node_mk(dim=(self.D[m],self.K,), value=s.ones((self.D[m],self.K))*value, N_cells=1.)
-        self.Theta = Multiview_Constant_Node(self.M, *Theta_list)
-        self.nodes["ThetaW"] = self.Theta
 
     def initExpectations(self, *nodes):
         """ Method to initialise all expectations """

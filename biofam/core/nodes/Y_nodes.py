@@ -21,10 +21,7 @@ class Y_Node(Constant_Variational_Node):
 
         self.mini_batch = None
 
-        # Precompute some terms
-        self.precompute()
-
-    def precompute(self):
+    def precompute(self, options=None):
         # Precompute some terms to speed up the calculations
         self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
@@ -88,7 +85,6 @@ class Y_Node(Constant_Variational_Node):
 
         Tau["lnE"][mask] = 0
         lik = self.likconst + 0.5 * s.sum(Tau["lnE"]) - s.sum(s.multiply(Tau["E"], tmp))
-
         return lik
 
     def sample(self, dist='P'):

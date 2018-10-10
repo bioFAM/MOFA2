@@ -5,11 +5,13 @@ import sys
 from time import sleep
 from time import time
 import pandas as pd
+import imp
+
+from typing import List, Union, Dict, TypeVar
 
 from biofam.build_model.build_model import *
 from biofam.build_model.train_model import train_model
 
-# TODO where do we input the out_file option ??
 class entry_point(object):
     def __init__(self):
         self.print_banner()
@@ -33,71 +35,66 @@ class entry_point(object):
         # sleep(2)
         sys.stdout.flush()
 
-    def set_data(self, data):
-        """Method to define the data
+    def set_data_matrix(self, data, samples_names_dict, features_names_dict):
+        """ Method to set the data
 
         PARAMETERS
         ----------
-        data: pd.DataFrame
-        	a pandas DataFrame with columns ("sample","sample_group","feature","feature_group","value")
-        	the order is irrelevant
+        data: several options:
+        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
+        - a list where each element is a numpy array or a pandas data frame
         """
 
-        # Sanity checks
-        assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
-        assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
-        assert 'sample_group' in data.columns, "'data' has to contain the column 'sample_group'"
-        assert 'feature' in data.columns, "'data' has to contain the column 'feature'"
-        assert 'feature_group' in data.columns, "'data' has to contain the column 'feature_group'"
-        assert 'value' in data.columns, "'data' has to contain the column 'value'"
+        # Sanity check
+        if not isinstance(data, list):
+            if isinstance(data, dict):
+                data = list(data.values())
+            else:
+                print("Error: Data not recognised"); sys.stdout.flush(); exit()
 
-        # Defien data options
-        self.data_opts = {}
+        # Convert input data to numpy array format
+        for m in range(len(data)):
+            if isinstance(data[m], dict):
+                data[m] = list(data[m].values())
+        for p in range(len(data[0])):
+            if not isinstance(data[m][p], np.ndarray):
+                if isinstance(data[m][p], pd.DataFrame):
+                    data[m][p] = data[m][p].values
+                else:
+                    print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
 
-        # Define feature groups and sample groups
-        self.data_opts['view_names'] = data["feature_group"].unique()
-        self.data_opts['group_names'] = data["sample_group"].unique()
+        # Verbose message
+        for m in range(len(data)):
+            for p in range(len(data[0])):
+                print("Loaded view %d group %d with %d samples and %d features..." % (m+1, p+1, data[m][p].shape[0], data[m][p].shape[1]))
+
+        # Save dimensionalities
+        self.dimensionalities["M"] = len(data)
+        self.dimensionalities["P"] = len(data[0])
+        self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
+        self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
+
+        # Define feature group names and sample group names
+        self.data_opts['views_names']  = [k for k in features_names_dict.keys()]
+        self.data_opts['groups_names'] = [k for k in samples_names_dict.keys()]
 
         # Define feature and sample names
-        self.data_opts['sample_names'] = data["sample"].unique()
-        self.data_opts['feature_names'] = [ data.loc[data['feature_group'] == m].feature.unique() for m in self.data_opts['view_names'] ]
+        self.data_opts['samples_names']  = [v for l in samples_names_dict.values() for v in l]
+        self.data_opts['features_names'] = [v for v in features_names_dict.values()]
 
-        # Create dictionaries with mapping between:
-        #  sample names (keys) and sample_groups (values)
-        #  feature names (keys) and feature groups (values)
-        # TODO CHECK that the order is fine here ...
-        self.data_opts['sample_groups'] = pd.Series(df.sample_group.values, index=df.sample).values()
-        # self.data_opts['feature_groups'] = pd.Series(df.feature_group.values, index=df.feature).to_dict()
+        # Set samples groups
+        # FIX THIS
+        self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
 
-        # Define dictionary with the dimensionalities
-        self.dimensionalities = {}
-        self.dimensionalities['D'] = [len(x) for x in self.data_opts['feature_names']]
-        self.dimensionalities['M'] = len(self.data_opts['view_names'])
-        self.dimensionalities['N'] = len(self.data_opts['sample_names'])
-        self.dimensionalities['P'] = len(self.data_opts['group_names'])
+        # Concatenate groups
+        for m in range(len(data)):
+            data[m] = np.concatenate(data[m])
+        self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
-        # Convert data frame to nested list of matrices where
-        # the first level splits by feature_group (views) and the second level splits by sample_group
-        data_matrix = [[None]*self.dimensionalities['P'] for m in range(self.dimensionalities['M'])]
-        for m in range(self.dimensionalities['M']):
-            for p in range(self.dimensionalities['P']):
-                subdata = data.loc[(data['feature_group'] == self.data_opts['view_names'][m]) & (data['sample_group'] == self.data_opts['group_names'][p]) ]
-                data_matrix[m][p] = subdata.pivot(index='sample', columns='feature', values='value').values
-                # TO-DO: Reorder to match feature_names and sample_names
-                # NOT TESTED data_matrix[m][p] = data_matrix[m][p].reindex(self.data_opts['sample_names'])
-                # NOT TESTED data_matrix[m][p] = data_matrix[m][p][self.data_opts['feature_names'][m]]
+        self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
-        # TODO check that
-        self.data = process_data(data_matrix, self.data_opts, self.data_opts['sample_groups'])
-        # NOTE: Usage of covariates is currently not functional
-        self.data_opts['covariates'] = None
-        self.data_opts['scale_covariates'] = False
-
-    def set_data_from_files(self, inFiles, views, groups, header_rows=False,
-                        header_cols=False, delimiter=' '):
+    def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
         """ Load the data """
-                # inFiles, outFile, views, groups,
-                # delimiter=" ", header_cols=False, header_rows=False
 
         # TODO: sanity checks
         # - Check that input file exists
@@ -116,10 +113,10 @@ class entry_point(object):
         if type(views) is not list:
             views = [views]
         if type(groups) is not list:
-            views = [groups]
+            groups = [groups]
 
-        self.io_opts['view_names'] = views
-        self.io_opts['group_names'] = groups
+        self.io_opts['views_names'] = views
+        self.io_opts['groups_names'] = groups
 
         # Headers
         if header_rows is True:
@@ -135,24 +132,111 @@ class entry_point(object):
         # Load observations
         self.data_opts.update(self.io_opts)
         # TODO reindex
-        self.data, self.sample_groups = loadData(self.data_opts)
+        self.data, self.samples_groups = loadData(self.data_opts)
 
         # data frame needs reindexing if no header row
         if not header_rows:
             self.data[0] = self.data[0].reset_index(drop=True)
         # save feature, sample names, sample groups
-
-        self.data_opts['sample_names'] = self.data[0].index
-        self.data_opts['feature_names'] = [dt.columns.values for dt in self.data]
+        self.data_opts['samples_names'] = self.data[0].index
+        self.data_opts['features_names'] = [dt.columns.values for dt in self.data]
         # TODO check that we have the right dictionary
         # TODO check that what is used later in the code is ok for this
-        self.data_opts['sample_groups'] = self.sample_groups
+        self.data_opts['samples_groups'] = self.samples_groups
+        # taking unique view and group names in the
+        ix = np.unique(self.data_opts['views_names'], return_index=True)[1]
+        self.data_opts['views_names'] = (np.array(self.data_opts['views_names'])[ix]).tolist()
+        ix = np.unique(self.data_opts['groups_names'], return_index=True)[1]
+        self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
 
         # set dimensionalities of the model
-        M = self.dimensionalities['M'] = len(set(self.io_opts['view_names']))
+        M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
         N = self.dimensionalities["N"] = self.data[0].shape[0]
         D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
-        self.dimensionalities['P'] = len(set(self.io_opts['group_names']))
+        self.dimensionalities['P'] = len(set(self.io_opts['groups_names']))
+
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
+        self.data = process_data(self.data, self.data_opts,  self.samples_groups)
+
+    def set_data_df(self, data):
+        """Method to define the data
+
+        PARAMETERS
+        ----------
+        data: pd.DataFrame
+            a pandas DataFrame with columns ("sample","sample_group","feature","feature_group","value")
+            the order is irrelevant
+        """
+
+        # Sanity checks
+        assert hasattr(self, 'data_opts'), "Data options not defined"
+        assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
+        assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
+        assert 'sample_group' in data.columns, "'data' has to contain the column 'sample_group'"
+        assert 'feature' in data.columns, "'data' has to contain the column 'feature'"
+        assert 'feature_group' in data.columns, "'data' has to contain the column 'feature_group'"
+        assert 'value' in data.columns, "'data' has to contain the column 'value'"
+
+        # Define feature group names and sample group names
+        self.data_opts['views_names'] = data["feature_group"].unique()
+        self.data_opts['groups_names'] = data["sample_group"].unique()
+        self.data_opts['features_names'] = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        self.data_opts['samples_names'] = data["sample"].unique()
+
+        # data_matrix = [None]*len(self.data_opts['views_names'])
+        # for m in range(len(self.data_opts['views_names'])):
+        #     subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
+        #     data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
+        # data_matrix = data.pivot(index='sample', columns='feature', values='value').split().tolist()
+
+        # Count the number of feature per view
+        tmp = data.groupby(['feature_group'])['feature'].nunique()
+        nfeatures = tmp.loc[self.data_opts['views_names']]
+
+
+
+        # Convert data frame to list of matrices
+        data['feature'] = data['feature'] + data['feature_group'] # make sure there are no duplicated feature names before pivoting
+        data_matrix = data.pivot(index='sample', columns='feature', values='value')
+
+        # Sort rows and columns according to the sample and feature names
+        features_names_tmp = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        data_matrix = data_matrix.loc[self.data_opts['samples_names']]
+        data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
+
+        # Split into a list of views, each view being a matrix
+        data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
+
+        # Define feature names
+        # self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
+
+        # Define sample groups
+        self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
+                                            .set_index('sample').loc[self.data_opts['samples_names']] \
+                                            .sample_group.tolist()
+
+        # Define dimensionalities
+        self.dimensionalities = {}
+        self.dimensionalities['M'] = len(self.data_opts['views_names'])
+        self.dimensionalities['N'] = len(self.data_opts['samples_names'])
+        self.dimensionalities['P'] = len(self.data_opts['groups_names'])
+        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
+
+        # Process the data (i.e center, scale, etc.)
+        data_matrix = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
+
+        # Convert input data to numpy array format
+        for m in range(len(data_matrix)):
+            if not isinstance(data_matrix[m], np.ndarray):
+                if isinstance(data_matrix[m], pd.DataFrame):
+                    data_matrix[m] = data_matrix[m].values
+                else:
+                    print("Error, input data is not a numpy.ndarray or a pandas dataframe"); exit()
+
+        self.data = data_matrix
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -161,7 +245,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
-        schedule=None
+        schedule=None, gpu_mode=False
         ):
         """ Parse training options """
 
@@ -177,6 +261,18 @@ class entry_point(object):
 
         # Verbosity
         self.train_opts['verbose'] = verbose
+
+        # GPU mode
+        self.train_opts['gpu_mode'] = gpu_mode
+        if gpu_mode:
+            try:
+                imp.find_module('cupy')
+            except ImportError:
+                print('For GPU mode, you need to install the CUPY library')
+                print ('1 - Make sure that you are running BIOFAM on a machine with an NVIDIA GPU')
+                print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
+                print ('Alternatively, deselect GPU mode')
+                exit(1)
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
@@ -198,11 +294,11 @@ class entry_point(object):
             self.train_opts['schedule'] = schedule
 
         # Seed
-        if seed is None or seed == 0:  # Seed for the random number generator
-            self.train_opts['seed'] = int(round(time() * 1000) % 1e6)
-        else:
-            self.train_opts['seed'] = seed
+        if seed is None:  # Seed for the random number generator
+            seed = int(round(time()*1000)%1e6)
+        self.train_opts['seed'] = int(seed)
         s.random.seed(self.train_opts['seed'])
+
 
     def set_stochasticity_options(self,
                                   tau=1.,
@@ -219,9 +315,7 @@ class entry_point(object):
         self.train_opts['forgetting_rate'] = forgetting_rate
         self.train_opts['batch_size'] = batch_size
 
-    def set_model_options(self,factors, likelihoods,
-    	sl_z=False, sl_w=False, ard_z=False, ard_w=False, noise_on='features',
-    	learnTheta=True, learn_intercept=False):
+    def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False):
         """ Set model options """
 
         # TODO: SANITY CHECKS AND:
@@ -244,45 +338,30 @@ class entry_point(object):
         self.model_opts['ard_w'] = ard_w
 
         # Define whether to add noise terms on the features or on the samples
-        self.model_opts['noise_on'] = noise_on
+        self.model_opts['noise_on'] = "features"
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
 
         # Define likelihoods
         self.model_opts['likelihoods'] = likelihoods
-        if isinstance(self.model_opts['likelihoods'],str):
+        if isinstance(self.model_opts['likelihoods'], str):
             self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
-
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli' and 'poisson'"
 
         # Define whether to learn the feature-wise means
-        self.model_opts["learn_intercept"] = learn_intercept
-        if learn_intercept:
-            self.model_opts['factors'] += 1
-            self.dimensionalities["K"] += 1
+        self.model_opts["learn_intercept"] = False
 
         # Define for which factors and views should we learn the sparsity levels
-        if isinstance(learnTheta,bool):
-            self.model_opts['sparsity'] = True
-            self.model_opts['learnTheta'] = [s.ones(self.dimensionalities["K"]) for m in range(self.dimensionalities["M"])]
-        elif isinstance(learnTheta,list):
-        	print("Depreciated, '--learnTheta' has to be a boolean")
-			# self.model_opts['sparsity'] = True
-			# assert len(learnTheta)==M, "--learnTheta has to be a binary vector with length number of views"
-			# self.model_opts['learnTheta'] = [ learnTheta[m]*s.ones(K) for m in range(M) ]
-        else:
-            print("Error, --learnTheta has to be a boolean")
-            exit(1)
+        self.model_opts['sparsity'] = True
+        self.model_opts['learnTheta'] = [s.ones(self.dimensionalities["K"]) for m in range(self.dimensionalities["M"])]
 
-        # TODO sort that out
-        self.data_opts['features_in_rows'] = False
-
-    def set_data_options(self, lik,
+    def set_data_options(self, likelihoods,
         center_features=False, center_features_per_group=False,
         scale_features=False, scale_views=False,
-        maskAtRandom=None, maskNSamples=None
+        maskAtRandom=None, maskNSamples=None,
+        features_in_rows=False
         ):
 
         """ Parse data processing options """
@@ -290,39 +369,44 @@ class entry_point(object):
         # TODO: more verbose messages
         # TODO Sanity checks
         self.data_opts = {}
-        self.model_opts = {}
 
-        self.data_opts["likelihoods"] = lik
-        self.model_opts["likelihoods"] = lik
-        M = len(self.model_opts["likelihoods"])
-        # assert len(self.data_opts['view_names'])==M, "Length of view names and input files does not match"
+        if features_in_rows is True:
+            self.data_opts['features_in_rows'] = features_in_rows
+
+        # Define likelihoods
+        if type(likelihoods) is not list:
+          print("You only specified one likelihood, we assume that you only have a single view")
+          likelihoods = [likelihoods]
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"]))
+        self.data_opts["likelihoods"] = likelihoods
+        M = len(likelihoods)
 
         # Center features
         # TO-DO: ITS NOT INTUITIVE TO HARD BOTH CENTER_FEATURES AND CENTER_FEATURES_PER_GROUP, WE NEEED TO FIX THIS
         if center_features_per_group is True:
-            self.data_opts['center_features_per_group'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
-            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features_per_group'] = [ True if l=="gaussian" else False for l in likelihoods ]
+            self.data_opts['center_features'] = [ False for l in likelihoods ]
         elif center_features is True:
-            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
-            self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features_per_group'] = [ False for l in likelihoods ]
+            self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in likelihoods ]
         else:
             # if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
-            self.data_opts['center_features'] = [ False for l in self.model_opts["likelihoods"] ]
-            self.data_opts['center_features_per_group'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['center_features'] = [ False for l in likelihoods ]
+            self.data_opts['center_features_per_group'] = [ False for l in likelihoods ]
 
 
         # Scale views
         if scale_views is True:
-            self.data_opts['scale_views'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['scale_views'] = [ True if l=="gaussian" else False for l in likelihoods ]
         else:
-            self.data_opts['scale_views'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['scale_views'] = [ False for l in likelihoods ]
 
         # Scale features
         if scale_features is True:
-            assert data_opts['scale_views'] is False, "Scale either entire views or features, not both"
-            self.data_opts['scale_features'] = [ True if l=="gaussian" else False for l in self.model_opts["likelihoods"] ]
+            assert self.data_opts['scale_views'][0] is False, "Scale either entire views or features, not both"
+            self.data_opts['scale_features'] = [ True if l=="gaussian" else False for l in likelihoods ]
         else:
-            self.data_opts['scale_features'] = [ False for l in self.model_opts["likelihoods"] ]
+            self.data_opts['scale_features'] = [ False for l in likelihoods ]
 
 
         # Mask values at random
@@ -344,6 +428,7 @@ class entry_point(object):
         # Sanity checks
         assert hasattr(self, 'model_opts'), "Train options not defined"
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
+
         # Build the BioFAM model
         self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
         self.model = self.model_builder.net
@@ -351,7 +436,7 @@ class entry_point(object):
     def run(self, no_theta=False):
         """ Run the model """
 
-    	# Sanity checks
+        # Sanity checks
         assert hasattr(self, 'train_opts'), "Train options not defined"
         assert hasattr(self, 'data_opts'), "Data options not defined"
 
@@ -363,234 +448,44 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
-        # TODO this was for testing, should be removed at some point
-        if no_theta:
-            self.train_opts['schedule'].remove('ThetaW')
-        # self.model.setTrainOptions(self.train_opts)
-        # self.train_opts['schedule'] = ['Y', 'Z']
-	    # Train the model
+        self.model.setTrainOptions(self.train_opts)
+        # Train the model
         train_model(self.model, self.train_opts)
 
     def save(self, outfile):
         """ Save the model in an hdf5 file """
 
         if self.train_opts["verbose"]:
-            print("Saving model in %s...\n" % outfile)
+          print("Saving model in %s...\n" % outfile)
 
         self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
-
         saveTrainedModel(
-            model=self.model,
-            outfile=outfile,
-	    	train_opts=self.train_opts,
-            model_opts=self.model_opts,
-	    	sample_names=self.data_opts['sample_names'],
-            feature_names=self.data_opts['feature_names'],
-            view_names=self.data_opts['view_names'],
-	    	group_names=self.data_opts['group_names'],
-            sample_groups=self.data_opts['sample_groups']
+          model=self.model,
+          outfile=outfile,
+          data=self.data,
+          train_opts=self.train_opts,
+          model_opts=self.model_opts,
+            samples_names=self.data_opts['samples_names'],
+          features_names=self.data_opts['features_names'],
+          views_names=self.data_opts['views_names'],
+            groups_names=self.data_opts['groups_names'],
+          samples_groups=self.data_opts['samples_groups']
         )
 
-
-
-    def get_df(self, node):
-        assert self.model is not None, 'Model is not built yet'
-
-        nodes = self.model.nodes
-        assert node in nodes, "requested node is not in the model"
-
-        sample_names = self.data_opts['sample_names']
-        feature_names = self.data_opts['feature_names']
-        factor_names = np.array(range(nodes['Z'].K)).astype(str)
-        view_names = np.unique(self.data_opts['view_names'])
-        sample_groups=self.data_opts['sample_groups']
-
-        # TODO this index_opts could be passed as an argument of a get_df method implemented in each nodes.
-        # then each node would know what index option to use to build the dataframe
-        # index_opts = {'sample_names': sample_names,
-        #               'feature_names': feature_names,
-        #               'view_names': view_names,
-        #               'sample_groups':sample_groups,
-        #               'factor_names':factor_names}
-        exp = nodes[node].getExpectation()
-
-        if node == 'W':
-            i=0
-            all_dfs = []
-            for view in view_names:
-                e = pd.DataFrame(exp[i], index=feature_names[i], columns=factor_names)
-                e.index.name = 'feature'
-                e = e.reset_index(drop=True)
-                e_melted = pd.melt(e, id_vars=['feature'], var_name='factor', value_name='value')
-                e_melted['view'] = view
-
-                all_dfs.append(e_melted)
-
-                i += 1
-
-            res = pd.concat(all_dfs)
-
-        if node == 'Y':
-            i=0
-            all_dfs = []
-            for view in view_names:
-                e = pd.DataFrame(exp[i], index=sample_names, columns=feature_names[i])
-                e['group']=sample_groups
-                e.index.name = 'sample'
-                e = e.reset_index(drop=True)
-                e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='feature', value_name='value')
-                e_melted['view'] = view
-
-                all_dfs.append(e_melted)
-
-                i += 1
-
-            res = pd.concat(all_dfs)
-
-        if node == 'Z':
-            e = pd.DataFrame(exp, index=sample_names, columns=factor_names)
-            e['group']=sample_groups
-            e.index.name = 'sample'
-            e = e.reset_index(drop=True)
-            e_melted = pd.melt(e, id_vars=['group', 'sample'], var_name='factor', value_name='value')
-
-            res = e_melted
-
-        return res
-
-    def depreciated_parse_covariates(self):
-        """ Parse covariates """
-        print("Covariates are not implemented")
-        exit()
-
-        K = self.dimensionalities["K"]
-        M = self.dimensionalities["M"]
-
-        # Define idx for covariate factors
-        idx = range(self.data_opts['covariates'].shape[1])
-
-        # Ignore mean and variance in the prior distribution of Z
-        # self.model_opts["priorZ"]["mean"][idx] = s.nan
-        self.model_opts["priorZ"]["var"][idx] = s.nan
-
-        # Ignore variance in the variational distribution of Z
-        # The mean has been initialised to the covariate values
-        self.model_opts["initZ"]["var"][idx] = 0.
-
-
-###### IGNORE BELOW ########
-class entry_sfa(entry_point):
-    def __init__(self):
-        super(entry_sfa, self).__init__()
-
-    def set_data_options(self,
-      inFiles, outFile, views, groups, x_files, view_has_covariance_prior=None,
-      delimiter=" ", header_cols=False, header_rows=False
-      ):
-        super(entry_sfa, self).set_data_options(inFiles, outFile, views, groups,
-          delimiter, header_cols, header_rows)
-        # Position files
-        self.data_opts['x_files'] = x_files
-
-        # Boolean to say whether the covariance prior is known for each view
-        # Only used if covariance prior on W
-        if view_has_covariance_prior is None:
-            view_has_covariance_prior = [True] * self.dimensionalities['M']
-        self.data_opts['view_has_covariance_prior'] = view_has_covariance_prior
-
-
-    def set_model(self, sl_z=False, sl_w=True, ard_z=False, ard_w=True, noise_on='features', cov_on='samples'):
-        # sanity check for the current implementation
-        assert (cov_on == samples) or (cov_on == 'features'), 'cov_on argument not understood'
-
-        if cov_on == 'samples':
-            assert not sl_z, 'cannot put spike and slab on Z if covariance on samples'
-            assert not ard_z, 'cannot put ARD on Z if covariance on samples'
-
-        if cov_on == 'features':
-            assert not sl_z, 'cannot put spike and slab on W if covariance on features'
-            assert not ard_z, 'cannot put ARD on W if covariance on features'
-
-        # define where you put the covariance prior
-        self.model_opts['cov_on'] = cov_on
-        super(entry_sfa, self).set_model(sl_z, sl_w, ard_z, ard_w, noise_on)
-
-    def load_data(self):
-        super(entry_sfa, self).load_data()
-        self.all_data['data_x'] = loadDataX(self.data_opts)
-
-    def build_and_run(self):
-        model_builder = buildSpatialBiofam(self.all_data, self.model_opts)
-
-        self.model = model_builder.net
-        self.train_opts['schedule'] = model_builder.schedule
-
-        self.model.setTrainOptions(self.train_opts)
-        train_model(self.model, self.train_opts)
-
-        print("Saving model in %s...\n" % self.data_opts['output_file'])
-        self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
-        saveTrainedModel(model=self.model, outfile=self.data_opts['output_file'], train_opts=self.train_opts, model_opts=self.model_opts,
-                         view_names=self.data_opts['view_names'], group_names=self.data_opts['group_names'], sample_groups=self.all_data['sample_groups'])
-
-
-
 if __name__ == '__main__':
+
     ent = entry_point()
-    dir = '/Users/damienarnol1/Documents/local/pro/PhD/FA/biofam/paper_figures/simul_data/stochastic_simul/data_100/'
-    infiles = [dir+'data_0_0.txt']
-    views =  ["view_0"]
-    groups = ["group_0"]
 
-    # infiles = [dir+'data_0.txt']
-    # views =  ["view_0"]
-    # groups = ["group_0"]
-    # infiles = [dir+'data_0_0.txt', dir+'data_0_1.txt', dir+'data_1_0.txt', dir+'data_1_1.txt']
-    # infiles = [dir+'data_all.txt']
+    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    views =  ["view_A", "view_A", "view_B", "view_B"]
+    groups = ["group_A", "group_B", "group_A", "group_B"]
 
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
-
-    # views =  ["view_0"]
-    # groups = ["group_0"]
-
-    lik = ["gaussian"]
-    # lik = ["gaussian", "gaussian"]
-    #
-    outfile = dir+"test_no_stochastic.hdf5"
-    #
-    stochastic=False
-    ent.set_data_options(lik, center_features=False, center_features_per_group=True, scale_features=False, scale_views=True)
+    lik = ["gaussian", "gaussian"]
+    out_file = '/tmp/test_biofam.hdf5'
+    ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=False, sl_z=False, ard_w=True, factors=10, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0, seed=1, elbofreq=10, verbose=True)
-    if stochastic: ent.set_stochasticity_options(tau=.8, forgetting_rate=0.01, batch_size=.1)  # TODO fix problem batch size > .5
+    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
+    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     ent.build()
-    ent.run(no_theta=False)
-    ent.save(outfile)
-    #
-    # outfile2 = dir+"test_sl.hdf5"
-    # ent2 = entry_point()
-    # ent2.set_data_options(lik, center_features=True, center_features_per_group=False, scale_features=False, scale_views=True)
-    # ent2.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    # ent2.set_model_options(ard_z=False, sl_w=True, sl_z=False, ard_w=True, factors=4, likelihoods=lik, learnTheta=False)
-    # ent2.set_train_options(iter=500, tolerance=0.01, dropR2=0.0)
-    # ent2.build()
-    # ent2.run(no_theta=False)
-    # ent2.save(outfile2)
-    # ent.get_df('Y')
-
-
-    # # from biofam.run.entry_point import entry_point
-    # file = "/Users/ricard/Downloads/test_biofam/data.txt"
-    # lik = ["gaussian", "gaussian"]
-    # ent.set_data_options()
-    # data = pd.read_csv(file, delimiter="\t")
-    # ent = entry_point()
-    # ent.set_data(data)
-    # ent.set_train_options(iter=10, tolerance=0.01, dropR2=0.0)
-    # ent.set_model(sl_z=False, sl_w=False, ard_z=True, ard_w=False, noise_on='features')
-    # ent.set_model_options(factors=10, likelihoods=lik)
-    # ent.build_and_run()
-    # ent.get_df('Y')
+    ent.run()
+    ent.save(out_file)

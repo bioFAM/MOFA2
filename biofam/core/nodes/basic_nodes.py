@@ -78,7 +78,7 @@ class Node(object):
         dim[axis] = new_dim
         self.dim = tuple(dim)
 
-    def precompute(self):
+    def precompute(self, options=None):
         pass
 
 
