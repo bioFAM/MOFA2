@@ -73,8 +73,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Alpha = self.markov_blanket['AlphaW'].getExpectation(expand=True)
         else:
             Alpha = 1./self.P.params['var']
-            if ix is not None:
-                Alpha = Alpha[ix,:]
 
         # Collect parameters from the Q distributions of this node
         Q = self.Q.getParameters()
