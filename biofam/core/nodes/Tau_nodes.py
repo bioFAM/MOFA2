@@ -144,7 +144,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
         term3[mask] = 0.
-        term3 += gpu_utils.square(ZW)
+        term3 += gpu_utils.square(gpu_utils.array(ZW))
 
         ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
         term4 = 2.*ZW
