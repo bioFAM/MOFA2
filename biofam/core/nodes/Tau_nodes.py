@@ -134,7 +134,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, coeff, ro, groups):
 
         # Calculate terms for the update
-        ZW =  Z.dot(W.T)
+        ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
         ZW[mask] = 0.
 
         term1 = gpu_utils.square(gpu_utils.array(Y))
@@ -144,7 +144,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
         term3[mask] = 0.
-        term3 += gpu_utils.square(gpu_utils.array(ZW))
+        term3 += gpu_utils.square(ZW)
 
         ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
         term4 = 2.*ZW
