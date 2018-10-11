@@ -220,22 +220,22 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def precompute(self, options):
         self.D = self.dim[0]
         self.factors_axis = 1
+        gpu_utils.gpu_mode = options['gpu_mode']
 
-    def updateParameters(self, ix=None, ro=None):
-        if ix is not None:
-            print('stochastic inference not implemented for SW node')
-            exit(1)
+    def updateParameters(self):
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
         tau = self.markov_blanket["Tau"].getExpectation(expand=True)  # TODO might be worth expanding only once when updating expectation
         Y = self.markov_blanket["Y"].getExpectation()
-        if "AlphaW" not in self.markov_blanket:
-            print("SW node not implemented wihtout ARD")
-            exit(1)
-        alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
+        if "AlphaW" in self.markov_blanket:
+            alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
+        else:
+            alpha = 1./self.P.params['var_B1']
         thetatmp = self.markov_blanket["ThetaW"].getExpectations(expand=True)
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
+
+
         mask = ma.getmask(Y)
 
         # Collect parameters and expectations from P and Q distributions of this node
@@ -249,41 +249,49 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         tau[mask] = 0.
 
         # precompute terms usful for all k
-        tauYT = (tau*Y).T
+        tauYT = (gpu_utils.array(tau)*gpu_utils.array(Y)).T
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
-            # precompute k related terms
-
             # Calculate intermediate steps
             term1 = (theta_lnE-theta_lnEInv)[:,k]
-            term2 = 0.5*s.log(alpha[:,k])
-            term3 = 0.5*s.log(s.dot(ZZ[:,k], tau) + alpha[:,k])
-            # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
 
-            term4_tmp1 = s.dot(tauYT,Z[:,k])
+            # GPU --------------------------------------------------------------
+            # Variables used in multiple operations snhould be loaded on GPU only once
+            Zk_cp = gpu_utils.array(Z[:,k])
+            tau_cp = gpu_utils.array(tau)
+            ZZk_cp = gpu_utils.array(ZZ[:,k])
+            alphak_cp = gpu_utils.array(alpha[:,k])
+
+            term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
+            # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
+            term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_cp) + alphak_cp))
+
+            term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
             # term4_tmp1 = fast_dot(tauYT,Z[:,k])
 
-            term4_tmp2_1 = SW[:,s.arange(self.dim[1])!=k].T
-            term4_tmp2_2 = (Z[:,k]*Z[:,s.arange(self.dim[1])!=k].T).T
-            term4_tmp2 = s.dot(term4_tmp2_2, term4_tmp2_1)
+            term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
+            term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z[:,s.arange(self.dim[1])!=k]).T).T
+            term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)
             # term4_tmp2 = fast_dot(term4_tmp2_2, term4_tmp2_1)
-            term4_tmp2 *= tau  # most expensive bit
+            term4_tmp2 *= tau_cp  # most expensive bit
             term4_tmp2 = term4_tmp2.sum(axis=0)
 
-            term4_tmp3 = s.dot(ZZ[:,k].T,tau) + alpha[:,k] # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
+            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
             # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
 
 
-            term4 = 0.5*s.divide(s.square(term4_tmp1-term4_tmp2),term4_tmp3) # good to modify, awsnt checked numerically
+            term4 = gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3)) # good to modify, awsnt checked numerically
+
+            # ------------------------------------------------------------------
 
             # Update S
             # NOTE there could be some precision issues in S --> loads of 1s in result
             Qtheta[:,k] = 1./(1.+s.exp(-(term1+term2-term3+term4)))
 
             # Update W
-            Qvar_S1[:,k] = 1./term4_tmp3
-            Qmean_S1[:,k] = Qvar_S1[:,k]*(term4_tmp1-term4_tmp2)
+            Qvar_S1[:,k] = gpu_utils.asnumpy(1./term4_tmp3)
+            Qmean_S1[:,k] = Qvar_S1[:,k]*gpu_utils.asnumpy(term4_tmp1-term4_tmp2)
 
             # Update Expectations for the next iteration
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
@@ -292,7 +300,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=1./alpha, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
 
     def calculateELBO(self):
-        # import pdb; pdb.set_trace()
         # Collect parameters and expectations
         Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
         S,WW = Qexp["EB"], Qexp["ENN"]
@@ -303,13 +310,14 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Get ARD sparsity or prior variance
         if "AlphaW" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy()
+            alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy()  # TODO is this copy necessarry ??
         else:
-            print("Not implemented")
-            exit(1)
+            alpha = dict()
+            alpha['E'] = 1./self.P.params['var_B1']
+            alpha['lnE'] = s.log(1./self.P.params['var_B1'])
+
 
         # Calculate ELBO for W
-        # import pdb; pdb.set_trace()
         lb_pw = (alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
         lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
         # #NOT SURE ABOUT THE FORMULA for lb_qw (brackets of expectation propagating inside the log ?)
