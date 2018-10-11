@@ -322,27 +322,30 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Q['mean_B1'] = par_up['mean_B1']
             Q['var_B1'] = par_up['var_B1']
             Q['theta'] = par_up['theta']
+            Q['var_B0'] = 1. / Alpha
         else:
             Q['mean_B1'][ix,:] = par_up['mean_B1']
             Q['var_B1'][ix,:] = par_up['var_B1']
             Q['theta'][ix,:] = par_up['theta']
+            Q['var_B0'][ix, :] = 1. / Alpha
 
-        self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=1. / Alpha,
+        self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=Q['var_B0'],
                              mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now
 
         if ix is not None:
-            # TODO update that
-            self.mini_batch['E'] = par_up['Qmean']
-            self.mini_batch['E2'] = s.square(par_up['Qmean']) + par_up['Qvar']
+            self.mini_batch['E'] = par_up['mean_B1'] * par_up['theta']
+            self.mini_batch['E2'] = par_up['theta'] * (s.square(par_up['mean_B1']) + par_up['var_B1'])
+
 
     def _updateParameters(self, Y, W, tau, Alpha,
                           Qmean_T1, Qvar_T1, Qtheta, SZ,
                           theta_lnE, theta_lnEInv):
 
+        N_batch = Qmean_T1.shape[0]
         M = len(Y)  # number of views
 
         for k in range(self.dim[1]):
-            # Calculate intermediate stept
+            #A Calculate intermediate stept
             term1 = (theta_lnE - theta_lnEInv)[:, k]
             # TODO this is not right: alpha should be expended to full matrix before and used as full matrix
             # term2 = 0.5 * s.log(alpha[:, k]) should work
@@ -355,9 +358,9 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
             # term3 = gpu_utils.zeros((self.N,))
-            term4_tmp1 = gpu_utils.zeros((self.N,))
-            term4_tmp2 = gpu_utils.zeros((self.N,))
-            term4_tmp3 = gpu_utils.zeros((self.N,))
+            term4_tmp1 = gpu_utils.zeros((N_batch,))
+            term4_tmp2 = gpu_utils.zeros((N_batch,))
+            term4_tmp3 = gpu_utils.zeros((N_batch,))
             for m in range(M):
                 tau_cp = gpu_utils.array(tau[m])
                 WWk_cp = gpu_utils.array(W[m]["E2"][:, k])

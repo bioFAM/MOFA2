@@ -128,9 +128,9 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
         tmp_group = self.groups[ix]
         expanded_expectation = QExp['E'][tmp_group, :]
         expanded_lnE = QExp['lnE'][tmp_group, :]
-        expanded_lnEInv = QExp['lnEInv'][self.groups, :]
+        expanded_lnEInv = QExp['lnEInv'][tmp_group, :]
         self.mini_batch = {'E': expanded_expectation,
-                           'lnE': expanded_lnEself,
+                           'lnE': expanded_lnE,
                            'lnEInv': expanded_lnEInv}
 
     def get_mini_batch(self):
@@ -179,7 +179,7 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
 
         # Perform update
         for c in range(self.n_groups):
-            mask = (self.groups == c)
+            mask = (groups == c)
 
             # coeff for stochastic inference
             n_batch = mask.sum()
