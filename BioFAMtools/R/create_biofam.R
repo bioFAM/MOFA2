@@ -142,7 +142,9 @@ create_biofam <- function(data, samples_groups = NULL) {
                         )
   )
   
-  object <- .create_biofam(data_matrix)
+  object <- new("BioFAModel")
+  object@status <- "untrained" # define status as untrained
+  object@input_data <- data_matrix
   
   return(object)
 }

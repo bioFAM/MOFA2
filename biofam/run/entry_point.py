@@ -266,8 +266,6 @@ class entry_point(object):
                 print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
                 print ('Alternatively, deselect GPU mode')
                 sys.stdout.flush(); exit(1)
-        else:
-            print("GPU mode inactivated, using the CPU")
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
