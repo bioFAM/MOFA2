@@ -309,7 +309,10 @@ class entry_point(object):
         # assert tau > 0, 'tau must be greater thn zero'
         # assert .5 < forgetting_rate <= 1., 'Choose .5 < forgetting_rate <= 1'
         # assert 0. < batch_size <= 1., 'Choose 0. < batch_size <= 1'
-
+        # TO-DO:
+        # (1) MAKE SURE THAT TRAIN OPTS IS DEFINED
+        # (2) RENAME TAU
+        # (3) 
         self.train_opts['stochastic'] = True
         self.train_opts['tau'] = tau
         self.train_opts['forgetting_rate'] = forgetting_rate
