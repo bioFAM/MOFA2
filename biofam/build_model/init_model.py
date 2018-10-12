@@ -444,6 +444,8 @@ class initModel(object):
             'features' to define a noise per feature
             'samples' to define a noise per sample
         """
+        pa = 1.
+        pb = 1.
 
         tau_list = [None]*self.M
         for m in range(self.M):
