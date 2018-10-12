@@ -485,7 +485,7 @@ if __name__ == '__main__':
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=False, sl_w=False , sl_z=False, ard_w=False, factors=15, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
+    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, gpu_mode=False)
     ent.set_stochasticity_options()
     ent.build()
     ent.run()
