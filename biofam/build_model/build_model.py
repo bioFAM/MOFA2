@@ -108,7 +108,8 @@ class buildBiofam(buildModel):
             self.init_model.initW()
 
     def build_Tau(self):
-        self.init_model.initTau()
+        # TODO sort out how to choose where to use Tau
+        self.init_model.initTau(self.data_opts['samples_groups'], on=self.model_opts['noise_on'])
 
     def build_AlphaZ(self):
         """ Build node AlphaZ for the ARD prior on the factors """

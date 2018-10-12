@@ -12,13 +12,20 @@ from .variational_nodes import Gamma_Unobserved_Variational_Node
 
 from biofam.core.distributions import *
 
-
 class TauD_Node(Gamma_Unobserved_Variational_Node):
-    def __init__(self, dim, pa, pb, qa, qb, qE=None):
+    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic, qE=None):
+
+        self.groups = groups
+        self.group_names = groups_dic
+        self.N = len(self.groups)
+        self.n_groups = len(np.unique(groups))
+
+        assert self.n_groups == dim[0], "node dimension does not match number of groups"
+
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
     def precompute(self, options):
-        self.N = self.dim[0]
+        # self.N = self.dim[0]
         self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
         gpu_utils.gpu_mode = options['gpu_mode']
 
@@ -27,14 +34,19 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         mask = ma.getmask(Y)
         Y = Y.data
 
-        self.Qa_pre = self.P.getParameters()['a'] + (Y.shape[0] - mask.sum(axis=0))/2.
+        self.Qa_pre = self.P.getParameters()['a'].copy()
+
+        for g in range(self.n_groups):
+            g_mask = (self.groups == g)
+            Y_tmp = Y[g_mask, :]
+            mask_tmp = mask[g_mask, :]
+            self.Qa_pre[g,:] += (Y_tmp.shape[0] - mask_tmp.sum(axis=0))/2.
 
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
         if expand:
-            N = self.markov_blanket['Z'].N
-            expanded_E = s.repeat(QExp['E'][None, :], N, axis=0)
-            expanded_lnE = s.repeat(QExp['lnE'][None, :], N, axis=0)
+            expanded_E = QExp['E'][self.groups, :]
+            expanded_lnE = QExp['lnE'][self.groups, :]
             return {'E': expanded_E, 'lnE': expanded_lnE}
         else:
             return QExp
@@ -46,6 +58,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     # @profile
     def updateParameters(self):
         # Collect expectations from other nodes
+        # TODO sum(axis = 0) to change
         Y = self.markov_blanket["Y"].getExpectation()
         mask = ma.getmask(Y)
 
@@ -58,6 +71,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # Collect parameters from the P and Q distributions of this node
         P, Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb = P['a'], P['b']
+        Qb = Q['b']
 
         # Mask matrices
         Y = Y.data
@@ -68,25 +82,27 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # ZW =  fast_dot(Z,W.T)
         ZW[mask] = 0.
 
-        term1 = gpu_utils.square(gpu_utils.array(Y)).sum(axis=0)
+        term1 = gpu_utils.square(gpu_utils.array(Y)) #.sum(axis=0)
 
         term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
         # term2 = fast_dot(ZZ, WW.T)
         term2[mask] = 0
-        term2 = term2.sum(axis=0)
+        # term2 = term2.sum(axis=0)
 
-        term3 = gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
+        term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
         term3[mask] = 0.
-        term3 = -term3.sum(axis=0)
-        term3 += (gpu_utils.square(ZW)).sum(axis=0)
+        # term3 = term3.sum(axis=0)
+        term3 += gpu_utils.square(ZW)  #.sum(axis=0)
 
         ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
-        term4 = 2.*(ZW.sum(axis=0))
+        term4 = 2.*ZW #.sum(axis=0)
 
         tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
 
         # Perform updates of the Q distribution
-        Qb = Pb + tmp/2.
+        for g in range(self.n_groups):
+            g_mask = (self.groups == g)
+            Qb[g,:] = Pb[g,:] + .5 * tmp[g_mask,:].sum(axis=0)
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=self.Qa_pre, b=Qb)

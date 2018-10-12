@@ -73,6 +73,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
+        # import pdb; pdb.set_trace()
         M = len(Y)
         for k in latent_variables:
             foo = s.zeros((self.N,))
@@ -94,9 +95,9 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
                 bar += gpu_utils.asnumpy(gpu_utils.dot(bar_tmp2, bar_tmp1))
 
+
             Qvar[:, k] = 1. / (Alpha[:, k] + foo)
             Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
-
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
 
