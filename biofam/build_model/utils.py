@@ -220,7 +220,9 @@ def process_data(Y, data_opts, samples_groups):
 
         print("\n")
 
-        parsed_Y[m]  = parsed_Y[m].values
+        # Convert data to numpy array format
+        if isinstance(parsed_Y[m], pd.DataFrame):
+            parsed_Y[m]  = parsed_Y[m].values
 
     return parsed_Y
 

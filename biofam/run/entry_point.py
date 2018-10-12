@@ -228,14 +228,6 @@ class entry_point(object):
         # Process the data (i.e center, scale, etc.)
         data_matrix = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
 
-        # Convert input data to numpy array format
-        for m in range(len(data_matrix)):
-            if not isinstance(data_matrix[m], np.ndarray):
-                if isinstance(data_matrix[m], pd.DataFrame):
-                    data_matrix[m] = data_matrix[m].values
-                else:
-                    print("Error, input data is not a numpy.ndarray or a pandas dataframe"); exit()
-
         self.data = data_matrix
 
         # NOTE: Usage of covariates is currently not functional
@@ -267,12 +259,15 @@ class entry_point(object):
         if gpu_mode:
             try:
                 imp.find_module('cupy')
+                print("GPU mode activated")
             except ImportError:
                 print('For GPU mode, you need to install the CUPY library')
                 print ('1 - Make sure that you are running BIOFAM on a machine with an NVIDIA GPU')
                 print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
                 print ('Alternatively, deselect GPU mode')
-                exit(1)
+                sys.stdout.flush(); exit(1)
+        else:
+            print("GPU mode inactivated, using the CPU")
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
