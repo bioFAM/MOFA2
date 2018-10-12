@@ -245,7 +245,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
-        schedule=None, gpu_mode=False
+        schedule=None, gpu_mode=False, stochastic=False
         ):
         """ Parse training options """
 
@@ -298,6 +298,10 @@ class entry_point(object):
             seed = int(round(time()*1000)%1e6)
         self.train_opts['seed'] = int(seed)
         s.random.seed(self.train_opts['seed'])
+
+        # set the default stochastic options which can be re changed later
+        if stochastic:
+            self.set_stochasticity_options()
 
 
     def set_stochasticity_options(self,
@@ -485,8 +489,8 @@ if __name__ == '__main__':
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=False, sl_w=False , sl_z=False, ard_w=False, factors=15, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, gpu_mode=False)
-    ent.set_stochasticity_options()
+    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, gpu_mode=False, stochastic=True)
+    # ent.set_stochasticity_options()
     ent.build()
     ent.run()
     ent.save(out_file)
