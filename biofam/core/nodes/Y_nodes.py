@@ -103,9 +103,6 @@ class Y_Node(Constant_Variational_Node):
         Tau_samp = self.markov_blanket['Tau'].samp
         F = Z_samp.dot(W_samp.transpose())
 
-        # DEPRECATED (tau is expanded inside the node)
-        # if Tau_samp.shape != mu.shape:
-        #     Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
         var = 1./Tau_samp
 
         if self.markov_blanket['Tau'].__class__.__name__ == "TauN_Node": #TauN

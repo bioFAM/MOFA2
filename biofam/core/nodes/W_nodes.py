@@ -1,9 +1,7 @@
 from __future__ import division
-from copy import deepcopy
 import numpy.ma as ma
 import numpy as np
 import scipy as s
-from copy import deepcopy
 import math
 
 from biofam.core.utils import *
@@ -15,7 +13,6 @@ from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
-# TODO make more general to handle both cases with and without SL in the Markov Blanket
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
         super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
@@ -66,7 +63,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Mu = self.P.getParameters()["mean"]
 
         if "AlphaW" in self.markov_blanket:
-            # TODO change that in alpha everywhere
             Alpha = self.markov_blanket['AlphaW'].getExpectation(expand=True)
         else:
             Alpha = 1./self.P.params['var']
@@ -91,7 +87,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         # make sure ro is not None
         #-----------------------------------------------------------------------
-        # TODO fix that in BayesNet instead
         if ro is None:
             ro = 1.
 
@@ -123,7 +118,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             Qmean[:,k] *= (1 - ro)
             Qmean[:,k] += ro * (1/(Alpha[:,k]+foo)) * (bar + Alpha[:,k]*Mu[:,k])
-            print(Qmean[1:5,0])
 
     def calculateELBO(self):
 
@@ -138,7 +132,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.D,self.dim[1]))
 
         if 'AlphaW' in self.markov_blanket:
-            Alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy() # Notice that this Alpha is the ARD prior on Z, not on W.
+            Alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True)
         else:
             Alpha = dict()
             Alpha['E'] = 1./self.P.params['var']
@@ -255,7 +249,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         # make sure ro is not None
         #-----------------------------------------------------------------------
-        # TODO fix that in BayesNet instead
         if ro is None:
             ro = 1.
 
@@ -344,7 +337,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Get ARD sparsity or prior variance
         if "AlphaW" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True).copy()  # TODO is this copy necessarry ??
+            alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True)
         else:
             alpha = dict()
             alpha['E'] = 1./self.P.params['var_B1']

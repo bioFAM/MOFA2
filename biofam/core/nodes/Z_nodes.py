@@ -2,7 +2,6 @@ from __future__ import division
 import numpy.ma as ma
 import numpy as np
 import scipy as s
-from copy import deepcopy
 import math
 from biofam.core.utils import *
 from biofam.core import gpu_utils
@@ -161,7 +160,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         if 'AlphaZ' in self.markov_blanket:
             Alpha = self.markov_blanket[
-                'AlphaZ'].getExpectations(expand=True).copy()  # Notice that this Alpha is the ARD prior on Z, not on W.
+                'AlphaZ'].getExpectations(expand=True)
         else:
             Alpha = dict()
             Alpha['E'] = 1./self.P.params['var']
@@ -169,7 +168,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
         latent_variables = self.getLvIndex()
-        Alpha["E"], Alpha["lnE"] = Alpha["E"][:, latent_variables], Alpha["lnE"][:, latent_variables]
+        # Alpha["E"], Alpha["lnE"] = Alpha["E"][:, latent_variables], Alpha["lnE"][:, latent_variables]
         Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
         PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
         QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
@@ -399,7 +398,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Get ARD sparsity or prior variance
         if "AlphaZ" in self.markov_blanket:
-            alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True).copy()
+            alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True)
         else:
             alpha = dict()
             alpha['E'] = 1./self.P.params['var_B1']
@@ -407,7 +406,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # This ELBO term contains only cross entropy between Q and P, and entropy of Q. So the covariates should not intervene at all
         latent_variables = self.getLvIndex()
-        alpha["E"], alpha["lnE"] = alpha["E"][:,latent_variables], alpha["lnE"][:,latent_variables]
+        # alpha["E"], alpha["lnE"] = alpha["E"][:,latent_variables], alpha["lnE"][:,latent_variables]
         T, ZZ = T[:, latent_variables], ZZ[:, latent_variables]
         Qvar = Qvar[:, latent_variables]
         theta['lnE'] = theta['lnE'][:,latent_variables]
