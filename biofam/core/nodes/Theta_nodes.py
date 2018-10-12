@@ -151,23 +151,23 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
         # Collect expectations from other nodes
         S = self.markov_blanket['Z'].getExpectations()["EB"]
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # subset matrices for stochastic inference
-        ########################################################################
+        #-----------------------------------------------------------------------
         # TODO could this not be replaced by get_mini_batch ? YES !
         if ix is None:
             ix = range(S.shape[0])
         S = S[ix,:].copy()
         groups = self.groups[ix].copy()
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # compute the update
-        ########################################################################
+        #-----------------------------------------------------------------------
         par_up = self._updateParameters(Qa, Qb, S, groups)
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # Do the asignment
-        ########################################################################
+        #-----------------------------------------------------------------------
         if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
         # TODO also change. do no deep copy but instead the same as in the other nodes
             par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
@@ -175,12 +175,6 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
         self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
 
     def _updateParameters(self, Qa, Qb, S, groups):
-        # Precompute terms
-        # if factors_selection is not None:
-        #     tmpS = S[:, factors_selection]
-        # else:
-        #     tmpS = S
-
         # Perform update
         for c in range(self.n_groups):
             mask = (groups == c)

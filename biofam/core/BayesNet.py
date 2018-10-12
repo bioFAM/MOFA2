@@ -233,8 +233,8 @@ class BayesNet(object):
         if batch_ix == 0:
             self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
 
-        min = S * batch_ix
-        max = S * (batch_ix + 1)
+        min = int(S * batch_ix)
+        max = int(S * (batch_ix + 1))
         if max > self.dim['N']:
             max = self.dim['N']
 
