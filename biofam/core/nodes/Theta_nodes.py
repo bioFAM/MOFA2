@@ -43,7 +43,11 @@ class ThetaW_Node(Beta_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    def updateParameters(self, ix=None, ro=None, factors_selection=None):
+    def updateParameters(self, ix=None, factor=None):
+        # NOTE Here we use a step of 1 because higher in the hierarchy means useless to decay the step size as W would converge anyway
+        self._updateParameters()
+
+    def _updateParameters(self, factors_selection=None):
         # factors_selection (np array or list): indices of factors that are non-annotated
 
         # Collect expectations from other nodes
