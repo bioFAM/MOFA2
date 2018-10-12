@@ -303,11 +303,7 @@ class entry_point(object):
         if stochastic:
             self.set_stochasticity_options()
 
-
-    def set_stochasticity_options(self,
-                                  tau=1.,
-                                  forgetting_rate=1.,
-                                  batch_size=.2):
+    def set_stochasticity_options(self, tau=1., forgetting_rate=.1, batch_size=.2):
 
         # snaity checks
         # assert tau > 0, 'tau must be greater thn zero'
