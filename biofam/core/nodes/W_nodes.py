@@ -235,7 +235,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # This node
         SW = self.Q.getExpectations()["E"]
         Q = self.Q.getParameters()
-        Qmean_S1, Qvar_S1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
+        Qmean_S1, Qvar_S1, Qvar_S0 = Q['mean_B1'], Q['var_B1'],  Q['var_B0']
+        Qtheta = Q['theta']
 
         #-----------------------------------------------------------------------
         # Masking
@@ -261,12 +262,12 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # compute the update
         #-----------------------------------------------------------------------
         self._updateParameters(Y, Z, tau, Alpha,
-                               Qmean_S1, Qvar_S1, Qtheta, SW,
+                               Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW,
                                theta_lnE, theta_lnEInv,
                                coeff, ro)
 
     def _updateParameters(self, Y, Z, tau, Alpha,
-                          Qmean_S1, Qvar_S1, Qtheta, SW,
+                          Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW,
                           theta_lnE, theta_lnEInv,
                           coeff, ro):
 
@@ -320,8 +321,16 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # Update Expectations for the next iteration
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
+        # update of Qvar_S0
+        Qvar_S0 *= (1 - ro)
+        Qvar_S0 += ro/Alpha
+
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=1./Alpha, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
+        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])),
+                             var_B0=Qvar_S0,
+                             mean_B1=Qmean_S1,
+                             var_B1=Qvar_S1,
+                             theta=Qtheta)
 
     def calculateELBO(self):
         # Collect parameters and expectations
