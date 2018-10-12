@@ -110,15 +110,14 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         # subsetting
         #-----------------------------------------------------------------------
-        # TODO check that a deep copy is made for the subsetting
-        groups = self.groups
-        if ix is not None:
-            groups = groups[ix]
+        if ix is None:
+            groups = self.groups
+        else:
+            groups = self.groups[ix]
 
         #-----------------------------------------------------------------------
         # make sure ro is not None
         #-----------------------------------------------------------------------
-        # TODO fix that in BayesNet instead
         if ro is None:
             ro =1.
 
@@ -126,14 +125,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # compute the update
         #-----------------------------------------------------------------------
         self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups)
-
-        ########################################################################
-        # Do the asignment
-        # ########################################################################
-        # if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
-        #     par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
-        #     par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
-        # self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
 
     def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups):
 
@@ -155,11 +146,9 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
 
-        # weighted update (TODO check that ro default is 1)
         Qb = self.Q.getParameters()['b']
         Qb *= (1-ro)
 
-        # TODO check that this is fine
         for g in range(self.n_groups):
             g_mask = (groups == g)
 
@@ -168,10 +157,9 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             n_total = self.n_per_group[g]
             coeff = n_total/n_batch
 
-            # TODO check what happens if tmp[g_mask,:] is empty for a group
             Qb[g,:] += ro * (Pb[g,:] + .5 * coeff * tmp[g_mask,:].sum(axis=0))
 
-        # TODO this should be completly useless
+        # NOTE this should be completly useless but keep for now
         Qa = self.Q.getParameters()['a']
         Qa *= (1 - ro)
         Qa += ro * self.Qa_pre

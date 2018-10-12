@@ -283,7 +283,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             if ix is not None:
                 Alpha = Alpha[ix,:]
 
-        # TODO sort out the mini bacth in ThetaZ
         thetatmp = self.markov_blanket['ThetaZ'].get_mini_batch()
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
@@ -348,9 +347,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         for k in range(self.dim[1]):
             #A Calculate intermediate stept
             term1 = (theta_lnE - theta_lnEInv)[:, k]
-            # TODO this is not right: alpha should be expended to full matrix before and used as full matrix
-            # term2 = 0.5 * s.log(alpha[:, k]) should work
-            # TODO modify everywhere else
             # GPU --------------------------------------------------------------
             # load variables on GPUs
             alphak_cp = gpu_utils.array(Alpha[:,k])
@@ -367,10 +363,10 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                 WWk_cp = gpu_utils.array(W[m]["E2"][:, k])
                 Wk_cp = gpu_utils.array(W[m]["E"][:, k])
 
-                term4_tmp1 += gpu_utils.dot(tau_cp * gpu_utils.array(Y[m]), Wk_cp) # good to modify # TODO critical time here  22 %
+                term4_tmp1 += gpu_utils.dot(tau_cp * gpu_utils.array(Y[m]), Wk_cp) # good to modify # NOTE critical time here  22 %
                 term4_tmp2 += (tau_cp * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(self.dim[1]) != k]),
-                                             (Wk_cp * gpu_utils.array(W[m]["E"][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)  # good to modify  # TODO critical time here  37 %
-                term4_tmp3 += gpu_utils.dot(tau_cp, WWk_cp) # TODO critical time here  3 %
+                                             (Wk_cp * gpu_utils.array(W[m]["E"][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)  # good to modify  # NOTE critical time here  37 %
+                term4_tmp3 += gpu_utils.dot(tau_cp, WWk_cp) # NOTE critical time here  3 %
 
             # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
             term3 =gpu_utils.asnumpy(0.5 * gpu_utils.log(term4_tmp3 + alphak_cp))
