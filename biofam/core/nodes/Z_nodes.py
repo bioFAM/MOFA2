@@ -329,8 +329,11 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Q['theta'][ix,:] = par_up['theta']
             Q['var_B0'][ix, :] = 1. / Alpha
 
-            self.mini_batch['E'] = par_up['mean_B1'] * par_up['theta']
-            self.mini_batch['E2'] = par_up['theta'] * (s.square(par_up['mean_B1']) + par_up['var_B1'])
+            self.mini_batch['EB']  = par_up['theta']
+            self.mini_batch['E']   = par_up['mean_B1'] * par_up['theta']
+            self.mini_batch['E2']  = par_up['theta'] * (s.square(par_up['mean_B1']) + par_up['var_B1'])
+            self.mini_batch['ENN'] = par_up['theta'] * (s.square(par_up['mean_B1']) + par_up['var_B1']) + \
+                                     (1-par_up['theta']) * Q['var_B0'][ix, :]
 
         self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=Q['var_B0'],
                              mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now

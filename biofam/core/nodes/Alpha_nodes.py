@@ -122,7 +122,7 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
 
     def updateParameters(self, ix=None, ro=None):
         # TODO: add an if MuZ is in markov blanket ?
-        tmp = self.markov_blanket["Z"].getExpectations()
+        tmp = self.markov_blanket["Z"].get_mini_batch()
         if 'ENN' in tmp:
             EZZ = tmp["ENN"]
         else:
@@ -136,11 +136,10 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         # subset matrices for stochastic inference
         #-----------------------------------------------------------------------
-        # TODO could this not be replaced by get_mini_batch ? YES
         if ix is None:
-            ix = range(EZZ.shape[0])
-        EZZ = EZZ[ix,:].copy()
-        groups = self.groups[ix].copy()
+            groups = self.groups
+        else:
+            groups = self.groups[ix]
 
         #-----------------------------------------------------------------------
         # compute the update

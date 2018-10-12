@@ -149,16 +149,15 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
         Qa, Qb = Q['a'], Q['b']
 
         # Collect expectations from other nodes
-        S = self.markov_blanket['Z'].getExpectations()["EB"]
+        S = self.markov_blanket['Z'].get_mini_batch()["EB"]
 
         #-----------------------------------------------------------------------
         # subset matrices for stochastic inference
         #-----------------------------------------------------------------------
-        # TODO could this not be replaced by get_mini_batch ? YES !
         if ix is None:
-            ix = range(S.shape[0])
-        S = S[ix,:].copy()
-        groups = self.groups[ix].copy()
+            groups = self.groups
+        else:
+            groups = self.groups[ix]
 
         #-----------------------------------------------------------------------
         # compute the update
