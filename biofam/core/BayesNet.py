@@ -231,15 +231,17 @@ class BayesNet(object):
         batch_ix = i % n_batches
 
         if batch_ix == 0:
+            print("-----------------------------------------------------------")
+            print("New epoch")
+            print("-----------------------------------------------------------")
             self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
 
-        min = S * batch_ix
-        max = S * (batch_ix + 1)
+        min = int(S * batch_ix)
+        max = int(S * (batch_ix + 1))
         if max > self.dim['N']:
             max = self.dim['N']
 
         return self.shuffled_ix[min:max]
-
 
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""

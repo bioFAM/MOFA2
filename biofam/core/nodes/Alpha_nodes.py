@@ -133,23 +133,23 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
         Pa, Pb = P['a'], P['b']
         Qa, Qb = Q['a'], Q['b']
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # subset matrices for stochastic inference
-        ########################################################################
-        # TODO could this not be replaced by get_mini_batch ?
+        #-----------------------------------------------------------------------
+        # TODO could this not be replaced by get_mini_batch ? YES
         if ix is None:
             ix = range(EZZ.shape[0])
         EZZ = EZZ[ix,:].copy()
         groups = self.groups[ix].copy()
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # compute the update
-        ########################################################################
+        #-----------------------------------------------------------------------
         par_up = self._updateParameters(Qa, Qb, Pa, Pb, EZZ, groups)
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # Do the asignment
-        ########################################################################
+        #-----------------------------------------------------------------------
         if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
         # TODO also change. do no deep copy but instead the same as in the other nodes
             par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
@@ -165,7 +165,6 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
             if n_batch == 0: continue
             n_total = self.n_per_group[c]
             coeff = n_total/n_batch
-
 
             Qa[c,:] = Pa[c,:] + 0.5 * n_total  # TODO should be precomputed
             Qb[c,:] = Pb[c,:] + 0.5 * coeff * EZZ[mask, :].sum(axis=0)
