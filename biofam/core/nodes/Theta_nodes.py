@@ -143,11 +143,6 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
         return self.mini_batch
 
     def updateParameters(self, ix=None, ro=None, factors_selection=None):
-        # factors_selection (np array or list): indices of factors that are non-annotated
-        # collect local parameters
-        Q = self.Q.getParameters().copy()
-        Qa, Qb = Q['a'], Q['b']
-
         # Collect expectations from other nodes
         S = self.markov_blanket['Z'].get_mini_batch()["EB"]
 
@@ -162,35 +157,28 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         # compute the update
         #-----------------------------------------------------------------------
-        par_up = self._updateParameters(Qa, Qb, S, groups)
+        self._updateParameters(S, groups, ro)
 
-        #-----------------------------------------------------------------------
-        # Do the asignment
-        #-----------------------------------------------------------------------
-        if ro is not None: # TODO have a default ro of 1 instead ? whats the overhead cost ?
-        # TODO also change. do no deep copy but instead the same as in the other nodes
-            par_up['Qa'] = ro * par_up['Qa'] + (1-ro) * self.Q.getParameters()['a']
-            par_up['Qb'] = ro * par_up['Qb'] + (1-ro) * self.Q.getParameters()['b']
-        self.Q.setParameters(a=par_up['Qa'], b=par_up['Qb'])
+    def _updateParameters(self, S, groups, ro):
 
-    def _updateParameters(self, Qa, Qb, S, groups):
+        Q = self.Q.getParameters()
+        Q['a'] *= (1-ro)
+        Q['b'] *= (1-ro)
+
         # Perform update
         for c in range(self.n_groups):
             mask = (groups == c)
 
             # coeff for stochastic inference
             n_batch = mask.sum()
-            if n_batch == 0: continue  # TODO add that for tau as well
+            if n_batch == 0: continue
             n_total = self.n_per_group[c]
             coeff = n_total/n_batch
 
             tmp1 = S[mask, :].sum(axis=0)
 
-            Qa[c,:] = self.Ppar['a'][c,:] + coeff * tmp1
-            Qb[c,:] = self.Ppar['b'][c,:] + coeff * (S[mask, :].shape[0] - tmp1)
-
-        # Save updated parameters of the Q distribution
-        return {'Qa': Qa, 'Qb': Qb}
+            Q['a'][c,:] += ro * (self.Ppar['a'][c,:] + coeff * tmp1)
+            Q['b'][c,:] += ro * (self.Ppar['b'][c,:] + coeff * (S[mask, :].shape[0] - tmp1))
 
     def calculateELBO(self):
 

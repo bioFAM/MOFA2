@@ -8,9 +8,6 @@ import scipy.special as special
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
 
-# TODO add sample functions everywhere
-# TODO calculateELBO is the same and could be moved to the parent node ?
-# TODO actually all the nodes are exactly the same apart from labeling. Could be one single node
 class AlphaW_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
         # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
@@ -160,7 +157,6 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
 
             Q['a'][c,:] += ro * (Pa[c,:] + 0.5 * n_total)  # TODO should be precomputed
             Q['b'][c,:] += ro * (Pb[c,:] + 0.5 * coeff * EZZ[mask, :].sum(axis=0))
-
 
     def calculateELBO(self):
         # Collect parameters and expectations
