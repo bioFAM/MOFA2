@@ -98,12 +98,12 @@ class buildBiofam(buildModel):
             self.init_model.initSZ(qmean_T1=0)
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
-            self.init_model.initZ(qmean_T1=0)
+            self.init_model.initZ(qmean=0)
 
     def build_W(self):
         """ Build node W for the weights """
         if self.model_opts['sl_w']:
-            self.init_model.initSW(qmean='random')
+            self.init_model.initSW(qmean_S1='random')
         else:
             self.init_model.initW(qmean='random')
 
