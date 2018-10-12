@@ -358,5 +358,3 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
 
         return self.samp
-
-
