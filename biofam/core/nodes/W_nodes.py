@@ -51,12 +51,9 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
-        # if ix is None:
-        #     ix = range(self.dim[0])
-
-        ########################################################################
+        #-----------------------------------------------------------------------
         # get Expectations which are necessarry for the update
-        ########################################################################
+        #-----------------------------------------------------------------------
         Y = self.markov_blanket["Y"].get_mini_batch()
         Z = self.markov_blanket["Z"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
@@ -78,22 +75,22 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # Masking
-        ########################################################################
+        #-----------------------------------------------------------------------
         mask = ma.getmask(Y)
         Y = Y.data
         tau[mask] = 0.
         Y[mask] = 0.
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # compute stochastic "anti-bias" coefficient
-        ########################################################################
+        #-----------------------------------------------------------------------
         coeff = float(N) / float(Y.shape[0])
 
-        ########################################################################
+        #-----------------------------------------------------------------------
         # make sure ro is not None
-        ########################################################################
+        #-----------------------------------------------------------------------
         # TODO fix that in BayesNet instead
         if ro is None:
             ro = 1.
@@ -103,8 +100,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         self._updateParameters(Y, Z, tau, Mu, Alpha, Qmean, Qvar, coeff, ro)
 
-
-    # TODO: use coef where appropriate
     def _updateParameters(self, Y, Z, tau, Mu, Alpha, Qmean, Qvar, coeff, ro):
 
         latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
@@ -220,31 +215,60 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.factors_axis = 1
         gpu_utils.gpu_mode = options['gpu_mode']
 
-    def updateParameters(self):
-        # Collect expectations from other nodes
-        Ztmp = self.markov_blanket["Z"].getExpectations()
-        Z,ZZ = Ztmp["E"],Ztmp["E2"]
-        tau = self.markov_blanket["Tau"].getExpectation(expand=True)  # TODO might be worth expanding only once when updating expectation
-        Y = self.markov_blanket["Y"].getExpectation()
+    def updateParameters(self, ix=None, ro=None):
+        #-----------------------------------------------------------------------
+        # get Expectations which are necessarry for the update
+        #-----------------------------------------------------------------------
+        Y = self.markov_blanket["Y"].get_mini_batch()
+        Z = self.markov_blanket["Z"].get_mini_batch()
+        tau = self.markov_blanket["Tau"].get_mini_batch()
+        N = self.markov_blanket["Y"].dim[0]
+
         if "AlphaW" in self.markov_blanket:
-            alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
+            Alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
         else:
-            alpha = 1./self.P.params['var_B1']
+            Alpha = 1./self.P.params['var_B1']
+
         thetatmp = self.markov_blanket["ThetaW"].getExpectations(expand=True)
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
 
-
-        mask = ma.getmask(Y)
-
-        # Collect parameters and expectations from P and Q distributions of this node
+        # This node
         SW = self.Q.getExpectations()["E"]
         Q = self.Q.getParameters()
         Qmean_S1, Qvar_S1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
-        # Mask matrices
+        #-----------------------------------------------------------------------
+        # Masking
+        #-----------------------------------------------------------------------
+        mask = ma.getmask(Y)
         Y = Y.data
         Y[mask] = 0.
         tau[mask] = 0.
+
+        #-----------------------------------------------------------------------
+        # compute stochastic "anti-bias" coefficient
+        #-----------------------------------------------------------------------
+        coeff = float(N) / float(Y.shape[0])
+
+        #-----------------------------------------------------------------------
+        # make sure ro is not None
+        #-----------------------------------------------------------------------
+        # TODO fix that in BayesNet instead
+        if ro is None:
+            ro = 1.
+
+        #-----------------------------------------------------------------------
+        # compute the update
+        #-----------------------------------------------------------------------
+        self._updateParameters(Y, Z, tau, Alpha,
+                               Qmean_S1, Qvar_S1, Qtheta, SW,
+                               theta_lnE, theta_lnEInv,
+                               coeff, ro)
+
+    def _updateParameters(self, Y, Z, tau, Alpha,
+                          Qmean_S1, Qvar_S1, Qtheta, SW,
+                          theta_lnE, theta_lnEInv,
+                          coeff, ro):
 
         # precompute terms usful for all k
         tauYT = (gpu_utils.array(tau)*gpu_utils.array(Y)).T
@@ -256,22 +280,19 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             # GPU --------------------------------------------------------------
             # Variables used in multiple operations snhould be loaded on GPU only once
-            Zk_cp = gpu_utils.array(Z[:,k])
+            Zk_cp = gpu_utils.array(Z['E'][:,k])
             tau_cp = gpu_utils.array(tau)
-            ZZk_cp = gpu_utils.array(ZZ[:,k])
-            alphak_cp = gpu_utils.array(alpha[:,k])
+            ZZk_cp = gpu_utils.array(Z['E2'][:,k])
+            alphak_cp = gpu_utils.array(Alpha[:,k])
 
             term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
-            # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
-            term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_cp) + alphak_cp))
+            term3 = gpu_utils.asnumpy(0.5 * coeff * gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_cp) + alphak_cp))
 
             term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
-            # term4_tmp1 = fast_dot(tauYT,Z[:,k])
 
             term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
-            term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z[:,s.arange(self.dim[1])!=k]).T).T
+            term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T
             term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)
-            # term4_tmp2 = fast_dot(term4_tmp2_2, term4_tmp2_1)
             term4_tmp2 *= tau_cp  # most expensive bit
             term4_tmp2 = term4_tmp2.sum(axis=0)
 
@@ -279,23 +300,28 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
 
 
-            term4 = gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3)) # good to modify, awsnt checked numerically
+            term4 = coeff * gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3)) # good to modify, awsnt checked numerically
 
             # ------------------------------------------------------------------
 
             # Update S
             # NOTE there could be some precision issues in S --> loads of 1s in result
-            Qtheta[:,k] = 1./(1.+s.exp(-(term1+term2-term3+term4)))
+            Qtheta[:,k] *= (1 - ro)
+            Qtheta[:,k] += ro * (1./(1.+s.exp(-(term1+term2-term3+term4))))
 
             # Update W
-            Qvar_S1[:,k] = gpu_utils.asnumpy(1./term4_tmp3)
-            Qmean_S1[:,k] = Qvar_S1[:,k]*gpu_utils.asnumpy(term4_tmp1-term4_tmp2)
+            tmp_var = gpu_utils.asnumpy(1./term4_tmp3)
+            Qvar_S1[:,k] *= ( 1 - ro)
+            Qvar_S1[:,k] += ro * tmp_var
+
+            Qmean_S1[:,k] *= ( 1 - ro)
+            Qmean_S1[:,k] += ro * tmp_var * gpu_utils.asnumpy(term4_tmp1-term4_tmp2)
 
             # Update Expectations for the next iteration
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=1./alpha, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
+        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=1./Alpha, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta )
 
     def calculateELBO(self):
         # Collect parameters and expectations
