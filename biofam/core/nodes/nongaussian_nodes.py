@@ -23,9 +23,9 @@ from .basic_nodes import Node
 from biofam.core.utils import sigmoid, lambdafn
 
 
-##############################
-## General pseudodata nodes ##
-##############################
+
+# General pseudodata nodes
+#-------------------------------------------------------------------------------
 
 class PseudoY(Unobserved_Variational_Node):
     """ General class for pseudodata nodes """
@@ -66,6 +66,16 @@ class PseudoY(Unobserved_Variational_Node):
     def updateParameters(self):
         pass
 
+    def define_mini_batch(self, ix):
+        QExp = self.Q.getExpectations()
+        expanded_expectation = QExp['E'][ix, :]
+        self.mini_batch = {'E': expanded_expectation}
+
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectation(expand=True)
+        return self.mini_batch
+
     def mask(self):
         # Mask the observations if they have missing values
         self.obs = ma.masked_invalid(self.obs)
@@ -100,9 +110,9 @@ class PseudoY(Unobserved_Variational_Node):
         print("Not implemented")
         exit()
 
-##################
-## Seeger nodes ##
-##################
+
+# Seeger nodes
+#-------------------------------------------------------------------------------
 
 class PseudoY_Seeger(PseudoY):
     """ General class for pseudodata nodes using the seeger approach """
@@ -112,15 +122,19 @@ class PseudoY_Seeger(PseudoY):
         #  obs (ndarray): observed data
         #  E (ndarray): initial expected value of pseudodata
         PseudoY.__init__(self, dim=dim, obs=obs, params=params, E=E)
+        self.params["zeta"] = s.zeros(self.obs.shape)
 
-    def updateParameters(self):
-        if "SW" in self.markov_blanket:
-            Z = self.markov_blanket["Z"].getExpectation()
-            W = self.markov_blanket["SW"].getExpectation()
-        else:
-            Z = self.markov_blanket["SZ"].getExpectation()
-            W = self.markov_blanket["W"].getExpectation()
-        self.params["zeta"] = s.dot(Z,W.T)
+    def updateParameters(self, ix=None, ro=None):
+        #-----------------------------------------------------------------------
+        # get Expectations or minibatch which are necessarry for the update
+        #-----------------------------------------------------------------------
+        Z = self.markov_blanket["Z"].get_mini_batch()['E']
+        W = self.markov_blanket["W"].getExpectation()
+
+        #-----------------------------------------------------------------------
+        # Update mini batch only
+        #-----------------------------------------------------------------------
+        self.params["zeta"][ix, :] = s.dot(Z,W.T)
 
 class Poisson_PseudoY(PseudoY_Seeger):
     """
@@ -167,7 +181,9 @@ class Poisson_PseudoY(PseudoY_Seeger):
 
     def updateExpectations(self):
         # Update the pseudodata
-        tau = self.markov_blanket["Tau"].getValue()
+        tau = self.markov_blanket["Tau"].getValue() # TODO update that
+        # TODO check that its not slow here, as we could otherwise update only
+        # for the current batch
         self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
 
     def calculateELBO(self):
@@ -212,6 +228,8 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
 
     def updateExpectations(self):
         # Update the pseudodata
+        # TODO check that its not slow here, as we could otherwise update only
+        # for the current batch
         self.E = self.params["zeta"] - 4.*(sigmoid(self.params["zeta"]) - self.obs)
 
     def calculateELBO(self):
@@ -225,6 +243,7 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
         tmp = s.dot(Z,W.T)
         lik = s.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
         return lik
+
 class Binomial_PseudoY(PseudoY_Seeger):
     """
     Class for a Binomial pseudodata node
@@ -235,7 +254,7 @@ class Binomial_PseudoY(PseudoY_Seeger):
     The second derivative is upper bounded:
         f''(x_ij) <= 0.25*max(N_{:,j})
 
-    Folloiwng Seeger et al, the pseudodata yhat_{nd} follows a normal distribution with mean
+    Following Seeger et al, the pseudodata yhat_{nd} follows a normal distribution with mean
     E[w_{i,:}]*E[z_{j,:}] and precision 'tau_j'
 
     IMPROVE EXPLANATION
@@ -261,7 +280,9 @@ class Binomial_PseudoY(PseudoY_Seeger):
 
     def updateExpectations(self):
         # Update the pseudodata
-        tau = self.markov_blanket["Tau"].getValue()
+        tau = self.markov_blanket["Tau"].getValue()  # TODO check that this works with stochastic (single value ?)
+        # TODO check that its not slow here, as we could otherwise update only
+        # for the current batch
         self.E = self.params["zeta"] - s.divide(self.tot*sigmoid(self.params["zeta"])-self.obs, tau)
         pass
 
@@ -276,7 +297,7 @@ class Binomial_PseudoY(PseudoY_Seeger):
 
         tmp = sigmoid(s.dot(Z,W.T))
 
-        # TODO change apprximation
+        # TODO change approximation
         tmp[tmp==0] = 0.00000001
         tmp[tmp==1] = 0.99999999
         lik = s.log(s.special.binom(self.tot,self.obs)).sum() + s.sum(self.obs*s.log(tmp)) + \
@@ -284,9 +305,9 @@ class Binomial_PseudoY(PseudoY_Seeger):
         return lik
 
 
-####################
-## Jaakkola nodes ##
-####################
+
+# Jaakkola nodes
+#-------------------------------------------------------------------------------
 
 class Tau_Jaakkola(Node):
     """
@@ -302,6 +323,20 @@ class Tau_Jaakkola(Node):
             assert value.shape == dim, "Dimensionality mismatch"
             self.value = value
 
+    def define_mini_batch(self, ix):
+        # define minibatch of data for all nodes to use
+        QExp = self.Q.getExpectations()
+
+        expanded_E = QExp['E'][ix, :]
+        expanded_lnE = QExp['lnE'][ix, :]
+        # expanded_lnE = s.repeat(QExp['lnE'][None, :], len(ix), axis=0)
+        self.mini_batch = {'E': expanded_E, 'lnE': expanded_lnE}
+
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectations()
+        return self.mini_batch
+
     def updateExpectations(self):
         self.value = 2*lambdafn(self.markov_blanket["Y"].getParameters()["zeta"])
 
@@ -316,6 +351,7 @@ class Tau_Jaakkola(Node):
 
     def removeFactors(self, idx, axis=None):
         pass
+
 class Bernoulli_PseudoY_Jaakkola(PseudoY):
     """
     Class for a Bernoulli pseudodata node using the Jaakkola approach:
@@ -346,31 +382,36 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         assert s.all( (self.obs==0) | (self.obs==1) ), "Data must be binary"
 
     def updateExpectations(self):
+        # TODO check how expensive this is to potentially update for batch only
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
 
-    def updateParameters(self):
-        if "SW" in self.markov_blanket:
-            Z = self.markov_blanket["Z"].getExpectations()
-            W = self.markov_blanket["SW"].getExpectations()
-            self.params["zeta"] = s.sqrt(
-                s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
-                                                                                                       W["EBNN"].T))
-        else:
-            Z = self.markov_blanket["SZ"].getExpectations()
-            W = self.markov_blanket["W"].getExpectations()
-            self.params["zeta"] = s.sqrt(
-                s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["EBNN"],
-                                                                                                     W["E2"].T))
-        self.params["zeta"] = ma.masked_invalid(self.params["zeta"])
+    def updateParameters(self, ix=None, ro=None):
+        #-----------------------------------------------------------------------
+        # get Expectations or minibatch which are necessarry for the update
+        #-----------------------------------------------------------------------
+        Z = self.markov_blanket["Z"].get_mini_batch()
+        W = self.markov_blanket["SW"].getExpectations()
+
+        # TODO check
+        self.params["zeta"][ix,:] = s.sqrt(
+            s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
+                                                                                                       W["E2"].T))
+
+        # self.params["zeta"] = s.sqrt(
+        #     s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
+        #                                                                                                W["EBNN"].T))
+        # else:
+        #     Z = self.markov_blanket["SZ"].getExpectations()
+        #     W = self.markov_blanket["W"].getExpectations()
+        #     self.params["zeta"] = s.sqrt(
+        #         s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["EBNN"],
+        #                                                                                              W["E2"].T))
+        # self.params["zeta"] = ma.masked_invalid(self.params["zeta"])
 
     def calculateELBO(self):
         # Compute Lower Bound using the Bernoulli likelihood with observed data
-        if "SW" in self.markov_blanket:
-            Z = self.markov_blanket["Z"].getExpectation()
-            W = self.markov_blanket["SW"].getExpectation()
-        else:
-            Z = self.markov_blanket["SZ"].getExpectation()
-            W = self.markov_blanket["W"].getExpectation()
+        Z = self.markov_blanket["Z"].getExpectation()
+        W = self.markov_blanket["W"].getExpectation()
         tmp = s.dot(Z,W.T)
         lik = ma.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
         return lik

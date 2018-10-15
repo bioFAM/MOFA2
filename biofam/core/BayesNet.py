@@ -266,7 +266,7 @@ class BayesNet(object):
         for i in range(self.options['maxiter']):
             t = time();
             if self.stochastic:
-                ro = self.step_size2(i)
+                ro = self.step_size2(i)  # TODO should we change that at every epoch instead
                 ix = self.sample_mini_batch_no_replace(i)
 
                 self.nodes['Y'].define_mini_batch(ix)
@@ -333,18 +333,16 @@ class BayesNet(object):
 
     def compute_r2_simple(self):
         # compute r2 for the cnosidered mini bact
-
-        W = s.concatenate(self.nodes['W'].getExpectation()) # check if we need to concatenate the list
+        # ----------------------------------------------------------------------
+        W = s.concatenate(self.nodes['W'].getExpectation())
         Z = self.nodes['Z'].get_mini_batch()['E']
         Y = s.concatenate(self.nodes['Y'].get_mini_batch(), axis=1)
-        # import pdb; pdb.set_trace()
 
         Y_mask = ma.getmask(Y)
         Y_dat = Y.data
         Y_dat[Y_mask] = 0.
 
-
-        pred = Z.dot(W.T)  # check where to transpose
+        pred = Z.dot(W.T)
         pred[Y_mask] = 0.
         SS = s.sum((Y_dat - pred)**2.)
         var = s.sum((Y_dat - Y_dat.mean())**2.)
@@ -352,6 +350,7 @@ class BayesNet(object):
         r2_batch = 1. - SS/var
 
         # compute r2 for all data
+        # ----------------------------------------------------------------------
         W = s.concatenate(self.nodes['W'].getExpectation())
         Z = self.nodes['Z'].getExpectation()
         Y = s.concatenate(self.nodes['Y'].getExpectation(), axis=1)
@@ -360,14 +359,15 @@ class BayesNet(object):
         Y_dat = Y.data
         Y_dat[Y_mask] = 0.
 
-
-        pred = Z.dot(W.T)  # check where to transpose
+        pred = Z.dot(W.T)
         pred[Y_mask] = 0.
         SS = s.sum((Y_dat - pred)**2.)
         var = s.sum((Y_dat - Y_dat.mean())**2.)
 
         r2_tot = 1. - SS/var
 
+        # print
+        # ----------------------------------------------------------------------
         print("batch specific r2 is ", r2_batch)
         print("total r2 is ", r2_tot)
         print()
