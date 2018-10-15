@@ -155,7 +155,7 @@ class ThetaZ_Node(Beta_Unobserved_Variational_Node):
             groups = self.groups[ix]
 
         #-----------------------------------------------------------------------
-        # 
+        # check that ro is not None
         #-----------------------------------------------------------------------
         if ro is None:
             ro = 1.

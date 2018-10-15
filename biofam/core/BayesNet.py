@@ -10,6 +10,8 @@ import os
 import scipy as s
 import pandas as pd
 import sys
+import numpy.ma as ma
+import math
 
 from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import nans
@@ -226,14 +228,14 @@ class BayesNet(object):
     def sample_mini_batch_no_replace(self, i):
         # TODO if multiple group, sample indices in each group evenly ? prob yes
         # shuffle the data at the beginnign of every epoch
-        n_batches = 1./self.options['batch_size']
+        n_batches = math.ceil(1./self.options['batch_size'])
         S = self.options['batch_size'] * self.dim['N']
         batch_ix = i % n_batches
 
         if batch_ix == 0:
-            print("-----------------------------------------------------------")
-            print("New epoch")
-            print("-----------------------------------------------------------")
+            epoch_ix = i / n_batches
+            print("Epoch", int(epoch_ix))
+            print("-------------------------------------------------------------------------------------------")
             self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
 
         min = int(S * batch_ix)
@@ -241,7 +243,8 @@ class BayesNet(object):
         if max > self.dim['N']:
             max = self.dim['N']
 
-        return self.shuffled_ix[min:max]
+        ix_res = self.shuffled_ix[min:max]
+        return ix_res
 
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
@@ -257,10 +260,9 @@ class BayesNet(object):
             self.nodes[n].precompute(self.options)
 
         print('elbo before training: ', self.calculateELBO())
+        print('schedule of updates: ',self.options['schedule'])
+        print()
 
-        print(self.options['schedule'])
-
-        print('elbo before training: ', self.calculateELBO())
         for i in range(self.options['maxiter']):
             t = time();
             if self.stochastic:
@@ -320,12 +322,55 @@ class BayesNet(object):
             else:
                 print("Iteration %d: time=%.2f, K=%d\n" % (i+1,time()-t,self.dim["K"]))
 
+            self.compute_r2_simple()
+
             # Flush (we need this to print when running on the cluster)
             sys.stdout.flush()
 
         # Finish by collecting the training statistics
         self.train_stats = { 'activeK':activeK, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
+
+    def compute_r2_simple(self):
+        # compute r2 for the cnosidered mini bact
+
+        W = s.concatenate(self.nodes['W'].getExpectation()) # check if we need to concatenate the list
+        Z = self.nodes['Z'].get_mini_batch()['E']
+        Y = s.concatenate(self.nodes['Y'].get_mini_batch(), axis=1)
+        # import pdb; pdb.set_trace()
+
+        Y_mask = ma.getmask(Y)
+        Y_dat = Y.data
+        Y_dat[Y_mask] = 0.
+
+
+        pred = Z.dot(W.T)  # check where to transpose
+        pred[Y_mask] = 0.
+        SS = s.sum((Y_dat - pred)**2.)
+        var = s.sum((Y_dat - Y_dat.mean())**2.)
+
+        r2_batch = 1. - SS/var
+
+        # compute r2 for all data
+        W = s.concatenate(self.nodes['W'].getExpectation())
+        Z = self.nodes['Z'].getExpectation()
+        Y = s.concatenate(self.nodes['Y'].getExpectation(), axis=1)
+
+        Y_mask = ma.getmask(Y)
+        Y_dat = Y.data
+        Y_dat[Y_mask] = 0.
+
+
+        pred = Z.dot(W.T)  # check where to transpose
+        pred[Y_mask] = 0.
+        SS = s.sum((Y_dat - pred)**2.)
+        var = s.sum((Y_dat - Y_dat.mean())**2.)
+
+        r2_tot = 1. - SS/var
+
+        print("batch specific r2 is ", r2_batch)
+        print("total r2 is ", r2_tot)
+        print()
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """

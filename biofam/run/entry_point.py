@@ -265,6 +265,8 @@ class entry_point(object):
         # GPU mode
         self.train_opts['gpu_mode'] = gpu_mode
         if gpu_mode:
+            # first see if cupy is installed and give instructions if not
+            # if installed import to check that everything goes well
             try:
                 imp.find_module('cupy')
             except ImportError:
@@ -273,6 +275,7 @@ class entry_point(object):
                 print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
                 print ('Alternatively, deselect GPU mode')
                 exit(1)
+            import cupy
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
@@ -488,8 +491,8 @@ if __name__ == '__main__':
     ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False)
-    ent.set_stochasticity_options()
+    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False)
+    # ent.set_stochasticity_options()
     ent.build()
     ent.run()
     ent.save(out_file)
