@@ -322,7 +322,7 @@ class BayesNet(object):
             else:
                 print("Iteration %d: time=%.2f, K=%d\n" % (i+1,time()-t,self.dim["K"]))
 
-            self.compute_r2_simple()
+            # self.compute_r2_simple()
 
             # Flush (we need this to print when running on the cluster)
             sys.stdout.flush()
@@ -368,9 +368,9 @@ class BayesNet(object):
 
         r2_tot = 1. - SS/var
 
-        print("batch specific r2 is ", r2_batch)
-        print("total r2 is ", r2_tot)
-        print()
+        # print("batch specific r2 is ", r2_batch)
+        # print("total r2 is ", r2_tot)
+        # print()
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """
