@@ -177,7 +177,7 @@ class buildBiofam(buildModel):
         # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
 
         # Define basic schedule of updates
-        schedule = ['Y', 'W', 'Z', 'Tau'k]
+        schedule = ['Y', 'W', 'Z', 'Tau']
         # schedule = ['Y', 'Z', 'W', 'Tau']
 
         # Insert ThetaW after W if Spike and Slab prior on W

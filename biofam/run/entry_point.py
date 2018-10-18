@@ -265,7 +265,8 @@ class entry_point(object):
                 print ('1 - Make sure that you are running BIOFAM on a machine with an NVIDIA GPU')
                 print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
                 print ('Alternatively, deselect GPU mode')
-                sys.stdout.flush(); exit(1)
+                sys.stdout.flush()#; exit(1)
+                gpu_mode = False
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
