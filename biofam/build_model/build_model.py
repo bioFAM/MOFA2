@@ -104,11 +104,11 @@ class buildBiofam(buildModel):
     def build_W(self):
         """ Build node W for the weights """
         if self.model_opts['sl_w']:
-            # self.init_model.initSW(qmean_S1 = "random")
-            self.init_model.initSW(qmean_S1 = 0)
+            self.init_model.initSW(qmean_S1 = "random")
+            # self.init_model.initSW(qmean_S1 = 0)
         else:
-            # self.init_model.initW(qmean="random")
-            self.init_model.initW(qmean=0)
+            self.init_model.initW(qmean="random")
+            # self.init_model.initW(qmean=0)
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
@@ -187,7 +187,7 @@ class buildBiofam(buildModel):
 
         # Define basic schedule of updates
         # schedule = ['Y', 'Z', 'W', 'Tau']
-        schedule = ['Y', 'Z', 'W', 'Tau']
+        schedule = ['Y', 'W', 'Z', 'Tau']
 
         # Insert ThetaW after W if Spike and Slab prior on W
         if self.model_opts['sl_w']:
