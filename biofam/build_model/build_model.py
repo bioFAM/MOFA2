@@ -88,17 +88,11 @@ class buildBiofam(buildModel):
 
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
-
-        # if learning the intercept, add a covariate of ones to Z
-        if self.model_opts["learn_intercept"]:
-            self.model_opts['covariates'] = s.ones((self.dim["N"],1))
-            self.model_opts['scale_covariates'] = [False]
-
         if self.model_opts['sl_z']:
-            self.init_model.initSZ(qmean_T1=0)
+            self.init_model.initSZ(qmean_T1="random")
         else:
             # TODO change Z node so that we dont use a multivariate prior when no covariance structure
-            self.init_model.initZ(qmean=0)
+            self.init_model.initZ(qmean="random")
 
     def build_W(self):
         """ Build node W for the weights """
@@ -183,8 +177,8 @@ class buildBiofam(buildModel):
         # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
 
         # Define basic schedule of updates
-        # schedule = ['Y', 'W', 'Z', 'Tau']
-        schedule = ['Y', 'Z', 'W', 'Tau']
+        schedule = ['Y', 'W', 'Z', 'Tau'k]
+        # schedule = ['Y', 'Z', 'W', 'Tau']
 
         # Insert ThetaW after W if Spike and Slab prior on W
         if self.model_opts['sl_w']:
