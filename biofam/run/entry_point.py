@@ -192,10 +192,9 @@ class entry_point(object):
         #     data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
         # data_matrix = data.pivot(index='sample', columns='feature', values='value').split().tolist()
 
-        # Count the number of feature per view
+        # Count the number of features per view
         tmp = data.groupby(['feature_group'])['feature'].nunique()
         nfeatures = tmp.loc[self.data_opts['views_names']]
-
 
 
         # Convert data frame to list of matrices
@@ -207,16 +206,19 @@ class entry_point(object):
         data_matrix = data_matrix.loc[self.data_opts['samples_names']]
         data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
+
         # Split into a list of views, each view being a matrix
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
-
-        # Define feature names
-        # self.data_opts['features_names'] = [ y.columns.values.tolist() for y in data_matrix]
+        outdir="/Users/ricard/data/Ecker_2017/mouse/biofam"
+        for m in range(len(data_matrix)):
+            for g in range(len(data_matrix[0])):
+                data_matrix[m][g].write_csv(print("%s/m%d_g%d.txt" % (outdir, m, g) ) )
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
                                             .set_index('sample').loc[self.data_opts['samples_names']] \
                                             .sample_group.tolist()
+
 
         # Define dimensionalities
         self.dimensionalities = {}
@@ -226,9 +228,8 @@ class entry_point(object):
         self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
         # Process the data (i.e center, scale, etc.)
-        data_matrix = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
-
-        self.data = data_matrix
+        t = time();
+        self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -255,10 +256,9 @@ class entry_point(object):
         self.train_opts['verbose'] = verbose
 
         # GPU mode
-        self.train_opts['gpu_mode'] = gpu_mode
         if gpu_mode:
             try:
-                imp.find_module('cupy')
+                import cupy as cp
                 print("GPU mode activated")
             except ImportError:
                 print('For GPU mode, you need to install the CUPY library')
@@ -267,6 +267,7 @@ class entry_point(object):
                 print ('Alternatively, deselect GPU mode')
                 sys.stdout.flush()#; exit(1)
                 gpu_mode = False
+        self.train_opts['gpu_mode'] = gpu_mode
 
         # Minimum Variance explained threshold to drop inactive factors
         self.train_opts['drop'] = { "by_r2":float(dropR2) }

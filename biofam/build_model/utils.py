@@ -1,5 +1,6 @@
 from __future__ import division
 from time import sleep
+from time import time
 from copy import deepcopy
 import numpy as np
 import scipy as s
@@ -218,11 +219,11 @@ def process_data(Y, data_opts, samples_groups):
             print("Scaling features for view " + str(m) + " to unit variance...")
             parsed_Y[m] /= np.nanstd(parsed_Y[m], axis=0)
 
-        print("\n")
+            # print("\n")
 
         # Convert data to numpy array format
         if isinstance(parsed_Y[m], pd.DataFrame):
-            parsed_Y[m]  = parsed_Y[m].values
+            parsed_Y[m] = parsed_Y[m].values
 
     return parsed_Y
 
