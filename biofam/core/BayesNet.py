@@ -322,7 +322,7 @@ class BayesNet(object):
             else:
                 print("Iteration %d: time=%.2f, K=%d\n" % (i+1,time()-t,self.dim["K"]))
 
-            self.compute_r2_simple()
+            # self.compute_r2_simple()
 
             # Flush (we need this to print when running on the cluster)
             sys.stdout.flush()
