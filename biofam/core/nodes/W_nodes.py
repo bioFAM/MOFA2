@@ -116,6 +116,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Qvar[:,k] *= (1 - ro)
             Qvar[:,k] += ro/(Alpha[:,k]+foo)
 
+            # NOTE Do not use "Qvar" in the update like we used to because this
+            # does not hold for stochastic because of the ro weighting
             Qmean[:,k] *= (1 - ro)
             Qmean[:,k] += ro * (1/(Alpha[:,k]+foo)) * (bar + Alpha[:,k]*Mu[:,k])
 

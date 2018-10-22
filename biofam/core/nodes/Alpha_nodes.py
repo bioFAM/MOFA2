@@ -135,7 +135,7 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
             groups = self.groups[ix]
 
         #-----------------------------------------------------------------------
-        #
+        # make sure ro is not None
         #-----------------------------------------------------------------------
         if ro is None:
             ro = 1.
