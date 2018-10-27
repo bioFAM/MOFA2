@@ -12,78 +12,23 @@ import h5py
 from biofam.core.nodes import *
 
 
-def removeIncompleteSamples(data):
-    """ Method to remove samples with missing views
+def mask_data(data, mask_fraction):
+    """ Method to mask data values, mainly used to evaluate imputation
 
     PARAMETERS
     ----------
-    data: list of ndarrays
-        list of length M with ndarrays with the observed data of dimensionality (N,Dm)
+    data: ndarray
+    mask_fraction: float with the fraction of values to mask (from 0 to 1)
     """
-    print("Removing incomplete samples...")
-    print("NOT FUNCTIONAL, TO FIX")
-    exit()
 
-    M = len(data)
-    N = data[0].shape[0]
-    samples_to_remove = []
-    for n in range(N):
-        for m in range(M):
-            if pd.isnull(data[m].iloc[n][0]):
-                samples_to_remove.append(n)
-                break
+    D = data.shape[1]
+    N = data.shape[0]
 
-    print("A total of " + str(len(samples_to_remove)) + " sample(s) have at least a missing view and will be removed")
-
-    data_filt = [None]*M
-    samples_to_keep = np.setdiff1d(range(N),samples_to_remove)
-    for m in range(M):
-        data_filt[m] = data[m].iloc[samples_to_keep]
-
-    return data_filt
-
-def maskData(data, data_opts):
-    """ Method to mask values of the data,
-    It is mainly used to generate missing values and evaluate imputation
-
-    PARAMETERS
-    ----------
-    data: list of ndarrays
-        list of length M with ndarrays with the observed data of dimensionality (N,Dm)
-    data_opts: dictionary
-        data_opts['maskAtRandom']
-        data_opts['maskNSamples']
-    """
-    print("NOT FUNCTIONAL, TO FIX")
-    exit()
-    print("Masking data with the following options:")
-    print("at random:")
-    print(data_opts['mask_at_random'])
-    print("full cases:")
-    print(data_opts['mask_n_samples'])
-
-    for m in range(len(data)):
-
-        # Mask values at random
-        D = data[m].shape[1]
-        N = data[m].shape[0]
-        p2Mask = data_opts['mask_at_random'][m]
-        if p2Mask != 0:
-            idxMask = np.zeros(N*D)
-            idxMask[:int(round(N*D*p2Mask))] = 1
-            np.random.shuffle(idxMask)
-            idxMask = np.reshape(idxMask, [N, D])
-            data[m] = data[m].mask(idxMask==1)
-
-        # Mask samples in a complete view
-        Nsamples2Mask = data_opts['mask_n_samples'][m]
-        if Nsamples2Mask != 0:
-            idxMask = np.random.choice(N, size=Nsamples2Mask, replace = False)
-            # idxMask = np.arange(Nsamples2Mask)
-            # print idxMask
-            tmp = data[m].copy()
-            tmp.ix[idxMask,:] = pd.np.nan
-            data[m] = tmp
+    mask = np.ones(N*D)
+    mask[:int(round(N*D*mask_fraction))] = np.nan
+    np.random.shuffle(mask)
+    mask = np.reshape(mask, [N, D])
+    data *= mask
 
     return data
 
@@ -198,6 +143,11 @@ def process_data(data, data_opts, samples_groups):
         #     print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
         #     parsed_data[m].drop(parsed_data[m].columns[np.where(var==0.)], axis=1, inplace=True)
 
+        # Mask values
+        if data_opts["mask"][m] > 0:
+            print("Masking %.1f%% of values in view '%s'..." % (data_opts["mask"][m]*100, data_opts["views_names"][m]))
+            parsed_data[m] = mask_data(parsed_data[m], data_opts['mask'][m])
+
         # Centering and scaling is only appropriate for gaussian data
         if data_opts["likelihoods"][m] is "gaussian":
 
@@ -221,6 +171,7 @@ def process_data(data, data_opts, samples_groups):
             # Scale features to unit variance
             if data_opts['scale_features']:
                 parsed_data[m] /= np.nanstd(parsed_data[m], axis=0)
+
 
         # Convert data to numpy array format
         if isinstance(parsed_data[m], pd.DataFrame):

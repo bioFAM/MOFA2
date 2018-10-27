@@ -348,7 +348,7 @@ class entry_point(object):
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli' and 'poisson'"
 
 
-    def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False):
+    def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False, mask=None):
         """ Set data processing options """
 
         # TODO: more verbose messages
@@ -375,12 +375,12 @@ class entry_point(object):
         self.data_opts['scale_features'] = scale_features
 
 
-        # Mask values at random
-        # if maskAtRandom is not None:
-        #     self.data_opts['maskAtRandom'] = data_opts['maskAtRandom']
-        #     assert len(self.data_opts['maskAtRandom'])==M, "Length of MaskAtRandom and input files does not match"
-        # else:
-        #     self.data_opts['maskAtRandom'] = [0]*M
+        # Mask values
+        if mask is not None:
+            assert len(mask)==M, "Length of 'mask' argument must be equal to the number of views"
+            self.data_opts['mask'] = mask
+        else:
+            self.data_opts['mask'] = [0]*M
 
        # Mask entire samples
         # if maskNSamples is not None:
@@ -461,7 +461,7 @@ if __name__ == '__main__':
     groups = ["group_A", "group_B", "group_A", "group_B"]
 
     lik = ["gaussian", "gaussian"]
-    ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
+    ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False, mask=[0.5,0.5])
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
     ent.set_train_options(iter=5, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)

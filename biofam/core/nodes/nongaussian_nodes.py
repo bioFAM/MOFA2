@@ -284,15 +284,11 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         assert s.all( (self.obs==0) | (self.obs==1) ), "Data must be binary"
 
     def updateExpectations(self):
-        print("bar")
-        import pdb; pdb.set_trace()
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
         self.means = self.E.mean(axis=0).data
         self.E -= self.means
 
     def updateParameters(self):
-        print("foo")
-        import pdb; pdb.set_trace()
         Z = self.markov_blanket["Z"].getExpectations()
         W = self.markov_blanket["W"].getExpectations()
         self.params["zeta"] = s.sqrt(s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],W["E2"].T))
@@ -303,7 +299,7 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
         zeta = self.params["zeta"]
-        SW, SWW = Wtmp["E"], Wtmp["ESWW"]
+        SW, SWW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
         mask = self.getMask()
 

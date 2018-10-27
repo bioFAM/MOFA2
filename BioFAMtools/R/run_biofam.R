@@ -45,7 +45,6 @@ run_biofam <- function(object, dir_options) {
   # Set data options
   biofam_entrypoint$set_data_options(
     likelihoods = unname(object@model_options$likelihood),
-    center_features = object@data_options$center_features,
     center_features_per_group = object@data_options$center_features_per_group,
     scale_views = object@data_options$scale_views
   )
