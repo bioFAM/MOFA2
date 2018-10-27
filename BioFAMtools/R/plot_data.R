@@ -43,24 +43,29 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
 
+  # Get views
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(view %in% views_names(object))
 
+  # Get groups
   groups <- .check_and_get_groups(object, groups)
+  
+  # Get factors
+  if (is.numeric(factor)) {
+  	factor <- factors_names(object)[factor]
+  } else { 
+    stopifnot(factor %in% factors_names(object)) 
+  }
 
-  if(is.numeric(factor)) {
-  	if (object@model_options$learn_intercept) factor <- factors_names(object)[factor+1]
-  	else factor <- factors_names(object)[factor]
-  } else { stopifnot(factor %in% factors_names(object)) }
-
-  # Collect relevant data
+  # Get weights
   W <- get_weights(object)[[view]][,factor]
+  
   # NOTE: By default concatenate all the groups
   Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
   Z <- do.call(rbind, Z)[,1]
   Z <- Z[!is.na(Z)]
   
-  
+  # Get imputed data
   if (imputed) {
     data <- get_imputed_data(object, view, groups)[[1]]
   } else {
@@ -101,9 +106,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   }
   
   # Transpose the data
-  if (transpose) {
-    data <- t(data)
-  }
+  if (transpose) data <- t(data)
   
   # Plot heatmap
   # if(is.null(main)) main <- paste(view, "observations for the top weighted features of factor", factor)
@@ -160,10 +163,12 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 
   groups <- .check_and_get_groups(object, groups)
 
-  if(is.numeric(factor)) {
-      if (object@model_options$learn_intercept) factor <- factors_names(object)[factor+1]
-      else factor <- factors_names(object)[factor]
-    } else{ stopifnot(factor %in% factors_names(object)) }
+  # Get factors
+  if (is.numeric(factor)) {
+    factor <- factors_names(object)[factor]
+  } else { 
+    stopifnot(factor %in% factors_names(object)) 
+  }
       
   # Collect relevant data
   N <- get_dimensions(object)[["N"]]

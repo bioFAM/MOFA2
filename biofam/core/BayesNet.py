@@ -207,7 +207,7 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute(self.options)
 
-        print('elbo before training: ', self.calculateELBO())
+        # print('elbo before training: ', self.calculateELBO())
 
         # Start training
         for i in range(self.options['maxiter']):
@@ -258,7 +258,7 @@ class BayesNet(object):
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
                     # Assess convergence
-                    if (0 <= delta_elbo < self.options['tolerance']) and (not self.options['forceiter']):
+                    if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
                         activeK = activeK[:(i+1)]
                         elbo = elbo[:(i+1)]
                         print ("Converged!\n")

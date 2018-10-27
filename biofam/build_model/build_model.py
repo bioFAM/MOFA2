@@ -84,7 +84,7 @@ class buildBiofam(buildModel):
 
     def build_Y(self):
         """ Build node Y for the observations """
-        self.init_model.initY(noise_on=self.model_opts['noise_on'])
+        self.init_model.initY()
 
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
@@ -103,7 +103,7 @@ class buildBiofam(buildModel):
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
-        self.init_model.initTau(self.data_opts['samples_groups'], on=self.model_opts['noise_on'])
+        self.init_model.initTau(self.data_opts['samples_groups'])
 
     def build_AlphaZ(self):
         """ Build node AlphaZ for the ARD prior on the factors """
@@ -123,7 +123,7 @@ class buildBiofam(buildModel):
 
         # Initialise hyperparameters for the ThetaZ prior
         initTheta_a = 1.
-        initTheta_b = 1. #0.001  #0.001 #1.
+        initTheta_b = 1.
 
         self.init_model.initThetaZ(self.data_opts['samples_groups'], qa=initTheta_a, qb=initTheta_b)
 
@@ -132,7 +132,7 @@ class buildBiofam(buildModel):
 
         # Initialise hyperparameters for the ThetaW prior
         initTheta_a = 1.
-        initTheta_b = 1.#.001  #0.001 #1.
+        initTheta_b = 1.
 
         self.init_model.initThetaW(qa=initTheta_a, qb=initTheta_b)
 

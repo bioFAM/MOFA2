@@ -21,6 +21,8 @@ def removeIncompleteSamples(data):
         list of length M with ndarrays with the observed data of dimensionality (N,Dm)
     """
     print("Removing incomplete samples...")
+    print("NOT FUNCTIONAL, TO FIX")
+    exit()
 
     M = len(data)
     N = data[0].shape[0]
@@ -52,6 +54,8 @@ def maskData(data, data_opts):
         data_opts['maskAtRandom']
         data_opts['maskNSamples']
     """
+    print("NOT FUNCTIONAL, TO FIX")
+    exit()
     print("Masking data with the following options:")
     print("at random:")
     print(data_opts['mask_at_random'])
@@ -174,58 +178,55 @@ def loadData(data_opts, verbose=True):
 
     return (Y, samples_groups)
 
-def process_data(Y, data_opts, samples_groups):
-    M = len(Y)
-    parsed_Y = deepcopy(Y)
-    assert len(data_opts['center_features']) == M, "data_opts['center_features'] is not length M"
-    assert len(data_opts['scale_features']) == M, "data_opts['scale_features'] is not length M"
-    assert len(data_opts['scale_views']) == M, "data_opts['scale_views'] is not length M"
+def process_data(data, data_opts, samples_groups):
 
-    for m in range(M):
+    # Make a deep copy of the data to avoid problems when parsing
+    # TO-DO: IS THIS REQUIRED???
+    parsed_data = deepcopy(data)
+
+    for m in range(len(data)):
 
         # Convert to float32
-        parsed_Y[m] = parsed_Y[m].astype(np.float32)
+        parsed_data[m] = parsed_data[m].astype(np.float32)
 
-        # For some reason, reticulate stores missing values in integer matrices as -2147483648
-        parsed_Y[m][parsed_Y[m] == -2147483648] = np.nan
+        # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
+        parsed_data[m][parsed_data[m] == -2147483648] = np.nan
+
         # Removing features with no variance
-        # var = parsed_Y[m].std(axis=0)
+        # var = parsed_data[m].std(axis=0)
         # if np.any(var==0.):
         #     print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
-        #     parsed_Y[m].drop(parsed_Y[m].columns[np.where(var==0.)], axis=1, inplace=True)
+        #     parsed_data[m].drop(parsed_data[m].columns[np.where(var==0.)], axis=1, inplace=True)
 
-        if data_opts['center_features'][m]:
-            print("Centering features for view " + str(m) + "...")
-            parsed_Y[m] -= np.nanmean(parsed_Y[m],axis=0)
+        # Centering and scaling is only appropriate for gaussian data
+        if data_opts["likelihoods"][m] is "gaussian":
 
-        if data_opts['center_features_per_group'][m]:
-            print("Centering features per group for view " + str(m) + "...")
-            for gp_name in data_opts['groups_names']:
-                filt = [gp==gp_name for gp in samples_groups]
-                parsed_Y[m][filt] -= np.nanmean(parsed_Y[m][filt],axis=0)
+            # Center features
+            if data_opts['center_features_per_group']:
+                for gp_name in data_opts['groups_names']:
+                    filt = [gp==gp_name for gp in samples_groups]
+                    parsed_data[m][filt] -= np.nanmean(parsed_data[m][filt],axis=0)
+            else:
+                parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
+            
+            # Scale views to unit variance
+            if data_opts['scale_views']:
+                parsed_data[m] /= np.nanstd(parsed_data[m])
 
-        # Scale the views to unit variance
-        if data_opts['scale_views'][m]:
-            print("Scaling view " + str(m) + " to unit variance...")
-            parsed_Y[m] /= np.nanstd(parsed_Y[m])
+            # quantile normalise features
+            # if data_opts['gaussianise_features'][m]:
+            #     print("Gaussianising features for view " + str(m) + "...")
+            #     parsed_data[m] = gaussianise(parsed_data[m])
 
-        # quantile normalise features
-        # if data_opts['gaussianise_features'][m]:
-        #     print("Gaussianising features for view " + str(m) + "...")
-        #     parsed_Y[m] = gaussianise(parsed_Y[m])
-
-        # Scale the features to unit variance
-        if data_opts['scale_features'][m]:
-            print("Scaling features for view " + str(m) + " to unit variance...")
-            parsed_Y[m] /= np.nanstd(parsed_Y[m], axis=0)
-
-            # print("\n")
+            # Scale features to unit variance
+            if data_opts['scale_features']:
+                parsed_data[m] /= np.nanstd(parsed_data[m], axis=0)
 
         # Convert data to numpy array format
-        if isinstance(parsed_Y[m], pd.DataFrame):
-            parsed_Y[m] = parsed_Y[m].values
+        if isinstance(parsed_data[m], pd.DataFrame):
+            parsed_data[m] = parsed_data[m].values
 
-    return parsed_Y
+    return parsed_data
 
 def loadDataGroups(data_opts):
     """
@@ -235,7 +236,6 @@ def loadDataGroups(data_opts):
         return None
     sample_labels = np.genfromtxt(data_opts['samples_groups_file'], dtype='str')
     return sample_labels
-
 
 def corr(A,B):
     """ Method to efficiently compute correlation coefficients between two matrices
@@ -257,6 +257,11 @@ def corr(A,B):
     # Finally get corr coeff
     return np.dot(A_mA, B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))
 
+
+
+
+
+### BELOW IS DEPRECIATED ###
 def saveParameters(model, hdf5, views_names=None, groups_names=None, samples_groups=None):
     """ Method to save the parameters of the model in an hdf5 file
 
@@ -464,7 +469,7 @@ def saveModelOpts(opts, hdf5):
     hdf5:
     """
     # opts_interest = ["learnIntercept", "schedule", "likelihoods"]
-    opts_interest = ["learn_intercept", "likelihoods", "noise_on", "sl_z", "sl_w"]
+    opts_interest = ["likelihoods", "sl_z", "sl_w"]
     opts = dict((k, opts[k]) for k in opts_interest)
     grp = hdf5.create_group('model_options')
     for k, v in opts.items():
@@ -498,7 +503,6 @@ def saveTrainingData(model, hdf5, data, views_names=None, groups_names=None, sam
     # Save features per view and samples per group
     featuredata_grp = hdf5.create_group("features")
     sampledata_grp  = hdf5.create_group("samples")
-
     for m in range(len(data)):
         view = views_names[m] if views_names is not None else "view_" + str(m)
 
@@ -537,9 +541,9 @@ def saveTrainedModel(model, outfile, data,
     # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
     if views_names is not None:
         uniq_views_names = np.unique(views_names).tolist()
-        sorted_views = sorted(uniq_views_names) #alphabetical sort
+        sorted_views = sorted(uniq_views_names) # alphabetical sort
         idx = {view:i for (i,view) in enumerate(uniq_views_names)}
-        idx_sorted = [idx[view] for view in sorted_views] #idx of the views sorted alphabetically
+        idx_sorted = [idx[view] for view in sorted_views] # idx of the views sorted alphabetically
         tmp = [model_opts["likelihoods"][idx_sorted[m]] for m in range(len(model_opts["likelihoods"]))]
         model_opts["likelihoods"] = tmp
 

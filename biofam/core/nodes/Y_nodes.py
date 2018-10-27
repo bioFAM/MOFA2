@@ -10,8 +10,7 @@ from biofam.core.utils import dotd
 from .variational_nodes import Constant_Variational_Node
 
 class Y_Node(Constant_Variational_Node):
-    def __init__(self, dim, value, noise_on='features'):
-        self.noise_on = noise_on
+    def __init__(self, dim, value):
         Constant_Variational_Node.__init__(self, dim, value)
 
         # Create a boolean mask of the data to hide missing values
@@ -23,13 +22,8 @@ class Y_Node(Constant_Variational_Node):
         self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
         self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
 
-        # Precompute the constant depending on the noise dimensions
-        # TODO rewrite with no tau_d argument but problem is thatprecompute is
-        # called before the markov_blanket is defined so we need this info here
-        if self.noise_on == 'features':
-            self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
-        else:
-            self.likconst = -0.5 * s.sum(self.D) * s.log(2.*s.pi)
+        # Precompute the constant term of the likelihood
+        self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
 
     def mask(self):
         # Mask the observations if they have missing values

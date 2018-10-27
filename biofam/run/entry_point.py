@@ -10,6 +10,7 @@ import imp
 from typing import List, Union, Dict, TypeVar
 
 from biofam.build_model.build_model import *
+from biofam.build_model.save_model import *
 from biofam.build_model.train_model import train_model
 
 class entry_point(object):
@@ -32,17 +33,19 @@ class entry_point(object):
         """
 
         print(banner)
-        # sleep(2)
         sys.stdout.flush()
 
-    def set_data_matrix(self, data, samples_names_dict, features_names_dict):
-        """ Method to set the data
+    def set_data_matrix(self, data, samples_names_dict=None, features_names_dict=None):
+        """ Method to input the data in a wide matrix
 
         PARAMETERS
         ----------
-        data: several options:
-        - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
-        - a list where each element is a numpy array or a pandas data frame
+        data: two options:
+            - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
+            - a list where each element is a numpy array or a pandas data frame
+            in both cases, the dimensions of each matrix must be (samples,features)
+        samples_names_dict (optional): dictionary mapping groups names (keys) to samples names (values)
+        features_names_dict (optional): dictionary mapping views names (keys) to features names (values)
         """
 
         # Sanity check
@@ -63,34 +66,57 @@ class entry_point(object):
                 else:
                     print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
 
-        # Verbose message
-        for m in range(len(data)):
-            for p in range(len(data[0])):
-                print("Loaded view %d group %d with %d samples and %d features..." % (m+1, p+1, data[m][p].shape[0], data[m][p].shape[1]))
-
         # Save dimensionalities
-        self.dimensionalities["M"] = len(data)
-        self.dimensionalities["P"] = len(data[0])
-        self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
-        self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
+        M = self.dimensionalities["M"] = len(data)
+        G = self.dimensionalities["P"] = len(data[0])
+        N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
+        D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
-        # Define feature group names and sample group names
-        self.data_opts['views_names']  = [k for k in features_names_dict.keys()]
-        self.data_opts['groups_names'] = [k for k in samples_names_dict.keys()]
+        # Define views names and features names
+        if features_names_dict is None:
+            print("Views and features names not provided, using default naming convention:")
+            print("Views: view1, view2, ..., viewM")
+            print("Features: feature1_view1, featureD_viewM\n")
+            self.data_opts['views_names'] = [ "view" + str(m) for m in range(M) ]
+            self.data_opts['features_names'] = [ "feature%d_view%d" % (d,m) for m in range(M) for d in range(D[m]) ]
+        else:
+            self.data_opts['views_names']  = [k for k in features_names_dict.keys()]
+            self.data_opts['features_names'] = [v for v in features_names_dict.values()]
 
-        # Define feature and sample names
-        self.data_opts['samples_names']  = [v for l in samples_names_dict.values() for v in l]
-        self.data_opts['features_names'] = [v for v in features_names_dict.values()]
 
-        # Set samples groups
-        # FIX THIS
-        self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
+        # Define groups and samples names
+        if samples_names_dict is None:
+            print("Samples and groups names not provided, using default naming convention:")
+            print("Groups: group1, group2, ..., groupG")
+            print("samples: sample1_group1, sampleN_groupG\n")
+            self.data_opts['groups_names'] = [ "group" + str(g) for g in range(G) ]
+            self.data_opts['samples_names'] = [ "sample%d_group%d" % (n,g) for g in range(G) for n in range(N[g]) ]
+        else:
+            self.data_opts['groups_names'] = [k for k in samples_names_dict.keys()]
+            self.data_opts['samples_names']  = [v for l in samples_names_dict.values() for v in l]
+        
+        # Set samples groups (list with dimensionality N where each row is the corresponding group name)
+        # self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
+
+        # WHY THIS DOES NOT WORK?? asd = [ [self.data_opts['groups_names'][g]]*N[g] for g in range(G) ]
+        self.data_opts['samples_groups'] = []
+        for g in range(G):
+            self.data_opts['samples_groups'].append( [self.data_opts['groups_names'][g]]*N[g] )
+        self.data_opts['samples_groups'] = np.concatenate(self.data_opts['samples_groups'])
+
+        
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
+        print("\n")
 
         # Concatenate groups
         for m in range(len(data)):
             data[m] = np.concatenate(data[m])
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
+        # Process the data (center, scaling, etc.)
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
@@ -162,7 +188,7 @@ class entry_point(object):
         self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
     def set_data_df(self, data):
-        """Method to define the data
+        """Method to input the data in a long data.frame format
 
         PARAMETERS
         ----------
@@ -209,10 +235,6 @@ class entry_point(object):
 
         # Split into a list of views, each view being a matrix
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
-        outdir="/Users/ricard/data/Ecker_2017/mouse/biofam"
-        for m in range(len(data_matrix)):
-            for g in range(len(data_matrix[0])):
-                data_matrix[m][g].write_csv(print("%s/m%d_g%d.txt" % (outdir, m, g) ) )
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
@@ -228,7 +250,6 @@ class entry_point(object):
         self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
         # Process the data (i.e center, scale, etc.)
-        t = time();
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
 
         # NOTE: Usage of covariates is currently not functional
@@ -240,7 +261,7 @@ class entry_point(object):
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
         schedule=None, gpu_mode=False
         ):
-        """ Parse training options """
+        """ Set training options """
 
         # TODO: verbosity, print more messages
 
@@ -259,13 +280,13 @@ class entry_point(object):
         if gpu_mode:
             try:
                 import cupy as cp
-                print("GPU mode activated")
+                print("\nGPU mode activated\n")
             except ImportError:
+                print("\nGPU not found... switching to CPU mode")
                 print('For GPU mode, you need to install the CUPY library')
-                print ('1 - Make sure that you are running BIOFAM on a machine with an NVIDIA GPU')
-                print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html')
-                print ('Alternatively, deselect GPU mode')
-                sys.stdout.flush()#; exit(1)
+                print ('1 - Make sure that you are running MOFA+ on a machine with an NVIDIA GPU')
+                print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html\n')
+                sys.stdout.flush()
                 gpu_mode = False
         self.train_opts['gpu_mode'] = gpu_mode
 
@@ -273,7 +294,7 @@ class entry_point(object):
         self.train_opts['drop'] = { "by_r2":float(dropR2) }
         self.train_opts['start_drop'] = int(startDrop)
         self.train_opts['freq_drop'] = int(freqDrop)
-        if (dropR2>0 & verbose==True): print("\nDropping factors with minimum threshold of {0}% variance explained".format(dropR2))
+        if (dropR2>0 & verbose==True): print("\nDropping factors with minimum threshold of {0}% variance explained\n".format(dropR2))
 
         # Tolerance level for convergence
         self.train_opts['tolerance'] = float(tolerance)
@@ -316,9 +337,6 @@ class entry_point(object):
         # Define whether to use view and factor-wise ARD prior for W
         self.model_opts['ard_w'] = ard_w
 
-        # Define whether to add noise terms on the features or on the samples
-        self.model_opts['noise_on'] = "features"
-
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
 
@@ -329,21 +347,9 @@ class entry_point(object):
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli' and 'poisson'"
 
-        # Define whether to learn the feature-wise means
-        self.model_opts["learn_intercept"] = False
 
-        # Define for which factors and views should we learn the sparsity levels
-        self.model_opts['sparsity'] = True
-        self.model_opts['learnTheta'] = [s.ones(self.dimensionalities["K"]) for m in range(self.dimensionalities["M"])]
-
-    def set_data_options(self, likelihoods,
-        center_features=False, center_features_per_group=False,
-        scale_features=False, scale_views=False,
-        maskAtRandom=None, maskNSamples=None,
-        features_in_rows=False
-        ):
-
-        """ Parse data processing options """
+    def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False):
+        """ Set data processing options """
 
         # TODO: more verbose messages
         # TODO Sanity checks
@@ -354,56 +360,38 @@ class entry_point(object):
 
         # Define likelihoods
         if type(likelihoods) is not list:
-          print("You only specified one likelihood, we assume that you only have a single view")
           likelihoods = [likelihoods]
         assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"]))
         self.data_opts["likelihoods"] = likelihoods
         M = len(likelihoods)
 
         # Center features
-        # TO-DO: ITS NOT INTUITIVE TO HARD BOTH CENTER_FEATURES AND CENTER_FEATURES_PER_GROUP, WE NEEED TO FIX THIS
-        if center_features_per_group is True:
-            self.data_opts['center_features_per_group'] = [ True if l=="gaussian" else False for l in likelihoods ]
-            self.data_opts['center_features'] = [ False for l in likelihoods ]
-        elif center_features is True:
-            self.data_opts['center_features_per_group'] = [ False for l in likelihoods ]
-            self.data_opts['center_features'] = [ True if l=="gaussian" else False for l in likelihoods ]
-        else:
-            # if not self.model_opts["learn_intercept"]: print("\nWarning... you are not centering the data and not learning the mean...\n")
-            self.data_opts['center_features'] = [ False for l in likelihoods ]
-            self.data_opts['center_features_per_group'] = [ False for l in likelihoods ]
+        self.data_opts['center_features_per_group'] = center_features_per_group
 
+        # Scale views to unit variance
+        self.data_opts['scale_views'] = scale_views
 
-        # Scale views
-        if scale_views is True:
-            self.data_opts['scale_views'] = [ True if l=="gaussian" else False for l in likelihoods ]
-        else:
-            self.data_opts['scale_views'] = [ False for l in likelihoods ]
-
-        # Scale features
-        if scale_features is True:
-            assert self.data_opts['scale_views'][0] is False, "Scale either entire views or features, not both"
-            self.data_opts['scale_features'] = [ True if l=="gaussian" else False for l in likelihoods ]
-        else:
-            self.data_opts['scale_features'] = [ False for l in likelihoods ]
+        # Scale features to unit variance
+        self.data_opts['scale_features'] = scale_features
 
 
         # Mask values at random
-        if maskAtRandom is not None:
-            self.data_opts['maskAtRandom'] = data_opts['maskAtRandom']
-            assert len(self.data_opts['maskAtRandom'])==M, "Length of MaskAtRandom and input files does not match"
-        else:
-            self.data_opts['maskAtRandom'] = [0]*M
+        # if maskAtRandom is not None:
+        #     self.data_opts['maskAtRandom'] = data_opts['maskAtRandom']
+        #     assert len(self.data_opts['maskAtRandom'])==M, "Length of MaskAtRandom and input files does not match"
+        # else:
+        #     self.data_opts['maskAtRandom'] = [0]*M
 
        # Mask entire samples
-        if maskNSamples is not None:
-            self.data_opts['maskNSamples'] = data_opts['maskNSamples']
-            assert len(self.data_opts['maskNSamples'])==M, "Length of MaskAtRandom and input files does not match"
-        else:
-            self.data_opts['maskNSamples'] = [0]*M
+        # if maskNSamples is not None:
+        #     self.data_opts['maskNSamples'] = data_opts['maskNSamples']
+        #     assert len(self.data_opts['maskNSamples'])==M, "Length of MaskAtRandom and input files does not match"
+        # else:
+        #     self.data_opts['maskNSamples'] = [0]*M
 
     def build(self):
         """ Build the model """
+
         # Sanity checks
         assert hasattr(self, 'model_opts'), "Train options not defined"
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
@@ -412,7 +400,7 @@ class entry_point(object):
         self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
         self.model = self.model_builder.net
 
-    def run(self, no_theta=False):
+    def run(self):
         """ Run the model """
 
         # Sanity checks
@@ -427,8 +415,6 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
-        if no_theta:
-            self.train_opts['schedule'].remove('ThetaZ')
         self.model.setTrainOptions(self.train_opts)
 
         # Train the model
@@ -437,22 +423,33 @@ class entry_point(object):
     def save(self, outfile):
         """ Save the model in an hdf5 file """
 
-        if self.train_opts["verbose"]:
-          print("Saving model in %s...\n" % outfile)
+        # Sanity checks
+        assert hasattr(self, 'data'), "Data has to be defined before training the model"
+        assert hasattr(self, 'model'), "No trained model found"
 
-        self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
-        saveTrainedModel(
+        # Create output directory
+        if not os.path.isdir(os.path.dirname(outfile)):
+            print("Output directory does not exist, creating it...")
+            os.makedirs(os.path.dirname(outfile))
+        print("Saving model in %s...\n" % outfile)
+
+        # Save the model
+        tmp = saveModel(
           model=self.model,
           outfile=outfile,
           data=self.data,
+          samples_groups=self.data_opts['samples_groups'],
           train_opts=self.train_opts,
           model_opts=self.model_opts,
-            samples_names=self.data_opts['samples_names'],
+          samples_names=self.data_opts['samples_names'],
           features_names=self.data_opts['features_names'],
-          views_names=self.data_opts['views_names'],
-            groups_names=self.data_opts['groups_names'],
-          samples_groups=self.data_opts['samples_groups']
+          views_names=self.data_opts['views_names']
         )
+
+        tmp.saveExpectations(nodes="all")
+        tmp.saveModelOptions()
+        tmp.saveTrainOptions()
+        tmp.saveData()
 
 if __name__ == '__main__':
 
@@ -463,11 +460,14 @@ if __name__ == '__main__':
     groups = ["group_A", "group_B", "group_A", "group_B"]
 
     lik = ["gaussian", "gaussian"]
-    out_file = '/tmp/test_biofam.hdf5'
-    ent.set_data_options(lik, center_features=False, center_features_per_group=False, scale_features=False, scale_views=False)
+    ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
+    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
+    ent.set_train_options(iter=5, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
+
     ent.build()
+
     ent.run()
+
+    out_file = '/Users/ricard/test/test_biofam_asd.hdf5'
     ent.save(out_file)

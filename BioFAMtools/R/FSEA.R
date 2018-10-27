@@ -42,12 +42,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   } 
   else { 
       if (is.numeric(factors)) {
-          if (object@model_options$learn_intercept) {
-            factors <- factors_names(object)[factors+1]
-          }
-          else {
-            factors <- factors_names(object)[factors]
-          }
+          factors <- factors_names(object)[factors]
       }
       else { 
         stopifnot(all(factors %in% factors_names(object))) 

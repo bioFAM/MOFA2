@@ -143,20 +143,8 @@
     groups <- .check_and_get_views(object, groups)
     
     # Define the dimensionality of noise
-    # If not found in model_options, the default setting is 
-    # having a noise parameter per feature
-    if ('noise_on' %in% names(object@model_options)) {
-      if (object@model_options$noise_on == "samples") {
-        node_lists_options$samples$nodes <- c(node_lists_options$samples$nodes, "Tau")
-        node_lists_options$samples$axes  <- c(node_lists_options$samples$axes, 0)
-      } else {
-        node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
-        node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
-      }
-    } else {
-      node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
-      node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
-    }
+    node_lists_options$features$nodes <- c(node_lists_options$features$nodes, "Tau")
+    node_lists_options$features$axes  <- c(node_lists_options$features$axes, 0)
     
     # Iterate over node list depending on the entity
     nodes <- node_lists_options[[entity]]$nodes
