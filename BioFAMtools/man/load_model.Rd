@@ -14,7 +14,11 @@ load_model(file, object = NULL, sort_factors = TRUE, on_disk = FALSE,
 
 \item{sort_factors}{boolean indicating whether factors should be sorted by variance explained (default is TRUE)}
 
-\item{on_disk}{boolean indicating whether to work from memory (FALSE) or disk (TRUE)}
+\item{on_disk}{boolean indicating whether to work from memory (FALSE) or disk (TRUE). \cr
+This should be set to TRUE when the training data is so big that cannot fit into memory. \cr
+On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.}
+
+\item{load_training_data}{boolean indicating whether to load the training data (default is TRUE, it can be memory expensive)}
 }
 \value{
 a \code{\link{BioFAModel}} model

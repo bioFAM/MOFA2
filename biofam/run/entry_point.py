@@ -280,9 +280,9 @@ class entry_point(object):
         if gpu_mode:
             try:
                 import cupy as cp
-                print("\nGPU mode activated\n")
+                print("GPU mode activated\n")
             except ImportError:
-                print("\nGPU not found... switching to CPU mode")
+                print("GPU not found... switching to CPU mode")
                 print('For GPU mode, you need to install the CUPY library')
                 print ('1 - Make sure that you are running MOFA+ on a machine with an NVIDIA GPU')
                 print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html\n')
@@ -446,7 +446,8 @@ class entry_point(object):
           views_names=self.data_opts['views_names']
         )
 
-        tmp.saveExpectations(nodes="all")
+        # tmp.saveExpectations(nodes="all")
+        tmp.saveExpectations(nodes=["Y","W","Z"])
         tmp.saveModelOptions()
         tmp.saveTrainOptions()
         tmp.saveData()

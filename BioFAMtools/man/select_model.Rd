@@ -10,6 +10,6 @@ select_model(models, plotit = TRUE)
 \item{models}{a list containing \code{\link{BioFAModel}} objects.}
 }
 \description{
-Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics 
+Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics
 and the model with the highest ELBO value is selected.
 }

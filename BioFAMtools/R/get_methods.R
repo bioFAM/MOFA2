@@ -15,6 +15,16 @@ get_dimensions <- function(object) {
   return(object@dimensions)
 }
 
+#' @title get_elbo
+#' @name get_elbo
+#' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
+#' @details This can be useful for model selection.
+#' @param object a \code{\link{BioFAModel}} object.
+#' @export
+get_elbo <- function(object) {
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
+  return(tail(object@training_stats$elbo, 1))
+}
 
 #' @title get_factors
 #' @name get_factors
@@ -161,8 +171,8 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
 }
 
 
-#' @title getimputed_data
-#' @name getimputed_data
+#' @title get_imputed_data
+#' @name get_imputed_data
 #' @description Function to get the imputed data. It requires the previous use of the \code{\link{imputeMissing}} method.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
@@ -251,21 +261,27 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   
   # Convert to long data frame
   if (as.data.frame) {
+    
+    # Z node
     if (variable=="Z") {
       tmp <- reshape2::melt(exp)
       colnames(tmp) <- c("sample", "factor", "value", "group")
       tmp[c("sample", "factor", "group")] <- sapply(tmp[c("sample", "factor", "group")], as.character)
     }
+    
+    # W node
     else if (variable=="W") {
       tmp <- lapply(names(exp), function(m) { 
         tmp <- reshape2::melt(exp[[m]])
-        colnames(tmp) <- c("feature", "factor", "value")
+        colnames(tmp) <- c("feature","factor","value")
         tmp$view <- m
-        tmp[c("view", "feature", "factor")] <- sapply(tmp[c("view", "feature", "factor")], as.character)
+        tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character)
         return(tmp)
       })
       tmp <- do.call(rbind.data.frame,tmp)
     }
+    
+    # Y node
     else if (variable=="Y") {
       tmp <- lapply(names(exp), function(m) {
         tmp <- lapply(names(exp[[m]]), function(h) {
@@ -273,56 +289,15 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
           colnames(tmp) <- c("sample", "feature", "value")
           tmp$view <- m
           tmp$group <- h
-          tmp[c("view", "group", "feature", "factor")] <- sapply(tmp[c("view", "group", "feature", "factor")], as.character)
+          tmp[c("view","group","feature","factor")] <- sapply(tmp[c("view","group","feature","factor")], as.character)
           return(tmp) 
         })
       })
       tmp <- do.call(rbind, tmp)
     }
-    else if (variable=="Tau") {
-      stop("Not implemented")
-      # tmp <- lapply(names(exp), function(m) { 
-      #   data.frame(view=m, feature=names(exp[[m]]), value=unname(exp[[m]]))
-      #   tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character)
-      #   return(tmp) 
-      # })
-      # tmp <- do.call(rbind,tmp)
-    }
-    else if (variable=="AlphaW" | variable=="AlphaZ") {
-      tmp <- lapply(names(exp), function(m) { 
-        tmp <- data.frame(view=m, factor=names(exp[[m]]), value=unname(exp[[m]]))
-        tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character)
-        return(tmp) 
-      })
-      tmp <- do.call(rbind,tmp)
-    }
-    else if (variable=="ThetaW" | variable=="ThetaZ") {
-      stop("Not implemented")
-      # tmp <- lapply(names(exp), function(m) { tmp <- reshape2::melt(exp[[m]]); colnames(tmp) <- c("sample","feature","value"); tmp$view <- m; tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character); return(tmp) })
-      # tmp <- do.call(rbind,tmp)
-    }
-    else if (variable=="SigmaAlphaW" | variable=="SigmaZ") {
-      stop("Not implemented")
-    }
+    
     exp <- tmp
   }
   return(exp)
 }
 
-
-#' @title get_elbo
-#' @name get_elbo
-#' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
-#' @details This can be useful for model selection.
-#' @param object a \code{\link{BioFAModel}} object.
-#' @export
-get_elbo <- function(object) {
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
-  return(tail(object@training_stats$elbo, 1))
-}
-
-get_groups_annotation <- function(object){
-  samples_list <- samples_names(object)
-  if(class(samples_list) == "list") samples <- Reduce(c, samples_list) else samples <- samples_list
-  data.frame(sample = samples, group = rep(names(samples_list), times = sapply(samples_list, length)))
-}

@@ -22,7 +22,7 @@ Otherwise, for each pair of models, a seperate heatmap is produced comparing one
 The corresponding correlation matrix or list or pairwise correlation matrices is returned
 }
 \description{
-Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
+Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between
 their weights matrices. The correlations are computed between the columns of the concatenation of the weights matrices, only on those features which are present in all models.
 Ideally, the output should look like a block diagonal matrix, suggesting that the definition of factors (how they impact features) is robust under different initialisations.
 If not, it suggests that some factors are weak and not captured by all models.

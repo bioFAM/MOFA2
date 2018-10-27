@@ -5,7 +5,7 @@
 \title{get_factors}
 \usage{
 get_factors(object, groups = "all", factors = "all",
-  as.data.frame = FALSE, include_intercept = TRUE)
+  as.data.frame = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
@@ -15,9 +15,6 @@ Default is "all".}
 
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a matrix.
 Default is \code{FALSE}.}
-
-\item{include_intercept}{logical indicating where to include the intercept term of the model, if present. 
-Default is \code{TRUE}.}
 }
 \value{
 By default it returns the latent factor matrix of dimensionality (N,K), where N is number of samples and K is number of factors. \cr

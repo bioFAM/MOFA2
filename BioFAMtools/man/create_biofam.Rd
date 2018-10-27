@@ -4,7 +4,7 @@
 \alias{create_biofam}
 \title{create a BioFAM object}
 \usage{
-create_biofam(data)
+create_biofam(data, samples_groups = NULL)
 }
 \arguments{
 \item{data}{TO SPECIFY}

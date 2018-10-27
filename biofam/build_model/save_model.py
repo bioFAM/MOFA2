@@ -47,11 +47,14 @@ class saveModel():
         # Save samples names
         for g in self.groups_names:
             samples_idx = np.where(np.array(self.samples_groups) == g)[0]
-            samples_grp.create_dataset(g, data=[str(s).encode('utf8') for s in [self.samples_names[e] for e in samples_idx]])
+            samples_names = [s for s in [self.samples_names[e] for e in samples_idx]]
+            # samples_grp.create_dataset(g, data=[str(s).encode('utf8') for s in [self.samples_names[e] for e in samples_idx]])
+            samples_grp.create_dataset(g, data=np.array(samples_names, dtype='S50'))
 
         # Save feature names
         for m in range(len(self.data)):
-            features_grp.create_dataset(self.views_names[m], data=[str(x).encode('utf8') for x in self.features_names[m]])
+            # features_grp.create_dataset(self.views_names[m], data=[str(x).encode('utf8') for x in self.features_names[m]])
+            features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
 
         # Save data
         for m in range(len(self.data)):
@@ -70,6 +73,10 @@ class saveModel():
             assert set(nodes).issubset(["Z","W","Y","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW"]), "Unrecognised nodes"
         nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
 
+        # Define nodes which special characteristics 
+        # (note that this is ugly and is not proper class-oriented programming)
+        multigroup_nodes = ["Y","Tau","Z"]
+
         # Create HDF5 group
         grp = self.hdf5.create_group("expectations")
 
@@ -85,36 +92,33 @@ class saveModel():
             if isinstance(nodes_dic[n],Multiview_Node):
                 for m in range(nodes_dic[n].M):
 
-                    # Create subsubgroup for the view
-                    view_subgrp = node_subgrp.create_group(self.views_names[m])
-
                     # Multi-groups nodes
-                    if n=="Y" or n=="Tau":
+                    if n in multigroup_nodes:
                         for g in self.groups_names:
 
-                            # create hdf5 group for the considered sample group
-                            samp_subgrp = view_subgrp.create_group(str(g))
+                            # Create subgroup for the view
+                            view_subgrp = node_subgrp.create_group(self.views_names[m])
 
                             # create hdf5 data set for the expectation
                             samp_indices = np.where(np.array(self.samples_groups) == g)[0]
-                            samp_subgrp.create_dataset("E", data=exp[m][samp_indices,:])
+                            view_subgrp.create_dataset(g, data=exp[m][samp_indices,:])
 
                     # Single-groups nodes
                     else:
-                        view_subgrp.create_dataset("E", data=exp[m].T)
+                        node_subgrp.create_dataset(self.views_names[m], data=exp[m].T)
 
             # Single-view nodes
             else:
-                for g in self.groups_names:
-                    samp_subgrp = node_subgrp.create_group(str(g))
 
-                    # Multi-group nodes
-                    if n == "Z":
+                # Multi-group nodes
+                if n in multigroup_nodes:
+                    for g in self.groups_names:
                         samp_indices = np.where(np.array(self.samples_groups) == g)[0]
-                        samp_subgrp.create_dataset("E", data=exp[samp_indices,:].T)
-                    # Single-group nodes
-                    else:
-                        samp_subgrp.create_dataset("E", data=exp.T)
+                        node_subgrp.create_dataset(g, data=exp[samp_indices,:].T)
+
+                # Single-group nodes
+                else:
+                    node_subgrp.create_dataset("E", data=exp.T)
 
         pass
 

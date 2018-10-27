@@ -31,7 +31,7 @@ impute_missing <- function(object, views = "all", groups = "all", factors = "all
   pred <- predict(object, views=views, factors=factors, type=type)
 
   # Replace NAs with predicted values
-  # TO-DO: HOW TO REPLACE VALUES WITH DELAYEDARRAYS??
+  # TO-DO: HOW TO REPLACE  VALUES WITH DELAYEDARRAYS??
   imputed <- get_training_data(object, views=views, groups=groups)
   for (m in views) {
     for (g in groups) {

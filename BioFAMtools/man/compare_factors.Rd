@@ -20,7 +20,7 @@ Otherwise, for each pair of models, a seperate heatmap is produced comparing one
 The corresponding correlation matrix or list or pairwise correlation matrices is returned
 }
 \description{
-Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between 
+Different objects of \code{\link{BioFAModel}} are compared in terms of correlation between
 their latent factors. The correlation is calculated only on those samples which are present in all models.
 Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
 If not, it suggests that some factors are weak and not captured by all models.

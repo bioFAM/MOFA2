@@ -5,12 +5,15 @@
 \title{Do predictions using a fitted BioFAModel}
 \usage{
 predict(object, views = "all", groups = "all", factors = "all",
-  type = c("inRange", "response", "link"), include_intercept = TRUE)
+  type = c("inRange", "response", "link"))
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
 \item{views}{character vector with the view name(s), or numeric vector with the view index(es). 
+Default is "all".}
+
+\item{groups}{character vector with the group name(s), or numeric vector with the group index(es). 
 Default is "all".}
 
 \item{factors}{character vector with the factor name(s) or numeric vector with the factor index(es). 
@@ -19,11 +22,7 @@ Default is "all".}
 \item{type}{type of prediction returned, either: 
 "response" gives the response vector, the mean for Gaussian and Poisson, and probabilities for Bernoulli, 
 "link" gives the linear predictions, 
-"inRange" rounds the fitted values integer-valued distributions to the next integer. \cr
-Default is "inRange".}
-
-\item{include_intercept}{logical indicating whether to include the intercept factors for the prediction, if present.
-Default is TRUE.}
+"inRange" rounds the fitted values integer-valued distributions to the next integer (default). \cr}
 }
 \value{
 Returns a list with data predictions, each element corresponding to a view.

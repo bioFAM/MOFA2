@@ -49,7 +49,7 @@ create_biofam <- function(data, samples_groups = NULL) {
     }
     groups_names <- as.character(unique(samples_groups))
     
-    # Set view names
+    # Set views names
     if (is.null(names(data))) {
       default_views_names <- paste0("view_",1:length(data))
       message(paste0("View names are not specified in the data, using default: ", paste(default_views_names, collapse=", "), "\n"))
@@ -137,9 +137,9 @@ create_biofam <- function(data, samples_groups = NULL) {
   # ))
   
   data_matrix <- lapply(split(df,df$feature_group),
-                        function(x) lapply(split(x,x$sample_group), 
-                                           function(y) .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE))
-                        )
+    function(x) lapply(split(x,x$sample_group), 
+      function(y) .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE))
+    )
   )
   
   object <- new("BioFAModel")

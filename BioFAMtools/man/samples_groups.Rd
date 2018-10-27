@@ -8,7 +8,7 @@
 \alias{BioFAModel-method}
 \title{samples_groups: retrieve sample names and groups}
 \usage{
-samples_groups(object, format)
+samples_groups(object, format = "default")
 
 \S4method{samples_groups}{BioFAModel}(object, format = "default")
 }

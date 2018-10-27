@@ -40,15 +40,15 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   # Load identity of features and samples
   feature_names <- h5read(file, "features")
   sample_names  <- h5read(file, "samples")
-  feature_groups <- foo[foo$group=="/data","name"]
-  sample_groups <- foo[foo$group==paste0("/data/",feature_groups[1]),"name"]
+  view_names <- foo[foo$group=="/data","name"]
+  group_names <- foo[foo$group==paste0("/data/",view_names[1]),"name"]
 
   # Load training data as matrices
   training_data <- list()
   if (load_training_data) {
-    for (m in feature_groups) {
+    for (m in view_names) {
       training_data[[m]] <- list()
-      for (p in sample_groups) {
+      for (p in group_names) {
         if (on_disk) {
           # as DelayedArrays
           training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, p) ) )
@@ -61,9 +61,9 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   } else {
     n_features <- lapply(feature_names, length)
     n_samples  <- lapply(sample_names, length)
-    for (m in feature_groups) {
+    for (m in view_names) {
       training_data[[m]] <- list()
-      for (p in sample_groups) {
+      for (p in group_names) {
         training_data[[m]][[p]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[p]])
       }
     }
@@ -71,8 +71,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
 
   # Replace NaN by NA
   # RICARD: IF USING ON_DISK, I THINK THIS REALISES EVERYTHING INTO MEMORY, TO CHECK
-  for (m in feature_groups) {
-    for (p in sample_groups) {
+  for (m in view_names) {
+    for (p in group_names) {
       training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA
     }
   }
@@ -102,31 +102,26 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")
   if ("AlphaZ" %in% node_names)
     expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
-
-  # TO-DO: IF TAU IS EXPANDED IT SHOULD BE A DELAYEDARRAY
-  if ("Tau" %in% node_names)
-    expectations[["Tau"]] <- h5read(file, "expectations/Tau")
-
   if ("Z" %in% node_names)
     expectations[["Z"]] <- h5read(file, "expectations/Z")
   if ("W" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/W")
-
   if ("ThetaW" %in% node_names)
     expectations[["ThetaW"]] <- h5read(file, "expectations/ThetaW")
   if ("ThetaZ" %in% node_names)
     expectations[["ThetaZ"]] <- h5read(file, "expectations/ThetaZ")
+  if ("Tau" %in% node_names)
+    expectations[["Tau"]] <- h5read(file, "expectations/Tau") # TO-DO: DELAYEDARRAY
   
-  # Y is the biggest matrix and can be stored in disk via HDF5 DelayedArray framework
   if ("Y" %in% node_names) {
     expectations[["Y"]] <- list()
-    for (m in feature_groups) {
+    for (m in view_names) {
       expectations[["Y"]][[m]] <- list()
-      for (p in sample_groups) {
+      for (p in group_names) {
         if (on_disk) {
-          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s/E", m, p)) )
+          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
         } else {
-          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s/E", m, p))
+          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
         }
       }
     }
@@ -143,7 +138,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   object@dimensions[["P"]] <- length(training_data[[1]])                      # number of groups (groups of samples)
   object@dimensions[["N"]] <- sapply(training_data[[1]], ncol)                # number of samples per sample_group
   object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features per feature_group (view)
-  object@dimensions[["K"]] <- ncol(object@expectations$W[[1]]$E)              # number of factors
+  object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])                # number of factors
 
 
   # Create default samples names if they are null
@@ -195,14 +190,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     }
   }
 
-  # Define types of nodes
-  object@model_options$nodes <- list(
-    multiview_nodes  = c("W", "AlphaW", "ThetaW"),
-    multigroup_nodes = c("Z", "AlphaZ", "ThetaZ"),
-    twodim_nodes     = c("Y", "Tau")
-  )
-
-
   # Add views names to likelihood vector
   if (is.null(names(object@model_options$likelihood))) {
     names(object@model_options$likelihood) <- views_names(object)
@@ -244,7 +231,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   ## Update previous models ##
   ############################
 
-  object <- .update_old_model(object)
+  # object <- .update_old_model(object)
 
   ######################
   ## Quality controls ##
