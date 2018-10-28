@@ -94,10 +94,11 @@ class saveModel():
 
                     # Multi-groups nodes
                     if n in multigroup_nodes:
-                        for g in self.groups_names:
 
-                            # Create subgroup for the view
-                            view_subgrp = node_subgrp.create_group(self.views_names[m])
+                        # Create subgroup for the view
+                        view_subgrp = node_subgrp.create_group(self.views_names[m])
+                        
+                        for g in self.groups_names:
 
                             # create hdf5 data set for the expectation
                             samp_indices = np.where(np.array(self.samples_groups) == g)[0]
