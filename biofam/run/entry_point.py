@@ -212,16 +212,9 @@ class entry_point(object):
         self.data_opts['features_names'] = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
         self.data_opts['samples_names'] = data["sample"].unique()
 
-        # data_matrix = [None]*len(self.data_opts['views_names'])
-        # for m in range(len(self.data_opts['views_names'])):
-        #     subdata = data.loc[ data['feature_group'] == self.data_opts['views_names'][m] ]
-        #     data_matrix[m] = subdata.pivot(index='sample', columns='feature', values='value')
-        # data_matrix = data.pivot(index='sample', columns='feature', values='value').split().tolist()
-
         # Count the number of features per view
-        tmp = data.groupby(['feature_group'])['feature'].nunique()
+        tmp = data[["feature","feature_group"]].drop_duplicates().groupby("feature_group")["feature"].nunique()
         nfeatures = tmp.loc[self.data_opts['views_names']]
-
 
         # Convert data frame to list of matrices
         data['feature'] = data['feature'] + data['feature_group'] # make sure there are no duplicated feature names before pivoting
