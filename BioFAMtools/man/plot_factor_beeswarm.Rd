@@ -2,10 +2,10 @@
 % Please edit documentation in R/plot_factors.R
 \name{plot_factor_beeswarm}
 \alias{plot_factor_beeswarm}
-\title{Beeswarm plot of latent factors}
+\title{Beeswarm plot of factor values}
 \usage{
-plot_factor_beeswarm(object, factors = "all", group_by = NULL,
-  color_by = NULL, name_color = "", show_missing = FALSE)
+plot_factor_beeswarm(object, factors = "all", group_by = "group",
+  color_by = NULL, name_color = "", shape_by = NULL, shape_color = "")
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
@@ -42,5 +42,5 @@ Beeswarm plot of the latent factor values.
 \details{
 One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
 This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
-Similar functions are \code{\link{plot_factor_scatter}} for doing scatter plots and \code{\link{plot_factor_hist}} for doing histogram plots
+Similar functions are \code{\link{plot_factor_scatter}} for doing scatter plots.
 }

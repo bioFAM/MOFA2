@@ -4,7 +4,7 @@
 \alias{get_factors}
 \title{get_factors}
 \usage{
-get_factors(object, groups = "all", factors = "all",
+get_factors(object, factors = "all", groups = "all",
   as.data.frame = FALSE)
 }
 \arguments{
