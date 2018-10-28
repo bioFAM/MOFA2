@@ -293,7 +293,7 @@ plot_factor_scatters <- function(object, factors = "all", show_missing=TRUE, dot
 #' Generally, correlated factors are redundant and should be avoided, as they make interpretation harder. Therefore, 
 #' if you have too many correlated factors we suggest you try reducing the number of factors.
 #' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
-#' @importFrom corrplot corrplot
+#' @import corrplot
 #' @export
 plot_factor_cor <- function(object, method = "pearson", ...) {
   

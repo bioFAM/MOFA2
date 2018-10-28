@@ -25,11 +25,20 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   # Create new bioFAModel object
   if (is.null(object)) object <- new("BioFAModel")
 
-  # Sanity checks
-  if (.hasSlot(object, "status") & length(object@status) != 0)
-    if (object@status == "trained") warning("The specified object is already trained, over-writing training output with new results.")
-  if (.hasSlot(object, "on_disk") & (on_disk)) object@on_disk <- TRUE
-
+  # Set status
+  if (.hasSlot(object, "status")) {
+    if (object@status == "trained") {
+      warning("The specified object is already trained, over-writing training output with new results.")
+    } else {
+      object@status <- "trained"
+    }
+  }
+  
+  # Set on_disk option
+  if (.hasSlot(object, "on_disk")) {
+    if (on_disk) { object@on_disk <- TRUE } else { object@on_disk <- FALSE }
+  }
+  
   # Get groups and data set names from the hdf5 file object
   foo <- h5ls(file, datasetinfo = F)
 

@@ -20,74 +20,12 @@
   return(likelihood)
 }
 
-.update_old_model <- function(object) {
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
-  
-  # Update node names
-  if ("SW" %in% names(object@expectations)) {
-    # object@model_options$schedule[object@model_options$schedule == "SW"] <- "W" # schedule is depreciated from model_options
-    names(object@expectations)[names(object@expectations) == "SW"] <- "W"
-    colnames(object@training_stats$elbo_terms)[colnames(object@training_stats$elbo_terms)=="SW"] <- "W"
-  }
-  if ("SZ" %in% names(object@expectations)) {
-    names(object@expectations)[names(object@expectations) == "SZ"] <- "Z"
-    colnames(object@training_stats$elbo_terms)[colnames(object@training_stats$elbo_terms)=="SZ"] <- "Z"
-  }
-
-  # Update expectations
-  if (is.list(object@expectations$Z[[1]]) & ("E" %in% names(object@expectations$Z[[1]]))) {
-    # Multi-view nodes
-    for (m in views_names(object)) {
-      for (node in object@model_options$nodes$multiview_node) {
-        if (node %in% names(object@expectations)){
-          object@expectations[[node]][[m]] <- object@expectations[[node]][[m]]$E
-        }
-      }
-    }
-    # Multi-group nodes
-    for (p in groups_names(object)) {
-      for (node in object@model_options$nodes$multigroup_nodes) {
-        if (node %in% names(object@expectations)){
-          object@expectations[[node]][[p]] <- object@expectations[[node]][[p]]$E
-        }
-      }
-    }
-    # Multi-view & multi-group nodes
-    for (m in views_names(object)) {
-      for (p in groups_names(object)) {
-        for (node in object@model_options$nodes$twodim_nodes) {
-          object@expectations[[node]][[m]][[p]] <- object@expectations[[node]][[m]][[p]]$E
-        }
-      }
-    }
-  }
-  
-  
-  # Set the status as trained if it wasn't set before
-  if((!.hasSlot(object, "status")) | (length(object@status) == 0))
-    object@status <- "trained"
-
-  
-  return(object)
-}
-
 # Set view names and group names for nested list objects (e.g. Y)
 .name_views_and_groups <- function(nested_list, view_names, group_names) {
   names(nested_list) <- view_names
   for (view in view_names) { names(nested_list[[view]]) <- group_names }
   nested_list
 }
-
-subset_augment <- function(mat, pats) {
-  pats <- unique(pats)
-  mat <- t(mat)
-  aug_mat <- matrix(NA, ncol=ncol(mat), nrow=length(pats))
-  aug_mat <- mat[match(pats,rownames(mat)),,drop=FALSE]
-  rownames(aug_mat) <- pats
-  colnames(aug_mat) <- colnames(mat)
-  return(t(aug_mat))
-}
-
 
 detect_passengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.03) {
   
@@ -154,7 +92,7 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
 }
 
 
-flip_factor <- function(model, factor){
+.flip_factor <- function(model, factor){
   for(groupnm in names(model@expectations$Z)) {
     model@expectations$Z[[groupnm]][,factor] <- - model@expectations$Z[[groupnm]][,factor]
   }
@@ -221,84 +159,4 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   mx@nrow <- length(rownames)
   mx@ncol <- length(colnames)
   mx
-}
-
-
-
-
-.rep_string <- function(times, string, collapse = "") {
-  paste(replicate(times, string), collapse = collapse)
-}
-
-.pad_left_with <- function(len, string, with = "") {
-  wlen <- nchar(with)
-  len  <- max(len - wlen, 0)
-  paste0(with, paste(replicate(len, " "), collapse = ""), string)
-}
-
-.pad_left <- function(len, string) {
-  .pad_left_with(len, string, with = "")
-}
-
-# Center and paste
-.cpaste <- function(vals, cwidth, collapse = "") {
-  vals <- sapply(vals, function(e) {
-    e <- toString(e)
-    lendiff <- cwidth - nchar(e)
-    if (lendiff > 1) {
-      paste0(.rep_string(ceiling(lendiff / 2), " "),
-             e,
-             .rep_string(floor(lendiff / 2), " "))
-    } else {
-      e
-    }
-  })
-  paste(vals, collapse = collapse)
-}
-
-# Fancy printing method
-vis <- function(object) {
-
-  stopifnot(class(object) == "BioFAModel")
-  
-  if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
-    stop("Error: dimensions not defined")
-  if (!.hasSlot(object, "status") | length(object@status) == 0)
-    stop("Error: status not defined")
-
-  vis_lines <- ""
-
-  lpad <- max(sapply(views_names(object), function(v) nchar(v)))
-  wlim <- max(sapply(groups_names(object), function(v) nchar(v)))
-  igr_sp <- .rep_string(5, " ")
-  s <- 8             # extra lpadding shift
-  w <- max(8, wlim)  # width of one block (minus 2 walls)
-  hat    <- paste0(" ", .rep_string(w, "_"), " ")
-  walls  <- paste0("|", .rep_string(w, " "), "|")
-  ground <- paste0("|", .rep_string(w, "_"), "|")
-
-  cat("
-         \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   \U2588\U2588︎\U2588︎\U2588︎\U2588︎
-biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎
-         \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   
-      ")
-
-  groups_line    <- .pad_left(lpad + s, .cpaste(groups_names(object), w+2, collapse = igr_sp))
-  nsamples_line  <- .pad_left(lpad + s, .cpaste(get_dimensions(object)$N, w+2, collapse = igr_sp))
-  vis_lines      <- c(vis_lines, groups_line, nsamples_line)  
-
-  for (m in 1:length(views_names(object))) {
-    toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, hat, collapse = igr_sp)))
-    midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, walls, collapse = igr_sp)))
-    dfeatures_line <- .pad_left_with(lpad + s, 
-                                     paste(.rep_string(get_dimensions(object)$P, walls, collapse = igr_sp)), 
-                                     with = paste(c(views_names(object)[m], .cpaste(get_dimensions(object)$D[m], s)), collapse = ""))
-    botrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, ground, collapse = igr_sp)))
-
-    vis_lines      <- c(vis_lines, toprect_line, midrect_line, dfeatures_line, botrect_line)  
-  }
-
-  cat(paste(vis_lines, collapse = "\n"))
-  
-  cat("\n\n")
 }
