@@ -38,7 +38,7 @@ class saveModel():
 
     def saveData(self):
         """ Method to save the training data"""
-
+        import pdb; pdb.set_trace()
         # Create HDF5 groups
         data_grp = self.hdf5.create_group("data")
         features_grp = self.hdf5.create_group("features")
@@ -87,7 +87,9 @@ class saveModel():
 
             # Collect node expectation
             exp = nodes_dic[n].getExpectation()
-
+            import pdb; pdb.set_trace()
+                            #         if type(tmp) == ma.core.MaskedArray:
+                            # tmp = ma.filled(tmp, fill_value=np.nan)
             # Multi-view nodes
             if isinstance(nodes_dic[n],Multiview_Node):
                 for m in range(nodes_dic[n].M):

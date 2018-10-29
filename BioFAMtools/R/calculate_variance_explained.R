@@ -29,9 +29,9 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   K <- length(factors)
 
   # Collect relevant expectations
-  W <- get_weights(object, views, factors)
-  Z <- get_factors(object, groups, factors)
-  Y <- get_expectations(object, "Y")  # for non-Gaussian likelihoods the pseudodata is considered
+  W <- get_weights(object, views=views, factors=factors)
+  Z <- get_factors(object, groups=groups, factors=factors)
+  Y <- get_expectations(object, "Y")[views]
   Y <- lapply(Y, function(x) lapply(x,t))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
@@ -39,6 +39,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     Z[[p]][is.na(Z[[p]])] <- 0
   }
 
+  # Check that data observations are centered
   for (m in views) { for (p in groups) {
     if (!all(colMeans(Y[[m]][[p]],na.rm=T)<1e-2,na.rm=T))
       cat(sprintf("Warning: data for view %s is not centered\n",m))
@@ -47,19 +48,16 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   Y <- .name_views_and_groups(Y, views, groups)
 
   # Calculate coefficient of determination per group and view
-  fvar_m <- lapply(groups, function(p)
-    lapply(views, function(m) {
+  fvar_m <- lapply(groups, function(p) lapply(views, function(m) {
       a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]],W[[m]]))**2, na.rm=T)
       b <- sum(Y[[m]][[p]]**2, na.rm=T)
       return(1 - a/b)
-    }
-    ))
+    } ))
   fvar_m <- .name_views_and_groups(fvar_m, groups, views)
 
   # Calculate coefficient of determination per group, factor and view
   fvar_mk <- lapply(groups, function(p) {
-    tmp <- sapply(views, function(m) {
-      sapply(factors, function(k) {
+    tmp <- sapply(views, function(m) { sapply(factors, function(k) {
         a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]][,k],W[[m]][,k]))**2, na.rm=T)
         b <- sum(Y[[m]][[p]]**2, na.rm=T)
         return(1 - a/b)

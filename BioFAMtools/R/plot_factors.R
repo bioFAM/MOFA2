@@ -33,7 +33,7 @@
 #' @import ggbeeswarm
 #' @import grDevices
 #' @export
-plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", dot_size=1,
+plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", show_missing = TRUE, dot_size = 1,
                                  color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
   
   # Sanity checks

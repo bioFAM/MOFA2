@@ -24,15 +24,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
 
   # Create new bioFAModel object
   if (is.null(object)) object <- new("BioFAModel")
-
-  # Set status
-  if (.hasSlot(object, "status")) {
-    if (object@status == "trained") {
-      warning("The specified object is already trained, over-writing training output with new results.")
-    } else {
-      object@status <- "trained"
-    }
-  }
+  object@status <- "trained"
   
   # Set on_disk option
   if (.hasSlot(object, "on_disk")) {
