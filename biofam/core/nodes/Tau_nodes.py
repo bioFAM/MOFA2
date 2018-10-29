@@ -31,15 +31,16 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         # update of Qa
         Y = self.markov_blanket["Y"].getExpectation()
-        mask = ma.getmask(Y)
-        Y = Y.data
+        self.mask = self.markov_blanket["Y"].getMask()
+        # mask = ma.getmask(Y)
+        # Y = Y.data
 
         self.Qa_pre = self.P.getParameters()['a'].copy()
 
         for g in range(self.n_groups):
             g_mask = (self.groups == g)
             Y_tmp = Y[g_mask, :]
-            mask_tmp = mask[g_mask, :]
+            mask_tmp = self.mask[g_mask, :]
             self.Qa_pre[g,:] += (Y_tmp.shape[0] - mask_tmp.sum(axis=0))/2.
 
     def getExpectations(self, expand=True):
@@ -60,7 +61,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # Collect expectations from other nodes
         # TODO sum(axis = 0) to change
         Y = self.markov_blanket["Y"].getExpectation()
-        mask = ma.getmask(Y)
 
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
@@ -74,23 +74,23 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Qb = Q['b']
 
         # Mask matrices
-        Y = Y.data
-        Y[mask] = 0.
+        # Y = Y.data
+        # Y[mask] = 0.
 
         # Calculate terms for the update
         ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
         # ZW =  fast_dot(Z,W.T)
-        ZW[mask] = 0.
+        ZW[self.mask] = 0.
 
         term1 = gpu_utils.square(gpu_utils.array(Y)) #.sum(axis=0)
 
         term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
         # term2 = fast_dot(ZZ, WW.T)
-        term2[mask] = 0
+        term2[self.mask] = 0
         # term2 = term2.sum(axis=0)
 
         term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
-        term3[mask] = 0.
+        term3[self.mask] = 0.
         # term3 = term3.sum(axis=0)
         term3 += gpu_utils.square(ZW)  #.sum(axis=0)
 

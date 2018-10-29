@@ -50,7 +50,9 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         SZtmp = self.markov_blanket["Z"].getExpectations()
         tau = self.markov_blanket["Tau"].getExpectation()
         latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
-        mask = ma.getmask(Y)
+
+        # mask = ma.getmask(Y)
+        mask = self.markov_blanket["Y"].getMask()
 
         # Collect parameters from the prior or expectations from the markov blanket
         if "MuW" in self.markov_blanket:
@@ -202,7 +204,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
 
 
-        mask = ma.getmask(Y)
+        # mask = ma.getmask(Y)
+        mask = self.markov_blanket["Y"].getMask()
 
         # Collect parameters and expectations from P and Q distributions of this node
         SW = self.Q.getExpectations()["E"]
@@ -210,8 +213,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qmean_S1, Qvar_S1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
         # Mask matrices
-        Y = Y.data
-        Y[mask] = 0.
+        # Y = Y.data
+        # Y[mask] = 0.
         tau[mask] = 0.
 
         # precompute terms usful for all k

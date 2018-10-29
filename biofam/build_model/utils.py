@@ -26,7 +26,7 @@ def mask_data(data, mask_fraction):
 
     mask = np.ones(N*D)
     mask[:int(round(N*D*mask_fraction))] = np.nan
-    np.random.shuffle(mask)
+    s.random.shuffle(mask)
     mask = np.reshape(mask, [N, D])
     data *= mask
 

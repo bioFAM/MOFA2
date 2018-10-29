@@ -47,7 +47,10 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         SWtmp = self.markov_blanket["W"].getExpectations()
         tau = self.markov_blanket["Tau"].getExpectation()
         latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
+
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
+        # mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
+        import pdb; pdb.set_trace()
 
         # Collect parameters from the prior or expectations from the markov blanket
         if "MuZ" in self.markov_blanket:
@@ -65,9 +68,10 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             # Mask tau
             # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.
+
             # Mask Y
-            Y[m] = Y[m].data
-            Y[m][mask[m]] = 0.
+            # Y[m] = Y[m].data
+            # Y[m][mask[m]] = 0.
 
         # Collect parameters from the P and Q distributions of this node
         Q = self.Q.getParameters()
@@ -226,8 +230,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         thetatmp = self.markov_blanket['ThetaZ'].getExpectations(expand=True)
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
-        # print(theta_lnEInv)
-
         # Collect parameters and expectations from P and Q distributions of this node
         SZ = self.Q.getExpectations()["E"]
         Q = self.Q.getParameters()
@@ -237,9 +239,11 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Mask matrices (excluding covariates from the list of latent variables)
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
+        # mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
+
         for m in range(M):
-            Y[m] = Y[m].data
-            Y[m][mask[m]] = 0.
+            # Y[m] = Y[m].data
+            # Y[m][mask[m]] = 0.
             tau[m][mask[m]] = 0.
 
         # TODO : remove loops working with tensors ?

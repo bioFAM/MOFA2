@@ -25,6 +25,12 @@ def square(mat):
     else:
         return np.square(mat)
 
+def sum(mat):
+    if gpu_mode:
+        return cp.sum(mat)
+    else:
+        return np.sum(mat)
+
 # --------------------------------------------------------
 # operations on matrices pairs
 # --------------------------------------------------------

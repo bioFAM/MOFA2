@@ -5,6 +5,7 @@ import scipy as s
 import math
 
 from biofam.core.utils import dotd
+from biofam.core import gpu_utils
 
 # Import manually defined functions
 from .variational_nodes import Constant_Variational_Node
@@ -16,11 +17,15 @@ class Y_Node(Constant_Variational_Node):
         # Create a boolean mask of the data to hide missing values
         if type(self.value) != ma.MaskedArray:
             self.mask()
+        ma.set_fill_value(self.value, 0.)
 
     def precompute(self, options=None):
         # Precompute some terms to speed up the calculations
-        self.N = self.dim[0] - ma.getmask(self.value).sum(axis=0)
-        self.D = self.dim[1] - ma.getmask(self.value).sum(axis=1)
+        mask = ma.getmask(self.value)
+        self.N = self.dim[0] - mask.sum(axis=0)
+        self.D = self.dim[1] - mask.sum(axis=1)
+
+        gpu_utils.gpu_mode = options['gpu_mode']
 
         # Precompute the constant term of the likelihood
         self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
@@ -36,7 +41,7 @@ class Y_Node(Constant_Variational_Node):
         # Calculate evidence lower bound
         # Collect expectations from nodes
 
-        Y = self.getExpectation().copy()
+        Y = self.getExpectation()
         mask = ma.getmask(Y)
 
         Tau = self.markov_blanket["Tau"].getExpectations()
@@ -51,22 +56,27 @@ class Y_Node(Constant_Variational_Node):
         Y = Y.data
         Y[mask] = 0.
 
-        ZW = ma.array(s.dot(Z, W.T),mask=mask)
+        ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
+        ZW[mask] = 0.
 
-        # term1 = s.square(Y).sum(axis=0).data # not checked numerically with or without mask
-        term1 = s.square(Y.astype("float64"))
+        term1 = gpu_utils.square(gpu_utils.array(Y))
 
-        # term2 = 2.*(Y*s.dot(Z,W.T)).sum(axis=0).data
-        term2 = 2. * (Y * ZW)  # save to modify
+        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
+        term2[mask] = 0
 
-        term3 = ma.array(ZZ.dot(WW.T), mask=mask)
+        term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
+        term3[mask] = 0.
+        term3 += gpu_utils.square(ZW)
 
-        term4 = s.square(ZW) - ma.array(s.dot(s.square(Z),s.square(W).T),mask=mask)
+        ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
+        term4 = 2.*ZW
 
-        tmp = 0.5 * (term1 - term2 + term3 + term4)
+        tmp = 0.5 * (term1 + term2 + term3 - term4)
 
         Tau["lnE"][mask] = 0
-        lik = self.likconst + 0.5 * s.sum(Tau["lnE"]) - s.sum(s.multiply(Tau["E"], tmp))
+        lik = self.likconst + 0.5 * gpu_utils.sum(gpu_utils.array(Tau["lnE"])) -\
+              gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
+
         return lik
 
     def sample(self, dist='P'):
