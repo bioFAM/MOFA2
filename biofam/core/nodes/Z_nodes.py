@@ -50,7 +50,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         mask = [ma.getmask(Y[m]) for m in range(len(Y))]
         # mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
-        import pdb; pdb.set_trace()
 
         # Collect parameters from the prior or expectations from the markov blanket
         if "MuZ" in self.markov_blanket:
@@ -77,7 +76,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
-        # import pdb; pdb.set_trace()
         M = len(Y)
         for k in latent_variables:
             foo = s.zeros((self.N,))
