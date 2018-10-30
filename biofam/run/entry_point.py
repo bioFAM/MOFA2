@@ -9,6 +9,7 @@ import imp
 
 from typing import List, Union, Dict, TypeVar
 
+from biofam.core.BayesNet import *
 from biofam.build_model.build_model import *
 from biofam.build_model.save_model import *
 from biofam.build_model.train_model import train_model
@@ -256,7 +257,8 @@ class entry_point(object):
         ):
         """ Set training options """
 
-        # TODO: verbosity, print more messages
+        # Sanity checks
+        assert hasattr(self, 'model_opts'), "Model options have to be defined before training options"
 
         self.train_opts = {}
 
@@ -299,8 +301,33 @@ class entry_point(object):
         self.train_opts['start_sparsity'] = int(startSparsity)
 
         # Training schedule
-        if schedule is not None:
-            self.train_opts['schedule'] = schedule
+        if schedule is None:
+            schedule = ['Y', 'W', 'Z', 'Tau']
+
+            # Insert ThetaW after W if Spike and Slab prior on W
+            if self.model_opts['sl_w']:
+                ix = schedule.index("W"); schedule.insert(ix+1, 'ThetaW')
+            
+            # Insert ThetaZ after Z if Spike and Slab prior on Z
+            if self.model_opts['sl_z']:
+                ix = schedule.index("Z"); schedule.insert(ix+1, 'ThetaZ')
+
+            # Insert AlphaW after W if ARD prior on W
+            if self.model_opts['ard_w']:
+                ix = schedule.index("W"); schedule.insert(ix+1, 'AlphaW')
+
+            # Insert AlphaZ after Z if ARD prior on Z
+            if self.model_opts['ard_z']:
+                ix = schedule.index("Z"); schedule.insert(ix+1, 'AlphaZ')
+                
+        else:
+            assert set(["Y","W","Z","Tau"]) <= set(schedule)
+            if self.model_opts['ard_z']: assert "AlphaZ" in schedule
+            if self.model_opts['ard_w']: assert "AlphaW" in schedule
+            if self.model_opts['sl_z']: assert "ThetaZ" in schedule
+            if self.model_opts['sl_w']: assert "ThetaW" in schedule
+
+        self.train_opts['schedule'] = schedule
 
         # Seed
         if seed is None:  # Seed for the random number generator
@@ -339,7 +366,6 @@ class entry_point(object):
             self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli' and 'poisson'"
-
 
     def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False, mask=None):
         """ Set data processing options """
@@ -386,25 +412,26 @@ class entry_point(object):
         """ Build the model """
 
         # Sanity checks
-        assert hasattr(self, 'model_opts'), "Train options not defined"
+        assert hasattr(self, 'model_opts'), "Model options not defined"
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
 
-        # Build the BioFAM model
-        self.model_builder = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
-        self.model = self.model_builder.net
+        # Build the nodes
+        tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
+
+        # Create BayesNet class
+        self.model = BayesNet(self.dimensionalities, tmp.get_nodes())
 
     def run(self):
         """ Run the model """
 
         # Sanity checks
+        assert hasattr(self, 'model_opts'), "Model options not defined"
         assert hasattr(self, 'train_opts'), "Train options not defined"
         assert hasattr(self, 'data_opts'), "Data options not defined"
 
         # Fetch training schedule (order of updates for the different nodes)
         if 'schedule' in self.train_opts:
-            assert all(self.train_opts['schedule'] in self.model.get_nodes().keys()), "Some nodes defined in the training schedule are not present in the model"
-            if ~all(self.model.get_nodes().keys() in self.train_opts['schedule']):
-                if self.train_opts['verbose']: print("Warning: some nodes are not in the trainign schedule and will not be updated")
+            assert set(self.train_opts['schedule']) == set(list(self.model.getNodes().keys())), "Some nodes defined in the training schedule are not present in the model, or viceversa"
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
@@ -457,7 +484,7 @@ if __name__ == '__main__':
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
-    ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
+    ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
 
     ent.build()
 

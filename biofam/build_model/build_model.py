@@ -8,7 +8,6 @@ import numpy as np
 import scipy as s
 #from joblib import Parallel, delayed
 
-from biofam.core.BayesNet import *
 from biofam.build_model.init_model import initModel
 from biofam.build_model.utils import *
 
@@ -18,7 +17,6 @@ class buildModel(object):
         self.data_opts = data_opts
         self.model_opts = model_opts
         self.dim = dimensionalities
-        pass
 
     def createMarkovBlankets(self):
         """ Define the markov blankets """
@@ -34,8 +32,7 @@ class buildModel(object):
 
     def get_nodes(self):
         """ Get all nodes """
-        assert hasattr(self, 'net'), "BayesNet has not been created"
-        return self.net.getNodes()
+        return self.init_model.getNodes()
 
 
 class buildBiofam(buildModel):
@@ -50,12 +47,6 @@ class buildBiofam(buildModel):
 
         # Define markov blankets
         self.createMarkovBlankets()
-
-        # Define training schedule
-        self.createSchedule()
-
-        # Create BayesNet class
-        self.createBayesNet()
 
     def build_nodes(self):
         """ Method to build all nodes """
@@ -140,7 +131,7 @@ class buildBiofam(buildModel):
         """ Define the markov blankets """
 
         # Fetch all nodes
-        nodes = self.init_model.getNodes()
+        nodes = self.get_nodes()
 
         # Define basic connections
         nodes['Y'].addMarkovBlanket(Z=nodes["Z"], W=nodes["W"], Tau=nodes["Tau"])
@@ -167,41 +158,3 @@ class buildBiofam(buildModel):
         if self.model_opts['ard_w']:
             nodes['AlphaW'].addMarkovBlanket(W=nodes['W'])
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
-
-    def createSchedule(self):
-        """ Define the schedule of updates """
-
-        # TO-DO:
-        # - RICARD: I THINK THE SCHEDULE OF UPDATES SHOULD NOT BE INSIDE BUILD_MODEL
-        # - ALLOW SCHEDULE TO BE PROVIDED AS TRAIN_OPTIONS
-        # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
-
-        # Define basic schedule of updates
-        schedule = ['Y', 'W', 'Z', 'Tau']
-        # schedule = ['Y', 'Z', 'W', 'Tau']
-
-        # Insert ThetaW after W if Spike and Slab prior on W
-        if self.model_opts['sl_w']:
-            ix = schedule.index("W")
-            schedule.insert(ix+1, 'ThetaW')
-
-        # Insert ThetaZ after Z if Spike and Slab prior on Z
-        if self.model_opts['sl_z']:
-            ix = schedule.index("Z")
-            schedule.insert(ix+1, 'ThetaZ')
-
-        # Insert AlphaW after W if ARD prior on W
-        if self.model_opts['ard_w']:
-            ix = schedule.index("W")
-            schedule.insert(ix+1, 'AlphaW')
-
-        # Insert AlphaZ after Z if ARD prior on Z
-        if self.model_opts['ard_z']:
-            ix = schedule.index("Z")
-            schedule.insert(ix+1, 'AlphaZ')
-
-        self.schedule = schedule
-
-    def createBayesNet(self):
-        """ Method to create the BayesNet class """
-        self.net = BayesNet(dim=self.dim, nodes=self.init_model.getNodes())
