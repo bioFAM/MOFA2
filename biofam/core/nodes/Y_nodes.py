@@ -17,13 +17,14 @@ class Y_Node(Constant_Variational_Node):
         # Create a boolean mask of the data to hide missing values
         if type(self.value) != ma.MaskedArray:
             self.mask()
-        ma.set_fill_value(self.value, 0.)
+
+        # Replace NA by zero
+        self.value[np.isnan(self.value)] = 0.
 
     def precompute(self, options=None):
-        # Precompute some terms to speed up the calculations
-        mask = ma.getmask(self.value)
-        self.N = self.dim[0] - mask.sum(axis=0)
-        self.D = self.dim[1] - mask.sum(axis=1)
+        """ Precompute some terms to speed up the calculations """
+        self.N = self.dim[0] - self.mask.sum(axis=0)
+        self.D = self.dim[1] - self.mask.sum(axis=1)
 
         gpu_utils.gpu_mode = options['gpu_mode']
 
@@ -31,41 +32,37 @@ class Y_Node(Constant_Variational_Node):
         self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
 
     def mask(self):
-        # Mask the observations if they have missing values
-        self.value = ma.masked_invalid(self.value)
-
+        """ Generate binary mask """
+        self.mask = ma.getmask( ma.masked_invalid(self.value) )
+        
     def getMask(self):
-        return ma.getmask(self.value)
+        return self.mask
 
     def calculateELBO(self):
-        # Calculate evidence lower bound
+        """ Calculate evidence lower bound """
+
         # Collect expectations from nodes
-
-        Y = self.getExpectation()
-        mask = ma.getmask(Y)
-
+        Y = self.getExpectation() 
         Tau = self.markov_blanket["Tau"].getExpectations()
-
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
-
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
-        # Mask matrices
-        Y = Y.data
-        Y[mask] = 0.
+        # Get Mask
+        mask = ma.getmask(Y)
 
+        # Compute ELBO
         ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
-        ZW[mask] = 0.
+        ZW[self.mask] = 0.
 
         term1 = gpu_utils.square(gpu_utils.array(Y))
 
         term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
-        term2[mask] = 0
+        term2[self.mask] = 0
 
         term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
-        term3[mask] = 0.
+        term3[self.mask] = 0.
         term3 += gpu_utils.square(ZW)
 
         ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
@@ -73,7 +70,7 @@ class Y_Node(Constant_Variational_Node):
 
         tmp = 0.5 * (term1 + term2 + term3 - term4)
 
-        Tau["lnE"][mask] = 0
+        Tau["lnE"][self.mask] = 0
         lik = self.likconst + 0.5 * gpu_utils.sum(gpu_utils.array(Tau["lnE"])) -\
               gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
 

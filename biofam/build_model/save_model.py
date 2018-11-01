@@ -87,13 +87,12 @@ class saveModel():
 
             # Collect node expectation
             exp = nodes_dic[n].getExpectation()
-                                #         if type(tmp) == ma.core.MaskedArray:
-                            # tmp = ma.filled(tmp, fill_value=np.nan)
+
             # Multi-view nodes
             if isinstance(nodes_dic[n],Multiview_Node):
                 for m in range(nodes_dic[n].M):
 
-                    # Multi-groups nodes
+                    # Multi-groups nodes (Tau and Y)
                     if n in multigroup_nodes:
 
                         # Create subgroup for the view
@@ -101,11 +100,16 @@ class saveModel():
                         
                         for g in self.groups_names:
 
+                            # Add missing values to Tau and Y nodes
+                            mask = nodes_dic[n].nodes[m].getMask()
+                            exp[m][mask] = np.nan
+
                             # create hdf5 data set for the expectation
                             samp_indices = np.where(np.array(self.samples_groups) == g)[0]
+
                             view_subgrp.create_dataset(g, data=exp[m][samp_indices,:])
 
-                    # Single-groups nodes
+                    # Single-groups nodes (W)
                     else:
                         node_subgrp.create_dataset(self.views_names[m], data=exp[m].T)
 

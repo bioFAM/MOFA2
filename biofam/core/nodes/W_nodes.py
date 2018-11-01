@@ -17,28 +17,15 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 
 # TODO make more general to handle both cases with and without SL in the Markov Blanket
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
-    def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
+    def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None):
         super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
-
-        # Define indices for covariates
-        if idx_covariates is not None:
-            self.covariates[idx_covariates] = True
 
     def precompute(self, options):
         # Precompute terms to speed up computation
         self.D = self.dim[0]
         self.K = self.dim[1]
-        self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
         gpu_utils.gpu_mode = options['gpu_mode']
-
-    def getLvIndex(self):
-        # Method to return the index of the latent variables (without covariates)
-        latent_variables = np.array(range(self.dim[1]))
-        if any(self.covariates):
-            # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
-            latent_variables = latent_variables[~self.covariates]
-        return latent_variables
 
     def removeFactors(self, idx):
         super().removeFactors(idx, axis=1)
@@ -49,7 +36,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Y = self.markov_blanket["Y"].getExpectation()
         SZtmp = self.markov_blanket["Z"].getExpectations()
         tau = self.markov_blanket["Tau"].getExpectation()
-        latent_variables = self.getLvIndex() # excluding covariates from the list of latent variables
 
         # mask = ma.getmask(Y)
         mask = self.markov_blanket["Y"].getMask()
@@ -67,15 +53,12 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         # Mask tau
         tau[mask] = 0.
-        # Mask Y
-        Y = Y.data
-        Y[mask] = 0.
 
         # Collect parameters from the P and Q distributions of this node
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
-        for k in latent_variables:
+        for k in self.K:
 
             foo = s.dot(SZtmp["E2"][:,k], tau)
 
@@ -119,12 +102,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Alpha['E'] = 1./self.P.params['var']
             Alpha['lnE'] = s.log(1./self.P.params['var'])
 
-        # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
-        latent_variables = self.getLvIndex()
-        Alpha["E"], Alpha["lnE"] = Alpha["E"][:, latent_variables], Alpha["lnE"][:, latent_variables]
-        Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
-        PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
-        QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
 
         # compute term from the exponential in the Gaussian
         tmp1 = 0.5 * QE2 - PE * QE + 0.5 * PE2
@@ -135,7 +112,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         lb_p = tmp1 + tmp2
         # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
-        lb_q = -(s.log(Qvar).sum() + self.D * len(latent_variables)) / 2.
+        lb_q = -(s.log(Qvar).sum() + self.D * len(self.K)) / 2.
         return lb_p-lb_q
 
 
@@ -191,6 +168,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         gpu_utils.gpu_mode = options['gpu_mode']
 
     def updateParameters(self):
+        
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
@@ -203,8 +181,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         thetatmp = self.markov_blanket["ThetaW"].getExpectations(expand=True)
         theta_lnE, theta_lnEInv  = thetatmp['lnE'], thetatmp['lnEInv']
 
-
-        # mask = ma.getmask(Y)
+        # Get Mask
         mask = self.markov_blanket["Y"].getMask()
 
         # Collect parameters and expectations from P and Q distributions of this node

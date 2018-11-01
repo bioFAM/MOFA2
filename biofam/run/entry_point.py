@@ -18,7 +18,6 @@ class entry_point(object):
     def __init__(self):
         self.print_banner()
         self.dimensionalities = {}
-        self.model_opts = None
         self.model = None
 
     def print_banner(self):
@@ -341,9 +340,7 @@ class entry_point(object):
         # TODO: SANITY CHECKS AND:
         # - learnTheta should be replaced by learn_sparsity
 
-
-        if self.model_opts is None:
-            self.model_opts = {}
+        self.model_opts = {}
 
         # Define whether to use sample-wise spike and slab prior for Z
         self.model_opts['sl_z'] = sl_z
@@ -484,7 +481,8 @@ if __name__ == '__main__':
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
-    ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
+    ent.set_train_options(iter=5, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
+    # ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
 
     ent.build()
 
