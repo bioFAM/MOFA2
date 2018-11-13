@@ -27,7 +27,7 @@
   nested_list
 }
 
-detect_passengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.03) {
+detect_passengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.001) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -59,27 +59,26 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
   # Collect relevant data
   Z <- get_factors(object)
   
-  # Identify factors unique to a single view by calculating relative R2 per factor
+  # Calculate variance explained
   r2 <- calculate_variance_explained(object, views = views, groups = groups, factors = factors)$r2_per_factor
-  unique_factors <- unique(unlist(lapply(groups, function(p) names(which(rowSums(r2[[p]]>=r2_threshold)==1)) )))
   
-  # Mask samples that are unique in the unique factors
-  missing <- lapply(get_training_data(object, views, groups), function(views) {
-    lapply(views, function(group) {
-      names(which(apply(group,2,function(x) all(is.na(x)))))
-    })
-  })
-
-  missing <- .name_views_and_groups(missing, views_names(object), groups_names(object))
-  for (fctr in unique_factors) {
-    # view <- names(which(r2[fctr,]>=r2_threshold))
+  # (...)  
+  data <- get_training_data(object, views, groups)
+  nomissing <- lapply(groups, function(g) { 
+    tmp <- lapply(views, function(m) {
+      names(which(apply(data[[m]][[g]],2,function(x) !all(is.na(x)))))
+    }); names(tmp) <- views
+    tmp
+  }); names(nomissing) <- groups
+  
+  # (...)  
+  for (k in factors) {
     for (p in groups) {
-      view <- colnames(r2[[p]][,which(r2[[p]][fctr,]>=r2_threshold), drop=F])
-      if (!is.null(view)) {
-        missing_samples <- missing[[view]][[p]]
-        if (length(missing_samples) > 0) {
-          Z[[p]][missing_samples, fctr] <- rep(NA,length(missing_samples))
-        }
+      max.view <- colnames(r2[[p]][,which.max(r2[[p]][k,]), drop=F])
+      top_samples <- names(tail(sort(abs(get_factors(object, groups=p, factors=k)[[1]][,1])),n=10))
+      if (!any(top_samples %in% nomissing[[p]][[max.view]])) {
+        missing_samples <- samples_names(object)[[p]][!samples_names(object)[[p]] %in% nomissing[[p]][[max.view]]]
+        Z[[p]][missing_samples, k] <- rep(NA,length(missing_samples))
       }
     }
   }

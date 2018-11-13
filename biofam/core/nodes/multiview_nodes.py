@@ -95,7 +95,7 @@ class Multiview_Node(Node):
         M = self.activeM if m is None else m
         for m in M: self.nodes[m].updateDim(axis,new_dim)
 
-    def sample(self, dist):
+    def sample(self, dist="P"):
         # TODO should we np.array() it ? better data type BUT problem of space efficiency ?
         self.samp = [self.nodes[m].sample(dist) for m in self.activeM]
         return self.samp

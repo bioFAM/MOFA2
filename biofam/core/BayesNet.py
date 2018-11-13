@@ -125,6 +125,8 @@ class BayesNet(object):
         ----------
         by_r2: float
             threshold to shut down factors based on the coefficient of determination
+
+        TO-DO: SEPARATE PER GROUP
         """
         drop_dic = {}
 
@@ -213,6 +215,7 @@ class BayesNet(object):
         # Start training
         for i in range(self.options['maxiter']):
             t = time();
+
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
                 if any(self.options['drop'].values()):
@@ -231,7 +234,7 @@ class BayesNet(object):
 
                 # Print first iteration
                 if i==0:
-                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (~self.nodes["Z"].K)))
+                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.nodes["Z"].K)))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -240,7 +243,7 @@ class BayesNet(object):
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
-                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes["Z"].K)))
+                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.nodes["Z"].K)))
                     if delta_elbo<0:
                         print("Warning, lower bound is decreasing..."); print('\a')
                         #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))

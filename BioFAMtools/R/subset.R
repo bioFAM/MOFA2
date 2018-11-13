@@ -56,12 +56,15 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(factors) <= object@dimensions[["K"]])
-  if (is.character(factors)) stopifnot(all(factors %in% factors_names(object)))
   
   # Get factors
-  if (is.numeric(factors)) {
+  if (is.numeric(factors) | is.logical(factors)) {
+    stopifnot(length(factors) == length(unique(factors)))
     factors <- factors_names(object)[factors]
-  } else { 
+  } else if (is.logical(factors)) {
+    factors <- factors_names(object)[factors]
+  } else if (is.character(factors)) { 
+    stopifnot(length(factors) == length(unique(factors)))
     stopifnot(all(factors %in% factors_names(object)))
   }
   

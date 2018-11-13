@@ -123,6 +123,11 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         return lb_p - lb_q
 
     def sample(self, dist='P'):
+        # TO-DO: 
+        # (1) GROUPS
+        # (1) ONLY SAMPLES FROM P
+
+        # Collecting samples from the hierarchical model
         if "MuZ" in self.markov_blanket:
             p_mean = self.markov_blanket['MuZ'].sample()
         else:
@@ -131,33 +136,20 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if "AlphaZ" in self.markov_blanket:
             alpha = self.markov_blanket['AlphaZ'].sample()
             p_var = s.square(1. / alpha)
-            #p_cov = s.diag(p_var)
             p_cov = [p_var[k] * np.eye(self.N) for k in range(self.K)]
         else:
-            if "SigmaZ" in self.markov_blanket:
-                p_cov = self.markov_blanket['SigmaZ'].sample()
-            else:
-                p_cov = self.P.params['cov']
+            p_cov = [self.P.params['var'] * np.eye(self.N) for k in range(self.K)]
 
         # simulating
+        tmp = []
+        for k in range(self.dim[1]):
+            tmp.append(s.random.multivariate_normal(p_mean[:,k], p_cov[k]))
 
-        samp_tmp = []
-        for i in range(self.dim[1]):
-            # samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i])) #does it yield the correct result for sparse input matrices ?
-            if p_cov[i].__class__.__name__ == 'dia_matrix':
-                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i].toarray()))  # inefficient
-            elif p_cov[i].__class__.__name__ == 'ndarray':
-                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i]))
-            else:
-                print("Not implemented yet")
-                exit()
-
-        # self.samp = s.array([tmp/tmp.std() for tmp in samp_tmp]).transpose()
-
-        self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
+        # is his necessary????
+        # self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
         #self.samp = np.array(samp_tmp).T
 
-        return self.samp
+        return tmp
 
 
 class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):

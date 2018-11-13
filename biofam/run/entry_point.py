@@ -78,7 +78,7 @@ class entry_point(object):
             print("Views: view1, view2, ..., viewM")
             print("Features: feature1_view1, featureD_viewM\n")
             self.data_opts['views_names'] = [ "view" + str(m) for m in range(M) ]
-            self.data_opts['features_names'] = [ "feature%d_view%d" % (d,m) for m in range(M) for d in range(D[m]) ]
+            self.data_opts['features_names'] = [ ["feature%d_view%d" % (d,m) for d in range(D[m])] for m in range(M) ]
         else:
             self.data_opts['views_names']  = [k for k in features_names_dict.keys()]
             self.data_opts['features_names'] = [v for v in features_names_dict.values()]
@@ -276,7 +276,7 @@ class entry_point(object):
                 import cupy as cp
                 print("GPU mode activated\n")
             except ImportError:
-                print("GPU not found... switching to CPU mode")
+                print("GPU mode is activated, but GPU not found... switching to CPU mode")
                 print('For GPU mode, you need to install the CUPY library')
                 print ('1 - Make sure that you are running MOFA+ on a machine with an NVIDIA GPU')
                 print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html\n')

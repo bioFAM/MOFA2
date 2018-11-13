@@ -120,6 +120,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         return lb_p - lb_q
 
     def sample(self, distrib='P'):
+        # TO-DO: CURRENTLY ONLY SAMPLES FROM P
         #instead of overwriting sample, we should maybe change the dimensions of this node !
         P = Gamma(dim=(self.dim[1],1), a=self.P.params["a"][0,:], b=self.P.params["b"][0,:])
         self.samp = P.sample()

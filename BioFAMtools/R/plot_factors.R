@@ -61,7 +61,8 @@ plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", sh
   
   # Generate plot
   p <- ggplot(df, aes(x=group_by, y=value)) +
-    ggbeeswarm::geom_quasirandom(aes(color=color_by, shape=shape_by), size=dot_size) +
+    # ggbeeswarm::geom_quasirandom(aes(color=color_by, shape=shape_by), size=dot_size) +
+    ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size) +
     facet_wrap(~factor, scales="free") +
     ylab("Factor value") + xlab("") +
     theme(
@@ -155,7 +156,8 @@ plot_factor_scatter <- function(object, factors, show_missing = TRUE, dot_size=1
   
   # Generate plot  
   p <- ggplot(df, aes(x = x, y = y)) + 
-    geom_point(aes(color = color_by, shape = shape_by)) + 
+    # geom_point(aes(color = color_by, shape = shape_by)) + 
+    ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by))
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
       axis.text = element_text(size = rel(1), color = "black"), 

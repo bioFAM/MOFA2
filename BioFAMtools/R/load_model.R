@@ -225,8 +225,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     object <- subset_factors(object, order_factors)
   }
 
-  # Parse factors: Mask passenger samples
-  # object <- detect_passengers(object)
+  # Mask passenger samples
+  object <- detect_passengers(object)
 
   ############################
   ## Update previous models ##
