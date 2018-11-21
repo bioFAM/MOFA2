@@ -17,9 +17,12 @@ PseudoY: general class for pseudodata
 from __future__ import division
 import scipy as s
 import numpy.ma as ma
+import numpy as np
 
 from .variational_nodes import Unobserved_Variational_Node
 from .basic_nodes import Node
+from .Y_nodes import Y_Node
+from .Tau_nodes import TauD_Node
 from biofam.core.utils import sigmoid, lambdafn
 
 
@@ -246,10 +249,10 @@ class Tau_Jaakkola(Node):
     def getValue(self):
         return self.value
 
-    def getExpectation(self):
+    def getExpectation(self, expand=True):
         return self.getValue()
 
-    def getExpectations(self):
+    def getExpectations(self, expand=True):
         return { 'E':self.getValue(), 'lnE':s.log(self.getValue()) }
 
     def removeFactors(self, idx, axis=None):
@@ -329,7 +332,7 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
 # TODO in the data processing make sure that the data is centered around the zeros
 # TODO create initialiser
 # TODO build Markov Blanket in each sub-node. for the tau we need to give the right Y
-class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
+class Zero_Inflated_PseudoY_Jaakkola(PseudoY):
     """
     Mixed node containing:
         - a normal Y node for non-zero data
@@ -340,7 +343,7 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
     getExpectations returns the merged matrices
 
     Appropriate wiring is done in the markov blanket so that tau jaakola sees the
-    jaakola Y and normal tau sees the normal Y 
+    jaakola Y and normal tau sees the normal Y
     """
     def __init__(self, dim, obs, params=None, E=None):
         self.all_obs = obs
@@ -358,7 +361,7 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
         # initialise the jaakola node with nas and non zeros masked
         obs_jaakola = obs.copy()  # TODO if obs is already a masked array should we update mask ?
         obs_jaakola[self.nonzeros] = np.nan
-        self.jaakola_node = Bernoulli_PseudoY_Jaakkola(dim, obs_jaakola):
+        self.jaakola_node = Bernoulli_PseudoY_Jaakkola(dim, obs_jaakola)
 
         # Initialise a y node where the zeros and nas are masked
         obs_normal = obs.copy()
@@ -366,8 +369,8 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
         self.normal_node = Y_Node(dim, obs_normal)
 
 
-    def addMarkovBlanket(self, **kargs):
-        self.jaakola_node.addMarkovBlanket(**kargs)
+    def addMarkovBlanket(self, **kwargs):
+        self.jaakola_node.addMarkovBlanket(**kwargs)
 
         # NOTE here we make sure that the non-zero Y node sees the corresponding Tau
         if not hasattr(self.normal_node, 'markov_blanket'):
@@ -382,10 +385,13 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
             else:
                 self.normal_node.markov_blanket[k] = v
 
+    def updateParameters(self):
+        self.jaakola_node.updateParameters()
+
     def updateExpectations(self):
         self.jaakola_node.updateExpectations()
 
-    def getExpectation(self):
+    def getExpectation(self, expand=True):
         E = self.normal_node.getExpectation()
         pseudo_y = self.jaakola_node.getExpectation()
         E[self.zeros] = pseudo_y[self.zeros]
@@ -401,7 +407,7 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
         return tmp1 + tmp2
 
 
-class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Node):
+class Zero_Inflated_Tau_Jaakkola(Node):
     """
     Mixed node containing:
         - a jaakola tau
@@ -414,10 +420,11 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Node):
         # TODO what is the value in tau jaakola
         # initialiser for the two nodes initialise different members which are
         # all contained in the Zero_Inflated_Tau_Jaakkola node
-        self.tau_jaakola = Tau_Jaakkola(dim, value)
+        N = len(groups)
+        self.tau_jaakola = Tau_Jaakkola((N, dim[1]), value)
         self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, groups_dic, qE)
 
-    def addMarkovBlanket(self, **kargs):
+    def addMarkovBlanket(self, **kwargs):
         if not hasattr(self.tau_jaakola, 'markov_blanket'):
             self.tau_jaakola.markov_blanket = {}
 
@@ -455,7 +462,7 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Node):
         # Update expectatins of self.Q using a gamma node
         TauD_Node.updateExpectations(self)
 
-    def getExpectations(self):
+    def getExpectations(self, expand=True):
         # Get expectations from separate nodes
         E = self.tau_normal.getExpectations(self, expand=True)
         tau_jk = self.tau_jaakola.getExpectations(self, expand=True)
