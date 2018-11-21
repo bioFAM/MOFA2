@@ -322,3 +322,265 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         lb[mask] = 0.
 
         return lb.sum()
+
+#-------------------------------------------------------------------------------
+# Zero inflated data: mixed node implementation
+#-------------------------------------------------------------------------------
+# TODO in the data processing make sure that the data is centered around the zeros
+# TODO create initialiser
+# TODO build Markov Blanket in each sub-node. for the tau we need to give the right Y
+class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
+    """
+    Mixed node containing:
+        - a normal Y node for non-zero data
+        - a Bernoulli node for zero data
+
+    Zeros should be replaced by pseudo data as in Jaakola
+    Non-Zero data should remain as such
+    getExpectations should globally return a merged matrix
+    For tau another mixed node is needed which should be able to access the internal
+    nodes in Zero_Inflated_PseudoY_Jaakkola
+    """
+    def __init__(self, dim, obs, params=None, E=None):
+        self.all_obs = obs
+        if type(self.all_obs) != ma.MaskedArray:
+            self.all_obs = ma.masked_invalid(self.all_obs)
+
+        # identify the zeros, nonzeros and nas and store their positions in masks
+        self.zeros = (self.all_obs == 0)
+        self.nonzeros = ~self.zeros # this masks includes the nas
+        self.nas = ma.getmask(self.all_obs)
+
+        self.sparsity = self.zeros.sum()/(self.zeros.sum() + self.nonzeros.sum())
+        print('using zero inflated noise model with sparsity ', self.sparsity)
+
+        # initialise the jaakola node with nas and non zeros masked
+        obs_jaakola = obs.copy()  # TODO if obs is already a masked array should we update mask ?
+        obs_jaakola[self.nonzeros] = np.nan
+        self.jaakola_node = Bernoulli_PseudoY_Jaakkola(dim, obs_jaakola):
+
+        # Initialise a y node where the zeros and nas are masked
+        obs_normal = obs.copy()
+        obs_normal[self.zeros]= np.nan  # nas are already masked so no need to
+        self.normal_node = Y_Node(dim, obs_normal)
+
+
+    def addMarkovBlanket(self, **kargs):
+        self.jaakola_node.addMarkovBlanket(**kargs)
+
+        # NOTE here we make sure that the non-zero Y node sees the corresponding Tau
+        if not hasattr(self.normal_node, 'markov_blanket'):
+            self.normal_node.markov_blanket = {}
+
+        for k,v in kwargs.items():
+            if k in self.normal_node.markov_blanket.keys():
+                print("Error: " + str(k) + " is already in the markov blanket of " + str(self.normal_node))
+                exit(1)
+            elif k == 'Tau':
+                self.normal_node.markov_blanket[k] = v.tau_normal
+            else:
+                self.normal_node.markov_blanket[k] = v
+
+    def updateExpectations(self):
+        self.jaakola_node.updateExpectations()
+
+    def getExpectation(self):
+        E = self.normal_node.getExpectation()
+        pseudo_y = self.jaakola_node.getExpectation()
+        E[self.zeros] = pseudo_y[self.zeros]
+
+        return E
+
+    def calculateELBO(self):
+        # as the values used by the jaakola node and the gamma node are rightly masked
+        # we can just sum the two contributions (double check that this works ofc)
+        tmp1 = Bernoulli_PseudoY_Jaakkola.calculateELBO(self)
+        tmp2 = Y_Node.calculateELBO(self)
+
+        return tmp1 + tmp2
+
+
+class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Node):
+    """
+    Mixed node containing:
+        - a jaakola tau
+        - a normal tau
+
+    Both nodes are initialised normally but we need to do the right wiring in the markov blanket
+    """
+
+    def __init__(self, dim, value, pa, pb, qa, qb, groups, groups_dic, qE=None):
+        # TODO what is the value in tau jaakola
+        # initialiser for the two nodes initialise different members which are
+        # all contained in the Zero_Inflated_Tau_Jaakkola node
+        self.tau_jaakola = Tau_Jaakkola(dim, value)
+        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, groups_dic, qE)
+
+    def addMarkovBlanket(self, **kargs):
+        if not hasattr(self.tau_jaakola, 'markov_blanket'):
+            self.tau_jaakola.markov_blanket = {}
+
+        for k,v in kwargs.items():
+            if k in self.tau_jaakola.markov_blanket.keys():
+                print("Error: " + str(k) + " is already in the markov blanket of " + str(self.tau_jaakola))
+                exit(1)
+            elif k == 'Y':
+                self.tau_jaakola.markov_blanket[k] = v.normal_node
+            else:
+                self.tau_jaakola.markov_blanket[k] = v
+
+        if not hasattr(self.tau_normal, 'markov_blanket'):
+            self.tau_normal.markov_blanket = {}
+
+        for k,v in kwargs.items():
+            if k in self.tau_normal.markov_blanket.keys():
+                print("Error: " + str(k) + " is already in the markov blanket of " + str(self.tau_normal))
+                exit(1)
+            elif k == 'Y':
+                self.tau_normal.markov_blanket[k] = v.jaakola_node
+            else:
+                self.tau_normal.markov_blanket[k] = v
+
+    def updateParameters(self):
+        # TODO need to make sure the zeros are masked for the Taud update. Should be ok as Taud will see the masked gaussian data
+        self.tau_jaakola.updateParameters()
+        self.tau_normal.updateParameters()
+
+    # TODO could be some duplicated operations here in the two tau nodes but not a big deal
+    def updateExpectations(self):
+        # Update self.value using Jaakolas update
+        Tau_Jaakkola.updateExpectations(self)
+
+        # Update expectatins of self.Q using a gamma node
+        TauD_Node.updateExpectations(self)
+
+    def getExpectations(self):
+        # Get expectations from separate nodes
+        E = self.tau_normal.getExpectations(self, expand=True)
+        tau_jk = self.tau_jaakola.getExpectations(self, expand=True)
+
+        # Merge
+        zeros = self.markov_blanket['Y'].zeros
+        E['E'][zeros], E['lnE'][zeros] = tau_jk['E'][zeros], tau_jk['lnE'][zeros]
+
+        return E
+
+    def calculateELBO():
+        # TODO make sure that tau_d masks the zeros
+        return self.tau_normal.calculateELBO()
+
+#-------------------------------------------------------------------------------
+# Zero inflated data
+#-------------------------------------------------------------------------------
+# class Zero_Inflated_PseudoY_Jaakkola(Bernoulli_PseudoY_Jaakkola, Y_Node):
+#     """
+#     The node contains three types of observation (masked arrays):
+#         - all_obs where initial NAs are masked
+#         - obs where NAs AND non zeros are masked, used by the jaakola node methods
+#         - values where NAs AND zeros are masked, used by the Gamma node methods
+#     """
+#     def __init__(self, dim, obs, params=None, E=None):
+#         self.all_obs = obs
+#         if type(self.all_obs) != ma.MaskedArray:
+#             self.all_obs = ma.masked_invalid(self.all_obs)
+#
+#         # identify the zeros, nonzeros and nas and store their positions in masks
+#         self.zeros = (self.all_obs == 0)
+#         self.nonzeros = ~self.zeros # this masks includes the nas
+#         self.nas = ma.getmask(self.all_obs)
+#
+#         self.sparsity = self.zeros.sum()/(self.zeros.sum() + self.nonzeros.sum())
+#         print('using zero inflated noise model with parsity ', self.sparsity)
+#
+#         # initialise the jaakola node with nas and non zeros masked
+#         obs_jaakola = obs.copy()  # TODO if obs is already a masked array should we update mask ?
+#         obs_jaakola[self.nonzeros] = np.nan
+#         Bernoulli_PseudoY_Jaakkola.__init__(self, dim, obs_jaakola, params, E)
+#
+#         # Initialise a y node where the zeros and nas are masked
+#         vals_gamma = self.obs.copy()
+#         vals_gamma[self.zeros]= np.nan  # nas are already masked so no need to
+#         Y_Node.__init__(self, dim, vals_gamma)
+#
+#         # This option enables the node to return Specific parts of the data when necessary
+#         # either all, zeros or nonzeros
+#         self.E_option == 'all'
+#
+#     def updateExpectations(self):
+#         # update expectations as if all observed data was binary
+#         Bernoulli_PseudoY_Jaakkola.updateExpectations(self)
+#
+#     # set an option for returning the expection
+#     def set_E_option(self, option):
+#         self.E_option = option
+#
+#     def getExpectation(self):
+#         # for all non zero values, replace by the real observations
+#         if self.E_option == 'all':
+#             # TODO check masks ok
+#             E = self.obs.copy()
+#             E[self.nonzeros] = self.all_obs[self.non_zeros]
+#
+#         if self.E_option == 'zeros':
+#             E = self.obs
+#
+#         if self.E_option == 'nonzeros':
+#             E = self.value
+#
+#         return E
+#
+#     def calculateELBO(self):
+#         # as the values used by the jaakola node and the gamma node are rightly masked
+#         # we can just sum the two contributions
+#         tmp1 = Bernoulli_PseudoY_Jaakkola.calculateELBO(self)
+#         tmp2 = Y_Node.calculateELBO(self)
+#
+#         return tmp1 + tmp2
+#
+# class Zero_Inflated_Tau_Jaakkola(Tau_Jaakkola, TauD_Node):
+#     """
+#     """
+#     def __init__(self, dim, value, pa, pb, qa, qb):
+#         # initialiser for the two nodes initialise different members which are
+#         # all contained in the Zero_Inflated_Tau_Jaakkola node
+#         Tau_Jaakkola.__init__(self, dim, value)
+#         TauD_Node.__init__(self, dim, pa, pb, qa, qb)
+#         # TODO have a tau_n option too
+#
+#     def updateParameters():
+#         # TODO need to make sure the zeros are masked for the Taud update ...
+#         Y = self.markov_blanket['Y']
+#         Y.set_E_option('nonzeros')
+#         TauD_Node.updateParameters(self)
+#         Y.set_E_option('all')
+#
+#     def updateExpectations(self):
+#         # Update self.value using Jaakolas update
+#         Tau_Jaakkola.updateExpectations(self)
+#
+#         # Update expectatins of self.Q using a gamma node
+#         TauD_Node.updateExpectations(self)
+#
+#     def getExpectations():
+#         # expand E from the gamma node
+#         taud_exp = TauD_Node.getExpectations(self, expand=True)
+#         # return {'E': expanded_E, 'lnE': expanded_lnE}
+#
+#         # merge E from
+#
+#         self.E[self.zeros] = self.E_bk[self.zeros]
+#         return { 'E':self.getValue(), 'lnE':s.log(self.getValue()) }
+#
+#     def calculateELBO():
+#         # TODO make sure that tau_d masks the zeros
+#         Y.set_E_option('nonzeros')
+#         tmp =  TauD_Node.calculateELBO(self)
+#         Y.set_E_option('all')
+#         return tmp
+#
+#     def getValue(self):
+#         return self.getExpectation()
+#
+#     def getExpectation(self):
+#         # TODO reimplement from getExpectations
+#         return self.getValue()

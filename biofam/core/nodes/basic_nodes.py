@@ -28,7 +28,7 @@ class Node(object):
             for k,v in kwargs.items():
                 if k in self.markov_blanket.keys():
                     print("Error: " + str(k) + " is already in the markov blanket of " + str(self))
-                    exit()
+                    exit(1)
                 else:
                     self.markov_blanket[k] = v
         else:
