@@ -195,9 +195,9 @@ class initModel(object):
 
             # Initialise the node
             W_list[m] = W_Node(
-                dim=(self.D[m], self.K), 
-                pmean=pmean_m, pvar=pvar, 
-                qmean=qmean_m, qvar=qvar_m, 
+                dim=(self.D[m], self.K),
+                pmean=pmean_m, pvar=pvar,
+                qmean=qmean_m, qvar=qvar_m,
                 qE=qE, qE2=qE2
             )
 
@@ -357,6 +357,11 @@ class initModel(object):
                 # tau_list[m] = Tau_Jaakkola(dim=(self.D[m],), value=0.25)
                 tau_list[m] = Tau_Jaakkola(dim=((self.N, self.D[m])), value=1.)
 
+            elif self.lik[m] == "zero_inflated":
+                # contains parameters to initialise both normal and jaakola tau
+                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((self.N, self.D[m])), value=1.,
+                                                         pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
+
             # Gaussian noise model for continuous data
             elif self.lik[m] == "gaussian":
                 tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
@@ -373,6 +378,8 @@ class initModel(object):
                 Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
             elif self.lik[m]=="bernoulli":
                 Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
+            elif self.lik[m]=="zero_inflated":
+                Y_list[m] =  Zero_Inflated_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=None)
         self.Y = Multiview_Mixed_Node(self.M, *Y_list)
         self.nodes["Y"] = self.Y
 

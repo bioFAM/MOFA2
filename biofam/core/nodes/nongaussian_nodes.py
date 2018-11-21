@@ -335,11 +335,12 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Node):
         - a normal Y node for non-zero data
         - a Bernoulli node for zero data
 
-    Zeros should be replaced by pseudo data as in Jaakola
-    Non-Zero data should remain as such
-    getExpectations should globally return a merged matrix
-    For tau another mixed node is needed which should be able to access the internal
-    nodes in Zero_Inflated_PseudoY_Jaakkola
+    Zeros are replaced by pseudo data as in Jaakola
+    Non-Zero data remain as such
+    getExpectations returns the merged matrices
+
+    Appropriate wiring is done in the markov blanket so that tau jaakola sees the
+    jaakola Y and normal tau sees the normal Y 
     """
     def __init__(self, dim, obs, params=None, E=None):
         self.all_obs = obs
@@ -406,7 +407,7 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Node):
         - a jaakola tau
         - a normal tau
 
-    Both nodes are initialised normally but we need to do the right wiring in the markov blanket
+    Both nodes are initialised normally and the right wiring is done the markov blanket
     """
 
     def __init__(self, dim, value, pa, pb, qa, qb, groups, groups_dic, qE=None):

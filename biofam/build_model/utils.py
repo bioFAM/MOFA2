@@ -149,7 +149,12 @@ def process_data(data, data_opts, samples_groups):
             parsed_data[m] = mask_data(parsed_data[m], data_opts['mask'][m])
 
         # Centering and scaling is only appropriate for gaussian data
-        if data_opts["likelihoods"][m] is "gaussian":
+        if data_opts["likelihoods"][m] in ["gaussian", "zero_inflated"]:
+
+            # mask zeros if zero infalted likelihood
+            if data_opts["likelihoods"][m] is "zero_inflated":
+                zeros_mask = parsed_data[m] == 0
+                parsed_data[m][zeros_mask] = np.nan
 
             # Center features
             if data_opts['center_features_per_group']:
@@ -158,7 +163,7 @@ def process_data(data, data_opts, samples_groups):
                     parsed_data[m][filt] -= np.nanmean(parsed_data[m][filt],axis=0)
             else:
                 parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
-            
+
             # Scale views to unit variance
             if data_opts['scale_views']:
                 parsed_data[m] /= np.nanstd(parsed_data[m])
@@ -171,6 +176,10 @@ def process_data(data, data_opts, samples_groups):
             # Scale features to unit variance
             if data_opts['scale_features']:
                 parsed_data[m] /= np.nanstd(parsed_data[m], axis=0)
+
+            # reset zeros if zero infalted likelihood
+            if data_opts["likelihoods"][m] is "zero_inflated":
+                parsed_data[m][zeros_mask] = 0.
 
 
         # Convert data to numpy array format
