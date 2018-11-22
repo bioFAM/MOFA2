@@ -5,8 +5,8 @@
 \alias{impute_missing}
 \title{Impute missing values from a fitted BioFAModel}
 \usage{
-impute_missing(object, views = "all", groups = "all", factors = "all",
-  type = c("inRange", "response", "link"))
+impute_missing(object, views = "all", groups = "all",
+  factors = "all", type = c("inRange", "response", "link"))
 }
 \arguments{
 \item{object}{a \code{\link{BioFAM}} object.}

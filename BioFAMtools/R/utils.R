@@ -27,7 +27,7 @@
   nested_list
 }
 
-detect_passengers <- function(object, views = "all", groups = "all", factors = "all", r2_threshold = 0.001) {
+detect_passengers <- function(object, views = "all", groups = "all", factors = "all") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -64,22 +64,41 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
   
   # (...)  
   data <- get_training_data(object, views, groups)
-  nomissing <- lapply(groups, function(g) { 
+  missing <- lapply(groups, function(g) { 
     tmp <- lapply(views, function(m) {
-      names(which(apply(data[[m]][[g]],2,function(x) !all(is.na(x)))))
+      names(which(apply(data[[m]][[g]],2,function(x) all(is.na(x)))))
     }); names(tmp) <- views
     tmp
-  }); names(nomissing) <- groups
+  }); names(missing) <- groups
   
   # (...)  
   for (k in factors) {
-    for (p in groups) {
-      max.view <- colnames(r2[[p]][,which.max(r2[[p]][k,]), drop=F])
-      top_samples <- names(tail(sort(abs(get_factors(object, groups=p, factors=k)[[1]][,1])),n=10))
-      if (!any(top_samples %in% nomissing[[p]][[max.view]])) {
-        missing_samples <- samples_names(object)[[p]][!samples_names(object)[[p]] %in% nomissing[[p]][[max.view]]]
-        Z[[p]][missing_samples, k] <- rep(NA,length(missing_samples))
+    for (g in groups) {
+      
+      active.view <- colnames(r2[[g]][,which.max(r2[[g]][k,]), drop=F])
+      # r2_threshold <- 0.01
+      # active.views <- colnames(r2[[g]][,which(r2[[g]][k,]>=r2_threshold), drop=F])
+      
+      samples <- samples_names(object)[[g]]
+      
+      z <- get_factors(object, groups="all", factors=k)
+      
+      max.value1 <- 2.5*max(abs(sapply(z,sd,na.rm=T)))
+      max.value2 <- 5*max(abs(sapply(z,sd,na.rm=T)))
+
+      
+      ##
+      
+      
+      passengers1 <- names(which(abs(z[[g]][,1]) >= max.value1))
+      passengers1 <- passengers1[passengers1 %in% missing[[g]][[active.view]]]
+      passengers2 <- names(which(abs(z[[g]][,1]) >= max.value2))
+      passengers <- union(passengers1,passengers2)
+      
+      if (length(passengers)>=0) {
+        Z[[g]][passengers,k] <- rep(NA,length(passengers))
       }
+      
     }
   }
   
@@ -133,6 +152,13 @@ return(model)
   }
 }
 
+.get_nodes_types <- function() {
+  nodes_types <- list(
+    multiview_nodes  = c("W", "AlphaW", "ThetaW"),
+    multigroup_nodes = c("Z", "AlphaZ", "ThetaZ"),
+    twodim_nodes     = c("Y", "Tau")
+  )
+}
 
 setClass("matrix_placeholder", 
          slots=c(rownames = "ANY",

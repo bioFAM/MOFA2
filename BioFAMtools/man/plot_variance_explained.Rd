@@ -16,3 +16,6 @@ plot_variance_explained(object, cluster = TRUE, ...)
 \value{
 ggplot object
 }
+\description{
+Plot variance explained by the model
+}

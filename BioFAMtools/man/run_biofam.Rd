@@ -4,16 +4,12 @@
 \alias{run_biofam}
 \title{train a BioFAM model}
 \usage{
-run_biofam(object, dir_options)
+run_biofam(object, outfile)
 }
 \arguments{
 \item{object}{an untrained \code{\link{bioFAMmodel}} object}
 
-\item{dir_options}{list with I/O options, it should contain at least two entries: \cr
-\itemize{
- \item{\strong{data_dir}:}{ input directory where the matrices as stored as text files with row and column names and tab delimiter. }
- \item{\strong{outfile}:}{ output file where the model is going to be stored as an hdf5 file.}
-}}
+\item{outfile}{output file (hdf5 format)}
 }
 \value{
 a trained \code{\link{bioFAMmodel}} object

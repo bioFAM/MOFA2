@@ -4,15 +4,17 @@
 \alias{plot_factor_scatter}
 \title{Scatterplot of two latent factors}
 \usage{
-plot_factor_scatter(object, factors, groups = "all", color_by = NULL,
-  shape_by = NULL, name_color = "", name_shape = "",
-  show_missing = TRUE)
+plot_factor_scatter(object, factors, show_missing = TRUE, dot_size = 1,
+  color_by = NULL, shape_by = NULL, color_name = "",
+  shape_name = "")
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
 
 \item{factors}{a vector of length two with the factors to plot. Factors can be specified either as a characters
 using the factor names, or as numeric with the index of the factors}
+
+\item{show_missing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
 
 \item{color_by}{specifies groups or values used to color the samples. 
 This can be either 
@@ -27,11 +29,9 @@ a character giving the name of a feature present in the training data,
 a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 or a vector of the same length as the number of samples specifying discrete groups.}
 
-\item{name_color}{name for color legend (usually only used if color_by is not a character itself)}
+\item{color_name}{name for color legend (usually only used if color_by is not a character itself)}
 
-\item{name_shape}{name for shape legend (usually only used if shape_by is not a character itself)}
-
-\item{show_missing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
+\item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself)}
 }
 \value{
 Returns a \code{ggplot2} object

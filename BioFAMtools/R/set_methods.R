@@ -162,13 +162,20 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             # if (length(value) != length(object@training_data))
             #   stop("View names do not match the number of views in the training data")
             
+            # Define types of nodes
+            nodes_types <- list(
+              multiview_nodes  = c("W", "AlphaW", "ThetaW"),
+              multigroup_nodes = c("Z", "AlphaZ", "ThetaZ"),
+              twodim_nodes     = c("Y", "Tau")
+            )
+            
             # Set view names in data options
             object@data_options$views_names <- value
+            names(object@data_options$features_names) <- value
             
             # Set view names in expectations
             for (node in names(object@expectations)) {
-              if (node %in% object@model_options$nodes$multiview_nodes |
-                  node %in% object@model_options$nodes$twodim_nodes) {
+              if (node %in% nodes_types$multiview_nodes | node %in% nodes_types$twodim_nodes) {
                 if (class(object@expectations[[node]]) == "list" & length(object@expectations[[node]]) == object@dimensions["M"]) {
                   names(object@expectations[[node]]) <- value 
                 }
@@ -219,11 +226,14 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             # if (length(value) != length(object@training_data[[1]]))
             #   stop("Group names do not match the number of groups in the training data")
             
+            # Define types of nodes
+            nodes_types <- .get_nodes_types()
+
             # Set sample group names in data options
             object@data_options$samples_groups <- value
             
             # Set sample group names in expectations
-            for (node in object@model_options$nodes$multigroup_nodes) {
+            for (node in nodes_types$multigroup_nodes) {
               if (node %in% names(object@expectations)) {
                 if (class(object@expectations[[node]]) == "list" & 
                     length(object@expectations[[node]]) == object@dimensions["P"]) {
@@ -231,7 +241,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
                 }
               }
             }
-            for (node in object@model_options$nodes$twodim_nodes) {
+            for (node in nodes_types$twodim_nodes) {
               if (node %in% names(object@expectations)) {
                 for (m in 1:length(object@expectations$Y)) {
                   if (class(object@expectations[[node]][[m]]) == "list" & 
@@ -260,11 +270,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
 .set_expectations_names <- function(object, entity, values, views="all", groups="all") {
   
   # Define types of nodes
-  nodes_types <- list(
-    multiview_nodes  = c("W", "AlphaW", "ThetaW"),
-    multigroup_nodes = c("Z", "AlphaZ", "ThetaZ"),
-    twodim_nodes     = c("Y", "Tau")
-  )
+  nodes_types <- .get_nodes_types()
   
   # Define what entities should be updated for which nodes
   #   Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors

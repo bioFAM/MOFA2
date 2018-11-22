@@ -2,11 +2,13 @@
 % Please edit documentation in R/AllGenerics.R
 \name{imputed_data}
 \alias{imputed_data}
-\alias{imputed_data}
 \alias{imputed_data<-}
 \title{imputed_data: set and retrieve imputed data}
 \usage{
 imputed_data(object)
 
 .imputed_data(object) <- value
+}
+\description{
+imputed_data: set and retrieve imputed data
 }

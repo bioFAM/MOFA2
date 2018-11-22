@@ -3,7 +3,6 @@
 \docType{methods}
 \name{samples_names}
 \alias{samples_names}
-\alias{samples_names}
 \alias{samples_names<-}
 \alias{samples_names,BioFAModel-method}
 \alias{samples_names<-,BioFAModel,list-method}
@@ -24,4 +23,7 @@ samples_names(object) <- value
 }
 \value{
 list of character vectors with the sample names for each group
+}
+\description{
+samples_names: set and retrieve sample names
 }

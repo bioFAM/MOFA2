@@ -2,11 +2,13 @@
 % Please edit documentation in R/AllGenerics.R
 \name{input_data}
 \alias{input_data}
-\alias{input_data}
 \alias{inputData<-}
 \title{Set and retrieve input data}
 \usage{
 input_data(object)
 
 .input_data(object) <- value
+}
+\description{
+Set and retrieve input data
 }

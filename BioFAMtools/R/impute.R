@@ -18,7 +18,7 @@
 #' These representation can be used to do predictions using the equation \code{Y = WX}. For more details read the supplementary methods of the manuscript. \cr
 #' This method fills the \code{ImputedData} slot by replacing the missing values in the input data with the model predictions.
 #' @export
-impute_missing <- function(object, views = "all", groups = "all", factors = "all", type = c("inRange", "response", "link")) {
+impute <- function(object, views = "all", groups = "all", factors = "all", type = c("inRange", "response", "link")) {
   
   # Get views and groups
   views  <- .check_and_get_views(object, views)

@@ -151,6 +151,7 @@ get_default_data_options <- function(object) {
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the initial number of factors. 
 #'  If you want to learn the number of factors automatically we recommend setting this to a large value, around 50. Default is 25.}
+#'  }
 #' @return Returns a list with the default model options, which have to be passed as an argument to \code{\link{prepareMOFA}}
 #' @export
 get_default_model_options <- function(object) {

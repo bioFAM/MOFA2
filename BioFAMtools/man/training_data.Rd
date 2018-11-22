@@ -2,11 +2,13 @@
 % Please edit documentation in R/AllGenerics.R
 \name{training_data}
 \alias{training_data}
-\alias{training_data}
 \alias{training_data<-}
 \title{training_data: set and retrieve training data}
 \usage{
 training_data(object)
 
 .training_data(object) <- value
+}
+\description{
+training_data: set and retrieve training data
 }

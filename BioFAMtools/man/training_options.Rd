@@ -2,11 +2,13 @@
 % Please edit documentation in R/AllGenerics.R
 \name{training_options}
 \alias{training_options}
-\alias{training_options}
 \alias{training_options<-}
 \title{training_options: set and retrieve training opts}
 \usage{
 training_options(object)
 
 .training_options(object) <- value
+}
+\description{
+training_options: set and retrieve training opts
 }

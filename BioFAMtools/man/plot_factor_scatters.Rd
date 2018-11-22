@@ -4,9 +4,9 @@
 \alias{plot_factor_scatters}
 \title{Pairwise scatterplots of multiple latent factors}
 \usage{
-plot_factor_scatters(object, factors = "all", groups = "all",
-  show_missing = TRUE, color_by = NULL, name_color = "",
-  shape_by = NULL, name_shape = "")
+plot_factor_scatters(object, factors = "all", show_missing = TRUE,
+  dot_size = 1, color_by = NULL, color_name = "", shape_by = NULL,
+  shape_name = "")
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
@@ -23,7 +23,7 @@ a character giving the name of a feature present in the training data,
 a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
 
-\item{name_color}{name for color legend (usually only used if color_by is not a character itself)}
+\item{color_name}{name for color legend (usually only used if color_by is not a character itself)}
 
 \item{shape_by}{specifies groups or values used to shape the samples. 
 This can be either: 
@@ -31,7 +31,7 @@ a character giving the name of a feature present in the training data,
 a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
 or a vector of the same length as the number of samples specifying discrete groups.}
 
-\item{name_shape}{name for shape legend (usually only used if shape_by is not a character itself)}
+\item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself)}
 }
 \value{
 \code{ggplot2} object

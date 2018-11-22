@@ -8,3 +8,6 @@
 
 \item{viz_weight}{: option relevant only if variables are features names of the biofam model. If true, plot weights and not correlation across all groups in the first figures}
 }
+\description{
+Plot weights and correlations bewteen factors and expressions of the variables in each view for both groups.
+}

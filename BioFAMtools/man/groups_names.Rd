@@ -3,7 +3,6 @@
 \docType{methods}
 \name{groups_names}
 \alias{groups_names}
-\alias{groups_names}
 \alias{groups_names<-}
 \alias{groups_names,BioFAModel-method}
 \alias{groups_names<-,BioFAModel,character-method}
@@ -24,4 +23,7 @@ groups_names(object) <- value
 }
 \value{
 character vector with the names for each view
+}
+\description{
+groups_names: set and retrieve view names
 }
