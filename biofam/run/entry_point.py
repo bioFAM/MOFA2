@@ -94,7 +94,7 @@ class entry_point(object):
         else:
             self.data_opts['groups_names'] = [k for k in samples_names_dict.keys()]
             self.data_opts['samples_names']  = [v for l in samples_names_dict.values() for v in l]
-        
+
         # Set samples groups (list with dimensionality N where each row is the corresponding group name)
         # self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
 
@@ -104,7 +104,7 @@ class entry_point(object):
             self.data_opts['samples_groups'].append( [self.data_opts['groups_names'][g]]*N[g] )
         self.data_opts['samples_groups'] = np.concatenate(self.data_opts['samples_groups'])
 
-        
+
         # If everything successful, print verbose message
         for m in range(M):
             for g in range(G):
@@ -306,7 +306,7 @@ class entry_point(object):
             # Insert ThetaW after W if Spike and Slab prior on W
             if self.model_opts['sl_w']:
                 ix = schedule.index("W"); schedule.insert(ix+1, 'ThetaW')
-            
+
             # Insert ThetaZ after Z if Spike and Slab prior on Z
             if self.model_opts['sl_z']:
                 ix = schedule.index("Z"); schedule.insert(ix+1, 'ThetaZ')
@@ -318,7 +318,7 @@ class entry_point(object):
             # Insert AlphaZ after Z if ARD prior on Z
             if self.model_opts['ard_z']:
                 ix = schedule.index("Z"); schedule.insert(ix+1, 'AlphaZ')
-                
+
         else:
             assert set(["Y","W","Z","Tau"]) <= set(schedule)
             if self.model_opts['ard_z']: assert "AlphaZ" in schedule
@@ -362,7 +362,7 @@ class entry_point(object):
         if isinstance(self.model_opts['likelihoods'], str):
             self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
-        assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli' and 'poisson'"
+        assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson",'zero_inflated'])), "Available likelihoods are 'gaussian','bernoulli', 'poisson', 'zero_inflated'"
 
     def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False, mask=None):
         """ Set data processing options """
@@ -377,7 +377,7 @@ class entry_point(object):
         # Define likelihoods
         if type(likelihoods) is not list:
           likelihoods = [likelihoods]
-        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"]))
+        assert set(likelihoods).issubset(set(["gaussian", "bernoulli", "poisson", "zero_inflated"]))
         self.data_opts["likelihoods"] = likelihoods
         M = len(likelihoods)
 
@@ -473,11 +473,16 @@ if __name__ == '__main__':
 
     ent = entry_point()
 
-    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
+
+    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_1.txt"]
     views =  ["view_A", "view_A", "view_B", "view_B"]
     groups = ["group_A", "group_B", "group_A", "group_B"]
 
-    lik = ["gaussian", "gaussian"]
+
+    lik = ["zero_inflated", "gaussian"]
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
