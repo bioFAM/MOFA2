@@ -60,6 +60,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     def updateParameters(self):
         # Collect expectations from other nodes
         # TODO sum(axis = 0) to change
+
         Y = self.markov_blanket["Y"].getExpectation()
 
         Wtmp = self.markov_blanket["W"].getExpectations()
