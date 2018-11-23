@@ -19,7 +19,7 @@ import scipy as s
 import numpy.ma as ma
 import numpy as np
 
-from .variational_nodes import Unobserved_Variational_Node
+from .variational_nodes import Unobserved_Variational_Node, Unobserved_Variational_Mixed_Node
 from .basic_nodes import Node
 from .Y_nodes import Y_Node
 from .Tau_nodes import TauD_Node
@@ -74,7 +74,8 @@ class PseudoY(Unobserved_Variational_Node):
         self.obs = ma.masked_invalid(self.obs)
 
     def getMask(self):
-        return ma.getmask(self.obs)
+        tmp = self.getExpectation()
+        return ma.getmask(tmp)
 
     def precompute(self, options=None):
         # Precompute some terms to speed up the calculations
@@ -84,11 +85,11 @@ class PseudoY(Unobserved_Variational_Node):
         print("Error: expectation updates for pseudodata node depend on the type of likelihood. They have to be specified in a new class.")
         exit()
 
-    def getExpectation(self):
+    def getExpectation(self, expand=True):
         return self.E
 
-    def getExpectations(self):
-        return { 'E':self.getExpectation() }
+    def getExpectations(self, expand=True):
+        return { 'E':self.getExpectation(expand) }
 
     def getObservations(self):
         return self.obs
@@ -332,7 +333,7 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
 # TODO in the data processing make sure that the data is centered around the zeros
 # TODO create initialiser
 # TODO build Markov Blanket in each sub-node. for the tau we need to give the right Y
-class Zero_Inflated_PseudoY_Jaakkola(PseudoY):
+class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
     """
     Mixed node containing:
         - a normal Y node for non-zero data
@@ -368,6 +369,8 @@ class Zero_Inflated_PseudoY_Jaakkola(PseudoY):
         obs_normal[self.zeros]= np.nan  # nas are already masked so no need to
         self.normal_node = Y_Node(dim, obs_normal)
 
+        self.nodes = [self.normal_node, self.jaakola_node]
+
 
     def addMarkovBlanket(self, **kwargs):
         self.jaakola_node.addMarkovBlanket(**kwargs)
@@ -385,6 +388,9 @@ class Zero_Inflated_PseudoY_Jaakkola(PseudoY):
             else:
                 self.normal_node.markov_blanket[k] = v
 
+    def getMask(self):
+        return self.nas
+
     def updateParameters(self):
         self.jaakola_node.updateParameters()
 
@@ -401,13 +407,13 @@ class Zero_Inflated_PseudoY_Jaakkola(PseudoY):
     def calculateELBO(self):
         # as the values used by the jaakola node and the gamma node are rightly masked
         # we can just sum the two contributions (double check that this works ofc)
-        tmp1 = Bernoulli_PseudoY_Jaakkola.calculateELBO(self)
-        tmp2 = Y_Node.calculateELBO(self)
+        tmp1 = self.jaakola_node.calculateELBO()
+        tmp2 = self.normal_node.calculateELBO()
 
         return tmp1 + tmp2
 
 
-class Zero_Inflated_Tau_Jaakkola(Node):
+class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Mixed_Node):
     """
     Mixed node containing:
         - a jaakola tau
@@ -424,7 +430,14 @@ class Zero_Inflated_Tau_Jaakkola(Node):
         self.tau_jaakola = Tau_Jaakkola((N, dim[1]), value)
         self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, groups_dic, qE)
 
+        self.nodes = [self.tau_jaakola, self.tau_normal]
+
     def addMarkovBlanket(self, **kwargs):
+        # create a marov blanket for tau containing the zero inflated Y
+        if not hasattr(self, 'markov_blanket'):
+            self.markov_blanket = {}
+
+        # create the markov blanket for the jaakola tau, wiring the corresonding Y
         if not hasattr(self.tau_jaakola, 'markov_blanket'):
             self.tau_jaakola.markov_blanket = {}
 
@@ -433,10 +446,12 @@ class Zero_Inflated_Tau_Jaakkola(Node):
                 print("Error: " + str(k) + " is already in the markov blanket of " + str(self.tau_jaakola))
                 exit(1)
             elif k == 'Y':
-                self.tau_jaakola.markov_blanket[k] = v.normal_node
+                self.tau_jaakola.markov_blanket[k] = v.jaakola_node
+                self.markov_blanket[k] = v # put the 'mixed' Y node in the mb of self
             else:
                 self.tau_jaakola.markov_blanket[k] = v
 
+        # create the markov blanket for the normal tau, wiring the corressponding Y
         if not hasattr(self.tau_normal, 'markov_blanket'):
             self.tau_normal.markov_blanket = {}
 
@@ -445,27 +460,14 @@ class Zero_Inflated_Tau_Jaakkola(Node):
                 print("Error: " + str(k) + " is already in the markov blanket of " + str(self.tau_normal))
                 exit(1)
             elif k == 'Y':
-                self.tau_normal.markov_blanket[k] = v.jaakola_node
+                self.tau_normal.markov_blanket[k] = v.normal_node
             else:
                 self.tau_normal.markov_blanket[k] = v
 
-    def updateParameters(self):
-        # TODO need to make sure the zeros are masked for the Taud update. Should be ok as Taud will see the masked gaussian data
-        self.tau_jaakola.updateParameters()
-        self.tau_normal.updateParameters()
-
-    # TODO could be some duplicated operations here in the two tau nodes but not a big deal
-    def updateExpectations(self):
-        # Update self.value using Jaakolas update
-        Tau_Jaakkola.updateExpectations(self)
-
-        # Update expectatins of self.Q using a gamma node
-        TauD_Node.updateExpectations(self)
-
     def getExpectations(self, expand=True):
         # Get expectations from separate nodes
-        E = self.tau_normal.getExpectations(self, expand=True)
-        tau_jk = self.tau_jaakola.getExpectations(self, expand=True)
+        E = self.tau_normal.getExpectations(expand=True)
+        tau_jk = self.tau_jaakola.getExpectations(expand=True)
 
         # Merge
         zeros = self.markov_blanket['Y'].zeros
@@ -473,7 +475,10 @@ class Zero_Inflated_Tau_Jaakkola(Node):
 
         return E
 
-    def calculateELBO():
+    def getExpectation(self, expand=True):
+        return self.getExpectations(expand)['E']
+
+    def calculateELBO(self):
         # TODO make sure that tau_d masks the zeros
         return self.tau_normal.calculateELBO()
 
