@@ -26,7 +26,7 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
         QExp['E'] = QExp['E']
         QExp['lnE'] = QExp['lnE']
         if expand:
-            D = self.markov_blanket['W'].D
+            D = self.markov_blanket['W'].dim[0]
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
             expanded_lnE = s.repeat(QExp['lnE'][None, :], D, axis=0)
             return {'E': expanded_E, 'lnE': expanded_lnE}

@@ -12,7 +12,7 @@ import pandas as pd
 import sys
 
 from biofam.core.nodes.variational_nodes import Variational_Node
-from .utils import nans
+from .utils import corr, nans
 
 class BayesNet(object):
     def __init__(self, dim, nodes):
@@ -118,23 +118,19 @@ class BayesNet(object):
         # TODO some function here to save simulated data
         pass
 
-    def removeInactiveFactors(self, by_r2=None):
+    def removeInactiveFactors(self, min_r2=None):
         """Method to remove inactive factors
 
         PARAMETERS
         ----------
-        by_r2: float
-            threshold to shut down factors based on the coefficient of determination
-
-        TO-DO: SEPARATE PER GROUP
+        min_r2: float
+            threshold to shut down factors based on a minimum variance explained per group and view
         """
         drop_dic = {}
 
-        if by_r2 is not None:
-
+        if min_r2 is not None:
             Z = self.nodes['Z'].getExpectation()
             W = self.nodes["W"].getExpectation()
-
             Y = self.nodes["Y"].getExpectation()
 
             all_r2 = s.zeros([self.dim['M'], self.dim['K']])
@@ -147,48 +143,30 @@ class BayesNet(object):
                 Ypred_m = s.dot(Z, W[m].T)
                 Ypred_m[mask] = 0.
 
-                # If there is an intercept term, regress it out, as it greatly decreases the fraction of variance explained by the other factors
-                # (THIS IS NOT IDEAL...)
-                if s.all(Z[:,0]==1.):
-                    # calculate the total R2
-                    SS = ((Y[m] - Y[m].mean())**2.).sum()
-                    Res = ((Ypred_m - Y[m])**2.).sum()
-                    R2_tot = 1. - Res/SS
+                # calculate the total R2
+                # SS = ((Y[m] - Y[m].mean(axis=0))**2.).sum()
+                SS = (Y[m]**2.).sum()
+                Res = ((Y[m] - Ypred_m)**2.).sum()
+                R2_tot = 1. - Res/SS
 
-                    # intercept_m = s.outer(Z[:,0], W[m][:,0].T)
-                    # intercept_m[mask] = 0. # DO WE NEED TO DO THIS???
-                    # Ypred_m -= intercept_m
+                # calculate R2 per factor
+                for k in range(self.dim['K']):
+                    Ypred_mk = s.outer(Z[:,k], W[m][:,k])
+                    Ypred_mk[mask] = 0.
+                    Res = ((Y[m] - Ypred_mk)**2.).sum()
+                    all_r2[m,k] = 1. - Res/SS
 
-                    all_r2[:,0] = 1.
-                    for k in range(1,self.dim['K']):
-                        # adding the intercept to the predictions with factor k
-                        Ypred_mk = s.outer(Z[:,k], W[m][:,k]) + s.outer(Z[:,0], W[m][:,0])
-                        Ypred_mk[mask] = 0.  # should not be necessary anymore as we do masked data - this ?
-                        Res = ((Y[m] - Ypred_mk)**2.).sum()
-                        R2_k = 1. - Res/SS
-                        all_r2[m,k] = R2_k/R2_tot
-                # No intercept term
-                else:
-                    # calculate the total R2
-                    SS = ((Y[m] - Y[m].mean())**2.).sum()
-                    Res = ((Ypred_m - Y[m])**2.).sum()
-                    R2_tot = 1. - Res/SS
+            # print(all_r2)
+            # print(s.absolute(corr(Z,Z)))
 
-                    for k in range(self.dim['K']):
-                        Ypred_mk = s.outer(Z[:,k], W[m][:,k])
-                        Ypred_mk[mask] = 0.
-                        Res = ((Y[m] - Ypred_mk)**2.).sum()
-                        R2_k = 1. - Res/SS
-                        all_r2[m,k] = R2_k/R2_tot
-
-            if by_r2 is not None:
-                drop_dic["by_r2"] = s.where( (all_r2>by_r2).sum(axis=0) == 0)[0]
-                if len(drop_dic["by_r2"]) > 0:
-                    drop_dic["by_r2"] = [ s.random.choice(drop_dic["by_r2"]) ]
+            drop_dic["min_r2"] = s.where( (all_r2>min_r2).sum(axis=0) == 0)[0]
+            if len(drop_dic["min_r2"]) > 0:
+                drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
 
         # Drop the factors
         drop = s.unique(s.concatenate(list(drop_dic.values())))
         if len(drop) > 0:
+            print("dropping a factor")
             for node in self.nodes.keys():
                 self.nodes[node].removeFactors(drop)
         self.dim['K'] -= len(drop)
@@ -234,7 +212,7 @@ class BayesNet(object):
 
                 # Print first iteration
                 if i==0:
-                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.nodes["Z"].K)))
+                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.dim['K'])))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -243,7 +221,7 @@ class BayesNet(object):
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
-                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.nodes["Z"].K)))
+                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
                     if delta_elbo<0:
                         print("Warning, lower bound is decreasing..."); print('\a')
                         #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))

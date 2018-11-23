@@ -403,7 +403,6 @@ class initModel(object):
         K: number of factors for which we learn theta. If no argument is given, we'll just use the
             total number of factors
         """
-
         # Sanity checks
         assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 

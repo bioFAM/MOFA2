@@ -250,7 +250,7 @@ class entry_point(object):
         self.data_opts['scale_covariates'] = False
 
     def set_train_options(self,
-        iter=5000, elbofreq=1, startSparsity=0, tolerance=0.01,
+        iter=5000, elbofreq=1, startSparsity=1, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
         schedule=None, gpu_mode=False
         ):
@@ -285,7 +285,7 @@ class entry_point(object):
         self.train_opts['gpu_mode'] = gpu_mode
 
         # Minimum Variance explained threshold to drop inactive factors
-        self.train_opts['drop'] = { "by_r2":float(dropR2) }
+        self.train_opts['drop'] = { "min_r2":float(dropR2) }
         self.train_opts['start_drop'] = int(startDrop)
         self.train_opts['freq_drop'] = int(freqDrop)
         if (dropR2>0 & verbose==True): print("\nDropping factors with minimum threshold of {0}% variance explained\n".format(dropR2))
