@@ -125,14 +125,12 @@ def loadData(data_opts, verbose=True):
 
 def process_data(data, data_opts, samples_groups):
 
-    # Make a deep copy of the data to avoid problems when parsing
-    # TO-DO: IS THIS REQUIRED???
-    parsed_data = deepcopy(data)
+    parsed_data = data
 
     for m in range(len(data)):
 
         # Convert to float32
-        parsed_data[m] = parsed_data[m].astype(np.float32)
+        # parsed_data[m] = parsed_data[m].astype(np.float32)
 
         # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
         parsed_data[m][parsed_data[m] == -2147483648] = np.nan
@@ -153,7 +151,7 @@ def process_data(data, data_opts, samples_groups):
 
             # mask zeros if zero infalted likelihood
             if data_opts["likelihoods"][m] is "zero_inflated":
-                zeros_mask = parsed_data[m] == 0
+                zeros_mask = parsed_data[m]==0
                 parsed_data[m][zeros_mask] = np.nan
 
             # Center features

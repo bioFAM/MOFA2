@@ -206,7 +206,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
             # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
             term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_gpu) + alphak_cp))
-
             term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
             # term4_tmp1 = fast_dot(tauYT,Z[:,k])
 

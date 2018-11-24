@@ -187,6 +187,7 @@ class entry_point(object):
 
         self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
+    # @profile
     def set_data_df(self, data):
         """Method to input the data in a long data.frame format
 
@@ -207,33 +208,32 @@ class entry_point(object):
         assert 'value' in data.columns, "'data' has to contain the column 'value'"
 
         # Define feature group names and sample group names
-        self.data_opts['views_names'] = data["feature_group"].unique()
-        self.data_opts['groups_names'] = data["sample_group"].unique()
+        self.data_opts['views_names'] = data["feature_group"].unique().tolist()
+        self.data_opts['groups_names'] = data["sample_group"].unique().tolist()
         self.data_opts['features_names'] = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
-        self.data_opts['samples_names'] = data["sample"].unique()
+        self.data_opts['samples_names'] = data["sample"].unique().tolist()
 
-        # Count the number of features per view
-        tmp = data[["feature","feature_group"]].drop_duplicates().groupby("feature_group")["feature"].nunique()
-        nfeatures = tmp.loc[self.data_opts['views_names']]
+        # Count the number of features per view and the number of samples per group
+        tmp_features = data[["feature","feature_group"]].drop_duplicates().groupby("feature_group")["feature"].nunique()
+        tmp_samples = data[["sample","sample_group"]].drop_duplicates().groupby("sample_group")["sample"].nunique()
 
         # Convert data frame to list of matrices
-        data['feature'] = data['feature'] + data['feature_group'] # make sure there are no duplicated feature names before pivoting
+        data['feature'] = data['feature'].astype(str) + data['feature_group'].astype(str) # make sure there are no duplicated feature names before pivoting
         data_matrix = data.pivot(index='sample', columns='feature', values='value')
 
-        # Sort rows and columns according to the sample and feature names
+        # Sort rows and columns of the matrix according to the sample and feature names
         features_names_tmp = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
         data_matrix = data_matrix.loc[self.data_opts['samples_names']]
         data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
-
         # Split into a list of views, each view being a matrix
+        nfeatures = tmp_features.loc[self.data_opts['views_names']]
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
                                             .set_index('sample').loc[self.data_opts['samples_names']] \
                                             .sample_group.tolist()
-
 
         # Define dimensionalities
         self.dimensionalities = {}
@@ -242,6 +242,12 @@ class entry_point(object):
         self.dimensionalities['P'] = len(self.data_opts['groups_names'])
         self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
+        # If everything successful, print verbose message
+        for m in self.data_opts['views_names']:
+            for g in self.data_opts['groups_names']:
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (m, g, tmp_samples[g], tmp_features[m]) )
+        print("\n")
+        
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
 

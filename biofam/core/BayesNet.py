@@ -160,7 +160,6 @@ class BayesNet(object):
                         Res_k = ((Y[m][gg,:] - Ypred_mk)**2.).sum()
                         all_r2[g][m,k] = 1. - Res_k/SS
 
-                    
             tmp = [ s.where( (all_r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
             drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
             # import pdb; pdb.set_trace()
