@@ -49,28 +49,31 @@ class Y_Node(Constant_Variational_Node):
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
-        # Get Mask
-        mask = ma.getmask(Y)
+        Tau["lnE"][self.mask] = 0
+
+        Y_gpu = gpu_utils.array(Y)
+        Z_gpu = gpu_utils.array(Z)
+        Wt_gpu = gpu_utils.array(W.T)
 
         # Compute ELBO
-        ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
+        ZW =  Z_gpu.dot(Wt_gpu)
         ZW[self.mask] = 0.
 
-        term1 = gpu_utils.square(gpu_utils.array(Y))
+        term1 = gpu_utils.square(Y_gpu)
 
         term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
         term2[self.mask] = 0
 
-        term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
+        term3 = - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu))
         term3[self.mask] = 0.
         term3 += gpu_utils.square(ZW)
 
-        ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
+        ZW *= Y_gpu  # WARNING ZW becomes ZWY
         term4 = 2.*ZW
 
         tmp = 0.5 * (term1 + term2 + term3 - term4)
 
-        Tau["lnE"][self.mask] = 0
+        
         lik = self.likconst + 0.5 * gpu_utils.sum(gpu_utils.array(Tau["lnE"])) -\
               gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
 

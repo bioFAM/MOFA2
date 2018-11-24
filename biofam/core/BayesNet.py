@@ -45,7 +45,6 @@ class BayesNet(object):
         assert "tolerance" in train_opts, "'tolerance' not found in the training options dictionary"
         assert "forceiter" in train_opts, "'forceiter' not found in the training options dictionary"
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
-        print(train_opts["schedule"])
         assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
         assert "gpu_mode" in train_opts, "'gpu_mode' not found in the training options dictionary"
 
@@ -133,7 +132,10 @@ class BayesNet(object):
             W = self.nodes["W"].getExpectation()
             Y = self.nodes["Y"].getExpectation()
 
-            all_r2 = s.zeros([self.dim['M'], self.dim['K']])
+            # Get groups
+            groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
+
+            all_r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['P']
             for m in range(self.dim['M']):
 
                 # Fetch the mask for missing vlaues
@@ -143,30 +145,32 @@ class BayesNet(object):
                 Ypred_m = s.dot(Z, W[m].T)
                 Ypred_m[mask] = 0.
 
-                # calculate the total R2
-                # SS = ((Y[m] - Y[m].mean(axis=0))**2.).sum()
-                SS = (Y[m]**2.).sum()
-                Res = ((Y[m] - Ypred_m)**2.).sum()
-                R2_tot = 1. - Res/SS
+                for g in range(self.dim['P']):
+                    gg = groups==g
+                    # calculate the total R2
+                    # # SS = ((Y[m] - Y[m].mean(axis=0))**2.).sum()
+                    SS = s.square(Y[m][gg,:]).sum()
+                    # Res = ((Y[m][g,] - Ypred_m[g,])**2.).sum()
+                    # R2_tot = 1. - Res/SS
 
-                # calculate R2 per factor
-                for k in range(self.dim['K']):
-                    Ypred_mk = s.outer(Z[:,k], W[m][:,k])
-                    Ypred_mk[mask] = 0.
-                    Res = ((Y[m] - Ypred_mk)**2.).sum()
-                    all_r2[m,k] = 1. - Res/SS
+                    # calculate R2 per factor
+                    for k in range(self.dim['K']):
+                        Ypred_mk = s.outer(Z[gg,k], W[m][:,k])
+                        Ypred_mk[mask[gg,:]] = 0.
+                        Res_k = ((Y[m][gg,:] - Ypred_mk)**2.).sum()
+                        all_r2[g][m,k] = 1. - Res_k/SS
 
+                    
+            tmp = [ s.where( (all_r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
+            drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
+            # import pdb; pdb.set_trace()
             # print(all_r2)
-            # print(s.absolute(corr(Z,Z)))
-
-            drop_dic["min_r2"] = s.where( (all_r2>min_r2).sum(axis=0) == 0)[0]
             if len(drop_dic["min_r2"]) > 0:
                 drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
 
         # Drop the factors
         drop = s.unique(s.concatenate(list(drop_dic.values())))
         if len(drop) > 0:
-            print("dropping a factor")
             for node in self.nodes.keys():
                 self.nodes[node].removeFactors(drop)
         self.dim['K'] -= len(drop)
