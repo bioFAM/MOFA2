@@ -247,7 +247,7 @@ class entry_point(object):
             for g in self.data_opts['groups_names']:
                 print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (m, g, tmp_samples[g], tmp_features[m]) )
         print("\n")
-        
+
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
 
@@ -495,7 +495,7 @@ if __name__ == '__main__':
 
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
+    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=2, likelihoods=lik)
     ent.set_train_options(iter=10, tolerance=.000, dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     # ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
 
