@@ -140,28 +140,30 @@ subset_samples <- function(object, samples) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-  stopifnot(length(samples) <= object@dimensions[["N"]])
-  warning("Removing samples a posteriori is fine for an exploratory analysis, but we recommend removing them before training!")
+  stopifnot(length(samples) <= sum(object@dimensions[["N"]]))
+  stopifnot(all(samples %in% unlist(samples_names(object))))
   
-  # Get samples
-  if (is.character(samples)) {
-    stopifnot(all(samples %in% samples_names(object)))
-  } else {
-    samples <- samples_names(object)[samples]
-  }
+  groups <- object@data_options$samples_groups
+  new_samples_names <-  sapply(groups, function(g) samples_names(object)[[g]][samples_names(object)[[g]] %in% samples])
   
   # Subset relevant slots
-  object@expectations$Z <- sapply(object@expectations$Z, function(x) x[samples,, drop=F])
-  object@expectations$Y <- sapply(object@expectations$Y, function(x) x[samples,], simplify = F, USE.NAMES = T)
-  object@TrainData <- sapply(object@TrainData, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T))
-  object@InputData <- object@InputData[,samples,,] 
-  if (length(object@ImputedData)==0) { object@ImputedData <- sapply(object@ImputedData, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) }
+  for (g in names(new_samples_names)) {
+    samples_g <- new_samples_names[[g]]
+    
+    object@expectations$Z[[g]] <- object@expectations$Z[[g]][samples_g,, drop=F]
+    for (m in views_names(object)) {
+      object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=F]
+      object@training_data[[m]][[g]] <- object@training_data[[m]][[g]][,samples_g,drop=F]
+      
+    }
+  }
+  # if (length(object@ImputedData)==0) { object@ImputedData <- sapply(object@ImputedData, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) }
 
   # Update dimensionality
-  object@dimensions[["N"]] <- length(samples)
+  object@dimensions[["N"]] <- sapply(new_samples_names, length)
   
   # Update sample names
-  samples_names(object) <- samples
+  samples_names(object) <- new_samples_names
   
   # Re-compute variance explained
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)

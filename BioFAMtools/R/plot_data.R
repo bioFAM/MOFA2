@@ -38,7 +38,7 @@
 #' # Plot top 50 features for factor 1 in the mRNA view, do not show feature or row names
 #' plot_data_heatmap(model, "mRNA", 1, 50, show_colnames = FALSE, show_rownames = FALSE) 
 #' @export
-plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, include_weights = FALSE, transpose = FALSE, imputed = FALSE, sort_samples = TRUE, ...) {
+plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, sort_samples = TRUE, ...) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")

@@ -349,7 +349,8 @@ class initModel(object):
             # Poisson noise model for count data
             if self.lik[m] == "poisson":
                 tmp = 0.25 + 0.17*s.amax(self.data[m],axis=0)
-                tau_list[m] = Constant_Node(dim=(self.N, self.D[m]), value=tmp)
+                tmp = s.repeat(tmp[None,:], self.N, axis=0)
+                tau_list[m] = Tau_Seeger(dim=(self.N, self.D[m]), value=tmp)
 
             # Bernoulli noise model for binary data
             elif self.lik[m] == "bernoulli":
@@ -403,7 +404,6 @@ class initModel(object):
         K: number of factors for which we learn theta. If no argument is given, we'll just use the
             total number of factors
         """
-
         # Sanity checks
         assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 

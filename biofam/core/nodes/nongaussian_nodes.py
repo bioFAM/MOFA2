@@ -20,9 +20,11 @@ import numpy.ma as ma
 import numpy as np
 
 from .variational_nodes import Unobserved_Variational_Node, Unobserved_Variational_Mixed_Node
-from .basic_nodes import Node
+from .basic_nodes import *
 from .Y_nodes import Y_Node
 from .Tau_nodes import TauD_Node
+
+from biofam.core import gpu_utils
 from biofam.core.utils import sigmoid, lambdafn
 
 
@@ -54,28 +56,22 @@ class PseudoY(Unobserved_Variational_Node):
         else:
             self.params = {}
 
-        # Create a boolean mask of the data to hidden missing values
-        if type(self.obs) != ma.MaskedArray:
-            self.mask()
+        # Create a boolean mask of the data to handle missing values
+        self.mask = ma.getmask( ma.masked_invalid(self.obs) )
+        self.obs[np.isnan(self.obs)] = 0.
 
         # Initialise expectation
         if E is not None:
             assert E.shape == dim, "Problems with the dimensionalities"
-            E = ma.masked_invalid(E)
-        # else:
-            # E = ma.masked_invalid(s.zeros(self.dim))
+            E[self.mask] = 0.
         self.E = E
 
     def updateParameters(self):
         pass
 
-    def mask(self):
-        # Mask the observations if they have missing values
-        self.obs = ma.masked_invalid(self.obs)
 
     def getMask(self):
-        tmp = self.getExpectation()
-        return ma.getmask(tmp)
+        return self.mask
 
     def precompute(self, options=None):
         # Precompute some terms to speed up the calculations
@@ -120,7 +116,20 @@ class PseudoY_Seeger(PseudoY):
     def updateParameters(self):
         Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
-        self.params["zeta"] = s.dot(Z,W.T)
+        # self.params["zeta"] = s.dot(Z,W.T)
+        self.params["zeta"] = gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T )
+
+class Tau_Seeger(Constant_Node):
+    """
+    """
+    def __init__(self, dim, value):
+        Constant_Node.__init__(self, dim=dim, value=value)
+
+    def getValue(self):
+        return self.value
+
+    def getExpectation(self, expand=True):
+        return self.getValue()
 
 class Poisson_PseudoY(PseudoY_Seeger):
     """
@@ -156,7 +165,6 @@ class Poisson_PseudoY(PseudoY_Seeger):
         # Initialise the observed data
         assert s.all(s.mod(self.obs, 1) == 0), "Data must not contain float numbers, only integers"
         assert s.all(self.obs >= 0), "Data must not contain negative numbers"
-
     def ratefn(self, X):
         # Poisson rate function
         return s.log(1+s.exp(X))
@@ -168,15 +176,21 @@ class Poisson_PseudoY(PseudoY_Seeger):
     def updateExpectations(self):
         # Update the pseudodata
         tau = self.markov_blanket["Tau"].getValue()
-        self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
+        # self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
+        self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"])) / tau
 
     def calculateELBO(self):
         # Compute Lower Bound using the Poisson likelihood with observed data
         Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
-        tmp = self.ratefn(s.dot(Z,W.T))
-        lb = s.sum( self.obs*s.log(tmp) - tmp)
-        return lb
+        mask = self.getMask()
+
+        tmp = self.ratefn( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
+
+        lb = self.obs*s.log(tmp) - tmp
+        lb[mask] = 0.
+
+        return lb.sum()
 
 class Bernoulli_PseudoY(PseudoY_Seeger):
     """
@@ -218,9 +232,10 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
         W = self.markov_blanket["W"].getExpectation()
         mask = self.getMask()
 
-        tmp = s.dot(Z,W.T)
-        lik = s.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
-        lb = self.obs.data*tmp - s.log(1.+s.exp(tmp))
+        # tmp = s.dot(Z,W.T)
+        tmp = gpu_utils.asnumpy( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
+
+        lb = self.obs*tmp - s.log(1.+s.exp(tmp))
         lb[mask] = 0.
 
         return lb.sum()
@@ -318,7 +333,7 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         EZZWW = tmp1 + tmp2
 
         # calculate elbo terms
-        term1 = 0.5 * ((2.*self.obs.data - 1.)*ZW - zeta)
+        term1 = 0.5 * ((2.*self.obs - 1.)*ZW - zeta)
         term2 = - s.log(1 + s.exp(-zeta))
         term3 = - 1/(4 * zeta) *  s.tanh(zeta/2.) * (EZZWW - zeta**2)
 

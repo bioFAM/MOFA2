@@ -26,6 +26,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
     def removeFactors(self, idx, axis=1):
         super(Z_Node, self).removeFactors(idx, axis)
+        self.K -= len(idx)
 
     def updateParameters(self):
         # Collect expectations from the markov blanket
@@ -62,7 +63,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Qmean, Qvar = Q['mean'], Q['var']
 
         M = len(Y)
-        for k in self.K:
+        for k in range(self.dim[1]):
             foo = s.zeros((self.N,))
             bar = s.zeros((self.N,))
             for m in range(M):
@@ -164,6 +165,10 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.K = self.dim[1]
         gpu_utils.gpu_mode = options['gpu_mode']
         self.factors_axis = 1
+
+    def removeFactors(self, idx, axis=1):
+        super(SZ_Node, self).removeFactors(idx, axis)
+        self.K -= len(idx)
 
     def updateParameters(self):
         # Collect expectations from other nodes

@@ -3,7 +3,6 @@
 \docType{methods}
 \name{factors_names}
 \alias{factors_names}
-\alias{factors_names}
 \alias{factors_names<-}
 \alias{factors_names,BioFAModel-method}
 \alias{factors_names<-,BioFAModel,vector-method}
@@ -24,4 +23,7 @@ factors_names(object) <- value
 }
 \value{
 character vector with the features names
+}
+\description{
+factors_names: set and retrieve factor names
 }

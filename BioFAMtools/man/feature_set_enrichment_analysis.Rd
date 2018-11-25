@@ -8,9 +8,10 @@
 FSEA(object, view, feature.sets, factors = "all",
   local.statistic = c("loading", "cor", "z"),
   global.statistic = c("mean.diff", "rank.sum"),
-  statistical.test = c("parametric", "cor.adj.parametric", "permutation"),
-  transformation = c("abs.value", "none"), min.size = 10, nperm = 1000,
-  cores = 1, p.adj.method = "BH", alpha = 0.1)
+  statistical.test = c("parametric", "cor.adj.parametric",
+  "permutation"), transformation = c("abs.value", "none"),
+  min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH",
+  alpha = 0.1)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

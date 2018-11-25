@@ -125,14 +125,12 @@ def loadData(data_opts, verbose=True):
 
 def process_data(data, data_opts, samples_groups):
 
-    # Make a deep copy of the data to avoid problems when parsing
-    # TO-DO: IS THIS REQUIRED???
-    parsed_data = deepcopy(data)
+    parsed_data = data
 
     for m in range(len(data)):
 
         # Convert to float32
-        parsed_data[m] = parsed_data[m].astype(np.float32)
+        # parsed_data[m] = parsed_data[m].astype(np.float32)
 
         # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
         parsed_data[m][parsed_data[m] == -2147483648] = np.nan
@@ -153,7 +151,7 @@ def process_data(data, data_opts, samples_groups):
 
             # mask zeros if zero infalted likelihood
             if data_opts["likelihoods"][m] is "zero_inflated":
-                zeros_mask = parsed_data[m] == 0
+                zeros_mask = parsed_data[m]==0
                 parsed_data[m][zeros_mask] = np.nan
 
             # Center features
@@ -196,26 +194,6 @@ def loadDataGroups(data_opts):
         return None
     sample_labels = np.genfromtxt(data_opts['samples_groups_file'], dtype='str')
     return sample_labels
-
-def corr(A,B):
-    """ Method to efficiently compute correlation coefficients between two matrices
-
-    PARAMETERS
-    ---------
-    A: np array
-    B: np array
-    """
-
-    # Rowwise mean of input arrays & subtract from input arrays themselves
-    A_mA = A - A.mean(1)[:,None]
-    B_mB = B - B.mean(1)[:,None]
-
-    # Sum of squares across rows
-    ssA = (A_mA**2).sum(1);
-    ssB = (B_mB**2).sum(1);
-
-    # Finally get corr coeff
-    return np.dot(A_mA, B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))
 
 
 

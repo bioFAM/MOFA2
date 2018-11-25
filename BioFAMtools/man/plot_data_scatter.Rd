@@ -5,7 +5,8 @@
 \title{Scatterplots of feature values against latent factors}
 \usage{
 plot_data_scatter(object, view, factor, groups = "all", features = 10,
-  color_by = NULL, name_color = "", shape_by = NULL, name_shape = "")
+  color_by = NULL, name_color = "", shape_by = NULL,
+  name_shape = "")
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

@@ -1,9 +1,7 @@
 from __future__ import division
-from copy import deepcopy
 import numpy.ma as ma
 import numpy as np
 import scipy as s
-from copy import deepcopy
 import math
 
 from biofam.core.utils import *
@@ -22,13 +20,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
     def precompute(self, options):
         # Precompute terms to speed up computation
-        self.D = self.dim[0]
-        self.K = self.dim[1]
         self.factors_axis = 1
         gpu_utils.gpu_mode = options['gpu_mode']
-
-    def removeFactors(self, idx):
-        super().removeFactors(idx, axis=1)
 
     def updateParameters(self):
         # print(self.getExpectations())
@@ -58,7 +51,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
-        for k in self.K:
+        for k in range(self.dim[1]):
 
             foo = s.dot(SZtmp["E2"][:,k], tau)
 
@@ -88,7 +81,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if "MuW" in self.markov_blanket:
             PE, PE2 = self.markov_blanket['MuW'].getExpectations()['E'], self.markov_blanket['MuW'].getExpectations()['E2']
         else:
-            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.D,self.dim[1]))
+            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.dim))
 
         # if "SigmaAlphaW" in self.markov_blanket:
         #     name_alpha = "SigmaAlphaW"
@@ -111,8 +104,8 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         tmp2 = 0.5 * Alpha["lnE"].sum()
 
         lb_p = tmp1 + tmp2
-        # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
-        lb_q = -(s.log(Qvar).sum() + self.D * len(self.K)) / 2.
+        lb_q = -(s.log(Qvar).sum() + self.dim[0]*self.dim[1]) / 2.
+
         return lb_p-lb_q
 
 
@@ -168,7 +161,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         gpu_utils.gpu_mode = options['gpu_mode']
 
     def updateParameters(self):
-        
         # Collect expectations from other nodes
         Ztmp = self.markov_blanket["Z"].getExpectations()
         Z,ZZ = Ztmp["E"],Ztmp["E2"]
@@ -194,8 +186,10 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Y[mask] = 0.
         tau[mask] = 0.
 
+        tau_gpu = gpu_utils.array(tau)
+
         # precompute terms usful for all k
-        tauYT = (gpu_utils.array(tau)*gpu_utils.array(Y)).T
+        tauYT = (tau_gpu*gpu_utils.array(Y)).T
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
@@ -205,14 +199,13 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # GPU --------------------------------------------------------------
             # Variables used in multiple operations snhould be loaded on GPU only once
             Zk_cp = gpu_utils.array(Z[:,k])
-            tau_cp = gpu_utils.array(tau)
+            # tau_cp = gpu_utils.array(tau)
             ZZk_cp = gpu_utils.array(ZZ[:,k])
             alphak_cp = gpu_utils.array(alpha[:,k])
 
             term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
             # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
-            term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_cp) + alphak_cp))
-
+            term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_gpu) + alphak_cp))
             term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
             # term4_tmp1 = fast_dot(tauYT,Z[:,k])
 
@@ -220,10 +213,10 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z[:,s.arange(self.dim[1])!=k]).T).T
             term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)
             # term4_tmp2 = fast_dot(term4_tmp2_2, term4_tmp2_1)
-            term4_tmp2 *= tau_cp  # most expensive bit
+            term4_tmp2 *= tau_gpu  # most expensive bit
             term4_tmp2 = term4_tmp2.sum(axis=0)
 
-            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_cp) + alphak_cp
+            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_gpu) + alphak_cp
             # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
 
 

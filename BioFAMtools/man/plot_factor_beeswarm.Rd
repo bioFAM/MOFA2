@@ -5,7 +5,8 @@
 \title{Beeswarm plot of factor values}
 \usage{
 plot_factor_beeswarm(object, factors = "all", group_by = "group",
-  color_by = NULL, name_color = "", shape_by = NULL, shape_color = "")
+  show_missing = TRUE, dot_size = 1, color_by = NULL,
+  color_name = "", shape_by = NULL, shape_name = "")
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
@@ -21,6 +22,8 @@ a character giving the same of a covariate (only if using \code{\link{MultiAssay
 or a vector of the same length as the number of samples specifying discrete groups.
 or a dataframe with two columns : "sample" (names of the samples) and "group" (groups for each sample)}
 
+\item{show_missing}{logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.}
+
 \item{color_by}{specifies groups or values (discrete or continuous) used to color the samples
 This can be either: 
 the string "group" : in this case, the plot will color samples with respect to the groups they belong to
@@ -29,9 +32,7 @@ a character giving the same of a covariate (only if using \code{\link{MultiAssay
 or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
 or a dataframe with two columns : "sample" (names of the samples) and "color" (values for each sample)}
 
-\item{name_color}{name for color legend (usually only used if color_by is not a character itself)}
-
-\item{show_missing}{logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.}
+\item{color_name}{name for color legend (usually only used if color_by is not a character itself)}
 }
 \value{
 Returns a \code{ggplot2} object

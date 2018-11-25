@@ -26,14 +26,14 @@ class Beta(Distribution):
         if E is None:
             self.updateExpectations()
         else:
-            #self.expectations = {
-            #    'E': s.ones(dim) * E,
-            #    'lnE': s.log(s.ones(dim) * E),
-            #    'lnEInv': s.log(1. - s.ones(dim) * E)
-            #}
-            #self.expectations["lnEInv"][s.isinf(self.expectations["lnEInv"])] = -s.inf
-            self.updateExpectations()
-            print("The expectation of the Beta distribution is initialized consistently with the provided parameters (not with the provided expectation)")
+            self.expectations = {
+               'E': s.ones(dim) * E,
+               'lnE': s.log(s.ones(dim) * E),
+               'lnEInv': s.log(1. - s.ones(dim) * E)
+            }
+            self.expectations["lnEInv"][s.isinf(self.expectations["lnEInv"])] = -s.inf
+            # self.updateExpectations()
+            # print("The expectation of the Beta distribution is initialized consistently with the provided parameters (not with the provided expectation)")
 
         # Check that dimensionalities match
         self.CheckDimensionalities()

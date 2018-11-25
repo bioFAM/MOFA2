@@ -56,19 +56,20 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         QExp = self.getExpectations(expand)
         return QExp['E']
 
-    # @profile
     def updateParameters(self):
         # Collect expectations from other nodes
         # TODO sum(axis = 0) to change
 
         Y = self.markov_blanket["Y"].getExpectation()
+        Y_gpu = gpu_utils.array(Y)
 
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
 
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
-
+        Z_gpu = gpu_utils.array(Z)
+        
         # Collect parameters from the P and Q distributions of this node
         P, Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb = P['a'], P['b']
@@ -79,23 +80,23 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # Y[mask] = 0.
 
         # Calculate terms for the update
-        ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
+        ZW =  Z_gpu.dot(gpu_utils.array(W.T))
         # ZW =  fast_dot(Z,W.T)
         ZW[self.mask] = 0.
 
-        term1 = gpu_utils.square(gpu_utils.array(Y)) #.sum(axis=0)
+        term1 = gpu_utils.square(Y_gpu) #.sum(axis=0)
 
         term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
         # term2 = fast_dot(ZZ, WW.T)
         term2[self.mask] = 0
         # term2 = term2.sum(axis=0)
 
-        term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
+        term3 = - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(gpu_utils.array(W)).T)
         term3[self.mask] = 0.
         # term3 = term3.sum(axis=0)
         term3 += gpu_utils.square(ZW)  #.sum(axis=0)
 
-        ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
+        ZW *= Y_gpu  # WARNING ZW becomes ZWY
         term4 = 2.*ZW #.sum(axis=0)
 
         tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
@@ -103,7 +104,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         # Perform updates of the Q distribution
         for g in range(self.n_groups):
             g_mask = (self.groups == g)
-            Qb[g,:] = Pb[g,:] + .5 * tmp[g_mask,:].sum(axis=0)
+            Qb[g,:] = Pb[g,:] + tmp[g_mask,:].sum(axis=0) / 2.
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(a=self.Qa_pre, b=Qb)

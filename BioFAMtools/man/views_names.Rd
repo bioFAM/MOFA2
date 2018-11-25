@@ -3,7 +3,6 @@
 \docType{methods}
 \name{views_names}
 \alias{views_names}
-\alias{views_names}
 \alias{views_names<-}
 \alias{views_names,BioFAModel-method}
 \alias{views_names<-,BioFAModel,character-method}
@@ -24,4 +23,7 @@ views_names(object) <- value
 }
 \value{
 character vector with the names for each view
+}
+\description{
+views_names: set and retrieve view names
 }

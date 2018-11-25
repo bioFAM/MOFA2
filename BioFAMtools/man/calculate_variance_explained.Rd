@@ -19,6 +19,9 @@ calculate_variance_explained(object, views = "all", groups = "all",
 \value{
 a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 }
+\description{
+Calculate variance explained by the model
+}
 \details{
 This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
 i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).

@@ -18,3 +18,6 @@ samples_groups(object, format = "default")
 \value{
 data.frame with the sample names and a group for each sample
 }
+\description{
+samples_groups: retrieve sample names and groups
+}

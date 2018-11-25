@@ -4,8 +4,8 @@
 \alias{getImputedData}
 \title{getImputedData}
 \usage{
-getImputedData(object, views = "all", groups = "all", features = "all",
-  as.data.frame = FALSE)
+getImputedData(object, views = "all", groups = "all",
+  features = "all", as.data.frame = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
