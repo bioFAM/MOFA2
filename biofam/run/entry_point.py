@@ -491,7 +491,7 @@ if __name__ == '__main__':
     infiles = ["test_data/toy_zeros/view_1.txt"]
     views =  ["view_A"]
     groups = ["group_A"]
-    lik = ["zero_inflated"]
+    lik = ["gaussian"]
 
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
