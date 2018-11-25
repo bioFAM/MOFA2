@@ -412,7 +412,7 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
         self.jaakola_node.updateExpectations()
 
     def getExpectation(self, expand=True):
-        E = self.normal_node.getExpectation()
+        E = self.normal_node.getExpectation().copy()
         pseudo_y = self.jaakola_node.getExpectation()
         E[self.zeros] = pseudo_y[self.zeros]
 
