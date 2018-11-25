@@ -488,6 +488,8 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Mixed_Node):
         zeros = self.markov_blanket['Y'].zeros
         E['E'][zeros], E['lnE'][zeros] = tau_jk['E'][zeros], tau_jk['lnE'][zeros]
 
+        import pdb; pdb.set_trace()
+
         return E
 
     def getExpectation(self, expand=True):
