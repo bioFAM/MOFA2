@@ -1,7 +1,6 @@
 from __future__ import division
 from time import sleep
 from time import time
-from copy import deepcopy
 import numpy as np
 import scipy as s
 import pandas as pd

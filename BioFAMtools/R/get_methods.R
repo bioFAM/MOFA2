@@ -173,18 +173,16 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
 
 #' @title get_imputed_data
 #' @name get_imputed_data
-#' @description Function to get the imputed data. It requires the previous use of the \code{\link{imputeMissing}} method.
+#' @description Function to get the imputed data. It requires the previous use of the \code{\link{impute}} method.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
 #' Default is "all".
-#' @param features list of character vectors with the feature names or list of numeric vectors with the feature indices. 
-#' Default is "all"
 #' @param as.data.frame logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 #' Default is \code{FALSE}.
 #' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
+get_imputed_data <- function(object, views = "all", groups = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -193,22 +191,8 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
-  # Get features
-  if (class(features)=="list") {
-    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
-  } else {
-    if (paste0(features,collapse="") == "all") { 
-      features <- features_names(object)[views]
-    } else {
-      stop("features not recognised, please read the documentation")
-    }
-  }
-  
-
   # Fetch data
-  imputed_data <- lapply(object@imputed_data[views], function(e) e[groups])
-  imputed_data <- lapply(1:length(imputed_data), function(m) lapply(1:length(imputed_data[[1]]), function(h) imputed_data[[m]][[h]][features[[m]],,drop=F]))
-  imputed_data <- .setViewAndgroups_names(imputed_data, views, groups)
+  imputed_data <- sapply(object@imputed_data[views], function(e) e[groups], simplify = FALSE,USE.NAMES = TRUE)
   
   # Convert to long data frame
   if (as.data.frame==T) {
@@ -222,8 +206,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
     })
     imputed_data <- do.call(rbind, tmp)
     imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.character)
-  } else if ((length(views)==1) && (as.data.frame==F)) {
-    imputed_data <- imputed_data[[views]]
   }
   
   return(imputed_data)
