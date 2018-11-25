@@ -477,21 +477,25 @@ if __name__ == '__main__':
     # views =  ["view_A", "view_A", "view_B", "view_B"]
     # groups = ["group_A", "group_B", "group_A", "group_B"]
 
-    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_1.txt"]
-    views =  ["view_A", "view_A", "view_B", "view_B"]
-    groups = ["group_A", "group_B", "group_A", "group_B"]
+    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_1.txt"]
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
+    # lik = ["zero_inflated", "gaussian"]
 
+    infiles = ["test_data/toy_zeros/view_1.txt"]
+    views =  ["view_A"]
+    groups = ["group_A"]
+    lik = ["zero_inflated"]
 
-    lik = ["zero_inflated", "gaussian"]
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
-    ent.set_train_options(iter=5, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1)
+    ent.set_train_options(iter=10, tolerance=.000, dropR2=0.0, seed=4, elbofreq=1, verbose=1)
     # ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
 
     ent.build()
 
     ent.run()
 
-    out_file = '/Users/ricard/test/test_biofam_asd.hdf5'
-    ent.save(out_file)
+    # out_file = '/Users/ricard/test/test_biofam_asd.hdf5'
+    # ent.save(out_file)

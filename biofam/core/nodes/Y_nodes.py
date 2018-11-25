@@ -34,7 +34,7 @@ class Y_Node(Constant_Variational_Node):
     def mask(self):
         """ Generate binary mask """
         self.mask = ma.getmask( ma.masked_invalid(self.value) )
-        
+
     def getMask(self):
         return self.mask
 
@@ -42,7 +42,7 @@ class Y_Node(Constant_Variational_Node):
         """ Calculate evidence lower bound """
 
         # Collect expectations from nodes
-        Y = self.getExpectation() 
+        Y = self.getExpectation()
         Tau = self.markov_blanket["Tau"].getExpectations()
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
