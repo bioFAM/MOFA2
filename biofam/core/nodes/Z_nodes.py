@@ -1,8 +1,6 @@
 from __future__ import division
-import numpy.ma as ma
 import numpy as np
 import scipy as s
-from copy import deepcopy
 import math
 from biofam.core.utils import *
 from biofam.core import gpu_utils
@@ -34,7 +32,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         SWtmp = self.markov_blanket["W"].getExpectations()
         tau = self.markov_blanket["Tau"].getExpectation()
 
-        # mask = [ma.getmask(Y[m]) for m in range(len(Y))]
         mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
 
         # Collect parameters from the prior or expectations from the markov blanket
@@ -51,7 +48,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         # Check dimensionality of Tau and expand if necessary (for Jaakola's bound only)
         for m in range(len(Y)):
             # Mask tau
-            # tau[m] = ma.masked_where(ma.getmask(Y[m]), tau[m]) # important to keep this out of the loop to mask non-gaussian tau
             tau[m][mask[m]] = 0.
 
             # Mask Y
@@ -63,12 +59,14 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Qmean, Qvar = Q['mean'], Q['var']
 
         M = len(Y)
-        for k in range(self.dim[1]):
-            foo = s.zeros((self.N,))
-            bar = s.zeros((self.N,))
-            for m in range(M):
-                tau_cp = gpu_utils.array(tau[m])
-                foo += gpu_utils.asnumpy(gpu_utils.dot(tau_cp, gpu_utils.array(SWtmp[m]["E2"][:, k])))
+        foo = [ s.zeros(self.N,) for k in range(self.dim[1]) ]
+        bar = [ s.zeros(self.N,) for k in range(self.dim[1]) ]
+        for m in range(M):
+            tau_cp = gpu_utils.array(tau[m])
+            Y_gpu = gpu_utils.array(Y[m])
+            for k in range(self.dim[1]):
+                
+                foo[k] += gpu_utils.asnumpy(gpu_utils.dot(tau_cp, gpu_utils.array(SWtmp[m]["E2"][:, k])))
 
                 bar_tmp1 = gpu_utils.array(SWtmp[m]["E"][:,k])
 
@@ -77,15 +75,15 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
                 tmp_cp1 = gpu_utils.array(Qmean[:, s.arange(self.dim[1]) != k])
                 tmp_cp2 = gpu_utils.array(SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
                 bar_tmp2 = - gpu_utils.dot(tmp_cp1, tmp_cp2)
-                bar_tmp2 += gpu_utils.array(Y[m])
+                bar_tmp2 += Y_gpu
                 bar_tmp2 *= tau_cp
                 ##############################
 
-                bar += gpu_utils.asnumpy(gpu_utils.dot(bar_tmp2, bar_tmp1))
+                bar[k] += gpu_utils.asnumpy(gpu_utils.dot(bar_tmp2, bar_tmp1))
 
-
-            Qvar[:, k] = 1. / (Alpha[:, k] + foo)
-            Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
+        for k in range(self.dim[1]):
+            Qvar[:,k] = 1. / (Alpha[:, k] + foo[k])
+            Qmean[:,k] = Qvar[:, k] * (bar[k] + Alpha[:, k] * Mu[:, k])
 
         # Save updated parameters of the Q distribution
         self.Q.setParameters(mean=Qmean, var=Qvar)
@@ -201,41 +199,40 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         for m in range(M):
             tau[m][mask[m]] = 0.
 
-        # TODO : remove loops working with tensors ?
-        # Update each latent variable in turn
+        term4_tmp1 = [ s.zeros(self.N,) for k in range(self.dim[1]) ]
+        term4_tmp2 = [ s.zeros(self.N,) for k in range(self.dim[1]) ]
+        term4_tmp3 = [ s.zeros(self.N,) for k in range(self.dim[1]) ]
+
+        # Precompute terms to speed up GPU computation
+        for m in range(M):
+            tau_cp = gpu_utils.array(tau[m])
+            Y_gpu = gpu_utils.array(Y[m])
+            for k in range(self.dim[1]):
+                Wk_cp = gpu_utils.array(W[m][:, k])
+                WWk_cp = gpu_utils.array(WW[m][:, k])
+
+                term4_tmp1_tmp = gpu_utils.dot(tau_cp*Y_gpu, Wk_cp)
+                term4_tmp1[k] += gpu_utils.asnumpy(term4_tmp1_tmp)
+                
+                term4_tmp3_tmp = gpu_utils.dot(tau_cp, WWk_cp)
+                term4_tmp3[k] += gpu_utils.asnumpy(term4_tmp3_tmp)
+
+        # Update each latent variable in turn (notice that the update of Z[,k] depends on the other values of Z!)
         for k in range(self.dim[1]):
-            # Calculate intermediate stept
+
             term1 = (theta_lnE - theta_lnEInv)[:, k]
-            # TODO this is not right: alpha should be expended to full matrix before and used as full matrix
-            # term2 = 0.5 * s.log(alpha[:, k]) should work
-            # TODO modify everywhere else
-            # GPU --------------------------------------------------------------
-            # load variables on GPUs
-            alphak_cp = gpu_utils.array(alpha[:,k])
+            term2 = 0.5 * s.log(alpha[:,k])
 
-            term2 = gpu_utils.asnumpy(0.5 * gpu_utils.log(alphak_cp))
-
-            # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            # term3 = gpu_utils.zeros((self.N,))
-            term4_tmp1 = gpu_utils.zeros((self.N,))
-            term4_tmp2 = gpu_utils.zeros((self.N,))
-            term4_tmp3 = gpu_utils.zeros((self.N,))
             for m in range(M):
                 tau_cp = gpu_utils.array(tau[m])
-                WWk_cp = gpu_utils.array(WW[m][:, k])
-                Wk_cp = gpu_utils.array(W[m][:, k])
-
-                term4_tmp1 += gpu_utils.dot(tau_cp * gpu_utils.array(Y[m]), Wk_cp) # good to modify # TODO critical time here  22 %
-                term4_tmp2 += (tau_cp * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(self.dim[1]) != k]),
-                                             (Wk_cp * gpu_utils.array(W[m][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)  # good to modify  # TODO critical time here  37 %
-                term4_tmp3 += gpu_utils.dot(tau_cp, WWk_cp) # TODO critical time here  3 %
-
-            # term4 = 0.5*s.divide((term4_tmp1-term4_tmp2)**2,term4_tmp3)
-            term3 =gpu_utils.asnumpy(0.5 * gpu_utils.log(term4_tmp3 + alphak_cp))
-
-            term4_tmp3 += alphak_cp
-            term4 = 0.5 * gpu_utils.divide(gpu_utils.square(term4_tmp1 - term4_tmp2), term4_tmp3)  # good to modify, awsnt checked numerically
-            term4 = gpu_utils.asnumpy(term4)
+                Wk_cp = gpu_utils.array(W[m][:, k]) # TO-DO: CAN WE JUST COPY W ONCE AND THEN SUBSET?
+                term4_tmp2_tmp = (tau_cp * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(self.dim[1]) != k]),
+                                (Wk_cp * gpu_utils.array(W[m][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)
+                term4_tmp2[k] += gpu_utils.asnumpy(term4_tmp2_tmp)
+                
+            term4_tmp3[k] += alpha[:,k]
+            term3 = 0.5 * s.log(term4_tmp3[k])
+            term4 = 0.5 * s.divide(s.square(term4_tmp1[k] - term4_tmp2[k]), term4_tmp3[k])
 
             # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
@@ -243,8 +240,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta[:,k] = np.nan_to_num(Qtheta[:,k])
 
             # Update Z
-            Qvar_T1[:, k] = 1. / gpu_utils.asnumpy(term4_tmp3)
-            Qmean_T1[:, k] = Qvar_T1[:, k] * gpu_utils.asnumpy(term4_tmp1 - term4_tmp2)
+            Qvar_T1[:, k] = 1. / term4_tmp3[k]
+            Qmean_T1[:, k] = Qvar_T1[:, k] * (term4_tmp1[k] - term4_tmp2[k])
 
             # Update Expectations for the next iteration
             SZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]
@@ -257,13 +254,13 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Collect parameters and expectations
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
-        T, ZZ = Qexp["EB"], Qexp["ENN"]
+        S, ZZ = Qexp["EB"], Qexp["ENN"]
         Qvar = Qpar['var_B1']
         theta = self.markov_blanket['ThetaZ'].getExpectations(expand=True)
 
         # Get ARD sparsity or prior variance
         if "AlphaZ" in self.markov_blanket:
-            alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True).copy()
+            alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True)
         else:
             alpha = dict()
             alpha['E'] = 1./self.P.params['var_B1']
@@ -271,17 +268,20 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Calculate ELBO for Z
         lb_pz = (alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
-        lb_qz = -0.5 * self.dim[1] * self.N - 0.5 * (T * s.log(Qvar) + (1. - T) * s.log(1. / alpha["E"])).sum()
+        lb_qz = -0.5*self.dim[1]*self.dim[0] - 0.5 * (S * s.log(Qvar) + (1. - S) * s.log(1. / alpha["E"])).sum()
         lb_z = lb_pz - lb_qz
 
-        # Calculate ELBO for T
-        lb_pt = T * theta['lnE'] + (1. - T) * theta['lnEInv']
-        lb_qt = T * s.log(T) + (1. - T) * s.log(1. - T)
-        lb_pt[s.isnan(lb_pt)] = 0.
-        lb_qt[s.isnan(lb_qt)] = 0.
-        lb_t = s.sum(lb_pt) - s.sum(lb_qt)
+        # Calculate ELBO for S
+        lb_ps = S * theta['lnE'] + (1. - S) * theta['lnEInv']
+        lb_qs = S * s.log(S) + (1. - S) * s.log(1. - S)
 
-        return lb_z + lb_t
+        # Replace NAs (due to theta=1) with zeros
+        lb_ps[s.isnan(lb_ps)] = 0.
+        lb_qs[s.isnan(lb_qs)] = 0.
+
+        lb_s = s.sum(lb_ps) - s.sum(lb_qs)
+    
+        return lb_z + lb_s
 
     def sample(self, dist='P'):
         # get necessary parameters

@@ -57,25 +57,25 @@ class Y_Node(Constant_Variational_Node):
 
         # Compute ELBO
         ZW =  Z_gpu.dot(Wt_gpu)
-        ZW[self.mask] = 0.
+        # ZW[self.mask] = 0.
 
         term1 = gpu_utils.square(Y_gpu)
 
         term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
-        term2[self.mask] = 0
+        # term2[self.mask] = 0
 
         term3 = - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu))
-        term3[self.mask] = 0.
+        # term3[self.mask] = 0.
         term3 += gpu_utils.square(ZW)
 
         ZW *= Y_gpu  # WARNING ZW becomes ZWY
         term4 = 2.*ZW
 
         tmp = 0.5 * (term1 + term2 + term3 - term4)
+        tmp[self.mask] = 0.
 
-        
-        lik = self.likconst + 0.5 * gpu_utils.sum(gpu_utils.array(Tau["lnE"])) -\
-              gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
+        # lik = self.likconst + 0.5 * gpu_utils.sum(gpu_utils.array(Tau["lnE"])) - gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
+        lik = self.likconst + 0.5 * Tau["lnE"].sum() - gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
 
         return lik
 

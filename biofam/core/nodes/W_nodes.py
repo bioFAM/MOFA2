@@ -182,50 +182,35 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qmean_S1, Qvar_S1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
 
         # Mask matrices
-        # Y = Y.data
-        # Y[mask] = 0.
         tau[mask] = 0.
 
-        tau_gpu = gpu_utils.array(tau)
-
         # precompute terms usful for all k
+        tau_gpu = gpu_utils.array(tau)
         tauYT = (tau_gpu*gpu_utils.array(Y)).T
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
-            # Calculate intermediate steps
-            term1 = (theta_lnE-theta_lnEInv)[:,k]
 
-            # GPU --------------------------------------------------------------
-            # Variables used in multiple operations snhould be loaded on GPU only once
             Zk_cp = gpu_utils.array(Z[:,k])
-            # tau_cp = gpu_utils.array(tau)
             ZZk_cp = gpu_utils.array(ZZ[:,k])
             alphak_cp = gpu_utils.array(alpha[:,k])
 
-            term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
-            # term3 = 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
-            term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_gpu) + alphak_cp))
-            term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
-            # term4_tmp1 = fast_dot(tauYT,Z[:,k])
+            term1 = (theta_lnE-theta_lnEInv)[:,k]
 
+            term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp)) # 0.5*s.log(fast_dot(ZZ[:,k], tau) + alpha[:,k])
+
+            term3 = gpu_utils.asnumpy(0.5*gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_gpu) + alphak_cp))
+
+            term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp) # fast_dot(tauYT,Z[:,k])
             term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
             term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z[:,s.arange(self.dim[1])!=k]).T).T
-            term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)
-            # term4_tmp2 = fast_dot(term4_tmp2_2, term4_tmp2_1)
-            term4_tmp2 *= tau_gpu  # most expensive bit
+            term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1) # fast_dot(term4_tmp2_2, term4_tmp2_1)
+            term4_tmp2 *= tau_gpu
             term4_tmp2 = term4_tmp2.sum(axis=0)
-
-            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_gpu) + alphak_cp
-            # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
-
-
+            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_gpu) + alphak_cp # fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
             term4 = gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3))
 
-            # ------------------------------------------------------------------
-
             # Update S
-            # NOTE there could be some precision issues in S --> loads of 1s in result
             Qtheta[:,k] = 1./(1.+s.exp(-(term1+term2-term3+term4)))
 
             # Update W
