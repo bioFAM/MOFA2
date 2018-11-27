@@ -1,7 +1,6 @@
 from __future__ import division
 from time import sleep
 from time import time
-from copy import deepcopy
 import numpy as np
 import scipy as s
 import pandas as pd
@@ -158,7 +157,7 @@ def process_data(data, data_opts, samples_groups):
             if data_opts['center_features_per_group']:
                 for gp_name in data_opts['groups_names']:
                     filt = [gp==gp_name for gp in samples_groups]
-                    parsed_data[m][filt] -= np.nanmean(parsed_data[m][filt],axis=0)
+                    parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
             else:
                 parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
 

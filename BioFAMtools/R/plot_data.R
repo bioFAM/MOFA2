@@ -38,7 +38,7 @@
 #' # Plot top 50 features for factor 1 in the mRNA view, do not show feature or row names
 #' plot_data_heatmap(model, "mRNA", 1, 50, show_colnames = FALSE, show_rownames = FALSE) 
 #' @export
-plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, sort_samples = TRUE, ...) {
+plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -98,28 +98,16 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   }
   data <- data[features,]
   
-  # Sort samples according to latent factors
-  if (sort_samples) {
-    order_samples <- names(sort(Z, decreasing=T))
-    order_samples <- order_samples[order_samples %in% colnames(data)]
-    data <- data[,order_samples]
-  }
+  # By default, sort samples according to the factor values
+  order_samples <- names(sort(Z, decreasing=T))
+  order_samples <- order_samples[order_samples %in% colnames(data)]
+  data <- data[,order_samples]
   
   # Transpose the data
   if (transpose) data <- t(data)
   
   # Plot heatmap
-  # if(is.null(main)) main <- paste(view, "observations for the top weighted features of factor", factor)
-  if (include_weights) { 
-    anno <- data.frame(row.names=names(W[features]), weight=W[features]) 
-    if (transpose==T) {
-      pheatmap::pheatmap(t(data), annotation_col=anno, ...)
-    } else {
-      pheatmap::pheatmap(t(data), annotation_row=anno, ...)
-    }
-  } else {
-    pheatmap::pheatmap(t(data), ...)
-  }
+  pheatmap::pheatmap(data, ...)
   
 }
 

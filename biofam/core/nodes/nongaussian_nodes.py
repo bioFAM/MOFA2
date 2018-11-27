@@ -69,7 +69,6 @@ class PseudoY(Unobserved_Variational_Node):
     def updateParameters(self):
         pass
 
-
     def getMask(self):
         return self.mask
 
