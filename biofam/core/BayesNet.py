@@ -14,7 +14,7 @@ import numpy.ma as ma
 import math
 
 from biofam.core.nodes.variational_nodes import Variational_Node
-from .utils import nans
+from .utils import corr, nans
 
 class BayesNet(object):
     def __init__(self, dim, nodes):
@@ -127,24 +127,25 @@ class BayesNet(object):
         # TODO some function here to save simulated data
         pass
 
-    def removeInactiveFactors(self, by_r2=None):
+    def removeInactiveFactors(self, min_r2=None):
         """Method to remove inactive factors
 
         PARAMETERS
         ----------
-        by_r2: float
-            threshold to shut down factors based on the coefficient of determination
+        min_r2: float
+            threshold to shut down factors based on a minimum variance explained per group and view
         """
         drop_dic = {}
 
-        if by_r2 is not None:
-
+        if min_r2 is not None:
             Z = self.nodes['Z'].getExpectation()
             W = self.nodes["W"].getExpectation()
-
             Y = self.nodes["Y"].getExpectation()
 
-            all_r2 = s.zeros([self.dim['M'], self.dim['K']])
+            # Get groups
+            groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
+
+            all_r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['P']
             for m in range(self.dim['M']):
 
                 # Fetch the mask for missing vlaues
@@ -154,44 +155,27 @@ class BayesNet(object):
                 Ypred_m = s.dot(Z, W[m].T)
                 Ypred_m[mask] = 0.
 
-                # If there is an intercept term, regress it out, as it greatly decreases the fraction of variance explained by the other factors
-                # (THIS IS NOT IDEAL...)
-                if s.all(Z[:,0]==1.):
+                for g in range(self.dim['P']):
+                    gg = groups==g
                     # calculate the total R2
-                    SS = ((Y[m] - Y[m].mean())**2.).sum()
-                    Res = ((Ypred_m - Y[m])**2.).sum()
-                    R2_tot = 1. - Res/SS
+                    # # SS = ((Y[m] - Y[m].mean(axis=0))**2.).sum()
+                    SS = s.square(Y[m][gg,:]).sum()
+                    # Res = ((Y[m][g,] - Ypred_m[g,])**2.).sum()
+                    # R2_tot = 1. - Res/SS
 
-                    # intercept_m = s.outer(Z[:,0], W[m][:,0].T)
-                    # intercept_m[mask] = 0. # DO WE NEED TO DO THIS???
-                    # Ypred_m -= intercept_m
-
-                    all_r2[:,0] = 1.
-                    for k in range(1,self.dim['K']):
-                        # adding the intercept to the predictions with factor k
-                        Ypred_mk = s.outer(Z[:,k], W[m][:,k]) + s.outer(Z[:,0], W[m][:,0])
-                        Ypred_mk[mask] = 0.  # should not be necessary anymore as we do masked data - this ?
-                        Res = ((Y[m] - Ypred_mk)**2.).sum()
-                        R2_k = 1. - Res/SS
-                        all_r2[m,k] = R2_k/R2_tot
-                # No intercept term
-                else:
-                    # calculate the total R2
-                    SS = ((Y[m] - Y[m].mean())**2.).sum()
-                    Res = ((Ypred_m - Y[m])**2.).sum()
-                    R2_tot = 1. - Res/SS
-
+                    # calculate R2 per factor
                     for k in range(self.dim['K']):
-                        Ypred_mk = s.outer(Z[:,k], W[m][:,k])
-                        Ypred_mk[mask] = 0.
-                        Res = ((Y[m] - Ypred_mk)**2.).sum()
-                        R2_k = 1. - Res/SS
-                        all_r2[m,k] = R2_k/R2_tot
+                        Ypred_mk = s.outer(Z[gg,k], W[m][:,k])
+                        Ypred_mk[mask[gg,:]] = 0.
+                        Res_k = ((Y[m][gg,:] - Ypred_mk)**2.).sum()
+                        all_r2[g][m,k] = 1. - Res_k/SS
 
-            if by_r2 is not None:
-                drop_dic["by_r2"] = s.where( (all_r2>by_r2).sum(axis=0) == 0)[0]
-                if len(drop_dic["by_r2"]) > 0:
-                    drop_dic["by_r2"] = [ s.random.choice(drop_dic["by_r2"]) ]
+            tmp = [ s.where( (all_r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
+            drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
+            # import pdb; pdb.set_trace()
+            # print(all_r2)
+            if len(drop_dic["min_r2"]) > 0:
+                drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
 
         # Drop the factors
         drop = s.unique(s.concatenate(list(drop_dic.values())))
@@ -262,9 +246,10 @@ class BayesNet(object):
         print('elbo before training: ', self.calculateELBO())
         print('schedule of updates: ',self.options['schedule'])
         print()
-
         for i in range(self.options['maxiter']):
             t = time();
+
+            # IMPROVE THIS: BAYESNET SHOULD BE AGNOSTIC TO THE NAME OF NODES
             if self.stochastic:
                 ro = self.step_size2(i)  # TODO should we change that at every epoch instead
                 ix = self.sample_mini_batch_no_replace(i)
@@ -275,6 +260,7 @@ class BayesNet(object):
                     self.nodes['AlphaZ'].define_mini_batch(ix)
                 if 'ThetaZ' in self.nodes:
                     self.nodes['ThetaZ'].define_mini_batch(ix)
+
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
                 if any(self.options['drop'].values()):
@@ -286,7 +272,6 @@ class BayesNet(object):
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
                 self.nodes[node].update(ix, ro)
-                # print "time: " + str(time()-t)
 
             # Calculate Evidence Lower Bound
             if (i+1) % self.options['elbofreq'] == 0:
@@ -294,25 +279,23 @@ class BayesNet(object):
 
                 # Print first iteration
                 if i==0:
-                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d, Covariates=%d" % (time() - t, elbo.iloc[i]["total"], (~self.nodes['Z'].covariates).sum(),self.nodes['Z'].covariates.sum()))
+                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.dim['K'])))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
-
                 else:
                     # Check convergence using the ELBO
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
-                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d, Covariates=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (~self.nodes['Z'].covariates).sum(), self.nodes['Z'].covariates.sum() ))
-                    if delta_elbo<0 and not self.stochastic:
+                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
+                    if delta_elbo<0:
                         print("Warning, lower bound is decreasing..."); print('\a')
-                        #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
 
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
                     # Assess convergence
-                    if (0 <= delta_elbo < self.options['tolerance']) and (not self.options['forceiter']):
+                    if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
                         activeK = activeK[:(i+1)]
                         elbo = elbo[:(i+1)]
                         print ("Converged!\n")
@@ -404,3 +387,4 @@ class BayesNet(object):
             elbo[node] = float(self.nodes[node].calculateELBO())
             elbo["total"] += elbo[node]
         return elbo
+

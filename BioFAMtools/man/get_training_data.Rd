@@ -4,8 +4,8 @@
 \alias{get_training_data}
 \title{get_training_data}
 \usage{
-get_training_data(object, views = "all", groups = "all", features = "all",
-  as.data.frame = F)
+get_training_data(object, views = "all", groups = "all",
+  features = "all", as.data.frame = F)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

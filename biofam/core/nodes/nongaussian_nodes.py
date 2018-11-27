@@ -17,9 +17,14 @@ PseudoY: general class for pseudodata
 from __future__ import division
 import scipy as s
 import numpy.ma as ma
+import numpy as np
 
-from .variational_nodes import Unobserved_Variational_Node
-from .basic_nodes import Node
+from .variational_nodes import Unobserved_Variational_Node, Unobserved_Variational_Mixed_Node
+from .basic_nodes import *
+from .Y_nodes import Y_Node
+from .Tau_nodes import TauD_Node
+
+from biofam.core import gpu_utils
 from biofam.core.utils import sigmoid, lambdafn
 
 
@@ -51,16 +56,14 @@ class PseudoY(Unobserved_Variational_Node):
         else:
             self.params = {}
 
-        # Create a boolean mask of the data to hidden missing values
-        if type(self.obs) != ma.MaskedArray:
-            self.mask()
+        # Create a boolean mask of the data to handle missing values
+        self.mask = ma.getmask( ma.masked_invalid(self.obs) )
+        self.obs[np.isnan(self.obs)] = 0.
 
         # Initialise expectation
         if E is not None:
             assert E.shape == dim, "Problems with the dimensionalities"
-            E = ma.masked_invalid(E)
-        # else:
-            # E = ma.masked_invalid(s.zeros(self.dim))
+            E[self.mask] = 0.
         self.E = E
 
     def updateParameters(self):
@@ -76,12 +79,8 @@ class PseudoY(Unobserved_Variational_Node):
             return self.getExpectation(expand=True)
         return self.mini_batch
 
-    def mask(self):
-        # Mask the observations if they have missing values
-        self.obs = ma.masked_invalid(self.obs)
-
     def getMask(self):
-        return ma.getmask(self.obs)
+        return self.mask
 
     def precompute(self, options=None):
         # Precompute some terms to speed up the calculations
@@ -91,11 +90,11 @@ class PseudoY(Unobserved_Variational_Node):
         print("Error: expectation updates for pseudodata node depend on the type of likelihood. They have to be specified in a new class.")
         exit()
 
-    def getExpectation(self):
+    def getExpectation(self, expand=True):
         return self.E
 
-    def getExpectations(self):
-        return { 'E':self.getExpectation() }
+    def getExpectations(self, expand=True):
+        return { 'E':self.getExpectation(expand) }
 
     def getObservations(self):
         return self.obs
@@ -134,7 +133,20 @@ class PseudoY_Seeger(PseudoY):
         #-----------------------------------------------------------------------
         # Update mini batch only
         #-----------------------------------------------------------------------
-        self.params["zeta"][ix, :] = s.dot(Z,W.T)
+        self.params["zeta"][ix, :] = s.dot(Z,W.T) # Update mini batch only
+        # self.params["zeta"] = gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T )
+
+class Tau_Seeger(Constant_Node):
+    """
+    """
+    def __init__(self, dim, value):
+        Constant_Node.__init__(self, dim=dim, value=value)
+
+    def getValue(self):
+        return self.value
+
+    def getExpectation(self, expand=True):
+        return self.getValue()
 
 class Poisson_PseudoY(PseudoY_Seeger):
     """
@@ -170,7 +182,6 @@ class Poisson_PseudoY(PseudoY_Seeger):
         # Initialise the observed data
         assert s.all(s.mod(self.obs, 1) == 0), "Data must not contain float numbers, only integers"
         assert s.all(self.obs >= 0), "Data must not contain negative numbers"
-
     def ratefn(self, X):
         # Poisson rate function
         return s.log(1+s.exp(X))
@@ -181,22 +192,22 @@ class Poisson_PseudoY(PseudoY_Seeger):
 
     def updateExpectations(self):
         # Update the pseudodata
-        tau = self.markov_blanket["Tau"].getValue() # TODO update that
-        # TODO check that its not slow here, as we could otherwise update only
-        # for the current batch
-        self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
+        tau = self.markov_blanket["Tau"].getValue()
+        # self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
+        self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"])) / tau
 
     def calculateELBO(self):
         # Compute Lower Bound using the Poisson likelihood with observed data
-        if "SW" in self.markov_blanket:
-            Z = self.markov_blanket["Z"].getExpectation()
-            W = self.markov_blanket["SW"].getExpectation()
-        else:
-            Z = self.markov_blanket["SZ"].getExpectation()
-            W = self.markov_blanket["W"].getExpectation()
-        tmp = self.ratefn(s.dot(Z,W.T))
-        lb = s.sum( self.obs*s.log(tmp) - tmp)
-        return lb
+        Z = self.markov_blanket["Z"].getExpectation()
+        W = self.markov_blanket["W"].getExpectation()
+        mask = self.getMask()
+
+        tmp = self.ratefn( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
+
+        lb = self.obs*s.log(tmp) - tmp
+        lb[mask] = 0.
+
+        return lb.sum()
 
 class Bernoulli_PseudoY(PseudoY_Seeger):
     """
@@ -231,78 +242,80 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
         # TODO check that its not slow here, as we could otherwise update only
         # for the current batch
         self.E = self.params["zeta"] - 4.*(sigmoid(self.params["zeta"]) - self.obs)
+        self.means = self.E.mean(axis=0).data
+        self.E -= self.means
 
     def calculateELBO(self):
         # Compute Lower Bound using the Bernoulli likelihood with observed data
-        if "SW" in self.markov_blanket:
-            Z = self.markov_blanket["Z"].getExpectation()
-            W = self.markov_blanket["SW"].getExpectation()
-        else:
-            Z = self.markov_blanket["SZ"].getExpectation()
-            W = self.markov_blanket["W"].getExpectation()
+        Z = self.markov_blanket["Z"].getExpectation()
+        W = self.markov_blanket["W"].getExpectation()
         tmp = s.dot(Z,W.T)
         lik = s.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
         return lik
 
-class Binomial_PseudoY(PseudoY_Seeger):
-    """
-    Class for a Binomial pseudodata node
-    Likelihood:
-        p(x|N,theta) = p(x|N,theta) = binom(N,x) * theta**(x) * (1-theta)**(N-x)
-        f(x) = -log p(x|N,theta) = -log(binom(N,x)) - x*theta - (N-x)*(1-theta)
+# class Binomial_PseudoY(PseudoY_Seeger):
+#     """
+#     Class for a Binomial pseudodata node
+#     Likelihood:
+#         p(x|N,theta) = p(x|N,theta) = binom(N,x) * theta**(x) * (1-theta)**(N-x)
+#         f(x) = -log p(x|N,theta) = -log(binom(N,x)) - x*theta - (N-x)*(1-theta)
 
-    The second derivative is upper bounded:
-        f''(x_ij) <= 0.25*max(N_{:,j})
+#     The second derivative is upper bounded:
+#         f''(x_ij) <= 0.25*max(N_{:,j})
 
-    Following Seeger et al, the pseudodata yhat_{nd} follows a normal distribution with mean
-    E[w_{i,:}]*E[z_{j,:}] and precision 'tau_j'
+#     Following Seeger et al, the pseudodata yhat_{nd} follows a normal distribution with mean
+#     E[w_{i,:}]*E[z_{j,:}] and precision 'tau_j'
 
-    IMPROVE EXPLANATION
+#     IMPROVE EXPLANATION
 
-    Pseudodata is updated as follows
-        yhat_ij = zeta_ij - f'(zeta_ij)/tau_j
-                = zeta_ij - (N_{ij}*sigmoid(zeta_ij) - y_ij)/tau_d
+#     Pseudodata is updated as follows
+#         yhat_ij = zeta_ij - f'(zeta_ij)/tau_j
+#                 = zeta_ij - (N_{ij}*sigmoid(zeta_ij) - y_ij)/tau_d
 
-    """
-    def __init__(self, dim, obs, tot, Zeta=None, E=None):
-        # - dim (2d tuple): dimensionality of each view
-        # - obs (ndarray): observed data
-        # - E (ndarray): initial expected value of pseudodata
-        PseudoY_Seeger.__init__(self, dim=dim, obs=None, params=params, E=E)
+#     """
+#     def __init__(self, dim, obs, tot, Zeta=None, E=None):
+#         # - dim (2d tuple): dimensionality of each view
+#         # - obs (ndarray): observed data
+#         # - E (ndarray): initial expected value of pseudodata
+#         PseudoY_Seeger.__init__(self, dim=dim, obs=None, params=params, E=E)
 
-        # Initialise the observed data
-        assert s.all(s.mod(obs, 1) == 0) and s.all(s.mod(tot, 1) == 0), "Data must not contain float numbers, only integers"
-        assert s.all(obs >= 0) and s.all(tot >= 0), "Data must not contain negative numbers"
-        assert s.all(obs <= tot), "Observed counts have to be equal or smaller than the total counts"
-        self.obs = obs
-        self.tot = tot
+#         # Initialise the observed data
+#         assert s.all(s.mod(obs, 1) == 0) and s.all(s.mod(tot, 1) == 0), "Data must not contain float numbers, only integers"
+#         assert s.all(obs >= 0) and s.all(tot >= 0), "Data must not contain negative numbers"
+#         assert s.all(obs <= tot), "Observed counts have to be equal or smaller than the total counts"
+#         self.obs = obs
+#         self.tot = tot
 
 
-    def updateExpectations(self):
-        # Update the pseudodata
-        tau = self.markov_blanket["Tau"].getValue()  # TODO check that this works with stochastic (single value ?)
-        # TODO check that its not slow here, as we could otherwise update only
-        # for the current batch
-        self.E = self.params["zeta"] - s.divide(self.tot*sigmoid(self.params["zeta"])-self.obs, tau)
-        pass
+#     def updateExpectations(self):
+#         # Update the pseudodata
+#         tau = self.markov_blanket["Tau"].getValue()  # TODO check that this works with stochastic (single value ?)
+#         # TODO check that its not slow here, as we could otherwise update only
+#         # for the current batch
+#         self.E = self.params["zeta"] - s.divide(self.tot*sigmoid(self.params["zeta"])-self.obs, tau)
+#         pass
+# =======
+#         Z = self.markov_blanket["Z"].getExpectation()
+#         W = self.markov_blanket["W"].getExpectation()
+#         mask = self.getMask()
+# >>>>>>> master
 
-    def calculateELBO(self):
-        # Compute Lower Bound using the Bernoulli likelihood with observed data
-        if "SW" in self.markov_blanket:
-            Z = self.markov_blanket["Z"].getExpectation()
-            W = self.markov_blanket["SW"].getExpectation()
-        else:
-            Z = self.markov_blanket["SZ"].getExpectation()
-            W = self.markov_blanket["W"].getExpectation()
+#         # tmp = s.dot(Z,W.T)
+#         tmp = gpu_utils.asnumpy( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
 
-        tmp = sigmoid(s.dot(Z,W.T))
+#         lb = self.obs*tmp - s.log(1.+s.exp(tmp))
+#         lb[mask] = 0.
 
-        # TODO change approximation
-        tmp[tmp==0] = 0.00000001
-        tmp[tmp==1] = 0.99999999
-        lik = s.log(s.special.binom(self.tot,self.obs)).sum() + s.sum(self.obs*s.log(tmp)) + \
-            s.sum((self.tot-self.obs)*s.log(1-tmp))
-        return lik
+# <<<<<<< HEAD
+#         # TODO change approximation
+#         tmp[tmp==0] = 0.00000001
+#         tmp[tmp==1] = 0.99999999
+#         lik = s.log(s.special.binom(self.tot,self.obs)).sum() + s.sum(self.obs*s.log(tmp)) + \
+#             s.sum((self.tot-self.obs)*s.log(1-tmp))
+#         return lik
+# =======
+#         return lb.sum()
+# >>>>>>> master
 
 
 
@@ -343,10 +356,10 @@ class Tau_Jaakkola(Node):
     def getValue(self):
         return self.value
 
-    def getExpectation(self):
+    def getExpectation(self, expand=True):
         return self.getValue()
 
-    def getExpectations(self):
+    def getExpectations(self, expand=True):
         return { 'E':self.getValue(), 'lnE':s.log(self.getValue()) }
 
     def removeFactors(self, idx, axis=None):
@@ -384,6 +397,8 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
     def updateExpectations(self):
         # TODO check how expensive this is to potentially update for batch only
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
+        self.means = self.E.mean(axis=0).data
+        self.E -= self.means
 
     def updateParameters(self, ix=None, ro=None):
         #-----------------------------------------------------------------------
@@ -393,9 +408,12 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         W = self.markov_blanket["SW"].getExpectations()
 
         # TODO check
+        # TODO: MASK??
         self.params["zeta"][ix,:] = s.sqrt(
             s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
                                                                                                        W["E2"].T))
+
+        # self.params["zeta"] = s.sqrt(s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],W["E2"].T))
 
         # self.params["zeta"] = s.sqrt(
         #     s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
@@ -408,10 +426,311 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         #                                                                                              W["E2"].T))
         # self.params["zeta"] = ma.masked_invalid(self.params["zeta"])
 
+    # def calculateELBO(self):
+    #     # Compute Lower Bound using the Bernoulli likelihood with observed data
+    #     Z = self.markov_blanket["Z"].getExpectation()
+    #     W = self.markov_blanket["W"].getExpectation()
+    #     tmp = s.dot(Z,W.T)
+    #     lik = ma.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
+    #     return lik
+
     def calculateELBO(self):
-        # Compute Lower Bound using the Bernoulli likelihood with observed data
+        # Compute Evidence Lower Bound using the lower bound to the likelihood
         Z = self.markov_blanket["Z"].getExpectation()
-        W = self.markov_blanket["W"].getExpectation()
-        tmp = s.dot(Z,W.T)
-        lik = ma.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
-        return lik
+        Wtmp = self.markov_blanket["W"].getExpectations()
+        Ztmp = self.markov_blanket["Z"].getExpectations()
+        zeta = self.params["zeta"]
+        SW, SWW = Wtmp["E"], Wtmp["E2"]
+        Z, ZZ = Ztmp["E"], Ztmp["E2"]
+        mask = self.getMask()
+
+        # calculate E(Z)E(W)
+        ZW = Z.dot(SW.T)
+        ZW[mask] = 0.
+
+        # Calculate E[(ZW_nd)^2]
+        # this is equal to E[\sum_{k != k} z_k w_k z_k' w_k'] + E[\sum_{k} z_k^2 w_k^2]
+        tmp1 = s.square(ZW) - s.dot(s.square(Z),s.square(SW).T) # this is for terms in k != k'
+        tmp2 = ZZ.dot(SWW.T) # this is for terms in k = k'
+        EZZWW = tmp1 + tmp2
+
+        # calculate elbo terms
+        term1 = 0.5 * ((2.*self.obs - 1.)*ZW - zeta)
+        term2 = - s.log(1 + s.exp(-zeta))
+        term3 = - 1/(4 * zeta) *  s.tanh(zeta/2.) * (EZZWW - zeta**2)
+
+        lb = term1 + term2 + term3
+        lb[mask] = 0.
+
+        return lb.sum()
+
+#-------------------------------------------------------------------------------
+# Zero inflated data: mixed node implementation
+#-------------------------------------------------------------------------------
+# TODO in the data processing make sure that the data is centered around the zeros
+# TODO create initialiser
+# TODO build Markov Blanket in each sub-node. for the tau we need to give the right Y
+class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
+    """
+    Mixed node containing:
+        - a normal Y node for non-zero data
+        - a Bernoulli node for zero data
+
+    Zeros are replaced by pseudo data as in Jaakola
+    Non-Zero data remain as such
+    getExpectations returns the merged matrices
+
+    Appropriate wiring is done in the markov blanket so that tau jaakola sees the
+    jaakola Y and normal tau sees the normal Y
+    """
+    def __init__(self, dim, obs, params=None, E=None):
+        self.all_obs = obs
+        if type(self.all_obs) != ma.MaskedArray:
+            self.all_obs = ma.masked_invalid(self.all_obs)
+
+        # identify the zeros, nonzeros and nas and store their positions in masks
+        self.zeros = (self.all_obs == 0)
+        self.nonzeros = ~self.zeros # this masks includes the nas
+        self.nas = ma.getmask(self.all_obs)
+
+        self.sparsity = self.zeros.sum()/(self.zeros.sum() + self.nonzeros.sum())
+        print('using zero inflated noise model with sparsity ', self.sparsity)
+
+        # initialise the jaakola node with nas and non zeros masked
+        obs_jaakola = obs.copy()  # TODO if obs is already a masked array should we update mask ?
+        obs_jaakola[self.nonzeros] = np.nan
+        self.jaakola_node = Bernoulli_PseudoY_Jaakkola(dim, obs_jaakola)
+
+        # Initialise a y node where the zeros and nas are masked
+        obs_normal = obs.copy()
+        obs_normal[self.zeros]= np.nan  # nas are already masked so no need to
+        self.normal_node = Y_Node(dim, obs_normal)
+
+        self.nodes = [self.normal_node, self.jaakola_node]
+
+
+    def addMarkovBlanket(self, **kwargs):
+        self.jaakola_node.addMarkovBlanket(**kwargs)
+
+        # NOTE here we make sure that the non-zero Y node sees the corresponding Tau
+        if not hasattr(self.normal_node, 'markov_blanket'):
+            self.normal_node.markov_blanket = {}
+
+        for k,v in kwargs.items():
+            if k in self.normal_node.markov_blanket.keys():
+                print("Error: " + str(k) + " is already in the markov blanket of " + str(self.normal_node))
+                exit(1)
+            elif k == 'Tau':
+                self.normal_node.markov_blanket[k] = v.tau_normal
+            else:
+                self.normal_node.markov_blanket[k] = v
+
+    def getMask(self):
+        return self.nas
+
+    def updateParameters(self):
+        self.jaakola_node.updateParameters()
+
+    def updateExpectations(self):
+        self.jaakola_node.updateExpectations()
+
+    def getExpectation(self, expand=True):
+        E = self.normal_node.getExpectation().copy()
+        pseudo_y = self.jaakola_node.getExpectation()
+        E[self.zeros] = pseudo_y[self.zeros]
+
+        return E
+
+    def calculateELBO(self):
+        # as the values used by the jaakola node and the gamma node are rightly masked
+        # we can just sum the two contributions (double check that this works ofc)
+        tmp1 = self.jaakola_node.calculateELBO()
+        tmp2 = self.normal_node.calculateELBO()
+
+        return tmp1 + tmp2
+
+
+class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Mixed_Node):
+    """
+    Mixed node containing:
+        - a jaakola tau
+        - a normal tau
+
+    Both nodes are initialised normally and the right wiring is done the markov blanket
+    """
+
+    def __init__(self, dim, value, pa, pb, qa, qb, groups, groups_dic, qE=None):
+        # TODO what is the value in tau jaakola
+        # initialiser for the two nodes initialise different members which are
+        # all contained in the Zero_Inflated_Tau_Jaakkola node
+        N = len(groups)
+        self.tau_jaakola = Tau_Jaakkola((N, dim[1]), value)
+        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, groups_dic, qE)
+
+        self.nodes = [self.tau_jaakola, self.tau_normal]
+
+    def addMarkovBlanket(self, **kwargs):
+        # create a marov blanket for tau containing the zero inflated Y
+        if not hasattr(self, 'markov_blanket'):
+            self.markov_blanket = {}
+
+        # create the markov blanket for the jaakola tau, wiring the corresonding Y
+        if not hasattr(self.tau_jaakola, 'markov_blanket'):
+            self.tau_jaakola.markov_blanket = {}
+
+        for k,v in kwargs.items():
+            if k in self.tau_jaakola.markov_blanket.keys():
+                print("Error: " + str(k) + " is already in the markov blanket of " + str(self.tau_jaakola))
+                exit(1)
+            elif k == 'Y':
+                self.tau_jaakola.markov_blanket[k] = v.jaakola_node
+                self.markov_blanket[k] = v # put the 'mixed' Y node in the mb of self
+            else:
+                self.tau_jaakola.markov_blanket[k] = v
+
+        # create the markov blanket for the normal tau, wiring the corressponding Y
+        if not hasattr(self.tau_normal, 'markov_blanket'):
+            self.tau_normal.markov_blanket = {}
+
+        for k,v in kwargs.items():
+            if k in self.tau_normal.markov_blanket.keys():
+                print("Error: " + str(k) + " is already in the markov blanket of " + str(self.tau_normal))
+                exit(1)
+            elif k == 'Y':
+                self.tau_normal.markov_blanket[k] = v.normal_node
+            else:
+                self.tau_normal.markov_blanket[k] = v
+
+    def getExpectations(self, expand=True):
+        # Get expectations from separate nodes
+        E = self.tau_normal.getExpectations(expand=True)
+        tau_jk = self.tau_jaakola.getExpectations(expand=True)
+
+        # Merge
+        zeros = self.markov_blanket['Y'].zeros
+        E['E'][zeros], E['lnE'][zeros] = tau_jk['E'][zeros], tau_jk['lnE'][zeros]
+
+        return E
+
+    def getExpectation(self, expand=True):
+        return self.getExpectations(expand)['E']
+
+    def calculateELBO(self):
+        # TODO make sure that tau_d masks the zeros
+        return self.tau_normal.calculateELBO()
+
+#-------------------------------------------------------------------------------
+# Zero inflated data
+#-------------------------------------------------------------------------------
+# class Zero_Inflated_PseudoY_Jaakkola(Bernoulli_PseudoY_Jaakkola, Y_Node):
+#     """
+#     The node contains three types of observation (masked arrays):
+#         - all_obs where initial NAs are masked
+#         - obs where NAs AND non zeros are masked, used by the jaakola node methods
+#         - values where NAs AND zeros are masked, used by the Gamma node methods
+#     """
+#     def __init__(self, dim, obs, params=None, E=None):
+#         self.all_obs = obs
+#         if type(self.all_obs) != ma.MaskedArray:
+#             self.all_obs = ma.masked_invalid(self.all_obs)
+#
+#         # identify the zeros, nonzeros and nas and store their positions in masks
+#         self.zeros = (self.all_obs == 0)
+#         self.nonzeros = ~self.zeros # this masks includes the nas
+#         self.nas = ma.getmask(self.all_obs)
+#
+#         self.sparsity = self.zeros.sum()/(self.zeros.sum() + self.nonzeros.sum())
+#         print('using zero inflated noise model with parsity ', self.sparsity)
+#
+#         # initialise the jaakola node with nas and non zeros masked
+#         obs_jaakola = obs.copy()  # TODO if obs is already a masked array should we update mask ?
+#         obs_jaakola[self.nonzeros] = np.nan
+#         Bernoulli_PseudoY_Jaakkola.__init__(self, dim, obs_jaakola, params, E)
+#
+#         # Initialise a y node where the zeros and nas are masked
+#         vals_gamma = self.obs.copy()
+#         vals_gamma[self.zeros]= np.nan  # nas are already masked so no need to
+#         Y_Node.__init__(self, dim, vals_gamma)
+#
+#         # This option enables the node to return Specific parts of the data when necessary
+#         # either all, zeros or nonzeros
+#         self.E_option == 'all'
+#
+#     def updateExpectations(self):
+#         # update expectations as if all observed data was binary
+#         Bernoulli_PseudoY_Jaakkola.updateExpectations(self)
+#
+#     # set an option for returning the expection
+#     def set_E_option(self, option):
+#         self.E_option = option
+#
+#     def getExpectation(self):
+#         # for all non zero values, replace by the real observations
+#         if self.E_option == 'all':
+#             # TODO check masks ok
+#             E = self.obs.copy()
+#             E[self.nonzeros] = self.all_obs[self.non_zeros]
+#
+#         if self.E_option == 'zeros':
+#             E = self.obs
+#
+#         if self.E_option == 'nonzeros':
+#             E = self.value
+#
+#         return E
+#
+#     def calculateELBO(self):
+#         # as the values used by the jaakola node and the gamma node are rightly masked
+#         # we can just sum the two contributions
+#         tmp1 = Bernoulli_PseudoY_Jaakkola.calculateELBO(self)
+#         tmp2 = Y_Node.calculateELBO(self)
+#
+#         return tmp1 + tmp2
+#
+# class Zero_Inflated_Tau_Jaakkola(Tau_Jaakkola, TauD_Node):
+#     """
+#     """
+#     def __init__(self, dim, value, pa, pb, qa, qb):
+#         # initialiser for the two nodes initialise different members which are
+#         # all contained in the Zero_Inflated_Tau_Jaakkola node
+#         Tau_Jaakkola.__init__(self, dim, value)
+#         TauD_Node.__init__(self, dim, pa, pb, qa, qb)
+#         # TODO have a tau_n option too
+#
+#     def updateParameters():
+#         # TODO need to make sure the zeros are masked for the Taud update ...
+#         Y = self.markov_blanket['Y']
+#         Y.set_E_option('nonzeros')
+#         TauD_Node.updateParameters(self)
+#         Y.set_E_option('all')
+#
+#     def updateExpectations(self):
+#         # Update self.value using Jaakolas update
+#         Tau_Jaakkola.updateExpectations(self)
+#
+#         # Update expectatins of self.Q using a gamma node
+#         TauD_Node.updateExpectations(self)
+#
+#     def getExpectations():
+#         # expand E from the gamma node
+#         taud_exp = TauD_Node.getExpectations(self, expand=True)
+#         # return {'E': expanded_E, 'lnE': expanded_lnE}
+#
+#         # merge E from
+#
+#         self.E[self.zeros] = self.E_bk[self.zeros]
+#         return { 'E':self.getValue(), 'lnE':s.log(self.getValue()) }
+#
+#     def calculateELBO():
+#         # TODO make sure that tau_d masks the zeros
+#         Y.set_E_option('nonzeros')
+#         tmp =  TauD_Node.calculateELBO(self)
+#         Y.set_E_option('all')
+#         return tmp
+#
+#     def getValue(self):
+#         return self.getExpectation()
+#
+#     def getExpectation(self):
+#         # TODO reimplement from getExpectations
+#         return self.getValue()

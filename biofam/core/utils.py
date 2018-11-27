@@ -102,3 +102,23 @@ def nans(shape, dtype=float):
     a = np.empty(shape, dtype)
     a.fill(np.nan)
     return a
+
+def corr(A,B):
+    """ Method to efficiently compute correlation coefficients between two matrices
+
+    PARAMETERS
+    ---------
+    A: np array
+    B: np array
+    """
+
+    # Rowwise mean of input arrays & subtract from input arrays themselves
+    A_mA = A - A.mean(1)[:,None]
+    B_mB = B - B.mean(1)[:,None]
+
+    # Sum of squares across rows
+    ssA = (A_mA**2).sum(1);
+    ssB = (B_mB**2).sum(1);
+
+    # Finally get corr coeff
+    return np.dot(A_mA, B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))

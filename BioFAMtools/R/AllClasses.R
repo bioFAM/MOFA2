@@ -58,7 +58,6 @@ setMethod("show", "BioFAModel", function(object) {
   
   if (object@status == "trained") {
     nfactors <- object@dimensions[["K"]]
-    if (object@model_options$learn_intercept) { nfactors <- nfactors - 1 }
     cat(sprintf("Trained BioFAModel with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of sample groups: %d \n Sample groups names: %s \n Number of samples per group: %s \n Number of factors: %d \n",
                 object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
                 object@dimensions[["P"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 

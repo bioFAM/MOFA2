@@ -23,15 +23,15 @@ def train_model(bayesnet, train_opts):
     ####################
 
     print ("\n")
-    print ("#"*45)
+    print ("#"*40)
     print ("## Training the model with seed %d ##" % (train_opts['seed']))
-    print ("#"*45)
+    print ("#"*40)
     print ("\n")
 
     bayesnet.iterate()
 
     print("\n")
-    print("#"*43)
+    print("#"*23)
     print("## Training finished ##")
-    print("#"*43)
+    print("#"*23)
     print("\n")

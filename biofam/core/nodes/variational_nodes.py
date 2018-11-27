@@ -90,6 +90,23 @@ class Unobserved_Variational_Node(Variational_Node):
         self.samp = self.P.sample()
         return self.samp
 
+
+class Unobserved_Variational_Mixed_Node(Variational_Node):
+    def __init__(self):
+        pass
+
+    def updateParameters(self):
+        for node in self.nodes:
+            node.updateParameters()
+
+    def updateExpectations(self):
+        for node in self.nodes:
+            node.updateExpectations()
+
+    def precompute(self, options=None):
+        for node in self.nodes:
+            node.precompute(options)
+
 #######################################################
 ## Specific classes for unobserved variational nodes ##
 #######################################################
@@ -218,5 +235,5 @@ class Beta_Unobserved_Variational_Node(Unobserved_Variational_Node):
         super().__init__(dim)
 
         # Initialise P and Q distributions
-        self.P = Beta(dim, pa, pb)
-        self.Q = Beta(dim, qa, qb, E=qE)
+        self.P = Beta(dim, a=pa, b=pb)
+        self.Q = Beta(dim, a=qa, b=qb, E=qE)

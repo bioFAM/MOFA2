@@ -3,3 +3,6 @@
 \name{plot_factor_summary}
 \alias{plot_factor_summary}
 \title{Plot summary of informative plots relative to a specific factor}
+\description{
+Plot summary of informative plots relative to a specific factor
+}

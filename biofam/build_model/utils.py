@@ -1,6 +1,6 @@
 from __future__ import division
 from time import sleep
-from copy import deepcopy
+from time import time
 import numpy as np
 import scipy as s
 import pandas as pd
@@ -11,74 +11,23 @@ import h5py
 from biofam.core.nodes import *
 
 
-def removeIncompleteSamples(data):
-    """ Method to remove samples with missing views
+def mask_data(data, mask_fraction):
+    """ Method to mask data values, mainly used to evaluate imputation
 
     PARAMETERS
     ----------
-    data: list of ndarrays
-        list of length M with ndarrays with the observed data of dimensionality (N,Dm)
+    data: ndarray
+    mask_fraction: float with the fraction of values to mask (from 0 to 1)
     """
-    print("Removing incomplete samples...")
 
-    M = len(data)
-    N = data[0].shape[0]
-    samples_to_remove = []
-    for n in range(N):
-        for m in range(M):
-            if pd.isnull(data[m].iloc[n][0]):
-                samples_to_remove.append(n)
-                break
+    D = data.shape[1]
+    N = data.shape[0]
 
-    print("A total of " + str(len(samples_to_remove)) + " sample(s) have at least a missing view and will be removed")
-
-    data_filt = [None]*M
-    samples_to_keep = np.setdiff1d(range(N),samples_to_remove)
-    for m in range(M):
-        data_filt[m] = data[m].iloc[samples_to_keep]
-
-    return data_filt
-
-def maskData(data, data_opts):
-    """ Method to mask values of the data,
-    It is mainly used to generate missing values and evaluate imputation
-
-    PARAMETERS
-    ----------
-    data: list of ndarrays
-        list of length M with ndarrays with the observed data of dimensionality (N,Dm)
-    data_opts: dictionary
-        data_opts['maskAtRandom']
-        data_opts['maskNSamples']
-    """
-    print("Masking data with the following options:")
-    print("at random:")
-    print(data_opts['mask_at_random'])
-    print("full cases:")
-    print(data_opts['mask_n_samples'])
-
-    for m in range(len(data)):
-
-        # Mask values at random
-        D = data[m].shape[1]
-        N = data[m].shape[0]
-        p2Mask = data_opts['mask_at_random'][m]
-        if p2Mask != 0:
-            idxMask = np.zeros(N*D)
-            idxMask[:int(round(N*D*p2Mask))] = 1
-            np.random.shuffle(idxMask)
-            idxMask = np.reshape(idxMask, [N, D])
-            data[m] = data[m].mask(idxMask==1)
-
-        # Mask samples in a complete view
-        Nsamples2Mask = data_opts['mask_n_samples'][m]
-        if Nsamples2Mask != 0:
-            idxMask = np.random.choice(N, size=Nsamples2Mask, replace = False)
-            # idxMask = np.arange(Nsamples2Mask)
-            # print idxMask
-            tmp = data[m].copy()
-            tmp.ix[idxMask,:] = pd.np.nan
-            data[m] = tmp
+    mask = np.ones(N*D)
+    mask[:int(round(N*D*mask_fraction))] = np.nan
+    s.random.shuffle(mask)
+    mask = np.reshape(mask, [N, D])
+    data *= mask
 
     return data
 
@@ -173,56 +122,68 @@ def loadData(data_opts, verbose=True):
 
     return (Y, samples_groups)
 
-def process_data(Y, data_opts, samples_groups):
-    M = len(Y)
-    parsed_Y = deepcopy(Y)
-    assert len(data_opts['center_features']) == M, "data_opts['center_features'] is not length M"
-    assert len(data_opts['scale_features']) == M, "data_opts['scale_features'] is not length M"
-    assert len(data_opts['scale_views']) == M, "data_opts['scale_views'] is not length M"
+def process_data(data, data_opts, samples_groups):
 
-    for m in range(M):
+    parsed_data = data
+
+    for m in range(len(data)):
 
         # Convert to float32
-        parsed_Y[m] = parsed_Y[m].astype(np.float32)
+        # parsed_data[m] = parsed_data[m].astype(np.float32)
 
-        # For some reason, reticulate stores missing values in integer matrices as -2147483648
-        parsed_Y[m][parsed_Y[m] == -2147483648] = np.nan
+        # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
+        parsed_data[m][parsed_data[m] == -2147483648] = np.nan
+
         # Removing features with no variance
-        # var = parsed_Y[m].std(axis=0)
+        # var = parsed_data[m].std(axis=0)
         # if np.any(var==0.):
         #     print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
-        #     parsed_Y[m].drop(parsed_Y[m].columns[np.where(var==0.)], axis=1, inplace=True)
+        #     parsed_data[m].drop(parsed_data[m].columns[np.where(var==0.)], axis=1, inplace=True)
 
-        if data_opts['center_features'][m]:
-            print("Centering features for view " + str(m) + "...")
-            parsed_Y[m] -= np.nanmean(parsed_Y[m],axis=0)
+        # Mask values
+        if data_opts["mask"][m] > 0:
+            print("Masking %.1f%% of values in view '%s'..." % (data_opts["mask"][m]*100, data_opts["views_names"][m]))
+            parsed_data[m] = mask_data(parsed_data[m], data_opts['mask'][m])
 
-        if data_opts['center_features_per_group'][m]:
-            print("Centering features per group for view " + str(m) + "...")
-            for gp_name in data_opts['groups_names']:
-                filt = [gp==gp_name for gp in samples_groups]
-                parsed_Y[m][filt] -= np.nanmean(parsed_Y[m][filt],axis=0)
+        # Centering and scaling is only appropriate for gaussian data
+        if data_opts["likelihoods"][m] in ["gaussian", "zero_inflated"]:
 
-        # Scale the views to unit variance
-        if data_opts['scale_views'][m]:
-            print("Scaling view " + str(m) + " to unit variance...")
-            parsed_Y[m] /= np.nanstd(parsed_Y[m])
+            # mask zeros if zero infalted likelihood
+            if data_opts["likelihoods"][m] is "zero_inflated":
+                zeros_mask = parsed_data[m]==0
+                parsed_data[m][zeros_mask] = np.nan
 
-        # quantile normalise features
-        # if data_opts['gaussianise_features'][m]:
-        #     print("Gaussianising features for view " + str(m) + "...")
-        #     parsed_Y[m] = gaussianise(parsed_Y[m])
+            # Center features
+            if data_opts['center_features_per_group']:
+                for gp_name in data_opts['groups_names']:
+                    filt = [gp==gp_name for gp in samples_groups]
+                    parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
+            else:
+                parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
 
-        # Scale the features to unit variance
-        if data_opts['scale_features'][m]:
-            print("Scaling features for view " + str(m) + " to unit variance...")
-            parsed_Y[m] /= np.nanstd(parsed_Y[m], axis=0)
+            # Scale views to unit variance
+            if data_opts['scale_views']:
+                parsed_data[m] /= np.nanstd(parsed_data[m])
 
-        print("\n")
+            # quantile normalise features
+            # if data_opts['gaussianise_features'][m]:
+            #     print("Gaussianising features for view " + str(m) + "...")
+            #     parsed_data[m] = gaussianise(parsed_data[m])
 
-        parsed_Y[m]  = parsed_Y[m].values
+            # Scale features to unit variance
+            if data_opts['scale_features']:
+                parsed_data[m] /= np.nanstd(parsed_data[m], axis=0)
 
-    return parsed_Y
+            # reset zeros if zero infalted likelihood
+            if data_opts["likelihoods"][m] is "zero_inflated":
+                parsed_data[m][zeros_mask] = 0.
+
+
+        # Convert data to numpy array format
+        if isinstance(parsed_data[m], pd.DataFrame):
+            parsed_data[m] = parsed_data[m].values
+
+    return parsed_data
 
 def loadDataGroups(data_opts):
     """
@@ -232,321 +193,3 @@ def loadDataGroups(data_opts):
         return None
     sample_labels = np.genfromtxt(data_opts['samples_groups_file'], dtype='str')
     return sample_labels
-
-
-def corr(A,B):
-    """ Method to efficiently compute correlation coefficients between two matrices
-
-    PARAMETERS
-    ---------
-    A: np array
-    B: np array
-    """
-
-    # Rowwise mean of input arrays & subtract from input arrays themselves
-    A_mA = A - A.mean(1)[:,None]
-    B_mB = B - B.mean(1)[:,None]
-
-    # Sum of squares across rows
-    ssA = (A_mA**2).sum(1);
-    ssB = (B_mB**2).sum(1);
-
-    # Finally get corr coeff
-    return np.dot(A_mA, B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))
-
-def saveParameters(model, hdf5, views_names=None, groups_names=None, samples_groups=None):
-    """ Method to save the parameters of the model in an hdf5 file
-
-    PARAMETERS
-    ----------
-    model: a BayesNet instance
-    hdf5:
-    views_names
-    """
-
-    # Get nodes from the model
-    nodes = model.getNodes()
-
-    # Create groups
-    param_grp = hdf5.create_group("parameters")
-
-    # Iterate over nodes
-    for node in nodes:
-
-        # Collect node parameters
-        parameters = nodes[node].getParameters()
-
-        # Create node subgroup
-        node_subgrp = param_grp.create_group(node)
-
-        # Multi-view nodes
-        if type(parameters) == list:
-            # Loop through the views
-            for m in range(len(parameters)):
-                tmp = views_names[m] if views_names is not None else "view_" + str(m)
-
-                # Create subsubgroup for the view
-                view_subgrp = node_subgrp.create_group(tmp)
-                # Loop through the parameters of the view
-                if parameters[m] is not None:
-                    # Variational nodes
-                    if type(parameters[m]) == dict:
-                        for param_name in parameters[m].keys():
-                            if parameters[m][param_name] is not None:
-                                view_subgrp.create_dataset(param_name, data=parameters[m][param_name].T)
-                    # Non-variational nodes (no distributions)
-                    elif type(parameters[m]) == np.ndarray:
-                           view_subgrp.create_dataset("value", data=parameters[m].T)
-
-        # Single-view nodes
-        else:
-            for group_ix, samp_group in enumerate(groups_names):
-                samp_subgrp = node_subgrp.create_group(str(samp_group))
-                samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
-                for param_name in parameters.keys():
-                    if node == 'Z':
-                        df = parameters[param_name][samp_indices,:]
-                    else:
-                        if len(df.shape) > 1:
-                            df = df[group_ix,:]
-                    samp_subgrp.create_dataset("%s" % (param_name), data=df.T)
-
-    pass
-
-def saveExpectations(model, hdf5, views_names=None, groups_names=None, samples_groups=None, only_first_moments=True):
-    """ Method to save the expectations of the model in an hdf5 file
-
-    PARAMETERS
-    ----------
-    model: a BayesNet instance
-    hdf5:
-    views_names
-    only_first_moments
-    """
-    # Get nodes from the model
-    nodes = model.getNodes()
-    # check if there are sample groups in the model
-    if 'samples_groups' is None:
-        samples_groups = np.array(['all'] * model.dim['N'])
-        groups_names = np.array(['all'])
-
-    exp_grp = hdf5.create_group("expectations")
-
-    # Iterate over nodes
-    for node in nodes:
-
-        # Collect node expectations
-        expectations = nodes[node].getExpectations()
-
-        # Create subgroup for the node
-        node_subgrp = exp_grp.create_group(node)
-
-        # Multi-view nodes
-        if type(expectations) == list:
-
-            # Iterate over views
-            for m in range(len(expectations)):
-                tmp = views_names[m] if views_names is not None else "view_" + str(m)
-
-                # Create subsubgroup for the view
-                view_subgrp = node_subgrp.create_group(tmp)
-
-                # Loop through the expectations
-
-                if node == "SW":
-                    expectations[m] = {'E':expectations[m]["E"], 'ES':expectations[m]["EB"], 'EW':expectations[m]["EN"]}
-                if only_first_moments: expectations[m] = {'E':expectations[m]["E"]}
-
-                if expectations[m] is not None:
-
-                    # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
-                    SigmaNode = node == "SigmaAlphaW" and nodes[node].getNodes()[m].__class__.__name__ != "AlphaW_Node_mk"
-
-                    for exp_name in expectations[m].keys():
-
-                        tmp = expectations[m][exp_name]
-                        if type(tmp) == ma.core.MaskedArray:
-                            tmp = ma.filled(tmp, fill_value=np.nan)
-
-                        # Expectations for the node like Y and Tau have both view and group structure
-                        if node == "Y" or node == "Tau":
-                            for samp_group in groups_names:
-                                # create hdf5 group for the considered sample group
-                                samp_subgrp = view_subgrp.create_group(str(samp_group))
-                                samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
-                                df = tmp[samp_indices,:]
-                                samp_subgrp.create_dataset(str(exp_name), data=df)
-                        else:
-                            if SigmaNode:
-                                view_subgrp.create_dataset(exp_name, data=tmp)
-                            else:
-                                view_subgrp.create_dataset(exp_name, data=tmp.T)
-
-        # Single-view nodes
-        else:
-            if node == "SZ":
-                expectations = {'E':expectations["E"], 'ES':expectations["EB"], 'EZ':expectations["EN"]}
-            if only_first_moments: expectations = {'E':expectations["E"]}
-#            for samp_group in range(len(groups_names)):
-#                samp_subgrp = node_subgrp.create_group(samp_group)
-            group_ix = 0
-            for samp_group in groups_names:
-                # create hdf5 group for the considered sample group
-                samp_subgrp = node_subgrp.create_group(str(samp_group))
-                samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
-
-                # iterate over expectation names
-                for exp_name in expectations.keys():
-                    # is the node a Sigma node ? since we cannot transpose its expectation (list of matrices, not tensors)
-                    if node == "SigmaZ":
-                        samp_subgrp.create_dataset("%s" % (exp_name), data=expectations[exp_name])
-                    if node == 'Z':
-                        df = expectations[exp_name][samp_indices,:]
-                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
-                    else:
-#                        df = expectations[exp_name][samples_groups,:]
-#                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
-                        df = expectations[exp_name]
-                        # TODO a bit dirty here, this is if we use a thetaZ which is not per group
-                        if len(df.shape)>1:
-                            df = df[group_ix,:]
-                        samp_subgrp.create_dataset("%s" % (exp_name), data=df.T)
-
-                group_ix += 1
-
-
-def saveTrainingStats(model, hdf5):
-    """ Method to save the training statistics in an hdf5 file
-
-    PARAMETERS
-    ----------
-    model: a BayesNet instance
-    hdf5:
-    """
-    stats = model.getTrainingStats()
-    stats_grp = hdf5.create_group("training_stats")
-    stats_grp.create_dataset("activeK", data=stats["activeK"])
-    stats_grp.create_dataset("elbo", data=stats["elbo"])
-    stats_grp.create_dataset("elbo_terms", data=stats["elbo_terms"].T)
-    stats_grp['elbo_terms'].attrs['colnames'] = [a.encode('utf8') for a in stats["elbo_terms"].columns.values]
-
-def saveTrainingOpts(opts, hdf5):
-    """ Method to save the training options in an hdf5 file
-
-    PARAMETERS
-    ----------
-    opts:
-    hdf5:
-    """
-    # Remove dictionaries from the options
-    for k,v in opts.copy().items():
-        if type(v)==dict:
-            for k1,v1 in v.items():
-                opts[str(k)+"_"+str(k1)] = v1
-            opts.pop(k)
-
-    # Create HDF5 data set
-    if 'schedule' in opts.keys():
-        del opts['schedule']
-    # For more info see the issue with UTF-8 strings in Python3 and h5py: https://github.com/h5py/h5py/issues/289
-    hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
-    hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
-
-def saveModelOpts(opts, hdf5):
-    """ Method to save the model options in an hdf5 file
-
-    PARAMETERS
-    ----------
-    opts:
-    hdf5:
-    """
-    # opts_interest = ["learnIntercept", "schedule", "likelihoods"]
-    opts_interest = ["learn_intercept", "likelihoods", "noise_on", "sl_z", "sl_w"]
-    opts = dict((k, opts[k]) for k in opts_interest)
-    grp = hdf5.create_group('model_options')
-    for k, v in opts.items():
-        grp.create_dataset(k, data=np.asarray(v).astype('S'))
-    grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
-
-def saveTrainingData(model, hdf5, data, views_names=None, groups_names=None, samples_groups=None, samples_names=None, features_names=None):
-    """ Method to save the training data in an hdf5 file
-
-    PARAMETERS
-    ----------
-    model: a BayesNet instance
-    hdf5:
-    views_names
-    groups_names
-    samples_names
-    features_names
-    """
-
-    # check if there are sample groups in the model
-
-    # if 'AlphaZ' in nodes and isinstance(nodes["AlphaZ"], AlphaZ_Node_groups):
-    #     samples_groups = nodes["AlphaZ"].groups
-    #     groups_names = nodes['AlphaZ'].groups_names
-    # else:
-    #     samples_groups = np.array([0] * model.dim['N'])
-    #     groups_names = np.array(['all'])
-
-    data_grp = hdf5.create_group("data")
-
-    # Save features per view and samples per group
-    featuredata_grp = hdf5.create_group("features")
-    sampledata_grp  = hdf5.create_group("samples")
-
-    for m in range(len(data)):
-        view = views_names[m] if views_names is not None else "view_" + str(m)
-
-        # Save features names
-        if features_names is not None:
-            featuredata_grp.create_dataset(view, data=[str(f).encode('utf8') for f in features_names[m]])
-
-        # Save data
-        view_subgrp = data_grp.create_group(view)
-        for samp_group in groups_names:
-            samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
-            # view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:].data)
-            view_subgrp.create_dataset(samp_group, data=data[m][samp_indices,:])
-
-    # Save samples names
-    for samp_group in groups_names:
-        samp_indices = np.where(np.array(samples_groups) == samp_group)[0]
-        if samples_names is not None:
-            sampledata_grp.create_dataset(samp_group, data=[str(s).encode('utf8') for s in [samples_names[e] for e in samp_indices]])
-
-
-def saveTrainedModel(model, outfile, data,
-    train_opts, model_opts,
-    features_names=None, views_names=None,
-    samples_names=None, groups_names=None, samples_groups=None):
-    """ Method to save the model in an hdf5 file
-
-    PARAMETERS
-    ----------
-    """
-    assert model.trained, "Model is not trained"
-
-    # For some reason h5py orders the datasets alphabetically, so we have to modify the likelihood accordingly
-    if views_names is not None:
-        uniq_views_names = np.unique(views_names).tolist()
-        sorted_views = sorted(uniq_views_names) #alphabetical sort
-        idx = {view:i for (i,view) in enumerate(uniq_views_names)}
-        idx_sorted = [idx[view] for view in sorted_views] #idx of the views sorted alphabetically
-        tmp = [model_opts["likelihoods"][idx_sorted[m]] for m in range(len(model_opts["likelihoods"]))]
-        model_opts["likelihoods"] = tmp
-
-    # if features_names is not None:
-    #     assert len(np.unique(features_names)) == len(features_names), 'Feature names must be unique'
-    # if samples_names is not None:
-    #     assert len(np.unique(samples_names)) == len(samples_names), 'Sample names must be unique'
-
-    hdf5 = h5py.File(outfile,'w')
-    saveExpectations(model, hdf5, views_names, groups_names, samples_groups)
-    # saveParameters(model, hdf5, views_names, groups_names, samples_groups)
-    saveModelOpts(model_opts, hdf5)
-    # saveTrainingStats(model, hdf5)
-    saveTrainingOpts(train_opts, hdf5)
-    saveTrainingData(model, hdf5, data, views_names, groups_names, samples_groups, samples_names, features_names)
-    hdf5.close()

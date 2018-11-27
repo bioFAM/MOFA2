@@ -8,7 +8,6 @@ import numpy as np
 import scipy as s
 #from joblib import Parallel, delayed
 
-from biofam.core.BayesNet import *
 from biofam.build_model.init_model import initModel
 from biofam.build_model.utils import *
 
@@ -18,7 +17,6 @@ class buildModel(object):
         self.data_opts = data_opts
         self.model_opts = model_opts
         self.dim = dimensionalities
-        pass
 
     def createMarkovBlankets(self):
         """ Define the markov blankets """
@@ -34,8 +32,7 @@ class buildModel(object):
 
     def get_nodes(self):
         """ Get all nodes """
-        assert hasattr(self, 'net'), "BayesNet has not been created"
-        return self.net.getNodes()
+        return self.init_model.getNodes()
 
 
 class buildBiofam(buildModel):
@@ -50,12 +47,6 @@ class buildBiofam(buildModel):
 
         # Define markov blankets
         self.createMarkovBlankets()
-
-        # Define training schedule
-        self.createSchedule()
-
-        # Create BayesNet class
-        self.createBayesNet()
 
     def build_nodes(self):
         """ Method to build all nodes """
@@ -84,30 +75,25 @@ class buildBiofam(buildModel):
 
     def build_Y(self):
         """ Build node Y for the observations """
-        self.init_model.initY(noise_on=self.model_opts['noise_on'])
+        self.init_model.initY()
 
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
-
-        # if learning the intercept, add a covariate of ones to Z
-        if self.model_opts["learn_intercept"]:
-            self.model_opts['covariates'] = s.ones((self.dim["N"],1))
-            self.model_opts['scale_covariates'] = [False]
-
         if self.model_opts['sl_z']:
             self.init_model.initSZ(qmean_T1=0)
+            # self.init_model.initSZ(qmean_T1="random")
         else:
-            # TODO change Z node so that we dont use a multivariate prior when no covariance structure
             self.init_model.initZ(qmean=0)
+            # self.init_model.initZ(qmean="random")
 
     def build_W(self):
         """ Build node W for the weights """
         if self.model_opts['sl_w']:
-            self.init_model.initSW(qmean_S1 = "random")
-            # self.init_model.initSW(qmean_S1 = 0)
+            self.init_model.initSW(qmean_S1=0)
+            # self.init_model.initSW(qmean_S1 = "random")
         else:
-            self.init_model.initW(qmean="random")
-            # self.init_model.initW(qmean=0)
+            self.init_model.initW(qmean=0)
+            # self.init_model.initW(qmean="random")
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
@@ -131,24 +117,26 @@ class buildBiofam(buildModel):
 
         # Initialise hyperparameters for the ThetaZ prior
         initTheta_a = 1.
-        initTheta_b = 1. #0.001  #0.001 #1.
+        initTheta_b = 1.
+        initTheta_qE = 1.
 
-        self.init_model.initThetaZ(self.data_opts['samples_groups'], qa=initTheta_a, qb=initTheta_b)
+        self.init_model.initThetaZ(self.data_opts['samples_groups'], qa=initTheta_a, qb=initTheta_b, qE=initTheta_qE)
 
     def build_ThetaW(self):
         """ Build node ThetaW for the Spike and Slab prior on the weights """
 
         # Initialise hyperparameters for the ThetaW prior
         initTheta_a = 1.
-        initTheta_b = 1.#.001  #0.001 #1.
+        initTheta_b = 1.
+        initTheta_qE = 1.
 
-        self.init_model.initThetaW(qa=initTheta_a, qb=initTheta_b)
+        self.init_model.initThetaW(qa=initTheta_a, qb=initTheta_b, qE=initTheta_qE)
 
     def createMarkovBlankets(self):
         """ Define the markov blankets """
 
         # Fetch all nodes
-        nodes = self.init_model.getNodes()
+        nodes = self.get_nodes()
 
         # Define basic connections
         nodes['Y'].addMarkovBlanket(Z=nodes["Z"], W=nodes["W"], Tau=nodes["Tau"])
@@ -175,41 +163,3 @@ class buildBiofam(buildModel):
         if self.model_opts['ard_w']:
             nodes['AlphaW'].addMarkovBlanket(W=nodes['W'])
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
-
-    def createSchedule(self):
-        """ Define the schedule of updates """
-
-        # TO-DO:
-        # - RICARD: I THINK THE SCHEDULE OF UPDATES SHOULD NOT BE INSIDE BUILD_MODEL
-        # - ALLOW SCHEDULE TO BE PROVIDED AS TRAIN_OPTIONS
-        # - IF PROVIDED, SO A SANITY CHECKS THAT THE CORRECT NODES CAN BE FOUND AND THERE ARE NO DUPLICATED
-
-        # Define basic schedule of updates
-        schedule = ['Y', 'Z', 'W', 'Tau']
-        # schedule = ['Y', 'W', 'Z', 'Tau']
-
-        # Insert ThetaW after W if Spike and Slab prior on W
-        if self.model_opts['sl_w']:
-            ix = schedule.index("W")
-            schedule.insert(ix+1, 'ThetaW')
-
-        # Insert ThetaZ after Z if Spike and Slab prior on Z
-        if self.model_opts['sl_z']:
-            ix = schedule.index("Z")
-            schedule.insert(ix+1, 'ThetaZ')
-
-        # Insert AlphaW after W if ARD prior on W
-        if self.model_opts['ard_w']:
-            ix = schedule.index("W")
-            schedule.insert(ix+1, 'AlphaW')
-
-        # Insert AlphaZ after Z if ARD prior on Z
-        if self.model_opts['ard_z']:
-            ix = schedule.index("Z")
-            schedule.insert(ix+1, 'AlphaZ')
-
-        self.schedule = schedule
-
-    def createBayesNet(self):
-        """ Method to create the BayesNet class """
-        self.net = BayesNet(dim=self.dim, nodes=self.init_model.getNodes())

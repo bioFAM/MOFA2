@@ -129,9 +129,8 @@ get_default_data_options <- function(object) {
   
   # Define default data options
   data_options <- list(
-    center_features = TRUE,  # (logical) Center features to zero mean (only applies to continuous data)
-    scale_views = FALSE,      # (logical) Scale views to unit variance (only applies to continuous data)
-    center_features_per_group = FALSE # TO DO
+    center_features_per_group = FALSE, # (logical) Center features to zero mean, for each group separately
+    scale_views = FALSE                # (logical) Scale views to unit variance
   )
   
   # if data_options already exist, replace the default values but keep the additional ones
@@ -152,6 +151,7 @@ get_default_data_options <- function(object) {
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the initial number of factors. 
 #'  If you want to learn the number of factors automatically we recommend setting this to a large value, around 50. Default is 25.}
+#'  }
 #' @return Returns a list with the default model options, which have to be passed as an argument to \code{\link{prepareMOFA}}
 #' @export
 get_default_model_options <- function(object) {

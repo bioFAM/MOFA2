@@ -4,7 +4,8 @@
 \alias{get_weights}
 \title{get_weights}
 \usage{
-get_weights(object, views = "all", factors = "all", as.data.frame = FALSE)
+get_weights(object, views = "all", factors = "all",
+  as.data.frame = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
