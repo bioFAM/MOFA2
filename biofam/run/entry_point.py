@@ -247,7 +247,7 @@ class entry_point(object):
             for g in self.data_opts['groups_names']:
                 print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (m, g, tmp_samples[g], tmp_features[m]) )
         print("\n")
-        
+
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
 
@@ -309,7 +309,7 @@ class entry_point(object):
 
         # Training schedule
         if schedule is None:
-            schedule = ['Y', 'W', 'Z', 'Tau']
+            schedule = ['Y', 'Z', 'W', 'Tau']
 
             # Insert ThetaW after W if Spike and Slab prior on W
             if self.model_opts['sl_w']:
@@ -499,32 +499,25 @@ if __name__ == '__main__':
 
     ent = entry_point()
 
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
-
+    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    views =  ["view_A", "view_A", "view_B", "view_B"]
+    groups = ["group_A", "group_B", "group_A", "group_B"]
+    lik = ["gaussian", "gaussian"]
     # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_1.txt"]
     # views =  ["view_A", "view_A", "view_B", "view_B"]
     # groups = ["group_A", "group_B", "group_A", "group_B"]
     # lik = ["zero_inflated", "gaussian"]
 
-    infiles = ["test_data/toy_zeros/view_1.txt"]
-    views =  ["view_A"]
-    groups = ["group_A"]
-    lik = ["zero_inflated"]
+    #infiles = ["test_data/toy_zeros/view_1.txt"]
+    #views =  ["view_A"]
+    #groups = ["group_A"]
+    #lik = ["gaussian"]
 
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-<<<<<<< HEAD
     ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
-    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False)
-    # ent.set_stochasticity_options()
-=======
-    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=5, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=.000, dropR2=0.0, seed=4, elbofreq=1, verbose=1)
-    # ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
-
->>>>>>> master
+    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False, stochastic=True)
+    ent.set_stochasticity_options()
     ent.build()
 
     ent.run()

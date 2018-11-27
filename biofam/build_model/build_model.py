@@ -163,3 +163,6 @@ class buildBiofam(buildModel):
         if self.model_opts['ard_w']:
             nodes['AlphaW'].addMarkovBlanket(W=nodes['W'])
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
+
+
+        
