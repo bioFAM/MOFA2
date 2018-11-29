@@ -16,7 +16,8 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
         super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
-
+        print("Not functional")
+        exit()
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
@@ -51,7 +52,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         # get Expectations which are necessarry for the update
         #-----------------------------------------------------------------------
-        Y = self.markov_blanket["Y"].get_mini_batch()
+        Y = self.markov_blanket["Y"].getExpectation()
         Z = self.markov_blanket["Z"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
         N = self.markov_blanket["Y"].dim[0]
@@ -211,13 +212,14 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.factors_axis = 1
         gpu_utils.gpu_mode = options['gpu_mode']
 
-    def updateParameters(self, ix=None, ro=None):
+    def updateParameters(self, ix=None, ro=1.):
         #-----------------------------------------------------------------------
         # get Expectations which are necessarry for the update
         #-----------------------------------------------------------------------
         Y = self.markov_blanket["Y"].get_mini_batch()
         Z = self.markov_blanket["Z"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
+        mask = self.markov_blanket["Y"].getMask()
         N = self.markov_blanket["Y"].dim[0]
 
         if "AlphaW" in self.markov_blanket:
@@ -234,37 +236,18 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qmean_S1, Qvar_S1, Qvar_S0 = Q['mean_B1'], Q['var_B1'],  Q['var_B0']
         Qtheta = Q['theta']
 
-        #-----------------------------------------------------------------------
-        # Masking
-        #-----------------------------------------------------------------------
-        mask = ma.getmask(Y)
-        Y = Y.data
-        Y[mask] = 0.
+        # Mask
         tau[mask] = 0.
 
-        #-----------------------------------------------------------------------
-        # compute stochastic "anti-bias" coefficient
-        #-----------------------------------------------------------------------
+        # Compute stochastic "anti-bias" coefficient
         coeff = float(N) / float(Y.shape[0])
 
-        #-----------------------------------------------------------------------
-        # make sure ro is not None
-        #-----------------------------------------------------------------------
-        if ro is None:
-            ro = 1.
+        # Compute parameter updates
+        # if ix is not None: import pdb; pdb.set_trace()
+        # print(SW[:3,:3])
+        self._updateParameters(Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro)
 
-        #-----------------------------------------------------------------------
-        # compute the update
-        #-----------------------------------------------------------------------
-        self._updateParameters(Y, Z, tau, Alpha,
-                               Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW,
-                               theta_lnE, theta_lnEInv,
-                               coeff, ro)
-
-    def _updateParameters(self, Y, Z, tau, Alpha,
-                          Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW,
-                          theta_lnE, theta_lnEInv,
-                          coeff, ro):
+    def _updateParameters(self, Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro):
 
         # precompute terms usful for all k
         tauYT = (gpu_utils.array(tau)*gpu_utils.array(Y)).T
@@ -321,11 +304,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qvar_S0 += ro/Alpha
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])),
-                             var_B0=Qvar_S0,
-                             mean_B1=Qmean_S1,
-                             var_B1=Qvar_S1,
-                             theta=Qtheta)
+        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])), var_B0=Qvar_S0, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta)
 
     def calculateELBO(self):
         # Collect parameters and expectations
@@ -347,8 +326,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Calculate ELBO for W
         lb_pw = (alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
-        lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
-        # #NOT SURE ABOUT THE FORMULA for lb_qw (brackets of expectation propagating inside the log ?)
+        lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum()
         lb_w = lb_pw - lb_qw
 
         # Calculate ELBO for S
@@ -359,31 +337,3 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_s = s.sum(lb_ps) - s.sum(lb_qs)
 
         return lb_w + lb_s
-
-    def sample(self, dist='P'):
-        # get necessary parameters
-        mu_w_hat = self.P.getParameters()['mean_B1']
-        mu_w_hat = s.ones(self.dim) * mu_w_hat
-
-        theta = self.markov_blanket["ThetaW"].sample()
-        #if theta.shape != mu_w_hat.shape:  #if theta had already mu_z_hat shape, then the sampling above would be wrong
-        theta = s.repeat(theta[None,:],mu_w_hat.shape[0],0)
-
-        #if "AlphaW" in self.markov_blanket:
-        alpha = self.markov_blanket["AlphaW"].sample()
-            #if alpha.shape[0] == 1:
-            #    alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-            #if alpha.shape != mu_w_hat.shape:
-            #    alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
-        #else:
-        #    print("Not implemented")
-        #    exit()
-
-        # simulate
-        bernoulli_s = s.random.binomial(1, theta)
-
-        w_hat = np.array([s.random.normal(mu_w_hat[:, i], math.sqrt(1./alpha[i])) for i in range(mu_w_hat.shape[1])]).T
-        #w_hat = np.random.normal(mu_w_hat, np.sqrt(1./alpha))
-
-        self.samp = bernoulli_s * w_hat
-        return self.samp

@@ -12,68 +12,53 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node
 from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior
 
 class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
-    def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
+    def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None):
         super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
 
-        self.N = self.dim[0]
-        self.K = self.dim[1]
-
         self.mini_batch = None
-        # Define indices for covariates
-        if idx_covariates is not None:
-            self.covariates[idx_covariates] = True
 
     def precompute(self, options):
-        # Precompute terms to speed up computation
-        self.covariates = np.zeros(self.dim[1], dtype=bool)
+        """ Method to precompute terms to speed up computation """
         self.factors_axis = 1
 
         gpu_utils.gpu_mode = options['gpu_mode']
 
-    def getLvIndex(self):
-        # Method to return the index of the latent variables (without covariates)
-        latent_variables = np.array(range(self.dim[1]))
-        if any(self.covariates):
-            # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
-            latent_variables = latent_variables[~self.covariates]
-        return latent_variables
-
     def removeFactors(self, idx, axis=1):
+        """ Method to remove inactive factors """
         super(Z_Node, self).removeFactors(idx, axis)
+        self.dim[1] -= len(idx)
 
     def get_mini_batch(self):
+        """ Method to fetch minibatch """
         if self.mini_batch is None:
             return self.getExpectations()
         return self.mini_batch
 
-    def updateParameters(self, ix=None, ro=None):
+    def updateParameters(self, ix=None, ro=1.):
         """
-        Public function to update the nodes parameters
+        Public method to update the nodes parameters
         Optional arguments for stochastic updates are:
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
 
-        #-----------------------------------------------------------------------
-        # get Expectations or minibatch which are necessarry for the update
-        #-----------------------------------------------------------------------
+        # Get exepctations from other nodes
         W = self.markov_blanket["W"].getExpectations()
         Y = self.markov_blanket["Y"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
+        mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
 
         if "MuZ" in self.markov_blanket:
             Mu =  self.markov_blanket['MuZ'].get_mini_batch()
         else:
             Mu = self.P.getParameters()["mean"]
-            if ix is not None:
-                Mu = Mu[ix]
+            if ix is not None: Mu = Mu[ix]
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].get_mini_batch()
         else:
             Alpha = 1./self.P.params['var']
-            if ix is not None:
-                Alpha = Alpha[ix,:]
+            if ix is not None: Alpha = Alpha[ix,:]
 
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
@@ -82,25 +67,14 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Qmean = Qmean[ix,:]
             Qvar = Qvar[ix,:]
 
-        #-----------------------------------------------------------------------
-        # masking
-        #-----------------------------------------------------------------------
-        mask = [ma.getmask(Y[m]) for m in range(len(Y))]
-        for m in range(len(Y)):
-            Y[m] = Y[m].data
-
+        # Masking
         for m in range(len(Y)):
             tau[m][mask[m]] = 0.
-            Y[m][mask[m]] = 0.
 
-        #-----------------------------------------------------------------------
-        # compute the update
-        #-----------------------------------------------------------------------
+        # Compute updates
         par_up = self._updateParameters(Y, W, tau, Mu, Alpha, Qmean, Qvar)
 
-        #-----------------------------------------------------------------------
-        # Do the asignment
-        #-----------------------------------------------------------------------
+        # Update parameters
         if ix is None:
             Q['mean'] = par_up['Qmean']
             Q['var'] = par_up['Qvar']
@@ -114,12 +88,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         self.Q.setParameters(mean=Q['mean'], var=Q['var'])  # NOTE should not be necessary but safer to keep for now
 
     def _updateParameters(self, Y, W, tau, Mu, Alpha, Qmean, Qvar):
+        """ Hidden method to compute parameter updates """
 
-        latent_variables = self.getLvIndex()  # excluding covariates from the list of latent variables
         N = Y[0].shape[0]  # this is different from self.N for minibatch
 
         M = len(Y)
-        for k in latent_variables:
+        for k in range(self.dim[1]):
             foo = s.zeros((N,))
             bar = s.zeros((N,))
             for m in range(M):
@@ -141,7 +115,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             Qvar[:, k] = 1. / (Alpha[:, k] + foo)
             Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
-
         # Save updated parameters of the Q distribution
         return {'Qmean': Qmean, 'Qvar':Qvar}
 
@@ -156,22 +129,14 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             PE, PE2 = self.markov_blanket['MuZ'].getExpectations()['E'], \
                       self.markov_blanket['MuZ'].getExpectations()['E2']
         else:
-            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.N, self.dim[1]))
+            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.dim[0], self.dim[1]))
 
         if 'AlphaZ' in self.markov_blanket:
-            Alpha = self.markov_blanket[
-                'AlphaZ'].getExpectations(expand=True)
+            Alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True)
         else:
             Alpha = dict()
             Alpha['E'] = 1./self.P.params['var']
             Alpha['lnE'] = s.log(1./self.P.params['var'])
-
-        # This ELBO term contains only cross entropy between Q and P,and entropy of Q. So the covariates should not intervene at all
-        latent_variables = self.getLvIndex()
-        # Alpha["E"], Alpha["lnE"] = Alpha["E"][:, latent_variables], Alpha["lnE"][:, latent_variables]
-        Qmean, Qvar = Qmean[:, latent_variables], Qvar[:, latent_variables]
-        PE, PE2 = PE[:, latent_variables], PE2[:, latent_variables]
-        QE, QE2 = QE[:, latent_variables], QE2[:, latent_variables]
 
         # compute term from the exponential in the Gaussian
         tmp1 = 0.5 * QE2 - PE * QE + 0.5 * PE2
@@ -181,79 +146,28 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         tmp2 = 0.5 * Alpha["lnE"].sum()
 
         lb_p = tmp1 + tmp2
-        # lb_q = -(s.log(Qvar).sum() + self.N*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
-        lb_q = -(s.log(Qvar).sum() + self.N * len(latent_variables)) / 2.
+        lb_q = -(s.log(Qvar).sum() + self.dim[0] * self.dim[1]) / 2.
 
         return lb_p - lb_q
-
-    def sample(self, dist='P'):
-        if "MuZ" in self.markov_blanket:
-            p_mean = self.markov_blanket['MuZ'].sample()
-        else:
-            p_mean = self.P.params['mean']
-
-        if "AlphaZ" in self.markov_blanket:
-            alpha = self.markov_blanket['AlphaZ'].sample()
-            p_var = s.square(1. / alpha)
-            #p_cov = s.diag(p_var)
-            p_cov = [p_var[k] * np.eye(self.N) for k in range(self.K)]
-        else:
-            if "SigmaZ" in self.markov_blanket:
-                p_cov = self.markov_blanket['SigmaZ'].sample()
-            else:
-                p_cov = self.P.params['cov']
-
-        # simulating
-
-        samp_tmp = []
-        for i in range(self.dim[1]):
-            # samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i])) #does it yield the correct result for sparse input matrices ?
-            if p_cov[i].__class__.__name__ == 'dia_matrix':
-                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i].toarray()))  # inefficient
-            elif p_cov[i].__class__.__name__ == 'ndarray':
-                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i]))
-            else:
-                print("Not implemented yet")
-                exit()
-
-        # self.samp = s.array([tmp/tmp.std() for tmp in samp_tmp]).transpose()
-
-        self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
-        #self.samp = np.array(samp_tmp).T
-
-        return self.samp
-
 
 class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
     def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta,
-                 qEZ_T0=None, qEZ_T1=None, qET=None, idx_covariates=None):
+                 qEZ_T0=None, qEZ_T1=None, qET=None):
         super().__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
                                       qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
 
         self.mini_batch = None
 
-        # Define indices for covariates
-        if idx_covariates is not None:
-            self.covariates[idx_covariates] = True
-
     def precompute(self, options):
-        self.N = self.dim[0]
-        self.K = self.dim[1]
-        self.covariates = np.zeros(self.dim[1], dtype=bool)
-
         gpu_utils.gpu_mode = options['gpu_mode']
 
         self.factors_axis = 1
 
-    def getLvIndex(self):
-        # Method to return the index of the latent variables (without covariates)
-        latent_variables = np.array(range(self.dim[1]))
-        if any(self.covariates):
-            # latent_variables = np.delete(latent_variables, latent_variables[self.covariates])
-            latent_variables = latent_variables[~self.covariates]
-
-        return latent_variables
+    def removeFactors(self, idx, axis=1):
+        """ Method to remove inactive factors """
+        super(SZ_Node, self).removeFactors(idx, axis)
+        self.dim[1] -= len(idx)
 
     def get_mini_batch(self):
         if self.mini_batch is None:
@@ -262,18 +176,18 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
     def updateParameters(self, ix=None, ro=None):
         """
-        Public function to update the nodes parameters
+        Public method to update the nodes parameters
         Optional arguments for stochastic updates are:
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
-
         #-----------------------------------------------------------------------
         # get Expectations or minibatch which are necessarry for the update
         #-----------------------------------------------------------------------
         W = self.markov_blanket["W"].getExpectations()
         Y = self.markov_blanket["Y"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
+        mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
 
         if "AlphaZ" in self.markov_blanket:
             Alpha = self.markov_blanket['AlphaZ'].get_mini_batch()
@@ -295,27 +209,19 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta = Qtheta[ix,:]
             SZ = SZ[ix,:]
 
-        #-----------------------------------------------------------------------
-        # masking
-        #-----------------------------------------------------------------------
-        mask = [ma.getmask(Y[m]) for m in range(len(Y))]
-        for m in range(len(Y)):
-            Y[m] = Y[m].data
-
+        # Masking
         for m in range(len(Y)):
             tau[m][mask[m]] = 0.
-            Y[m][mask[m]] = 0.
 
-        #-----------------------------------------------------------------------
-        # compute the update
-        #-----------------------------------------------------------------------
-        par_up = self._updateParameters(Y, W, tau, Alpha,
-                                        Qmean_T1, Qvar_T1, Qtheta, SZ,
-                                        theta_lnE, theta_lnEInv)
+        # if ix is not None: import pdb; pdb.set_trace()
+        # print(self.Q.getExpectations()["E"][:3,:3])
+        # self.mini_batch['E'][:3,:3]
 
-        #-----------------------------------------------------------------------
-        # Do the asignment
-        #-----------------------------------------------------------------------
+        # Compute the updates
+        par_up = self._updateParameters(Y, W, tau, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv)
+
+        # Update the parameters
+        # IS IT NOT CLEANER TO DEFINE IX TO BE ALL 1. BY DEFAULT?
         if ix is None:
             Q['mean_B1'] = par_up['mean_B1']
             Q['var_B1'] = par_up['var_B1']
@@ -333,12 +239,11 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             self.mini_batch['ENN'] = par_up['theta'] * (s.square(par_up['mean_B1']) + par_up['var_B1']) + \
                                      (1-par_up['theta']) * Q['var_B0'][ix, :]
 
-        self.Q.setParameters(mean_B0=s.zeros((self.N, self.dim[1])), var_B0=Q['var_B0'],
+        self.Q.setParameters(mean_B0=s.zeros((self.dim[0], self.dim[1])), var_B0=Q['var_B0'],
                              mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now
 
-    def _updateParameters(self, Y, W, tau, Alpha,
-                          Qmean_T1, Qvar_T1, Qtheta, SZ,
-                          theta_lnE, theta_lnEInv):
+    def _updateParameters(self, Y, W, tau, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv):
+        """ Hidden method to compute parameter updates """
 
         N_batch = Qmean_T1.shape[0]
         M = len(Y)  # number of views
@@ -353,7 +258,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term2 = gpu_utils.asnumpy(0.5 * gpu_utils.log(alphak_cp))
 
             # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            # term3 = gpu_utils.zeros((self.N,))
+            # term3 = gpu_utils.zeros((self.dim[0],))
             term4_tmp1 = gpu_utils.zeros((N_batch,))
             term4_tmp2 = gpu_utils.zeros((N_batch,))
             term4_tmp3 = gpu_utils.zeros((N_batch,))
@@ -404,51 +309,19 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             alpha['E'] = 1./self.P.params['var_B1']
             alpha['lnE'] = s.log(1./self.P.params['var_B1'])
 
-        # This ELBO term contains only cross entropy between Q and P, and entropy of Q. So the covariates should not intervene at all
-        latent_variables = self.getLvIndex()
-        # alpha["E"], alpha["lnE"] = alpha["E"][:,latent_variables], alpha["lnE"][:,latent_variables]
-        T, ZZ = T[:, latent_variables], ZZ[:, latent_variables]
-        Qvar = Qvar[:, latent_variables]
-        theta['lnE'] = theta['lnE'][:,latent_variables]
-        theta['lnEInv'] = theta['lnEInv'][:,latent_variables]
-
         # Calculate ELBO for Z
         lb_pz = (alpha["lnE"].sum() - s.sum(alpha["E"] * ZZ)) / 2.
-        lb_qz = -0.5 * self.dim[1] * self.N - 0.5 * (
-                    T * s.log(Qvar) + (1. - T) * s.log(1. / alpha["E"])).sum()  # IS THE FIRST CONSTANT TERM CORRECT???
+        lb_qz = -0.5 * self.dim[1] * self.dim[0] - 0.5 * (T * s.log(Qvar) + (1. - T) * s.log(1. / alpha["E"])).sum()
         lb_z = lb_pz - lb_qz
 
         # Calculate ELBO for T
         lb_pt = T * theta['lnE'] + (1. - T) * theta['lnEInv']
         lb_qt = T * s.log(T) + (1. - T) * s.log(1. - T)
+
+        # Replace NAs (due to theta=1) with zeros
         lb_pt[s.isnan(lb_pt)] = 0.
         lb_qt[s.isnan(lb_qt)] = 0.
+
         lb_t = s.sum(lb_pt) - s.sum(lb_qt)
 
         return lb_z + lb_t
-
-    def sample(self, dist='P'):
-        # get necessary parameters
-        mu_z_hat = self.P.getParameters()['mean_B1']
-        mu_z_hat = s.ones(self.dim) * mu_z_hat
-
-        theta = self.markov_blanket['ThetaZ'].sample()
-        #if theta.shape != mu_z_hat.shape: #if theta had already mu_z_hat shape, then the sampling above would be wrong
-        theta = s.repeat(theta[None, :], mu_z_hat.shape[0], 0)
-
-        alpha = self.markov_blanket['AlphaZ'].sample()
-        #if alpha.shape[0] == 1:
-        #    alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-        #if alpha.shape != mu_z_hat.shape:
-        #    alpha = s.repeat(alpha[None, :], self.dim[0], axis=0)
-
-        # simulate
-        bernoulli_t = s.random.binomial(1, theta)
-
-        z_hat = np.array([s.random.normal(mu_z_hat[:, i], math.sqrt(1./alpha[i])) for i in range(mu_z_hat.shape[1])]).T
-        #z_hat = s.random.normal(mu_z_hat, np.sqrt(1. / alpha))
-
-        self.samp = bernoulli_t * z_hat
-        self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
-
-        return self.samp

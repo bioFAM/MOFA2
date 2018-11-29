@@ -59,7 +59,7 @@ class Multiview_Node(Node):
         print("Error: Multiview nodes do not have a markov blanket, use the single-view nodes")
         exit(1)
 
-    def removeFactors(self,idx):
+    def removeFactors(self, idx):
         """Method to remove factors from the node
 
         PARAMETERS
@@ -98,11 +98,6 @@ class Multiview_Node(Node):
         assert s.all(m in self.activeM), "Trying to update the dimensionality of a node that doesnt exist in a view"
         M = self.activeM if m is None else m
         for m in M: self.nodes[m].updateDim(axis,new_dim)
-
-    def sample(self, dist="P"):
-        # TODO should we np.array() it ? better data type BUT problem of space efficiency ?
-        self.samp = [self.nodes[m].sample(dist) for m in self.activeM]
-        return self.samp
 
     def precompute(self, options):
         for m in self.activeM:

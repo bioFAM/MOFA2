@@ -49,14 +49,7 @@ class BayesNet(object):
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
         assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
         assert "gpu_mode" in train_opts, "'gpu_mode' not found in the training options dictionary"
-
-        if 'stochastic' in train_opts:
-            self.stochastic = True
-            assert 'tau' in train_opts, "tau not found for stochastic training"
-            # assert 'forgetting_rate' in train_opts, "forgetting_rate not found for stochastic training"
-            assert 'batch_size' in train_opts, "batch size not found for stochastic training"
-        else:
-            self.stochastic = False
+        assert "stochastic" in train_opts, "'stochastic' not found in the training options dictionary"
 
         self.options = train_opts
 
@@ -100,32 +93,6 @@ class BayesNet(object):
     def getNodes(self):
         """ Method to return all nodes """
         return self.nodes
-
-    def simulate(self, dist='P'):
-        """ Method to simulate from the generative model """
-        if 'SW' in self.nodes:
-            self.nodes["SW"].sample(dist)
-            self.nodes["Z"].sample(dist)
-            self.nodes["Z"].samp -= self.nodes["Z"].samp.mean() #centering
-        else:
-            self.nodes["SZ"].sample(dist)
-            self.nodes["W"].sample(dist)
-            for m in range(self.dim["M"]):
-                self.nodes["W"].nodes[m].samp -= self.nodes["W"].nodes[m].samp.mean() #centering
-        self.nodes['Tau'].sample(dist)
-        self.nodes['Y'].sample(dist)
-
-        self.simulated = True
-
-    def sampleData(self):
-        """ Method to sample data from the prior distributions of the generative model """
-        if ~self.simulated:
-            self.simulate()
-        return self.nodes['Y'].sample(dist='P')
-
-    def saveData(self):
-        # TODO some function here to save simulated data
-        pass
 
     def removeInactiveFactors(self, min_r2=None):
         """Method to remove inactive factors
@@ -172,8 +139,6 @@ class BayesNet(object):
 
             tmp = [ s.where( (all_r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
             drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
-            # import pdb; pdb.set_trace()
-            # print(all_r2)
             if len(drop_dic["min_r2"]) > 0:
                 drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
 
@@ -215,7 +180,6 @@ class BayesNet(object):
         n_batches = math.ceil(1./self.options['batch_size'])
         S = self.options['batch_size'] * self.dim['N']
         batch_ix = i % n_batches
-
         if batch_ix == 0:
             epoch_ix = i / n_batches
             print("Epoch", int(epoch_ix))
@@ -238,22 +202,23 @@ class BayesNet(object):
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         activeK = nans((self.options['maxiter']))
 
-        ro = None
-        ix = None
+        # Precompute terms
         for n in self.nodes:
             self.nodes[n].precompute(self.options)
 
         print('elbo before training: ', self.calculateELBO())
         print('schedule of updates: ',self.options['schedule'])
         print()
+
+        ro = 1.
+        ix = None
         for i in range(self.options['maxiter']):
             t = time();
 
-            # IMPROVE THIS: BAYESNET SHOULD BE AGNOSTIC TO THE NAME OF NODES
-            if self.stochastic:
+            # IMPROVE THIS: BAYESNET SHOULD BE AGNOSTIC TO THE NAME OF NODES: CREATE METHOD ISNIDE BAYESNET TO DEFINE MINI BACHES
+            if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
                 ro = self.step_size2(i)  # TODO should we change that at every epoch instead
                 ix = self.sample_mini_batch_no_replace(i)
-
                 self.nodes['Y'].define_mini_batch(ix)
                 self.nodes['Tau'].define_mini_batch(ix)
                 if 'AlphaZ' in self.nodes:
@@ -271,6 +236,7 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
+                print(node)
                 self.nodes[node].update(ix, ro)
 
             # Calculate Evidence Lower Bound
@@ -288,8 +254,8 @@ class BayesNet(object):
 
                     # Print ELBO monitoring
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
-                    if delta_elbo<0:
-                        print("Warning, lower bound is decreasing..."); print('\a')
+                    # if delta_elbo<0:
+                    #     print("Warning, lower bound is decreasing..."); print('\a')
 
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")

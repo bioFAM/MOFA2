@@ -10,12 +10,9 @@ from .variational_nodes import Gamma_Unobserved_Variational_Node
 
 class AlphaW_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
-        # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
     def precompute(self, options=None):
-        # self.lbconst = self.K * ( self.P.a*s.log(self.P.b) - special.gammaln(self.P.a) )
-        # self.lbconst = s.sum( self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']) )
         self.factors_axis = 0
 
     def getExpectations(self, expand=False):
@@ -72,9 +69,8 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
 class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
     """ """
 
-    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic, qE=None, qlnE=None):
+    def __init__(self, dim, pa, pb, qa, qb, groups, qE=None, qlnE=None):
         self.groups = groups
-        self.group_names = groups_dic
         self.factors_axis = 1
         self.N = len(self.groups)
         self.n_groups = len(np.unique(groups))
@@ -115,7 +111,13 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
             return self.getExpectation(expand=True)
         return self.mini_batch
 
-    def updateParameters(self, ix=None, ro=None):
+    def updateParameters(self, ix=None, ro=1.):
+        """
+        Public method to update the nodes parameters
+        Optional arguments for stochastic updates are:
+            - ix: list of indices of the minibatch
+            - ro: step size of the natural gradient ascent
+        """
         tmp = self.markov_blanket["Z"].get_mini_batch()
         if 'ENN' in tmp:
             EZZ = tmp["ENN"]
@@ -135,18 +137,13 @@ class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
             groups = self.groups[ix]
 
         #-----------------------------------------------------------------------
-        # make sure ro is not None
-        #-----------------------------------------------------------------------
-        if ro is None:
-            ro = 1.
-
-        #-----------------------------------------------------------------------
         # compute the update
         #-----------------------------------------------------------------------
         self._updateParameters(Pa, Pb, EZZ, groups, ro)
 
 
     def _updateParameters(self, Pa, Pb, EZZ, groups, ro):
+        """ Hidden method to compute parameter updates """
 
         Q = self.Q.getParameters()
         Q['a'] *= (1-ro)

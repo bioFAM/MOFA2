@@ -14,10 +14,9 @@ from biofam.core.distributions import *
 
 
 class TauD_Node(Gamma_Unobserved_Variational_Node):
-    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic, qE=None):
+    def __init__(self, dim, pa, pb, qa, qb, groups, qE=None):
 
         self.groups = groups
-        self.group_names = groups_dic
         self.N = len(self.groups)
         self.n_groups = len(np.unique(groups))
 
@@ -26,29 +25,20 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
     def precompute(self, options):
-        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+        """ Method to precompute some terms to speed up the calculations """
+
+        # GPU mode
         gpu_utils.gpu_mode = options['gpu_mode']
 
-        # compute number of sample per group
+        # Constant ELBO terms
+        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+
+        # compute number of samples per group
         self.n_per_group = np.zeros(self.n_groups)
         for c in range(self.n_groups):
             self.n_per_group[c] = (self.groups == c).sum()
 
-        # update of Qa
-        Y = self.markov_blanket["Y"].getExpectation()
-        mask = ma.getmask(Y)
-        Y = Y.data
-
         self.mini_batch = None
-
-        # TODO is it ok to do that with stochastic ? here we kind of assume that missing values are evenly distributed
-        self.Qa_pre = self.P.getParameters()['a'].copy()
-
-        for g in range(self.n_groups):
-            g_mask = (self.groups == g)
-            Y_tmp = Y[g_mask, :]
-            mask_tmp = mask[g_mask, :]
-            self.Qa_pre[g,:] += (Y_tmp.shape[0] - mask_tmp.sum(axis=0))/2.
 
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
@@ -64,7 +54,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         return QExp['E']
 
     def define_mini_batch(self, ix):
-        # define minibatch of data for all nodes to use
+        """ Method to define minibatch of data for all nodes to use """
         QExp = self.Q.getExpectations()
 
         # expand only the size of the minibatch
@@ -78,21 +68,19 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             return self.getExpectation()
         return self.mini_batch
 
-    def updateParameters(self, ix=None, ro=None):
+    def updateParameters(self, ix=None, ro=1.):
         """
         Public function to update the nodes parameters
         Optional arguments for stochastic updates are:
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
-        #-----------------------------------------------------------------------
-        # get full Expectations or minibatches
-        #-----------------------------------------------------------------------
+
+        # Get expectations from other nodes
         Y = self.markov_blanket["Y"].get_mini_batch()
+        mask = self.markov_blanket["Y"].getMask()
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].get_mini_batch()
-        N = self.markov_blanket["Y"].dim[0]
-
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
@@ -100,33 +88,26 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         P = self.P.getParameters()
         Pa, Pb = P['a'], P['b']
 
-        #-----------------------------------------------------------------------
-        # Masking
-        #-----------------------------------------------------------------------
-        mask = ma.getmask(Y)
-        Y = Y.data
-        Y[mask] = 0.
-
-        #-----------------------------------------------------------------------
-        # subsetting
-        #-----------------------------------------------------------------------
+        # subset mini-batch
         if ix is None:
             groups = self.groups
         else:
             groups = self.groups[ix]
 
-        #-----------------------------------------------------------------------
-        # make sure ro is not None
-        #-----------------------------------------------------------------------
-        if ro is None:
-            ro =1.
+        # compute the updates
+        Qa, Qb = self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups)
 
-        #-----------------------------------------------------------------------
-        # compute the update
-        #-----------------------------------------------------------------------
-        self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups)
+        self.Q.setParameters(a=Qa, b=Qb)
 
     def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups):
+        """ Hidden method to compute parameter updates """
+        Q = self.Q.getParameters()
+        Qa, Qb = Q['a'], Q['b']
+
+        # Move matrices to the GPU
+        # Y_gpu = gpu_utils.array(Y)
+        # Z_gpu = gpu_utils.array(Z)
+        # W_gpu = gpu_utils.array(W).T
 
         # Calculate terms for the update
         ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
@@ -146,9 +127,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
 
-        Qb = self.Q.getParameters()['b']
+        Qa *= (1-ro)
         Qb *= (1-ro)
-
         for g in range(self.n_groups):
             g_mask = (groups == g)
 
@@ -156,14 +136,16 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             if n_batch == 0: continue
             n_total = self.n_per_group[g]
             coeff = n_total/n_batch
+            # if ro < 1: import pdb; pdb.set_trace()
+            Qb[g,:] += ro * (Pb[g,:] + 0.5*coeff*tmp[g_mask,:].sum(axis=0))
 
-            Qb[g,:] += ro * (Pb[g,:] + .5 * coeff * tmp[g_mask,:].sum(axis=0))
+            # TO VERIFY
+            mask_tmp = mask[g_mask, :]
+            # Qa[g,:] += ro * (Pa[g,:] + (mask.shape[0] - coeff*mask_tmp.sum(axis=0))/2)
+            Qa[g,:] += ro * (Pa[g,:] + 0.5*coeff*(mask.shape[0] - mask_tmp.sum(axis=0)))
 
-        # NOTE this should be completly useless but keep for now
-        Qa = self.Q.getParameters()['a']
-        Qa *= (1 - ro)
-        Qa += ro * self.Qa_pre
 
+        return Qa, Qb
 
     def calculateELBO(self):
         # Collect parameters and expectations from current node
@@ -176,9 +158,3 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         lb_q = s.sum(Qa*s.log(Qb)) + s.sum((Qa-1.)*QlnE) - s.sum(Qb*QE) - s.sum(special.gammaln(Qa))
 
         return lb_p - lb_q
-
-    def sample(self, distrib='P'):
-        #instead of overwriting sample, we should maybe change the dimensions of this node !
-        P = Gamma(dim=(self.dim[1],1), a=self.P.params["a"][0,:], b=self.P.params["b"][0,:])
-        self.samp = P.sample()
-        return self.samp

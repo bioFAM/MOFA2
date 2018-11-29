@@ -276,20 +276,17 @@ class initModel(object):
         # Sanity checks
         assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
-        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        # convert groups into integers from 0 to n_groups
         tmp = np.unique(groups, return_inverse=True)
-        groups_dic = tmp[0]
         groups_ix = tmp[1]
 
         n_group = len(np.unique(groups_ix))
-        assert len(groups_dic) == n_group, 'problem in np.unique'
 
         self.nodes["AlphaZ"] = AlphaZ_Node(
             dim=(n_group, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
             groups=groups_ix,
-            groups_dic=groups_dic,
             qE=qE, qlnE=qlnE
         )
 
@@ -337,13 +334,11 @@ class initModel(object):
 
         tau_list = [None]*self.M
 
-        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        # convert groups into integers from 0 to n_groups 
         tmp = np.unique(groups, return_inverse=True)
-        groups_dic = tmp[0]
         groups_ix = tmp[1]
 
         n_group = len(np.unique(groups_ix))
-        assert len(groups_dic) == n_group, 'problem in np.unique'
 
         for m in range(self.M):
 
@@ -362,11 +357,11 @@ class initModel(object):
             elif self.lik[m] == "zero_inflated":
                 # contains parameters to initialise both normal and jaakola tau
                 tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((n_group, self.D[m])), value=1.,
-                                                         pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
+                                                         pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
 
             # Gaussian noise model for continuous data
             elif self.lik[m] == "gaussian":
-                tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
+                tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
 
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
@@ -408,20 +403,17 @@ class initModel(object):
         # Sanity checks
         assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
-        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        # convert groups into integers from 0 to n_groups
         tmp = np.unique(groups, return_inverse=True)
-        groups_dic = tmp[0]
         groups_ix = tmp[1]
 
         n_group = len(np.unique(groups_ix))
-        assert len(groups_dic) == n_group, 'problem in np.unique'
 
         self.nodes["ThetaZ"] = ThetaZ_Node(
             dim=(n_group, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
             groups=groups_ix,
-            groups_dic=groups_dic,
             qE=qE)
 
     def initThetaW(self, pa=1., pb=1., qa=1., qb=1., qE=None):

@@ -1,4 +1,3 @@
-import argparse
 import pandas as pd
 import scipy as s
 import sys
@@ -6,8 +5,6 @@ from time import sleep
 from time import time
 import pandas as pd
 import imp
-
-from typing import List, Union, Dict, TypeVar
 
 from biofam.core.BayesNet import *
 from biofam.build_model.build_model import *
@@ -343,22 +340,21 @@ class entry_point(object):
         s.random.seed(self.train_opts['seed'])
 
         # set the default stochastic options which can be re changed later
-        if stochastic:
-            self.set_stochasticity_options()
+        self.train_opts['stochastic'] = stochastic
+        if stochastic: set_stochasticity_options()
 
-    def set_stochasticity_options(self, tau=1., forgetting_rate=.1, batch_size=.2):
+    def set_stochasticity_options(self, tau=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
-        # snaity checks
-        # assert tau > 0, 'tau must be greater thn zero'
-        # assert .5 < forgetting_rate <= 1., 'Choose .5 < forgetting_rate <= 1'
-        # assert 0. < batch_size <= 1., 'Choose 0. < batch_size <= 1'
-        # TO-DO:
-        # (1) MAKE SURE THAT TRAIN OPTS IS DEFINED
-        # (2) RENAME TAU
-        # (3)
+        # Sanity checks
+        assert hasattr(self, 'train_opts'), "Train options not defined"
+        assert tau > 0, 'tau must be greater than zero'
+        assert 0 <= forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
+        assert 0 < batch_size <= 1, 'Batch size must range from 0 to 1'
+
         self.train_opts['stochastic'] = True
         self.train_opts['tau'] = tau
         self.train_opts['forgetting_rate'] = forgetting_rate
+        self.train_opts['start_stochastic'] = start_stochastic
         self.train_opts['batch_size'] = batch_size
 
     def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False):
