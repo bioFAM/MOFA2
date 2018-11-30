@@ -62,7 +62,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
     def get_mini_batch(self):
         if self.mini_batch is None:
             return self.getExpectation()
-        return self.mini_batch
+        else:
+            return self.mini_batch
 
     def updateParameters(self, ix=None, ro=1.):
         """

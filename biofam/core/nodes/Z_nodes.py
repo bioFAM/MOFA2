@@ -25,7 +25,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def removeFactors(self, idx, axis=1):
         """ Method to remove inactive factors """
         super(Z_Node, self).removeFactors(idx, axis)
-        self.dim[1] -= len(idx)
+        # self.dim[1] -= len(idx)
 
     def get_mini_batch(self):
         """ Method to fetch minibatch """
@@ -152,7 +152,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         return lb_p - lb_q
 
 class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
-    # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
     def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta, qEZ_T0=None, qEZ_T1=None, qET=None):
         super().__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
 
@@ -168,12 +167,13 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def removeFactors(self, idx, axis=1):
         """ Method to remove inactive factors """
         super(SZ_Node, self).removeFactors(idx, axis)
-        self.dim[1] -= len(idx)
+        # self.dim[1] -= len(idx)
 
     def get_mini_batch(self):
         if self.mini_batch is None:
             return self.getExpectations()
-        return self.mini_batch
+        else:
+            return self.mini_batch
 
     def updateParameters(self, ix=None, ro=None):
         """
@@ -237,13 +237,13 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         self.Q.setParameters(mean_B0=s.zeros((self.dim[0], self.dim[1])), var_B0=Q['var_B0'],
                              mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now
-
+    
     def _updateParameters(self, Y, W, tau, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv):
         """ Hidden method to compute parameter updates """
 
         # Precompute terms to speed up GPU computation
         N = Qmean_T1.shape[0]
-        M = len(Y)  # number of views
+        M = len(Y)
         term4_tmp1 = [ s.zeros(N,) for k in range(self.dim[1]) ]
         term4_tmp2 = [ s.zeros(N,) for k in range(self.dim[1]) ]
         term4_tmp3 = [ s.zeros(N,) for k in range(self.dim[1]) ]

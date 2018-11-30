@@ -200,7 +200,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Compute parameter updates
         self._updateParameters(Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro)
-
+    
     def _updateParameters(self, Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro):
 
         # Copy matrices to GPU
