@@ -188,7 +188,6 @@ class entry_point(object):
 
         self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
-    # @profile
     def set_data_df(self, data):
         """Method to input the data in a long data.frame format
 

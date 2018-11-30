@@ -168,7 +168,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         super(SZ_Node, self).removeFactors(idx, axis)
         self.K -= len(idx)
 
-    @profile
     def updateParameters(self):
         # Collect expectations from other nodes
 
