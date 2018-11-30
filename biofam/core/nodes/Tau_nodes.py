@@ -53,8 +53,11 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             return QExp
 
     def getExpectation(self, expand=True):
-        QExp = self.getExpectations(expand)
-        return QExp['E']
+        QExp = self.Q.getExpectations()
+        if expand:
+            return QExp['E'][self.groups, :]
+        else:
+            return Qexp
 
     def updateParameters(self):
         # Collect expectations from other nodes
@@ -77,21 +80,13 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Z_gpu = gpu_utils.array(Z)
         W_gpu = gpu_utils.array(W).T
 
-        # Calculate terms for the update
-        ZW =  Z_gpu.dot(W_gpu)
-        ZW[self.mask] = 0.
+        ZW = Z_gpu.dot(W_gpu)
+        tmp = gpu_utils.square(Y_gpu) \
+            + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
+            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
+            - 2*ZW*Y_gpu 
+        tmp *= 0.5
 
-        term1 = gpu_utils.square(Y_gpu)
-
-        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
-        
-        term3 = - gpu_utils.dot( gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu) )
-        term3 += gpu_utils.square(ZW)
-
-        ZW *= Y_gpu  # WARNING ZW becomes ZWY
-        term4 = 2.*ZW
-
-        tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
         tmp[self.mask] = 0.
 
         # Perform updates of the Q distribution
@@ -113,10 +108,3 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         lb_q = s.sum(Qa*s.log(Qb)) + s.sum((Qa-1.)*QlnE) - s.sum(Qb*QE) - s.sum(special.gammaln(Qa))
 
         return lb_p - lb_q
-
-    def sample(self, distrib='P'):
-        # TO-DO: CURRENTLY ONLY SAMPLES FROM P
-        #instead of overwriting sample, we should maybe change the dimensions of this node !
-        P = Gamma(dim=(self.dim[1],1), a=self.P.params["a"][0,:], b=self.P.params["b"][0,:])
-        self.samp = P.sample()
-        return self.samp

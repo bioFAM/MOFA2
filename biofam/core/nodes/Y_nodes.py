@@ -55,48 +55,25 @@ class Y_Node(Constant_Variational_Node):
         Z_gpu = gpu_utils.array(Z)
         Wt_gpu = gpu_utils.array(W.T)
 
-        # Compute ELBO
-        ZW =  Z_gpu.dot(Wt_gpu)
-        # ZW[self.mask] = 0.
+        # ZW =  Z_gpu.dot(Wt_gpu)
+        # term1 = gpu_utils.square(Y_gpu)
+        # term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
+        # term3 = - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu))
+        # term3 += gpu_utils.square(ZW)
+        # ZW *= Y_gpu  # WARNING ZW becomes ZWY
+        # term4 = 2.*ZW
+        # tmp = 0.5 * (term1 + term2 + term3 - term4)
 
-        term1 = gpu_utils.square(Y_gpu)
+        ZW = Z_gpu.dot(Wt_gpu)
+        tmp = gpu_utils.square(Y_gpu) \
+            + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
+            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu)) + gpu_utils.square(ZW) \
+            - 2*ZW*Y_gpu 
+        tmp *= 0.5
 
-        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
-        # term2[self.mask] = 0
-
-        term3 = - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu))
-        # term3[self.mask] = 0.
-        term3 += gpu_utils.square(ZW)
-
-        ZW *= Y_gpu  # WARNING ZW becomes ZWY
-        term4 = 2.*ZW
-
-        tmp = 0.5 * (term1 + term2 + term3 - term4)
         tmp[self.mask] = 0.
 
         # lik = self.likconst + 0.5 * gpu_utils.sum(gpu_utils.array(Tau["lnE"])) - gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
         lik = self.likconst + 0.5 * Tau["lnE"].sum() - gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)
 
         return lik
-
-    def sample(self, dist='P'):
-        # Y does NOT call sample recursively but relies on previous calls
-        Z_samp = self.markov_blanket['Z'].samp
-        W_samp = self.markov_blanket['W'].samp
-
-        Tau_samp = self.markov_blanket['Tau'].samp
-        F = Z_samp.dot(W_samp.transpose())
-
-        # DEPRECATED (tau is expanded inside the node)
-        # if Tau_samp.shape != mu.shape:
-        #     Tau_samp = s.repeat(Tau_samp.copy()[None,:], self.dim[0], axis=0)
-        var = 1./Tau_samp
-
-        if self.markov_blanket['Tau'].__class__.__name__ == "TauN_Node": #TauN
-            self.samp = np.array([s.random.normal(F[i, :], math.sqrt(var[i])) for i in range(F.shape[0])])
-        else: #TauD
-            self.samp = np.array([s.random.normal(F[:, i],math.sqrt(var[i])) for i in range(F.shape[1])]).T
-
-        self.value = self.samp
-
-        return self.samp

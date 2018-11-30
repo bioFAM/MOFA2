@@ -168,6 +168,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         super(SZ_Node, self).removeFactors(idx, axis)
         self.K -= len(idx)
 
+    @profile
     def updateParameters(self):
         # Collect expectations from other nodes
 
@@ -282,29 +283,3 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_s = s.sum(lb_ps) - s.sum(lb_qs)
     
         return lb_z + lb_s
-
-    def sample(self, dist='P'):
-        # get necessary parameters
-        mu_z_hat = self.P.getParameters()['mean_B1']
-        mu_z_hat = s.ones(self.dim) * mu_z_hat
-
-        theta = self.markov_blanket['ThetaZ'].sample()
-        #if theta.shape != mu_z_hat.shape: #if theta had already mu_z_hat shape, then the sampling above would be wrong
-        theta = s.repeat(theta[None, :], mu_z_hat.shape[0], 0)
-
-        alpha = self.markov_blanket['AlphaZ'].sample()
-        #if alpha.shape[0] == 1:
-        #    alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-        #if alpha.shape != mu_z_hat.shape:
-        #    alpha = s.repeat(alpha[None, :], self.dim[0], axis=0)
-
-        # simulate
-        bernoulli_t = s.random.binomial(1, theta)
-
-        z_hat = np.array([s.random.normal(mu_z_hat[:, i], math.sqrt(1./alpha[i])) for i in range(mu_z_hat.shape[1])]).T
-        #z_hat = s.random.normal(mu_z_hat, np.sqrt(1. / alpha))
-
-        self.samp = bernoulli_t * z_hat
-        self.samp[:, self.covariates] = self.getExpectation()[:, self.covariates]
-
-        return self.samp

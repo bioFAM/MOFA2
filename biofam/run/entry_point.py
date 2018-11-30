@@ -117,6 +117,7 @@ class entry_point(object):
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
         # Process the data (center, scaling, etc.)
+        print("Processing data...\n")
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
