@@ -77,18 +77,13 @@ class Y_Node(Constant_Variational_Node):
         Z_gpu = gpu_utils.array(Z)
         Wt_gpu = gpu_utils.array(W.T)
 
-        ZW =  Z_gpu.dot(Wt_gpu)
-        term1 = gpu_utils.square(Y_gpu)
+        ZW = Z_gpu.dot(Wt_gpu)
+        tmp = gpu_utils.square(Y_gpu) \
+            + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
+            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu)) + gpu_utils.square(ZW) \
+            - 2*ZW*Y_gpu 
+        tmp *= 0.5
 
-        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
-
-        term3 = - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu))
-        term3 += gpu_utils.square(ZW)
-
-        ZW *= Y_gpu  # WARNING ZW becomes ZWY
-        term4 = 2.*ZW
-
-        tmp = 0.5 * (term1 + term2 + term3 - term4)
         tmp[mask] = 0.
 
         # lik = self.likconst + 0.5 * gpu_utils.sum(gpu_utils.array(Tau["lnE"])) - gpu_utils.sum(gpu_utils.array(Tau["E"]) * tmp)

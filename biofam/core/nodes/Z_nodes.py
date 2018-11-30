@@ -19,8 +19,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
     def precompute(self, options):
         """ Method to precompute terms to speed up computation """
-        self.factors_axis = 1
-
         gpu_utils.gpu_mode = options['gpu_mode']
 
     def removeFactors(self, idx, axis=1):
@@ -32,7 +30,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         """ Method to fetch minibatch """
         if self.mini_batch is None:
             return self.getExpectations()
-        return self.mini_batch
+        else:
+            return self.mini_batch
 
     def updateParameters(self, ix=None, ro=1.):
         """
@@ -42,7 +41,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             - ro: step size of the natural gradient ascent
         """
 
-        # Get exepctations from other nodes
+        # Get expectations from other nodes
         W = self.markov_blanket["W"].getExpectations()
         Y = self.markov_blanket["Y"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
@@ -60,6 +59,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Alpha = 1./self.P.params['var']
             if ix is not None: Alpha = Alpha[ix,:]
 
+        # Get parameters of current node
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
         if ix is not None:
@@ -152,17 +152,16 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
 class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
     # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
-    def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta,
-                 qEZ_T0=None, qEZ_T1=None, qET=None):
-        super().__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0,
-                                      qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
+    def __init__(self, dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta, qEZ_T0=None, qEZ_T1=None, qET=None):
+        super().__init__(dim, pmean_T0, pmean_T1, pvar_T0, pvar_T1, ptheta, qmean_T0, qmean_T1, qvar_T0, qvar_T1, qtheta, qEZ_T0, qEZ_T1, qET)
 
         self.mini_batch = None
 
     def precompute(self, options):
-        gpu_utils.gpu_mode = options['gpu_mode']
+        """ Method to precompute some terms to speed up the calculations """
 
-        self.factors_axis = 1
+        # GPU mode
+        gpu_utils.gpu_mode = options['gpu_mode']
 
     def removeFactors(self, idx, axis=1):
         """ Method to remove inactive factors """
@@ -181,9 +180,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
-        #-----------------------------------------------------------------------
-        # get Expectations or minibatch which are necessarry for the update
-        #-----------------------------------------------------------------------
+
+        # Get expectations from other nodes
         W = self.markov_blanket["W"].getExpectations()
         Y = self.markov_blanket["Y"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
@@ -199,6 +197,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         thetatmp = self.markov_blanket['ThetaZ'].get_mini_batch()
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
 
+        # Get expectations and parameters from current node
         Q = self.Q.getParameters()
         SZ = self.Q.getExpectations()["E"]
         Qmean_T1, Qvar_T1, Qtheta = Q['mean_B1'], Q['var_B1'], Q['theta']
@@ -213,15 +212,10 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         for m in range(len(Y)):
             tau[m][mask[m]] = 0.
 
-        # if ix is not None: import pdb; pdb.set_trace()
-        # print(self.Q.getExpectations()["E"][:3,:3])
-        # self.mini_batch['E'][:3,:3]
-
         # Compute the updates
         par_up = self._updateParameters(Y, W, tau, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv)
 
-        # Update the parameters
-        # IS IT NOT CLEANER TO DEFINE IX TO BE ALL 1. BY DEFAULT?
+        # Update the parameters (this is not very clean...)
         if ix is None:
             Q['mean_B1'] = par_up['mean_B1']
             Q['var_B1'] = par_up['var_B1']
@@ -257,8 +251,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             term2 = gpu_utils.asnumpy(0.5 * gpu_utils.log(alphak_cp))
 
-            # term3 = 0.5*s.log(ma.dot(WW[:,k],tau) + alpha[k])
-            # term3 = gpu_utils.zeros((self.dim[0],))
             term4_tmp1 = gpu_utils.zeros((N_batch,))
             term4_tmp2 = gpu_utils.zeros((N_batch,))
             term4_tmp3 = gpu_utils.zeros((N_batch,))

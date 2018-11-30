@@ -236,7 +236,6 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
-                print(node)
                 self.nodes[node].update(ix, ro)
 
             # Calculate Evidence Lower Bound

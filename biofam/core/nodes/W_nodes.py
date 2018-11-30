@@ -202,8 +202,6 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         return self.samp
 
 class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
-    # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
-    # def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
     def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
         super().__init__(dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES)
 
@@ -250,6 +248,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def _updateParameters(self, Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro):
 
         # precompute terms usful for all k
+        tau_gpu = gpu_utils.array(tau)
         tauYT = (gpu_utils.array(tau)*gpu_utils.array(Y)).T
 
         # Update each latent variable in turn
@@ -271,9 +270,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
             term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
             term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T
-            term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)
-            term4_tmp2 *= tau_cp  # most expensive bit
-            term4_tmp2 = term4_tmp2.sum(axis=0)
+            term4_tmp2 = (tau_gpu*gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)).sum(axis=0)
 
             term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
             # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]

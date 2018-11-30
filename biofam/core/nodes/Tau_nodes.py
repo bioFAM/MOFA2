@@ -15,14 +15,13 @@ from biofam.core.distributions import *
 
 class TauD_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, groups, qE=None):
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
         self.groups = groups
-        self.N = len(self.groups)
         self.n_groups = len(np.unique(groups))
 
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
-        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
     def precompute(self, options):
         """ Method to precompute some terms to speed up the calculations """
@@ -50,18 +49,15 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             return QExp
 
     def getExpectation(self, expand=True):
-        QExp = self.getExpectations(expand)
-        return QExp['E']
+        QExp = self.Q.getExpectation()
+        if expand:
+            return QExp[self.groups,:]
+        else:
+            return Qexp
 
     def define_mini_batch(self, ix):
-        """ Method to define minibatch of data for all nodes to use """
-        QExp = self.Q.getExpectations()
-
-        # expand only the size of the minibatch
-        self.groups_batch = self.groups[ix]
-        expanded_E = QExp['E'][self.groups_batch, :]
-        # expanded_lnE = s.repeat(QExp['lnE'][None, :], len(ix), axis=0)
-        self.mini_batch = expanded_E
+        """ Method to define minibatch for the expectation """
+        self.mini_batch = self.Q.getExpectation()[self.groups[ix],:]
 
     def get_mini_batch(self):
         if self.mini_batch is None:
@@ -70,7 +66,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
     def updateParameters(self, ix=None, ro=1.):
         """
-        Public function to update the nodes parameters
+        Public method to update the nodes parameters
         Optional arguments for stochastic updates are:
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
@@ -105,28 +101,20 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Qa, Qb = Q['a'], Q['b']
 
         # Move matrices to the GPU
-        # Y_gpu = gpu_utils.array(Y)
-        # Z_gpu = gpu_utils.array(Z)
-        # W_gpu = gpu_utils.array(W).T
+        Y_gpu = gpu_utils.array(Y)
+        Z_gpu = gpu_utils.array(Z)
+        W_gpu = gpu_utils.array(W).T
 
         # Calculate terms for the update
-        ZW =  gpu_utils.array(Z).dot(gpu_utils.array(W.T))
-        ZW[mask] = 0.
+        ZW = Z_gpu.dot(W_gpu)
+        tmp = gpu_utils.square(Y_gpu) \
+            + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
+            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
+            - 2*ZW*Y_gpu 
+        tmp *= 0.5
+        tmp[mask] = 0.
 
-        term1 = gpu_utils.square(gpu_utils.array(Y))
-
-        term2 = gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T))
-        term2[mask] = 0
-
-        term3 = - gpu_utils.dot(gpu_utils.square(gpu_utils.array(Z)),gpu_utils.square(gpu_utils.array(W)).T)
-        term3[mask] = 0.
-        term3 += gpu_utils.square(ZW)
-
-        ZW *= gpu_utils.array(Y)  # WARNING ZW becomes ZWY
-        term4 = 2.*ZW
-
-        tmp = gpu_utils.asnumpy(term1 + term2 + term3 - term4)
-
+        # Compute updates
         Qa *= (1-ro)
         Qb *= (1-ro)
         for g in range(self.n_groups):
@@ -134,16 +122,12 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
             n_batch = g_mask.sum()
             if n_batch == 0: continue
-            n_total = self.n_per_group[g]
-            coeff = n_total/n_batch
-            # if ro < 1: import pdb; pdb.set_trace()
+
+            # Calculate scaling coefficient for mini-batch
+            coeff = self.n_per_group[g]/n_batch
+
             Qb[g,:] += ro * (Pb[g,:] + 0.5*coeff*tmp[g_mask,:].sum(axis=0))
-
-            # TO VERIFY
-            mask_tmp = mask[g_mask, :]
-            # Qa[g,:] += ro * (Pa[g,:] + (mask.shape[0] - coeff*mask_tmp.sum(axis=0))/2)
-            Qa[g,:] += ro * (Pa[g,:] + 0.5*coeff*(mask.shape[0] - mask_tmp.sum(axis=0)))
-
+            Qa[g,:] += ro * (Pa[g,:] + 0.5*coeff*(mask.shape[0] - mask[g_mask,:].sum(axis=0)))
 
         return Qa, Qb
 
