@@ -90,7 +90,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         else:
             groups = self.groups[ix]
 
-        # compute the updates
+        # compute the updated parameters
         Qa, Qb = self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups)
 
         self.Q.setParameters(a=Qa, b=Qb)
@@ -132,6 +132,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         return Qa, Qb
 
     def calculateELBO(self):
+        """ Method to compute ELBO """
+        
         # Collect parameters and expectations from current node
         P, Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
