@@ -174,7 +174,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             return self.getExpectations()
         else:
             return self.mini_batch
-    @profile
+    # @profile
     def updateParameters(self, ix=None, ro=None):
         """
         Public method to update the nodes parameters

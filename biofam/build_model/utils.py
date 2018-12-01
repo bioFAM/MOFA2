@@ -126,7 +126,12 @@ def process_data(data, data_opts, samples_groups):
 
     parsed_data = data
 
+
     for m in range(len(data)):
+
+        # Convert data to numpy array format
+        if isinstance(parsed_data[m], pd.DataFrame):
+            parsed_data[m] = parsed_data[m].values
 
         # Convert to float32
         # parsed_data[m] = parsed_data[m].astype(np.float32)
@@ -178,10 +183,6 @@ def process_data(data, data_opts, samples_groups):
             if data_opts["likelihoods"][m] is "zero_inflated":
                 parsed_data[m][zeros_mask] = 0.
 
-
-        # Convert data to numpy array format
-        if isinstance(parsed_data[m], pd.DataFrame):
-            parsed_data[m] = parsed_data[m].values
 
     return parsed_data
 

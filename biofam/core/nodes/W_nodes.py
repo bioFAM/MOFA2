@@ -168,7 +168,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
     def precompute(self, options):
         self.factors_axis = 1
         gpu_utils.gpu_mode = options['gpu_mode']
-    @profile
+    # @profile
     def updateParameters(self, ix=None, ro=1.):
 
         # Collect expectations from other nodes
