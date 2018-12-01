@@ -455,9 +455,11 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
+        # Set training options
         self.model.setTrainOptions(self.train_opts)
+        
         # Train the model
-        train_model(self.model, self.train_opts)
+        train_model(self.model)
 
     def save(self, outfile):
         """ Save the model in an hdf5 file """

@@ -9,14 +9,11 @@ import numpy as np
 from biofam.core.BayesNet import BayesNet
 
 
-def train_model(bayesnet, train_opts):
+def train_model(model):
 
     # Sanity check on the Bayesian Network
-    # assert type(bayesnet)==BayesNet, "'bayesnet' has to be a BayesNet class"
-    assert isinstance(bayesnet, BayesNet), "'bayesnet' has to be a BayesNet class"
+    assert isinstance(model, BayesNet), "'bayesnet' has to be a BayesNet class"
 
-    # Define training options
-    bayesnet.setTrainOptions(train_opts)
 
     ####################
     ## Start training ##
@@ -24,11 +21,11 @@ def train_model(bayesnet, train_opts):
 
     print ("\n")
     print ("#"*40)
-    print ("## Training the model with seed %d ##" % (train_opts['seed']))
+    print ("## Training the model with seed %d ##" % (model.options['seed']))
     print ("#"*40)
     print ("\n")
 
-    bayesnet.iterate()
+    model.iterate()
 
     print("\n")
     print("#"*23)

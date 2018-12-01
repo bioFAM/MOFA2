@@ -193,7 +193,7 @@ class BayesNet(object):
 
         ix_res = self.shuffled_ix[min:max]
         return ix_res
-
+    
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
 
