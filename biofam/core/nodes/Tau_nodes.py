@@ -85,8 +85,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
             - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
             - 2*ZW*Y_gpu 
-        tmp *= 0.5
-
         tmp[self.mask] = 0.
 
         # Perform updates of the Q distribution
