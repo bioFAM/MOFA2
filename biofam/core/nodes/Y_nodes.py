@@ -73,14 +73,14 @@ class Y_Node(Constant_Variational_Node):
         Tau["lnE"][mask] = 0
 
         # Move matrices to the GPU
-        Y_gpu = gpu_utils.array(Y)
-        Z_gpu = gpu_utils.array(Z)
-        Wt_gpu = gpu_utils.array(W.T)
+        Y_gpu = Y # Y_gpu = gpu_utils.array(Y)
+        Z_gpu = Z # Z_gpu = gpu_utils.array(Z)
+        W_gpu = W # W_gpu = gpu_utils.array(W.T)
 
-        ZW = Z_gpu.dot(Wt_gpu)
+        ZW = Z_gpu.dot(W_gpu)
         tmp = gpu_utils.square(Y_gpu) \
             + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
-            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(Wt_gpu)) + gpu_utils.square(ZW) \
+            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
             - 2*ZW*Y_gpu 
         tmp *= 0.5
 
