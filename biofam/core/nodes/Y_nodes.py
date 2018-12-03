@@ -27,7 +27,8 @@ class Y_Node(Constant_Variational_Node):
         self.D = self.dim[1] - self.getMask().sum(axis=1)
 
         # GPU mode
-        gpu_utils.gpu_mode = options['gpu_mode']
+        # gpu_utils.gpu_mode = options['gpu_mode']
+        gpu_utils.gpu_mode = False
 
         # Constant ELBO terms
         self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
@@ -73,9 +74,9 @@ class Y_Node(Constant_Variational_Node):
         Tau["lnE"][mask] = 0
 
         # Move matrices to the GPU
-        Y_gpu = Y # Y_gpu = gpu_utils.array(Y)
-        Z_gpu = Z # Z_gpu = gpu_utils.array(Z)
-        W_gpu = W # W_gpu = gpu_utils.array(W.T)
+        Y_gpu = gpu_utils.array(Y)
+        Z_gpu = gpu_utils.array(Z)
+        W_gpu = gpu_utils.array(W.T)
 
         ZW = Z_gpu.dot(W_gpu)
         tmp = gpu_utils.square(Y_gpu) \
