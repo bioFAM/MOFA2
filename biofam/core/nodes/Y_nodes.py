@@ -65,7 +65,7 @@ class Y_Node(Constant_Variational_Node):
         Tau = self.markov_blanket["Tau"].getExpectations()
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
-        W, WW = Wtmp["E"], Wtmp["E2"]
+        W, WW = Wtmp["E"].T, Wtmp["E2"].T
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
         mask = ma.getmask(self.value)
 
@@ -76,7 +76,7 @@ class Y_Node(Constant_Variational_Node):
 
         ZW = Z.dot(W)
         tmp = s.square(Y) \
-            + s.array(ZZ).dot(s.array(WW.T)) \
+            + s.array(ZZ).dot(s.array(WW)) \
             - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
             - 2*ZW*Y 
 
