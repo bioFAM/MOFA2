@@ -63,7 +63,7 @@ class PseudoY(Unobserved_Variational_Node):
             E[self.mask] = 0.
         self.E = E
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         pass
 
     def getMask(self):
@@ -79,6 +79,10 @@ class PseudoY(Unobserved_Variational_Node):
 
     def getExpectation(self, expand=True):
         return self.E
+
+    # TODO change !!
+    def get_mini_batch(self, expand=True):
+        return self.getExpectations(expand)
 
     def getExpectations(self, expand=True):
         return { 'E':self.getExpectation(expand) }
@@ -109,7 +113,7 @@ class PseudoY_Seeger(PseudoY):
         #  E (ndarray): initial expected value of pseudodata
         PseudoY.__init__(self, dim=dim, obs=obs, params=params, E=E)
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
         # self.params["zeta"] = s.dot(Z,W.T)
@@ -284,12 +288,16 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         # Initialise the observed data
         assert s.all( (self.obs==0) | (self.obs==1) ), "Data must be binary"
 
+    def precompute(self, options):
+        self.updateParameters(ix=None, ro=None)
+        self.updateExpectations()
+
     def updateExpectations(self):
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
         self.means = self.E.mean(axis=0).data
         self.E -= self.means
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         Z = self.markov_blanket["Z"].getExpectations()
         W = self.markov_blanket["W"].getExpectations()
         self.params["zeta"] = s.sqrt(s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],W["E2"].T))
@@ -342,6 +350,8 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
     jaakola Y and normal tau sees the normal Y
     """
     def __init__(self, dim, obs, params=None, E=None):
+        self.dim = dim
+        
         self.all_obs = obs
         if type(self.all_obs) != ma.MaskedArray:
             self.all_obs = ma.masked_invalid(self.all_obs)
@@ -386,8 +396,8 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
     def getMask(self):
         return self.nas
 
-    def updateParameters(self):
-        self.jaakola_node.updateParameters()
+    def updateParameters(self, ix=None, ro=None):
+        self.jaakola_node.updateParameters(ix, ro)
 
     def updateExpectations(self):
         self.jaakola_node.updateExpectations()
@@ -397,6 +407,9 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
         pseudo_y = self.jaakola_node.getExpectation()
         E[self.zeros] = pseudo_y[self.zeros]
         return E
+
+    def get_mini_batch(self, expand=True):
+        return self.getExpectation(expand=True)
 
     def calculateELBO(self):
         # as the values used by the jaakola node and the gamma node are rightly masked
@@ -416,13 +429,13 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Mixed_Node):
     Both nodes are initialised normally and the right wiring is done the markov blanket
     """
 
-    def __init__(self, dim, value, pa, pb, qa, qb, groups, groups_dic, qE=None):
+    def __init__(self, dim, value, pa, pb, qa, qb, groups, qE=None):
         # TODO what is the value in tau jaakola
         # initialiser for the two nodes initialise different members which are
         # all contained in the Zero_Inflated_Tau_Jaakkola node
         N = len(groups)
         self.tau_jaakola = Tau_Jaakkola((N, dim[1]), value)
-        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, groups_dic, qE)
+        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, qE)
 
         self.nodes = [self.tau_jaakola, self.tau_normal]
 
@@ -471,6 +484,9 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Mixed_Node):
 
     def getExpectation(self, expand=True):
         return self.getExpectations(expand)['E']
+
+    def get_mini_batch(self, expand=True):
+        return self.getExpectation(expand=True)
 
     def calculateELBO(self):
         # TODO make sure that tau_d masks the zeros

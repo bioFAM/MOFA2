@@ -95,7 +95,7 @@ class Unobserved_Variational_Mixed_Node(Variational_Node):
     def __init__(self):
         pass
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         for node in self.nodes:
             node.updateParameters()
 
