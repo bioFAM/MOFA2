@@ -1,17 +1,14 @@
 """
 Module to define updates for non-conjugate matrix factorisation models.
 Reference: 'Fast Variational Bayesian Inference for Non-Conjugate Matrix Factorisation models' by Seeger and Bouchard (2012)
-
 PseudoY: general class for pseudodata
     PseudoY_seeger: general class for pseudodata using seeger aproach
         Poisson_PseudoY: Poisson likelihood
         Bernoulli_PseudoY: Bernoulli likelihood
         Binomial_PseudoY: Binomial likelihood (TO FINISH)
-
     PseudoY_Jaakkola: NOT IMPLEMENTED
         Bernoulli_PseudoY_Jaakkola: bernoulli likelihood for Jaakkola approach (see REF)
         Tau_Jaakkola:
-
 """
 
 from __future__ import division
@@ -28,9 +25,9 @@ from biofam.core import gpu_utils
 from biofam.core.utils import sigmoid, lambdafn
 
 
-
-# General pseudodata nodes
-#-------------------------------------------------------------------------------
+##############################
+## General pseudodata nodes ##
+##############################
 
 class PseudoY(Unobserved_Variational_Node):
     """ General class for pseudodata nodes """
@@ -69,16 +66,6 @@ class PseudoY(Unobserved_Variational_Node):
     def updateParameters(self):
         pass
 
-    def define_mini_batch(self, ix):
-        QExp = self.Q.getExpectations()
-        expanded_expectation = QExp['E'][ix, :]
-        self.mini_batch = {'E': expanded_expectation}
-
-    def get_mini_batch(self):
-        if self.mini_batch is None:
-            return self.getExpectation(expand=True)
-        return self.mini_batch
-
     def getMask(self):
         return self.mask
 
@@ -109,9 +96,9 @@ class PseudoY(Unobserved_Variational_Node):
         print("Not implemented")
         exit()
 
-
-# Seeger nodes
-#-------------------------------------------------------------------------------
+##################
+## Seeger nodes ##
+##################
 
 class PseudoY_Seeger(PseudoY):
     """ General class for pseudodata nodes using the seeger approach """
@@ -121,20 +108,12 @@ class PseudoY_Seeger(PseudoY):
         #  obs (ndarray): observed data
         #  E (ndarray): initial expected value of pseudodata
         PseudoY.__init__(self, dim=dim, obs=obs, params=params, E=E)
-        self.params["zeta"] = s.zeros(self.obs.shape)
 
-    def updateParameters(self, ix=None, ro=None):
-        #-----------------------------------------------------------------------
-        # get Expectations or minibatch which are necessarry for the update
-        #-----------------------------------------------------------------------
-        Z = self.markov_blanket["Z"].get_mini_batch()['E']
+    def updateParameters(self):
+        Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
-
-        #-----------------------------------------------------------------------
-        # Update mini batch only
-        #-----------------------------------------------------------------------
-        self.params["zeta"][ix, :] = s.dot(Z,W.T) # Update mini batch only
-        # self.params["zeta"] = gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T )
+        # self.params["zeta"] = s.dot(Z,W.T)
+        self.params["zeta"] = gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T )
 
 class Tau_Seeger(Constant_Node):
     """
@@ -157,21 +136,17 @@ class Poisson_PseudoY(PseudoY_Seeger):
     A simple choise for the rate function is e^{x} but this rate function is non-robust
     in the presence of outliers, so in Seeger et al they chose the function:
         gamma(x) = log(1+e^x)
-
     The data follows a Poisson distribution, but Followung Seeger et al the pseudodata Yhat_ij
     follows a normal distribution with mean E[W_{i,:}]*E[Z_{j,:}] and precision 'tau_j'
     where 'tau_j' is an upper bound of the second derivative of the loglikelihood:
         x_ij = sum_k^k w_{i,k}*z_{k,j}
         f_ij''(x_ij) <= tau_j for all i,j
-
     For the Poisson likelihood with rate function (1), the upper bound tau is calculated as follows:
         f_ij''(x_ij) = 0.25 + 0.17*ymax_j   where ymax_j = max(Y_{:,j})
-
     Pseudodata is updated as follows:
         yhat_ij = zeta_ij - f'(zeta_ij)/tau_j = ...
     The bound degrades with the presence of entries with large y_ij, so one should consider
     clipping overly large counts
-
     """
     def __init__(self, dim, obs, params=None, E=None):
         # - dim (2d tuple): dimensionality of each view
@@ -215,18 +190,13 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
     Likelihood:
         p(y|x) = (e^{yx}) / (1+e^x)  (1)
         f(x) = -log p(y|x) = log(1+e^x) - yx
-
     The second derivative is upper bounded by tau=0.25
-
     Folloiwng Seeger et al, the data follows a Bernoulli distribution but the pseudodata follows a
     normal distribution with mean E[W]*E[Z] and precision 'tau'
-
     IMPROVE EXPLANATION
-
     Pseudodata is updated as follows:
         yhat_ij = zeta_ij - f'(zeta_ij)/tau
                 = zeta_ij - 4*(sigmoid(zeta_ij) - y_ij)
-
     """
     def __init__(self, dim, obs, params=None, E=None):
         # - dim (2d tuple): dimensionality of each view
@@ -239,8 +209,6 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
 
     def updateExpectations(self):
         # Update the pseudodata
-        # TODO check that its not slow here, as we could otherwise update only
-        # for the current batch
         self.E = self.params["zeta"] - 4.*(sigmoid(self.params["zeta"]) - self.obs)
         self.means = self.E.mean(axis=0).data
         self.E -= self.means
@@ -249,15 +217,20 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
         # Compute Lower Bound using the Bernoulli likelihood with observed data
         Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
-        tmp = s.dot(Z,W.T)
-        lik = s.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
-        return lik
+        mask = self.getMask()
+
+        # tmp = s.dot(Z,W.T)
+        tmp = gpu_utils.asnumpy( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
+
+        lb = self.obs*tmp - s.log(1.+s.exp(tmp))
+        lb[mask] = 0.
+
+        return lb.sum()
 
 
-
-
-# Jaakkola nodes
-#-------------------------------------------------------------------------------
+####################
+## Jaakkola nodes ##
+####################
 
 class Tau_Jaakkola(Node):
     """
@@ -273,20 +246,6 @@ class Tau_Jaakkola(Node):
             assert value.shape == dim, "Dimensionality mismatch"
             self.value = value
 
-    def define_mini_batch(self, ix):
-        # define minibatch of data for all nodes to use
-        QExp = self.Q.getExpectations()
-
-        expanded_E = QExp['E'][ix, :]
-        expanded_lnE = QExp['lnE'][ix, :]
-        # expanded_lnE = s.repeat(QExp['lnE'][None, :], len(ix), axis=0)
-        self.mini_batch = {'E': expanded_E, 'lnE': expanded_lnE}
-
-    def get_mini_batch(self):
-        if self.mini_batch is None:
-            return self.getExpectations()
-        return self.mini_batch
-
     def updateExpectations(self):
         self.value = 2*lambdafn(self.markov_blanket["Y"].getParameters()["zeta"])
 
@@ -301,7 +260,6 @@ class Tau_Jaakkola(Node):
 
     def removeFactors(self, idx, axis=None):
         pass
-
 class Bernoulli_PseudoY_Jaakkola(PseudoY):
     """
     Class for a Bernoulli pseudodata node using the Jaakkola approach:
@@ -309,19 +267,14 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         p(y|x) = (e^{yx}) / (1+e^x)
     Following Jaakola et al and intterpreting the bound as a liklihood on gaussian pseudodata
     leads to the folllowing updates
-
     Pseudodata is given by
             yhat_ij = (2*y_ij-1)/(4*lambadfn(xi_ij))
         where lambdafn(x)= tanh(x/2)/(4*x).
-
     Its conditional distribution is given by
             N((ZW)_ij, 1/(2 lambadfn(xi_ij)))
-
     Updates for the variational parameter xi_ij are given by
             sqrt(E((ZW)_ij^2))
-
     xi_ij in above notation is the same as zeta (variational parameter)
-
     NOTE: For this class to work the noise variance tau needs to be updated according to
         tau_ij <- 2*lambadfn(xi_ij)
     """
@@ -332,45 +285,14 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
         assert s.all( (self.obs==0) | (self.obs==1) ), "Data must be binary"
 
     def updateExpectations(self):
-        # TODO check how expensive this is to potentially update for batch only
-        import pdb; pdb.set_trace()
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
         self.means = self.E.mean(axis=0).data
         self.E -= self.means
 
-    def updateParameters(self, ix=None, ro=None):
-        #-----------------------------------------------------------------------
-        # get Expectations or minibatch which are necessarry for the update
-        #-----------------------------------------------------------------------
-        Z = self.markov_blanket["Z"].get_mini_batch()
-        W = self.markov_blanket["SW"].getExpectations()
-
-        # TODO check
-        # TODO: MASK??
-        self.params["zeta"][ix,:] = s.sqrt(
-            s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
-                                                                                                       W["E2"].T))
-
-        # self.params["zeta"] = s.sqrt(s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],W["E2"].T))
-
-        # self.params["zeta"] = s.sqrt(
-        #     s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],
-        #                                                                                                W["EBNN"].T))
-        # else:
-        #     Z = self.markov_blanket["SZ"].getExpectations()
-        #     W = self.markov_blanket["W"].getExpectations()
-        #     self.params["zeta"] = s.sqrt(
-        #         s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["EBNN"],
-        #                                                                                              W["E2"].T))
-        # self.params["zeta"] = ma.masked_invalid(self.params["zeta"])
-
-    # def calculateELBO(self):
-    #     # Compute Lower Bound using the Bernoulli likelihood with observed data
-    #     Z = self.markov_blanket["Z"].getExpectation()
-    #     W = self.markov_blanket["W"].getExpectation()
-    #     tmp = s.dot(Z,W.T)
-    #     lik = ma.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
-    #     return lik
+    def updateParameters(self):
+        Z = self.markov_blanket["Z"].getExpectations()
+        W = self.markov_blanket["W"].getExpectations()
+        self.params["zeta"] = s.sqrt(s.square(Z["E"].dot(W["E"].T)) - s.dot(s.square(Z["E"]), s.square(W["E"].T)) + s.dot(Z["E2"],W["E2"].T))
 
     def calculateELBO(self):
         # Compute Evidence Lower Bound using the lower bound to the likelihood
@@ -413,11 +335,9 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
     Mixed node containing:
         - a normal Y node for non-zero data
         - a Bernoulli node for zero data
-
     Zeros are replaced by pseudo data as in Jaakola
     Non-Zero data remain as such
     getExpectations returns the merged matrices
-
     Appropriate wiring is done in the markov blanket so that tau jaakola sees the
     jaakola Y and normal tau sees the normal Y
     """
@@ -493,17 +413,16 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Mixed_Node):
     Mixed node containing:
         - a jaakola tau
         - a normal tau
-
     Both nodes are initialised normally and the right wiring is done the markov blanket
     """
 
-    def __init__(self, dim, value, pa, pb, qa, qb, groups, qE=None):
+    def __init__(self, dim, value, pa, pb, qa, qb, groups, groups_dic, qE=None):
         # TODO what is the value in tau jaakola
         # initialiser for the two nodes initialise different members which are
         # all contained in the Zero_Inflated_Tau_Jaakkola node
         N = len(groups)
         self.tau_jaakola = Tau_Jaakkola((N, dim[1]), value)
-        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, qE)
+        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, groups_dic, qE)
 
         self.nodes = [self.tau_jaakola, self.tau_normal]
 

@@ -512,7 +512,7 @@ if __name__ == '__main__':
     infiles = ["test_data/zero_inflations/zeros_0.3/0_0.txt"]
     views =  ["view_A"]
     groups = ["group_A"]
-    lik = ["gaussian"]
+    lik = ["zero_inflated"]
 
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False, mask_zeros=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
