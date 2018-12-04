@@ -396,6 +396,7 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
 
     def updateExpectations(self):
         # TODO check how expensive this is to potentially update for batch only
+        import pdb; pdb.set_trace()
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
         self.means = self.E.mean(axis=0).data
         self.E -= self.means

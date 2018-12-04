@@ -499,25 +499,25 @@ if __name__ == '__main__':
 
     ent = entry_point()
 
-    infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    views =  ["view_A", "view_A", "view_B", "view_B"]
-    groups = ["group_A", "group_B", "group_A", "group_B"]
-    lik = ["gaussian", "gaussian"]
+    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
+    # views =  ["view_A", "view_A", "view_B", "view_B"]
+    # groups = ["group_A", "group_B", "group_A", "group_B"]
+    # lik = ["gaussian", "gaussian"]
     # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_1.txt"]
     # views =  ["view_A", "view_A", "view_B", "view_B"]
     # groups = ["group_A", "group_B", "group_A", "group_B"]
     # lik = ["zero_inflated", "gaussian"]
 
-    #infiles = ["test_data/toy_zeros/view_1.txt"]
-    #views =  ["view_A"]
-    #groups = ["group_A"]
-    #lik = ["gaussian"]
+    infiles = ["test_data/zero_inflations/zeros_0.3/0_0.txt"]
+    views =  ["view_A"]
+    groups = ["group_A"]
+    lik = ["zero_inflated"]
 
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=False , sl_z=True, ard_w=True, factors=15, likelihoods=lik)
-    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False, stochastic=True)
-    ent.set_stochasticity_options()
+    ent.set_model_options(ard_z=False, sl_w=True , sl_z=False, ard_w=True, factors=10, likelihoods=lik)
+    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False, stochastic=False)
+    # ent.set_stochasticity_options()
     ent.build()
 
     ent.run()

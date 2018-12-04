@@ -32,7 +32,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None):
+    def initZ(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -96,7 +96,7 @@ class initModel(object):
             qE=qE, qE2=qE2
         )
 
-    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1='random', qvar_T0=1.,
+    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0, qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
         """Method to initialise sparse factors with a spike and slab prior
 
@@ -144,7 +144,7 @@ class initModel(object):
             qET=qET, qEZ_T0=qEZ_T0, qEZ_T1=qEZ_T1
         )
 
-    def initW(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None):
+    def initW(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None):
         """Method to initialise the weights
 
         PARAMETERS
@@ -205,7 +205,7 @@ class initModel(object):
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
     def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1.,
-        qmean_S0=0., qmean_S1=0, qvar_S0=1., qvar_S1=1., qtheta=1.,
+        qmean_S0=0., qmean_S1='random', qvar_S0=1., qvar_S1=1., qtheta=1.,
         qEW_S0=None, qEW_S1=None, qES=None):
         """Method to initialise sparse weights with a (reparametrised) spike and slab prior
 
