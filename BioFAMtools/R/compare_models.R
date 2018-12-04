@@ -24,7 +24,7 @@
 #' @export
 
 compare_factors <- function(models, comparison = "all", show_rownames=FALSE, show_colnames=FALSE,...) {
-  breaksList = seq(0, 1, by = 0.001)
+  breaksList = seq(0, 1, by = 0.01)  # define a break list to fix the colour range irrespective of data range
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")
@@ -80,7 +80,7 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
     # if(is.null(main)) main <- "Absolute correlation between latent factors"
     if(length(unique(as.numeric(abs(corLFs))))>1){
     pheatmap(abs(corLFs), show_rownames = show_rownames,show_colnames = show_colnames,
-             color = colorRampPalette(c("white",RColorBrewer::brewer.pal(n = 7, name = "YlOrRd")))(length(breaksList)),
+             color = colorRampPalette(c("white",RColorBrewer::brewer.pal(9,name="YlOrRd")))(length(breaksList)), breaks=breaksList,
              # color=colorRampPalette(c("white", "orange" ,"red"))(100),
              # annotation_col = modelAnnot, main= main , ...)
              ...)
@@ -103,8 +103,7 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
           corLFs_pairs <- cor(LFs1[common_pairwise,], LFs2[common_pairwise,], use="complete.obs")
           corLFs_pairs[is.na(corLFs_pairs)]  = 0
           if(length(unique(abs(corLFs_pairs)))>1){
-          pheatmap(abs(corLFs_pairs),
-                   color = colorRampPalette(c("white",RColorBrewer::brewer.pal(n = 7, name = "YlOrRd")))(length(breaksList)), show_rownames= show_rownames, show_colnames = show_colnames, ...)
+          pheatmap(abs(corLFs_pairs),color=colorRampPalette(c("white", "orange" ,"red"))(length(breaksList)), breaks=breaksList,show_rownames= show_rownames, show_colnames = show_colnames, ...)
           } else warning("No plot produced as correlations consist of only one value")
           corLFs_pairs
           }

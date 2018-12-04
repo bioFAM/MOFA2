@@ -38,9 +38,9 @@ class Node(object):
         """ Method to return the Markov blanket of the node """
         return self.markov_blanket
 
-    def update(self):
+    def update(self, ix=None, ro=None):
         """ General method to update both parameters and expectations of the node """
-        self.updateParameters()
+        self.updateParameters(ix, ro)
         self.updateExpectations()
 
     def updateExpectations(self):
@@ -59,7 +59,7 @@ class Node(object):
         """ General method to get the first moment (expectation) of a node """
         pass
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         """ General function to update parameters of the node """
         pass
 

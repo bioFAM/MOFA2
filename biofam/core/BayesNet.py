@@ -10,6 +10,8 @@ import os
 import scipy as s
 import pandas as pd
 import sys
+import numpy.ma as ma
+import math
 
 from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import corr, nans
@@ -47,6 +49,7 @@ class BayesNet(object):
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
         assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
         assert "gpu_mode" in train_opts, "'gpu_mode' not found in the training options dictionary"
+        assert "stochastic" in train_opts, "'stochastic' not found in the training options dictionary"
 
         self.options = train_opts
 
@@ -90,32 +93,6 @@ class BayesNet(object):
     def getNodes(self):
         """ Method to return all nodes """
         return self.nodes
-
-    def simulate(self, dist='P'):
-        """ Method to simulate from the generative model """
-        if 'SW' in self.nodes:
-            self.nodes["SW"].sample(dist)
-            self.nodes["Z"].sample(dist)
-            self.nodes["Z"].samp -= self.nodes["Z"].samp.mean() #centering
-        else:
-            self.nodes["SZ"].sample(dist)
-            self.nodes["W"].sample(dist)
-            for m in range(self.dim["M"]):
-                self.nodes["W"].nodes[m].samp -= self.nodes["W"].nodes[m].samp.mean() #centering
-        self.nodes['Tau'].sample(dist)
-        self.nodes['Y'].sample(dist)
-
-        self.simulated = True
-
-    def sampleData(self):
-        """ Method to sample data from the prior distributions of the generative model """
-        if ~self.simulated:
-            self.simulate()
-        return self.nodes['Y'].sample(dist='P')
-
-    def saveData(self):
-        # TODO some function here to save simulated data
-        pass
 
     def removeInactiveFactors(self, min_r2=None):
         """Method to remove inactive factors
@@ -162,8 +139,6 @@ class BayesNet(object):
 
             tmp = [ s.where( (all_r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
             drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
-            # import pdb; pdb.set_trace()
-            # print(all_r2)
             if len(drop_dic["min_r2"]) > 0:
                 drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
 
@@ -180,6 +155,45 @@ class BayesNet(object):
 
         pass
 
+    def step_size(self, iter):
+        # return the step size for the considered iterration
+        tau = self.options['tau']
+        kappa = self.options['forgetting_rate']
+        return (iter + tau)**(-kappa)
+
+    def step_size2(self, iter):
+        # return the step size for the considered iterration
+        tau = self.options['tau']
+        kappa = self.options['forgetting_rate']
+        return tau / ((1 +  kappa * iter)**(3./4.))
+
+    def sample_mini_batch_replace(self):
+        # TODO if multiple group, sample indices in each group evenly ? prob yes
+        S_pc = self.options['batch_size']
+        S = S_pc * self.dim['N']
+        ix = s.random.choice(range(self.dim['N']), size= S, replace=False)
+        return ix
+
+    def sample_mini_batch_no_replace(self, i):
+        # TODO if multiple group, sample indices in each group evenly ? prob yes
+        # shuffle the data at the beginnign of every epoch
+        n_batches = math.ceil(1./self.options['batch_size'])
+        S = self.options['batch_size'] * self.dim['N']
+        batch_ix = i % n_batches
+        if batch_ix == 0:
+            epoch_ix = i / n_batches
+            print("Epoch", int(epoch_ix))
+            print("-------------------------------------------------------------------------------------------")
+            self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
+
+        min = int(S * batch_ix)
+        max = int(S * (batch_ix + 1))
+        if max > self.dim['N']:
+            max = self.dim['N']
+
+        ix_res = self.shuffled_ix[min:max]
+        return ix_res
+    
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
 
@@ -188,14 +202,29 @@ class BayesNet(object):
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         activeK = nans((self.options['maxiter']))
 
+        # Precompute terms
         for n in self.nodes:
             self.nodes[n].precompute(self.options)
 
-        # print('elbo before training: ', self.calculateELBO())
+        print('elbo before training: ', self.calculateELBO())
+        print('schedule of updates: ',self.options['schedule'])
+        print()
 
-        # Start training
+        ro = 1.
+        ix = None
         for i in range(self.options['maxiter']):
             t = time();
+
+            # IMPROVE THIS: BAYESNET SHOULD BE AGNOSTIC TO THE NAME OF NODES: CREATE METHOD ISNIDE BAYESNET TO DEFINE MINI BACHES
+            if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
+                ro = self.step_size2(i)  # TODO should we change that at every epoch instead
+                ix = self.sample_mini_batch_no_replace(i)
+                self.nodes['Y'].define_mini_batch(ix)
+                self.nodes['Tau'].define_mini_batch(ix)
+                if 'AlphaZ' in self.nodes:
+                    self.nodes['AlphaZ'].define_mini_batch(ix)
+                if 'ThetaZ' in self.nodes:
+                    self.nodes['ThetaZ'].define_mini_batch(ix)
 
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
@@ -207,7 +236,7 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
-                self.nodes[node].update()
+                self.nodes[node].update(ix, ro)
 
             # Calculate Evidence Lower Bound
             if (i+1) % self.options['elbofreq'] == 0:
@@ -218,16 +247,14 @@ class BayesNet(object):
                     print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.dim['K'])))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
-
                 else:
                     # Check convergence using the ELBO
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
-                    if delta_elbo<0:
-                        print("Warning, lower bound is decreasing..."); print('\a')
-                        #import os; os.system('play --no-show-progress --null --channels 1 synth %s sine %f' % (0.01, 440))
+                    # if delta_elbo<0:
+                    #     print("Warning, lower bound is decreasing..."); print('\a')
 
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
@@ -243,12 +270,55 @@ class BayesNet(object):
             else:
                 print("Iteration %d: time=%.2f, K=%d\n" % (i+1,time()-t,self.dim["K"]))
 
+            # self.compute_r2_simple()
+
             # Flush (we need this to print when running on the cluster)
             sys.stdout.flush()
 
         # Finish by collecting the training statistics
         self.train_stats = { 'activeK':activeK, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
+
+    def compute_r2_simple(self):
+        # compute r2 for the cnosidered mini bact
+        # ----------------------------------------------------------------------
+        W = s.concatenate(self.nodes['W'].getExpectation())
+        Z = self.nodes['Z'].get_mini_batch()['E']
+        Y = s.concatenate(self.nodes['Y'].get_mini_batch(), axis=1)
+
+        Y_mask = ma.getmask(Y)
+        Y_dat = Y.data
+        Y_dat[Y_mask] = 0.
+
+        pred = Z.dot(W.T)
+        pred[Y_mask] = 0.
+        SS = s.sum((Y_dat - pred)**2.)
+        var = s.sum((Y_dat - Y_dat.mean())**2.)
+
+        r2_batch = 1. - SS/var
+
+        # compute r2 for all data
+        # ----------------------------------------------------------------------
+        W = s.concatenate(self.nodes['W'].getExpectation())
+        Z = self.nodes['Z'].getExpectation()
+        Y = s.concatenate(self.nodes['Y'].getExpectation(), axis=1)
+
+        Y_mask = ma.getmask(Y)
+        Y_dat = Y.data
+        Y_dat[Y_mask] = 0.
+
+        pred = Z.dot(W.T)
+        pred[Y_mask] = 0.
+        SS = s.sum((Y_dat - pred)**2.)
+        var = s.sum((Y_dat - Y_dat.mean())**2.)
+
+        r2_tot = 1. - SS/var
+
+        # print
+        # ----------------------------------------------------------------------
+        print("batch specific r2 is ", r2_batch)
+        print("total r2 is ", r2_tot)
+        print()
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """

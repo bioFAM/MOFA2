@@ -59,7 +59,7 @@ class Multiview_Node(Node):
         print("Error: Multiview nodes do not have a markov blanket, use the single-view nodes")
         exit(1)
 
-    def removeFactors(self,idx):
+    def removeFactors(self, idx):
         """Method to remove factors from the node
 
         PARAMETERS
@@ -99,14 +99,16 @@ class Multiview_Node(Node):
         M = self.activeM if m is None else m
         for m in M: self.nodes[m].updateDim(axis,new_dim)
 
-    def sample(self, dist="P"):
-        # TODO should we np.array() it ? better data type BUT problem of space efficiency ?
-        self.samp = [self.nodes[m].sample(dist) for m in self.activeM]
-        return self.samp
-
     def precompute(self, options):
         for m in self.activeM:
             self.nodes[m].precompute(options)
+
+    def define_mini_batch(self, ix):
+        for m in self.activeM:
+            self.nodes[m].define_mini_batch(ix)
+
+    def get_mini_batch(self):
+        return [self.nodes[m].get_mini_batch() for m in self.activeM]
 
 
 class Multiview_Variational_Node(Multiview_Node, Variational_Node):
@@ -115,18 +117,18 @@ class Multiview_Variational_Node(Multiview_Node, Variational_Node):
         Multiview_Node.__init__(self, M, *nodes)
         for node in nodes: assert isinstance(node, Variational_Node)
 
-    def update(self):
+    def update(self, ix=None, ro=None):
         """ Method to update both parameters and expectations of the node"""
         for m in self.activeM:
-            self.nodes[m].updateParameters()
+            self.nodes[m].updateParameters(ix, ro)
             self.nodes[m].updateExpectations()
 
     def updateExpectations(self):
         """Method to update expectations using current estimates of the parameters"""
         for m in self.activeM: self.nodes[m].updateExpectations()
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
         """Method to update parameters using current estimates of the expectations"""
-        for m in self.activeM: self.nodes[m].updateParameters()
+        for m in self.activeM: self.nodes[m].updateParameters(ix, ro)
     def calculateELBO(self):
         """Method to calculate variational evidence lower bound"""
         lb = [ self.nodes[m].calculateELBO() for m in self.activeM ]
@@ -148,9 +150,9 @@ class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):
         # nodes: list of M 'Node' instances
         Multiview_Node.__init__(self, M, *nodes)
 
-    def update(self):
+    def update(self, ix=None, ro=None):
         """Method to update values of the nodes"""
-        for m in self.activeM: self.nodes[m].update()
+        for m in self.activeM: self.nodes[m].update(ix, ro)
 
     def calculateELBO(self):
         """Method to calculate variational evidence lower bound

@@ -32,7 +32,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None):
+    def initZ(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -96,7 +96,7 @@ class initModel(object):
             qE=qE, qE2=qE2
         )
 
-    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1='random', qvar_T0=1.,
+    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0, qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
         """Method to initialise sparse factors with a spike and slab prior
 
@@ -144,7 +144,7 @@ class initModel(object):
             qET=qET, qEZ_T0=qEZ_T0, qEZ_T1=qEZ_T1
         )
 
-    def initW(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None):
+    def initW(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None):
         """Method to initialise the weights
 
         PARAMETERS
@@ -176,6 +176,7 @@ class initModel(object):
 
                     # Random initialisation
                     if qmean == "random":
+                        # TODO check effect of scale here
                         qmean_m = stats.norm.rvs(loc=0, scale=1., size=(self.D[m], self.K))
 
                 elif isinstance(qmean, s.ndarray):
@@ -204,7 +205,7 @@ class initModel(object):
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
     def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1.,
-        qmean_S0=0., qmean_S1=0, qvar_S0=1., qvar_S1=1., qtheta=1.,
+        qmean_S0=0., qmean_S1='random', qvar_S0=1., qvar_S1=1., qtheta=1.,
         qEW_S0=None, qEW_S1=None, qES=None):
         """Method to initialise sparse weights with a (reparametrised) spike and slab prior
 
@@ -275,20 +276,17 @@ class initModel(object):
         # Sanity checks
         assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
-        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        # convert groups into integers from 0 to n_groups
         tmp = np.unique(groups, return_inverse=True)
-        groups_dic = tmp[0]
         groups_ix = tmp[1]
 
         n_group = len(np.unique(groups_ix))
-        assert len(groups_dic) == n_group, 'problem in np.unique'
 
         self.nodes["AlphaZ"] = AlphaZ_Node(
             dim=(n_group, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
             groups=groups_ix,
-            groups_dic=groups_dic,
             qE=qE, qlnE=qlnE
         )
 
@@ -336,13 +334,11 @@ class initModel(object):
 
         tau_list = [None]*self.M
 
-        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        # convert groups into integers from 0 to n_groups 
         tmp = np.unique(groups, return_inverse=True)
-        groups_dic = tmp[0]
         groups_ix = tmp[1]
 
         n_group = len(np.unique(groups_ix))
-        assert len(groups_dic) == n_group, 'problem in np.unique'
 
         for m in range(self.M):
 
@@ -360,12 +356,11 @@ class initModel(object):
 
             elif self.lik[m] == "zero_inflated":
                 # contains parameters to initialise both normal and jaakola tau
-                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((n_group, self.D[m])), value=1.,
-                                                         pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
+                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((n_group, self.D[m])), value=1., pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
 
             # Gaussian noise model for continuous data
             elif self.lik[m] == "gaussian":
-                tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, groups_dic=groups_dic, qE=qE)
+                tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
 
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
@@ -407,20 +402,17 @@ class initModel(object):
         # Sanity checks
         assert len(groups) == self.N, 'sample groups labels do not match number of samples'
 
-        # convert groups into integers from 0 to n_groups and keep the corresponding group names in groups_dic
+        # convert groups into integers from 0 to n_groups
         tmp = np.unique(groups, return_inverse=True)
-        groups_dic = tmp[0]
         groups_ix = tmp[1]
 
         n_group = len(np.unique(groups_ix))
-        assert len(groups_dic) == n_group, 'problem in np.unique'
 
         self.nodes["ThetaZ"] = ThetaZ_Node(
             dim=(n_group, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
             groups=groups_ix,
-            groups_dic=groups_dic,
             qE=qE)
 
     def initThetaW(self, pa=1., pb=1., qa=1., qb=1., qE=None):

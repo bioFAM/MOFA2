@@ -8,23 +8,16 @@ import scipy.special as special
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
 
-# TODO add sample functions everywhere
-# TODO calculateELBO is the same and could be moved to the parent node ?
-# TODO actually all the nodes are exactly the same apart from labeling. Could be one single node
 class AlphaW_Node(Gamma_Unobserved_Variational_Node):
     def __init__(self, dim, pa, pb, qa, qb, qE=None, qlnE=None):
-        # Gamma_Unobserved_Variational_Node.__init__(self, dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
         super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
 
     def precompute(self, options=None):
-        # self.lbconst = self.K * ( self.P.a*s.log(self.P.b) - special.gammaln(self.P.a) )
-        # self.lbconst = s.sum( self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']) )
-        self.factors_axis = 0
+        """ Method to precompute some terms to speed up the calculations """
+        self.factors_axis = 1
 
     def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
-        QExp['E'] = QExp['E']
-        QExp['lnE'] = QExp['lnE']
         if expand:
             D = self.markov_blanket['W'].dim[0]
             expanded_E = s.repeat(QExp['E'][None, :], D, axis=0)
@@ -34,30 +27,43 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
             return QExp
 
     def getExpectation(self, expand=False):
-        QExp = self.getExpectations(expand)
-        return QExp['E']
+        return self.getExpectations(expand)['E']
 
-    def updateParameters(self):
+    def updateParameters(self, ix=None, ro=None):
+        """
+        Public method to update the nodes parameters
+        Optional arguments for stochastic updates are:
+            - ix: list of indices of the minibatch
+            - ro: step size of the natural gradient ascent
+        """
+
+        # NOTE Here we use a step of 1 because higher in the hierarchy means useless to decay the step size as W would converge anyway
+        self._updateParameters()
+
+    def _updateParameters(self):
+        """ Hidden method to compute parameter updates """
+
         # Collect expectations from other nodes
-        tmp = self.markov_blanket["W"].getExpectations()
-        E  = tmp["E"]
-        if "ENN" in tmp:
-            EWW = tmp["ENN"]
+        Wtmp = self.markov_blanket["W"].getExpectations()
+        W  = Wtmp["E"]
+        if "ENN" in Wtmp:
+            WW = Wtmp["ENN"]
         else:
-            EWW = tmp["E2"]
+            WW = Wtmp["E2"]
 
-        # Collect parameters from the P and Q distributions of this node
-        P,Q = self.P.getParameters(), self.Q.getParameters()
+        # Collect parameters from the P distribution of this node
+        P = self.P.getParameters()
         Pa, Pb = P['a'], P['b']
 
         # Perform updates
-        Qa = Pa + 0.5*E.shape[0]
-        Qb = Pb + 0.5*EWW.sum(axis=0)
+        Qa = Pa + 0.5*W.shape[0]
+        Qb = Pb + 0.5*WW.sum(axis=0)
 
-        # Save updated parameters of the Q distribution
         self.Q.setParameters(a=Qa, b=Qb)
 
     def calculateELBO(self):
+        """ Method to compute ELBO """
+
         # Collect parameters and expectations
         P,Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']
@@ -70,58 +76,94 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
         return lb_p - lb_q
 
 class AlphaZ_Node(Gamma_Unobserved_Variational_Node):
-    """ """
-
-    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic, qE=None, qlnE=None):
+    def __init__(self, dim, pa, pb, qa, qb, groups, qE=None, qlnE=None):
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
+        
         self.groups = groups
-        self.group_names = groups_dic
-        self.factors_axis = 1
-        self.N = len(self.groups)
         self.n_groups = len(np.unique(groups))
-
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
-        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
+        self.mini_batch = None
+
+    def precompute(self, options=None):
+        """ Method to precompute some terms to speed up the calculations """
+
+        # Define axis of factors (to drop them)
+        self.factors_axis = 1
+
+        self.n_per_group = np.zeros(self.n_groups)
+        for c in range(self.n_groups):
+            self.n_per_group[c] = (self.groups == c).sum()
 
     def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()
         if expand:
-            # reshape the values to N_samples * N_factors and return
-            expanded_expectation = QExp['E'][self.groups, :]
-            expanded_lnE = QExp['lnE'][self.groups, :]
-            # do we need to expand the variance as well -> not used I think
-            return {'E': expanded_expectation, 'lnE': expanded_lnE}
+            return {'E': QExp['E'][self.groups, :], 'lnE': QExp['lnE'][self.groups, :] }
         else:
             return {'E': QExp['E'], 'lnE': QExp['lnE']}
 
     def getExpectation(self, expand=False):
-        QExp = self.getExpectations(expand)
-        return QExp['E']
+        return self.getExpectations(expand)['E']
 
-    def updateParameters(self):
-        # TODO: add an if MuZ is in markov blanket ?
-        tmp = self.markov_blanket["Z"].getExpectations()
-        # TODO check that in both version the ENN/E2 which are returned are the same
-        if 'ENN' in tmp:
-            EZZ = tmp["ENN"]
+    def define_mini_batch(self, ix):
+        QExp = self.Q.getExpectations()
+        self.mini_batch = QExp['E'][self.groups[ix], :]
+
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectation(expand=True)
         else:
-            EZZ = tmp["E2"]
+            return self.mini_batch
 
-        # Collect parameters from the P and Q distributions of this node
-        P,Q = self.P.getParameters(), self.Q.getParameters()
+    def updateParameters(self, ix=None, ro=1.):
+        """
+        Public method to update the nodes parameters
+        Optional arguments for stochastic updates are:
+            - ix: list of indices of the minibatch
+            - ro: step size of the natural gradient ascent
+        """
+        Ztmp = self.markov_blanket["Z"].get_mini_batch()
+        if 'ENN' in Ztmp:
+            ZZ = Ztmp["ENN"]
+        else:
+            ZZ = Ztmp["E2"]
+
+        # Collect parameters from the P distributions of this node
+        P = self.P.getParameters()
         Pa, Pb = P['a'], P['b']
-        Qa, Qb = Q['a'], Q['b']
 
-        # Perform update
+        # subset mini-batch
+        if ix is None:
+            groups = self.groups
+        else:
+            groups = self.groups[ix]
+
+        # compute the updated parameters
+        self._updateParameters(Pa, Pb, ZZ, groups, ro)
+
+        # self.Q.setParameters(a=Qa, b=Qb)
+
+    def _updateParameters(self, Pa, Pb, ZZ, groups, ro):
+        """ Hidden method to compute parameter updates """
+
+        Q = self.Q.getParameters()
+        Q['a'] *= (1-ro)
+        Q['b'] *= (1-ro)
+
         for c in range(self.n_groups):
-            mask = (self.groups == c)
-            # TODO check that this subsetting doesnt affect precision
-            Qa[c,:] = Pa[c,:] + 0.5*EZZ[mask, :].shape[0]
-            Qb[c,:] = Pb[c,:] + 0.5*EZZ[mask, :].sum(axis=0)
+            mask = (groups == c)
 
-        self.Q.setParameters(a=Qa, b=Qb)
+            # Compute anti-bias coefficient for stochastic inference
+            n_batch = mask.sum()
+            if n_batch == 0: continue
+            coeff = self.n_per_group[c]/n_batch
+
+            Q['a'][c,:] += ro * (Pa[c,:] + 0.5 * self.n_per_group[c])  # TODO should be precomputed
+            Q['b'][c,:] += ro * (Pb[c,:] + 0.5 * coeff * ZZ[mask,:].sum(axis=0))
 
     def calculateELBO(self):
+        """ Method to compute ELBO """
+        
         # Collect parameters and expectations
         P,Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']

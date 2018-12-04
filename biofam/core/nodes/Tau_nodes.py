@@ -12,36 +12,32 @@ from .variational_nodes import Gamma_Unobserved_Variational_Node
 
 from biofam.core.distributions import *
 
+
 class TauD_Node(Gamma_Unobserved_Variational_Node):
-    def __init__(self, dim, pa, pb, qa, qb, groups, groups_dic, qE=None):
+    def __init__(self, dim, pa, pb, qa, qb, groups, qE=None):
+        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
         self.groups = groups
-        self.group_names = groups_dic
-        self.N = len(self.groups)
         self.n_groups = len(np.unique(groups))
 
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
-        super().__init__(dim=dim, pa=pa, pb=pb, qa=qa, qb=qb, qE=qE)
 
     def precompute(self, options):
-        # self.N = self.dim[0]
-        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
+        """ Method to precompute some terms to speed up the calculations """
+
+        # GPU mode
         gpu_utils.gpu_mode = options['gpu_mode']
 
-        # update of Qa
-        Y = self.markov_blanket["Y"].getExpectation()
-        self.mask = self.markov_blanket["Y"].getMask()
-        # mask = ma.getmask(Y)
-        # Y = Y.data
+        # Constant ELBO terms
+        self.lbconst = s.sum(self.P.params['a']*s.log(self.P.params['b']) - special.gammaln(self.P.params['a']))
 
-        self.Qa_pre = self.P.getParameters()['a'].copy()
+        # compute number of samples per group
+        self.n_per_group = np.zeros(self.n_groups)
+        for c in range(self.n_groups):
+            self.n_per_group[c] = (self.groups == c).sum()
 
-        for g in range(self.n_groups):
-            g_mask = (self.groups == g)
-            Y_tmp = Y[g_mask, :]
-            mask_tmp = self.mask[g_mask, :]
-            self.Qa_pre[g,:] += (Y_tmp.shape[0] - mask_tmp.sum(axis=0))/2.
+        self.mini_batch = None
 
     def getExpectations(self, expand=True):
         QExp = self.Q.getExpectations()
@@ -53,49 +49,91 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             return QExp
 
     def getExpectation(self, expand=True):
-        QExp = self.Q.getExpectations()
+        QExp = self.Q.getExpectation()
         if expand:
-            return QExp['E'][self.groups, :]
+            return QExp[self.groups,:]
         else:
             return Qexp
 
-    def updateParameters(self):
-        # Collect expectations from other nodes
+    def define_mini_batch(self, ix):
+        """ Method to define minibatch for the expectation """
+        self.mini_batch = self.Q.getExpectation()[self.groups[ix],:]
 
-        Y = self.markov_blanket["Y"].getExpectation()
+    def get_mini_batch(self):
+        if self.mini_batch is None:
+            return self.getExpectation()
+        else:
+            return self.mini_batch
 
+    def updateParameters(self, ix=None, ro=1.):
+        """
+        Public method to update the nodes parameters
+        Optional arguments for stochastic updates are:
+            - ix: list of indices of the minibatch
+            - ro: step size of the natural gradient ascent
+        """
+
+        # Get expectations from other nodes
+        Y = self.markov_blanket["Y"].get_mini_batch()
+        mask = self.markov_blanket["Y"].getMask()
         Wtmp = self.markov_blanket["W"].getExpectations()
-        Ztmp = self.markov_blanket["Z"].getExpectations()
-
+        Ztmp = self.markov_blanket["Z"].get_mini_batch()
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
-        # Collect parameters from the P and Q distributions of this node
-        P, Q = self.P.getParameters(), self.Q.getParameters()
+        # Collect parameters from the P distributions of this node
+        P = self.P.getParameters()
         Pa, Pb = P['a'], P['b']
-        Qb = Q['b']
 
-        # Copy matrices to GPU
+        # subset mini-batch
+        if ix is None:
+            groups = self.groups
+        else:
+            groups = self.groups[ix]
+
+        # compute the updated parameters
+        Qa, Qb = self._updateParameters(Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups)
+
+        self.Q.setParameters(a=Qa, b=Qb)
+
+    def _updateParameters(self, Y, W, WW, Z, ZZ, Pa, Pb, mask, ro, groups):
+        """ Hidden method to compute parameter updates """
+        Q = self.Q.getParameters()
+        Qa, Qb = Q['a'], Q['b']
+
+        # Move matrices to the GPU
         Y_gpu = gpu_utils.array(Y)
         Z_gpu = gpu_utils.array(Z)
         W_gpu = gpu_utils.array(W).T
 
+        # Calculate terms for the update
         ZW = Z_gpu.dot(W_gpu)
-        tmp = gpu_utils.square(Y_gpu) \
+        tmp = gpu_utils.asnumpy( gpu_utils.square(Y_gpu) \
             + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
             - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
-            - 2*ZW*Y_gpu 
-        tmp[self.mask] = 0.
+            - 2*ZW*Y_gpu )
+        tmp[mask] = 0.
 
-        # Perform updates of the Q distribution
+        # Compute updates
+        Qa *= (1-ro)
+        Qb *= (1-ro)
         for g in range(self.n_groups):
-            g_mask = (self.groups == g)
-            Qb[g,:] = Pb[g,:] + tmp[g_mask,:].sum(axis=0) / 2.
+            g_mask = (groups == g)
 
-        # Save updated parameters of the Q distribution
-        self.Q.setParameters(a=self.Qa_pre, b=Qb)
+            n_batch = g_mask.sum()
+            if n_batch == 0: continue
+
+            # Calculate scaling coefficient for mini-batch
+            coeff = self.n_per_group[g]/n_batch
+
+            Qb[g,:] += ro * (Pb[g,:] + 0.5*coeff*tmp[g_mask,:].sum(axis=0))
+            Qa[g,:] += ro * (Pa[g,:] + 0.5*coeff*(mask.shape[0] - mask[g_mask,:].sum(axis=0)))
+
+        return Qa, Qb
 
     def calculateELBO(self):
+        """ Method to compute ELBO """
+        
         # Collect parameters and expectations from current node
         P, Q = self.P.getParameters(), self.Q.getParameters()
         Pa, Pb, Qa, Qb = P['a'], P['b'], Q['a'], Q['b']

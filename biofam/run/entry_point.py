@@ -1,4 +1,3 @@
-import argparse
 import pandas as pd
 import scipy as s
 import sys
@@ -6,8 +5,6 @@ from time import sleep
 from time import time
 import pandas as pd
 import imp
-
-from typing import List, Union, Dict, TypeVar
 
 from biofam.core.BayesNet import *
 from biofam.build_model.build_model import *
@@ -258,7 +255,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=1, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
-        schedule=None, gpu_mode=False
+        schedule=None, gpu_mode=False, stochastic=False
         ):
         """ Set training options """
 
@@ -278,6 +275,8 @@ class entry_point(object):
 
         # GPU mode
         if gpu_mode:
+            # first see if cupy is installed and give instructions if not
+            # if installed import to check that everything goes well
             try:
                 import cupy as cp
                 print("GPU mode activated\n")
@@ -307,7 +306,7 @@ class entry_point(object):
 
         # Training schedule
         if schedule is None:
-            schedule = ['Y', 'W', 'Z', 'Tau']
+            schedule = ['Y', 'Z', 'W', 'Tau']
 
             # Insert ThetaW after W if Spike and Slab prior on W
             if self.model_opts['sl_w']:
@@ -339,6 +338,24 @@ class entry_point(object):
             seed = int(round(time()*1000)%1e6)
         self.train_opts['seed'] = int(seed)
         s.random.seed(self.train_opts['seed'])
+
+        # set the default stochastic options which can be re changed later
+        self.train_opts['stochastic'] = stochastic
+        if stochastic: set_stochasticity_options()
+
+    def set_stochasticity_options(self, tau=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
+
+        # Sanity checks
+        assert hasattr(self, 'train_opts'), "Train options not defined"
+        assert tau > 0, 'tau must be greater than zero'
+        assert 0 <= forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
+        assert 0 < batch_size <= 1, 'Batch size must range from 0 to 1'
+
+        self.train_opts['stochastic'] = True
+        self.train_opts['tau'] = tau
+        self.train_opts['forgetting_rate'] = forgetting_rate
+        self.train_opts['start_stochastic'] = start_stochastic
+        self.train_opts['batch_size'] = batch_size
 
     def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False):
         """ Set model options """
@@ -440,10 +457,11 @@ class entry_point(object):
         else:
             self.train_opts['schedule'] = self.model_builder.schedule
 
+        # Set training options
         self.model.setTrainOptions(self.train_opts)
-
+        
         # Train the model
-        train_model(self.model, self.train_opts)
+        train_model(self.model)
 
     def save(self, outfile):
         """ Save the model in an hdf5 file """
@@ -484,23 +502,22 @@ if __name__ == '__main__':
     # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
     # views =  ["view_A", "view_A", "view_B", "view_B"]
     # groups = ["group_A", "group_B", "group_A", "group_B"]
-
+    # lik = ["gaussian", "gaussian"]
     # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_1.txt"]
     # views =  ["view_A", "view_A", "view_B", "view_B"]
     # groups = ["group_A", "group_B", "group_A", "group_B"]
     # lik = ["zero_inflated", "gaussian"]
 
-    infiles = ["test_data/zero_inflations/zeros_0.1/0_0.txt"]
+    infiles = ["test_data/zero_inflations/zeros_0.3/0_0.txt"]
     views =  ["view_A"]
     groups = ["group_A"]
     lik = ["zero_inflated"]
 
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False, mask_zeros=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=2, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=.000, dropR2=0.0, seed=4, elbofreq=1, verbose=1)
-    # ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
-
+    ent.set_model_options(ard_z=False, sl_w=True , sl_z=False, ard_w=True, factors=10, likelihoods=lik)
+    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False, stochastic=False)
+    # ent.set_stochasticity_options()
     ent.build()
 
     ent.run()
