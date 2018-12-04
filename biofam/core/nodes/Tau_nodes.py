@@ -108,11 +108,10 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         # Calculate terms for the update
         ZW = Z_gpu.dot(W_gpu)
-        tmp = gpu_utils.square(Y_gpu) \
+        tmp = gpu_utils.asnumpy( gpu_utils.square(Y_gpu) \
             + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
             - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
-            - 2*ZW*Y_gpu 
-        tmp *= 0.5
+            - 2*ZW*Y_gpu )
         tmp[mask] = 0.
 
         # Compute updates

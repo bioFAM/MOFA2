@@ -356,8 +356,7 @@ class initModel(object):
 
             elif self.lik[m] == "zero_inflated":
                 # contains parameters to initialise both normal and jaakola tau
-                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((n_group, self.D[m])), value=1.,
-                                                         pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
+                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((n_group, self.D[m])), value=1., pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
 
             # Gaussian noise model for continuous data
             elif self.lik[m] == "gaussian":

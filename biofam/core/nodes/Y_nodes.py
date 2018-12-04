@@ -57,31 +57,36 @@ class Y_Node(Constant_Variational_Node):
         else:
             return self.mini_batch
 
-    def calculateELBO(self):
+    def calculateELBO(self, TauTrick=False):
         """ Method to calculate evidence lower bound """
 
         # Collect expectations from nodes
-        Y = self.getExpectation()
         Tau = self.markov_blanket["Tau"].getExpectations()
-        Wtmp = self.markov_blanket["W"].getExpectations()
-        Ztmp = self.markov_blanket["Z"].getExpectations()
-        W, WW = Wtmp["E"].T, Wtmp["E2"].T
-        Z, ZZ = Ztmp["E"], Ztmp["E2"]
         mask = ma.getmask(self.value)
 
         # Mask relevant matrices
         Tau["lnE"][mask] = 0
+        
+        if TauTrick: # Important: this assumes that the Tau update has been done before calculating elbo of Y
+            tauQ_param = self.markov_blanket["Tau"].getParameters("Q")
+            tauP_param = self.markov_blanket["Tau"].getParameters("P")
 
-        # Move matrices to the GPU
+            # TO-DO: TAKE INTO ACCOUNT GROUPS
+            elbo = self.likconst + 0.5*s.sum(Tau["lnE"]) - s.dot(Tau["E"],tauQ_param["b"] - tauP_param["b"])
+        else:
+            Y = self.getExpectation()
+            Wtmp = self.markov_blanket["W"].getExpectations()
+            Ztmp = self.markov_blanket["Z"].getExpectations()
+            W, WW = Wtmp["E"].T, Wtmp["E2"].T
+            Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
-        ZW = Z.dot(W)
-        tmp = s.square(Y) \
-            + s.array(ZZ).dot(s.array(WW)) \
-            - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
-            - 2*ZW*Y 
-
-        tmp[mask] = 0.
-
-        elbo = self.likconst + 0.5*Tau["lnE"].sum() - s.sum(Tau["E"] * tmp)
+            ZW = Z.dot(W)
+            tmp = s.square(Y) \
+                + s.array(ZZ).dot(s.array(WW)) \
+                - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
+                - 2*ZW*Y 
+            tmp *= 0.5
+            tmp[mask] = 0.
+            elbo = self.likconst + 0.5*Tau["lnE"].sum() - s.sum(Tau["E"] * tmp)
 
         return elbo

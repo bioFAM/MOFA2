@@ -253,69 +253,6 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
         lik = s.sum( self.obs*tmp - s.log(1+s.exp(tmp)) )
         return lik
 
-# class Binomial_PseudoY(PseudoY_Seeger):
-#     """
-#     Class for a Binomial pseudodata node
-#     Likelihood:
-#         p(x|N,theta) = p(x|N,theta) = binom(N,x) * theta**(x) * (1-theta)**(N-x)
-#         f(x) = -log p(x|N,theta) = -log(binom(N,x)) - x*theta - (N-x)*(1-theta)
-
-#     The second derivative is upper bounded:
-#         f''(x_ij) <= 0.25*max(N_{:,j})
-
-#     Following Seeger et al, the pseudodata yhat_{nd} follows a normal distribution with mean
-#     E[w_{i,:}]*E[z_{j,:}] and precision 'tau_j'
-
-#     IMPROVE EXPLANATION
-
-#     Pseudodata is updated as follows
-#         yhat_ij = zeta_ij - f'(zeta_ij)/tau_j
-#                 = zeta_ij - (N_{ij}*sigmoid(zeta_ij) - y_ij)/tau_d
-
-#     """
-#     def __init__(self, dim, obs, tot, Zeta=None, E=None):
-#         # - dim (2d tuple): dimensionality of each view
-#         # - obs (ndarray): observed data
-#         # - E (ndarray): initial expected value of pseudodata
-#         PseudoY_Seeger.__init__(self, dim=dim, obs=None, params=params, E=E)
-
-#         # Initialise the observed data
-#         assert s.all(s.mod(obs, 1) == 0) and s.all(s.mod(tot, 1) == 0), "Data must not contain float numbers, only integers"
-#         assert s.all(obs >= 0) and s.all(tot >= 0), "Data must not contain negative numbers"
-#         assert s.all(obs <= tot), "Observed counts have to be equal or smaller than the total counts"
-#         self.obs = obs
-#         self.tot = tot
-
-
-#     def updateExpectations(self):
-#         # Update the pseudodata
-#         tau = self.markov_blanket["Tau"].getValue()  # TODO check that this works with stochastic (single value ?)
-#         # TODO check that its not slow here, as we could otherwise update only
-#         # for the current batch
-#         self.E = self.params["zeta"] - s.divide(self.tot*sigmoid(self.params["zeta"])-self.obs, tau)
-#         pass
-# =======
-#         Z = self.markov_blanket["Z"].getExpectation()
-#         W = self.markov_blanket["W"].getExpectation()
-#         mask = self.getMask()
-# >>>>>>> master
-
-#         # tmp = s.dot(Z,W.T)
-#         tmp = gpu_utils.asnumpy( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
-
-#         lb = self.obs*tmp - s.log(1.+s.exp(tmp))
-#         lb[mask] = 0.
-
-# <<<<<<< HEAD
-#         # TODO change approximation
-#         tmp[tmp==0] = 0.00000001
-#         tmp[tmp==1] = 0.99999999
-#         lik = s.log(s.special.binom(self.tot,self.obs)).sum() + s.sum(self.obs*s.log(tmp)) + \
-#             s.sum((self.tot-self.obs)*s.log(1-tmp))
-#         return lik
-# =======
-#         return lb.sum()
-# >>>>>>> master
 
 
 
@@ -559,13 +496,13 @@ class Zero_Inflated_Tau_Jaakkola(Unobserved_Variational_Mixed_Node):
     Both nodes are initialised normally and the right wiring is done the markov blanket
     """
 
-    def __init__(self, dim, value, pa, pb, qa, qb, groups, groups_dic, qE=None):
+    def __init__(self, dim, value, pa, pb, qa, qb, groups, qE=None):
         # TODO what is the value in tau jaakola
         # initialiser for the two nodes initialise different members which are
         # all contained in the Zero_Inflated_Tau_Jaakkola node
         N = len(groups)
         self.tau_jaakola = Tau_Jaakkola((N, dim[1]), value)
-        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, groups_dic, qE)
+        self.tau_normal  = TauD_Node(dim, pa, pb, qa, qb, groups, qE)
 
         self.nodes = [self.tau_jaakola, self.tau_normal]
 
