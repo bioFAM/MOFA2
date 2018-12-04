@@ -80,7 +80,8 @@ class Distribution(object):
         self.updateDim(axis=axis, new_dim=self.dim[axis]-len(idx))
 
     def updateDim(self, axis, new_dim):
-        """ Method to update the dimensionality of a particular axis. This method is a bit inefficient but we store dimensionalities with tuples and they cannot be modified
+        """ Method to update the dimensionality of a particular axis. 
+        This method is a bit inefficient but we store dimensionalities with tuples and they cannot be modified
 
         PARAMETERS
         ----------

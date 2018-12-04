@@ -16,14 +16,15 @@ from .variational_nodes import UnivariateGaussian_Unobserved_Variational_Node_wi
 class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
     def __init__(self, dim, pmean, pvar, qmean, qvar, qE=None, qE2=None, idx_covariates=None):
         super().__init__(dim=dim, pmean=pmean, pvar=pvar, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
-
+        print("Not functional")
+        exit()
         # Define indices for covariates
         if idx_covariates is not None:
             self.covariates[idx_covariates] = True
 
     def precompute(self, options):
         # Precompute terms to speed up computation
-        self.D = self.dim[0]
+        self.dim[0] = self.dim[0]
         self.K = self.dim[1]
         self.covariates = np.zeros(self.dim[1], dtype=bool)
         self.factors_axis = 1
@@ -51,7 +52,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         #-----------------------------------------------------------------------
         # get Expectations which are necessarry for the update
         #-----------------------------------------------------------------------
-        Y = self.markov_blanket["Y"].get_mini_batch()
+        Y = self.markov_blanket["Y"].getExpectation()
         Z = self.markov_blanket["Z"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
         N = self.markov_blanket["Y"].dim[0]
@@ -130,7 +131,7 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         if "MuW" in self.markov_blanket:
             PE, PE2 = self.markov_blanket['MuW'].getExpectations()['E'], self.markov_blanket['MuW'].getExpectations()['E2']
         else:
-            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.D,self.dim[1]))
+            PE, PE2 = self.P.getParameters()["mean"], s.zeros((self.dim[0],self.dim[1]))
 
         if 'AlphaW' in self.markov_blanket:
             Alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True)
@@ -154,71 +155,27 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         tmp2 = 0.5 * Alpha["lnE"].sum()
 
         lb_p = tmp1 + tmp2
-        # lb_q = -(s.log(Qvar).sum() + self.D*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
-        lb_q = -(s.log(Qvar).sum() + self.D * len(latent_variables)) / 2.
+        # lb_q = -(s.log(Qvar).sum() + self.dim[0]*self.dim[1])/2. # I THINK THIS IS WRONG BECAUSE SELF.DIM[1] ICNLUDES COVARIATES
+        lb_q = -(s.log(Qvar).sum() + self.dim[0] * len(latent_variables)) / 2.
 
         return lb_p-lb_q
 
 
-    def sample(self, dist='P'):
-        if "MuW" in self.markov_blanket:
-            p_mean = self.markov_blanket['MuW'].sample()
-        else:
-            p_mean = self.P.params['mean']
-
-        if "SigmaAlphaW" in self.markov_blanket:
-            if self.markov_blanket["SigmaAlphaW"].__class__.__name__ == "AlphaW_Node_mk":
-                alpha = self.markov_blanket['SigmaAlphaW'].sample()
-                p_var = s.square(1./alpha)
-                #p_cov = s.diag(p_var)
-                p_cov = [p_var[k]*np.eye(self.D) for k in range(self.K)]
-            else:
-                p_cov = self.markov_blanket['SigmaAlphaW'].sample()
-        elif "AlphaW" in self.markov_blanket:
-            alpha = self.markov_blanket['AlphaW'].sample()
-            p_var = s.square(1. / alpha)
-            #p_cov = s.diag(p_var)
-            p_cov = [p_var[k] * np.eye(self.D) for k in range(self.K)]
-        else:
-            p_cov = self.P.params['cov']
-
-        # simulating
-
-        samp_tmp = []
-        for i in range(self.dim[1]):
-            #samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i])) #does it yield the correct result for sparse input matrices ?
-            if p_cov[i].__class__.__name__ == 'dia_matrix':
-                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i].toarray())) #inefficient
-            elif p_cov[i].__class__.__name__ == 'ndarray':
-                samp_tmp.append(s.random.multivariate_normal(p_mean[:, i], p_cov[i]))
-            else:
-                print("Not implemented yet")
-                exit()
-
-        # self.samp = s.array([tmp/tmp.std() for tmp in samp_tmp]).transpose()
-        self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
-
-        return self.samp
-
 class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
-    # TOO MANY ARGUMENTS, SHOULD WE USE **KWARGS AND *KARGS ONLY?
-    # def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
     def __init__(self, dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0=None, qEW_S1=None, qES=None):
         super().__init__(dim, pmean_S0, pmean_S1, pvar_S0, pvar_S1, ptheta, qmean_S0, qmean_S1, qvar_S0, qvar_S1, qtheta, qEW_S0, qEW_S1, qES)
 
     def precompute(self, options):
-        self.D = self.dim[0]
         self.factors_axis = 1
         gpu_utils.gpu_mode = options['gpu_mode']
+    # @profile
+    def updateParameters(self, ix=None, ro=1.):
 
-    def updateParameters(self, ix=None, ro=None):
-        #-----------------------------------------------------------------------
-        # get Expectations which are necessarry for the update
-        #-----------------------------------------------------------------------
+        # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].get_mini_batch()
         Z = self.markov_blanket["Z"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
-        N = self.markov_blanket["Y"].dim[0]
+        mask = self.markov_blanket["Y"].getMask()
 
         if "AlphaW" in self.markov_blanket:
             Alpha = self.markov_blanket["AlphaW"].getExpectation(expand=True)
@@ -234,83 +191,56 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qmean_S1, Qvar_S1, Qvar_S0 = Q['mean_B1'], Q['var_B1'],  Q['var_B0']
         Qtheta = Q['theta']
 
-        #-----------------------------------------------------------------------
-        # Masking
-        #-----------------------------------------------------------------------
-        mask = ma.getmask(Y)
-        Y = Y.data
-        Y[mask] = 0.
+        # Mask matrices
         tau[mask] = 0.
 
-        #-----------------------------------------------------------------------
-        # compute stochastic "anti-bias" coefficient
-        #-----------------------------------------------------------------------
+        # Compute stochastic "anti-bias" coefficient
+        N = self.markov_blanket["Y"].dim[0]
         coeff = float(N) / float(Y.shape[0])
 
-        #-----------------------------------------------------------------------
-        # make sure ro is not None
-        #-----------------------------------------------------------------------
-        if ro is None:
-            ro = 1.
+        # Compute parameter updates
+        self._updateParameters(Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro)
+    
+    def _updateParameters(self, Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro):
 
-        #-----------------------------------------------------------------------
-        # compute the update
-        #-----------------------------------------------------------------------
-        self._updateParameters(Y, Z, tau, Alpha,
-                               Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW,
-                               theta_lnE, theta_lnEInv,
-                               coeff, ro)
+        # Copy matrices to GPU
+        tau_gpu = gpu_utils.array(tau)
 
-    def _updateParameters(self, Y, Z, tau, Alpha,
-                          Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW,
-                          theta_lnE, theta_lnEInv,
-                          coeff, ro):
-
-        # precompute terms usful for all k
-        tauYT = (gpu_utils.array(tau)*gpu_utils.array(Y)).T
+        # precompute terms
+        tauYT = (tau_gpu*gpu_utils.array(Y)).T
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
-            # Calculate intermediate steps
-            term1 = (theta_lnE-theta_lnEInv)[:,k]
 
-            # GPU --------------------------------------------------------------
-            # Variables used in multiple operations snhould be loaded on GPU only once
-            Zk_cp = gpu_utils.array(Z['E'][:,k])
-            tau_cp = gpu_utils.array(tau)
-            ZZk_cp = gpu_utils.array(Z['E2'][:,k])
+            # Copy matrices to GPU
+            Zk_cp = gpu_utils.array(Z["E"][:,k])
+            ZZk_cp = gpu_utils.array(Z["E2"][:,k])
             alphak_cp = gpu_utils.array(Alpha[:,k])
 
+            # Compute terms
+            term1 = (theta_lnE-theta_lnEInv)[:,k]
+
             term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
-            term3 = gpu_utils.asnumpy(0.5 * coeff * gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_cp) + alphak_cp))
+
+            term3 = gpu_utils.asnumpy(0.5 * coeff * gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_gpu) + alphak_cp))
 
             term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
-
             term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
             term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T
-            term4_tmp2 = gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)
-            term4_tmp2 *= tau_cp  # most expensive bit
-            term4_tmp2 = term4_tmp2.sum(axis=0)
-
-            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_cp) + alphak_cp # good to modify (I REPLACE MA.DOT FOR S.DOT, IT SHOULD BE SAFE )
-            # term4_tmp3 = fast_dot(ZZ[:,k].T,tau) + alpha[:,k]
-
-
-            term4 = coeff * gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3)) # good to modify, awsnt checked numerically
-
-            # ------------------------------------------------------------------
+            term4_tmp2 = (tau_gpu*gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)).sum(axis=0)
+            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_gpu) + alphak_cp
+            term4 = coeff * gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3))
 
             # Update S
-            # NOTE there could be some precision issues in S --> loads of 1s in result
             Qtheta[:,k] *= (1 - ro)
             Qtheta[:,k] += ro * (1./(1.+s.exp(-(term1+term2-term3+term4))))
 
             # Update W
             tmp_var = gpu_utils.asnumpy(1./term4_tmp3)
-            Qvar_S1[:,k] *= ( 1 - ro)
+            Qvar_S1[:,k] *= (1 - ro)
             Qvar_S1[:,k] += ro * tmp_var
 
-            Qmean_S1[:,k] *= ( 1 - ro)
+            Qmean_S1[:,k] *= (1 - ro)
             Qmean_S1[:,k] += ro * tmp_var * gpu_utils.asnumpy(term4_tmp1-term4_tmp2)
 
             # Update Expectations for the next iteration
@@ -321,22 +251,14 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qvar_S0 += ro/Alpha
 
         # Save updated parameters of the Q distribution
-        self.Q.setParameters(mean_B0=s.zeros((self.D,self.dim[1])),
-                             var_B0=Qvar_S0,
-                             mean_B1=Qmean_S1,
-                             var_B1=Qvar_S1,
-                             theta=Qtheta)
+        self.Q.setParameters(mean_B0=s.zeros((self.dim[0],self.dim[1])), var_B0=Qvar_S0, mean_B1=Qmean_S1, var_B1=Qvar_S1, theta=Qtheta)
 
     def calculateELBO(self):
         # Collect parameters and expectations
         Qpar,Qexp = self.Q.getParameters(), self.Q.getExpectations()
         S,WW = Qexp["EB"], Qexp["ENN"]
         Qvar = Qpar['var_B1']
-
         theta = self.markov_blanket["ThetaW"].getExpectations(expand=True)
-
-
-        # Get ARD sparsity or prior variance
         if "AlphaW" in self.markov_blanket:
             alpha = self.markov_blanket["AlphaW"].getExpectations(expand=True)
         else:
@@ -344,14 +266,12 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             alpha['E'] = 1./self.P.params['var_B1']
             alpha['lnE'] = s.log(1./self.P.params['var_B1'])
 
-
-        # Calculate ELBO for W
+        # Calculate ELBO term for W
         lb_pw = (alpha["lnE"].sum() - s.sum(alpha["E"]*WW))/2.
-        lb_qw = -0.5*self.dim[1]*self.D - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum() # IS THE FIRST CONSTANT TERM CORRECT???
-        # #NOT SURE ABOUT THE FORMULA for lb_qw (brackets of expectation propagating inside the log ?)
+        lb_qw = -0.5*self.dim[1]*self.dim[0] - 0.5*(S*s.log(Qvar) + (1.-S)*s.log(1./alpha["E"])).sum()
         lb_w = lb_pw - lb_qw
 
-        # Calculate ELBO for S
+        # Calculate ELBO term for S
         lb_ps = S*theta['lnE'] + (1.-S)*theta['lnEInv']
         lb_qs = S*s.log(S) + (1.-S)*s.log(1.-S)
         lb_ps[s.isnan(lb_ps)] = 0.
@@ -359,31 +279,3 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_s = s.sum(lb_ps) - s.sum(lb_qs)
 
         return lb_w + lb_s
-
-    def sample(self, dist='P'):
-        # get necessary parameters
-        mu_w_hat = self.P.getParameters()['mean_B1']
-        mu_w_hat = s.ones(self.dim) * mu_w_hat
-
-        theta = self.markov_blanket["ThetaW"].sample()
-        #if theta.shape != mu_w_hat.shape:  #if theta had already mu_z_hat shape, then the sampling above would be wrong
-        theta = s.repeat(theta[None,:],mu_w_hat.shape[0],0)
-
-        #if "AlphaW" in self.markov_blanket:
-        alpha = self.markov_blanket["AlphaW"].sample()
-            #if alpha.shape[0] == 1:
-            #    alpha = s.repeat(alpha[:], self.dim[1], axis=0)
-            #if alpha.shape != mu_w_hat.shape:
-            #    alpha = s.repeat(alpha[None,:], self.dim[0], axis=0)
-        #else:
-        #    print("Not implemented")
-        #    exit()
-
-        # simulate
-        bernoulli_s = s.random.binomial(1, theta)
-
-        w_hat = np.array([s.random.normal(mu_w_hat[:, i], math.sqrt(1./alpha[i])) for i in range(mu_w_hat.shape[1])]).T
-        #w_hat = np.random.normal(mu_w_hat, np.sqrt(1./alpha))
-
-        self.samp = bernoulli_s * w_hat
-        return self.samp
