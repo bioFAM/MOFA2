@@ -459,7 +459,7 @@ class entry_point(object):
 
         # Set training options
         self.model.setTrainOptions(self.train_opts)
-        
+
         # Train the model
         train_model(self.model)
 
@@ -511,12 +511,12 @@ if __name__ == '__main__':
     infiles = ["test_data/zero_inflations/zeros_0.3/0_0.txt"]
     views =  ["view_A"]
     groups = ["group_A"]
-    lik = ["zero_inflated"]
+    lik = ["gaussian"]
 
     ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False, mask_zeros=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=False, sl_w=True , sl_z=False, ard_w=True, factors=10, likelihoods=lik)
-    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=5, verbose=1, gpu_mode=False, stochastic=False)
+    ent.set_train_options(iter=1000, tolerance=0., dropR2=0.0, seed=4, elbofreq=1, verbose=1, gpu_mode=False, stochastic=False)
     # ent.set_stochasticity_options()
     ent.build()
 
