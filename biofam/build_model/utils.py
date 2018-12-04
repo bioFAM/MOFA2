@@ -126,6 +126,9 @@ def process_data(data, data_opts, samples_groups):
 
     parsed_data = data
 
+    if type(data_opts['mask_zeros']) == bool:
+        data_opts['mask_zeros'] = [data_opts['mask_zeros']] * len(data)
+
     for m in range(len(data)):
 
         # Convert to float32
@@ -144,6 +147,10 @@ def process_data(data, data_opts, samples_groups):
         if data_opts["mask"][m] > 0:
             print("Masking %.1f%% of values in view '%s'..." % (data_opts["mask"][m]*100, data_opts["views_names"][m]))
             parsed_data[m] = mask_data(parsed_data[m], data_opts['mask'][m])
+
+        if data_opts['mask_zeros'][m]:
+            print('Masking zeros for view ', m)
+            parsed_data[m][parsed_data[m] == 0] = np.nan
 
         # Centering and scaling is only appropriate for gaussian data
         if data_opts["likelihoods"][m] in ["gaussian", "zero_inflated"]:

@@ -370,7 +370,7 @@ class entry_point(object):
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson",'zero_inflated'])), "Available likelihoods are 'gaussian','bernoulli', 'poisson', 'zero_inflated'"
 
-    def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False, mask=None):
+    def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False, mask=None, mask_zeros=False):
         """ Set data processing options """
 
         # TODO: more verbose messages
@@ -396,6 +396,8 @@ class entry_point(object):
         # Scale features to unit variance
         self.data_opts['scale_features'] = scale_features
 
+        # Do we want to mask zeros in the data (provide list if depends on view)
+        self.data_opts['mask_zeros'] = mask_zeros
 
         # Mask values
         if mask is not None:
@@ -488,12 +490,12 @@ if __name__ == '__main__':
     # groups = ["group_A", "group_B", "group_A", "group_B"]
     # lik = ["zero_inflated", "gaussian"]
 
-    infiles = ["test_data/toy_zeros/view_1.txt"]
+    infiles = ["test_data/zero_inflations/zeros_0.1/0_0.txt"]
     views =  ["view_A"]
     groups = ["group_A"]
-    lik = ["gaussian"]
+    lik = ["zero_inflated"]
 
-    ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False)
+    ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False, mask_zeros=True)
     ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
     ent.set_model_options(ard_z=True, sl_w=True , sl_z=True, ard_w=True, factors=2, likelihoods=lik)
     ent.set_train_options(iter=10, tolerance=.000, dropR2=0.0, seed=4, elbofreq=1, verbose=1)
