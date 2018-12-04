@@ -126,8 +126,8 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             # Calculate scaling coefficient for mini-batch
             coeff = self.n_per_group[g]/n_batch
 
+            Qa[g,:] += ro * (Pa[g,:] + 0.5*coeff*(mask[g_mask,:].shape[0] - mask[g_mask,:].sum(axis=0)))
             Qb[g,:] += ro * (Pb[g,:] + 0.5*coeff*tmp[g_mask,:].sum(axis=0))
-            Qa[g,:] += ro * (Pa[g,:] + 0.5*coeff*(mask.shape[0] - mask[g_mask,:].sum(axis=0)))
 
         return Qa, Qb
 
