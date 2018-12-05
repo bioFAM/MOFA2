@@ -315,7 +315,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Replace NAs (due to theta=1) with zeros
         lb_pt[s.isnan(lb_pt)] = 0.
         lb_qt[s.isnan(lb_qt)] = 0.
-
+        
         lb_t = s.sum(lb_pt) - s.sum(lb_qt)
 
         return lb_z + lb_t
