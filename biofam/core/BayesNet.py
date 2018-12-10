@@ -105,7 +105,6 @@ class BayesNet(object):
         drop_dic = {}
 
         if min_r2 is not None:
-            print("asd")
             Z = self.nodes['Z'].getExpectation()
             W = self.nodes["W"].getExpectation()
             Y = self.nodes["Y"].getExpectation()
@@ -156,34 +155,39 @@ class BayesNet(object):
 
         pass
 
-    def step_size(self, iter):
+    def step_size(self, i):
         # return the step size for the considered iterration
         tau = self.options['tau']
         kappa = self.options['forgetting_rate']
-        return (iter + tau)**(-kappa)
+        return (i + tau)**(-kappa)
 
-    def step_size2(self, iter):
+    def step_size2(self, i):
         # return the step size for the considered iterration
         tau = self.options['tau']
         kappa = self.options['forgetting_rate']
-        return tau / ((1 +  kappa * iter)**(3./4.))
+        return tau / ((1 + kappa * i)**(3./4.))
 
     def sample_mini_batch_replace(self):
         # TODO if multiple group, sample indices in each group evenly ? prob yes
         S_pc = self.options['batch_size']
         S = S_pc * self.dim['N']
-        ix = s.random.choice(range(self.dim['N']), size= S, replace=False)
+        ix = s.random.choice(range(self.dim['N']), size=S, replace=False)
         return ix
 
     def sample_mini_batch_no_replace(self, i):
-        # TODO if multiple group, sample indices in each group evenly ? prob yes
-        # shuffle the data at the beginnign of every epoch
+        """ Method to define mini batches"""
+
+        # TODO :
+        # - if multiple group, sample indices in each group evenly ? prob yes
+        # - ??? shuffle the data at the beginnign of every epoch
+
+        # Sample mini-batch indices and define epoch
         n_batches = math.ceil(1./self.options['batch_size'])
         S = self.options['batch_size'] * self.dim['N']
         batch_ix = i % n_batches
+        epoch = int(i / n_batches)
         if batch_ix == 0:
-            epoch_ix = i / n_batches
-            print("Epoch", int(epoch_ix))
+            print("Epoch", epoch)
             print("-------------------------------------------------------------------------------------------")
             self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
 
@@ -192,8 +196,17 @@ class BayesNet(object):
         if max > self.dim['N']:
             max = self.dim['N']
 
-        ix_res = self.shuffled_ix[min:max]
-        return ix_res
+        ix = self.shuffled_ix[min:max]
+
+        # Define mini-batch for each node
+        self.nodes['Y'].define_mini_batch(ix)
+        self.nodes['Tau'].define_mini_batch(ix)
+        if 'AlphaZ' in self.nodes:
+            self.nodes['AlphaZ'].define_mini_batch(ix)
+        if 'ThetaZ' in self.nodes:
+            self.nodes['ThetaZ'].define_mini_batch(ix)  
+
+        return ix, epoch
     
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
@@ -207,9 +220,9 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute(self.options)
 
-        print('elbo before training: ', self.calculateELBO())
-        print('schedule of updates: ',self.options['schedule'])
-        print()
+        if self.options['verbose']: 
+            print('ELBO before training: ', self.calculateELBO())
+            print('\nSchedule of updates: ',self.options['schedule'])
 
         ro = 1.
         ix = None
@@ -218,14 +231,9 @@ class BayesNet(object):
 
             # IMPROVE THIS: BAYESNET SHOULD BE AGNOSTIC TO THE NAME OF NODES: CREATE METHOD ISNIDE BAYESNET TO DEFINE MINI BACHES
             if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
-                ro = self.step_size2(i)  # TODO should we change that at every epoch instead
-                ix = self.sample_mini_batch_no_replace(i)
-                self.nodes['Y'].define_mini_batch(ix)
-                self.nodes['Tau'].define_mini_batch(ix)
-                if 'AlphaZ' in self.nodes:
-                    self.nodes['AlphaZ'].define_mini_batch(ix)
-                if 'ThetaZ' in self.nodes:
-                    self.nodes['ThetaZ'].define_mini_batch(ix)
+                ix, epoch = self.sample_mini_batch_no_replace(i)
+                ro = self.step_size2(epoch)
+                if self.options['verbose']: print("rho: %s" % ro)
 
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
@@ -255,9 +263,9 @@ class BayesNet(object):
 
                     # Print ELBO monitoring
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
-                    if delta_elbo<0:
-                        print("Warning, lower bound is decreasing..."); print('\a')
+                    if delta_elbo<0: print("Warning, lower bound is decreasing..."); print('\a')
 
+                    # Print ELBO decomposed by node
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
 
@@ -271,8 +279,6 @@ class BayesNet(object):
             # Do not calculate lower bound
             else:
                 print("Iteration %d: time=%.2f, K=%d\n" % (i+1,time()-t,self.dim["K"]))
-
-            # self.compute_r2_simple()
 
             # Flush (we need this to print when running on the cluster)
             sys.stdout.flush()
