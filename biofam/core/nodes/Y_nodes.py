@@ -79,13 +79,21 @@ class Y_Node(Constant_Variational_Node):
             W, WW = Wtmp["E"].T, Wtmp["E2"].T
             Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
-            ZW = Z.dot(W)
+            # (SPEED EFFICIENT, MEMORY INEFFICIENT)
+            # ZW = Z.dot(W)
+            # tmp = s.square(Y) \
+            #     + ZZ.dot(WW) \
+            #     - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
+            #     - 2*ZW*Y 
+
+            # (SPEED INEFFICIENT, MEMORY EFFICIENT)
             tmp = s.square(Y) \
-                + s.array(ZZ).dot(s.array(WW)) \
-                - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
-                - 2*ZW*Y 
+                + ZZ.dot(WW) \
+                - s.dot(s.square(Z),s.square(W)) + s.square(Z.dot(W)) \
+                - 2*Z.dot(W)*Y 
             tmp *= 0.5
             tmp[mask] = 0.
+            
             elbo = self.likconst + 0.5*Tau["lnE"].sum() - s.sum(Tau["E"] * tmp)
 
         return elbo

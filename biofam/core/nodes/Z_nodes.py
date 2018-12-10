@@ -116,6 +116,7 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
             Qvar[:, k] = 1. / (Alpha[:, k] + foo)
             Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
+
         # Save updated parameters of the Q distribution
         return {'Qmean': Qmean, 'Qvar':Qvar}
 
@@ -174,7 +175,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             return self.getExpectations()
         else:
             return self.mini_batch
-    # @profile
+
     def updateParameters(self, ix=None, ro=None):
         """
         Public method to update the nodes parameters
@@ -235,21 +236,22 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             self.mini_batch['ENN'] = par_up['theta'] * (s.square(par_up['mean_B1']) + par_up['var_B1']) + \
                                      (1-par_up['theta']) * Q['var_B0'][ix, :]
 
-        self.Q.setParameters(mean_B0=s.zeros((self.dim[0], self.dim[1])), var_B0=Q['var_B0'],
-                             mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now
-    
+        # self.Q.setParameters(mean_B0=s.zeros((self.dim[0], self.dim[1])), var_B0=Q['var_B0'],
+        #                      mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now
+
     def _updateParameters(self, Y, W, tau, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv):
         """ Hidden method to compute parameter updates """
 
         # Precompute terms to speed up GPU computation
         N = Qmean_T1.shape[0]
         M = len(Y)
+
         term4_tmp1 = [ s.zeros(N,) for k in range(self.dim[1]) ]
         term4_tmp2 = [ s.zeros(N,) for k in range(self.dim[1]) ]
         term4_tmp3 = [ s.zeros(N,) for k in range(self.dim[1]) ]
         for m in range(M):
             tau_gpu = gpu_utils.array(tau[m])
-            Y_gpu = gpu_utils.array(Y[m])
+            Y_gpu = gpu_utils.array(Y[m].data)
             for k in range(self.dim[1]):
                 Wk_gpu = gpu_utils.array(W[m]["E"][:,k])
                 WWk_gpu = gpu_utils.array(W[m]["E2"][:,k])

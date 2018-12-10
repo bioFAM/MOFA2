@@ -220,9 +220,9 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute(self.options)
 
-        if self.options['verbose']: 
-            print('ELBO before training: ', self.calculateELBO())
-            print('\nSchedule of updates: ',self.options['schedule'])
+        # if self.options['verbose']: 
+        #     print('ELBO before training: ', self.calculateELBO())
+        #     print('\nSchedule of updates: ',self.options['schedule'])
 
         ro = 1.
         ix = None
@@ -246,7 +246,10 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
+                print(node)
+                import resource; print('=== before: ' + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6))
                 self.nodes[node].update(ix, ro)
+                import resource; print('=== after: ' + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6))
 
             # Calculate Evidence Lower Bound
             if (i+1) % self.options['elbofreq'] == 0:
@@ -356,8 +359,11 @@ class BayesNet(object):
         """Method to calculate the Evidence Lower Bound of the model"""
         if len(nodes) == 0: nodes = self.getVariationalNodes().keys()
         elbo = pd.Series(s.zeros(len(nodes)+1), index=list(nodes)+["total"])
+        print("Calculating ELBO")
+        import resource; print('=== before: ' + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6))
         for node in nodes:
             elbo[node] = float(self.nodes[node].calculateELBO())
             elbo["total"] += elbo[node]
+        import resource; print('=== after: ' + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6))
         return elbo
 

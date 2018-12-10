@@ -135,13 +135,6 @@ def process_data(data, data_opts, samples_groups):
         if isinstance(parsed_data[m], pd.DataFrame):
             parsed_data[m] = parsed_data[m].values
 
-        # Convert to float32
-        # parsed_data[m] = parsed_data[m].astype(np.float32)
-
-        # Convert data to numpy array format
-        if isinstance(parsed_data[m], pd.DataFrame):
-            parsed_data[m] = parsed_data[m].values
-
         # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
         parsed_data[m][parsed_data[m] == -2147483648] = np.nan
 
