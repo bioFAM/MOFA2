@@ -80,15 +80,20 @@ class PseudoY(Unobserved_Variational_Node):
     def getExpectation(self, expand=True):
         return self.E
 
-    # TODO change !!
+    def define_mini_batch(self, ix):
+        """ Method to define a mini-batch (only for stochastic inference) """
+        # self.mini_batch = self.E[ix,:]
+        pass
+
+    # TODO change: define a proper mini-batch !!
     def get_mini_batch(self, expand=True):
-        return self.getExpectations(expand)
+        return self.getExpectation(expand)
 
     def getExpectations(self, expand=True):
         return { 'E':self.getExpectation(expand) }
 
-    def getObservations(self):
-        return self.obs
+    # def getObservations(self):
+    #     return self.obs
 
     def getValue(self):
         return self.obs
@@ -128,8 +133,20 @@ class Tau_Seeger(Constant_Node):
     def getValue(self):
         return self.value
 
+    def define_mini_batch(self, ix):
+        """ Method to define a mini-batch (only for stochastic inference) """
+        # self.mini_batch = self.value[ix,:]
+        pass
+
+    # TODO change: define a proper min-batch !!
+    def get_mini_batch(self, expand=True):
+        return self.getExpectation(expand)
+
     def getExpectation(self, expand=True):
         return self.getValue()
+
+    def getExpectations(self, expand=True):
+        return { 'E':self.getExpectation(expand) }
 
 class Poisson_PseudoY(PseudoY_Seeger):
     """
@@ -161,6 +178,7 @@ class Poisson_PseudoY(PseudoY_Seeger):
         # Initialise the observed data
         assert s.all(s.mod(self.obs, 1) == 0), "Data must not contain float numbers, only integers"
         assert s.all(self.obs >= 0), "Data must not contain negative numbers"
+
     def ratefn(self, X):
         # Poisson rate function
         return s.log(1+s.exp(X))
@@ -176,17 +194,53 @@ class Poisson_PseudoY(PseudoY_Seeger):
         self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"])) / tau
 
     def calculateELBO(self):
-        # Compute Lower Bound using the Poisson likelihood with observed data
+        """ Compute Lower Bound """
+
+        # using the Poisson likelihood with observed data
+        # Z = self.markov_blanket["Z"].getExpectation()
+        # W = self.markov_blanket["W"].getExpectation()
+        # mask = self.getMask()
+
+        # tmp = self.ratefn( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
+
+        # lb = self.obs*s.log(tmp) - tmp
+        # lb[mask] = 0.
+
+        # elbo = lb.sum()
+
+        # Ussing lower bound
         Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
         mask = self.getMask()
 
-        tmp = self.ratefn( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
+        ZW = Z.dot(W)
+        print("To finish...")
+        term1 = 0.5*tau*(ZW - eta)**2
+        # term3 = self.rate_fn(self.params["zeta"])
+        # term2 = ZW*s.log(tmp) - tmpself.r
 
-        lb = self.obs*s.log(tmp) - tmp
-        lb[mask] = 0.
+        # Ussing lower bound with pseudodata
+        # PseudoY = self.getExpectation()
+        # Wtmp = self.markov_blanket["W"].getExpectations()
+        # Ztmp = self.markov_blanket["Z"].getExpectations()
+        # W, WW = Wtmp["E"].T, Wtmp["E2"].T
+        # Z, ZZ = Ztmp["E"], Ztmp["E2"]
+        # tau = self.markov_blanket["Tau"].getValue()
+        # mask = self.getMask()
 
-        return lb.sum()
+        # ZW = Z.dot(W)
+        # tmp = s.square(PseudoY) \
+        #     + s.array(ZZ).dot(s.array(WW)) \
+        #     - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
+        #     - 2*ZW*PseudoY 
+        # tmp *= 0.5
+        # tmp[mask] = 0.
+
+        # likconst = -0.5 * s.sum(self.dim[0]) * s.log(2.*s.pi)
+
+        # elbo = likconst + 0.5*s.log(tau).sum() - s.sum(tau*tmp)
+
+        return elbo
 
 class Bernoulli_PseudoY(PseudoY_Seeger):
     """

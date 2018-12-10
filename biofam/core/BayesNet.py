@@ -105,6 +105,7 @@ class BayesNet(object):
         drop_dic = {}
 
         if min_r2 is not None:
+            print("asd")
             Z = self.nodes['Z'].getExpectation()
             W = self.nodes["W"].getExpectation()
             Y = self.nodes["Y"].getExpectation()
@@ -228,7 +229,8 @@ class BayesNet(object):
 
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
-                if any(self.options['drop'].values()):
+                # if any(self.options['drop'].values()):
+                if self.options['drop']["min_r2"] is not None:
                     self.removeInactiveFactors(**self.options['drop'])
                 activeK[i] = self.dim["K"]
 
@@ -253,8 +255,8 @@ class BayesNet(object):
 
                     # Print ELBO monitoring
                     print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
-                    # if delta_elbo<0:
-                    #     print("Warning, lower bound is decreasing..."); print('\a')
+                    if delta_elbo<0:
+                        print("Warning, lower bound is decreasing..."); print('\a')
 
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")

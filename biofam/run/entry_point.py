@@ -254,7 +254,7 @@ class entry_point(object):
 
     def set_train_options(self,
         iter=5000, elbofreq=1, startSparsity=1, tolerance=0.01,
-        startDrop=1, freqDrop=1, dropR2=0, nostop=False, verbose=False, seed=None,
+        startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
         schedule=None, gpu_mode=False, stochastic=False
         ):
         """ Set training options """
@@ -290,10 +290,11 @@ class entry_point(object):
         self.train_opts['gpu_mode'] = gpu_mode
 
         # Minimum Variance explained threshold to drop inactive factors
-        self.train_opts['drop'] = { "min_r2":float(dropR2) }
+        if dropR2 is not None: dropR2 = float(dropR2)
+        self.train_opts['drop'] = { "min_r2":dropR2 }
         self.train_opts['start_drop'] = int(startDrop)
         self.train_opts['freq_drop'] = int(freqDrop)
-        if (dropR2>0 & verbose==True): print("\nDropping factors with minimum threshold of {0}% variance explained\n".format(dropR2))
+        if ((dropR2 is not None) & (verbose is True)): print("\nDropping factors with minimum threshold of {0}% variance explained\n".format(dropR2))
 
         # Tolerance level for convergence
         self.train_opts['tolerance'] = float(tolerance)
