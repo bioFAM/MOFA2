@@ -272,10 +272,15 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_w = lb_pw - lb_qw
 
         # Calculate ELBO term for S
+        # S[S<1e-10] = 1e-10
+        # S[S>0.9999999] = 0.9999999
         lb_ps = S*theta['lnE'] + (1.-S)*theta['lnEInv']
         lb_qs = S*s.log(S) + (1.-S)*s.log(1.-S)
-        lb_ps[s.isnan(lb_ps)] = 0.
-        lb_qs[s.isnan(lb_qs)] = 0.
+
+        # Replace NAs (due to theta=1) with zeros
+        # lb_ps[s.isnan(lb_ps)] = 0.
+        # lb_qs[s.isnan(lb_qs)] = 0.
+
         lb_s = s.sum(lb_ps) - s.sum(lb_qs)
 
         return lb_w + lb_s

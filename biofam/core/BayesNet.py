@@ -132,12 +132,13 @@ class BayesNet(object):
 
         r2 = s.zeros(self.dim['M'])
         for m in range(self.dim['M']):
-            mask = self.nodes["Y"].getNodes()[m].mask
+            # mask = self.nodes["Y"].getNodes()[m].mask
+            mask = self.nodes["Y"].getNodes()[m].getMask()
 
             Ypred_m = s.dot(Z, W[m].T)
             Ypred_m[mask] = 0.
 
-            Res = ((Y[m] - Ypred_m)**2.).sum()
+            Res = ((Y[m].data - Ypred_m)**2.).sum()
             SS = s.square(Y[m]).sum()
 
             r2[m] = 1. - Res/SS
@@ -243,9 +244,12 @@ class BayesNet(object):
         # Print statistics before training
         if self.options['verbose']: 
             foo = self.calculateELBO()
+            r2 = self.calculate_total_variance_explained()
+
             print('ELBO before training:')
             print("".join([ "%s=%.2f  " % (k,v) for k,v in foo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % foo["total"])
             print('Schedule of updates: ',self.options['schedule']);
+            print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
             if self.options['stochastic']:
                 print("Using stochastic variational inference with the following parameters:")
                 print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n" % (100*self.options['batch_size'], self.options['forgetting_rate']) )
@@ -286,7 +290,7 @@ class BayesNet(object):
                 if i==0:
                     print("Iteration 1: time=%.2f, ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.dim['K'])))
                     if self.options['verbose']:
-                        print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
+                        print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
                 else:
                     # Check convergence using the ELBO
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
@@ -299,9 +303,6 @@ class BayesNet(object):
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
                         print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
-                        
-                        r2 = self.calculate_total_variance_explained()
-                        print("Variance explained:\t" + "   ".join([ "View %s: %.2f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
 
                     # Assess convergence
                     if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
@@ -316,9 +317,19 @@ class BayesNet(object):
             if self.options['verbose']:
                 # Memory usage
                 print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+                # Variance explained
+                r2 = self.calculate_total_variance_explained()
+                print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+                # Number of zero weights
+                W = self.nodes["W"].getExpectation()
+                foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
+                print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                Z = self.nodes["Z"].getExpectation()
+                bar = s.mean(s.absolute(Z)<1e-3)
+                print("Fraction of zero samples: %.0f%%" % (100*bar))
                 # stochastic inference 
                 if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1): 
-                    print("Step size (for stochastic gradient descent): %.4f" % ro)
+                    print("Step size: %.4f" % ro)
 
             # Flush (we need this to print when running on the cluster)
             print("\n")

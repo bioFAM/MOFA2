@@ -311,12 +311,14 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_z = lb_pz - lb_qz
 
         # Calculate ELBO for T
+        # T[T<1e-10] = 1e-10
+        # T[T>0.9999999] = 0.9999999
         lb_pt = T * theta['lnE'] + (1. - T) * theta['lnEInv']
         lb_qt = T * s.log(T) + (1. - T) * s.log(1. - T)
 
         # Replace NAs (due to theta=1) with zeros
-        lb_pt[s.isnan(lb_pt)] = 0.
-        lb_qt[s.isnan(lb_qt)] = 0.
+        # lb_pt[s.isnan(lb_pt)] = 0.
+        # lb_qt[s.isnan(lb_qt)] = 0.
         
         lb_t = s.sum(lb_pt) - s.sum(lb_qt)
 
