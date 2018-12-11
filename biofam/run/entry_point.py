@@ -114,7 +114,6 @@ class entry_point(object):
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
         # Process the data (center, scaling, etc.)
-        print("Processing data...\n")
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
@@ -279,7 +278,7 @@ class entry_point(object):
             # if installed import to check that everything goes well
             try:
                 import cupy as cp
-                print("GPU mode activated\n")
+                print("GPU mode is activated\n")
             except ImportError:
                 print("GPU mode is activated, but GPU not found... switching to CPU mode")
                 print('For GPU mode, you need to install the CUPY library')

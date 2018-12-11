@@ -17,6 +17,9 @@ import resource
 from biofam.core.nodes.variational_nodes import Variational_Node
 from .utils import corr, nans, infer_platform
 
+import warnings
+warnings.filterwarnings("ignore")
+
 class BayesNet(object):
     def __init__(self, dim, nodes):
         """ Initialisation of a Bayesian network
@@ -188,7 +191,7 @@ class BayesNet(object):
         batch_ix = i % n_batches
         epoch = int(i / n_batches)
         if batch_ix == 0:
-            print("Epoch", epoch)
+            print("## Epoch %d ##" % epoch)
             print("-------------------------------------------------------------------------------------------")
             self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
 
@@ -221,20 +224,26 @@ class BayesNet(object):
         for n in self.nodes:
             self.nodes[n].precompute(self.options)
 
-        # if self.options['verbose']: 
-        #     print('ELBO before training: ', self.calculateELBO())
-        #     print('\nSchedule of updates: ',self.options['schedule'])
-
+        # Print statistics before training
+        if self.options['verbose']: 
+            foo = self.calculateELBO()
+            print('ELBO before training:')
+            print("".join([ "%s=%.2f  " % (k,v) for k,v in foo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % foo["total"])
+            print('Schedule of updates: ',self.options['schedule']);
+            if self.options['stochastic']:
+                print("Using stochastic variational inference with the following parameters:")
+                print("- Batch size: %d\n- Forgetting rate: %.2f\n" % (self.options['batch_size'], self.options['forgetting_rate']) )
+            print("\n")
+        
         ro = 1.
         ix = None
         for i in range(self.options['maxiter']):
             t = time();
 
-            # IMPROVE THIS: BAYESNET SHOULD BE AGNOSTIC TO THE NAME OF NODES: CREATE METHOD ISNIDE BAYESNET TO DEFINE MINI BACHES
+            # Sample mini-batch and define step size for stochastic inference
             if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
                 ix, epoch = self.sample_mini_batch_no_replace(i)
                 ro = self.step_size2(epoch)
-                if self.options['verbose']: print("rho: %s" % ro)
 
             # Remove inactive latent variables
             if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
@@ -259,7 +268,7 @@ class BayesNet(object):
 
                 # Print first iteration
                 if i==0:
-                    print("Iteration 1: time=%.2f ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.dim['K'])))
+                    print("Iteration 1: time=%.2f, ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.dim['K'])))
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
                 else:
@@ -267,28 +276,30 @@ class BayesNet(object):
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                     # Print ELBO monitoring
-                    print("Iteration %d: time=%.2f ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
-                    if delta_elbo<0: print("Warning, lower bound is decreasing..."); print('\a')
+                    print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
+                    if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
                     # Print ELBO decomposed by node
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
-                        print('Fraction of time spent in ELBO computation: %.2f %%' % (t_elbo/(t_updates+t_elbo)) )
+                        print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
 
                     # Assess convergence
                     if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
-                        activeK = activeK[:(i+1)]
-                        elbo = elbo[:(i+1)]
-                        print ("Converged!\n")
-                        break
+                        activeK = activeK[:(i+1)]; elbo = elbo[:(i+1)]
+                        print ("Converged!\n"); break
 
             # Do not calculate lower bound
             else:
-                print("Iteration %d: time=%.2f, K=%d\n" % (i+1,time()-t,self.dim["K"]))
+                print("Iteration %d: time=%.2f, Factors=%d\n" % (i+1,time()-t,self.dim["K"]))
 
             # Print memory usage
             if self.options['verbose']:
                 print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+
+            # Print stochastic inference statistics
+            if self.options['verbose'] and self.options['stochastic'] and (i >= self.options["start_stochastic"]-1): 
+                print("Step size (for stochastic gradient descent): %.4f" % ro)
 
             # Flush (we need this to print when running on the cluster)
             print("\n")

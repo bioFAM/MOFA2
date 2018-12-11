@@ -179,6 +179,10 @@ class Poisson_PseudoY(PseudoY_Seeger):
         assert s.all(s.mod(self.obs, 1) == 0), "Data must not contain float numbers, only integers"
         assert s.all(self.obs >= 0), "Data must not contain negative numbers"
 
+    def precompute(self, options):
+        self.updateParameters(ix=None, ro=None)
+        self.updateExpectations()
+
     def ratefn(self, X):
         # Poisson rate function
         return s.log(1+s.exp(X))
@@ -204,15 +208,16 @@ class Poisson_PseudoY(PseudoY_Seeger):
         zeta = self.params["zeta"]
         Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
+        tau = self.markov_blanket["Tau"].getExpectation()
         mask = self.getMask()
 
-        ZW = Z.dot(W)
+        import pdb; pdb.set_trace()
+        ZW = Z.dot(W.T)
         term1 = 0.5*tau*(ZW - zeta)**2
         term2 = (ZW - zeta)*(sigmoid(zeta) - sigmoid(zeta)*(1-self.obs/self.ratefn(zeta)))
         term3 = self.ratefn(zeta) - self.obs*s.log(self.ratefn(zeta))
-        import pdb; pdb.set_trace()
 
-        # elbo = likconst + 0.5*s.log(tau).sum() - s.sum(tau*tmp)
+        elbo = term1.sum() + term2.sum() + term3.sum()
 
         return elbo
 

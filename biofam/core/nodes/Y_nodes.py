@@ -78,7 +78,7 @@ class Y_Node(Constant_Variational_Node):
             # Collect expectations from nodes
             Y = self.getExpectation()
             Tau = self.markov_blanket["Tau"].getExpectations(expand=False)
-            mask = self.getMask()
+            mask = self.mask
             Wtmp = self.markov_blanket["W"].getExpectations()
             Ztmp = self.markov_blanket["Z"].getExpectations()
             W, WW = Wtmp["E"].T, Wtmp["E2"].T

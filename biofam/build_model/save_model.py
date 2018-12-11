@@ -101,7 +101,7 @@ class saveModel():
                         for g in self.groups_names:
 
                             # Add missing values to Tau and Y nodes
-                            mask = nodes_dic[n].nodes[m].getMask()
+                            mask = nodes_dic["Y"].nodes[m].mask
                             exp[m][mask] = np.nan
 
                             # create hdf5 data set for the expectation

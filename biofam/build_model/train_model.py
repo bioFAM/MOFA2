@@ -20,9 +20,9 @@ def train_model(model):
     ####################
 
     print ("\n")
-    print ("#"*40)
+    print ("#"*38)
     print ("## Training the model with seed %d ##" % (model.options['seed']))
-    print ("#"*40)
+    print ("#"*38)
     print ("\n")
 
     model.iterate()
