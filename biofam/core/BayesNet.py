@@ -12,9 +12,10 @@ import pandas as pd
 import sys
 import numpy.ma as ma
 import math
+import resource
 
 from biofam.core.nodes.variational_nodes import Variational_Node
-from .utils import corr, nans
+from .utils import corr, nans, infer_platform
 
 class BayesNet(object):
     def __init__(self, dim, nodes):
@@ -243,14 +244,18 @@ class BayesNet(object):
                 activeK[i] = self.dim["K"]
 
             # Update node by node, with E and M step merged
+            t_updates = time()
             for node in self.options['schedule']:
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
                 self.nodes[node].update(ix, ro)
+            t_updates = time() - t_updates
 
             # Calculate Evidence Lower Bound
             if (i+1) % self.options['elbofreq'] == 0:
+                t_elbo = time()
                 elbo.iloc[i] = self.calculateELBO()
+                t_elbo = time() - t_elbo
 
                 # Print first iteration
                 if i==0:
@@ -267,7 +272,8 @@ class BayesNet(object):
 
                     # Print ELBO decomposed by node
                     if self.options['verbose']:
-                        print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]) + "\n")
+                        print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
+                        print('Fraction of time spent in ELBO computation: %.2f %%' % (t_elbo/(t_updates+t_elbo)) )
 
                     # Assess convergence
                     if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
@@ -280,7 +286,12 @@ class BayesNet(object):
             else:
                 print("Iteration %d: time=%.2f, K=%d\n" % (i+1,time()-t,self.dim["K"]))
 
+            # Print memory usage
+            if self.options['verbose']:
+                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+
             # Flush (we need this to print when running on the cluster)
+            print("\n")
             sys.stdout.flush()
 
         # Finish by collecting the training statistics

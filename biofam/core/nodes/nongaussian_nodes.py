@@ -201,42 +201,16 @@ class Poisson_PseudoY(PseudoY_Seeger):
         # W = self.markov_blanket["W"].getExpectation()
         # mask = self.getMask()
 
-        # tmp = self.ratefn( gpu_utils.dot( gpu_utils.array(Z),gpu_utils.array(W).T ) )
-
-        # lb = self.obs*s.log(tmp) - tmp
-        # lb[mask] = 0.
-
-        # elbo = lb.sum()
-
-        # Ussing lower bound
+        zeta = self.params["zeta"]
         Z = self.markov_blanket["Z"].getExpectation()
         W = self.markov_blanket["W"].getExpectation()
         mask = self.getMask()
 
         ZW = Z.dot(W)
-        print("To finish...")
-        term1 = 0.5*tau*(ZW - eta)**2
-        # term3 = self.rate_fn(self.params["zeta"])
-        # term2 = ZW*s.log(tmp) - tmpself.r
-
-        # Ussing lower bound with pseudodata
-        # PseudoY = self.getExpectation()
-        # Wtmp = self.markov_blanket["W"].getExpectations()
-        # Ztmp = self.markov_blanket["Z"].getExpectations()
-        # W, WW = Wtmp["E"].T, Wtmp["E2"].T
-        # Z, ZZ = Ztmp["E"], Ztmp["E2"]
-        # tau = self.markov_blanket["Tau"].getValue()
-        # mask = self.getMask()
-
-        # ZW = Z.dot(W)
-        # tmp = s.square(PseudoY) \
-        #     + s.array(ZZ).dot(s.array(WW)) \
-        #     - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
-        #     - 2*ZW*PseudoY 
-        # tmp *= 0.5
-        # tmp[mask] = 0.
-
-        # likconst = -0.5 * s.sum(self.dim[0]) * s.log(2.*s.pi)
+        term1 = 0.5*tau*(ZW - zeta)**2
+        term2 = (ZW - zeta)*(sigmoid(zeta) - sigmoid(zeta)*(1-self.obs/self.ratefn(zeta)))
+        term3 = self.ratefn(zeta) - self.obs*s.log(self.ratefn(zeta))
+        import pdb; pdb.set_trace()
 
         # elbo = likconst + 0.5*s.log(tau).sum() - s.sum(tau*tmp)
 

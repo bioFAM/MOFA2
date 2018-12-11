@@ -7,6 +7,7 @@ import numpy.ma as ma
 import os
 import h5py
 
+from sys import platform
 from sklearn.utils.validation import check_array
 from scipy import linalg
 
@@ -122,3 +123,13 @@ def corr(A,B):
 
     # Finally get corr coeff
     return np.dot(A_mA, B_mB.T)/np.sqrt(np.dot(ssA[:,None],ssB[None]))
+
+
+def infer_platform():
+    if platform == "linux" or platform == "linux2":
+        return 1e3
+    elif platform == "darwin":
+        return 1e6
+    else:
+        print("Platform not recognised")
+        exit()
