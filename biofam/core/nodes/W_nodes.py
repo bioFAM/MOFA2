@@ -191,17 +191,17 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         Qmean_S1, Qvar_S1, Qvar_S0 = Q['mean_B1'], Q['var_B1'],  Q['var_B0']
         Qtheta = Q['theta']
 
-        # Mask matrices
-        tau[mask] = 0.
-
         # Compute stochastic "anti-bias" coefficient
         N = self.markov_blanket["Y"].dim[0]
         coeff = float(N) / float(Y.shape[0])
 
         # Compute parameter updates
-        self._updateParameters(Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro)
+        self._updateParameters(Y, Z, tau, mask, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro)
     
-    def _updateParameters(self, Y, Z, tau, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro):
+    def _updateParameters(self, Y, Z, tau, mask, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro):
+
+        # Mask matrices
+        tau[mask] = 0.
 
         # Copy matrices to GPU
         tau_gpu = gpu_utils.array(tau)

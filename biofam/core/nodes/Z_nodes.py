@@ -211,12 +211,9 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta = Qtheta[ix,:]
             SZ = SZ[ix,:]
 
-        # Masking
-        for m in range(len(Y)):
-            tau[m][mask[m]] = 0.
 
         # Compute the updates
-        par_up = self._updateParameters(Y, W, tau, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv)
+        par_up = self._updateParameters(Y, W, tau, mask, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv)
 
         # Update the parameters (this is not very clean...)
         if ix is None:
@@ -239,8 +236,12 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # self.Q.setParameters(mean_B0=s.zeros((self.dim[0], self.dim[1])), var_B0=Q['var_B0'],
         #                      mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now
 
-    def _updateParameters(self, Y, W, tau, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv):
+    def _updateParameters(self, Y, W, tau, mask, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv):
         """ Hidden method to compute parameter updates """
+
+        # Mask matrices
+        for m in range(len(Y)):
+            tau[m][mask[m]] = 0.
 
         # Precompute terms to speed up GPU computation
         N = Qmean_T1.shape[0]
@@ -251,7 +252,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         term4_tmp3 = [ s.zeros(N,) for k in range(self.dim[1]) ]
         for m in range(M):
             tau_gpu = gpu_utils.array(tau[m])
-            Y_gpu = gpu_utils.array(Y[m].data)
+            Y_gpu = gpu_utils.array(Y[m])
             for k in range(self.dim[1]):
                 Wk_gpu = gpu_utils.array(W[m]["E"][:,k])
                 WWk_gpu = gpu_utils.array(W[m]["E2"][:,k])

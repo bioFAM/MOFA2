@@ -15,9 +15,10 @@ class Y_Node(Constant_Variational_Node):
         Constant_Variational_Node.__init__(self, dim, value)
 
         # Mask missing values
-        self.mask()
+        self.mask = self.mask()
 
         self.mini_batch = None
+        self.mini_mask = None
 
     def precompute(self, options=None):
         """ Method to precompute some terms to speed up the calculations """
@@ -34,20 +35,21 @@ class Y_Node(Constant_Variational_Node):
 
     def mask(self):
         """ Method to mask missing observations """
-        if type(self.value) != ma.MaskedArray:
-            self.value = ma.masked_invalid(self.value)
-        ma.set_fill_value(self.value, 0.)
+        mask = s.isnan(self.value)
+        self.value[mask] = 0.
+        return mask
 
     def getMask(self):
         """ Get method for the mask """
         if self.mini_batch is None:
-            return ma.getmask(self.value)
+            return self.mask
         else:
-            return ma.getmask(self.mini_batch)
+            return self.mini_mask
             
     def define_mini_batch(self, ix):
         """ Method to define a mini-batch (only for stochastic inference) """
         self.mini_batch = self.value[ix,:]
+        self.mini_mask = self.mask[ix,:]
 
     def get_mini_batch(self):
         """ Method to retrieve a mini-batch (only for stochastic inference) """
@@ -59,34 +61,29 @@ class Y_Node(Constant_Variational_Node):
     def calculateELBO(self, TauTrick=False):
         """ Method to calculate evidence lower bound """
 
-        # Collect expectations from nodes
-        Tau = self.markov_blanket["Tau"].getExpectations()
-        mask = ma.getmask(self.value)
 
-        # Mask relevant matrices
-        Tau["lnE"][mask] = 0
-        
-        if TauTrick: # Important: this assumes that the Tau update has been done before calculating elbo of Y
+        if TauTrick: # Important: this assumes that the Tau update has been done prior to calculating elbo of Y
             tauQ_param = self.markov_blanket["Tau"].getParameters("Q")
             tauP_param = self.markov_blanket["Tau"].getParameters("P")
 
+            Tau = self.markov_blanket["Tau"].getExpectations()
+            Tau["lnE"][mask] = 0.
+            Tau["E"][mask] = 0.
+
             # TO-DO: TAKE INTO ACCOUNT GROUPS
+            # TO-DO: CHECK MISSING VALUES IN TAU["E"]
             elbo = self.likconst + 0.5*s.sum(Tau["lnE"]) - s.dot(Tau["E"],tauQ_param["b"] - tauP_param["b"])
+
         else:
+            # Collect expectations from nodes
             Y = self.getExpectation()
+            Tau = self.markov_blanket["Tau"].getExpectations(expand=False)
+            mask = self.getMask()
             Wtmp = self.markov_blanket["W"].getExpectations()
             Ztmp = self.markov_blanket["Z"].getExpectations()
             W, WW = Wtmp["E"].T, Wtmp["E2"].T
             Z, ZZ = Ztmp["E"], Ztmp["E2"]
 
-            # (SPEED EFFICIENT, MEMORY INEFFICIENT)
-            # ZW = Z.dot(W)
-            # tmp = s.square(Y) \
-            #     + ZZ.dot(WW) \
-            #     - s.dot(s.square(Z),s.square(W)) + s.square(ZW) \
-            #     - 2*ZW*Y 
-
-            # (SPEED INEFFICIENT, MEMORY EFFICIENT)
             tmp = s.square(Y) \
                 + ZZ.dot(WW) \
                 - s.dot(s.square(Z),s.square(W)) + s.square(Z.dot(W)) \
@@ -94,6 +91,12 @@ class Y_Node(Constant_Variational_Node):
             tmp *= 0.5
             tmp[mask] = 0.
             
-            elbo = self.likconst + 0.5*Tau["lnE"].sum() - s.sum(Tau["E"] * tmp)
+            elbo = self.likconst
+            groups = self.markov_blanket["Tau"].groups
+            for g in range(len(np.unique(groups))):
+                idx = groups==g
+                foo = (~mask[idx,:]).sum(axis=0)
+                elbo += 0.5*(Tau["lnE"][g,:]*foo).sum() - (Tau["E"][g,:]*tmp[idx,:]).sum()
 
         return elbo
+
