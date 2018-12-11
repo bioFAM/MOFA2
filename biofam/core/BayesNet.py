@@ -98,6 +98,52 @@ class BayesNet(object):
         """ Method to return all nodes """
         return self.nodes
 
+    def calculate_variance_explained(self):
+
+        # Collect relevant expectations
+        Z = self.nodes['Z'].getExpectation()
+        W = self.nodes["W"].getExpectation()
+        Y = self.nodes["Y"].getExpectation()
+
+        # Get groups
+        groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
+
+        r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['P']
+        for m in range(self.dim['M']):
+            mask = self.nodes["Y"].getNodes()[m].getMask()
+            Ypred_m = s.dot(Z, W[m].T)
+            Ypred_m[mask] = 0.
+            for g in range(self.dim['P']):
+                gg = groups==g
+                SS = s.square(Y[m][gg,:]).sum()
+                for k in range(self.dim['K']):
+                    Ypred_mk = s.outer(Z[gg,k], W[m][:,k])
+                    Ypred_mk[mask[gg,:]] = 0.
+                    Res_k = ((Y[m][gg,:] - Ypred_mk)**2.).sum()
+                    r2[g][m,k] = 1. - Res_k/SS
+        return r2
+
+    def calculate_total_variance_explained(self):
+
+        # Collect relevant expectations
+        Z = self.nodes['Z'].getExpectation()
+        W = self.nodes["W"].getExpectation()
+        Y = self.nodes["Y"].getExpectation()
+
+        r2 = s.zeros(self.dim['M'])
+        for m in range(self.dim['M']):
+            mask = self.nodes["Y"].getNodes()[m].mask
+
+            Ypred_m = s.dot(Z, W[m].T)
+            Ypred_m[mask] = 0.
+
+            Res = ((Y[m] - Ypred_m)**2.).sum()
+            SS = s.square(Y[m]).sum()
+
+            r2[m] = 1. - Res/SS
+
+        return r2
+
     def removeInactiveFactors(self, min_r2=None):
         """Method to remove inactive factors
 
@@ -109,39 +155,9 @@ class BayesNet(object):
         drop_dic = {}
 
         if min_r2 is not None:
-            Z = self.nodes['Z'].getExpectation()
-            W = self.nodes["W"].getExpectation()
-            Y = self.nodes["Y"].getExpectation()
+            r2 = self.calculate_variance_explained()
 
-            # Get groups
-            groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
-
-            all_r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['P']
-            for m in range(self.dim['M']):
-
-                # Fetch the mask for missing vlaues
-                mask = self.nodes["Y"].getNodes()[m].getMask()
-
-                # Calculate predictions and mask them
-                Ypred_m = s.dot(Z, W[m].T)
-                Ypred_m[mask] = 0.
-
-                for g in range(self.dim['P']):
-                    gg = groups==g
-                    # calculate the total R2
-                    # # SS = ((Y[m] - Y[m].mean(axis=0))**2.).sum()
-                    SS = s.square(Y[m][gg,:]).sum()
-                    # Res = ((Y[m][g,] - Ypred_m[g,])**2.).sum()
-                    # R2_tot = 1. - Res/SS
-
-                    # calculate R2 per factor
-                    for k in range(self.dim['K']):
-                        Ypred_mk = s.outer(Z[gg,k], W[m][:,k])
-                        Ypred_mk[mask[gg,:]] = 0.
-                        Res_k = ((Y[m][gg,:] - Ypred_mk)**2.).sum()
-                        all_r2[g][m,k] = 1. - Res_k/SS
-
-            tmp = [ s.where( (all_r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
+            tmp = [ s.where( (r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
             drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
             if len(drop_dic["min_r2"]) > 0:
                 drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
@@ -232,9 +248,9 @@ class BayesNet(object):
             print('Schedule of updates: ',self.options['schedule']);
             if self.options['stochastic']:
                 print("Using stochastic variational inference with the following parameters:")
-                print("- Batch size: %d\n- Forgetting rate: %.2f\n" % (self.options['batch_size'], self.options['forgetting_rate']) )
+                print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n" % (100*self.options['batch_size'], self.options['forgetting_rate']) )
             print("\n")
-        
+
         ro = 1.
         ix = None
         for i in range(self.options['maxiter']):
@@ -279,10 +295,13 @@ class BayesNet(object):
                     print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
                     if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
-                    # Print ELBO decomposed by node
+                    # Print ELBO decomposed by node and variance explained
                     if self.options['verbose']:
                         print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
                         print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
+                        
+                        r2 = self.calculate_total_variance_explained()
+                        print("Variance explained:\t" + "   ".join([ "View %s: %.2f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
 
                     # Assess convergence
                     if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
@@ -291,15 +310,15 @@ class BayesNet(object):
 
             # Do not calculate lower bound
             else:
-                print("Iteration %d: time=%.2f, Factors=%d\n" % (i+1,time()-t,self.dim["K"]))
+                print("Iteration %d: time=%.2f, Factors=%d" % (i+1,time()-t,self.dim["K"]))
 
-            # Print memory usage
+            # Print other statistics
             if self.options['verbose']:
+                # Memory usage
                 print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
-
-            # Print stochastic inference statistics
-            if self.options['verbose'] and self.options['stochastic'] and (i >= self.options["start_stochastic"]-1): 
-                print("Step size (for stochastic gradient descent): %.4f" % ro)
+                # stochastic inference 
+                if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1): 
+                    print("Step size (for stochastic gradient descent): %.4f" % ro)
 
             # Flush (we need this to print when running on the cluster)
             print("\n")

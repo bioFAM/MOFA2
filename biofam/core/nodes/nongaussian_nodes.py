@@ -180,7 +180,7 @@ class Poisson_PseudoY(PseudoY_Seeger):
         assert s.all(self.obs >= 0), "Data must not contain negative numbers"
 
     def precompute(self, options):
-        self.updateParameters(ix=None, ro=None)
+        self.updateParameters()
         self.updateExpectations()
 
     def ratefn(self, X):
@@ -193,33 +193,34 @@ class Poisson_PseudoY(PseudoY_Seeger):
 
     def updateExpectations(self):
         # Update the pseudodata
-        tau = self.markov_blanket["Tau"].getValue()
+        tau = self.markov_blanket["Tau"].getValue() # to-do: not expand
         # self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
         self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"])) / tau
 
     def calculateELBO(self):
         """ Compute Lower Bound """
 
-        # using the Poisson likelihood with observed data
-        # Z = self.markov_blanket["Z"].getExpectation()
-        # W = self.markov_blanket["W"].getExpectation()
-        # mask = self.getMask()
-
+        Wtmp = self.markov_blanket["W"].getExpectations()
+        Ztmp = self.markov_blanket["Z"].getExpectations()
+        W, WW = Wtmp["E"], Wtmp["E2"]
+        Z, ZZ = Ztmp["E"], Ztmp["E2"]
         zeta = self.params["zeta"]
-        Z = self.markov_blanket["Z"].getExpectation()
-        W = self.markov_blanket["W"].getExpectation()
-        tau = self.markov_blanket["Tau"].getExpectation()
+        tau = self.markov_blanket["Tau"].getValue() # to-do: not expand
         mask = self.getMask()
 
-        import pdb; pdb.set_trace()
+        # Precompute terms
         ZW = Z.dot(W.T)
-        term1 = 0.5*tau*(ZW - zeta)**2
-        term2 = (ZW - zeta)*(sigmoid(zeta) - sigmoid(zeta)*(1-self.obs/self.ratefn(zeta)))
+        ZZWW = s.square(ZW) - s.dot(s.square(Z),s.square(W).T) + ZZ.dot(WW.T)
+
+        # term1 = 0.5*tau*(ZW - zeta)**2
+        term1 = 0.5*tau*(ZZWW - 2*ZW*zeta + s.square(zeta))
+        term2 = (ZW - zeta)*(sigmoid(zeta)*(1-self.obs/self.ratefn(zeta)))
         term3 = self.ratefn(zeta) - self.obs*s.log(self.ratefn(zeta))
 
-        elbo = term1.sum() + term2.sum() + term3.sum()
+        elbo = term1 + term2 + term3
+        elbo[mask] = 0.
 
-        return elbo
+        return elbo.sum()
 
 class Bernoulli_PseudoY(PseudoY_Seeger):
     """
