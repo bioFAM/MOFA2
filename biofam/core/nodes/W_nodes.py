@@ -278,8 +278,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_qs = S*s.log(S) + (1.-S)*s.log(1.-S)
 
         # Replace NAs (due to theta=1) with zeros
-        # lb_ps[s.isnan(lb_ps)] = 0.
-        # lb_qs[s.isnan(lb_qs)] = 0.
+        lb_ps[s.isnan(lb_ps)] = 0.
+        lb_qs[s.isnan(lb_qs)] = 0.
 
         lb_s = s.sum(lb_ps) - s.sum(lb_qs)
 

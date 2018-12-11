@@ -132,8 +132,7 @@ class BayesNet(object):
 
         r2 = s.zeros(self.dim['M'])
         for m in range(self.dim['M']):
-            # mask = self.nodes["Y"].getNodes()[m].mask
-            mask = self.nodes["Y"].getNodes()[m].getMask()
+            mask = self.nodes["Y"].getNodes()[m].mask
 
             Ypred_m = s.dot(Z, W[m].T)
             Ypred_m[mask] = 0.
@@ -320,10 +319,11 @@ class BayesNet(object):
                 # Variance explained
                 r2 = self.calculate_total_variance_explained()
                 print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
-                # Number of zero weights
+                # Sparsity levels of the weights
                 W = self.nodes["W"].getExpectation()
                 foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
                 print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                # Sparsity levels of the factors
                 Z = self.nodes["Z"].getExpectation()
                 bar = s.mean(s.absolute(Z)<1e-3)
                 print("Fraction of zero samples: %.0f%%" % (100*bar))

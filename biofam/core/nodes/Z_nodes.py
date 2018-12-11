@@ -317,8 +317,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         lb_qt = T * s.log(T) + (1. - T) * s.log(1. - T)
 
         # Replace NAs (due to theta=1) with zeros
-        # lb_pt[s.isnan(lb_pt)] = 0.
-        # lb_qt[s.isnan(lb_qt)] = 0.
+        lb_pt[s.isnan(lb_pt)] = 0.
+        lb_qt[s.isnan(lb_qt)] = 0.
         
         lb_t = s.sum(lb_pt) - s.sum(lb_qt)
 
