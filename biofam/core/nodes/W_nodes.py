@@ -246,6 +246,8 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             # Update Expectations for the next iteration
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
+            del Zk_cp, ZZk_cp, alphak_cp, term4_tmp1, term4_tmp2_1, term4_tmp2_2, term4_tmp2, term4_tmp3
+            
         # update of Qvar_S0
         Qvar_S0 *= (1 - ro)
         Qvar_S0 += ro/Alpha
