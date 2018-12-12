@@ -242,12 +242,12 @@ class BayesNet(object):
 
         # Print statistics before training
         if self.options['verbose']: 
-            foo = self.calculateELBO()
+            # foo = self.calculateELBO()
             # r2 = self.calculate_total_variance_explained()
 
-            print('ELBO before training:')
-            print("".join([ "%s=%.2f  " % (k,v) for k,v in foo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % foo["total"])
-            print('Schedule of updates: ',self.options['schedule']);
+            # print('ELBO before training:')
+            # print("".join([ "%s=%.2f  " % (k,v) for k,v in foo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % foo["total"])
+            # print('Schedule of updates: ',self.options['schedule']);
             # print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
             if self.options['stochastic']:
                 print("Using stochastic variational inference with the following parameters:")

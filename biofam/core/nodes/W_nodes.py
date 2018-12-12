@@ -225,9 +225,13 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             term3 = gpu_utils.asnumpy(0.5 * coeff * gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_gpu) + alphak_cp))
 
             term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
-            term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
-            term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T
-            term4_tmp2 = (tau_gpu*gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)).sum(axis=0)
+            # term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
+            # term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T
+            # term4_tmp2 = (tau_gpu*gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)).sum(axis=0)
+            term4_tmp2 = (tau_gpu*gpu_utils.dot(
+                (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T, 
+                gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T))
+            ).sum(axis=0)
             term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_gpu) + alphak_cp
             term4 = coeff * gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3)) 
 
@@ -247,7 +251,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
             del Zk_cp, ZZk_cp, alphak_cp, term4_tmp1, term4_tmp2_1, term4_tmp2_2, term4_tmp2, term4_tmp3
-            
+
         # update of Qvar_S0
         Qvar_S0 *= (1 - ro)
         Qvar_S0 += ro/Alpha
