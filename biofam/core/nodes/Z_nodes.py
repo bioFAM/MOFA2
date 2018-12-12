@@ -259,6 +259,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                 term4_tmp1[k] += gpu_utils.asnumpy( gpu_utils.dot(tau_gpu*Y_gpu, Wk_gpu) )
                 term4_tmp3[k] += gpu_utils.asnumpy( gpu_utils.dot(tau_gpu, WWk_gpu) )
 
+        del tau_gpu, Y_gpu, Wk_gpu, WWk_gpu
+
         # Update each latent variable in turn (notice that the update of Z[,k] depends on the other values of Z!)
         for k in range(self.dim[1]):
             term1 = (theta_lnE - theta_lnEInv)[:, k]
@@ -270,7 +272,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                 term4_tmp2_tmp = (tau_gpu * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(self.dim[1]) != k]),
                                 (Wk_gpu * gpu_utils.array(W[m]["E"][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)
                 term4_tmp2[k] += gpu_utils.asnumpy(term4_tmp2_tmp)
-
+                del tau_gpu, Wk_gpu
+            
             term4_tmp3[k] += Alpha[:,k]
             term3 = 0.5 * s.log(term4_tmp3[k])
             term4 = 0.5 * s.divide(s.square(term4_tmp1[k] - term4_tmp2[k]), term4_tmp3[k])
