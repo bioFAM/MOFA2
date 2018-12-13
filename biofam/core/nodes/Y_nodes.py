@@ -30,6 +30,10 @@ class Y_Node(Constant_Variational_Node):
         # GPU mode
         gpu_utils.gpu_mode = options['gpu_mode']
 
+        # Do TauTrick to speed up ELBO computation?
+        # Important: this assumes that the Tau update has been done prior to calculating elbo of Y
+        self.TauTrick = options['Y_ELBO_TauTrick'] 
+
         # Constant ELBO terms
         self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)
 
@@ -58,27 +62,23 @@ class Y_Node(Constant_Variational_Node):
         else:
             return self.mini_batch
 
-    def calculateELBO(self, TauTrick=False):
+    def calculateELBO(self):
         """ Method to calculate evidence lower bound """
+        mask = self.mask
+        Tau = self.markov_blanket["Tau"].getExpectations(expand=False)
+        elbo = self.likconst
+        groups = self.markov_blanket["Tau"].groups
 
-
-        if TauTrick: # Important: this assumes that the Tau update has been done prior to calculating elbo of Y
+        if self.TauTrick: 
             tauQ_param = self.markov_blanket["Tau"].getParameters("Q")
             tauP_param = self.markov_blanket["Tau"].getParameters("P")
-
-            Tau = self.markov_blanket["Tau"].getExpectations()
-            Tau["lnE"][mask] = 0.
-            Tau["E"][mask] = 0.
-
-            # TO-DO: TAKE INTO ACCOUNT GROUPS
-            # TO-DO: CHECK MISSING VALUES IN TAU["E"]
-            elbo = self.likconst + 0.5*s.sum(Tau["lnE"]) - s.dot(Tau["E"],tauQ_param["b"] - tauP_param["b"])
+            for g in range(len(np.unique(groups))):
+                idx = groups==g
+                foo = (~mask[idx,:]).sum(axis=0)
+                elbo += 0.5*(Tau["lnE"][g,:]*foo).sum() - s.dot(Tau["E"][g,:],(tauQ_param["b"][g,:] - tauP_param["b"][g,:]))
 
         else:
-            # Collect expectations from nodes
             Y = self.getExpectation()
-            Tau = self.markov_blanket["Tau"].getExpectations(expand=False)
-            mask = self.mask
             Wtmp = self.markov_blanket["W"].getExpectations()
             Ztmp = self.markov_blanket["Z"].getExpectations()
             W, WW = Wtmp["E"].T, Wtmp["E2"].T
@@ -91,8 +91,6 @@ class Y_Node(Constant_Variational_Node):
             tmp *= 0.5
             tmp[mask] = 0.
             
-            elbo = self.likconst
-            groups = self.markov_blanket["Tau"].groups
             for g in range(len(np.unique(groups))):
                 idx = groups==g
                 foo = (~mask[idx,:]).sum(axis=0)
