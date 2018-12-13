@@ -272,7 +272,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
                 term4_tmp2_tmp = (tau_gpu * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(self.dim[1]) != k]),
                                 (Wk_gpu * gpu_utils.array(W[m]["E"][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)
                 term4_tmp2[k] += gpu_utils.asnumpy(term4_tmp2_tmp)
-                del tau_gpu, Wk_gpu
+                del tau_gpu, Wk_gpu, term4_tmp2_tmp
             
             term4_tmp3[k] += Alpha[:,k]
             term3 = 0.5 * s.log(term4_tmp3[k])

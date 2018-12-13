@@ -107,19 +107,19 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         W_gpu = gpu_utils.array(W).T
 
         # Calculate terms for the update (SPEED EFFICIENT, MEMORY INEFFICIENT)
-        ZW = Z_gpu.dot(W_gpu)
-        tmp = gpu_utils.asnumpy( gpu_utils.square(Y_gpu) \
-            + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
-            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
-            - 2*ZW*Y_gpu )
-        tmp[mask] = 0.
-
-        # Calculate terms for the update (SPEED INEFFICIENT, MEMORY EFFICIENT)
+        # ZW = Z_gpu.dot(W_gpu)
         # tmp = gpu_utils.asnumpy( gpu_utils.square(Y_gpu) \
         #     + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
-        #     - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(Z_gpu.dot(W_gpu)) \
-        #     - 2*Z_gpu.dot(W_gpu)*Y_gpu )
+        #     - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(ZW) \
+        #     - 2*ZW*Y_gpu )
         # tmp[mask] = 0.
+
+        # Calculate terms for the update (SPEED INEFFICIENT, MEMORY EFFICIENT)
+        tmp = gpu_utils.asnumpy( gpu_utils.square(Y_gpu) \
+            + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
+            - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(Z_gpu.dot(W_gpu)) \
+            - 2*Z_gpu.dot(W_gpu)*Y_gpu )
+        tmp[mask] = 0.
 
         # Compute updates
         Qa *= (1-ro)

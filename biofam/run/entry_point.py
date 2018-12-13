@@ -493,6 +493,7 @@ class entry_point(object):
         tmp.saveExpectations(nodes=["Y","W","Z"])
         tmp.saveModelOptions()
         tmp.saveTrainOptions()
+        tmp.saveTrainingStats()
         tmp.saveData()
 
 if __name__ == '__main__':

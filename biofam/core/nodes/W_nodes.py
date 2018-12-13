@@ -204,53 +204,62 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         tau[mask] = 0.
 
         # Copy matrices to GPU
+        # Y_gpu = gpu_utils.array(Y)
         tau_gpu = gpu_utils.array(tau)
+        Z_gpu = gpu_utils.array(Z["E"])
+        ZZ_gpu = gpu_utils.array(Z["E2"])
 
         # precompute terms
-        tauYT = (tau_gpu*gpu_utils.array(Y)).T
+        tauY_gpu = gpu_utils.array(tau*Y).T
+        foo = gpu_utils.asnumpy( gpu_utils.dot(ZZ_gpu.T, tau_gpu).T )
+        term4_tmp1 = gpu_utils.asnumpy( gpu_utils.dot(tauY_gpu, Z_gpu) )
+
+        del tauY_gpu, ZZ_gpu
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
 
             # Copy matrices to GPU
-            Zk_cp = gpu_utils.array(Z["E"][:,k])
-            ZZk_cp = gpu_utils.array(Z["E2"][:,k])
-            alphak_cp = gpu_utils.array(Alpha[:,k])
+            # Zk_cp = gpu_utils.array(Z["E"][:,k])
+            # ZZk_cp = gpu_utils.array(Z["E2"][:,k])
+            # alphak_cp = gpu_utils.array(Alpha[:,k])
 
             # Compute terms
             term1 = (theta_lnE-theta_lnEInv)[:,k]
 
-            term2 = gpu_utils.asnumpy(0.5*gpu_utils.log(alphak_cp))
+            term2 = 0.5*s.log(Alpha[:,k])
+            term3 = 0.5 * coeff * s.log(foo[:,k] + Alpha[:,k])
 
-            term3 = gpu_utils.asnumpy(0.5 * coeff * gpu_utils.log(gpu_utils.dot(ZZk_cp, tau_gpu) + alphak_cp))
+            # term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
 
-            term4_tmp1 = gpu_utils.dot(tauYT, Zk_cp)
             # term4_tmp2_1 = gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T)
-            # term4_tmp2_2 = (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T
+            # term4_tmp2_2 = (Z_gpu[:,k] * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T
             # term4_tmp2 = (tau_gpu*gpu_utils.dot(term4_tmp2_2, term4_tmp2_1)).sum(axis=0)
-            term4_tmp2 = (tau_gpu*gpu_utils.dot(
-                (Zk_cp * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T, 
+            term4_tmp2 = gpu_utils.asnumpy( (tau_gpu*gpu_utils.dot(
+                (Z_gpu[:,k] * gpu_utils.array(Z['E'][:,s.arange(self.dim[1])!=k]).T).T, 
                 gpu_utils.array(SW[:,s.arange(self.dim[1])!=k].T))
-            ).sum(axis=0)
-            term4_tmp3 = gpu_utils.dot(ZZk_cp.T,tau_gpu) + alphak_cp
-            term4 = coeff * gpu_utils.asnumpy(0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1-term4_tmp2),term4_tmp3)) 
+            ).sum(axis=0) )
+
+            term4_tmp3 = foo[:,k] + Alpha[:,k]
+
+            term4 = coeff * 0.5*s.divide(s.square(term4_tmp1[:,k]-term4_tmp2),term4_tmp3)
 
             # Update S
             Qtheta[:,k] *= (1 - ro)
             Qtheta[:,k] += ro * (1./(1.+s.exp(-(term1+term2-term3+term4))))
 
             # Update W
-            tmp_var = gpu_utils.asnumpy(1./term4_tmp3)
+            tmp_var = 1./term4_tmp3
             Qvar_S1[:,k] *= (1 - ro)
             Qvar_S1[:,k] += ro * tmp_var
 
             Qmean_S1[:,k] *= (1 - ro)
-            Qmean_S1[:,k] += ro * tmp_var * gpu_utils.asnumpy(term4_tmp1-term4_tmp2)
+            Qmean_S1[:,k] += ro * tmp_var * (term4_tmp1[:,k]-term4_tmp2)
 
             # Update Expectations for the next iteration
             SW[:,k] = Qtheta[:,k] * Qmean_S1[:,k]
 
-            del Zk_cp, ZZk_cp, alphak_cp, term4_tmp1, term4_tmp2_1, term4_tmp2_2, term4_tmp2, term4_tmp3
+            del term1, term2, term3, term4_tmp2, term4_tmp3
 
         # update of Qvar_S0
         Qvar_S0 *= (1 - ro)

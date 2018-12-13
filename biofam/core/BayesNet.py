@@ -234,7 +234,7 @@ class BayesNet(object):
         # Define some variables to monitor training
         nodes = list(self.getVariationalNodes().keys())
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
-        activeK = nans((self.options['maxiter']))
+        number_factors = nans((self.options['maxiter']))
 
         # Precompute terms
         for n in self.nodes:
@@ -269,7 +269,7 @@ class BayesNet(object):
                 # if any(self.options['drop'].values()):
                 if self.options['drop']["min_r2"] is not None:
                     self.removeInactiveFactors(**self.options['drop'])
-                activeK[i] = self.dim["K"]
+                number_factors[i] = self.dim["K"]
 
             # Update node by node, with E and M step merged
             t_updates = time()
@@ -305,7 +305,7 @@ class BayesNet(object):
 
                     # Assess convergence
                     if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
-                        activeK = activeK[:(i+1)]; elbo = elbo[:(i+1)]
+                        number_factors = number_factors[:(i+1)]; elbo = elbo[:(i+1)]
                         print ("Converged!\n"); break
 
             # Do not calculate lower bound
@@ -336,7 +336,7 @@ class BayesNet(object):
             sys.stdout.flush()
 
         # Finish by collecting the training statistics
-        self.train_stats = { 'activeK':activeK, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
+        self.train_stats = { 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
 
     def compute_r2_simple(self):
