@@ -126,6 +126,7 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
                    if (!all(sapply(value, length) == sapply(object@training_data, function(e) nrow(e[[1]]))))
                      stop("Feature names do not match the dimensionality of the data (rows)")
                    
+                   
                    object@data_options$features_names <- value
                    object <- .set_expectations_names(object, entity = 'features', value)
                    object <- .set_data_names(object, entity = 'features', value)
@@ -171,7 +172,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             
             # Set view names in data options
             object@data_options$views_names <- value
-            names(object@data_options$features_names) <- value
+            tryCatch( { object@data_options$features_names <- value })
             
             # Set view names in expectations
             for (node in names(object@expectations)) {

@@ -144,7 +144,7 @@ plot_factor_scatter <- function(object, factors, show_missing = TRUE, dot_size=1
   Z <- Z[complete.cases(Z),]
   
   # Merge factor values with color and shape information
-  df <- merge(df, color_by, by="sample")
+  df <- merge(Z, color_by, by="sample")
   df <- merge(df, shape_by, by="sample")
   
   # Remove missing values
@@ -157,7 +157,7 @@ plot_factor_scatter <- function(object, factors, show_missing = TRUE, dot_size=1
   # Generate plot  
   p <- ggplot(df, aes(x = x, y = y)) + 
     # geom_point(aes(color = color_by, shape = shape_by)) + 
-    ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by))
+    ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
       axis.text = element_text(size = rel(1), color = "black"), 

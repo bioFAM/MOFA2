@@ -80,11 +80,11 @@ class buildBiofam(buildModel):
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
         if self.model_opts['sl_z']:
-            self.init_model.initSZ(qmean_T1=0)
-            # self.init_model.initSZ(qmean_T1="random")
+            # self.init_model.initSZ(qmean_T1=0)
+            self.init_model.initSZ(qmean_T1="random")
         else:
-            self.init_model.initZ(qmean=0)
-            # self.init_model.initZ(qmean="random")
+            # self.init_model.initZ(qmean=0)
+            self.init_model.initZ(qmean="random")
 
     def build_W(self):
         """ Build node W for the weights """
@@ -97,7 +97,8 @@ class buildBiofam(buildModel):
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
-        self.init_model.initTau(self.data_opts['samples_groups'])
+        initTau_qE = 100.
+        self.init_model.initTau(groups= self.data_opts['samples_groups'], qE=initTau_qE)
 
     def build_AlphaZ(self):
         """ Build node AlphaZ for the ARD prior on the factors """

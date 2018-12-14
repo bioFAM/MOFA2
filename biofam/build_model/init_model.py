@@ -32,7 +32,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -96,7 +96,7 @@ class initModel(object):
             qE=qE, qE2=qE2
         )
 
-    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1=0, qvar_T0=1.,
+    def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
         """Method to initialise sparse factors with a spike and slab prior
 

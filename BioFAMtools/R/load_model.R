@@ -20,7 +20,7 @@
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE) {
+load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE, set_names = TRUE) {
 
   # Create new bioFAModel object
   if (is.null(object)) object <- new("BioFAModel")
@@ -57,6 +57,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
           # as matrices
           training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s", m, p) )
         }
+        # Replace NaN by NA
+        training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA # this realised into memory, TO FIX
       }
     }
   } else {
@@ -67,14 +69,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
       for (p in group_names) {
         training_data[[m]][[p]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[p]])
       }
-    }
-  }
-
-  # Replace NaN by NA
-  # RICARD: IF USING ON_DISK, I THINK THIS REALISES EVERYTHING INTO MEMORY, TO CHECK
-  for (m in view_names) {
-    for (p in group_names) {
-      training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA
     }
   }
 
@@ -141,7 +135,19 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features per feature_group (view)
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])                # number of factors
 
-
+  # Assign sample and feature names (slow for large matrices)
+  if (set_names) {
+    
+    # Create default features names if they are null
+    if (is.null(feature_names)) {
+      print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
+      feature_names <- lapply(1:object@dimensions[["M"]],
+        function(m) sprintf("feature%d_view_&d", as.character(1:object@dimensions[["D"]][m]), m))
+    }
+    features_names(object) <- feature_names
+    
+  }
+  
   # Create default samples names if they are null
   if (is.null(sample_names)) {
     print("Samples names not found, generating default: sample1, ..., sampleN")
@@ -149,21 +155,13 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   }
   samples_names(object)  <- sample_names
   
-  # Create default features names if they are null
-  if (is.null(feature_names)) {
-    print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
-    feature_names <- lapply(1:object@dimensions[["M"]],
-      function(m) sprintf("feature%d_view_&d", as.character(1:object@dimensions[["D"]][m]), m))
-  }
-  features_names(object) <- feature_names
-
   # Set views names
   if (is.null(names(object@training_data))) {
     print("Views names not found, generating default: view1, ..., viewM")
     view_names <- paste0("view", as.character(1:object@dimensions[["M"]]))
   }
   views_names(object) <- view_names
-
+  
   # Set groups names
   if (is.null(names(object@training_data[[1]]))) {
     print("Groups names not found, generating default: group1, ..., groupG")
@@ -173,6 +171,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
 
   # Set factors names
   factors_names(object)  <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
+
   
   ########################
   ## Load model options ##
