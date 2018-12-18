@@ -209,7 +209,6 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   # Load training statistics
   tryCatch( {
     object@training_stats <- h5read(file, 'training_stats', read.attributes=T)
-    colnames(object@training_stats$elbo_terms) <- attr(h5read(file,"training_stats/elbo_terms", read.attributes=T),"colnames")
   }, error = function(x) { print("Training stats not found, not loading it...") })
 
   ###################

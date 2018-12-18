@@ -97,7 +97,9 @@ class buildBiofam(buildModel):
 
     def build_Tau(self):
         # TODO sort out how to choose where to use Tau
-        initTau_qE = 100.
+        # initTau_qE = 100.
+        initTau_qE = None
+        
         self.init_model.initTau(groups= self.data_opts['samples_groups'], qE=initTau_qE)
 
     def build_AlphaZ(self):
