@@ -196,6 +196,7 @@ class Poisson_PseudoY(PseudoY_Seeger):
         tau = self.markov_blanket["Tau"].getValue() # to-do: not expand
         # self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
         self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"])) / tau
+        self.E[self.mask] = 0.
 
     def calculateELBO(self):
         """ Compute Lower Bound """
@@ -217,7 +218,7 @@ class Poisson_PseudoY(PseudoY_Seeger):
         term2 = (ZW - zeta)*(sigmoid(zeta)*(1-self.obs/self.ratefn(zeta)))
         term3 = self.ratefn(zeta) - self.obs*s.log(self.ratefn(zeta))
 
-        elbo = term1 + term2 + term3
+        elbo = -(term1 + term2 + term3)
         elbo[mask] = 0.
 
         return elbo.sum()
