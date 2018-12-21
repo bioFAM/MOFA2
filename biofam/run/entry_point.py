@@ -56,12 +56,12 @@ class entry_point(object):
         for m in range(len(data)):
             if isinstance(data[m], dict):
                 data[m] = list(data[m].values())
-        for p in range(len(data[0])):
-            if not isinstance(data[m][p], np.ndarray):
-                if isinstance(data[m][p], pd.DataFrame):
-                    data[m][p] = data[m][p].values
-                else:
-                    print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
+            for p in range(len(data[m])):
+                if not isinstance(data[m][p], np.ndarray):
+                    if isinstance(data[m][p], pd.DataFrame):
+                        data[m][p] = data[m][p].values
+                    else:
+                        print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
 
         # Save dimensionalities
         M = self.dimensionalities["M"] = len(data)

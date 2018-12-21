@@ -182,6 +182,7 @@ class saveModel():
         stats_grp = self.hdf5.create_group("training_stats")
 
         stats_grp.create_dataset("number_factors", data=stats["number_factors"])
+        stats_grp.create_dataset("time", data=stats["time"])
         stats_grp.create_dataset("elbo", data=stats["elbo"])
         # stats_grp.create_dataset("elbo_terms", data=stats["elbo_terms"].T)
         # stats_grp['elbo_terms'].attrs['colnames'] = [a.encode('utf8') for a in stats["elbo_terms"].columns.values]

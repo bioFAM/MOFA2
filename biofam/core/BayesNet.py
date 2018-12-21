@@ -235,6 +235,7 @@ class BayesNet(object):
         nodes = list(self.getVariationalNodes().keys())
         elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
         number_factors = nans((self.options['maxiter']))
+        iter_time = nans((self.options['maxiter']))
 
         # Precompute terms
         for n in self.nodes:
@@ -331,12 +332,13 @@ class BayesNet(object):
                 if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1): 
                     print("Step size: %.4f" % ro)
 
+            iter_time[i] = time()-t
             # Flush (we need this to print when running on the cluster)
             print("\n")
             sys.stdout.flush()
 
         # Finish by collecting the training statistics
-        self.train_stats = { 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
+        self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
 
     def compute_r2_simple(self):
