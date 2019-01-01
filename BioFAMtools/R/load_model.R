@@ -146,14 +146,14 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     }
     features_names(object) <- feature_names
     
+    # Create default samples names if they are null
+    if (is.null(sample_names)) {
+      print("Samples names not found, generating default: sample1, ..., sampleN")
+      sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
+    }
+    samples_names(object)  <- sample_names
+    
   }
-  
-  # Create default samples names if they are null
-  if (is.null(sample_names)) {
-    print("Samples names not found, generating default: sample1, ..., sampleN")
-    sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
-  }
-  samples_names(object)  <- sample_names
   
   # Set views names
   if (is.null(names(object@training_data))) {
