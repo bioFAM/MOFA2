@@ -117,7 +117,7 @@ class Multiview_Variational_Node(Multiview_Node, Variational_Node):
         Multiview_Node.__init__(self, M, *nodes)
         for node in nodes: assert isinstance(node, Variational_Node)
 
-    def update(self, ix=None, ro=None):
+    def update(self, ix=None, ro=1.):
         """ Method to update both parameters and expectations of the node"""
         for m in self.activeM:
             self.nodes[m].updateParameters(ix, ro)
@@ -126,7 +126,7 @@ class Multiview_Variational_Node(Multiview_Node, Variational_Node):
     def updateExpectations(self):
         """Method to update expectations using current estimates of the parameters"""
         for m in self.activeM: self.nodes[m].updateExpectations()
-    def updateParameters(self, ix=None, ro=None):
+    def updateParameters(self, ix=None, ro=1.):
         """Method to update parameters using current estimates of the expectations"""
         for m in self.activeM: self.nodes[m].updateParameters(ix, ro)
     def calculateELBO(self):
@@ -150,7 +150,7 @@ class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):
         # nodes: list of M 'Node' instances
         Multiview_Node.__init__(self, M, *nodes)
 
-    def update(self, ix=None, ro=None):
+    def update(self, ix=None, ro=1.):
         """Method to update values of the nodes"""
         for m in self.activeM: self.nodes[m].update(ix, ro)
 

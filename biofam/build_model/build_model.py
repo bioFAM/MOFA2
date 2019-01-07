@@ -121,8 +121,8 @@ class buildBiofam(buildModel):
         # Initialise hyperparameters for the ThetaZ prior
         initTheta_a = 1.
         initTheta_b = 1.
-        # initTheta_qE = None
-        initTheta_qE = 1.
+        initTheta_qE = None
+        # initTheta_qE = 1.
 
         self.init_model.initThetaZ(self.data_opts['samples_groups'], qa=initTheta_a, qb=initTheta_b, qE=initTheta_qE)
 
@@ -132,8 +132,8 @@ class buildBiofam(buildModel):
         # Initialise hyperparameters for the ThetaW prior
         initTheta_a = 1.
         initTheta_b = 1.
-        # initTheta_qE = None
-        initTheta_qE = 1.
+        initTheta_qE = None
+        # initTheta_qE = 1.
 
         self.init_model.initThetaW(qa=initTheta_a, qb=initTheta_b, qE=initTheta_qE)
 

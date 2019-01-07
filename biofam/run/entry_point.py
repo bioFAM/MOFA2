@@ -252,7 +252,7 @@ class entry_point(object):
         self.data_opts['scale_covariates'] = False
 
     def set_train_options(self,
-        iter=5000, elbofreq=1, startSparsity=1, tolerance=0.01,
+        iter=5000, startELBO=1, elbofreq=1, startSparsity=1, tolerance=0.01,
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
         schedule=None, gpu_mode=False, stochastic=False, Y_ELBO_TauTrick=True,
         ):
@@ -268,6 +268,7 @@ class entry_point(object):
 
         # Lower bound computation frequency
         self.train_opts['elbofreq'] = int(elbofreq)
+        self.train_opts['start_elbo'] = int(startELBO)
 
         # Verbosity
         self.train_opts['verbose'] = verbose
@@ -439,6 +440,7 @@ class entry_point(object):
         """ Build the model """
 
         # Sanity checks
+        assert hasattr(self, 'train_opts'), "Training options not defined"
         assert hasattr(self, 'model_opts'), "Model options not defined"
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
 
@@ -446,7 +448,10 @@ class entry_point(object):
         tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
 
         # Create BayesNet class
-        self.model = BayesNet(self.dimensionalities, tmp.get_nodes())
+        if self.train_opts['stochastic']:
+            self.model = StochasticBayesNet(self.dimensionalities, tmp.get_nodes())
+        else:
+            self.model = BayesNet(self.dimensionalities, tmp.get_nodes())
 
     def run(self):
         """ Run the model """

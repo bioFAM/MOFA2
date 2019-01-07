@@ -53,7 +53,7 @@ class BayesNet(object):
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
         assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
         assert "gpu_mode" in train_opts, "'gpu_mode' not found in the training options dictionary"
-        assert "stochastic" in train_opts, "'stochastic' not found in the training options dictionary"
+        assert "start_elbo" in train_opts, "'gpu_mode' not found in the training options dictionary"
 
         self.options = train_opts
 
@@ -111,8 +111,8 @@ class BayesNet(object):
         r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['P']
         for m in range(self.dim['M']):
             mask = self.nodes["Y"].getNodes()[m].getMask()
-            Ypred_m = s.dot(Z, W[m].T)
-            Ypred_m[mask] = 0.
+            # Ypred_m = s.dot(Z, W[m].T)
+            # Ypred_m[mask] = 0.
             for g in range(self.dim['P']):
                 gg = groups==g
                 SS = s.square(Y[m][gg,:]).sum()
@@ -175,98 +175,45 @@ class BayesNet(object):
 
         pass
 
-    def step_size(self, i):
-        # return the step size for the considered iterration
-        tau = self.options['tau']
-        kappa = self.options['forgetting_rate']
-        return (i + tau)**(-kappa)
+    def precompute(self):
+        # Precompute terms
+        for n in self.nodes:
+            self.nodes[n].precompute(self.options)
 
-    def step_size2(self, i):
-        # return the step size for the considered iterration
-        tau = self.options['tau']
-        kappa = self.options['forgetting_rate']
-        return tau / ((1 + kappa * i)**(3./4.))
+        # Precompute ELBO
+        elbo = nans(1)
+        if self.options["start_elbo"]<=1:
+            for node in self.nodes["Y"].getNodes(): node.TauTrick = False
+            elbo = self.calculateELBO()
+            for node in self.nodes["Y"].getNodes(): node.TauTrick = self.options["Y_ELBO_TauTrick"]
+            if self.options['verbose']:
+                print("ELBO before training:")
+                print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % elbo["total"])
+            else:
+                print('ELBO before training: %.2f' % elbo["total"])
+        print("\n")
+        return elbo
 
-    def sample_mini_batch_replace(self):
-        # TODO if multiple group, sample indices in each group evenly ? prob yes
-        S_pc = self.options['batch_size']
-        S = S_pc * self.dim['N']
-        ix = s.random.choice(range(self.dim['N']), size=S, replace=False)
-        return ix
-
-    def sample_mini_batch_no_replace(self, i):
-        """ Method to define mini batches"""
-
-        # TODO :
-        # - if multiple group, sample indices in each group evenly ? prob yes
-        # - ??? shuffle the data at the beginnign of every epoch
-
-        # Sample mini-batch indices and define epoch
-        n_batches = math.ceil(1./self.options['batch_size'])
-        S = self.options['batch_size'] * self.dim['N']
-        batch_ix = i % n_batches
-        epoch = int(i / n_batches)
-        if batch_ix == 0:
-            print("## Epoch %d ##" % epoch)
-            print("-------------------------------------------------------------------------------------------")
-            self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
-
-        min = int(S * batch_ix)
-        max = int(S * (batch_ix + 1))
-        if max > self.dim['N']:
-            max = self.dim['N']
-
-        ix = self.shuffled_ix[min:max]
-
-        # Define mini-batch for each node
-        self.nodes['Y'].define_mini_batch(ix)
-        self.nodes['Tau'].define_mini_batch(ix)
-        if 'AlphaZ' in self.nodes:
-            self.nodes['AlphaZ'].define_mini_batch(ix)
-        if 'ThetaZ' in self.nodes:
-            self.nodes['ThetaZ'].define_mini_batch(ix)  
-
-        return ix, epoch
-    
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
 
         # Define some variables to monitor training
         nodes = list(self.getVariationalNodes().keys())
-        elbo = pd.DataFrame(data = nans((self.options['maxiter'], len(nodes)+1 )), columns = nodes+["total"] )
-        number_factors = nans((self.options['maxiter']))
-        iter_time = nans((self.options['maxiter']))
+        elbo = pd.DataFrame(data = nans((self.options['maxiter']+1, len(nodes)+1 )), columns = nodes+["total"] )
+        number_factors = nans((self.options['maxiter']+1))
+        iter_time = nans((self.options['maxiter']+1))
 
-        # Precompute terms
-        for n in self.nodes:
-            self.nodes[n].precompute(self.options)
+        # Precompute
+        converged = False; convergence_token = 1
+        elbo.iloc[0] = self.precompute()
+        number_factors[0] = self.dim['K']
+        iter_time[0] = 0.
 
-        # Print statistics before training
-        if self.options['verbose']: 
-            # foo = self.calculateELBO()
-            # r2 = self.calculate_total_variance_explained()
-
-            # print('ELBO before training:')
-            # print("".join([ "%s=%.2f  " % (k,v) for k,v in foo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % foo["total"])
-            # print('Schedule of updates: ',self.options['schedule']);
-            # print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
-            if self.options['stochastic']:
-                print("Using stochastic variational inference with the following parameters:")
-                print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n" % (100*self.options['batch_size'], self.options['forgetting_rate']) )
-            print("\n")
-
-        ro = 1.
-        ix = None
-        for i in range(self.options['maxiter']):
+        for i in range(1,self.options['maxiter']):
             t = time();
 
-            # Sample mini-batch and define step size for stochastic inference
-            if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
-                ix, epoch = self.sample_mini_batch_no_replace(i)
-                ro = self.step_size2(epoch)
-
-            # Remove inactive latent variables
-            if (i >= self.options["start_drop"]) and (i % self.options['freq_drop']) == 0:
+            # Remove inactive factors
+            if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
                 # if any(self.options['drop'].values()):
                 if self.options['drop']["min_r2"] is not None:
                     self.removeInactiveFactors(**self.options['drop'])
@@ -277,41 +224,39 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
-                self.nodes[node].update(ix, ro)
+                self.nodes[node].update()
             t_updates = time() - t_updates
 
             # Calculate Evidence Lower Bound
-            if (i+1) % self.options['elbofreq'] == 0:
+            if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['elbofreq']==0):
                 t_elbo = time()
                 elbo.iloc[i] = self.calculateELBO()
+                if i==self.options["start_elbo"]: first_elbo = elbo.iloc[i]["total"]
                 t_elbo = time() - t_elbo
 
-                # Print first iteration
-                if i==0:
-                    print("Iteration 1: time=%.2f, ELBO=%.2f, Factors=%d" % (time() - t, elbo.iloc[i]["total"], (self.dim['K'])))
-                    if self.options['verbose']:
-                        print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
-                else:
-                    # Check convergence using the ELBO
-                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
+                # Check convergence using the ELBO
+                delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
+                
 
-                    # Print ELBO monitoring
-                    print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.4f, Factors=%d" % (i+1, time()-t, elbo.iloc[i]["total"], delta_elbo, (self.dim['K'])))
-                    if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
+                # Print ELBO monitoring
+                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.6f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
+                if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
-                    # Print ELBO decomposed by node and variance explained
-                    if self.options['verbose']:
-                        print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
-                        print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
+                # Print ELBO decomposed by node and variance explained
+                if self.options['verbose']:
+                    print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
+                    print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
 
-                    # Assess convergence
-                    if (abs(delta_elbo) < self.options['tolerance']) and (not self.options['forceiter']):
-                        number_factors = number_factors[:(i+1)]; elbo = elbo[:(i+1)]
-                        print ("Converged!\n"); break
+                # Assess convergence
+                if i>self.options["start_elbo"] and not self.options['forceiter']:
+                    convergence_token, converged = self.assess_convergence(delta_elbo, first_elbo, convergence_token)
+                    if converged:
+                        number_factors = number_factors[:i]; elbo = elbo[:i]
+                        print ("\nConverged!\n"); break
 
             # Do not calculate lower bound
             else:
-                print("Iteration %d: time=%.2f, Factors=%d" % (i+1,time()-t,self.dim["K"]))
+                print("Iteration %d: time=%.2f, Factors=%d" % (i,time()-t,self.dim["K"]))
 
             # Print other statistics
             if self.options['verbose']:
@@ -328,59 +273,32 @@ class BayesNet(object):
                 Z = self.nodes["Z"].getExpectation()
                 bar = s.mean(s.absolute(Z)<1e-3)
                 print("Fraction of zero samples: %.0f%%" % (100*bar))
-                # stochastic inference 
-                if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1): 
-                    print("Step size: %.4f" % ro)
+            print("\n")
 
             iter_time[i] = time()-t
+            
             # Flush (we need this to print when running on the cluster)
-            print("\n")
             sys.stdout.flush()
 
         # Finish by collecting the training statistics
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
 
-    def compute_r2_simple(self):
-        # compute r2 for the cnosidered mini bact
-        # ----------------------------------------------------------------------
-        W = s.concatenate(self.nodes['W'].getExpectation())
-        Z = self.nodes['Z'].get_mini_batch()['E']
-        Y = s.concatenate(self.nodes['Y'].get_mini_batch(), axis=1)
+    def assess_convergence(self, delta_elbo, first_elbo, convergence_token):
+        converged = False
 
-        Y_mask = ma.getmask(Y)
-        Y_dat = Y.data
-        Y_dat[Y_mask] = 0.
+        # Option 1: deltaELBO
+        if abs(delta_elbo) < self.options['tolerance']: 
+            converged = True
 
-        pred = Z.dot(W.T)
-        pred[Y_mask] = 0.
-        SS = s.sum((Y_dat - pred)**2.)
-        var = s.sum((Y_dat - Y_dat.mean())**2.)
+        # Option 2: fraction of deltaELBO
+        if abs(delta_elbo/first_elbo) < 0.0001: 
+            convergence_token += 1
+            if convergence_token==5: converged = True
+        else:
+            convergence_token = 1
 
-        r2_batch = 1. - SS/var
-
-        # compute r2 for all data
-        # ----------------------------------------------------------------------
-        W = s.concatenate(self.nodes['W'].getExpectation())
-        Z = self.nodes['Z'].getExpectation()
-        Y = s.concatenate(self.nodes['Y'].getExpectation(), axis=1)
-
-        Y_mask = ma.getmask(Y)
-        Y_dat = Y.data
-        Y_dat[Y_mask] = 0.
-
-        pred = Z.dot(W.T)
-        pred[Y_mask] = 0.
-        SS = s.sum((Y_dat - pred)**2.)
-        var = s.sum((Y_dat - Y_dat.mean())**2.)
-
-        r2_tot = 1. - SS/var
-
-        # print
-        # ----------------------------------------------------------------------
-        print("batch specific r2 is ", r2_batch)
-        print("total r2 is ", r2_tot)
-        print()
+        return convergence_token, converged
 
     def getVariationalNodes(self):
         """ Method to return all variational nodes """
@@ -414,4 +332,165 @@ class BayesNet(object):
             elbo[node] = float(self.nodes[node].calculateELBO())
             elbo["total"] += elbo[node]
         return elbo
+
+
+class StochasticBayesNet(BayesNet):
+    def __init__(self, dim, nodes):
+        super().__init__(dim=dim, nodes=nodes)
+
+    def step_size(self, i):
+        # return the step size for the considered iterration
+        tau = self.options['tau']
+        kappa = self.options['forgetting_rate']
+        return (i + tau)**(-kappa)
+
+    def step_size2(self, i):
+        # return the step size for the considered iterration
+        tau = self.options['tau']
+        kappa = self.options['forgetting_rate']
+        return tau / ((1 + kappa * i)**(3./4.))
+
+    def sample_mini_batch(self):
+        # TODO if multiple group, sample indices in each group evenly ? prob yes
+        S = int( self.options['batch_size'] * self.dim['N'] )
+        ix = s.random.choice(range(self.dim['N']), size=S, replace=False)
+        self.define_mini_batch(ix)
+        return ix
+
+    def sample_mini_batch_no_replace(self, i):
+        """ Method to define mini batches"""
+
+        # TODO :
+        # - if multiple group, sample indices in each group evenly ? prob yes
+
+        i -= 1 # This is because we start at iteration 1 in the main loop
+
+        # Sample mini-batch indices and define epoch
+        n_batches = math.ceil(1./self.options['batch_size'])
+        S = self.options['batch_size'] * self.dim['N']
+        batch_ix = i % n_batches
+        epoch = int(i / n_batches)
+        if batch_ix == 0:
+            print("## Epoch %d ##" % epoch)
+            print("-------------------------------------------------------------------------------------------")
+            self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
+
+        min = int(S * batch_ix)
+        max = int(S * (batch_ix + 1))
+        if max > self.dim['N']:
+            max = self.dim['N']
+
+        ix = self.shuffled_ix[min:max]
+        self.define_mini_batch(ix)
+
+        return ix, epoch
+    
+    def define_mini_batch(self, ix):
+        # Define mini-batch for each node
+        self.nodes['Y'].define_mini_batch(ix)
+        self.nodes['Tau'].define_mini_batch(ix)
+        if 'AlphaZ' in self.nodes:
+            self.nodes['AlphaZ'].define_mini_batch(ix)
+        if 'ThetaZ' in self.nodes:
+            self.nodes['ThetaZ'].define_mini_batch(ix)  
+
+    def iterate(self):
+        """Method to start iterating and updating the variables using the VB algorithm"""
+
+        # Define some variables to monitor training
+        nodes = list(self.getVariationalNodes().keys())
+        elbo = pd.DataFrame(data = nans((self.options['maxiter']+1, len(nodes)+1 )), columns = nodes+["total"] )
+        number_factors = nans((self.options['maxiter']+1))
+        iter_time = nans((self.options['maxiter']+1))
+
+        # Precompute
+        converged = False; convergence_token = 1
+        elbo.iloc[0] = self.precompute()
+        number_factors[0] = self.dim['K']
+        iter_time[0] = 0.
+
+        # Print stochastic settings before training
+        print("Using stochastic variational inference with the following parameters:")
+        print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n- Tau: %.2f\n" % (100*self.options['batch_size'], self.options['forgetting_rate'], self.options['tau']) )
+        ix = None
+
+        for i in range(1,self.options['maxiter']):
+            t = time();
+
+            # Sample mini-batch and define step size for stochastic inference
+            if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
+                ix, epoch = self.sample_mini_batch_no_replace(i)
+                ro = self.step_size2(epoch)
+
+            # Remove inactive factors
+            if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
+                # if any(self.options['drop'].values()):
+                if self.options['drop']["min_r2"] is not None:
+                    self.removeInactiveFactors(**self.options['drop'])
+                number_factors[i] = self.dim["K"]
+
+            # Update node by node, with E and M step merged
+            t_updates = time()
+            for node in self.options['schedule']:
+                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
+                    continue
+                self.nodes[node].update(ix, ro)
+            t_updates = time() - t_updates
+
+            # Calculate Evidence Lower Bound
+            if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['elbofreq']==0):
+                t_elbo = time()
+                elbo.iloc[i] = self.calculateELBO()
+                t_elbo = time() - t_elbo
+                if i==self.options["start_elbo"]: first_elbo = elbo.iloc[i]["total"]
+
+                # Check convergence using the ELBO
+                delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
+
+                # Print ELBO monitoring
+                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.6f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
+                if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
+
+                # Print ELBO decomposed by node and variance explained
+                if self.options['verbose']:
+                    print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
+                    print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
+
+                # Assess convergence
+                if i>self.options["start_elbo"] and not self.options['forceiter']:
+                    convergence_token, converged = self.assess_convergence(delta_elbo, first_elbo, convergence_token)
+                    if converged:
+                        number_factors = number_factors[:i]; elbo = elbo[:i]
+                        print ("\nConverged!\n"); break
+
+            # Do not calculate lower bound
+            else:
+                print("Iteration %d: time=%.2f, Factors=%d" % (i,time()-t,self.dim["K"]))
+
+            # Print other statistics
+            print("Step size (rho): %.3f" % ro )
+            if self.options['verbose']:
+                # Memory usage
+                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+                # Variance explained
+                r2 = self.calculate_total_variance_explained()
+                print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+                # Sparsity levels of the weights
+                W = self.nodes["W"].getExpectation()
+                foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
+                print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                # Sparsity levels of the factors
+                Z = self.nodes["Z"].getExpectation()
+                bar = s.mean(s.absolute(Z)<1e-3)
+                print("Fraction of zero samples: %.0f%%" % (100*bar))
+            print("\n")
+
+            iter_time[i] = time()-t
+            
+            # Flush (we need this to print when running on the cluster)
+            sys.stdout.flush()
+
+        # Finish by collecting the training statistics
+        self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
+        self.trained = True
 

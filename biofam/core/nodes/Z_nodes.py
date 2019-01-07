@@ -176,7 +176,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         else:
             return self.mini_batch
 
-    def updateParameters(self, ix=None, ro=None):
+    def updateParameters(self, ix=None, ro=1.):
         """
         Public method to update the nodes parameters
         Optional arguments for stochastic updates are:

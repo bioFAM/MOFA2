@@ -29,7 +29,7 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
     def getExpectation(self, expand=False):
         return self.getExpectations(expand)['E']
 
-    def updateParameters(self, ix=None, ro=None):
+    def updateParameters(self, ix=None, ro=1.):
         """
         Public method to update the nodes parameters
         Optional arguments for stochastic updates are:
