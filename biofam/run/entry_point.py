@@ -305,6 +305,9 @@ class entry_point(object):
         # Iteration to activate spike and slab sparsity
         self.train_opts['start_sparsity'] = int(startSparsity)
 
+        # By default, stochastic training is not activated
+        self.train_opts['stochastic'] = False
+
         # Training schedule
         if schedule is None:
             schedule = ['Y', 'Z', 'W', 'Tau']
