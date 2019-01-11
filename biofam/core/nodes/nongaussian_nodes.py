@@ -404,6 +404,7 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
         self.zeros = (self.all_obs == 0)
         self.nonzeros = ~self.zeros # this masks includes the nas
         self.nas = ma.getmask(self.all_obs)
+        self.mask = self.nas   # TODO mask to be used when calculating variance explained 
 
         self.sparsity = self.zeros.sum()/(self.zeros.sum() + self.nonzeros.sum())
         print('using zero inflated noise model with sparsity ', self.sparsity)
@@ -411,6 +412,9 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
         # initialise the jaakola node with nas and non zeros masked
         obs_jaakola = obs.copy()  # TODO if obs is already a masked array should we update mask ?
         obs_jaakola[self.nonzeros] = np.nan
+        # instead:?
+        # self.notnas = np.logical_not(self.nas)
+        # obs_jaakola[self.nonzeros & self.notnas] = 1 # TOCHECK: for non-zero values put 1 for observed
         self.jaakola_node = Bernoulli_PseudoY_Jaakkola(dim, obs_jaakola)
 
         # Initialise a y node where the zeros and nas are masked
@@ -448,8 +452,8 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
 
     def getExpectation(self, expand=True):
         E = self.normal_node.getExpectation().copy()
-        pseudo_y = self.jaakola_node.getExpectation()
-        E[self.zeros] = pseudo_y[self.zeros]
+        pseudo_y = self.jaakola_node.getExpectation() # TODO Is this in any ways comparable to E?
+        E[self.zeros] = pseudo_y[self.zeros] 
         return E
 
     def get_mini_batch(self, expand=True):
@@ -458,6 +462,7 @@ class Zero_Inflated_PseudoY_Jaakkola(Unobserved_Variational_Mixed_Node):
     def calculateELBO(self):
         # as the values used by the jaakola node and the gamma node are rightly masked
         # we can just sum the two contributions (double check that this works ofc)
+        # TODO Masking to 1 would change this!
         # TODO check masks
         tmp1 = self.jaakola_node.calculateELBO()
         tmp2 = self.normal_node.calculateELBO()
