@@ -285,6 +285,15 @@ class Tau_Jaakkola(Node):
             assert value.shape == dim, "Dimensionality mismatch"
             self.value = value
 
+    def define_mini_batch(self, ix):
+        """ Method to define a mini-batch (only for stochastic inference) """
+        # self.mini_batch = self.E[ix,:]
+        pass
+
+    # TODO change: define a proper mini-batch !!
+    def get_mini_batch(self, expand=True):
+        return self.getExpectation(expand)
+        
     def updateExpectations(self):
         self.value = 2*lambdafn(self.markov_blanket["Y"].getParameters()["zeta"])
 
