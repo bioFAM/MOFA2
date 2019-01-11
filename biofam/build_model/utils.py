@@ -156,8 +156,8 @@ def process_data(data, data_opts, samples_groups):
         # Centering and scaling is only appropriate for gaussian data
         if data_opts["likelihoods"][m] in ["gaussian", "zero_inflated"]:
 
-            # mask zeros if zero infalted likelihood
-            if data_opts["likelihoods"][m] is "zero_inflated":
+            # mask zeros if zero inflated likelihood
+            if data_opts["likelihoods"][m] == "zero_inflated":
                 zeros_mask = parsed_data[m]==0
                 parsed_data[m][zeros_mask] = np.nan
 
@@ -183,7 +183,7 @@ def process_data(data, data_opts, samples_groups):
                 parsed_data[m] /= np.nanstd(parsed_data[m], axis=0)
 
             # reset zeros if zero infalted likelihood
-            if data_opts["likelihoods"][m] is "zero_inflated":
+            if data_opts["likelihoods"][m] == "zero_inflated":
                 parsed_data[m][zeros_mask] = 0.
 
     return parsed_data
