@@ -198,7 +198,7 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         thetatmp = self.markov_blanket['ThetaZ'].get_mini_batch()
         theta_lnE, theta_lnEInv = thetatmp['lnE'], thetatmp['lnEInv']
-
+        
         # Get expectations and parameters from current node
         Q = self.Q.getParameters()
         SZ = self.Q.getExpectations()["E"]
