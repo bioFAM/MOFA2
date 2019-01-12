@@ -92,8 +92,8 @@ class buildBiofam(buildModel):
         """ Build node W for the weights """
         if self.model_opts['sl_w']:
             # self.init_model.initSW(qmean_S1=0)
-            self.init_model.initSW(qmean_S1 = "random")
-            # self.init_model.initSW(qmean_S1="pca", Y=self.data)
+            # self.init_model.initSW(qmean_S1 = "random")
+            self.init_model.initSW(qmean_S1="pca", Y=self.data)
         else:
             # self.init_model.initW(qmean=0)
             self.init_model.initW(qmean="random")
