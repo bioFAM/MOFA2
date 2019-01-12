@@ -229,16 +229,18 @@ class initModel(object):
             if isinstance(qmean_S1,str):
 
                 if qmean_S1 == "random":
+                    print("Initialising weights randomly, scaled to unit variance")
                     qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
                 elif qmean_S1 == "pca":
+                    print("Initialising weights with PCA solution, scaled to unit variance")
                     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=False)
                     pca.fit(Y[m])
                     qmean_S1_tmp = pca.components_.T
+                    qmean_S1_tmp /= np.nanstd(qmean_S1_tmp, axis=0) # Scale weights to unit variance
                 else:
                     print("%s initialisation not implemented for W" % qmean_S1)
                     exit()
-                # Scale weights to unit variance
-                qmean_S1_tmp /= np.nanstd(qmean_S1_tmp, axis=0)
+                
 
             elif isinstance(qmean_S1,s.ndarray):
                 assert qmean_S1.shape == (self.D[m],self.K), "Wrong dimensionality"
@@ -326,7 +328,7 @@ class initModel(object):
             alpha_list[m] = AlphaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initTau(self, groups, pa=1, pb=1, qa=1., qb=1., qE=None):
+    def initTau(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None):
         """Method to initialise the precision of the noise
 
         PARAMETERS

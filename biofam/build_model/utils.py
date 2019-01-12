@@ -171,6 +171,7 @@ def process_data(data, data_opts, samples_groups):
 
             # Scale views to unit variance
             if data_opts['scale_views']:
+                print("Scaling entire views (not features!) to unit variance")
                 parsed_data[m] /= np.nanstd(parsed_data[m])
 
             # quantile normalise features
@@ -180,6 +181,7 @@ def process_data(data, data_opts, samples_groups):
 
             # Scale features to unit variance
             if data_opts['scale_features']:
+                print("Scaling features to unit variance")
                 parsed_data[m] /= np.nanstd(parsed_data[m], axis=0)
 
             # reset zeros if zero infalted likelihood
