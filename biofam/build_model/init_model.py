@@ -97,7 +97,7 @@ class initModel(object):
         )
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
-        qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None):
+        qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None, Y=None):
         """Method to initialise sparse factors with a spike and slab prior
 
         PARAMETERS
@@ -115,7 +115,13 @@ class initModel(object):
         if isinstance(qmean_T1, str):
 
             if qmean_T1 == "random":
-                qmean_T1_tmp = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
+                qmean_T1 = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
+            elif qmean_T1 == "pca":
+                print("I think this is wrong, check careful waht the pca.components are")
+                exit()
+                pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
+                pca.fit(s.concatenate(Y, axis=1).T)
+                qmean_T1 = pca.components_.T
             else:
                 print("%s initialisation not implemented for Z" % qmean_T1)
                 exit()
@@ -124,7 +130,7 @@ class initModel(object):
             assert qmean_T1.shape == (self.N, self.K), "Wrong dimensionality"
 
         elif isinstance(qmean_T1, (int, float)):
-            qmean_T1_tmp = s.ones((self.N, self.K)) * qmean_T1
+            qmean_T1 *= s.ones((self.N, self.K))
 
         else:
             print("Wrong initialisation for Z")
@@ -139,7 +145,7 @@ class initModel(object):
 
             qtheta=qtheta,
             qmean_T0=qmean_T0, qvar_T0=qvar_T0,
-            qmean_T1=qmean_T1_tmp, qvar_T1=qvar_T1,
+            qmean_T1=qmean_T1, qvar_T1=qvar_T1,
 
             qET=qET, qEZ_T0=qEZ_T0, qEZ_T1=qEZ_T1
         )
@@ -206,7 +212,7 @@ class initModel(object):
 
     def initSW(self, pmean_S0=0., pmean_S1=0., pvar_S0=1., pvar_S1=1., ptheta=1.,
         qmean_S0=0., qmean_S1='random', qvar_S0=1., qvar_S1=1., qtheta=1.,
-        qEW_S0=None, qEW_S1=None, qES=None):
+        qEW_S0=None, qEW_S1=None, qES=None, Y=None):
         """Method to initialise sparse weights with a (reparametrised) spike and slab prior
 
         PARAMETERS
@@ -222,11 +228,17 @@ class initModel(object):
             ## Initialise variational distribution (Q)
             if isinstance(qmean_S1,str):
 
-                if qmean_S1 == "random": # random
+                if qmean_S1 == "random":
                     qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
+                elif qmean_S1 == "pca":
+                    pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=False)
+                    pca.fit(Y[m])
+                    qmean_S1_tmp = pca.components_.T
                 else:
                     print("%s initialisation not implemented for W" % qmean_S1)
                     exit()
+                # Scale weights to unit variance
+                qmean_S1_tmp /= np.nanstd(qmean_S1_tmp, axis=0)
 
             elif isinstance(qmean_S1,s.ndarray):
                 assert qmean_S1.shape == (self.D[m],self.K), "Wrong dimensionality"
@@ -314,7 +326,7 @@ class initModel(object):
             alpha_list[m] = AlphaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initTau(self, groups, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initTau(self, groups, pa=1, pb=1, qa=1., qb=1., qE=None):
         """Method to initialise the precision of the noise
 
         PARAMETERS

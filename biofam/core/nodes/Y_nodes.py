@@ -95,6 +95,5 @@ class Y_Node(Constant_Variational_Node):
                 idx = groups==g
                 foo = (~mask[idx,:]).sum(axis=0)
                 elbo += 0.5*(Tau["lnE"][g,:]*foo).sum() - (Tau["E"][g,:]*tmp[idx,:]).sum()
-
         return elbo
 

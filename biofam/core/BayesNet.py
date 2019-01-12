@@ -476,13 +476,13 @@ class StochasticBayesNet(BayesNet):
                 r2 = self.calculate_total_variance_explained()
                 print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
                 # Sparsity levels of the weights
-                W = self.nodes["W"].getExpectation()
-                foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
-                print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                # W = self.nodes["W"].getExpectation()
+                # foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
+                # print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
                 # Sparsity levels of the factors
-                Z = self.nodes["Z"].getExpectation()
-                bar = s.mean(s.absolute(Z)<1e-3)
-                print("Fraction of zero samples: %.0f%%" % (100*bar))
+                # Z = self.nodes["Z"].getExpectation()
+                # bar = s.mean(s.absolute(Z)<1e-3)
+                # print("Fraction of zero samples: %.0f%%" % (100*bar))
             print("\n")
 
             iter_time[i] = time()-t
