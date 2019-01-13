@@ -292,7 +292,7 @@ class BayesNet(object):
             converged = True
 
         # Option 2: fraction of deltaELBO
-        if abs(delta_elbo/first_elbo) < 0.0001: 
+        if abs(delta_elbo/first_elbo) < 0.00001: 
             convergence_token += 1
             if convergence_token==5: converged = True
         else:
