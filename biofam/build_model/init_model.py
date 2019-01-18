@@ -329,7 +329,7 @@ class initModel(object):
             alpha_list[m] = AlphaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initTau(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None):
+    def initTau(self, groups, pa=1e-3, pb=1e-3, qa=1., qb=1., qE=None):
         """Method to initialise the precision of the noise
 
         PARAMETERS

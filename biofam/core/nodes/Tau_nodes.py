@@ -22,7 +22,6 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
 
         assert self.n_groups == dim[0], "node dimension does not match number of groups"
 
-
     def precompute(self, options):
         """ Method to precompute some terms to speed up the calculations """
 
