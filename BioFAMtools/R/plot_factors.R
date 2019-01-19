@@ -152,7 +152,7 @@ plot_factor_scatter <- function(object, factors, show_missing = TRUE, dot_size=1
   
   # spread over factors
   df <- tidyr::spread(df, key="factor", value="value")
-  df <- set_colnames(df,c(colnames(df)[1:4],"x","y"))
+  df <- magrittr::set_colnames(df,c(colnames(df)[1:4],"x","y"))
   
   # Generate plot  
   p <- ggplot(df, aes(x = x, y = y)) + 

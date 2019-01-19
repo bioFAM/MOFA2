@@ -494,3 +494,18 @@ class StochasticBayesNet(BayesNet):
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
 
+    def assess_convergence(self, delta_elbo, first_elbo, convergence_token):
+        converged = False
+
+        # Option 1: deltaELBO
+        if abs(delta_elbo) < self.options['tolerance']: 
+            converged = True
+
+        # Option 2: fraction of deltaELBO
+        if abs(delta_elbo/first_elbo) < 0.0000001: 
+            convergence_token += 1
+            if convergence_token==5: converged = True
+        else:
+            convergence_token = 1
+
+        return convergence_token, converged
