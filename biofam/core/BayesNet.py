@@ -49,6 +49,7 @@ class BayesNet(object):
         assert "freq_drop" in train_opts, "'freq_drop' not found in the training options dictionary"
         assert "verbose" in train_opts, "'verbose' not found in the training options dictionary"
         assert "tolerance" in train_opts, "'tolerance' not found in the training options dictionary"
+        assert "convergence_mode" in train_opts, "'convergence_mode' not found in the training options dictionary"
         assert "forceiter" in train_opts, "'forceiter' not found in the training options dictionary"
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
         assert "start_sparsity" in train_opts, "'start_sparsity' not found in the training options dictionary"
@@ -288,11 +289,21 @@ class BayesNet(object):
         converged = False
 
         # Option 1: deltaELBO
-        if abs(delta_elbo) < self.options['tolerance']: 
-            converged = True
+        # if abs(delta_elbo) < self.options['tolerance']: 
+        #     converged = True
 
-        # Option 2: fraction of deltaELBO
-        if abs(delta_elbo/first_elbo) < 0.00000001: 
+        # Assess convergence based on the fraction of deltaELBO change
+        print(self.options["convergence_mode"])
+        if self.options["convergence_mode"] == "fast":
+            convergence_threshold = 0.00001
+        elif self.options["convergence_mode"] == "medium":
+            convergence_threshold = 0.000001
+        elif self.options["convergence_mode"] == "slow":
+            convergence_threshold = 0.0000001
+        else:
+            print("Convergence mode not recognised"); exit()
+
+        if abs(delta_elbo/first_elbo) < convergence_threshold: 
             convergence_token += 1
             if convergence_token==5: converged = True
         else:
@@ -493,19 +504,3 @@ class StochasticBayesNet(BayesNet):
         # Finish by collecting the training statistics
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
-
-    def assess_convergence(self, delta_elbo, first_elbo, convergence_token):
-        converged = False
-
-        # Option 1: deltaELBO
-        if abs(delta_elbo) < self.options['tolerance']: 
-            converged = True
-
-        # Option 2: fraction of deltaELBO
-        if abs(delta_elbo/first_elbo) < 0.0000001: 
-            convergence_token += 1
-            if convergence_token==5: converged = True
-        else:
-            convergence_token = 1
-
-        return convergence_token, converged

@@ -39,7 +39,7 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
     stopifnot(all(views %in% views_names(object)))  
   }
   M <- length(views)
-
+  
   # Define groups
   if (paste0(groups, sep="", collapse="") == "all") { 
     groups <- groups_names(object) 
@@ -71,39 +71,36 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
     tmp
   }); names(missing) <- groups
   
-  # (...)  
   for (k in factors) {
     for (g in groups) {
-      
-      active.view <- colnames(r2[[g]][,which.max(r2[[g]][k,]), drop=F])
-      # r2_threshold <- 0.01
-      # active.views <- colnames(r2[[g]][,which(r2[[g]][k,]>=r2_threshold), drop=F])
-      
-      samples <- samples_names(object)[[g]]
-      
-      z <- get_factors(object, groups="all", factors=k)
-      
-      max.value1 <- 2.5*max(abs(sapply(z,sd,na.rm=T)))
-      max.value2 <- 5*max(abs(sapply(z,sd,na.rm=T)))
-
-      
-      ##
-      
-      
-      passengers1 <- names(which(abs(z[[g]][,1]) >= max.value1))
-      passengers1 <- passengers1[passengers1 %in% missing[[g]][[active.view]]]
-      passengers2 <- names(which(abs(z[[g]][,1]) >= max.value2))
-      passengers <- union(passengers1,passengers2)
-      
-      if (length(passengers)>=0) {
-        Z[[g]][passengers,k] <- rep(NA,length(passengers))
+      for (m in views) {
+        samples <- samples_names(object)[[g]]
+        if (any(samples%in%missing[[g]][[m]])) {
+          foo <- predict(object, groups=g, factors=k, views=m)[[1]][[1]]
+          
+          # select top features 
+          genes <- names(tail(sort(abs(get_weights(object, views=m, factors=k)[[1]][,1])), n=100))
+          
+          # Define foreground set
+          bar <- apply(abs(foo[genes,]),2,mean,na.rm=T)
+          bar <- bar[samples %in%missing[[g]][[m]]]
+          
+          # Define background set: group with the highest activity
+          background_g <- names(which.max(sapply(r2, function(x) x[k,][[m]])))
+          foo.background <- predict(object, groups=background_g, factors=k, views=m)[[1]][[1]]
+          bar.background <- apply(abs(foo.background[genes,]),2,mean,na.rm=T)
+          
+          # detect outliers by comparing statistics of foreground versus background
+          max.value <- max(bar.background,na.rm=T)
+          outliers <- names(which(bar>max.value ))
+          if (length(outliers)>0) {
+            object@expectations$Z[[g]][,k][outliers] <- NA
+          }
+          
+        }
       }
-      
     }
   }
-  
-  # Replace the latent matrix
-  object@expectations$Z <- Z
   
   return(object)
   

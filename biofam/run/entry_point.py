@@ -252,7 +252,7 @@ class entry_point(object):
         self.data_opts['scale_covariates'] = False
 
     def set_train_options(self,
-        iter=5000, startELBO=1, elbofreq=1, startSparsity=1, tolerance=0.01,
+        iter=5000, startELBO=1, elbofreq=1, startSparsity=1, tolerance=0.01, convergence_mode="fast",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
         ):
@@ -298,6 +298,7 @@ class entry_point(object):
 
         # Tolerance level for convergence
         self.train_opts['tolerance'] = float(tolerance)
+        self.train_opts['convergence_mode'] = str(convergence_mode)
 
         # Do no stop even when convergence criteria is met
         self.train_opts['forceiter'] = nostop
