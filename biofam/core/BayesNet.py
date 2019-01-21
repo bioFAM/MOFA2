@@ -240,7 +240,7 @@ class BayesNet(object):
                 
 
                 # Print ELBO monitoring
-                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.6f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
+                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
                 if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
                 # Print ELBO decomposed by node and variance explained
@@ -293,13 +293,12 @@ class BayesNet(object):
         #     converged = True
 
         # Assess convergence based on the fraction of deltaELBO change
-        print(self.options["convergence_mode"])
         if self.options["convergence_mode"] == "fast":
-            convergence_threshold = 0.00001
-        elif self.options["convergence_mode"] == "medium":
             convergence_threshold = 0.000001
-        elif self.options["convergence_mode"] == "slow":
+        elif self.options["convergence_mode"] == "medium":
             convergence_threshold = 0.0000001
+        elif self.options["convergence_mode"] == "slow":
+            convergence_threshold = 0.00000001
         else:
             print("Convergence mode not recognised"); exit()
 
@@ -459,7 +458,7 @@ class StochasticBayesNet(BayesNet):
                 delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                 # Print ELBO monitoring
-                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.6f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
+                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
                 if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
                 # Print ELBO decomposed by node and variance explained

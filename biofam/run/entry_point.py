@@ -252,7 +252,7 @@ class entry_point(object):
         self.data_opts['scale_covariates'] = False
 
     def set_train_options(self,
-        iter=5000, startELBO=1, elbofreq=1, startSparsity=1, tolerance=0.01, convergence_mode="fast",
+        iter=5000, startELBO=1, elbofreq=1, startSparsity=1, tolerance=0.01, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
         ):
