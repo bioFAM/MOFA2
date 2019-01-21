@@ -163,10 +163,12 @@ class saveModel():
                     opts[str(k)+"_"+str(k1)] = v1
                 opts.pop(k)
 
-        # Remove schedule from training options
+        # Remove strings from training options
         # self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
         if 'schedule' in opts.keys():
             del opts['schedule']
+        if 'convergence_mode' in opts.keys():
+            del opts['convergence_mode']
 
         # Create data set: only numeric options 
         self.hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
