@@ -295,15 +295,15 @@ class BayesNet(object):
 
         # Assess convergence based on the fraction of deltaELBO change
         if self.options["convergence_mode"] == "fast":
-            convergence_threshold = 0.000001
+            convergence_threshold = 0.0001
         elif self.options["convergence_mode"] == "medium":
-            convergence_threshold = 0.0000001
+            convergence_threshold = 0.00001
         elif self.options["convergence_mode"] == "slow":
-            convergence_threshold = 0.00000001
+            convergence_threshold = 0.000001
         else:
             print("Convergence mode not recognised"); exit()
 
-        if abs(delta_elbo/first_elbo) < convergence_threshold: 
+        if 100*abs(delta_elbo/first_elbo) < convergence_threshold: 
             convergence_token += 1
             if convergence_token==5: converged = True
         else:
