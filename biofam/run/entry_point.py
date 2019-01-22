@@ -299,6 +299,7 @@ class entry_point(object):
         # Tolerance level for convergence
         self.train_opts['tolerance'] = float(tolerance)
         self.train_opts['convergence_mode'] = str(convergence_mode)
+        if verbose: print("Convergence mode: %s\n" % convergence_mode)
 
         # Do no stop even when convergence criteria is met
         self.train_opts['forceiter'] = nostop
