@@ -267,7 +267,10 @@ class entry_point(object):
         self.train_opts['maxiter'] = int(iter)
 
         # Lower bound computation frequency
+        if elbofreq is None or elbofreq==0: elbofreq=iter+1
         self.train_opts['elbofreq'] = int(elbofreq)
+        if startELBO==0: startELBO=1
+        if startELBO==None: startELBO=iter+1
         self.train_opts['start_elbo'] = int(startELBO)
 
         # Verbosity

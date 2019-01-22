@@ -182,17 +182,17 @@ class BayesNet(object):
             self.nodes[n].precompute(self.options)
 
         # Precompute ELBO
-        elbo = nans(1)
-        if self.options["start_elbo"]<=1:
-            for node in self.nodes["Y"].getNodes(): node.TauTrick = False
-            elbo = self.calculateELBO()
-            for node in self.nodes["Y"].getNodes(): node.TauTrick = self.options["Y_ELBO_TauTrick"]
-            if self.options['verbose']:
-                print("ELBO before training:")
-                print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % elbo["total"])
-            else:
-                print('ELBO before training: %.2f' % elbo["total"])
+        for node in self.nodes["Y"].getNodes(): node.TauTrick = False # important to do this for ELBO computation
+        elbo = self.calculateELBO()
+        for node in self.nodes["Y"].getNodes(): node.TauTrick = self.options["Y_ELBO_TauTrick"]
+
+        if self.options['verbose']:
+            print("ELBO before training:")
+            print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % elbo["total"])
+        else:
+            print('ELBO before training: %.2f' % elbo["total"])
         print("\n")
+
         return elbo
 
     def iterate(self):
@@ -232,15 +232,16 @@ class BayesNet(object):
             if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['elbofreq']==0):
                 t_elbo = time()
                 elbo.iloc[i] = self.calculateELBO()
-                if i==self.options["start_elbo"]: first_elbo = elbo.iloc[i]["total"]
                 t_elbo = time() - t_elbo
 
                 # Check convergence using the ELBO
-                delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
-                
+                if i==self.options["start_elbo"]: 
+                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[0]["total"]
+                else:
+                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                 # Print ELBO monitoring
-                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
+                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
                 if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
                 # Print ELBO decomposed by node and variance explained
@@ -250,7 +251,7 @@ class BayesNet(object):
 
                 # Assess convergence
                 if i>self.options["start_elbo"] and not self.options['forceiter']:
-                    convergence_token, converged = self.assess_convergence(delta_elbo, first_elbo, convergence_token)
+                    convergence_token, converged = self.assess_convergence(delta_elbo, elbo.iloc[0]["total"], convergence_token)
                     if converged:
                         number_factors = number_factors[:i]; elbo = elbo[:i]
                         print ("\nConverged!\n"); break
@@ -430,7 +431,7 @@ class StochasticBayesNet(BayesNet):
             # Sample mini-batch and define step size for stochastic inference
             if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
                 ix, epoch = self.sample_mini_batch_no_replace(i)
-                ro = self.step_size2(epoch)
+                ro = self.step_size(epoch)
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
@@ -452,13 +453,12 @@ class StochasticBayesNet(BayesNet):
                 t_elbo = time()
                 elbo.iloc[i] = self.calculateELBO()
                 t_elbo = time() - t_elbo
-                if i==self.options["start_elbo"]: first_elbo = elbo.iloc[i]["total"]
 
                 # Check convergence using the ELBO
                 delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                 # Print ELBO monitoring
-                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, abs(delta_elbo/first_elbo), (self.dim['K'])))
+                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
                 if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
                 # Print ELBO decomposed by node and variance explained
@@ -468,7 +468,7 @@ class StochasticBayesNet(BayesNet):
 
                 # Assess convergence
                 if i>self.options["start_elbo"] and not self.options['forceiter']:
-                    convergence_token, converged = self.assess_convergence(delta_elbo, first_elbo, convergence_token)
+                    convergence_token, converged = self.assess_convergence(delta_elbo, elbo.iloc[0]["total"], convergence_token)
                     if converged:
                         number_factors = number_factors[:i]; elbo = elbo[:i]
                         print ("\nConverged!\n"); break
