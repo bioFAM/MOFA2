@@ -431,7 +431,7 @@ class StochasticBayesNet(BayesNet):
             # Sample mini-batch and define step size for stochastic inference
             if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
                 ix, epoch = self.sample_mini_batch_no_replace(i)
-                ro = self.step_size(epoch)
+                ro = self.step_size2(epoch)
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
@@ -455,7 +455,10 @@ class StochasticBayesNet(BayesNet):
                 t_elbo = time() - t_elbo
 
                 # Check convergence using the ELBO
-                delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
+                if i==self.options["start_elbo"]: 
+                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[0]["total"]
+                else:
+                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                 # Print ELBO monitoring
                 print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))

@@ -229,10 +229,10 @@ class initModel(object):
             if isinstance(qmean_S1,str):
 
                 if qmean_S1 == "random":
-                    print("Initialising weights randomly")
+                    # print("Initialising weights randomly")
                     qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
                 elif qmean_S1 == "pca":
-                    print("Initialising weights with PCA solution")
+                    # print("Initialising weights with PCA solution")
                     pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=False)
                     pca.fit(Y[m])
                     qmean_S1_tmp = pca.components_.T
