@@ -3,6 +3,48 @@
 ## Functions to do subsetting ##
 ################################
 
+#' @title Subset groups
+#' @name subset_groups
+#' @description Method to subset (or sort) groups
+#' @param object a \code{\link{BioFAModel}} object.
+#' @param groups character vector with the groups names, numeric vector with the groups indices or logical vector with the groups to be kept as TRUE.
+#' @export
+subset_groups <- function(object, groups) {
+  
+  # Sanity checks
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  stopifnot(length(groups) <= object@dimensions[["P"]])
+  
+  if (is.numeric(groups) | is.logical(groups))  {
+    groups <- groups_names(object)[groups] 
+  } else {
+    stopifnot(all(groups %in% groups_names(object)))
+  }
+  
+  # Subset relevant slots
+  if ("Z" %in% names(object@expectations) & length(object@expectations$Z)>0)
+    object@expectations$Z <- object@expectations$Z[groups]
+  if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0)
+    object@expectations$Y <- sapply(object@expectations$Y, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  if ("Tau" %in% names(object@expectations) & length(object@expectations$Tau)>0)
+    object@expectations$Tau <- sapply(object@expectations$Tau, function(x) x[groups], simplify = F, USE.NAMES = T)
+  
+  object@training_data <- sapply(object@training_data, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  
+  # Update dimensionality
+  object@dimensions[["P"]] <- length(groups)
+  object@dimensions[["N"]] <- object@dimensions[["N"]][groups]
+  
+  # Update view names
+  groups_names(object) <- groups
+  
+  # Re-compute variance explained
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  
+  return(object)
+}
+
+
 #' @title Subset views
 #' @name subset_views
 #' @description Method to subset (or sort) views
@@ -34,6 +76,7 @@ subset_views <- function(object, views) {
   
   # Update dimensionality
   object@dimensions[["M"]] <- length(views)
+  object@dimensions[["D"]] <- object@dimensions[["D"]][views]
   
   # Update view names
   views_names(object) <- views

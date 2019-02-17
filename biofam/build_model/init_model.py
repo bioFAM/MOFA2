@@ -117,11 +117,10 @@ class initModel(object):
             if qmean_T1 == "random":
                 qmean_T1 = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
             elif qmean_T1 == "pca":
-                print("I think this is wrong, check careful waht the pca.components are")
-                exit()
-                pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
-                pca.fit(s.concatenate(Y, axis=1).T)
-                qmean_T1 = pca.components_.T
+                pca = sklearn.decomposition.PCA(n_components=self.K, whiten=False)
+                Ytmp = s.concatenate(Y, axis=1)
+                pca.fit(Ytmp)
+                qmean_T1 = pca.transform(Ytmp)
             else:
                 print("%s initialisation not implemented for Z" % qmean_T1)
                 exit()
@@ -233,10 +232,10 @@ class initModel(object):
                     qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
                 elif qmean_S1 == "pca":
                     # print("Initialising weights with PCA solution")
-                    pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=False)
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=False)
                     pca.fit(Y[m])
                     qmean_S1_tmp = pca.components_.T
-                    qmean_S1_tmp /= np.nanstd(qmean_S1_tmp, axis=0) # Scale weights to unit variance
+                    # qmean_S1_tmp /= np.nanstd(qmean_S1_tmp, axis=0) # Scale weights to unit variance
                 else:
                     print("%s initialisation not implemented for W" % qmean_S1)
                     exit()

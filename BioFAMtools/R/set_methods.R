@@ -236,17 +236,16 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             # Set sample group names in expectations
             for (node in nodes_types$multigroup_nodes) {
               if (node %in% names(object@expectations)) {
-                if (class(object@expectations[[node]]) == "list" & 
-                    length(object@expectations[[node]]) == object@dimensions["P"]) {
+                if (class(object@expectations[[node]])=="list" & length(object@expectations[[node]])==object@dimensions["P"]) {
                   names(object@expectations[[node]]) <- value 
                 }
               }
             }
+            
             for (node in nodes_types$twodim_nodes) {
               if (node %in% names(object@expectations)) {
-                for (m in 1:length(object@expectations$Y)) {
-                  if (class(object@expectations[[node]][[m]]) == "list" & 
-                      length(object@expectations[[node]][[m]]) == object@dimensions["P"]) {
+                for (m in 1:length(object@expectations[[node]])) {
+                  if (class(object@expectations[[node]][[m]])=="list" & length(object@expectations[[node]][[m]])==object@dimensions["P"]) {
                     names(object@expectations[[node]][[m]]) <- value 
                   }
                 }
@@ -260,6 +259,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             }
             
             # Set sample group names in dimensionalities
+            stopifnot(length(object@dimensions$N)==length(value))
             names(object@dimensions$N) <- value
             
             return(object)

@@ -33,7 +33,7 @@
 #' @import ggbeeswarm
 #' @import grDevices
 #' @export
-plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", show_missing = TRUE, dot_size = 1,
+plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", add_violin=TRUE, show_missing = TRUE, dot_size = 1,
                                  color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
   
   # Sanity checks
@@ -81,6 +81,11 @@ plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", sh
       legend.direction = "vertical",
       legend.key = element_blank()
     ) 
+  if (add_violin) {
+    # p <- p + geom_violin(aes(fill=group_by), alpha=0.25, trim=F, scale="width") +
+    p <- p + geom_violin(alpha=0.25, trim=F, scale="width") +
+      scale_fill_discrete(guide = FALSE)
+  }
   
   # If color is numeric, define the default gradient
   if (is.numeric(df$color))
@@ -328,6 +333,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     for (group in names(samples_names(object))) {
       group_by <- c(group_by,rep(group,length(samples_names(object)[[group]])))
     }
+    group_by = factor(group_by, levels=groups_names(object))
     
     # Option 2: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
@@ -349,6 +355,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
       sample = unlist(samples_names(object)),
       group_by = group_by
     )
+    
   }
   
   return(df)

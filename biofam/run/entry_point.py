@@ -116,6 +116,10 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
         """ Load the data """
 
@@ -252,7 +256,7 @@ class entry_point(object):
         self.data_opts['scale_covariates'] = False
 
     def set_train_options(self,
-        iter=5000, startELBO=1, elbofreq=1, startSparsity=1, tolerance=0.01, convergence_mode="medium",
+        iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
         ):

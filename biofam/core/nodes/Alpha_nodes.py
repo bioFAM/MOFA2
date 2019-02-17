@@ -58,6 +58,9 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
         # Perform updates
         Qa = Pa + 0.5*W.shape[0]
         Qb = Pb + 0.5*WW.sum(axis=0)
+        
+        # Qa = Pa + 0.5*W.shape[0]*W.shape[1]
+        # Qb = Pb + 0.5*WW.sum()
 
         self.Q.setParameters(a=Qa, b=Qb)
 

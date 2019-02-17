@@ -299,7 +299,7 @@ class BayesNet(object):
         elif self.options["convergence_mode"] == "medium":
             convergence_threshold = 0.00001
         elif self.options["convergence_mode"] == "slow":
-            convergence_threshold = 0.000001
+            convergence_threshold = 0.0000001
         else:
             print("Convergence mode not recognised"); exit()
 

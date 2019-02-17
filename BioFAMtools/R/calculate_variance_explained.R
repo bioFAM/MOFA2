@@ -92,7 +92,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plot_variance_explained <- function(object, cluster = TRUE, plot_total = FALSE, ...) {
+plot_variance_explained <- function(object, x="view", y="factor", split_by="group", cluster = TRUE, plot_total = FALSE, ...) {
 
   # Calculate variance explained
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
@@ -139,19 +139,21 @@ plot_variance_explained <- function(object, cluster = TRUE, plot_total = FALSE, 
   # Detect whether to split by group or by view
   groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
-  x="view";  split_by="group"
-  if ( length(groups)>1 ) { x="group"; split_by="view" }
+  # x="view";  split_by="group"; y="factor
+  # if ( length(groups)>1 ) { x="group"; split_by="view" }
 
   plot_list <- list()
   for (i in levels(fvar_mk_df[[split_by]])) {
     
     # Grid plot with the variance explained per factor and view/group
-    p1_title <- paste0("Variance explained per factor")
-    p1 <- ggplot(fvar_mk_df[fvar_mk_df[[split_by]] == i,], aes_string(x=x, y="factor")) + 
+    # p1_title <- paste0("Variance explained per factor")
+    p1 <- ggplot(fvar_mk_df[fvar_mk_df[[split_by]] == i,], aes_string(x=x, y=y)) + 
       geom_tile(aes(fill=value), color="black") +
       guides(fill=guide_colorbar("R2")) +
-      ylab("Latent factor") +
+      # ylab("Latent factor") +
+      labs(x="", y="", title="") +
       scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_lim_p1,max_lim_p1)) +
+      guides(fill=guide_colorbar("R2")) +
       theme(
         # plot.margin = margin(5,5,5,5),
         plot.title = element_text(size=17, hjust=0.5),
@@ -163,7 +165,7 @@ plot_variance_explained <- function(object, cluster = TRUE, plot_total = FALSE, 
         axis.ticks =  element_blank(),
         panel.background = element_blank()
       )
-    p1 <- p1 + ggtitle(p1_title) + guides(fill=guide_colorbar("R2"))
+    # p1 <- p1 + ggtitle(p1_title)
     
     # Join the two plots
     if (plot_total) {

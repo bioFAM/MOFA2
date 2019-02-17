@@ -73,30 +73,37 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
   
   for (k in factors) {
     for (g in groups) {
+      r2[[g]][is.na(r2[[g]])] <- 0
       for (m in views) {
         samples <- samples_names(object)[[g]]
-        if (any(samples%in%missing[[g]][[m]])) {
+        if (r2[[g]][k,m]<0.01 & any(samples%in%missing[[g]][[m]])) {
           foo <- predict(object, groups=g, factors=k, views=m)[[1]][[1]]
           
           # select top features 
-          genes <- names(tail(sort(abs(get_weights(object, views=m, factors=k)[[1]][,1])), n=100))
+          genes <- names(tail(sort(abs(get_weights(object, views=m, factors=k)[[1]][,1])), n=50))
           
           # Define foreground set
           bar <- apply(abs(foo[genes,]),2,mean,na.rm=T)
           bar <- bar[samples %in%missing[[g]][[m]]]
           
-          # Define background set: group with the highest activity
-          background_g <- names(which.max(sapply(r2, function(x) x[k,][[m]])))
-          foo.background <- predict(object, groups=background_g, factors=k, views=m)[[1]][[1]]
-          bar.background <- apply(abs(foo.background[genes,]),2,mean,na.rm=T)
-          
-          # detect outliers by comparing statistics of foreground versus background
-          max.value <- max(bar.background,na.rm=T)
-          outliers <- names(which(bar>max.value ))
-          if (length(outliers)>0) {
-            object@expectations$Z[[g]][,k][outliers] <- NA
+          if (length(bar)>0) {
+            
+            # Define background set: group with the highest activity, removing any missing sample
+            background_g <- names(which.max(sapply(r2, function(x) x[k,][[m]])))
+            foo.background <- predict(object, groups=background_g, factors=k, views=m)[[1]][[1]]
+            
+            foo.background <- foo.background[, colnames(foo.background)[!colnames(foo.background)%in%missing[[background_g]][[m]]]]
+            
+            bar.background <- apply(abs(foo.background[genes,]),2,mean,na.rm=T)
+            
+            # detect outliers by comparing statistics of foreground versus background
+            max.value <- max(bar.background,na.rm=T)
+            # max.value <- 2*max(bar.background,na.rm=T)
+            outliers <- names(which(bar>max.value ))
+            if (length(outliers)>0) {
+              object@expectations$Z[[g]][,k][outliers] <- NA
+            }
           }
-          
         }
       }
     }
@@ -181,4 +188,17 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   mx@nrow <- length(rownames)
   mx@ncol <- length(colnames)
   mx
+}
+
+#' @title Flip factor
+#' @name flip_factor
+#' @export
+flip_factor <- function(model, factor){
+  for(groupnm in names(model@expectations$Z)) {
+    model@expectations$Z[[groupnm]][,factor] <- - model@expectations$Z[[groupnm]][,factor]
+  }
+  for(viewnm in names(model@expectations$W)) {
+    model@expectations$W[[viewnm]][,factor] <- -model@expectations$W[[viewnm]][,factor]
+  }
+  return(model)
 }

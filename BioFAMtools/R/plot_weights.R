@@ -234,11 +234,12 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2 ggrepel
 #' @export
-plot_weights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual = NULL, color_manual = NULL, scale = TRUE) {
+plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, manual = NULL, color_manual = NULL, scale = TRUE, dot_size=1, text_size=5) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-
+  
+  if (view[1]=="all") view <- views_names(object)
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(all(view %in% views_names(object))) 
 
@@ -249,14 +250,14 @@ plot_weights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual =
     stopifnot(factor %in% factors_names(object)) 
   }
 
-  if(!is.null(manual)) { stopifnot(class(manual)=="list"); stopifnot(all(Reduce(intersect, manual) %in% features_names(object)[[view]]))  }
+  # if(!is.null(manual)) { stopifnot(class(manual)=="list"); stopifnot(all(Reduce(intersect, manual) %in% features_names(object)[[view]]))  }
   
   # Collect expectations  
   # W <- getExpectations(object,"W", as.data.frame = T)
   W <- get_weights(object,views=view, factors=factor, as.data.frame = T)
-  W <- W[W$factor==factor & W$view==view,]
+  W <- W[W$factor%in%factor & W$view%in%view,]
   
-    # Scale values
+  # Scale values
   if(scale) W$value <- W$value/max(abs(W$value))
   
   # Parse the weights
@@ -274,8 +275,11 @@ plot_weights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual =
   W$group <- "0"
   
   # Define group of features to color according to the loading
-  if(nfeatures>0) W$group[abs(W$value) >= sort(abs(W$value), decreasing = T)[nfeatures]] <- "1"
-  # if(!is.null(threshold)) W$group[abs(W$value) >= threshold] <- "1"
+  if (nfeatures>0) {
+    features <- W %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
+    W[W$feature %in% features,"group"] <- "1"
+    # W$group[abs(W$value)>=sort(abs(W$value), decreasing = T)[nfeatures]] <- "1"
+  }
   
   # Define group of features to label manually
   if(!is.null(manual)) {
@@ -291,26 +295,37 @@ plot_weights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual =
   
   # Sort by weight 
   W <- W[order(W$value),]
+  W$feature <- paste(W$view, W$feature, sep="_")
   W$feature <- factor(W$feature, levels=W$feature)
   
   # Define plot title
   # if(is.null(main)) main <- paste("Distribution of weigths of LF", factor, "in", view, "view")
   
   # Generate plot
-  W$tmp <- as.character(W$group!="0")
+  W$tmp <- as.factor(W$group!="0")
   
-  gg_W <- ggplot(W, aes(x=feature, y=value, col=group)) + 
+  gg_W <- ggplot(W, aes(x=as.numeric(feature), y=value, col=group)) + 
     # scale_y_continuous(expand = c(0.01,0.01)) + scale_x_discrete(expand = c(0.01,0.01)) +
-    geom_point(aes(size=tmp)) + labs(x="Rank position", y="Loading") +
-    scale_x_discrete(breaks = NULL, expand=c(0.05,0.05)) +
+    geom_point(aes(size=tmp)) + labs(x="Rank position", y="Loading", size=dot_size) +
+    scale_x_continuous(expand=c(0.05,0.05)) +
     ggrepel::geom_text_repel(data = W[W$group!="0",], aes(label = feature, col = group),
-                             segment.alpha=0.1, segment.color="black", segment.size=0.3, box.padding = unit(0.5, "lines"), show.legend= F)
+                             size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, box.padding = unit(0.5, "lines"), show.legend=F)
+  
+  if (scale) {
+    gg_W <- gg_W + coord_cartesian(ylim=c(-1,1))
+  }
+  
   # Define size
-  gg_W <- gg_W + scale_size_manual(values=c(0.5,2)) + guides(size=F)
+  gg_W <- gg_W + scale_size_manual(values=c(dot_size,dot_size*2)) + guides(size=F)
   
   # Define colors
   cols <- c("grey", "black", color_manual)
   gg_W <- gg_W + scale_color_manual(values=cols) + guides(col=F)
+  
+  # Facet if multiple views
+  if (length(unique(W$view))>1) {
+    gg_W <- gg_W + facet_wrap(~view, nrow=1, scales="free")
+  }
   
   # Add Theme  
   gg_W <- gg_W +
@@ -328,10 +343,10 @@ plot_weights <- function(object, view, factor, nfeatures=10, abs=FALSE, manual =
       panel.background = element_rect(fill = "white", colour = NA),
       panel.border     = element_rect(fill = NA, colour = "grey20"),
       # make gridlines dark, same contrast with white as in theme_grey
-      panel.grid.major = element_line(colour = "grey92"),
-      panel.grid.minor = element_line(colour = "grey92", size = rel(0.5)),
-      # contour strips to match panel contour
-      strip.background = element_rect(fill = "grey85", colour = "grey20")
+      panel.grid.major.y = element_line(colour = "grey92"),
+      panel.grid.major.x = element_blank() ,
+      panel.grid.minor.y = element_line(colour = "grey92", size = rel(0.5)),
+      panel.grid.minor.x = element_blank()
     )
   
   return(gg_W)
