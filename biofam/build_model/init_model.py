@@ -117,7 +117,7 @@ class initModel(object):
             if qmean_T1 == "random":
                 qmean_T1 = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
             elif qmean_T1 == "pca":
-                pca = sklearn.decomposition.PCA(n_components=self.K, whiten=False)
+                pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                 Ytmp = s.concatenate(Y, axis=1)
                 pca.fit(Ytmp)
                 qmean_T1 = pca.transform(Ytmp)
@@ -149,7 +149,7 @@ class initModel(object):
             qET=qET, qEZ_T0=qEZ_T0, qEZ_T1=qEZ_T1
         )
 
-    def initW(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None):
+    def initW(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None, Y=None):
         """Method to initialise the weights
 
         PARAMETERS
@@ -183,6 +183,10 @@ class initModel(object):
                     if qmean == "random":
                         # TODO check effect of scale here
                         qmean_m = stats.norm.rvs(loc=0, scale=1., size=(self.D[m], self.K))
+
+                    # Scale weights to the variance of the view
+                    # if Y is not None:
+                    #     qmean_m *= np.nanstd(Y[m])
 
                 elif isinstance(qmean, s.ndarray):
                     assert qmean.shape == (
@@ -232,7 +236,7 @@ class initModel(object):
                     qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
                 elif qmean_S1 == "pca":
                     # print("Initialising weights with PCA solution")
-                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=False)
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                     pca.fit(Y[m])
                     qmean_S1_tmp = pca.components_.T
                     # qmean_S1_tmp /= np.nanstd(qmean_S1_tmp, axis=0) # Scale weights to unit variance
@@ -240,7 +244,9 @@ class initModel(object):
                     print("%s initialisation not implemented for W" % qmean_S1)
                     exit()
                 
-                qmean_S1_tmp *= np.nanstd(Y[m]) # Scale weights to the variance of the view
+                # Scale weights to the variance of the view
+                # if Y is not None:
+                #     qmean_S1_tmp *= np.nanstd(Y[m]) 
 
             elif isinstance(qmean_S1,s.ndarray):
                 assert qmean_S1.shape == (self.D[m],self.K), "Wrong dimensionality"

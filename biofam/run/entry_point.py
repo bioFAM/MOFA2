@@ -355,7 +355,6 @@ class entry_point(object):
 
         # Use TauTrick to speed up ELBO computation?
         self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
-            
 
     def set_stochasticity_options(self, tau=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
