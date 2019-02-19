@@ -28,15 +28,6 @@
 #' This function generates a heatmap for selected features, which should reveal, im the original data space, the underlying pattern that is captured by the latent factor. \cr
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 #' @import pheatmap
-#' @examples
-#' # Load example of BioFAModel
-#' model <- load_model(system.file("extdata", "model15.hdf5", package = "BioFAMtools"))
-#' 
-#' # Plot top 50 features for factor 1 in the mRNA view
-#' plot_data_heatmap(model, "mRNA", 1, 50)
-#' 
-#' # Plot top 50 features for factor 1 in the mRNA view, do not show feature or row names
-#' plot_data_heatmap(model, "mRNA", 1, 50, show_colnames = FALSE, show_rownames = FALSE) 
 #' @export
 plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, ...) {
   

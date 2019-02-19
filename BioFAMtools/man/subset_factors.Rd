@@ -4,7 +4,7 @@
 \alias{subset_factors}
 \title{Subset factors}
 \usage{
-subset_factors(object, factors, keep_intercept = TRUE)
+subset_factors(object, factors)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

@@ -94,7 +94,7 @@ subset_views <- function(object, views) {
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors.
 #' @export
-subset_factors <- function(object, factors, keep_intercept = TRUE) {
+subset_factors <- function(object, factors) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -128,36 +128,6 @@ subset_factors <- function(object, factors, keep_intercept = TRUE) {
       }
     }
   }
-  
-  # TODO for everything below : adapt for 2D
-  
-  # Reordering covariance hyperparameters and "spatial signifiances" (spatialFA)
-  
-  # Warning : below, does not work if factors are not convertible to integers
-  if ("SigmaZ" %in% names(object@expectations)){
-    object@expectations$SigmaZ <- object@expectations$SigmaZ[,,as.integer(factors)]
-  }
-  
-  # Warning : below, does not work if factors are not convertible to integers
-  # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
-  # if ("SigmaAlphaW" %in% names(object@expectations)) {
-  #   for (m in views_names(object)){ 
-  #     object@expectations$SigmaAlphaW[[m]]<- object@expectations$SigmaAlphaW[[m]][,,as.integer(factors)]
-  #   }
-  # }
-  
-  if ("SigmaZ" %in% names(object@parameters)){
-    object@parameters$SigmaZ$l <- object@parameters$SigmaZ$l[factors]
-    object@parameters$SigmaZ$sig <- object@parameters$SigmaZ$sig[factors]
-  }
-  
-  # Warning : below, does not work if SigmaAlphaW contains Alpha nodes in some views
-  # if ("SigmaAlphaW" %in% names(object@parameters)){
-  #   for (m in views_names(object)){ 
-  #     object@parameters$SigmaAlphaW[[m]]$l <- object@parameters$SigmaAlphaW[[m]]$l[factors]
-  #     object@parameters$SigmaAlphaW[[m]]$sig <- object@parameters$SigmaAlphaW[[m]]$sig[factors]
-  #   }
-  # }
   
   # Update dimensionality
   object@dimensions[["K"]] <- length(factors)

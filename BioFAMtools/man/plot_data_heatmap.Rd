@@ -5,8 +5,7 @@
 \title{Plot heatmap of relevant features}
 \usage{
 plot_data_heatmap(object, view, factor, groups = "all", features = 50,
-  include_weights = FALSE, transpose = FALSE, imputed = FALSE,
-  sort_samples = TRUE, ...)
+  transpose = FALSE, imputed = FALSE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
@@ -19,19 +18,19 @@ plot_data_heatmap(object, view, factor, groups = "all", features = 50,
 If a character vector, a set of manually-defined features. 
 Default is 50.}
 
-\item{include_weights}{logical indicating whether to include the weight of each feature as an extra annotation in the heatmap. 
-Default is FALSE.}
-
 \item{transpose}{logical indicating whether to transpose the output heatmap. 
 Default corresponds to features as rows and samples as columns.}
 
 \item{imputed}{logical indicating whether to plot the imputed data instead of the original data. 
 Default is FALSE.}
 
-\item{sort_samples}{logical indicating whether to sort samples using the corresponding values in the latent factor, rather than clustering. 
+\item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}
+
+\item{include_weights}{logical indicating whether to include the weight of each feature as an extra annotation in the heatmap. 
 Default is FALSE.}
 
-\item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}
+\item{sort_samples}{logical indicating whether to sort samples using the corresponding values in the latent factor, rather than clustering. 
+Default is FALSE.}
 }
 \description{
 Function to plot a heatmap of the input data for relevant features, 
@@ -43,14 +42,4 @@ using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, 
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 This function generates a heatmap for selected features, which should reveal, im the original data space, the underlying pattern that is captured by the latent factor. \cr
 A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
-}
-\examples{
-# Load example of BioFAModel
-model <- load_model(system.file("extdata", "model15.hdf5", package = "BioFAMtools"))
-
-# Plot top 50 features for factor 1 in the mRNA view
-plot_data_heatmap(model, "mRNA", 1, 50)
-
-# Plot top 50 features for factor 1 in the mRNA view, do not show feature or row names
-plot_data_heatmap(model, "mRNA", 1, 50, show_colnames = FALSE, show_rownames = FALSE) 
 }

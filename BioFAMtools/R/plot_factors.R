@@ -3,8 +3,8 @@
 ## Functions to visualise latent factors ##
 ###########################################
 
-#' @title Beeswarm plot of factor values
-#' @name plot_factor_beeswarm
+#' @title Beeswarm plots of factor values
+#' @name plot_factor
 #' @description Beeswarm plot of the latent factor values.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
@@ -33,8 +33,8 @@
 #' @import ggbeeswarm
 #' @import grDevices
 #' @export
-plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", add_violin=TRUE, show_missing = TRUE, dot_size = 1,
-                                 color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
+plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TRUE, add_violin=TRUE, show_missing = TRUE, dot_size = 1,
+                                 color_by = NULL, color_name = "", shape_by = NULL, alpha=0.25, shape_name = "") {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -60,9 +60,9 @@ plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", ad
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   
   # Generate plot
-  p <- ggplot(df, aes(x=group_by, y=value)) +
+  p <- ggplot(df, aes(x=group_by, y=value, color=color_by, shape=shape_by)) +
     # ggbeeswarm::geom_quasirandom(aes(color=color_by, shape=shape_by), size=dot_size) +
-    ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size) +
+    # ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size) +
     facet_wrap(~factor, scales="free") +
     ylab("Factor value") + xlab("") +
     theme(
@@ -81,25 +81,32 @@ plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", ad
       legend.direction = "vertical",
       legend.key = element_blank()
     ) 
+  
+  dodge <- position_dodge(width = 1)
+  if (add_dots) {
+    p <- p + 
+      # ggbeeswarm::geom_quasirandom(size=dot_size, position=dodge, dodge.width=1)
+      ggrastr::geom_quasirandom_rast(size=dot_size, position=dodge, dodge.width=1)
+  }
   if (add_violin) {
-    # p <- p + geom_violin(aes(fill=group_by), alpha=0.25, trim=F, scale="width") +
-    p <- p + geom_violin(alpha=0.25, trim=F, scale="width") +
+    p <- p + 
+      geom_violin(aes(fill=color_by), alpha=alpha, trim=F, scale="width", position=dodge) +
       scale_fill_discrete(guide = FALSE)
   }
   
-  # If color is numeric, define the default gradient
+  # If 'color_by' is numeric, define the default gradient
   if (is.numeric(df$color))
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-  # Add color legend
+  
+  # Add manual legends
   if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color = FALSE) }
-  # Add shape legend
   if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
   
   return(p)
 }
 
-#' @title Scatterplot of two latent factors
-#' @name plot_factor_scatter
+#' @title Scatterplots of two factor values
+#' @name plot_factors
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
@@ -125,12 +132,20 @@ plot_factor_beeswarm <- function(object, factors = "all", group_by = "group", ad
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_factor_scatter <- function(object, factors, show_missing = TRUE, dot_size=1,
-                                color_by = NULL, shape_by = NULL, color_name="", shape_name="") {
+plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
+                         color_by = NULL, shape_by = NULL, color_name="", shape_name="") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-  stopifnot(length(factors)==2)
+  
+  # If plotting one or multiple factors, re-direct to other functions 
+  if (length(factors)==1) {
+    .args <- as.list(match.call()[-1])
+    do.call(plot_factor_beeswarm, .args)   
+  } else if (length(factors)>2) {
+    .args <- as.list(match.call()[-1])
+    do.call(.plot_multiple_factors, .args)
+  }
   
   # Get factors
   if (is.numeric(factors)) {
@@ -192,35 +207,11 @@ plot_factor_scatter <- function(object, factors, show_missing = TRUE, dot_size=1
 }
   
   
-#' @title Pairwise scatterplots of multiple latent factors
-#' @name plot_factor_scatters
-#' @description Scatterplots of the sample values for pair-wise combinations of multiple latent factors.
-#' @param object a \code{\link{BioFAModel}} object.
-#' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
-#' Default is 'all'
-#' @param color_by specifies groups or values used to color the samples. 
-#' This can be either: 
-#' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
-#' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' @param shape_by specifies groups or values used to shape the samples. 
-#' This can be either: 
-#' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups.
-#' @param color_name name for color legend (usually only used if color_by is not a character itself)
-#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself)
-#' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
-#' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
-#' This method generates multiple scatterplots for pairwise combinations of several latent factors.
-#' Similar functions are \code{\link{plot_factor_scatter}} for doing single scatter plots and 
-#' \code{\link{plot_factor_beeswarm}} for doing Beeswarm plots for single factors.
-#' @return \code{ggplot2} object
-#' @import ggplot2
-#' @export
-plot_factor_scatters <- function(object, factors = "all", show_missing=TRUE, dot_size=1,
-                                 color_by=NULL, color_name="", shape_by=NULL, shape_name="") {
+
+  
+# Plot multiple factors as pairwise scatterplots
+.plot_multiple_factors <- function(object, factors = "all", show_missing=TRUE, dot_size=1,
+                                   color_by=NULL, color_name="", shape_by=NULL, shape_name="") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -245,7 +236,7 @@ plot_factor_scatters <- function(object, factors = "all", show_missing=TRUE, dot
   Z <- Z[complete.cases(Z),]
   
   # Merge factor values with color and shape information
-  df <- merge(df, color_by, by="sample")
+  df <- merge(Z, color_by, by="sample")
   df <- merge(df, shape_by, by="sample")
   
   # Remove missing values

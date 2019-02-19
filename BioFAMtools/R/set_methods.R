@@ -172,7 +172,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             
             # Set view names in data options
             object@data_options$views_names <- value
-            tryCatch( { object@data_options$features_names <- value })
+            tryCatch( { names(object@data_options$features_names) <- value })
             
             # Set view names in expectations
             for (node in names(object@expectations)) {

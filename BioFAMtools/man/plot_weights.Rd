@@ -4,15 +4,16 @@
 \alias{plot_weights}
 \title{Plot Weights}
 \usage{
-plot_weights(object, view, factor, nfeatures = 10, abs = FALSE,
-  manual = NULL, color_manual = NULL, scale = TRUE)
+plot_weights(object, factor, view = "all", nfeatures = 10,
+  abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE,
+  dot_size = 1, text_size = 5)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{view}{character vector with the voiew name, or numeric vector with the index of the view to use.}
-
 \item{factor}{character vector with the factor name, or numeric vector with the index of the factor to use.}
+
+\item{view}{character vector with the voiew name, or numeric vector with the index of the view to use.}
 
 \item{nfeatures}{number of top features to label.}
 
