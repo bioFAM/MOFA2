@@ -353,9 +353,14 @@ plot_tiles_data <- function(object, colors = NULL) {
   return(p)
 }
 
-
+#' @title Visualize the structure of the data in the terminal
+#' @name plot_ascii_data
+#' @description A Fancy printing method
+#' @param object a \code{\link{BioFAModel}} object
+#' @param plot_header a logical value specifying whether to show the BioFAM header.
+#' @details This function is helpful to get an overview of the structure of the data as a text output
+#' @export
 plot_ascii_data <- function(object, plot_header = FALSE) {
-# Fancy printing method
   stopifnot(class(object) == "BioFAModel")
 
   if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
