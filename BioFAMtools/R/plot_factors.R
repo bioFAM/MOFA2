@@ -345,8 +345,12 @@ plot_factors_jitter <- function(object, factors = "all") {
         strip.background = element_blank(),
         panel.border = element_blank(),
         panel.grid.minor = element_blank(),
-        panel.grid.major = element_line(size = .1),
+        panel.grid.major = element_line(size=.1),
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        axis.title.y = element_text(size=18),
+        axis.text.y = element_text(size=12),
+        legend.text=element_text(size=14),
+        strip.text.x = element_text(size = 12)
     )
     return(p)
 }
