@@ -353,3 +353,82 @@ plot_tiles_data <- function(object, colors = NULL) {
   return(p)
 }
 
+
+plot_ascii_data <- function(object, plot_header = FALSE) {
+# Fancy printing method
+  stopifnot(class(object) == "BioFAModel")
+
+  if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
+    stop("Error: dimensions not defined")
+  if (!.hasSlot(object, "status") | length(object@status) == 0)
+    stop("Error: status not defined")
+
+  vis_lines <- ""
+
+  lpad <- max(sapply(views_names(object), function(v) nchar(v)))
+  wlim <- max(sapply(groups_names(object), function(v) nchar(v)))
+  igr_sp <- .rep_string(5, " ")
+  s <- 8             # extra lpadding shift
+  w <- max(8, wlim)  # width of one block (minus 2 walls)
+  hat    <- paste0(" ", .rep_string(w, "_"), " ")
+  walls  <- paste0("|", .rep_string(w, " "), "|")
+  ground <- paste0("|", .rep_string(w, "_"), "|")
+
+  if (plot_header) {
+    cat("
+         \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   \U2588\U2588︎\U2588︎\U2588︎\U2588︎
+biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎
+         \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   
+    ")
+  }
+
+  groups_line    <- .pad_left(lpad + s, .cpaste(groups_names(object), w+2, collapse = igr_sp))
+  nsamples_line  <- .pad_left(lpad + s, .cpaste(get_dimensions(object)$N, w+2, collapse = igr_sp))
+  vis_lines      <- c(vis_lines, groups_line, nsamples_line)  
+
+  for (m in 1:length(views_names(object))) {
+    toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, hat, collapse = igr_sp)))
+    midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, walls, collapse = igr_sp)))
+    dfeatures_line <- .pad_left_with(lpad + s, 
+                                     paste(.rep_string(get_dimensions(object)$P, walls, collapse = igr_sp)), 
+                                     with = paste(c(views_names(object)[m], .cpaste(get_dimensions(object)$D[m], s)), collapse = ""))
+    botrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, ground, collapse = igr_sp)))
+
+    vis_lines      <- c(vis_lines, toprect_line, midrect_line, dfeatures_line, botrect_line)  
+  }
+
+  cat(paste(vis_lines, collapse = "\n"))
+
+  cat("\n\n")  
+}
+
+.rep_string <- function(times, string, collapse = "") {
+  paste(replicate(times, string), collapse = collapse)
+}
+
+.pad_left_with <- function(len, string, with = "") {
+  wlen <- nchar(with)
+  len  <- max(len - wlen, 0)
+  paste0(with, paste(replicate(len, " "), collapse = ""), string)
+}
+
+.pad_left <- function(len, string) {
+  .pad_left_with(len, string, with = "")
+}
+
+# Center and paste
+.cpaste <- function(vals, cwidth, collapse = "") {
+  vals <- sapply(vals, function(e) {
+    e <- toString(e)
+    lendiff <- cwidth - nchar(e)
+    if (lendiff > 1) {
+      paste0(.rep_string(ceiling(lendiff / 2), " "),
+             e,
+             .rep_string(floor(lendiff / 2), " "))
+    } else {
+      e
+    }
+  })
+  paste(vals, collapse = collapse)
+}
+
