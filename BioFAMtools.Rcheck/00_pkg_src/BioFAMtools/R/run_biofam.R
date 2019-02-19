@@ -1,0 +1,91 @@
+#######################################
+## Functions to train a BioFAM model ##
+#######################################
+
+#' @title train a BioFAM model
+#' @name run_biofam
+#' @description Function to train an untrained \code{\link{bioFAMmodel}} object.
+#' @details In this step the R package is calling the \code{biofam} Python package, where the the training is performed. \cr
+#' The interface with Python is done with the \code{\link{reticulate}} package. 
+#' If you have several versions of Python installed and Rstudio is not detecting the correct one, you can change it using
+#' \code{reticulate::use_python}. \cr
+#' This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
+#' @param object an untrained \code{\link{bioFAMmodel}} object
+#' @param outfile output file (hdf5 format)
+#' @return a trained \code{\link{bioFAMmodel}} object
+#' @import reticulate
+#' @export
+run_biofam <- function(object, outfile) {
+  
+  # Sanity checks
+  if (!is(object, "BioFAModel")) 
+    stop("'object' has to be an instance of BioFAModel")
+  
+  # stopifnot(all(c("data_dir", "outfile") %in% names(dir_options)))
+  stopifnot(all(c("outfile") %in% names(dir_options)))
+  
+  if (object@status=="trained") 
+    stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")
+  
+  if (file.exists(dir_options$outfile))
+    message("Warning: Output file already exists, it will be replaced")
+  
+  # Sample names and feature names must be shorted than 50 characters
+  # unlist(lapply(object@input_data[[1]], rownames))
+  
+  # Initiate reticulate
+  biofam <- import("biofam")
+  
+  # Call entry point
+  biofam_entrypoint <- biofam$run.entry_point$entry_point()
+  
+  # Pass data
+  
+  # Set data options
+  biofam_entrypoint$set_data_options(
+    likelihoods = unname(object@model_options$likelihood),
+    center_features_per_group = object@data_options$center_features_per_group,
+    scale_views = object@data_options$scale_views
+  )
+  
+  # Set the data
+  biofam_entrypoint$set_data_matrix(
+    data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
+    samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
+    features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
+  )
+  
+  # Set model options 
+  biofam_entrypoint$set_model_options(
+    factors     = object@model_options$num_factors,
+    likelihoods = unname(object@model_options$likelihood),
+    sl_z        = object@model_options$sl_z, 
+    sl_w        = object@model_options$sl_w, 
+    ard_w       = object@model_options$ard_w, 
+    ard_z       = object@model_options$ard_z
+  )
+  
+  # Set training options  
+  biofam_entrypoint$set_train_options(
+    iter       = object@training_options$maxiter,
+    tolerance  = object@training_options$tolerance,
+    dropR2     = object@training_options$drop_factor_threshold,
+    seed       = object@training_options$seed, 
+    verbose    = object@training_options$verbose
+  )
+  
+  
+  # Build the model
+  biofam_entrypoint$build()
+  
+  # Run the model
+  biofam_entrypoint$run()
+  
+  # Save the model as an hdf5 file
+  biofam_entrypoint$save(outfile)
+  
+  # Load the trained model
+  object <- load_model(outfile, object)
+  
+  return(object)
+}
