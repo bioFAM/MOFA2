@@ -84,15 +84,24 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
 
 #' @title Plot variance explained by the model
+#' 
+#' Returns a list of plots with specifies axes.
+#' 
+#' Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.
+#' 
 #' @name plot_variance_explained
-#' @param object a \code{\link{MOFAmodel}} object.
-#' @param cluster logical indicating whether to do hierarchical clustering on the plot
+#' @param object a \code{\link{MOFAmodel}} object
+#' @param x string specifying the X axis (view, factor, or group)
+#' @param y string specifying the Y axis (view, factor, or group)
+#' @param split_by string specifying the dimension to split a plot by (view, factor, or group)
+#' @param cluster logical value indicating whether to do hierarchical clustering on the plot
+#' @param plot_total logical value to indicate if to plot the total variance explained along the X axis
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plot_variance_explained <- function(object, x="view", y="factor", split_by="group", cluster = TRUE, plot_total = FALSE, ...) {
+plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, ...) {
 
   # Calculate variance explained
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
@@ -100,6 +109,13 @@ plot_variance_explained <- function(object, x="view", y="factor", split_by="grou
   } else {
     r2_list <- calculate_variance_explained(object, ...)
   }
+
+  # Check if some of x, y, or split_by are the same
+  if (length(unique(c(x, y, split_by))) != 3) stop(paste0("Please ensure x, y, and split_by arguments are different.\n",
+                                                          "  Possible values are `view`, `group`, and `factor`."))
+
+  # Automatically fill split_by in
+  if (is.na(split_by)) split_by <- setdiff(c("view", "factor", "group"), c(x, y, split_by))
 
   fvar_m <- r2_list$r2_total
   fvar_mk <- r2_list$r2_per_factor
