@@ -32,7 +32,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -68,15 +68,16 @@ class initModel(object):
 
                 # Random initialisation with orthogonal factors
                 elif qmean == "orthogonal":
-                    pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                     pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.N, 9999)).T)
                     qmean = pca.components_.T
 
                 # PCA initialisation
                 elif qmean == "pca":
-                    pca = sklearn.decomposition.PCA(n_components=self.K, copy=True, whiten=True)
-                    pca.fit(s.concatenate(self.data, axis=0).T)
-                    qmean = pca.components_.T
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                    Ytmp = s.concatenate(Y, axis=1)
+                    pca.fit(Ytmp)
+                    qmean = pca.transform(Ytmp)
 
             elif isinstance(qmean, s.ndarray):
                 assert qmean.shape == (self.N, self.K), "Wrong shape for the expectation of the Q distribution of Z"
@@ -181,12 +182,13 @@ class initModel(object):
 
                     # Random initialisation
                     if qmean == "random":
-                        # TODO check effect of scale here
                         qmean_m = stats.norm.rvs(loc=0, scale=1., size=(self.D[m], self.K))
 
-                    # Scale weights to the variance of the view
-                    # if Y is not None:
-                    #     qmean_m *= np.nanstd(Y[m])
+                    elif qmean_S1 == "pca":
+                        # print("Initialising weights with PCA solution")
+                        pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                        pca.fit(Y[m])
+                        qmean_S1_tmp = pca.components_.T
 
                 elif isinstance(qmean, s.ndarray):
                     assert qmean.shape == (
