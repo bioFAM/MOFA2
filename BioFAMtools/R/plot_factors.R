@@ -309,6 +309,49 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 }
 
 
+#' @title Scatterplots of factor values with jitter
+#' @name plot_factors_jitter
+#' @description Scatterplot of the latent factor values.
+#' Simplified version of plot_factor. Always grouped by factor and coloured by group.
+#' @param object a trained \code{\link{BioFAModel}} object.
+#' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
+#' Default is 'all'
+#' @return Returns a \code{ggplot2} object
+#' @import ggplot2
+#' @export
+plot_factors_jitter <- function(object, factors = "all") {
+  # Sanity checks
+  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  
+  # Get factors
+  if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors] 
+  } else if (paste0(factors, collapse="") == "all") { 
+    factors <- factors_names(object) 
+  } else {
+    stopifnot(all(factors %in% factors_names(object)))  
+  }
+  
+  # Collect relevant data
+  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
+
+  # Plot jitter
+  p <- ggplot(Z, aes(x = group, y = value, color = group)) +
+    geom_jitter() +
+    facet_grid( ~ factor) +
+    theme_minimal() +
+    theme_bw() + 
+    theme(
+        strip.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(size = .1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+    )
+    return(p)
+}
+
+
 
 
 # (Hidden) function to define the group
