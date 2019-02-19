@@ -105,6 +105,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 
   # Calculate variance explained
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+    message("Using cached variance explained...")
     r2_list <- object@cache[["variance_explained"]]
   } else {
     r2_list <- calculate_variance_explained(object, ...)
