@@ -4,15 +4,22 @@
 #' @description Method to create a \code{\link{BioFAModel}} object
 #' @param data TO SPECIFY
 #' @return Returns an untrained \code{\link{BioFAModel}} object
+#' @import BiocGenerics
 #' @export
 create_biofam <- function(data, samples_groups = NULL) {
   
-  if (is(data, "MultiAssayExperiment")) {stop("Not functional")
+  if (is(data, "MultiAssayExperiment")) {
+    stop("Not functional")
     # message("Creating BioFAM object from a MultiAssayExperiment object...")
     # object <- .createBioFAMobjectFromMAE(data)
-    
+
   } else if (is(data, "SummarizedExperiment")) {
     stop("Not functional")
+    
+  } else if (is(data, "seurat")) {
+    message("Creating BioFAM object from a Seurat object...")
+    
+    object <- .create_biofam_from_seurat(data, samples_groups)
     
   } else if (is(data, "data.frame")) {
     message("Creating BioFAM object from a dataframe...")
@@ -37,7 +44,7 @@ create_biofam <- function(data, samples_groups = NULL) {
               all(sapply(data, function(x) is(x, "dgCMatrix"))) || 
               all(sapply(data, function(x) is(x, "dgTMatrix"))))) {
     
-    message("Creating BioFAM object from a list of matrices... make sure that features are stored in the rows and samples in the columns\n")
+    message("Creating BioFAM object from a list of matrices... make sure that features are stored in columns and samples in rows\n")
     
     # Quality controls
     stopifnot(all(sapply(data, function(p) all(is.numeric(p)))))
@@ -51,7 +58,7 @@ create_biofam <- function(data, samples_groups = NULL) {
     
     # Set views names
     if (is.null(names(data))) {
-      default_views_names <- paste0("view_",1:length(data))
+      default_views_names <- paste0("view_", 1:length(data))
       message(paste0("View names are not specified in the data, using default: ", paste(default_views_names, collapse=", "), "\n"))
       names(data) <- default_views_names
     }
@@ -149,6 +156,34 @@ create_biofam <- function(data, samples_groups = NULL) {
   return(object)
 }
 
+.create_biofam_from_seurat <- function(srt, samples_groups) {
+  if (is(samples_groups, 'character') && (length(samples_groups) == 1)) {
+    if (!(samples_groups %in% colnames(srt@meta.data)))
+      stop(paste0(samples_groups, " is not found in the Seurat@meta.data.\n",
+                  "If you want to use samples_groups information from Seurat@meta.data,\n",
+                  "please ensure to provide a column name that exists. The columns of meta data are:\n",
+                  paste0(colnames(srt@meta.data), sep = ", ")))
+    samples_groups <- srt@meta.data[,samples_groups]
+  }
+  data_matrices <- list("rna" = .split_seurat_into_groups(srt, samples_groups))
+
+  object <- new("BioFAModel")
+  object@status <- "untrained"
+  object@input_data <- data_matrices
+  
+  # Define dimensions
+  object@dimensions[["M"]] <- 1
+  object@dimensions[["D"]] <- ncol(data_matrices[[1]][[1]])
+  object@dimensions[["P"]] <- length(data_matrices[[1]])
+  object@dimensions[["N"]] <- sapply(data_matrices[[1]], function(m) nrow(m))
+  object@dimensions[["K"]] <- 0
+
+  # Set views & groups names
+  groups_names(object) <- as.character(names(data_matrices[[1]]))
+
+  return(object)
+}
+
 
 .split_data_into_groups <- function(data, samples_groups) {
   groups_names <- unique(samples_groups)
@@ -160,6 +195,21 @@ create_biofam <- function(data, samples_groups = NULL) {
     tmp_view
   })
   names(tmp) <- names(data)
+  tmp
+}
+
+.split_seurat_into_groups <- function(srt, samples_groups) {
+  groups_names <- unique(samples_groups)
+  tmp <- lapply(groups_names, function(p) {
+    # If group name is NA, it has to be treated separately
+    # due to the way R handles NAs and equal signs
+    if (is.na(p)) {
+      t(srt@data[,is.na(samples_groups)])
+    } else {
+      BiocGenerics::t(srt@data[,which(samples_groups == p)])
+    }
+  })
+  names(tmp) <- groups_names
   tmp
 }
 
