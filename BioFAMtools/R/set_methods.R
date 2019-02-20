@@ -164,11 +164,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             #   stop("View names do not match the number of views in the training data")
             
             # Define types of nodes
-            nodes_types <- list(
-              multiview_nodes  = c("W", "AlphaW", "ThetaW"),
-              multigroup_nodes = c("Z", "AlphaZ", "ThetaZ"),
-              twodim_nodes     = c("Y", "Tau")
-            )
+            nodes_types <- .get_nodes_types()
             
             # Set view names in data options
             object@data_options$views_names <- value
