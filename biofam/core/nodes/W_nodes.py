@@ -137,6 +137,9 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         self.factors_axis = 1
         gpu_utils.gpu_mode = options['gpu_mode']
 
+    def removeFactors(self, idx):
+        super().removeFactors(idx, axis=1)
+
     def updateParameters(self, ix=None, ro=1.):
 
         # Collect expectations from other nodes

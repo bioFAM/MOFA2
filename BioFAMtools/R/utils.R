@@ -56,61 +56,30 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
     stopifnot(all(factors %in% factors_names(object)))  
   }
   
-  # Collect relevant data
-  Z <- get_factors(object)
-  
-  # Calculate variance explained
-  r2 <- calculate_variance_explained(object, views = views, groups = groups, factors = factors)$r2_per_factor
-  
-  # (...)  
-  data <- get_training_data(object, views, groups)
-  missing <- lapply(groups, function(g) { 
-    tmp <- lapply(views, function(m) {
-      names(which(apply(data[[m]][[g]],2,function(x) all(is.na(x)))))
-    }); names(tmp) <- views
-    tmp
-  }); names(missing) <- groups
+  # Z <- get_factors(object)
   
   for (k in factors) {
     for (g in groups) {
-      r2[[g]][is.na(r2[[g]])] <- 0
-      for (m in views) {
-        samples <- samples_names(object)[[g]]
-        if (r2[[g]][k,m]<0.01 & any(samples%in%missing[[g]][[m]])) {
-          foo <- predict(object, groups=g, factors=k, views=m)[[1]][[1]]
-          
-          # select top features 
-          genes <- names(tail(sort(abs(get_weights(object, views=m, factors=k)[[1]][,1])), n=50))
-          
-          # Define foreground set
-          bar <- apply(abs(foo[genes,]),2,mean,na.rm=T)
-          bar <- bar[samples %in%missing[[g]][[m]]]
-          
-          if (length(bar)>0) {
-            
-            # Define background set: group with the highest activity, removing any missing sample
-            background_g <- names(which.max(sapply(r2, function(x) x[k,][[m]])))
-            foo.background <- predict(object, groups=background_g, factors=k, views=m)[[1]][[1]]
-            
-            foo.background <- foo.background[, colnames(foo.background)[!colnames(foo.background)%in%missing[[background_g]][[m]]]]
-            
-            bar.background <- apply(abs(foo.background[genes,]),2,mean,na.rm=T)
-            
-            # detect outliers by comparing statistics of foreground versus background
-            max.value <- max(bar.background,na.rm=T)
-            # max.value <- 2*max(bar.background,na.rm=T)
-            outliers <- names(which(bar>max.value ))
-            if (length(outliers)>0) {
-              object@expectations$Z[[g]][,k][outliers] <- NA
-            }
-          }
-        }
-      }
+      # samples <- samples_names(object)[[g]]
+    
+      Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
+      Z <- Z[!is.na(Z)]
+      
+      # cutoff <- 10
+      # tmp <- abs((Z - median(Z))/mad(Z))
+      
+      cutoff <- 3 * 1.96
+      tmp <- abs(Z - mean(Z)) / sd(Z)
+
+      outliers <- names(which(tmp>cutoff))
+      
+      
+      if (length(outliers)>0) object@expectations$Z[[g]][,k][outliers] <- NA
+      
     }
   }
   
   return(object)
-  
 }
 
 
@@ -147,7 +116,7 @@ return(model)
     stopifnot(all(groups <= object@dimensions$P))
     groups_names(object)[groups] 
   } else {
-    if (paste0(groups, sep = "", collapse = "") == "all") { 
+    if (paste0(groups, collapse = "") == "all") { 
       groups_names(object)
     } else {
       stopifnot(all(groups %in% groups_names(object)))
