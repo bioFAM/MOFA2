@@ -8,6 +8,7 @@
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
+#' @import DelayedArray
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", ...) {
 
@@ -41,29 +42,36 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
   # Check that data observations are centered
   for (m in views) { for (p in groups) {
-    if (!all(colMeans(Y[[m]][[p]],na.rm=T)<1e-2,na.rm=T))
+    if (!all(DelayedArray::colMeans(Y[[m]][[p]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
       cat(sprintf("Warning: data for view %s is not centered\n",m))
   }}
 
   Y <- .name_views_and_groups(Y, views, groups)
 
   # Calculate coefficient of determination per group and view
-  fvar_m <- lapply(groups, function(p) lapply(views, function(m) {
-      a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]],W[[m]]))**2, na.rm=T)
-      b <- sum(Y[[m]][[p]]**2, na.rm=T)
-      return(1 - a/b)
-    } ))
+  fvar_m <- tryCatch({
+    lapply(groups, function(p) lapply(views, function(m) {
+        a <- sum((Y[[m]][[p]] - tcrossprod(Z[[p]], W[[m]]))**2, na.rm = TRUE)
+        b <- sum(Y[[m]][[p]]**2, na.rm = TRUE)
+        return(1 - a/b)
+      })
+    )}, error = function(err) {
+      stop(paste0("Calculating explained variance doesn't work with the current version of DelayedArray.\n",
+                 "  Do not sort factors if you're trying to load the model (sort_factors = FALSE),\n",
+                 "  or load the full dataset into memory (on_disk = FALSE)."))
+      return(err)
+    })
   fvar_m <- .name_views_and_groups(fvar_m, groups, views)
 
   # Calculate coefficient of determination per group, factor and view
   fvar_mk <- lapply(groups, function(p) {
     tmp <- sapply(views, function(m) { sapply(factors, function(k) {
-        a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]][,k],W[[m]][,k]))**2, na.rm=T)
-        b <- sum(Y[[m]][[p]]**2, na.rm=T)
+        a <- sum((Y[[m]][[p]] - tcrossprod(Z[[p]][,k], W[[m]][,k]))**2, na.rm = TRUE)
+        b <- sum(Y[[m]][[p]]**2, na.rm = TRUE)
         return(1 - a/b)
       })
     })
-    tmp <- matrix(tmp, ncol=length(views), nrow=length(factors))
+    tmp <- matrix(tmp, ncol = length(views), nrow = length(factors))
     colnames(tmp) <- views; rownames(tmp) <- factors
     return(tmp)
   }); names(fvar_mk) <- groups
@@ -84,22 +92,39 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
 
 #' @title Plot variance explained by the model
+#' 
+#' Returns a list of plots with specifies axes.
+#' 
+#' Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.
+#' 
 #' @name plot_variance_explained
-#' @param object a \code{\link{MOFAmodel}} object.
-#' @param cluster logical indicating whether to do hierarchical clustering on the plot
+#' @param object a \code{\link{MOFAmodel}} object
+#' @param x string specifying the X axis (view, factor, or group)
+#' @param y string specifying the Y axis (view, factor, or group)
+#' @param split_by string specifying the dimension to split a plot by (view, factor, or group)
+#' @param cluster logical value indicating whether to do hierarchical clustering on the plot
+#' @param plot_total logical value to indicate if to plot the total variance explained along the X axis
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plot_variance_explained <- function(object, x="view", y="factor", split_by="group", cluster = TRUE, plot_total = FALSE, ...) {
+plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, ...) {
 
   # Calculate variance explained
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+    message("Using cached variance explained...")
     r2_list <- object@cache[["variance_explained"]]
   } else {
     r2_list <- calculate_variance_explained(object, ...)
   }
+
+  # Check if some of x, y, or split_by are the same
+  if (length(unique(c(x, y, split_by))) != 3) stop(paste0("Please ensure x, y, and split_by arguments are different.\n",
+                                                          "  Possible values are `view`, `group`, and `factor`."))
+
+  # Automatically fill split_by in
+  if (is.na(split_by)) split_by <- setdiff(c("view", "factor", "group"), c(x, y, split_by))
 
   fvar_m <- r2_list$r2_total
   fvar_mk <- r2_list$r2_per_factor

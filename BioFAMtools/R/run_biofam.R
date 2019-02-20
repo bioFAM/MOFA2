@@ -21,13 +21,13 @@ run_biofam <- function(object, outfile) {
   if (!is(object, "BioFAModel")) 
     stop("'object' has to be an instance of BioFAModel")
   
-  # stopifnot(all(c("data_dir", "outfile") %in% names(dir_options)))
-  stopifnot(all(c("outfile") %in% names(dir_options)))
+  if (is.na(outfile))
+    stop("Please provide the output file name")
   
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")
   
-  if (file.exists(dir_options$outfile))
+  if (file.exists(outfile))
     message("Warning: Output file already exists, it will be replaced")
   
   # Sample names and feature names must be shorted than 50 characters

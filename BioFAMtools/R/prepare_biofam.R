@@ -18,7 +18,7 @@
 #' If NULL, default training options are used.
 #' @return Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
 #' @export
-prepare_biofam <- function(object, dir_options, data_options = NULL, model_options = NULL, training_options = NULL) {
+prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -67,8 +67,8 @@ prepare_biofam <- function(object, dir_options, data_options = NULL, model_optio
   # }
   
   # If output already exists, remove it
-  if (file.exists(dir_options$outfile))
-    file.remove(dir_options$outfile)
+  # if (file.exists(dir_options$outfile))
+  #   file.remove(dir_options$outfile)
   
   return(object)
 }
