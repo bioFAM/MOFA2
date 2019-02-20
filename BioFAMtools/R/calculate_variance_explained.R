@@ -8,6 +8,7 @@
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
+#' @import DelayedArray
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", ...) {
 
@@ -41,29 +42,36 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
   # Check that data observations are centered
   for (m in views) { for (p in groups) {
-    if (!all(colMeans(Y[[m]][[p]],na.rm=T)<1e-2,na.rm=T))
+    if (!all(DelayedArray::colMeans(Y[[m]][[p]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
       cat(sprintf("Warning: data for view %s is not centered\n",m))
   }}
 
   Y <- .name_views_and_groups(Y, views, groups)
 
   # Calculate coefficient of determination per group and view
-  fvar_m <- lapply(groups, function(p) lapply(views, function(m) {
-      a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]],W[[m]]))**2, na.rm=T)
-      b <- sum(Y[[m]][[p]]**2, na.rm=T)
-      return(1 - a/b)
-    } ))
+  fvar_m <- tryCatch({
+    lapply(groups, function(p) lapply(views, function(m) {
+        a <- sum((Y[[m]][[p]] - tcrossprod(Z[[p]], W[[m]]))**2, na.rm = TRUE)
+        b <- sum(Y[[m]][[p]]**2, na.rm = TRUE)
+        return(1 - a/b)
+      })
+    )}, error = function(err) {
+      stop(paste0("Calculating explained variance doesn't work with the current version of DelayedArray.\n",
+                 "  Do not sort factors if you're trying to load the model (sort_factors = FALSE),\n",
+                 "  or load the full dataset into memory (on_disk = FALSE)."))
+      return(err)
+    })
   fvar_m <- .name_views_and_groups(fvar_m, groups, views)
 
   # Calculate coefficient of determination per group, factor and view
   fvar_mk <- lapply(groups, function(p) {
     tmp <- sapply(views, function(m) { sapply(factors, function(k) {
-        a <- sum((Y[[m]][[p]]-tcrossprod(Z[[p]][,k],W[[m]][,k]))**2, na.rm=T)
-        b <- sum(Y[[m]][[p]]**2, na.rm=T)
+        a <- sum((Y[[m]][[p]] - tcrossprod(Z[[p]][,k], W[[m]][,k]))**2, na.rm = TRUE)
+        b <- sum(Y[[m]][[p]]**2, na.rm = TRUE)
         return(1 - a/b)
       })
     })
-    tmp <- matrix(tmp, ncol=length(views), nrow=length(factors))
+    tmp <- matrix(tmp, ncol = length(views), nrow = length(factors))
     colnames(tmp) <- views; rownames(tmp) <- factors
     return(tmp)
   }); names(fvar_mk) <- groups
