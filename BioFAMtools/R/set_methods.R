@@ -65,6 +65,7 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
                      stop("sample names do not match the dimensionality of the data (columns)")
                    
                    object@data_options$samples_names <- value
+                   
                    object <- .set_expectations_names(object, entity = 'samples', value)
                    object <- .set_data_names(object, entity = 'samples', value)
                    
@@ -172,7 +173,9 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             
             # Set view names in data options
             object@data_options$views_names <- value
-            tryCatch( { names(object@data_options$features_names) <- value })
+            if (!is.null(object@data_options$features_names)) {
+              names(object@data_options$features_names) <- value 
+            }
             
             # Set view names in expectations
             for (node in names(object@expectations)) {
@@ -231,7 +234,10 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             nodes_types <- .get_nodes_types()
 
             # Set sample group names in data options
-            object@data_options$samples_groups <- value
+            if (!is.null(object@data_options$samples_names)) {
+              names(object@data_options$samples_names) <- value
+            }
+              
             
             # Set sample group names in expectations
             for (node in nodes_types$multigroup_nodes) {

@@ -151,8 +151,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
       print("Samples names not found, generating default: sample1, ..., sampleN")
       sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
     }
-    samples_names(object)  <- sample_names
-    
+    samples_names(object) <- sample_names
   }
   
   # Set views names
