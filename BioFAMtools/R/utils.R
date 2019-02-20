@@ -116,7 +116,7 @@ return(model)
     stopifnot(all(groups <= object@dimensions$P))
     groups_names(object)[groups] 
   } else {
-    if (paste0(groups, sep = "", collapse = "") == "all") { 
+    if (paste0(groups, collapse = "") == "all") { 
       groups_names(object)
     } else {
       stopifnot(all(groups %in% groups_names(object)))

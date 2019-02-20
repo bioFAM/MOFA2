@@ -234,6 +234,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             nodes_types <- .get_nodes_types()
 
             # Set sample group names in data options
+            object@data_options$samples_groups <- value
             if (!is.null(object@data_options$samples_names)) {
               names(object@data_options$samples_names) <- value
             }
