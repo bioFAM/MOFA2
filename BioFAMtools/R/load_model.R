@@ -44,7 +44,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   view_names <- foo[foo$group=="/data","name"]
   group_names <- foo[foo$group==paste0("/data/",view_names[1]),"name"]
 
-  # Load training data as matrices
+  # Load training data (as nested list of matrices)
   training_data <- list()
   if (load_training_data) {
     for (m in view_names) {
@@ -61,9 +61,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
         training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA # this realised into memory, TO FIX
       }
     }
+  # Create training data (as nested list of empty matrices, with the correct dimensions)
   } else {
-    n_features <- lapply(feature_names, length)
-    n_samples  <- lapply(sample_names, length)
     for (m in view_names) {
       training_data[[m]] <- list()
       for (p in group_names) {

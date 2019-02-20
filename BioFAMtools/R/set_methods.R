@@ -66,7 +66,12 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
                    
                    object@data_options$samples_names <- value
                    
+                   # Add samples names to the expectations matrices
                    object <- .set_expectations_names(object, entity = 'samples', value)
+                   
+                   # Add samples names to the data matrices
+                   # if (!is.null(dim(object@training_data[[1]][[1]]))) {
+                   # }
                    object <- .set_data_names(object, entity = 'samples', value)
                    
                    object
@@ -130,6 +135,9 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
                    
                    object@data_options$features_names <- value
                    object <- .set_expectations_names(object, entity = 'features', value)
+                   
+                   # if (!is.null(dim(object@training_data[[1]][[1]]))) {
+                   # }
                    object <- .set_data_names(object, entity = 'features', value)
                    
                    return(object)
