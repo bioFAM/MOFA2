@@ -241,6 +241,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value", color = "color_by", shape = "shape_by")) + 
     geom_point() +
+    # ggbeeswarm::geom_quasirandom() +
     stat_smooth(method="lm", color="blue", alpha=0.5) +
     facet_wrap(~feature, scales="free_y") +
     scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
@@ -300,10 +301,12 @@ plot_data_overview <- function(object, colors = NULL) {
   names(colors) <- views_names(object)
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  ovw.mx <- sapply(training_data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
+  ovw.mx <- sapply(training_data, function(datgr) 
+    sapply(datgr, function(dat) 
+      apply(dat, 2, function(s) 
+        !all(is.na(s)))))
 
   ovw <- as.data.frame(ovw.mx)
-  # ovw$group <- groups_names(object)
   ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = P) )
   
   # Remove samples with no measurements
