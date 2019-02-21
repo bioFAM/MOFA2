@@ -34,7 +34,7 @@
 #' @import grDevices
 #' @export
 plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TRUE, add_violin=TRUE, show_missing = TRUE, dot_size = 1,
-                                 color_by = NULL, color_name = "", shape_by = NULL, alpha=0.25, shape_name = "") {
+                                 color_by = NULL, color_name = "", shape_by = NULL, alpha=0.25, shape_name = "", rasterize = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -84,10 +84,11 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   
   dodge <- position_dodge(width = 1)
   if (add_dots) {
-    p <- p + 
-      # ggbeeswarm::geom_quasirandom(size=dot_size, position=dodge, dodge.width=1)
-      # ggrastr::geom_quasirandom_rast(size=dot_size, position=dodge, dodge.width=1)
-      geom_jitter(size=dot_size, position=dodge, dodge.width=1)
+    if (rasterize) {
+      p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position=dodge, dodge.width=1)
+    } else {
+      p <- p + geom_jitter(size=dot_size, position=dodge, dodge.width=1)
+    }
   }
   if (add_violin) {
     p <- p + 
