@@ -319,7 +319,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_factors_jitter <- function(object, factors = "all") {
+plot_factors_jitter <- function(object, factors = "all", color_by_gene = NA) {
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
@@ -333,10 +333,25 @@ plot_factors_jitter <- function(object, factors = "all") {
   }
   
   # Collect relevant data
-  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
+  Z <- get_factors(object, factors = factors, as.data.frame=TRUE)
+
+  # Add gene expression if colouring by gene expression
+  if (!is.na(color_by_gene)) {
+    viewidx <- which(sapply(features_names(object), function(vnm) color_by_gene %in% vnm))
+    if (length(viewidx) == 0) stop(paste0("No gene `", color_by_gene, "` is found among features"))
+    Z[,color_by_gene] <- unlist(sapply(get_training_data(bfam)[[viewidx]], function(l) Reduce(cbind, l[color_by_gene,])))
+  }
+
+  # Choose way to colour: by group or by gene value
+  if (is.na(color_by_gene)) {
+    p <- ggplot(Z, aes(x = group, y = value, color = group))
+  } else {
+    p <- ggplot(Z, aes_string(x = "group", y = "value", 
+                              group = "group", color = color_by_gene))
+  }
 
   # Plot jitter
-  p <- ggplot(Z, aes(x = group, y = value, color = group)) +
+  p <- p +
     geom_jitter() +
     facet_grid( ~ factor) +
     theme_minimal() +
