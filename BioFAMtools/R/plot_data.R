@@ -350,10 +350,10 @@ plot_data_overview <- function(object, colors = NULL) {
 #' @name plot_ascii_data
 #' @description A Fancy printing method
 #' @param object a \code{\link{BioFAModel}} object
-#' @param plot_header a logical value specifying whether to show the BioFAM header.
+#' @param header a logical value specifying whether to show the BioFAM header.
 #' @details This function is helpful to get an overview of the structure of the data as a text output
 #' @export
-plot_ascii_data <- function(object, plot_header = FALSE) {
+plot_ascii_data <- function(object, header = FALSE) {
   stopifnot(class(object) == "BioFAModel")
 
   if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
@@ -372,7 +372,7 @@ plot_ascii_data <- function(object, plot_header = FALSE) {
   walls  <- paste0("|", .rep_string(w, " "), "|")
   ground <- paste0("|", .rep_string(w, "_"), "|")
 
-  if (plot_header) {
+  if (header) {
     cat("
          \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   \U2588\U2588︎\U2588︎\U2588︎\U2588︎
 biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎
@@ -382,13 +382,20 @@ biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x 
 
   groups_line    <- .pad_left(lpad + s, .cpaste(groups_names(object), w+2, collapse = igr_sp))
   nsamples_line  <- .pad_left(lpad + s, .cpaste(get_dimensions(object)$N, w+2, collapse = igr_sp))
-  vis_lines      <- c(vis_lines, groups_line, nsamples_line)  
+  vis_lines      <- c(vis_lines, groups_line, nsamples_line) 
+
+  # Calculate percentage of missing values in every view and every group
+  content_pct <- lapply(object@input_data, function(view) sapply(view, function(group) sum(is.na(group))))
+  content_pct <- lapply(1:length(content_pct), function(m) {
+    paste0(as.character(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100), sep = "%")
+  })
 
   for (m in 1:length(views_names(object))) {
+    # browser()
     toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, hat, collapse = igr_sp)))
     midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, walls, collapse = igr_sp)))
     dfeatures_line <- .pad_left_with(lpad + s, 
-                                     paste(.rep_string(get_dimensions(object)$P, walls, collapse = igr_sp)), 
+                                     paste(.insert_inside(content_pct[[m]], rep(walls, get_dimensions(object)$P)), collapse = igr_sp), 
                                      with = paste(c(views_names(object)[m], .cpaste(get_dimensions(object)$D[m], s)), collapse = ""))
     botrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, ground, collapse = igr_sp)))
 
@@ -412,6 +419,14 @@ biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x 
 
 .pad_left <- function(len, string) {
   .pad_left_with(len, string, with = "")
+}
+
+.insert_inside <- function(values, boxes) {
+  sapply(1:length(boxes), function(i) {
+    box <- boxes[i]
+    v <- values[i]
+    paste0(substr(box, 1, 1), .cpaste(v, nchar(box) - 2), substr(box, length(box), length(box)))
+  })
 }
 
 # Center and paste
