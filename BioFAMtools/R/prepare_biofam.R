@@ -98,7 +98,7 @@ get_default_training_options <- function(object) {
   training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
     tolerance = 0.1,               # (numeric) Convergence threshold based on change in the evidence lower bound
-    drop_factor_threshold = 0.02,  # (numeric) Threshold on fraction of variance explained to drop a factor
+    drop_factor_threshold = NA,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity?
     seed = 0                       # (numeric or NULL) random seed
   )
@@ -129,7 +129,7 @@ get_default_data_options <- function(object) {
   
   # Define default data options
   data_options <- list(
-    center_features_per_group = FALSE, # (logical) Center features to zero mean, for each group separately
+    center_features_per_group = TRUE,  # (logical) Center features to zero mean, for each group separately
     scale_views = FALSE                # (logical) Scale views to unit variance
   )
   
