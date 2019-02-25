@@ -15,14 +15,17 @@
 #' @return a trained \code{\link{bioFAMmodel}} object
 #' @import reticulate
 #' @export
-run_biofam <- function(object, outfile) {
+run_biofam <- function(object, outfile = NA) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) 
     stop("'object' has to be an instance of BioFAModel")
-  
-  if (is.na(outfile))
-    stop("Please provide the output file name")
+
+  # If not outfile is provided, store a file in the /temp folder with the respective timestamp
+  if (is.na(outfile)) {
+    outfile <- file.path("/tmp", paste0("biofam_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
+    warning(paste0("No output filename provided. Using ", outfile, " to store the trained model."))
+  }
   
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")

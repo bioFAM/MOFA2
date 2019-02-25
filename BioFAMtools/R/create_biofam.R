@@ -58,21 +58,6 @@ create_biofam <- function(data, samples_groups = NULL) {
       names(data) <- default_views_names
     }
     
-    # Set features names
-    for (m in 1:length(data)) {
-      if (is.null(colnames(data[[m]]))) {
-        warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d,feature2_v%d...\n",m,m,m))
-        colnames(data[[m]]) <- paste0("feature_",1:ncol(object@input_data[[m]]),"_v",m )
-      }
-    }
-    
-    # Set samples names
-    if (is.null(rownames(data[[1]]))) {
-      warning(sprintf("Sample names are not specified, using default: sample1,sample2,...\n"))
-      for (m in 1:object@dimensions[["M"]])
-        rownames(object@input_data[[m]]) <- paste0("sample_",1:row(object@input_data[[m]]),"_v",m )
-    }
-    
     # Initialise BioFAM object
     object <- new("BioFAModel")
     object@status <- "untrained" # define status as untrained
@@ -85,13 +70,33 @@ create_biofam <- function(data, samples_groups = NULL) {
     object@dimensions[["D"]] <- sapply(data, function(m) ncol(m))
     object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(samples_groups == x))
     object@dimensions[["K"]] <- 0
+
+
+    # Set features names
+    for (m in 1:length(data)) {
+      if (is.null(colnames(data[[m]]))) {
+        warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d, feature2_v%d...", m, m, m))
+        for (g in 1:length(data[[m]])) {
+          colnames(data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@input_data[[m]][[g]]), "_v", m)
+        }
+      }
+    }
     
+    # Set samples names
+    for (g in 1:object@dimensions[["P"]]) {
+      if (is.null(rownames(data[[g]]))) {
+        warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
+        for (m in 1:object@dimensions[["M"]]) {
+          rownames(object@input_data[[m]][[g]]) <- paste0("sample_", 1:nrow(object@input_data[[m]][[g]]), "_g", g)
+        }
+      }
+    }
     
     # Set samples group names
     groups_names(object) <- groups_names
     
   } else {
-    stop("Error: input data has to be provided either as .....")
+    stop("Error: input data has to be provided as a list of matrices, a data frame (long format), or a suerat object.")
   }
   
   print(object)
