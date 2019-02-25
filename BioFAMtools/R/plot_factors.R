@@ -321,8 +321,6 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 }
 
 
-
-
 # (Hidden) function to define the group
 .set_groupby <- function(object, group_by) {
   
