@@ -18,7 +18,8 @@
 #' If NULL, default training options are used.
 #' @return Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
 #' @export
-prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL) {
+prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL,
+                           center=TRUE, regress_covariates=NULL ) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -36,6 +37,8 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
       stop("data_options are incorrectly specified, please read the documentation in get_default_data_options")
     object@data_options <- data_options
   }
+  if (any(nchar(unlist(samples_names(object)))>50))
+    warning("Due to string size limitations in the HDF5 format, sample names will be trimmed to less than 50 characters")
   
   # Get training options
   message("Checking training options...")
@@ -58,6 +61,19 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
       stop("model_options are incorrectly specified, please read the documentation in get_default_model_options")
     object@model_options <- model_options
   }
+  
+  # Center the data
+  if (center) {
+    print("Centering the data (per group)...")
+    for (m in views_names(object)) {
+      for (g in groups_names(object)) {
+        object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
+      }
+    }
+  }
+  
+  # Regress out covariates
+  object <- .regress_covariates(object, covariates)
   
   return(object)
 }
@@ -183,26 +199,7 @@ get_default_model_options <- function(object) {
 
 
 
-#' @title regress out a covariate from the training data
-#' @name regress_covariate
-#' @description Function to regress out a covariate from the training data.\cr
-#' If you have technical sources of variability (i.e. batch effects) that you do not want to be captured by factors in the model, 
-#' you should regress them out before fitting MOFA. This function performs a simple linear regression model, extracts the residuals,
-#' and replaces the original data in the TrainingData slot. \cr
-#' Why is this important? If big technical factors exist, the model will "focus" on capturing the variability driven by these factors, and smaller sources of variability could be missed. \cr
-#' But... can we not simply add those covariates to the model? Technically yes, but we extensively tested this functionality and it was not yielding good results. \cr 
-#' The reason is that covariates are usually discrete labels that do not reflect the underlying molecular biology. 
-#' For example, if you introduce age as a covariate, but the actual age is different from the "molecular age", 
-#' the model will simply learn a new factor that corresponds to this "latent" molecular age, and it will drop the covariate from the model.\cr
-#' We recommend factors to be learnt in a completely unsupervised manner and subsequently relate them to the covariates via visualisation or via a simple correlation analysis (see our vignettes for more details).
-#' @param object an untrained \code{\link{MOFAmodel}}
-#' @param views the view(s) to regress out the covariates.
-#' @param covariates a vector (one covariate) or a data.frame (for multiple covariates) where each row corresponds to one sample, sorted in the same order as in the input data matrices. 
-#' You can check the order by doing sampleNames(MOFAobject). If required, fill missing values with \code{NA}, which will be ignored when fitting the linear model.
-#' @return Returns an untrained \code{\link{MOFAmodel}} where the specified covariates have been regressed out in the training data.
-#' @importFrom stats lm
-#' @export
-regressCovariate <- function(object, covariates, min_observations = 5) {
+.regress_covariates <- function(object, covariates, min_observations = 10) {
 
   # First round of sanity checks
   if (!is(object, "BioFAModel")) 
@@ -220,11 +217,6 @@ regressCovariate <- function(object, covariates, min_observations = 5) {
   if (any(object@model_options$likelihood[views]!="gaussian")) 
     stop("Some of the specified views contains discrete data. \nRegressing out covariates only works in views with continuous (gaussian) data")
   
-  
-  # samples <- sapply(Y, function(x) colnames(x), simplify=F, USE.NAMES=T)
-  # samples <- lapply(Y,colnames)
-  # all_samples <- sampleNames(object)
-  
   # Prepare data.frame with covariates
   if (!is(covariates,"list"))
     stop("Covariates has to be a list of vectors (for one covariate) or a list of data.frames (for multiple covariates")
@@ -241,12 +233,12 @@ regressCovariate <- function(object, covariates, min_observations = 5) {
     Y_regressed[[m]] <- list()
     for (g in groups) {
       if (any(rowSums(!is.na(Y[[m]][[g]]))<min_observations) ) stop(sprintf("Some features do not have enough observations (N=%s) to fit the linear model",min_observations))
-      Y_regressed[[m]][[g]] <- t( apply(Y[[m]][[g]], 1, function(y) {
+      Y_regressed[[m]][[g]] <- t( apply(Y[[m]][[g]], 2, function(y) {
         
         # Fit linear model
         df <- cbind(y,covariates[[m]][[g]])
         lm.out <- lm(y~., data=df)
-        residuals <- lm.out[["residuals"]]+lm.out[["coefficients"]][1]
+        residuals <- lm.out[["residuals"]]
         
         # Fill missing values
         all_samples <- rownames(Y[[m]][[g]])

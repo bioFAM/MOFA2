@@ -61,8 +61,6 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   
   # Generate plot
   p <- ggplot(df, aes(x=group_by, y=value, color=color_by, shape=shape_by)) +
-    # ggbeeswarm::geom_quasirandom(aes(color=color_by, shape=shape_by), size=dot_size) +
-    # ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size) +
     facet_wrap(~factor, scales="free") +
     ylab("Factor value") + xlab("") +
     theme(
@@ -82,26 +80,33 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
       legend.key = element_blank()
     ) 
   
+  # Add dots
   if (add_dots) {
     if (rasterize) {
       if (dodge) {
-        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position=position_dodge(width = 1), dodge.width=1)
+        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1)
       } else {
         p <- p + ggrastr::geom_quasirandom_rast(size=dot_size)
       }
     } else {
       if (dodge) {
-        p <- p + ggbeeswarm::geom_quasirandom(size=dot_size, position=position_dodge(width = 1), dodge.width=1)
+        p <- p + ggbeeswarm::geom_quasirandom(size=dot_size, position="dodge", dodge.width=1)
       } else {
         p <- p + ggbeeswarm::geom_quasirandom(size=dot_size)
         
       }
     }
   }
+  
+  # Add violin plot
   if (add_violin) {
     if (dodge) {
-      p <- p + geom_violin(aes(fill=color_by), color="black", alpha=alpha, trim=F, scale="width", position=position_dodge(width = 1)) +
-        scale_fill_discrete(guide = FALSE)
+      if (min(table(df$color_by))==1) {
+        warning("Warning: some 'color_by' groups have only one observation, violin plots are not displayed")
+      } else {
+        p <- p + geom_violin(aes(fill=color_by), color="black", alpha=alpha, trim=F, scale="width", position=position_dodge(width = 1))
+        if (add_dots) p <- p + scale_fill_discrete(guide = FALSE)
+      }
     } else {
       p <- p + geom_violin(color="black", fill="grey", alpha=alpha, trim=F, scale="width")
     }
@@ -111,9 +116,19 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   if (is.numeric(df$color))
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
   
-  # Add manual legends
-  if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color = FALSE) }
-  if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
+  # Add legend for color
+  if (length(unique(df$color))>1) { 
+    p <- p + labs(color=color_name) + theme(legend.text.align = 0)
+  } else { 
+    p <- p + guides(color = FALSE) 
+  }
+  
+  # Add legend for shape
+  if (length(unique(df$shape))>1) { 
+    p <- p + labs(shape=shape_name) + theme(legend.text.align = 0)
+  } else { 
+    p <- p + guides(shape = FALSE) 
+  }
   
   return(p)
 }
@@ -211,10 +226,20 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   # If color is numeric, define the default gradient
   if (is.numeric(df$color))
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-  # Add color legend
-  if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color = FALSE) }
-  # Add shape legend
-  if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
+  
+  # Add legend for color
+  if (length(unique(df$color))>1) { 
+    p <- p + labs(color=color_name) + theme(legend.text.align = 0)
+  } else { 
+    p <- p + guides(color = FALSE) 
+  }
+  
+  # Add legend for shape
+  if (length(unique(df$shape))>1) { 
+    p <- p + labs(shape=shape_name) + theme(legend.text.align = 0)
+  } else { 
+    p <- p + guides(shape = FALSE) 
+  }
   
   return(p)
 }
