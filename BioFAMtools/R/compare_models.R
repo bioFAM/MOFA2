@@ -36,15 +36,6 @@ compare_factors <- function(models, comparison = "all", show_rownames=FALSE, sho
   # give generic names if no names present
   if(is.null(names(models))) names(models) <- paste("model", 1: length(models), sep="")
 
-  # TODO maybe find a better way to handle that
-  # if(node=='Z'){
-  #     Z <- getFactors(models)
-  #   }
-  #   else{
-  #     SW <- getWeights(model)
-  #     Z  <- do.call('rbind', SW)
-  #     # concatenate weight matrices across views
-  #   }
 
   # get latent factors
   LFs <- lapply(seq_along(models), function(modelidx){

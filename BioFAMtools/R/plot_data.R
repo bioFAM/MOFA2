@@ -178,19 +178,18 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Set color
   color_legend <- TRUE
   if (!is.null(color_by)) {
+    
     # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
       training_data <- get_training_data(object)
       features_names <- lapply(training_data(object), rownames)
-      if(color_by %in% Reduce(union,features_names)) {
+      if (color_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
         color_by <- training_data[[viewidx]][color_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment"){
-        color_by <- getCovariates(object, color_by)
       }
-      else stop("'color_by' was specified but it was not recognised, please read the documentation")
-      # It is a vector of length N
+      
+    # It is a vector of length N
     } else if (length(color_by) > 1) {
       stopifnot(length(color_by) == ncol(Y))
       # color_by <- as.factor(color_by)
@@ -213,12 +212,9 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
       if (shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
         shape_by <- training_data[[viewidx]][shape_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment"){
-        shape_by <- getCovariates(object, shape_by)
       }
-      else stop("'shape_by' was specified but it was not recognised, please read the documentation")
-      # It is a vector of length N
-      # It is a vector of length N
+      
+    # It is a vector of length N
     } else if (length(shape_by) > 1) {
       stopifnot(length(shape_by) == ncol(Y))
     } else {

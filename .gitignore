@@ -28,3 +28,4 @@ var/
 .installed.cfg
 *.egg
 .Rproj.user
+*.Rcheck

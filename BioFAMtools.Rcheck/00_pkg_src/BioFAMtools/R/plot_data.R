@@ -178,19 +178,18 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Set color
   color_legend <- TRUE
   if (!is.null(color_by)) {
+    
     # It is the name of a covariate or a feature in the training_data
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
       training_data <- get_training_data(object)
       features_names <- lapply(training_data(object), rownames)
-      if(color_by %in% Reduce(union,features_names)) {
+      if (color_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
         color_by <- training_data[[viewidx]][color_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment"){
-        color_by <- getCovariates(object, color_by)
       }
-      else stop("'color_by' was specified but it was not recognised, please read the documentation")
-      # It is a vector of length N
+      
+    # It is a vector of length N
     } else if (length(color_by) > 1) {
       stopifnot(length(color_by) == ncol(Y))
       # color_by <- as.factor(color_by)
@@ -213,12 +212,9 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
       if (shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
         shape_by <- training_data[[viewidx]][shape_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment"){
-        shape_by <- getCovariates(object, shape_by)
       }
-      else stop("'shape_by' was specified but it was not recognised, please read the documentation")
-      # It is a vector of length N
-      # It is a vector of length N
+      
+    # It is a vector of length N
     } else if (length(shape_by) > 1) {
       stopifnot(length(shape_by) == ncol(Y))
     } else {
@@ -241,7 +237,6 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value", color = "color_by", shape = "shape_by")) + 
     geom_point() +
-    # ggbeeswarm::geom_quasirandom() +
     stat_smooth(method="lm", color="blue", alpha=0.5) +
     facet_wrap(~feature, scales="free_y") +
     scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
@@ -301,12 +296,10 @@ plot_data_overview <- function(object, colors = NULL) {
   names(colors) <- views_names(object)
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  ovw.mx <- sapply(training_data, function(datgr) 
-    sapply(datgr, function(dat) 
-      apply(dat, 2, function(s) 
-        !all(is.na(s)))))
+  ovw.mx <- sapply(training_data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
 
   ovw <- as.data.frame(ovw.mx)
+  # ovw$group <- groups_names(object)
   ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = P) )
   
   # Remove samples with no measurements

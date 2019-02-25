@@ -46,7 +46,6 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   }
 
   # Get relevant data
-  # W <- getExpectations(object,"W")[[view]][features,factors]
   W <- get_weights(object, views=view, factors=factors)[[1]][features,]
   
 
@@ -123,6 +122,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
   # Set color
   colorLegend <- T
   if (!is.null(color_by)) {
+    
     # It is the name of a covariate or a feature in the TrainData
     if (length(color_by) == 1 & is.character(color_by)) {
       if(name_color=="") name_color <- color_by
@@ -131,10 +131,8 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
       if(color_by %in% Reduce(union, features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
         color_by <- training_data[[viewidx]][[1]][color_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment"){
-        color_by <- getCovariates(object, color_by)
-    }
-    else stop("'color_by' was specified but it was not recognised, please read the documentation")
+      }
+      
     # It is a vector of length N
     } else if (length(color_by) > 1) {
       stopifnot(length(color_by) == N)
@@ -150,19 +148,17 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
   # Set shape
   shapeLegend <- T
   if (!is.null(shape_by)) {
+    
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
       if(name_shape=="") name_shape <- shape_by
       features_names <- features_names(object)
       training_data <- get_training_data(object)
-      if(shape_by %in% Reduce(union,features_names)) {
+      if (shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
         shape_by <- training_data[[viewidx]][[1]][shape_by,]
-      } else if(class(object@input_data) == "MultiAssayExperiment"){
-        shape_by <- getCovariates(object, shape_by)
-    }
-    else stop("'shape_by' was specified but it was not recognised, please read the documentation")
-    # It is a vector of length N
+      }
+
     # It is a vector of length N
     } else if (length(shape_by) > 1) {
       stopifnot(length(shape_by) == N)
@@ -253,7 +249,6 @@ plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, ma
   # if(!is.null(manual)) { stopifnot(class(manual)=="list"); stopifnot(all(Reduce(intersect, manual) %in% features_names(object)[[view]]))  }
   
   # Collect expectations  
-  # W <- getExpectations(object,"W", as.data.frame = T)
   W <- get_weights(object,views=view, factors=factor, as.data.frame = T)
   W <- W[W$factor%in%factor & W$view%in%view,]
   
@@ -288,9 +283,8 @@ plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, ma
     } else {
       stopifnot(length(color_manual)==length(manual)) 
     }
-    for (m in 1:length(manual)) {
+    for (m in 1:length(manual))
       W$group[W$feature %in% manual[[m]]] <- as.character(m+1)
-    }
   }
   
   # Sort by weight 

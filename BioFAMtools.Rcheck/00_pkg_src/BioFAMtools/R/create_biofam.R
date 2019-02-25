@@ -10,12 +10,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   
   if (is(data, "MultiAssayExperiment")) {
     stop("Not functional")
-    # message("Creating BioFAM object from a MultiAssayExperiment object...")
-    # object <- .createBioFAMobjectFromMAE(data)
 
-  } else if (is(data, "SummarizedExperiment")) {
-    stop("Not functional")
-    
   } else if (is(data, "seurat")) {
     message("Creating BioFAM object from a Seurat object...")
     
