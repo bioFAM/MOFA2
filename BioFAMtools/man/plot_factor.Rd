@@ -7,7 +7,7 @@
 plot_factor(object, factors = "all", group_by = "group",
   add_dots = TRUE, add_violin = TRUE, show_missing = TRUE,
   dot_size = 1, color_by = NULL, color_name = "", shape_by = NULL,
-  alpha = 0.25, shape_name = "", rasterize = FALSE)
+  alpha = 0.25, shape_name = "", rasterize = FALSE, dodge = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}

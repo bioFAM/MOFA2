@@ -34,7 +34,7 @@
 #' @import grDevices
 #' @export
 plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TRUE, add_violin=TRUE, show_missing = TRUE, dot_size = 1,
-                                 color_by = NULL, color_name = "", shape_by = NULL, alpha=0.25, shape_name = "", rasterize = FALSE) {
+                                 color_by = NULL, color_name = "", shape_by = NULL, alpha=0.25, shape_name = "", rasterize = FALSE, dodge=FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -82,18 +82,29 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
       legend.key = element_blank()
     ) 
   
-  dodge <- position_dodge(width = 1)
   if (add_dots) {
     if (rasterize) {
-      p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position=dodge, dodge.width=1)
+      if (dodge) {
+        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position=position_dodge(width = 1), dodge.width=1)
+      } else {
+        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size)
+      }
     } else {
-      p <- p + geom_jitter(size=dot_size, position=dodge, dodge.width=1)
+      if (dodge) {
+        p <- p + ggbeeswarm::geom_quasirandom(size=dot_size, position=position_dodge(width = 1), dodge.width=1)
+      } else {
+        p <- p + ggbeeswarm::geom_quasirandom(size=dot_size)
+        
+      }
     }
   }
   if (add_violin) {
-    p <- p + 
-      geom_violin(aes(fill=color_by), alpha=alpha, trim=F, scale="width", position=dodge) +
-      scale_fill_discrete(guide = FALSE)
+    if (dodge) {
+      p <- p + geom_violin(aes(fill=color_by), color="black", alpha=alpha, trim=F, scale="width", position=position_dodge(width = 1)) +
+        scale_fill_discrete(guide = FALSE)
+    } else {
+      p <- p + geom_violin(color="black", fill="grey", alpha=alpha, trim=F, scale="width")
+    }
   }
   
   # If 'color_by' is numeric, define the default gradient
@@ -177,9 +188,9 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   df <- magrittr::set_colnames(df,c(colnames(df)[1:4],"x","y"))
   
   # Generate plot  
-  p <- ggplot(df, aes(x = x, y = y)) + 
-    # geom_point(aes(color = color_by, shape = shape_by)) + 
-    ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
+  p <- ggplot(df, aes(x=x, y=y)) + 
+    geom_point(aes(color = color_by, shape = shape_by)) +
+    # ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
       axis.text = element_text(size = rel(1), color = "black"), 
@@ -249,7 +260,7 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   
   # Prepare the legend
   p <- ggplot(df, aes_string(x=factors[1], y=factors[2], color="color_by", shape="shape_by")) +
-    geom_point()
+    geom_point(size = dot_size)
   if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color = FALSE) }
   if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
   if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
@@ -262,8 +273,7 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
     lower = list(continuous="points"), diag=list(continuous='blankDiag'), upper=list(continuous='points'),
     mapping = aes(color=color_by, shape=shape_by), 
     title = "", 
-    legend = legend,
-    size = dot_size
+    legend = legend
     )
 
   p <- p + theme_bw() +

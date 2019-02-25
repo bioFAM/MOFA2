@@ -59,17 +59,6 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
     object@model_options <- model_options
   }
   
-  # Store views as matrices in .txt files
-  # message(sprintf("Storing input views in %s...", dir_options$data_dir))
-  # for(view in viewNames(object)) {
-  #   write.table(t(object@training_data[[view]]), file=file.path(dir_options$data_dir, paste0(view,".txt")),
-  #               sep="\t", row.names=T, col.names=T, quote=F)
-  # }
-  
-  # If output already exists, remove it
-  # if (file.exists(dir_options$outfile))
-  #   file.remove(dir_options$outfile)
-  
   return(object)
 }
 
@@ -157,14 +146,19 @@ get_default_data_options <- function(object) {
 get_default_model_options <- function(object) {
   
   # Sanity checks
-  # TO-DO: RATHER THAN CHECKING IF SLOT EXISTS, WE NEED TO CHECK THAT THE IS NOT AN EMPTY LIST()
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  if (!.hasSlot(object,"dimensions") | length(object@dimensions) == 0) stop("dimensions of object need to be defined before getting the model options")
-  if (!.hasSlot(object,"input_data")) stop("input_data slot needs to be specified before getting the model options")
+  if (!.hasSlot(object,"dimensions") | length(object@dimensions) == 0) 
+    stop("dimensions of object need to be defined before getting the model options")
+  if (.hasSlot(object,"input_data")) {
+    if (length(object@input_data)==0) stop("input_data slot is empty")
+  } else {
+    stop("input_data slot not found")
+  }
   
   # Guess likelihoods from the data
   # likelihood <- .infer_likelihoods(object) THIS DOES NOT WORK 
   likelihood <- rep(x="gaussian", times=object@dimensions$M)
+  names(likelihood) <- views_names(object)
   
   # Define default model options
   model_options <- list(
@@ -181,4 +175,88 @@ get_default_model_options <- function(object) {
     model_options <- modifyList(model_options, object@model_options)
   
   return(model_options)
+}
+
+
+
+
+
+
+
+#' @title regress out a covariate from the training data
+#' @name regress_covariate
+#' @description Function to regress out a covariate from the training data.\cr
+#' If you have technical sources of variability (i.e. batch effects) that you do not want to be captured by factors in the model, 
+#' you should regress them out before fitting MOFA. This function performs a simple linear regression model, extracts the residuals,
+#' and replaces the original data in the TrainingData slot. \cr
+#' Why is this important? If big technical factors exist, the model will "focus" on capturing the variability driven by these factors, and smaller sources of variability could be missed. \cr
+#' But... can we not simply add those covariates to the model? Technically yes, but we extensively tested this functionality and it was not yielding good results. \cr 
+#' The reason is that covariates are usually discrete labels that do not reflect the underlying molecular biology. 
+#' For example, if you introduce age as a covariate, but the actual age is different from the "molecular age", 
+#' the model will simply learn a new factor that corresponds to this "latent" molecular age, and it will drop the covariate from the model.\cr
+#' We recommend factors to be learnt in a completely unsupervised manner and subsequently relate them to the covariates via visualisation or via a simple correlation analysis (see our vignettes for more details).
+#' @param object an untrained \code{\link{MOFAmodel}}
+#' @param views the view(s) to regress out the covariates.
+#' @param covariates a vector (one covariate) or a data.frame (for multiple covariates) where each row corresponds to one sample, sorted in the same order as in the input data matrices. 
+#' You can check the order by doing sampleNames(MOFAobject). If required, fill missing values with \code{NA}, which will be ignored when fitting the linear model.
+#' @return Returns an untrained \code{\link{MOFAmodel}} where the specified covariates have been regressed out in the training data.
+#' @importFrom stats lm
+#' @export
+regressCovariate <- function(object, covariates, min_observations = 5) {
+
+  # First round of sanity checks
+  if (!is(object, "BioFAModel")) 
+    stop("'object' has to be an instance of BioFAModel")
+  if (length(object@input_data)==0)
+    stop("Input data has not been provided")
+  
+  # Fetch data
+  views <- names(covariates)
+  groups <- names(covariates[[1]])
+  Y <- sapply(object@input_data[views], function(x) x[groups], simplify=F, USE.NAMES=T)
+  # Y <- get_input_data(object, views=views, groups=groups)
+  
+  # Second round of sanity checks
+  if (any(object@model_options$likelihood[views]!="gaussian")) 
+    stop("Some of the specified views contains discrete data. \nRegressing out covariates only works in views with continuous (gaussian) data")
+  
+  
+  # samples <- sapply(Y, function(x) colnames(x), simplify=F, USE.NAMES=T)
+  # samples <- lapply(Y,colnames)
+  # all_samples <- sampleNames(object)
+  
+  # Prepare data.frame with covariates
+  if (!is(covariates,"list"))
+    stop("Covariates has to be a list of vectors (for one covariate) or a list of data.frames (for multiple covariates")
+  for (m in names(covariates)) {
+    for (g in names(covariates[[m]])) {
+      if (!is(covariates[[m]][[g]],"data.frame"))
+        covariates[[m]][[g]] <- data.frame(x=covariates[[m]][[g]])
+      stopifnot(nrow(covariates[[m]][[g]])==object@dimensions$N[g])
+    }
+  }
+  
+  Y_regressed <- list()
+  for (m in views) {
+    Y_regressed[[m]] <- list()
+    for (g in groups) {
+      if (any(rowSums(!is.na(Y[[m]][[g]]))<min_observations) ) stop(sprintf("Some features do not have enough observations (N=%s) to fit the linear model",min_observations))
+      Y_regressed[[m]][[g]] <- t( apply(Y[[m]][[g]], 1, function(y) {
+        
+        # Fit linear model
+        df <- cbind(y,covariates[[m]][[g]])
+        lm.out <- lm(y~., data=df)
+        residuals <- lm.out[["residuals"]]+lm.out[["coefficients"]][1]
+        
+        # Fill missing values
+        all_samples <- rownames(Y[[m]][[g]])
+        missing_samples <- all_samples[!all_samples %in% names(residuals)]
+        residuals[missing_samples] <- NA
+        residuals[all_samples]
+      }))
+    }
+  }
+  object@input_data[views] <- Y_regressed
+  
+  return(object)
 }
