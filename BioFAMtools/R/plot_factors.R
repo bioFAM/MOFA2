@@ -64,17 +64,17 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
     facet_wrap(~factor, scales="free") +
     ylab("Factor value") + xlab("") +
     theme(
-      axis.text.y = element_text(size = rel(1.5), color = "black"),
-      axis.title.y = element_text(size = rel(1.5), color = "black"),
-      axis.line = element_line(color = "black", size = 0.4),
+      axis.text = element_text(size = rel(1.1), color = "black"),
+      axis.title.y = element_text(size = rel(1.1), color = "black"),
+      axis.line = element_line(color = "black", size = 0.5),
       axis.ticks.length = unit(0.25,"cm"),
       axis.ticks = element_line(color = "black"),
       panel.border = element_blank(), 
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(), 
       panel.background = element_blank(),
-      legend.title=element_text(size=20, hjust=0.5, color="black"),
-      legend.text=element_text(size=18, hjust=0.5, color="black"),
+      legend.title = element_text(size=rel(1.1), hjust=0.5, color="black"),
+      legend.text = element_text(size=rel(1.1), hjust=0, color="black"),
       legend.position = "right", 
       legend.direction = "vertical",
       legend.key = element_blank()
@@ -101,7 +101,8 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   # Add violin plot
   if (add_violin) {
     if (dodge) {
-      if (min(table(df$color_by))==1) {
+      tmp <- summarise(group_by(df, factor, color_by), n=n())
+      if (min(tmp$n)==1) {
         warning("Warning: some 'color_by' groups have only one observation, violin plots are not displayed")
       } else {
         p <- p + geom_violin(aes(fill=color_by), color="black", alpha=alpha, trim=F, scale="width", position=position_dodge(width = 1))
@@ -118,14 +119,14 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   
   # Add legend for color
   if (length(unique(df$color))>1) { 
-    p <- p + labs(color=color_name) + theme(legend.text.align = 0)
+    p <- p + labs(color=color_name)
   } else { 
     p <- p + guides(color = FALSE) 
   }
   
   # Add legend for shape
   if (length(unique(df$shape))>1) { 
-    p <- p + labs(shape=shape_name) + theme(legend.text.align = 0)
+    p <- p + labs(shape=shape_name)
   } else { 
     p <- p + guides(shape = FALSE) 
   }
@@ -208,10 +209,8 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
     # ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
-      axis.text = element_text(size = rel(1), color = "black"), 
-      axis.title = element_text(size = 16), 
-      axis.title.y = element_text(size = rel(1.1), margin = margin(0, 10, 0, 0)), 
-      axis.title.x = element_text(size = rel(1.1), margin = margin(10, 0, 0, 0)), 
+      axis.text = element_text(size = rel(1.0), color = "black"), 
+      axis.title = element_text(size = rel(1.1)), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5),
       panel.border = element_blank(), 
@@ -219,8 +218,8 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
       panel.grid.minor = element_blank(), 
       panel.background = element_blank(),
       legend.key = element_rect(fill = "white"),
-      legend.text = element_text(size = 16),
-      legend.title = element_text(size =16)
+      legend.text = element_text(size=rel(1.2)),
+      legend.title = element_text(size=rel(1.2))
     )
   
   # If color is numeric, define the default gradient
@@ -229,14 +228,14 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   
   # Add legend for color
   if (length(unique(df$color))>1) { 
-    p <- p + labs(color=color_name) + theme(legend.text.align = 0)
+    p <- p + labs(color=color_name)
   } else { 
     p <- p + guides(color = FALSE) 
   }
   
   # Add legend for shape
   if (length(unique(df$shape))>1) { 
-    p <- p + labs(shape=shape_name) + theme(legend.text.align = 0)
+    p <- p + labs(shape=shape_name)
   } else { 
     p <- p + guides(shape = FALSE) 
   }
