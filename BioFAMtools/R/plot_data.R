@@ -290,28 +290,41 @@ plot_data_overview <- function(object, colors = NULL) {
     palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
                  "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
                  "#A65628", "#F781BF", "#1B9E77")
-    if (M<17) colors <- palette[1:M] else colors <- rainbow(M)
+    if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
   }
-  if (length(colors)!=M) stop("Length of 'colors' does not match the number of views")
+  if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
   names(colors) <- views_names(object)
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  ovw.mx <- sapply(training_data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
+  ovw.mx <- lapply(training_data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
 
-  ovw <- as.data.frame(ovw.mx)
-  # ovw$group <- groups_names(object)
-  ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = P) )
+  # ovw <- as.data.frame(ovw.mx)
+  # # ovw$group <- groups_names(object)
+  # ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = P) )
+
+  # samples: unlist(samples_names(object), use.names = FALSE)
+  # samples_groups: samples_groups(object)$group
+  # feaures names: unlist(features_names(object), use.names=F)
+  ovw <- do.call(cbind, lapply(1:M, function(m) {
+    do.call(rbind, lapply(ovw.mx[[m]], as.data.frame))
+  }))
+  rownames(ovw) <- unlist(samples_names(object), use.names = FALSE)
+  colnames(ovw) <- views_names(object)
+
+  ovw$sample <- rownames(ovw)
+  ovw$group  <- samples_groups(object)$group
+
   
   # Remove samples with no measurements
-  ovw <- ovw[apply(ovw, 1, any),, drop=FALSE]
-  if (is.null(rownames(ovw))) rownames(ovw) <- as.character(1:nrow(ovw))
+  # ovw <- ovw[apply(ovw, 1, any),, drop=FALSE]
+  # if (is.null(rownames(ovw))) rownames(ovw) <- as.character(1:nrow(ovw))
   
   # Melt to data.frame
-  ovw <- cbind(ovw, sample = rownames(ovw))
+  # ovw <- cbind(ovw, sample = rownames(ovw))
   molten_ovw <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
   
   # order samples
-  molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw)[order(rowSums(ovw.mx), decreasing = T)])
+  molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw))
 
   n <- length(unique(molten_ovw$sample))
   
@@ -328,7 +341,7 @@ plot_data_overview <- function(object, colors = NULL) {
     geom_tile(width=0.7, height=0.9, col="black") +
     # geom_text(data=filter(molten_ovw, sample==levels(molten_ovw$sample)[1]),
     #           aes(x=levels(molten_ovw$sample)[n/2],label=ntotal), size=6) +
-    scale_fill_manual(values = c('missing'="grey", colors)) +
+    scale_fill_manual(values = c("missing"="grey", colors)) +
     # ggtitle("Samples available for training") +
     xlab(paste0("Samples (n=", n, ")")) + ylab("") +
     guides(fill=F) + 
