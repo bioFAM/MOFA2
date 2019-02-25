@@ -63,14 +63,12 @@ create_biofam <- function(data, samples_groups = NULL) {
     object@status <- "untrained" # define status as untrained
     object@input_data <- .split_data_into_groups(data, samples_groups) # pass input data
     
-    
     # Set dimensionalities
     object@dimensions[["M"]] <- length(data)
     object@dimensions[["P"]] <- length(groups_names)
     object@dimensions[["D"]] <- sapply(data, function(m) ncol(m))
     object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(samples_groups == x))
     object@dimensions[["K"]] <- 0
-
 
     # Set features names
     for (m in 1:length(data)) {
@@ -92,8 +90,11 @@ create_biofam <- function(data, samples_groups = NULL) {
       }
     }
     
+    # Set view names
+    views_names(object) <- names(object@input_data)
+
     # Set samples group names
-    groups_names(object) <- groups_names
+    groups_names(object) <- names(object@input_data[[1]])
     
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame (long format), or a suerat object.")
