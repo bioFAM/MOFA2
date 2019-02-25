@@ -386,6 +386,9 @@ biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x 
 
   # Calculate percentage of missing values in every view and every group
   content_pct <- lapply(object@input_data, function(view) sapply(view, function(group) sum(is.na(group))))
+  if (length(content_pct) == 0) {
+    content_pct <- lapply(object@training_data, function(view) sapply(view, function(group) sum(is.na(group))))
+  }
   content_pct <- lapply(1:length(content_pct), function(m) {
     paste0(as.character(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100), sep = "%")
   })
