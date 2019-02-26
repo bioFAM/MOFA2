@@ -10,7 +10,7 @@ from biofam.core.nodes import *
 
 
 class saveModel():
-    def __init__(self, model, outfile, data, samples_groups, train_opts, model_opts, features_names, views_names, samples_names):
+    def __init__(self, model, outfile, data, samples_groups, train_opts, model_opts, features_names, views_names, samples_names, compression_level=9):
 
         # Check that the model is trained
         assert model.trained, "Model is not trained"        
@@ -18,7 +18,7 @@ class saveModel():
 
         # Initialise hdf5 file
         self.hdf5 = h5py.File(outfile,'w')
-
+        self.compression_level = compression_level
         # Initialise training data
         self.data = data
 
@@ -35,6 +35,8 @@ class saveModel():
         self.samples_names = samples_names
         self.features_names = features_names
         self.groups_names = set(samples_groups)
+
+
 
     def saveData(self):
         """ Method to save the training data"""
@@ -61,7 +63,7 @@ class saveModel():
             view_subgrp = data_grp.create_group(self.views_names[m])
             for g in self.groups_names:
                 samples_idx = np.where(np.array(self.samples_groups) == g)[0]
-                view_subgrp.create_dataset(g, data=self.data[m][samples_idx,:])
+                view_subgrp.create_dataset(g, data=self.data[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
 
     def saveExpectations(self, nodes="all"):
 
@@ -107,11 +109,11 @@ class saveModel():
                             # create hdf5 data set for the expectation
                             samp_indices = np.where(np.array(self.samples_groups) == g)[0]
 
-                            view_subgrp.create_dataset(g, data=exp[m][samp_indices,:])
+                            view_subgrp.create_dataset(g, data=exp[m][samp_indices,:], compression="gzip", compression_opts=self.compression_level)
 
                     # Single-groups nodes (W)
                     else:
-                        node_subgrp.create_dataset(self.views_names[m], data=exp[m].T)
+                        node_subgrp.create_dataset(self.views_names[m], data=exp[m].T, compression="gzip", compression_opts=self.compression_level)
 
             # Single-view nodes
             else:
@@ -120,11 +122,11 @@ class saveModel():
                 if n in multigroup_nodes:
                     for g in self.groups_names:
                         samp_indices = np.where(np.array(self.samples_groups) == g)[0]
-                        node_subgrp.create_dataset(g, data=exp[samp_indices,:].T)
+                        node_subgrp.create_dataset(g, data=exp[samp_indices,:].T, compression="gzip", compression_opts=self.compression_level)
 
                 # Single-group nodes
                 else:
-                    node_subgrp.create_dataset("E", data=exp.T)
+                    node_subgrp.create_dataset("E", data=exp.T, compression="gzip", compression_opts=self.compression_level)
 
         pass
 

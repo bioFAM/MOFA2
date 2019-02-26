@@ -115,7 +115,9 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
         if (on_disk) {
           expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
         } else {
-          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
+          # expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
+          tryCatch(expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p)), 
+                   error = function(e) { expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]] })
         }
       }
     }
@@ -179,7 +181,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     object@model_options <- as.list(h5read(file, 'model_options', read.attributes=T))
   }, error = function(x) { print("Model options not found, not loading it...") })
 
-  # Convert True/FalsesStrings to logical values
+  # Convert True/False strings to logical values
   for (opt in names(object@model_options)) {
     if (object@model_options[opt] == "False" | object@model_options[opt] == "True") {
       object@model_options[opt] <- as.logical(object@model_options[opt])

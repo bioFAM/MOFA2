@@ -1,3 +1,31 @@
+##########
+## Plot ##
+##########
+
+#' @name plot
+#' @rdname plot
+#' @export
+setGeneric("plot", function(object) { standardGeneric("plot") })
+
+
+#' @rdname plot
+#' @param object a \code{\link{BioFAM}} object.
+#' @export
+setMethod("plot", signature(object="BioFAModel"), 
+          function(object) {
+            if (object@status=="trained") {
+              plot_data_overview(object)  
+            } else if (object@status=="trained") {
+              stop("Not implemented")
+              # p1 <- plot_data_overview(object)  
+              # p2 <- plot_variance_explained(object)
+              # p <- cowplot::plot_grid(plotlist=list(p1,p2), ncol=2, nrow=1)
+              # return(p)
+            } else {
+              stop("Status of the model (trained or untrained) not recognised")
+            }
+          }
+)
 
 ##################
 ## Factor Names ##

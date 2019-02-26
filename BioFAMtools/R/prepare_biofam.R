@@ -228,12 +228,14 @@ get_default_model_options <- function(object) {
     }
   }
   
+  print("Regressing out the specified covariates...")
+  
   Y_regressed <- list()
   for (m in views) {
     Y_regressed[[m]] <- list()
     for (g in groups) {
       if (any(rowSums(!is.na(Y[[m]][[g]]))<min_observations) ) stop(sprintf("Some features do not have enough observations (N=%s) to fit the linear model",min_observations))
-      Y_regressed[[m]][[g]] <- t( apply(Y[[m]][[g]], 2, function(y) {
+      Y_regressed[[m]][[g]] <- apply(Y[[m]][[g]], 2, function(y) {
         
         # Fit linear model
         df <- cbind(y,covariates[[m]][[g]])
@@ -245,7 +247,7 @@ get_default_model_options <- function(object) {
         missing_samples <- all_samples[!all_samples %in% names(residuals)]
         residuals[missing_samples] <- NA
         residuals[all_samples]
-      }))
+      })
     }
   }
   object@input_data[views] <- Y_regressed

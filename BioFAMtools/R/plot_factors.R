@@ -173,7 +173,8 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
     do.call(plot_factor_beeswarm, .args)   
   } else if (length(factors)>2) {
     .args <- as.list(match.call()[-1])
-    do.call(.plot_multiple_factors, .args)
+    p <- do.call(.plot_multiple_factors, .args)
+    return(p)
   }
   
   # Get factors
@@ -210,7 +211,7 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
       axis.text = element_text(size = rel(1.0), color = "black"), 
-      axis.title = element_text(size = rel(1.1)), 
+      axis.title = element_text(size = rel(1.3)), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5),
       panel.border = element_blank(), 
@@ -247,8 +248,8 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
 
   
 # Plot multiple factors as pairwise scatterplots
-.plot_multiple_factors <- function(object, factors = "all", show_missing=TRUE, dot_size=1,
-                                   color_by=NULL, color_name="", shape_by=NULL, shape_name="") {
+.plot_multiple_factors <- function(object, factors = "all", show_missing = TRUE, dot_size = 1,
+                                   color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -284,7 +285,12 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   
   # Prepare the legend
   p <- ggplot(df, aes_string(x=factors[1], y=factors[2], color="color_by", shape="shape_by")) +
-    geom_point(size = dot_size)
+    geom_point() +
+    theme(
+      legend.key = element_rect(fill = "white"),
+      legend.text = element_text(size=rel(1.2)),
+      legend.title = element_text(size=rel(1.2))
+    )
   if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color = FALSE) }
   if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
   if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
@@ -294,20 +300,14 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   # Generate plot
   p <- GGally::ggpairs(df, 
     columns = factors,
-    lower = list(continuous="points"), diag=list(continuous='blankDiag'), upper=list(continuous='points'),
+    lower = list(continuous=GGally::wrap("points", size=dot_size)), 
+    diag = list(continuous='blankDiag'), 
+    upper = list(continuous=GGally::wrap("points", size=dot_size)), 
     mapping = aes(color=color_by, shape=shape_by), 
     title = "", 
     legend = legend
     )
-
-  p <- p + theme_bw() +
-    theme(
-      plot.title = element_text(size = 16, hjust=0.5, color="black"),
-      axis.title = element_text(size = 10, color="black"),
-      axis.text = element_text(size = 9, color="black"),
-      legend.position = "right",
-      legend.direction = "vertical"
-    )
+  p <- p + theme_bw() + theme(axis.text = element_text(color="black", size=rel(0.75)))
   
   return(p)
 }

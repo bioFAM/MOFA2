@@ -504,43 +504,17 @@ class entry_point(object):
           model_opts=self.model_opts,
           samples_names=self.data_opts['samples_names'],
           features_names=self.data_opts['features_names'],
-          views_names=self.data_opts['views_names']
+          views_names=self.data_opts['views_names'],
+          compression_level = 9
         )
 
-        # tmp.saveExpectations(nodes="all")
-        tmp.saveExpectations(nodes=["Y","W","Z"])
+        # If all likelihoods are gaussian there is no need to save the expectations of Y, just saving the data is enough
+        if all([i=="gaussian" for i in self.model_opts["likelihoods"]]):
+            tmp.saveExpectations(nodes=["W","Z"])
+        else:
+            tmp.saveExpectations(nodes=["Y","W","Z"])
+
         tmp.saveModelOptions()
         tmp.saveTrainOptions()
         tmp.saveTrainingStats()
         tmp.saveData()
-
-if __name__ == '__main__':
-
-
-    ent = entry_point()
-
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_2.txt" ]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
-
-    # infiles = ["../run/test_data/with_nas/500_0.txt", "../run/test_data/with_nas/500_2.txt", "../run/test_data/with_nas/500_1.txt", "../run/test_data/with_nas/500_1.txt"]
-    # views =  ["view_A", "view_A", "view_B", "view_B"]
-    # groups = ["group_A", "group_B", "group_A", "group_B"]
-    # lik = ["zero_inflated", "gaussian"]
-
-    infiles = ["test_data/zero_inflations/zeros_0.3/0_0.txt"]
-    views =  ["view_A"]
-    groups = ["group_A"]
-    lik = ["zero_inflated"]
-
-    ent.set_data_options(lik, center_features_per_group=False, scale_features=False, scale_views=False, mask_zeros=False)
-    ent.set_data_from_files(infiles, views, groups, delimiter=" ", header_cols=False, header_rows=False)
-    ent.set_model_options(ard_z=False, sl_w=True , sl_z=False, ard_w=True, factors=10, likelihoods=lik)
-    ent.set_train_options(iter=10, tolerance=.000, dropR2=0.0, seed=4, elbofreq=1, verbose=1)
-    # ent.set_train_options(iter=100, tolerance=1., dropR2=0.0, seed=4, elbofreq=1, verbose=1, schedule=["Y","Z","AlphaZ","ThetaZ","W","AlphaW","ThetaW","Tau"])
-
-    ent.build()
-
-    ent.run()
-
-    # ent.save(out_file)
