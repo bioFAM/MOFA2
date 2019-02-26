@@ -8,3 +8,14 @@ test_that("a model can be created from a list of matrices", {
 	expect_error(create_biofam(m))
 })
 
+test_that("a model can be created from a Seurat object", {
+	library(Seurat)
+	m <- readMM(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/matrix.mtx?raw=true'))
+	genes <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/genes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
+	cells <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/barcodes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
+	colnames(m) <- cells
+	rownames(m) <- genes
+	srt <- Seurat::CreateSeuratObject(m)
+	expect_is(create_biofam(srt), "BioFAModel")
+})
+
