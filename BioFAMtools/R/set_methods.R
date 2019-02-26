@@ -44,8 +44,17 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 #' @return list of character vectors with the sample names for each group
 #' @export
 setMethod("samples_names", signature(object="BioFAModel"), 
-          function(object) { 
-            object@data_options$samples_names
+          function(object) {
+            # When the model is not trained, the samples slot is not initialized yet
+            if (!("samples" %in% object@data_options)) {
+              return(list())
+            }
+            # The default case when samples are initialized (trained model)
+            samples_list <- lapply(object@data_options$samples_groups, function(g) {
+              with(object@data_options$samples, object@data_options$samples[group_name == g, "sample_name"])
+            })
+            names(samples_list) <- object@data_options$samples_groups
+            return(samples_list)
           })
 
 #' @rdname samples_names
@@ -64,7 +73,14 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
                    if (!all(sapply(value, length) == sapply(object@training_data[[1]], ncol)))
                      stop("sample names do not match the dimensionality of the data (columns)")
                    
-                   object@data_options$samples_names <- value
+                   value_groups <- rep(names(value), lengths(value))
+
+                   object@data_options$samples$sample_name <- unlist(value, use.names = FALSE)
+                   object@data_options$samples$group_name  <- value_groups
+
+                   if (class(object@data_options$samples) == "list") {
+                    object@data_options$samples <- data.frame(object@data_options$samples)
+                   }
                    
                    # Add samples names to the expectations matrices
                    object <- .set_expectations_names(object, entity = 'samples', value)
@@ -89,18 +105,56 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 #' @export
 setMethod("samples_groups", signature(object="BioFAModel"), 
           function(object, format = "default") {
-            samples <- object@data_options$samples_names
-            tmp <- data.frame(sample = unlist(samples),
-                              group = rep(names(samples), sapply(samples, length)),
-                              row.names = c())
+            tmp <- data.frame(sample_name = object@data_options$samples$sample_name,
+                              group_name  = object@data_options$samples$group_name,
+                              row.names   = c())
             if (format == "pheatmap") {
-              rownames(tmp) <- unlist(samples)
-              tmp <- tmp[,"group", drop = FALSE]
+              rownames(tmp) <- tmp$sample_name
+              tmp <- tmp[,"group_name", drop = FALSE]
               colnames(tmp) <- "ID"
             }
             tmp
           })
 
+#######################################
+## Set and retriveve sample metadata ##
+#######################################
+
+#' @rdname samples
+#' @param object a \code{\link{BioFAModel}} object.
+#' @return a data frame with sample metadata
+#' @export
+setMethod("samples", signature(object="BioFAModel"), 
+          function(object) { 
+            object@data_options$samples
+          })
+
+#' @rdname samples
+#' @param value data frame with sample information, has to contain columns sample_name and group_name
+#' @import methods
+#' @export
+setReplaceMethod("samples", signature(object="BioFAModel", value="data.frame"), 
+                 function(object, value) {
+                   if (!methods::.hasSlot(object, "training_data") | length(object@training_data) == 0 | length(object@training_data[[1]]) == 0)
+                     stop("Before assigning samples metadata you have to assign the training data")
+                   if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                     stop("Before assigning samples metadata you have to assign the expectations")
+                   if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+                     if (nrow(value) != sum(object@dimensions[["N"]]))
+                       stop("Number of rows in samples metadata does not match the dimensionality of the model")
+                   if (nrow(value) != sum(sapply(object@training_data[[1]], ncol)))
+                     stop("sample names do not match the dimensionality of the data (columns)")
+                   if (!("sample_name" %in% colnames(value)))
+                     stop("Metadata has to contain the column sample_name")
+                   if (!("group_name" %in% colnames(value)))
+                     stop("Metadata has to contain the column group_name")
+                   if (colnames(value)[1] != "sample_name")
+                     message("Note that sample_name is currently not the first column of the samples metadata.")
+                   
+                   object@data_options$samples <- value
+                   
+                   object
+                 })
 
 #####################################
 ## Set and retrieve features names ##
@@ -211,7 +265,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
 
 #' @rdname groups_names
 #' @param object a \code{\link{BioFAModel}} object.
-#' @return character vector with the names for each view
+#' @return character vector with the names for each sample group
 #' @rdname groups_names
 #' @export
 setMethod("groups_names", signature(object="BioFAModel"), 
@@ -221,7 +275,7 @@ setMethod("groups_names", signature(object="BioFAModel"),
 
 
 #' @rdname groups_names
-#' @param value character vector with the names for each view
+#' @param value character vector with the names for each sample group
 #' @import methods
 #' @export
 setMethod("groups_names<-", signature(object="BioFAModel", value="character"), 
