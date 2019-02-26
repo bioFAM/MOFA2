@@ -46,7 +46,7 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 setMethod("samples_names", signature(object="BioFAModel"), 
           function(object) {
             # When the model is not trained, the samples slot is not initialized yet
-            if (!("samples" %in% object@data_options)) {
+            if (!("samples" %in% names(object@data_options))) {
               return(list())
             }
             # The default case when samples are initialized (trained model)
