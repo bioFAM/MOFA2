@@ -42,7 +42,7 @@ create_biofam <- function(data, samples_groups = NULL) {
     message("Creating BioFAM object from a list of matrices... make sure that features are stored in columns and samples in rows\n")
     
     # Quality controls
-    stopifnot(all(sapply(data, function(p) all(is.numeric(p)))))
+    stopifnot(all(sapply(data, function(g) all(is.numeric(g)))) || all(sapply(data, function(x) class(x) %in% c("dgTMatrix", "dgCMatrix"))))
     
     # Set samples groups
     if (is.null(samples_groups)) {
@@ -166,6 +166,12 @@ create_biofam <- function(data, samples_groups = NULL) {
                   paste0(colnames(srt@meta.data), sep = ", ")))
     samples_groups <- srt@meta.data[,samples_groups]
   }
+
+  if (is.null(samples_groups)) {
+    message("No samples_groups provided as argument... we assume that all samples are coming from the same group.\n")
+    samples_groups <- rep("group1", ncol(srt@data))
+  }
+
   data_matrices <- list("rna" = .split_seurat_into_groups(srt, samples_groups))
 
   object <- new("BioFAModel")
