@@ -74,15 +74,15 @@ create_biofam <- function(data, samples_groups = NULL) {
     for (m in 1:length(data)) {
       if (is.null(colnames(data[[m]]))) {
         warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d, feature2_v%d...", m, m, m))
-        for (g in 1:length(data[[m]])) {
-          colnames(data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@input_data[[m]][[g]]), "_v", m)
+        for (g in 1:length(object@input_data[[m]])) {
+          colnames(object@input_data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@input_data[[m]][[g]]), "_v", m)
         }
       }
     }
     
     # Set samples names
     for (g in 1:object@dimensions[["P"]]) {
-      if (is.null(rownames(data[[g]]))) {
+      if (is.null(rownames(object@input_data[[1]][[g]]))) {
         warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
         for (m in 1:object@dimensions[["M"]]) {
           rownames(object@input_data[[m]][[g]]) <- paste0("sample_", 1:nrow(object@input_data[[m]][[g]]), "_g", g)
