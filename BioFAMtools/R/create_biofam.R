@@ -43,6 +43,11 @@ create_biofam <- function(data, samples_groups = NULL) {
     
     # Quality controls
     stopifnot(all(sapply(data, function(g) all(is.numeric(g)))) || all(sapply(data, function(x) class(x) %in% c("dgTMatrix", "dgCMatrix"))))
+
+    # Make a dgCMatrix out of dgTMatrix
+    if (all(sapply(data, function(x) is(x, "dgTMatrix")))) {
+      data <- lapply(data, function(m) as(m, "dgCMatrix"))
+    }
     
     # Set samples groups
     if (is.null(samples_groups)) {
@@ -187,6 +192,7 @@ create_biofam <- function(data, samples_groups = NULL) {
 
   # Set views & groups names
   groups_names(object) <- as.character(names(data_matrices[[1]]))
+  views_names(object)  <- c("rna")
 
   return(object)
 }
@@ -207,13 +213,13 @@ create_biofam <- function(data, samples_groups = NULL) {
 
 .split_seurat_into_groups <- function(srt, samples_groups) {
   groups_names <- unique(samples_groups)
-  tmp <- lapply(groups_names, function(p) {
+  tmp <- lapply(groups_names, function(g) {
     # If group name is NA, it has to be treated separately
     # due to the way R handles NAs and equal signs
-    if (is.na(p)) {
+    if (is.na(g)) {
       t(srt@data[,is.na(samples_groups)])
     } else {
-      BiocGenerics::t(srt@data[,which(samples_groups == p)])
+      BiocGenerics::t(srt@data[,which(samples_groups == g)])
     }
   })
   names(tmp) <- groups_names
