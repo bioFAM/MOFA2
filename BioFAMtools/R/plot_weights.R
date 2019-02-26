@@ -102,7 +102,6 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(factors)==2)
-  stopifnot(all(factors %in% factors_names(object)))
 
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(all(view %in% views_names(object))) 
@@ -111,7 +110,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
   if(is.numeric(factors)) {
     factors <- factors_names(object)[factors]
   } else { 
-    stopifnot(factors %in% factors_names(object))
+    stopifnot(all(factors %in% factors_names(object)))
   }
   
   # Collect relevant data  
