@@ -73,7 +73,7 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   }
   
   # Regress out covariates
-  object <- .regress_covariates(object, covariates)
+  # object <- .regress_covariates(object, covariates)
   
   return(object)
 }
