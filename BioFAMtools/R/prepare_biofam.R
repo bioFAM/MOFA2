@@ -73,7 +73,17 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   }
   
   # Regress out covariates
-  object <- .regress_covariates(object, covariates)
+  # object <- .regress_covariates(object, covariates)
+
+  # Transform sparse matrices into dense ones
+  # See https://github.com/rstudio/reticulate/issues/72
+  for (m in views_names(object)) {
+    for (g in groups_names(object)) {
+      print("checking sparsity...")
+      if (class(object@input_data[[m]][[g]]) %in% c("dgCMatrix", "dgTMatrix"))
+        object@input_data[[m]][[g]] <- as(object@input_data[[m]][[g]], "matrix")
+    }
+  }
   
   return(object)
 }
