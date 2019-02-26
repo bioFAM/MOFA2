@@ -1,5 +1,6 @@
-context("Creating the model from different object")
+context("Creating the model from different objects")
 library(BioFAMtools)
+
 
 test_that("a model can be created from a list of matrices", {
 	m <- as.matrix(read.csv('matrix.csv'))
@@ -9,6 +10,7 @@ test_that("a model can be created from a list of matrices", {
 })
 
 test_that("a model can be created from a Seurat object", {
+	skip_if_not_installed("Seurat")
 	library(Seurat)
 	m <- readMM(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/matrix.mtx?raw=true'))
 	genes <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/genes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
