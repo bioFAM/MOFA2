@@ -134,6 +134,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features per feature_group (view)
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])                # number of factors
 
+
   # Assign sample and feature names (slow for large matrices)
   if (set_names) {
     

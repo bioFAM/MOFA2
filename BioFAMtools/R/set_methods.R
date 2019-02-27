@@ -46,14 +46,14 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 setMethod("samples_names", signature(object="BioFAModel"), 
           function(object) {
             # When the model is not trained, the samples slot is not initialized yet
-            if (!("samples" %in% names(object@data_options))) {
+            if (!("samples" %in% slotNames(object))) {
               return(list())
             }
             # The default case when samples are initialized (trained model)
-            samples_list <- lapply(object@data_options$samples_groups, function(g) {
-              with(object@data_options$samples, object@data_options$samples[group_name == g, "sample_name"])
+            samples_list <- lapply(object@samples$groups, function(g) {
+              with(object@samples$metadata, object@samples$metadata[group_name == g, "sample_name"])
             })
-            names(samples_list) <- object@data_options$samples_groups
+            names(samples_list) <- object@samples$groups
             return(samples_list)
           })
 
@@ -75,11 +75,11 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
                    
                    value_groups <- rep(names(value), lengths(value))
 
-                   object@data_options$samples$sample_name <- unlist(value, use.names = FALSE)
-                   object@data_options$samples$group_name  <- value_groups
+                   object@samples$metadata$sample_name <- unlist(value, use.names = FALSE)
+                   object@samples$metadata$group_name  <- value_groups
 
-                   if (class(object@data_options$samples) == "list") {
-                    object@data_options$samples <- data.frame(object@data_options$samples)
+                   if (class(object@samples$metadata) == "list") {
+                    object@samples$metadata <- data.frame(object@samples$metadata)
                    }
                    
                    # Add samples names to the expectations matrices
@@ -105,8 +105,8 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 #' @export
 setMethod("samples_groups", signature(object="BioFAModel"), 
           function(object, format = "default") {
-            tmp <- data.frame(sample_name = object@data_options$samples$sample_name,
-                              group_name  = object@data_options$samples$group_name,
+            tmp <- data.frame(sample_name = object@samples$metadata$sample_name,
+                              group_name  = object@samples$metadata$group_name,
                               row.names   = c())
             if (format == "pheatmap") {
               rownames(tmp) <- tmp$sample_name
@@ -126,7 +126,7 @@ setMethod("samples_groups", signature(object="BioFAModel"),
 #' @export
 setMethod("samples", signature(object="BioFAModel"), 
           function(object) { 
-            object@data_options$samples
+            object@samples
           })
 
 #' @rdname samples
@@ -151,7 +151,11 @@ setReplaceMethod("samples", signature(object="BioFAModel", value="data.frame"),
                    if (colnames(value)[1] != "sample_name")
                      message("Note that sample_name is currently not the first column of the samples metadata.")
                    
-                   object@data_options$samples <- value
+                   if (!methods::.hasSlot(object, "samples")) {
+                    slot(object, "samples", check = TRUE) <- value
+                   } else {
+                    object@samples <- value
+                   }
                    
                    object
                  })
@@ -270,7 +274,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
 #' @export
 setMethod("groups_names", signature(object="BioFAModel"), 
           function(object) {
-            object@data_options$samples_groups
+            object@samples$groups
           })
 
 
@@ -292,9 +296,9 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             nodes_types <- .get_nodes_types()
 
             # Set sample group names in data options
-            object@data_options$samples_groups <- value
-            if (!is.null(object@data_options$samples_names)) {
-              names(object@data_options$samples_names) <- value
+            object@samples$groups <- value
+            if (!is.null(object@samples$sample_name)) {
+              levels(object@samples$group_name) <- value
             }
               
             
