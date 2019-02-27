@@ -46,7 +46,7 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 setMethod("samples_names", signature(object="BioFAModel"), 
           function(object) {
             # When the model is not trained, the samples slot is not initialized yet
-            if (!("samples" %in% slotNames(object))) {
+            if (!("samples" %in% slotNames(object)) || !("metadata" %in% names(object@samples))) {
               return(list())
             }
             # The default case when samples are initialized (trained model)
@@ -126,7 +126,7 @@ setMethod("samples_groups", signature(object="BioFAModel"),
 #' @export
 setMethod("samples", signature(object="BioFAModel"), 
           function(object) { 
-            object@samples
+            object@samples$metadata
           })
 
 #' @rdname samples
@@ -151,11 +151,7 @@ setReplaceMethod("samples", signature(object="BioFAModel", value="data.frame"),
                    if (colnames(value)[1] != "sample_name")
                      message("Note that sample_name is currently not the first column of the samples metadata.")
                    
-                   if (!methods::.hasSlot(object, "samples")) {
-                    slot(object, "samples", check = TRUE) <- value
-                   } else {
-                    object@samples <- value
-                   }
+                   object@samples$metadata <- value
                    
                    object
                  })
