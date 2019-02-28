@@ -396,26 +396,27 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     
   # Option 1: by default group
   } else if (color_by[1] == "group") {
-    color_by = c()
-    for (group in names(samples_names(object))){
-      color_by <- c(color_by,rep(group,length(samples_names(object)[[group]])))
-    }
+    color_by <- samples_groups(x)$group_name
     
   # Option 2: by a feature present in the training data    
-  } else if (length(color_by) == 1 & is.character(color_by) & color_by[1]%in%unlist(features_names(object))) {
+  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
       training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
       features_names <- lapply(training_data, rownames)
       viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
       color_by <- training_data[[viewidx]][color_by,]
+    
+  # Option 3: by a metadata column in object@samples$metadata
+  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples(object)))) {
+      color_by <- samples(object)[,color_by]
         
-  # Option 3: input is a data.frame with columns (sample,color)
-  } else if (is(color_by,"data.frame")) {
-    stopifnot(all(colnames(color_by) %in% c("sample","color")))
+  # Option 4: input is a data.frame with columns (sample, color)
+  } else if (is(color_by, "data.frame")) {
+    stopifnot(all(colnames(color_by) %in% c("sample", "color")))
     stopifnot(all(unique(color_by$sample) %in% unlist(samples_names(model))))
     
-  # Option 4: color_by is a vector of length N
+  # Option 5: color_by is a vector of length N
   } else if (length(color_by) > 1) {
-    stopifnot(length(color_by) == sum(object@dimensions[["N"]]))
+    stopifnot(length(color_by) == sum(get_dimensions(object)$N))
     
   # Option not recognised
   } else {
