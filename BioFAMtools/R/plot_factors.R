@@ -454,8 +454,12 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("sample","color")))
     stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(model))))
+
+    # Option 3: by a metadata column in object@samples$metadata
+  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples(object)))) {
+      shape_by <- samples(object)[,shape_by]
     
-  # Option 3: shape_by is a vector of length N
+  # Option 4: shape_by is a vector of length N
   } else if (length(shape_by) > 1) {
     stopifnot(length(shape_by) == sum(object@dimensions[["N"]]))
     
