@@ -19,8 +19,12 @@ class saveModel():
         # Initialise hdf5 file
         self.hdf5 = h5py.File(outfile,'w')
         self.compression_level = compression_level
+
         # Initialise training data
         self.data = data
+
+        # Define masks
+        self.mask = [ x.mask for x in model.getNodes()["Y"].getNodes() ]
 
         # Initialise samples groups
         assert len(samples_groups) == data[0].shape[0], "length of samples groups does not match the number of samples in the data"
@@ -62,8 +66,14 @@ class saveModel():
         for m in range(len(self.data)):
             view_subgrp = data_grp.create_group(self.views_names[m])
             for g in self.groups_names:
+                # Subset group
                 samples_idx = np.where(np.array(self.samples_groups) == g)[0]
-                view_subgrp.create_dataset(g, data=self.data[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
+                tmp = self.data[m][samples_idx,:]
+
+                # Mask missing values
+                tmp[self.mask[m]] = np.nan
+                
+                view_subgrp.create_dataset(g, data=tmp, compression="gzip", compression_opts=self.compression_level)
 
     def saveExpectations(self, nodes="all"):
 
@@ -103,8 +113,7 @@ class saveModel():
                         for g in self.groups_names:
 
                             # Add missing values to Tau and Y nodes
-                            mask = nodes_dic["Y"].nodes[m].mask
-                            exp[m][mask] = np.nan
+                            exp[m][self.mask[m]] = np.nan
 
                             # create hdf5 data set for the expectation
                             samp_indices = np.where(np.array(self.samples_groups) == g)[0]

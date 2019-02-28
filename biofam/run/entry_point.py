@@ -496,15 +496,15 @@ class entry_point(object):
 
         # Save the model
         tmp = saveModel(
-          model=self.model,
-          outfile=outfile,
-          data=self.data,
-          samples_groups=self.data_opts['samples_groups'],
-          train_opts=self.train_opts,
-          model_opts=self.model_opts,
-          samples_names=self.data_opts['samples_names'],
-          features_names=self.data_opts['features_names'],
-          views_names=self.data_opts['views_names'],
+          model = self.model,
+          outfile = outfile,
+          data = self.data,
+          samples_groups = self.data_opts['samples_groups'],
+          train_opts = self.train_opts,
+          model_opts = self.model_opts,
+          samples_names = self.data_opts['samples_names'],
+          features_names = self.data_opts['features_names'],
+          views_names = self.data_opts['views_names'],
           compression_level = 9
         )
 
