@@ -240,6 +240,16 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   
   # Get expectations in single matrix or list of matrices (for multi-view nodes)
   exp <- object@expectations[[variable]]
+
+  # For memory and space efficiency, when using only gaussian likelihoods,
+  # Y expectations are not saved to the trained model file by default.
+  # Load training data in that case
+  if (variable == "Y") {
+    if ((length(object@expectations$Y) == 0) && all(object@model_options$likelihood == "gaussian")) {
+      message("Using training data slot as Y expectations since all the likelihoods are gaussian.")
+      exp <- object@training_data
+    }
+  }
   
   # Convert to long data frame
   if (as.data.frame) {

@@ -13,9 +13,9 @@ setGeneric("plot", function(object) { standardGeneric("plot") })
 #' @export
 setMethod("plot", signature(object="BioFAModel"), 
           function(object) {
-            if (object@status=="trained") {
+            if (object@status == "untrained") {
               plot_data_overview(object)  
-            } else if (object@status=="trained") {
+            } else if (object@status == "trained") {
               stop("Not implemented")
               # p1 <- plot_data_overview(object)  
               # p2 <- plot_variance_explained(object)
