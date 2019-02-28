@@ -284,13 +284,16 @@ plot_data_overview <- function(object, colors = NULL) {
   training_data <- object@training_data
   M <- get_dimensions(object)[["M"]]
   P <- get_dimensions(object)[["P"]]
+  if (M==1 & P==1) stop("This function is not useful when there is just one view and one group")
+  if (is.null(dim(training_data[[1]][[1]]))) stop("Training data not found")
   
   # Define colors  
   if (is.null(colors)) {
-    palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
-                 "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
-                 "#A65628", "#F781BF", "#1B9E77")
-    if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
+    colors <- rep("#5CACEE",M)
+    # palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
+    #              "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
+    #              "#A65628", "#F781BF", "#1B9E77")
+    # if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
   }
   if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
   names(colors) <- views_names(object)
@@ -330,31 +333,29 @@ plot_data_overview <- function(object, colors = NULL) {
   
   # Add number of samples and features per view/group
   molten_ovw$combi  <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
-  molten_ovw$ntotal <- paste("n=", sapply(training_data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
-  molten_ovw$ptotal <- paste("d=", sapply(training_data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
+  molten_ovw$ntotal <- paste("N=", sapply(training_data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
+  molten_ovw$ptotal <- paste("D=", sapply(training_data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
     
   # Define y-axis label
   molten_ovw <- mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
   
   # Plot
-  p <- ggplot(molten_ovw, aes(x=sample, y=view_label, fill=combi)) +
-    geom_tile(width=0.7, height=0.9, col="black") +
-    # geom_text(data=filter(molten_ovw, sample==levels(molten_ovw$sample)[1]),
-    #           aes(x=levels(molten_ovw$sample)[n/2],label=ntotal), size=6) +
+  p <- ggplot(molten_ovw, aes_string(x="sample", y="view_label", fill="combi")) +
+    geom_raster() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
-    # ggtitle("Samples available for training") +
-    xlab(paste0("Samples (n=", n, ")")) + ylab("") +
+    xlab(paste0("Samples (N=", n, ")")) + ylab("") +
     guides(fill=F) + 
-    facet_wrap(~group_label, scales="free") +
+    facet_wrap(~group_label, scales="free_x") +
     theme(
       panel.background = element_rect(fill="white"),
-      text = element_text(size=16),
+      text = element_text(size=14),
+      axis.line = element_blank(),
       axis.ticks = element_blank(),
       axis.text.x = element_blank(),
       axis.text.y = element_text(color="black"),
-      panel.grid = element_blank(),
-      plot.margin = unit(c(5.5,2,5.5,5.5), "pt")
-    ) 
+      strip.background = element_blank(),
+      panel.grid = element_blank()
+    )
   
   return(p)
 }

@@ -288,7 +288,10 @@ plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, ma
   
   # Sort by weight 
   W <- W[order(W$value),]
-  W$feature <- paste(W$view, W$feature, sep="_")
+  if (nfeatures>0 & any(duplicated(W$feature))) {
+    warning("Duplicated feature names across views, we will add the view name as a prefix")
+    W$feature <- paste(W$view, W$feature, sep="_")
+  }
   W$feature <- factor(W$feature, levels=W$feature)
   
   # Define plot title

@@ -107,17 +107,22 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   if ("Tau" %in% node_names)
     expectations[["Tau"]] <- h5read(file, "expectations/Tau") # TO-DO: DELAYEDARRAY
   
-  if ("Y" %in% node_names) {
-    expectations[["Y"]] <- list()
-    for (m in view_names) {
-      expectations[["Y"]][[m]] <- list()
-      for (p in group_names) {
-        if (on_disk) {
-          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
+  tmp <- as.list(h5read(file, 'model_options', read.attributes=T))[["likelihoods"]]
+  names(tmp) <- names(training_data)
+  
+  # Load expectations of Y
+  expectations[["Y"]] <- list()
+  for (m in view_names) {
+    expectations[["Y"]][[m]] <- list()
+    for (p in group_names) {
+      if (on_disk) {
+        expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
+      } else {
+        # expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
+        if (tmp[[m]]=="gaussian") {
+          expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]]
         } else {
-          # expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
-          tryCatch(expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p)), 
-                   error = function(e) { expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]] })
+          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
         }
       }
     }
