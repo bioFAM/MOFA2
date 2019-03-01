@@ -360,12 +360,16 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     }
     group_by = factor(group_by, levels=groups_names(object))
     
-    # Option 2: input is a data.frame with columns (sample,group)
+    # Option 2: by a metadata column in object@samples$metadata
+  } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples(object)))) {
+      group_by <- samples(object)[,group_by]
+
+    # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
     stopifnot(all(colnames(group_by) %in% c("sample","group")))
     stopifnot(all(unique(group_by$sample) %in% unlist(samples_names(model))))
     
-    # Option 3: group_by is a vector of length N
+    # Option 4: group_by is a vector of length N
   } else if (length(group_by) > 1) {
     stopifnot(length(group_by) == sum(object@dimensions[["N"]]))
     
