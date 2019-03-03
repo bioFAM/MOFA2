@@ -288,7 +288,7 @@ setReplaceMethod("features", signature(object="BioFAModel", value="data.frame"),
 #' @export
 setMethod("views_names", signature(object="BioFAModel"), 
           function(object) {
-            object@data_options$views_names
+            object@features$views
           })
 
 
@@ -310,9 +310,9 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             nodes_types <- .get_nodes_types()
             
             # Set view names in data options
-            object@data_options$views_names <- value
-            if (!is.null(object@data_options$features_names)) {
-              names(object@data_options$features_names) <- value 
+            object@features$views <- value
+            if (!is.null(object@features$metadata)) {
+              levels(object@features$metadata$view_name) <- value 
             }
             
             # Set view names in expectations
@@ -373,8 +373,8 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
 
             # Set sample group names in data options
             object@samples$groups <- value
-            if (!is.null(object@samples$sample_name)) {
-              levels(object@samples$group_name) <- value
+            if (!is.null(object@samples$metadata)) {
+              levels(object@samples$metadata$group_name) <- value
             }
               
             
