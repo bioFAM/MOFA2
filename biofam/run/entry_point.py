@@ -213,10 +213,6 @@ class entry_point(object):
         self.data_opts['features_names'] = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
         self.data_opts['samples_names'] = data["sample"].unique().tolist()
 
-        # Count the number of features per view and the number of samples per group
-        tmp_features = data[["feature","feature_group"]].drop_duplicates().groupby("feature_group")["feature"].nunique()
-        tmp_samples = data[["sample","sample_group"]].drop_duplicates().groupby("sample_group")["sample"].nunique()
-
         # Convert data frame to list of matrices
         data['feature'] = data['feature'].astype(str) + data['feature_group'].astype(str) # make sure there are no duplicated feature names before pivoting
         data_matrix = data.pivot(index='sample', columns='feature', values='value')
@@ -227,6 +223,7 @@ class entry_point(object):
         data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
         # Split into a list of views, each view being a matrix
+        tmp_features = data[["feature","feature_group"]].drop_duplicates().groupby("feature_group")["feature"].nunique()
         nfeatures = tmp_features.loc[self.data_opts['views_names']]
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
 
@@ -242,15 +239,21 @@ class entry_point(object):
         self.dimensionalities['P'] = len(self.data_opts['groups_names'])
         self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
 
+        # Count the number of features per view and the number of samples per group
+        tmp_samples = data[["sample","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["sample"].nunique()
+        tmp_features = data[["feature","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["feature"].nunique()
+
         # If everything successful, print verbose message
-        for m in self.data_opts['views_names']:
-            for g in self.data_opts['groups_names']:
-                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (m, g, tmp_samples[g], tmp_features[m]) )
+        for g in self.data_opts['groups_names']:
+            for m in self.data_opts['views_names']:
+                try:
+                    print("Loaded group='%s' view='%s' with N=%d samples and D=%d features..." % (g, m, tmp_samples[g][m], tmp_features[g][m]) )
+                except:
+                    print("No data found for group='%s', view='%s',..." % (g, m))
         print("\n")
 
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
-
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False

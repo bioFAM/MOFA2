@@ -223,7 +223,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   # Order factors in order of variance explained
   if (sort_factors) {
     object@cache[["variance_explained"]] <- calculate_variance_explained(object)
-    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e)))
+    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e,na.rm=T)))
     order_factors <- c(names(r2)[order(r2, decreasing = T)])
     object <- subset_factors(object, order_factors)
   }

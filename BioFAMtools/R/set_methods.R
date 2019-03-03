@@ -182,7 +182,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             }
             
             # Set view names in cache
-            if (!is.null(object@cache)) {
+            if (!is.null(object@cache$variance_explained)) {
               for (i in names(object@cache$variance_explained$r2_total)) {
                 names(object@cache$variance_explained$r2_total[[i]]) <- value
                 colnames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
@@ -252,7 +252,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             }
               
             # Set sample group names in cache
-            if (!is.null(object@cache)) {
+            if (!is.null(object@cache$variance_explained)) {
               names(object@cache$variance_explained$r2_total) <- value
               names(object@cache$variance_explained$r2_per_factor) <- value
             }
