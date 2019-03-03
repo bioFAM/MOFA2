@@ -74,6 +74,32 @@ setGeneric("features_names", function(object) { standardGeneric("features_names"
 #' @export
 setGeneric("features_names<-", function(object, value) { standardGeneric("features_names<-") })
 
+#############################
+## Features Groups (Views) ##
+#############################
+
+#' @title featurs_views: retrieve feature names and views
+#' @name features_views
+#' @rdname features_views
+#' @export
+setGeneric("features_views", function(object, format = "default") { standardGeneric("features_views") })
+
+######################
+## Feature Metadata ##
+######################
+
+#' @title features: retrieve feature metadata
+#' @name features
+#' @rdname features
+#' @export
+setGeneric("features", function(object, format = "default") { standardGeneric("features") })
+
+#' @name features
+#' @rdname features
+#' @aliases features<-
+#' @export
+setGeneric("features<-", function(object, value) { standardGeneric("features<-") })
+
 ################
 ## View Names ##
 ################
