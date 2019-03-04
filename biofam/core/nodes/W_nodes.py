@@ -7,6 +7,7 @@ import math
 from biofam.core.utils import *
 from biofam.core import gpu_utils
 
+from time import time
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
@@ -181,7 +182,10 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         ZZ_gpu = gpu_utils.array(Z["E2"])
 
         # precompute terms
-        tauY_gpu = gpu_utils.array(tau*Y).T
+        # tauY_gpu = gpu_utils.array(tau*Y).T
+        tauY_gpu = (tau_gpu*gpu_utils.array(Y)).T
+        
+
         foo = gpu_utils.asnumpy( gpu_utils.dot(ZZ_gpu.T, tau_gpu).T )
         term4_tmp1 = gpu_utils.asnumpy( gpu_utils.dot(tauY_gpu, Z_gpu) )
 
@@ -189,11 +193,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # Update each latent variable in turn
         for k in range(self.dim[1]):
-
-            # Copy matrices to GPU
-            # Zk_cp = gpu_utils.array(Z["E"][:,k])
-            # ZZk_cp = gpu_utils.array(Z["E2"][:,k])
-            # alphak_cp = gpu_utils.array(Alpha[:,k])
 
             # Compute terms
             term1 = (theta_lnE-theta_lnEInv)[:,k]

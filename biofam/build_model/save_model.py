@@ -71,7 +71,7 @@ class saveModel():
                 tmp = self.data[m][samples_idx,:]
 
                 # Mask missing values
-                tmp[self.mask[m]] = np.nan
+                tmp[self.mask[m][samples_idx,:]] = np.nan
                 
                 view_subgrp.create_dataset(g, data=tmp, compression="gzip", compression_opts=self.compression_level)
 
