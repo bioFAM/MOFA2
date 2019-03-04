@@ -263,6 +263,8 @@ plot_weights <- function(object, factors = "all", views = "all", nfeatures = 10,
   # Collect expectations  
   W <- get_weights(object, views = views, factors = factors, as.data.frame = T)
   W <- W[(W$factor %in% factors) & (W$view %in% views),]
+  # Convert factor names to a factor to preserve order
+  W$factor <- factor(W$factor, levels = unique(W$factor))
   
   # Scale values
   if (scale) W$value <- W$value / max(abs(W$value))
@@ -318,6 +320,8 @@ plot_weights <- function(object, factors = "all", views = "all", nfeatures = 10,
   # if(is.null(main)) main <- paste("Distribution of weigths of LF", factor, "in", view, "view")
   
   # Generate plot
+
+  # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
   
   gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group)) + 
