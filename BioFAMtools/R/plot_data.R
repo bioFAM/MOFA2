@@ -29,7 +29,8 @@
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 #' @import pheatmap
 #' @export
-plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, ...) {
+plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, 
+                              annotate_samples = NULL, annotate_features = NULL, ...) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -49,7 +50,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   }
 
   # Get weights
-  W <- get_weights(object)[[view]][,factor]
+  W <- do.call(rbind, get_weights(object, views=view, factors=factor, as.data.frame = F))
   
   # NOTE: By default concatenate all the groups
   Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
@@ -77,9 +78,9 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   # Define features
   if (class(features) == "numeric") {
     if (length(features) == 1) {
-      features <- names(tail(sort(abs(W)), n=features))
+      features <- rownames(W)[tail(order(abs(W)), n=features)]
     } else {
-      features <- names(sort(-abs(W))[features])
+      features <- rownames(W)[order(-abs(W))[features]]
     }
     stopifnot(all(features %in% features_names(object)[[view]]))  
   } else if (class(features) == "character") {
@@ -96,9 +97,34 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   
   # Transpose the data
   if (transpose) data <- t(data)
-  
-  # Plot heatmap
-  pheatmap::pheatmap(data, ...)
+
+
+
+  if (!is.null(annotate_samples) || !is.null(annotate_features)) {
+    ann_samples  <- NULL
+    ann_features <- NULL
+
+    # Use samples annotation
+    if (!is.null(annotate_samples)) {
+      stopifnot(annotate_samples %in% colnames(samples(object)))
+      ann_samples <- data.frame(ID = samples(object)$group_name)
+      rownames(ann_samples) <- samples(object)$sample_name
+    }
+
+    # Use features annotation
+    if (!is.null(annotate_features)) {
+      stopifnot(annotate_features %in% colnames(features(object)))
+      ann_features <- data.frame(ID = features(object)$view_name)
+      rownames(ann_features) <- features(object)$feature_name
+    }
+
+    # Plot heatmap with annotations
+    pheatmap::pheatmap(data, annotation_col = ann_samples, annotation_row = ann_features, ...)
+
+  } else {
+    # Plot heatmap
+    pheatmap::pheatmap(data, ...)
+  }
   
 }
 
