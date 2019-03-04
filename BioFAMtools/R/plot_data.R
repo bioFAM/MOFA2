@@ -435,12 +435,12 @@ biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x 
 
   for (m in 1:length(views_names(object))) {
     # browser()
-    toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, hat, collapse = igr_sp)))
-    midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, walls, collapse = igr_sp)))
+    toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, hat, collapse = igr_sp)))
+    midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, walls, collapse = igr_sp)))
     dfeatures_line <- .pad_left_with(lpad + s, 
-                                     paste(.insert_inside(content_pct[[m]], rep(walls, get_dimensions(object)$P)), collapse = igr_sp), 
+                                     paste(.insert_inside(content_pct[[m]], rep(walls, get_dimensions(object)$G)), collapse = igr_sp), 
                                      with = paste(c(views_names(object)[m], .cpaste(get_dimensions(object)$D[m], s)), collapse = ""))
-    botrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$P, ground, collapse = igr_sp)))
+    botrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, ground, collapse = igr_sp)))
 
     vis_lines      <- c(vis_lines, toprect_line, midrect_line, dfeatures_line, botrect_line)  
   }
