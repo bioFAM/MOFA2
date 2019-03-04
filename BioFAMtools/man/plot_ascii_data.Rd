@@ -4,12 +4,12 @@
 \alias{plot_ascii_data}
 \title{Visualize the structure of the data in the terminal}
 \usage{
-plot_ascii_data(object, plot_header = FALSE)
+plot_ascii_data(object, header = FALSE)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object}
 
-\item{plot_header}{a logical value specifying whether to show the BioFAM header.}
+\item{header}{a logical value specifying whether to show the BioFAM header.}
 }
 \description{
 A Fancy printing method
