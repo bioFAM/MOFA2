@@ -309,8 +309,8 @@ plot_data_overview <- function(object, colors = NULL) {
   # Collect relevant data
   training_data <- object@training_data
   M <- get_dimensions(object)[["M"]]
-  P <- get_dimensions(object)[["P"]]
-  if (M==1 & P==1) stop("This function is not useful when there is just one view and one group")
+  G <- get_dimensions(object)[["G"]]
+  if (M==1 & G==1) stop("This function is not useful when there is just one view and one group")
   if (is.null(dim(training_data[[1]][[1]]))) stop("Training data not found")
   
   # Define colors  
