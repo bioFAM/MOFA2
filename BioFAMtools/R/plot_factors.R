@@ -361,8 +361,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     group_by = factor(group_by, levels=groups_names(object))
     
     # Option 2: by a metadata column in object@samples$metadata
-  } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples(object)))) {
-      group_by <- samples(object)[,group_by]
+  } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples_metadata(object)))) {
+      group_by <- samples_metadata(object)[,group_by]
 
     # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
@@ -410,8 +410,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
       color_by <- training_data[[viewidx]][color_by,]
     
   # Option 3: by a metadata column in object@samples$metadata
-  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples(object)))) {
-      color_by <- samples(object)[,color_by]
+  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+      color_by <- samples_metadata(object)[,color_by]
         
   # Option 4: input is a data.frame with columns (sample, color)
   } else if (is(color_by, "data.frame")) {
@@ -460,8 +460,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(model))))
 
     # Option 3: by a metadata column in object@samples$metadata
-  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples(object)))) {
-      shape_by <- samples(object)[,shape_by]
+  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
+      shape_by <- samples_metadata(object)[,shape_by]
     
   # Option 4: shape_by is a vector of length N
   } else if (length(shape_by) > 1) {
