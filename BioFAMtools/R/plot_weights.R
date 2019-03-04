@@ -218,61 +218,68 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
 #' This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
 #' In contrast, the function \code{\link{plot_top_weights}} displays only the top features with highest loading.
 #' @param object a \code{\link{BioFAModel}} object.
-#' @param view character vector with the voiew name, or numeric vector with the index of the view to use.
-#' @param factor character vector with the factor name, or numeric vector with the index of the factor to use.
+#' @param views character vector with the voiew name, or numeric vector with the index of the view to use.
+#' @param factors character vector with the factor name, or numeric vector with the index of the factor to use.
 #' @param nfeatures number of top features to label.
 #' @param abs logical indicating whether to use the absolute value of the weights.
 #' @param manual A nested list of character vectors with features to be manually labelled.
 #' @param color_manual a character vector with colors, one for each element of 'manual'
 #' @param scale logical indicating whether to scale all loadings from 0 to 1.
+#' @param sort_by_factor name or numeric value for the factor to sort all loadings by, or all (default)
+#' when "all", features between factors do not match
 #' @details The weights of the features within a view are relative andthey should not be interpreted in an absolute scale.
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2 ggrepel
 #' @export
-plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, manual = NULL, color_manual = NULL, scale = TRUE, dot_size=1, text_size=5) {
+plot_weights <- function(object, factors = "all", views = "all", nfeatures = 10, 
+                         abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
+                         sort_by_factor = "all",
+                         dot_size = 1, text_size = 5) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
-  if (view[1]=="all") view <- views_names(object)
-  if (is.numeric(view)) view <- views_names(object)[view]
-  stopifnot(all(view %in% views_names(object))) 
+  views <- .check_and_get_views(object, views)
 
   # Get factor
-  if (is.numeric(factor)) {
-    factor <- factors_names(object)[factor]
-  } else { 
-    stopifnot(factor %in% factors_names(object)) 
+  if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors]
+  } else {
+    stopifnot(factors %in% factors_names(object)) 
   }
 
-  # if(!is.null(manual)) { stopifnot(class(manual)=="list"); stopifnot(all(Reduce(intersect, manual) %in% features_names(object)[[view]]))  }
+  # Get factor to sort by
+  if (!is.null(sort_by_factor)) {
+    if (is.numeric(sort_by_factor)) {
+      sort_by_factor <- factors_names(object)[sort_by_factor]
+    } else if (sort_by_factor == "all") {
+      # 
+    } else { 
+      stopifnot(sort_by_factor %in% factors_names(object)) 
+    }
+    stopifnot(length(sort_by_factor) == 1)
+  }
   
   # Collect expectations  
-  W <- get_weights(object,views=view, factors=factor, as.data.frame = T)
-  W <- W[W$factor%in%factor & W$view%in%view,]
+  W <- get_weights(object, views = views, factors = factors, as.data.frame = T)
+  W <- W[(W$factor %in% factors) & (W$view %in% views),]
   
   # Scale values
-  if(scale) W$value <- W$value/max(abs(W$value))
+  if (scale) W$value <- W$value / max(abs(W$value))
   
   # Parse the weights
   if (abs) W$value <- abs(W$value)
-  
-  # Filter the weights
-  # if(nfeatures=="all") {
-  #   nfeatures <- nrow(W)
-  # } else {
-  #   stopifnot(class(nfeatures)=="numeric")
-  # }
-  # W <- head(W[order(abs(W$value), decreasing=T),], n=nfeatures)
     
   # Define groups for labelling
   W$group <- "0"
   
   # Define group of features to color according to the loading
-  if (nfeatures>0) {
-    features <- W %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
-    W[W$feature %in% features,"group"] <- "1"
-    # W$group[abs(W$value)>=sort(abs(W$value), decreasing = T)[nfeatures]] <- "1"
+  if (nfeatures > 0) {
+    for (f in factors) {
+      # This uses dplyr
+      features <- W %>% filter(factor == f) %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
+      W[(W$feature %in% features) & (W$factor == f),"group"] <- "1"
+    }
   }
   
   # Define group of features to label manually
@@ -286,24 +293,36 @@ plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, ma
       W$group[W$feature %in% manual[[m]]] <- as.character(m+1)
   }
   
-  # Sort by weight 
-  W <- W[order(W$value),]
-  if (nfeatures>0 & any(duplicated(W$feature))) {
-    warning("Duplicated feature names across views, we will add the view name as a prefix")
-    W$feature <- paste(W$view, W$feature, sep="_")
+  # Make features names unique
+  W$feature_id <- W$feature
+  if ((length(unique(W$view)) > 1) && (nfeatures > 0) && (any(duplicated(W[W$factor == factors[1],]$feature_id)))) {
+    message("Duplicated feature names across views, we will add the view name as a prefix")
+    W$feature_id <- paste(W$view, W$feature, sep="_")
   }
-  W$feature <- factor(W$feature, levels=W$feature)
+
+  # Sort by loading
+  if (!is.null(sort_by_factor)) {
+    W <- by(W, list(W$factor), function(x) {
+      x[order(x$value),]
+    })
+    if (sort_by_factor == "all") {
+      W <- do.call(rbind, W)
+      W$feature_id <- paste(W$view, W$feature, W$factor, sep="_")
+    } else {
+      W <- do.call(rbind, c(W[sort_by_factor], W[names(W) != sort_by_factor]))
+    }
+  }
+  W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
   
   # Define plot title
   # if(is.null(main)) main <- paste("Distribution of weigths of LF", factor, "in", view, "view")
   
   # Generate plot
-  W$tmp <- as.factor(W$group!="0")
+  W$tmp <- as.factor(W$group != "0")
   
-  gg_W <- ggplot(W, aes(x=as.numeric(feature), y=value, col=group)) + 
+  gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group)) + 
     # scale_y_continuous(expand = c(0.01,0.01)) + scale_x_discrete(expand = c(0.01,0.01)) +
     geom_point(aes(size=tmp)) + labs(x="Rank position", y="Loading", size=dot_size) +
-    scale_x_continuous(expand=c(0.05,0.05)) +
     ggrepel::geom_text_repel(data = W[W$group!="0",], aes(label = feature, col = group),
                              size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, box.padding = unit(0.5, "lines"), show.legend=F)
   
@@ -318,10 +337,17 @@ plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, ma
   cols <- c("grey", "black", color_manual)
   gg_W <- gg_W + scale_color_manual(values=cols) + guides(col=F)
   
-  # Facet if multiple views
-  if (length(unique(W$view))>1) {
-    gg_W <- gg_W + facet_wrap(~view, nrow=1, scales="free")
+  # Facet if multiple views and for multiple factors
+  if ((length(unique(W$view)) > 1) && (length(unique(W$factor)) > 1)) {
+    gg_W <- gg_W + facet_grid(~view, rows = vars(view), cols = vars(factor), scales="free")
   }
+  else if (length(unique(W$factor)) > 1) {
+    gg_W <- gg_W + facet_wrap(~factor, nrow=1, scales="free")
+  }
+  else if (length(unique(W$view)) > 1) {
+    gg_W <- gg_W + facet_wrap(~view, ncol=1, scales="free")
+  }
+  
   
   # Add Theme  
   gg_W <- gg_W +
@@ -330,8 +356,8 @@ plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, ma
       # panel.border = element_rect(colour = "black", fill=NA, size=0.75),
       plot.title = element_text(size=rel(1.3), hjust=0.5),
       # axis.title.x = element_blank(),
-      axis.text.x = element_blank(),
-      axis.text.y = element_text(size=rel(1.3), color="black"),
+      axis.text.x = element_text(size=rel(1.3), color="black"),
+      axis.text.y = element_blank(),  # loadings names are hidden by default
       axis.title.y = element_text(size=rel(1.5), color="black"),
       axis.ticks.x = element_blank(),
 
@@ -343,7 +369,9 @@ plot_weights <- function(object, factor, view="all", nfeatures=10, abs=FALSE, ma
       panel.grid.major.x = element_blank() ,
       panel.grid.minor.y = element_line(colour = "grey92", size = rel(0.5)),
       panel.grid.minor.x = element_blank()
-    )
+    ) + 
+    coord_flip() +
+    expand_limits(y = c(-1, 1))  # loadings axis
   
   return(gg_W)
 }
