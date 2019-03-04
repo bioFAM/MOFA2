@@ -33,20 +33,20 @@
 #' @aliases BioFAModel-class
 #' @exportClass BioFAModel
 setClass("BioFAModel", 
-         slots=c(input_data       = "list",
-                 training_data    = "list",
-                 imputed_data     = "list",
-                 samples          = "list",
-                 features         = "list",
-                 expectations     = "list", 
-                 training_stats   = "list",
-                 training_options = "list",
-                 data_options     = "list",
-                 model_options    = "list",
-                 dimensions       = "list",
-                 on_disk          = "logical",
-                 cache            = "list",
-                 status           = "character")
+         slots=c(input_data        = "list",
+                 training_data     = "list",
+                 imputed_data      = "list",
+                 samples_metadata  = "list",
+                 features_metadata = "list",
+                 expectations      = "list", 
+                 training_stats    = "list",
+                 training_options  = "list",
+                 data_options      = "list",
+                 model_options     = "list",
+                 dimensions        = "list",
+                 on_disk           = "logical",
+                 cache             = "list",
+                 status            = "character")
 )
 
 # Printing method

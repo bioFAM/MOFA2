@@ -74,17 +74,17 @@ setGeneric("samples_groups", function(object, format = "default") { standardGene
 ## Sample Metadata ##
 #####################
 
-#' @title samples: retrieve sample metadata
-#' @name samples
-#' @rdname samples
+#' @title samples_metadata: retrieve sample metadata
+#' @name samples_metadata
+#' @rdname samples_metadata
 #' @export
-setGeneric("samples", function(object, format = "default") { standardGeneric("samples") })
+setGeneric("samples_metadata", function(object, format = "default") { standardGeneric("samples_metadata") })
 
-#' @name samples
-#' @rdname samples
-#' @aliases samples<-
+#' @name samples_metadata
+#' @rdname samples_metadata
+#' @aliases samples_metadata<-
 #' @export
-setGeneric("samples<-", function(object, value) { standardGeneric("samples<-") })
+setGeneric("samples_metadata<-", function(object, value) { standardGeneric("samples_metadata<-") })
 
 ###################
 ## Feature Names ##
@@ -116,17 +116,17 @@ setGeneric("features_views", function(object, format = "default") { standardGene
 ## Feature Metadata ##
 ######################
 
-#' @title features: retrieve feature metadata
-#' @name features
-#' @rdname features
+#' @title features_metadata: retrieve feature metadata
+#' @name features_metadata
+#' @rdname features_metadata
 #' @export
-setGeneric("features", function(object, format = "default") { standardGeneric("features") })
+setGeneric("features_metadata", function(object, format = "default") { standardGeneric("features_metadata") })
 
-#' @name features
-#' @rdname features
-#' @aliases features<-
+#' @name features_metadata
+#' @rdname features_metadata
+#' @aliases features_metadata<-
 #' @export
-setGeneric("features<-", function(object, value) { standardGeneric("features<-") })
+setGeneric("features_metadata<-", function(object, value) { standardGeneric("features_metadata<-") })
 
 ################
 ## View Names ##
