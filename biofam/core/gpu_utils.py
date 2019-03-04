@@ -25,6 +25,12 @@ def square(mat):
     else:
         return np.square(mat)
 
+def exp(mat):
+    if gpu_mode:
+        return cp.exp(mat)
+    else:
+        return np.exp(mat)
+
 def sum(mat):
     if gpu_mode:
         return cp.sum(mat)

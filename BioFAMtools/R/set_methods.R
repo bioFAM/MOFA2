@@ -315,6 +315,14 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
               levels(object@features$metadata$view_name) <- value 
             }
             
+            # Set view names in cache
+            if (!is.null(object@cache$variance_explained)) {
+              for (i in names(object@cache$variance_explained$r2_total)) {
+                names(object@cache$variance_explained$r2_total[[i]]) <- value
+                colnames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
+              }
+            }
+            
             # Set view names in expectations
             for (node in names(object@expectations)) {
               if (node %in% nodes_types$multiview_nodes | node %in% nodes_types$twodim_nodes) {
@@ -377,7 +385,12 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
               levels(object@samples$metadata$group_name) <- value
             }
               
-            
+            # Set sample group names in cache
+            if (!is.null(object@cache$variance_explained)) {
+              names(object@cache$variance_explained$r2_total) <- value
+              names(object@cache$variance_explained$r2_per_factor) <- value
+            }
+          
             # Set sample group names in expectations
             for (node in nodes_types$multigroup_nodes) {
               if (node %in% names(object@expectations)) {
@@ -386,7 +399,6 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
                 }
               }
             }
-            
             for (node in nodes_types$twodim_nodes) {
               if (node %in% names(object@expectations)) {
                 for (m in 1:length(object@expectations[[node]])) {

@@ -5,6 +5,8 @@ import scipy as s
 import math
 from biofam.core.utils import *
 from biofam.core import gpu_utils
+from time import time
+
 
 # Import manually defined functions
 from .variational_nodes import BernoulliGaussian_Unobserved_Variational_Node
@@ -67,12 +69,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Qmean = Qmean[ix,:]
             Qvar = Qvar[ix,:]
 
-        # Masking
-        for m in range(len(Y)):
-            tau[m][mask[m]] = 0.
-
         # Compute updates
-        par_up = self._updateParameters(Y, W, tau, Mu, Alpha, Qmean, Qvar)
+        par_up = self._updateParameters(Y, W, tau, Mu, Alpha, Qmean, Qvar, mask)
 
         # Update parameters
         if ix is None:
@@ -87,33 +85,45 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
 
         self.Q.setParameters(mean=Q['mean'], var=Q['var'])  # NOTE should not be necessary but safer to keep for now
 
-    def _updateParameters(self, Y, W, tau, Mu, Alpha, Qmean, Qvar):
+    def _updateParameters(self, Y, W, tau, Mu, Alpha, Qmean, Qvar, mask):
         """ Hidden method to compute parameter updates """
+        # Speed analysis: the pre-computation part does not benefit from GPU, but the next updates doe
 
         N = Y[0].shape[0]  # this is different from self.N for minibatch
-
         M = len(Y)
-        for k in range(self.dim[1]):
-            foo = s.zeros((N,))
-            bar = s.zeros((N,))
+        K = self.dim[1]
+
+        # Masking
+        for m in range(M):
+            tau[m][mask[m]] = 0.
+
+
+        # Precompute terms to speed up GPU computation
+        foo = gpu_utils.array(s.zeros((N,K)))
+        precomputed_bar = gpu_utils.array(s.zeros((N,K)))
+        for m in range(M):
+            tau_gpu = gpu_utils.array(tau[m])
+            foo += gpu_utils.dot(tau_gpu, gpu_utils.array(W[m]["E2"]))
+            bar_tmp1 = gpu_utils.array(W[m]["E"])
+            bar_tmp2 = tau_gpu * gpu_utils.array(Y[m])
+            precomputed_bar += gpu_utils.dot(bar_tmp2, bar_tmp1)
+        foo = gpu_utils.asnumpy(foo)
+
+        # Calculate variational updates
+        for k in range(K):
+            bar = gpu_utils.array(s.zeros((N,)))
+            tmp_cp1 = gpu_utils.array(Qmean[:, s.arange(K) != k])
             for m in range(M):
-                tau_gpu = gpu_utils.array(tau[m])
-                foo += gpu_utils.asnumpy(gpu_utils.dot(tau_gpu, gpu_utils.array(W[m]["E2"][:, k])))
+                tmp_cp2 = gpu_utils.array(W[m]["E"][:, s.arange(K) != k].T)
 
                 bar_tmp1 = gpu_utils.array(W[m]["E"][:,k])
+                bar_tmp2 = gpu_utils.array(tau[m])*(-gpu_utils.dot(tmp_cp1, tmp_cp2))
 
-                # NOTE slow bit but hard to optimise
-                # bar_tmp2 = - fast_dot(Qmean[:, s.arange(self.dim[1]) != k], SWtmp[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                tmp_cp1 = gpu_utils.array(Qmean[:, s.arange(self.dim[1]) != k])
-                tmp_cp2 = gpu_utils.array(W[m]["E"][:, s.arange(self.dim[1]) != k].T)
-                bar_tmp2 = - gpu_utils.dot(tmp_cp1, tmp_cp2)
-                bar_tmp2 += gpu_utils.array(Y[m])
-                bar_tmp2 *= tau_gpu
-                ##############################
+                bar += gpu_utils.dot(bar_tmp2, bar_tmp1)
+            bar += precomputed_bar[:,k]
+            bar = gpu_utils.asnumpy(bar)
 
-                bar += gpu_utils.asnumpy(gpu_utils.dot(bar_tmp2, bar_tmp1))
-
-            Qvar[:, k] = 1. / (Alpha[:, k] + foo)
+            Qvar[:, k] = 1. / (Alpha[:, k] + foo[:,k])
             Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
 
         # Save updated parameters of the Q distribution
@@ -234,7 +244,6 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
 
         # self.Q.setParameters(mean_B0=s.zeros((self.dim[0], self.dim[1])), var_B0=Q['var_B0'],
         #                      mean_B1=Q['mean_B1'], var_B1=Q['var_B1'], theta=Q['theta'])  # NOTE should not be necessary but safer to keep for now
-
     def _updateParameters(self, Y, W, tau, mask, Alpha, Qmean_T1, Qvar_T1, Qtheta, SZ, theta_lnE, theta_lnEInv):
         """ Hidden method to compute parameter updates """
 
@@ -245,37 +254,50 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         # Precompute terms to speed up GPU computation
         N = Qmean_T1.shape[0]
         M = len(Y)
+        K = self.dim[1]
 
-        term4_tmp1 = [ s.zeros(N,) for k in range(self.dim[1]) ]
-        term4_tmp2 = [ s.zeros(N,) for k in range(self.dim[1]) ]
-        term4_tmp3 = [ s.zeros(N,) for k in range(self.dim[1]) ]
+        # term4_tmp1 = [ gpu_utils.array(Alpha[:,k]) for k in range(self.dim[1]) ]
+        # term4_tmp2 = [ gpu_utils.array(Alpha[:,k]) for k in range(self.dim[1]) ]
+        # term4_tmp3 = [ gpu_utils.array(Alpha[:,k]) for k in range(self.dim[1]) ]
+        # for m in range(M):
+        #     tau_gpu = gpu_utils.array(tau[m])
+        #     Y_gpu = gpu_utils.array(Y[m])
+        #     for k in range(K):
+        #         Wk_gpu = gpu_utils.array(W[m]["E"][:,k])
+        #         WWk_gpu = gpu_utils.array(W[m]["E2"][:,k])
+        #         term4_tmp1[k] += gpu_utils.dot(tau_gpu*Y_gpu, Wk_gpu)
+        #         term4_tmp3[k] += gpu_utils.dot(tau_gpu, WWk_gpu)
+        # del tau_gpu, Y_gpu, Wk_gpu, WWk_gpu
+
+        term4_tmp1 = gpu_utils.array( s.zeros((N,K))+Alpha )
+        term4_tmp2 = gpu_utils.array( s.zeros((N,K))+Alpha )
+        term4_tmp3 = gpu_utils.array( s.zeros((N,K))+Alpha ) 
+
         for m in range(M):
             tau_gpu = gpu_utils.array(tau[m])
             Y_gpu = gpu_utils.array(Y[m])
-            for k in range(self.dim[1]):
-                Wk_gpu = gpu_utils.array(W[m]["E"][:,k])
-                WWk_gpu = gpu_utils.array(W[m]["E2"][:,k])
-                term4_tmp1[k] += gpu_utils.asnumpy( gpu_utils.dot(tau_gpu*Y_gpu, Wk_gpu) )
-                term4_tmp3[k] += gpu_utils.asnumpy( gpu_utils.dot(tau_gpu, WWk_gpu) )
-
-        del tau_gpu, Y_gpu, Wk_gpu, WWk_gpu
+            W_gpu = gpu_utils.array(W[m]["E"])
+            WW_gpu = gpu_utils.array(W[m]["E2"])
+            term4_tmp1 += gpu_utils.dot(tau_gpu*Y_gpu, W_gpu)
+            term4_tmp3 += gpu_utils.dot(tau_gpu, WW_gpu)
+        del tau_gpu, Y_gpu, W_gpu, WW_gpu
 
         # Update each latent variable in turn (notice that the update of Z[,k] depends on the other values of Z!)
-        for k in range(self.dim[1]):
+        for k in range(K):
             term1 = (theta_lnE - theta_lnEInv)[:, k]
             term2 = 0.5 * s.log(Alpha[:,k])
 
             for m in range(M):
                 tau_gpu = gpu_utils.array(tau[m])
                 Wk_gpu = gpu_utils.array(W[m]["E"][:,k])
-                term4_tmp2_tmp = (tau_gpu * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(self.dim[1]) != k]),
-                                (Wk_gpu * gpu_utils.array(W[m]["E"][:, s.arange(self.dim[1]) != k].T)))).sum(axis=1)
-                term4_tmp2[k] += gpu_utils.asnumpy(term4_tmp2_tmp)
+                term4_tmp2_tmp = (tau_gpu * gpu_utils.dot(gpu_utils.array(SZ[:, s.arange(K) != k]),
+                                (Wk_gpu * gpu_utils.array(W[m]["E"][:, s.arange(K) != k].T)))).sum(axis=1)
+                term4_tmp2[:,k] += term4_tmp2_tmp
                 del tau_gpu, Wk_gpu, term4_tmp2_tmp
             
-            term4_tmp3[k] += Alpha[:,k]
-            term3 = 0.5 * s.log(term4_tmp3[k])
-            term4 = 0.5 * s.divide(s.square(term4_tmp1[k] - term4_tmp2[k]), term4_tmp3[k])
+            # term4_tmp3[k] += Alpha[:,k]
+            term3 = gpu_utils.asnumpy( 0.5*gpu_utils.log(term4_tmp3[:,k]) )
+            term4 = gpu_utils.asnumpy( 0.5*gpu_utils.divide(gpu_utils.square(term4_tmp1[:,k] - term4_tmp2[:,k]), term4_tmp3[:,k]) )
 
             # Update S
             # NOTE there could be some precision issues in T --> loads of 1s in result
@@ -283,8 +305,8 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
             Qtheta[:,k] = np.nan_to_num(Qtheta[:,k])
 
             # Update Z
-            Qvar_T1[:, k] = 1. / term4_tmp3[k]
-            Qmean_T1[:, k] = Qvar_T1[:, k] * (term4_tmp1[k] - term4_tmp2[k])
+            Qvar_T1[:, k] = gpu_utils.asnumpy( 1. / term4_tmp3[:,k] )
+            Qmean_T1[:, k] = Qvar_T1[:, k] * gpu_utils.asnumpy(term4_tmp1[:,k] - term4_tmp2[:,k])
 
             # Update Expectations for the next iteration
             SZ[:, k] = Qtheta[:, k] * Qmean_T1[:, k]
