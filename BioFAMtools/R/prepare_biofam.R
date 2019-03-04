@@ -112,9 +112,9 @@ get_default_training_options <- function(object) {
   # Get default train options
   training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
-    tolerance = 0.1,               # (numeric) Convergence threshold based on change in the evidence lower bound
+    convergence_mode = 'medium',   # (string) Convergence mode based on change in the evidence lower bound ("slow", "medium", "fast")
     drop_factor_threshold = NULL,  # (numeric) Threshold on fraction of variance explained to drop a factor
-    verbose = FALSE,               # (logical) verbosity?
+    verbose = FALSE,               # (logical) verbosity
     seed = 0                       # (numeric or NULL) random seed
   )
   

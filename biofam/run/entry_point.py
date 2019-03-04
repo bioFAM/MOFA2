@@ -278,7 +278,7 @@ class entry_point(object):
         self.train_opts['start_elbo'] = int(startELBO)
 
         # Verbosity
-        self.train_opts['verbose'] = verbose
+        self.train_opts['verbose'] = bool(verbose)
 
         # GPU mode
         if gpu_mode:

@@ -24,7 +24,7 @@ create_biofam <- function(data, samples_groups = NULL) {
     # Set dimensionalities
     object@dimensions[["M"]] <- length(unique(data$feature_group))
     object@dimensions[["D"]] <- sapply(unique(data$feature_group), function(m) length(unique(data[data$feature_group==m,]$feature)))
-    object@dimensions[["P"]] <- length(unique(data$sample_group))
+    object@dimensions[["G"]] <- length(unique(data$sample_group))
     object@dimensions[["N"]] <- sapply(unique(data$sample_group), function(p) length(unique(data[data$sample_group==p,]$sample)))
     object@dimensions[["K"]] <- 0
     
@@ -62,6 +62,7 @@ create_biofam <- function(data, samples_groups = NULL) {
       message(paste0("View names are not specified in the data, using default: ", paste(default_views_names, collapse=", "), "\n"))
       names(data) <- default_views_names
     }
+    views_names <- as.character(names(data))
     
     # Initialise BioFAM object
     object <- new("BioFAModel")
@@ -70,7 +71,7 @@ create_biofam <- function(data, samples_groups = NULL) {
     
     # Set dimensionalities
     object@dimensions[["M"]] <- length(data)
-    object@dimensions[["P"]] <- length(groups_names)
+    object@dimensions[["G"]] <- length(groups_names)
     object@dimensions[["D"]] <- sapply(data, function(m) ncol(m))
     object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(samples_groups == x))
     object@dimensions[["K"]] <- 0
@@ -86,7 +87,7 @@ create_biofam <- function(data, samples_groups = NULL) {
     }
     
     # Set samples names
-    for (g in 1:object@dimensions[["P"]]) {
+    for (g in 1:object@dimensions[["G"]]) {
       if (is.null(rownames(object@input_data[[1]][[g]]))) {
         warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
         for (m in 1:object@dimensions[["M"]]) {
@@ -119,7 +120,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   stopifnot(all(colnames(df) %in% (c("sample","feature","value","sample_group","feature_group"))))
   stopifnot(all(is.numeric(df$value)))
   
-  # Convert 'sample' and'feature' columns to factors
+  # Convert 'sample' and 'feature' columns to factors
   if (!is.factor(df$sample))
     df$sample <- as.factor(df$sample)
   if (!is.factor(df$feature))
@@ -186,7 +187,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   # Define dimensions
   object@dimensions[["M"]] <- 1
   object@dimensions[["D"]] <- ncol(data_matrices[[1]][[1]])
-  object@dimensions[["P"]] <- length(data_matrices[[1]])
+  object@dimensions[["G"]] <- length(data_matrices[[1]])
   object@dimensions[["N"]] <- sapply(data_matrices[[1]], function(m) nrow(m))
   object@dimensions[["K"]] <- 0
 

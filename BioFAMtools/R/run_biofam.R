@@ -70,11 +70,11 @@ run_biofam <- function(object, outfile = NA) {
   
   # Set training options  
   biofam_entrypoint$set_train_options(
-    iter       = object@training_options$maxiter,
-    tolerance  = object@training_options$tolerance,
-    dropR2     = object@training_options$drop_factor_threshold,
-    seed       = object@training_options$seed, 
-    verbose    = object@training_options$verbose
+    iter             = object@training_options$maxiter,
+    convergence_mode = object@training_options$convergence_mode,
+    dropR2           = object@training_options$drop_factor_threshold,
+    seed             = object@training_options$seed, 
+    verbose          = object@training_options$verbose
   )
   
   

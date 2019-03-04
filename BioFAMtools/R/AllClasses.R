@@ -36,6 +36,8 @@ setClass("BioFAModel",
          slots=c(input_data       = "list",
                  training_data    = "list",
                  imputed_data     = "list",
+                 samples          = "list",
+                 features         = "list",
                  expectations     = "list", 
                  training_stats   = "list",
                  training_options = "list",
@@ -59,12 +61,12 @@ setMethod("show", "BioFAModel", function(object) {
     nfactors <- object@dimensions[["K"]]
     cat(sprintf("Trained BioFAModel with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of sample groups: %d \n Sample groups names: %s \n Number of samples per group: %s \n Number of factors: %d \n",
                 object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
-                object@dimensions[["P"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
+                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
                 nfactors))
   } else {
     cat(sprintf("Untrained BioFAModel model with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of sample groups: %d \n Sample groups names: %s \n Number of samples per group: %s \n",
                 object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
-                object@dimensions[["P"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
   }
   cat("\n")
 })

@@ -60,15 +60,31 @@ setGeneric("samples_names", function(object) { standardGeneric("samples_names") 
 #' @export
 setGeneric("samples_names<-", function(object, value) { standardGeneric("samples_names<-") })
 
-##################
+###################
 ## Sample Groups ##
-##################
+###################
 
 #' @title samples_groups: retrieve sample names and groups
 #' @name samples_groups
 #' @rdname samples_groups
 #' @export
 setGeneric("samples_groups", function(object, format = "default") { standardGeneric("samples_groups") })
+
+#####################
+## Sample Metadata ##
+#####################
+
+#' @title samples: retrieve sample metadata
+#' @name samples
+#' @rdname samples
+#' @export
+setGeneric("samples", function(object, format = "default") { standardGeneric("samples") })
+
+#' @name samples
+#' @rdname samples
+#' @aliases samples<-
+#' @export
+setGeneric("samples<-", function(object, value) { standardGeneric("samples<-") })
 
 ###################
 ## Feature Names ##
@@ -85,6 +101,32 @@ setGeneric("features_names", function(object) { standardGeneric("features_names"
 #' @aliases features_names<-
 #' @export
 setGeneric("features_names<-", function(object, value) { standardGeneric("features_names<-") })
+
+#############################
+## Features Groups (Views) ##
+#############################
+
+#' @title featurs_views: retrieve feature names and views
+#' @name features_views
+#' @rdname features_views
+#' @export
+setGeneric("features_views", function(object, format = "default") { standardGeneric("features_views") })
+
+######################
+## Feature Metadata ##
+######################
+
+#' @title features: retrieve feature metadata
+#' @name features
+#' @rdname features
+#' @export
+setGeneric("features", function(object, format = "default") { standardGeneric("features") })
+
+#' @name features
+#' @rdname features
+#' @aliases features<-
+#' @export
+setGeneric("features<-", function(object, value) { standardGeneric("features<-") })
 
 ################
 ## View Names ##

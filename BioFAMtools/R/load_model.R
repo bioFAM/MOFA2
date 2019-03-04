@@ -131,10 +131,11 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
 
   # Specify dimensionality of the data
   object@dimensions[["M"]] <- length(training_data)                           # number of views (groups of features)
-  object@dimensions[["P"]] <- length(training_data[[1]])                      # number of groups (groups of samples)
+  object@dimensions[["G"]] <- length(training_data[[1]])                      # number of groups (groups of samples)
   object@dimensions[["N"]] <- sapply(training_data[[1]], ncol)                # number of samples per sample_group
   object@dimensions[["D"]] <- sapply(training_data, function(e) nrow(e[[1]])) # number of features per feature_group (view)
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])                # number of factors
+
 
   # Assign sample and feature names (slow for large matrices)
   if (set_names) {
@@ -165,7 +166,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   # Set groups names
   if (is.null(names(object@training_data[[1]]))) {
     print("Groups names not found, generating default: group1, ..., groupG")
-    group_names <- paste0("group", as.character(1:object@dimensions[["P"]]))
+    group_names <- paste0("group", as.character(1:object@dimensions[["G"]]))
   }
   groups_names(object) <- group_names
 
