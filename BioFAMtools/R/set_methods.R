@@ -197,7 +197,7 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
                    
                    value_groups <- rep(names(value), lengths(value))
 
-                   object@features$metadata$sample_name <- unlist(value, use.names = FALSE)
+                   object@features$metadata$feature_name <- unlist(value, use.names = FALSE)
                    object@features$metadata$view_name   <- value_groups
 
                    if (class(object@features$metadata) == "list") {
