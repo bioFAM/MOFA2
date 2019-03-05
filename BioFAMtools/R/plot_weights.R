@@ -324,7 +324,14 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
   
-  gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group)) + 
+  if (sort_by_factor == "all") {
+    # When sorting for every factor, features are not matched between factors
+    gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group))
+  } else {
+    gg_W <- ggplot(W, aes(x=feature, y=value, col=group))
+  }
+
+  gg_W <- gg_W + 
     # scale_y_continuous(expand = c(0.01,0.01)) + scale_x_discrete(expand = c(0.01,0.01)) +
     # scale_y_discrete(expand = c(0.01, 0.01)) +
     scale_x_discrete(expand = c(0.01, 0.01)) +
@@ -345,7 +352,7 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   
   # Facet if multiple views and for multiple factors
   if ((length(unique(W$view)) > 1) && (length(unique(W$factor)) > 1)) {
-    gg_W <- gg_W + facet_grid(rows = vars(view), cols = vars(factor), scales="free")
+    gg_W <- gg_W + facet_wrap(view ~ factor, scales="free")
   }
   else if (length(unique(W$factor)) > 1) {
     gg_W <- gg_W + facet_wrap(~factor, nrow=1, scales="free")
