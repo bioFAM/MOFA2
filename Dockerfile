@@ -8,7 +8,7 @@ RUN python3 setup.py install
 
 # Install bioconductor dependencies
 RUN R --vanilla -e "\
-  if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', repos = 'http://cran.r-peojct.org'); \
+  if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', repos = 'http:s//cran.r-project.org'); \
   sapply(c('rhdf5', 'dplyr', 'tidyr', 'reshape2', 'pheatmap', 'corrplot', \
            'ggplot2', 'ggbeeswarm', 'scales', 'GGally', 'doParallel', 'RColorBrewer', \
            'cowplot', 'ggrepel', 'foreach', 'reticulate', 'HDF5Array', 'DelayedArray'), \ 
