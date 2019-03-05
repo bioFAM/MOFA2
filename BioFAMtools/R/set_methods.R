@@ -301,7 +301,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             # if (!methods::.hasSlot(object, "training_data") | length(object@training_data) == 0)
             #   stop("Before assigning view names you have to assign the training data")
             if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
-              if (length(value) != object@dimensions["M"])
+              if (length(value) != object@dimensions[["M"]])
                 stop("Length of view names does not match the dimensionality of the model")
             # if (length(value) != length(object@training_data))
             #   stop("View names do not match the number of views in the training data")
@@ -310,9 +310,14 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             nodes_types <- .get_nodes_types()
             
             # Set view names in data options
+            old_views <- object@data_options$views
             object@data_options$views <- value
             if (!is.null(object@features_metadata) && (length(object@features_metadata) != 0)) {
-              levels(object@features_metadata$view_name) <- value 
+              for (i in 1:object@dimensions[["M"]]) {
+                old_name <- old_views[i]
+                new_name <- value[i]
+                object@features_metadata[object@features_metadata$view_name == old_name, "view_name"] <- new_name
+              }
             }
             
             # Set view names in cache
@@ -370,8 +375,8 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
           function(object, value) {
             # if (!methods::.hasSlot(object, "training_data") | length(object@training_data) == 0)
             #   stop("Before assigning group names you have to assign the training data")
-            if (methods::.hasSlot(object,"dimensions") & length(object@dimensions) != 0)
-              if(length(value) != object@dimensions["G"])
+            if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+              if(length(value) != object@dimensions[["G"]])
                 stop("Length of group names does not match the dimensionality of the model")
             # if (length(value) != length(object@training_data[[1]]))
             #   stop("Group names do not match the number of groups in the training data")
@@ -380,9 +385,14 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             nodes_types <- .get_nodes_types()
 
             # Set sample group names in data options
+            old_groups <- object@data_options$groups
             object@data_options$groups <- value
             if (!is.null(object@samples_metadata) && (length(object@samples_metadata) != 0)) {
-              levels(object@samples_metadata$group_name) <- value
+              for (i in 1:object@dimensions[["G"]]) {
+                old_name <- old_groups[i]
+                new_name <- value[i]
+                object@samples_metadata[object@samples_metadata$group_name == old_name, "group_name"] <- new_name
+              }
             }
               
             # Set sample group names in cache

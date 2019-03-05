@@ -22,6 +22,8 @@
 
 load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE, set_names = TRUE) {
 
+  options(stringsAsFactors = FALSE)
+
   # Create new bioFAModel object
   if (is.null(object)) object <- new("BioFAModel")
   object@status <- "trained"
