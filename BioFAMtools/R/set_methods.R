@@ -46,7 +46,7 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 setMethod("samples_names", signature(object="BioFAModel"), 
           function(object) {
             # When the model is not trained, the samples slot is not initialized yet
-            if (!("samples_metadata" %in% slotNames(object))) {
+            if (!("samples_metadata" %in% slotNames(object)) || (length(object@samples_metadata) == 0)) {
               return(list())
             }
             # The default case when samples are initialized (trained model)
@@ -168,7 +168,7 @@ setReplaceMethod("samples_metadata", signature(object="BioFAModel", value="data.
 setMethod("features_names", signature(object="BioFAModel"), 
           function(object) {
             # When the model is not trained, the features slot is not initialized yet
-            if (!("features_metadata" %in% slotNames(object))) {
+            if (!("features_metadata" %in% slotNames(object)) || (length(object@features_metadata) == 0)) {
               return(list())
             }
             # The default case when features are initialized (trained model)
