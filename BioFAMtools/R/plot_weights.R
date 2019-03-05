@@ -345,7 +345,7 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   
   # Facet if multiple views and for multiple factors
   if ((length(unique(W$view)) > 1) && (length(unique(W$factor)) > 1)) {
-    gg_W <- gg_W + facet_grid(~view, rows = vars(view), cols = vars(factor), scales="free")
+    gg_W <- gg_W + facet_grid(rows = vars(view), cols = vars(factor), scales="free")
   }
   else if (length(unique(W$factor)) > 1) {
     gg_W <- gg_W + facet_wrap(~factor, nrow=1, scales="free")
