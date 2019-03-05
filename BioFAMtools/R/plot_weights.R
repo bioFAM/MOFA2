@@ -231,7 +231,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2 ggrepel
 #' @export
-plot_weights <- function(object, factors = "all", views = "all", nfeatures = 10, 
+plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10, 
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
                          sort_by_factor = "all",
                          dot_size = 1, text_size = 5) {
@@ -326,6 +326,8 @@ plot_weights <- function(object, factors = "all", views = "all", nfeatures = 10,
   
   gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group)) + 
     # scale_y_continuous(expand = c(0.01,0.01)) + scale_x_discrete(expand = c(0.01,0.01)) +
+    # scale_y_discrete(expand = c(0.01, 0.01)) +
+    scale_x_discrete(expand = c(0.01, 0.01)) +
     geom_point(aes(size=tmp)) + labs(x="Rank position", y="Loading", size=dot_size) +
     ggrepel::geom_text_repel(data = W[W$group!="0",], aes(label = feature, col = group),
                              size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, box.padding = unit(0.5, "lines"), show.legend=F)
@@ -355,6 +357,8 @@ plot_weights <- function(object, factors = "all", views = "all", nfeatures = 10,
   
   # Add Theme  
   gg_W <- gg_W +
+    theme_minimal() +
+    theme_bw() + 
     theme(
       # panel.spacing = margin(5,5,5,5),
       # panel.border = element_rect(colour = "black", fill=NA, size=0.75),
@@ -363,16 +367,17 @@ plot_weights <- function(object, factors = "all", views = "all", nfeatures = 10,
       axis.text.x = element_text(size=rel(1.3), color="black"),
       axis.text.y = element_blank(),  # loadings names are hidden by default
       axis.title.y = element_text(size=rel(1.5), color="black"),
-      axis.ticks.x = element_blank(),
+      axis.ticks.y = element_blank(),
 
       # white background and dark border
-      panel.background = element_rect(fill = "white", colour = NA),
-      panel.border     = element_rect(fill = NA, colour = "grey20"),
+      # panel.background = element_rect(fill = "white", colour = NA),
+      # panel.border     = element_rect(fill = NA, colour = "grey20"),
+      strip.background = element_blank(),
+      panel.border = element_blank(),
+
       # make gridlines dark, same contrast with white as in theme_grey
-      panel.grid.major.y = element_line(colour = "grey92"),
-      panel.grid.major.x = element_blank() ,
-      panel.grid.minor.y = element_line(colour = "grey92", size = rel(0.5)),
-      panel.grid.minor.x = element_blank()
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor = element_blank()
     ) + 
     coord_flip() +
     expand_limits(y = c(-1, 1))  # loadings axis
