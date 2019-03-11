@@ -183,7 +183,7 @@ class entry_point(object):
         M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
         N = self.dimensionalities["N"] = self.data[0].shape[0]
         D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
-        self.dimensionalities['P'] = len(set(self.io_opts['groups_names']))
+        self.dimensionalities['G'] = len(set(self.io_opts['groups_names']))
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -297,7 +297,7 @@ class entry_point(object):
             self.data_opts['samples_groups'] = ["group1"] * N
         else:
             self.data_opts['groups_names'] = adata.obs[groups_label].unique()
-            self.data_opts['samples_names'] = adata.obs.reset_index().groupby(groups_label)['index'].apply(list).tolist()
+            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
             self.data_opts['samples_groups'] = adata.obs[groups_label].values
 
         # If everything successful, print verbose message
