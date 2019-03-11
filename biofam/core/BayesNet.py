@@ -496,7 +496,7 @@ class StochasticBayesNet(BayesNet):
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
                 # print("Fraction of zero samples: %.0f%%" % (100*bar))
-            print("\n")
+            # print("\n")
 
             iter_time[i] = time()-t
             
