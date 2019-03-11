@@ -68,7 +68,7 @@ class entry_point(object):
 
         # Save dimensionalities
         M = self.dimensionalities["M"] = len(data)
-        G = self.dimensionalities["P"] = len(data[0])
+        G = self.dimensionalities["G"] = len(data[0])
         N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
@@ -180,10 +180,10 @@ class entry_point(object):
         self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
 
         # set dimensionalities of the model
-        M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
+        M = self.dimensionalities["M"] = len(set(self.io_opts['views_names']))
         N = self.dimensionalities["N"] = self.data[0].shape[0]
         D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
-        self.dimensionalities['G'] = len(set(self.io_opts['groups_names']))
+        self.dimensionalities["G"] = len(set(self.io_opts['groups_names']))
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -237,10 +237,10 @@ class entry_point(object):
 
         # Define dimensionalities
         self.dimensionalities = {}
-        self.dimensionalities['M'] = len(self.data_opts['views_names'])
-        self.dimensionalities['N'] = len(self.data_opts['samples_names'])
-        self.dimensionalities['P'] = len(self.data_opts['groups_names'])
-        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
+        self.dimensionalities["M"] = len(self.data_opts['views_names'])
+        self.dimensionalities["N"] = len(self.data_opts['samples_names'])
+        self.dimensionalities["G"] = len(self.data_opts['groups_names'])
+        self.dimensionalities["D"] = [len(x) for x in self.data_opts['features_names']]
 
         # Count the number of features per view and the number of samples per group
         tmp_samples = data[["sample","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["sample"].nunique()
