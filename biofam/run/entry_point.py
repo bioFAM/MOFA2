@@ -261,6 +261,57 @@ class entry_point(object):
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
 
+    def set_data_from_anndata(self, adata, groups_label=None):
+        """ Method to input the data in AnnData format
+
+        PARAMETERS
+        ----------
+        adata: an AnnotationData object
+        groups_label (optional): a column name in adata.obs for grouping the samples
+        """
+
+        # Check groups_label is defined properly
+        n_groups = 1  # no grouping by default
+        if groups_label is not None:
+            if not isinstance(groups_label, str):
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+            if groups_label not in adata.obs.columns:
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+            n_groups = adata.obs[groups_label].unique().shape[0]
+
+        # Save dimensionalities
+        M = self.dimensionalities["M"] = 1
+        G = self.dimensionalities["G"] = n_groups
+        N = self.dimensionalities["N"] = adata.shape[0]
+        D = self.dimensionalities["D"] = [adata.shape[1]]
+        n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby('louvain').size().values
+
+        # Define views names and features names
+        self.data_opts['views_names'] = ["rna"]
+        self.data_opts['features_names'] = [adata.var_names]
+
+        # Define groups and samples names
+        if groups_label is None:
+            self.data_opts['groups_names'] = "group1"
+            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
+            self.data_opts['samples_groups'] = ["group1"] * N
+        else:
+            self.data_opts['groups_names'] = adata.obs[groups_label].unique()
+            self.data_opts['samples_names'] = adata.obs.reset_index().groupby(groups_label)['index'].apply(list).tolist()
+            self.data_opts['samples_groups'] = adata.obs[groups_label].values
+
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
+        print("\n")
+        # Process the data (center, scaling, etc.)
+        self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
+
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
     def set_train_options(self,
         iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
