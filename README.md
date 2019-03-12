@@ -29,6 +29,13 @@ python setup.py install
 R CMD INSTALL --build BioFAMtools
 ```
 
+### Using Docker image
+
+You can build an image with biofam python library and R package using the provided [Dockerfile](./Dockerfile):
+
+```
+docker build -t biofam .
+```
 
 
 ## Authors
