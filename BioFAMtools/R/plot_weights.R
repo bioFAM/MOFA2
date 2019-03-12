@@ -242,7 +242,9 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   views <- .check_and_get_views(object, views)
 
   # Get factor
-  if (is.numeric(factors)) {
+  if (factors[1] == "all") {
+    factors <- factors_names(object)
+  } else if (is.numeric(factors)) {
     factors <- factors_names(object)[factors]
   } else {
     stopifnot(factors %in% factors_names(object)) 
@@ -312,6 +314,7 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
       W$feature_id <- paste(W$view, W$feature, W$factor, sep="_")
     } else {
       W <- do.call(rbind, c(W[sort_by_factor], W[names(W) != sort_by_factor]))
+      W$feature_id <- W$feature
     }
   }
   W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
@@ -323,15 +326,8 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
 
   # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
-  
-  if (sort_by_factor == "all") {
-    # When sorting for every factor, features are not matched between factors
-    gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group))
-  } else {
-    gg_W <- ggplot(W, aes(x=feature, y=value, col=group))
-  }
 
-  gg_W <- gg_W + 
+  gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group))
     # scale_y_continuous(expand = c(0.01,0.01)) + scale_x_discrete(expand = c(0.01,0.01)) +
     # scale_y_discrete(expand = c(0.01, 0.01)) +
     scale_x_discrete(expand = c(0.01, 0.01)) +
