@@ -270,6 +270,9 @@ class entry_point(object):
         groups_label (optional): a column name in adata.obs for grouping the samples
         """
 
+        # Sanity checks
+        assert hasattr(self, 'data_opts'), "Data options not defined"
+
         # Check groups_label is defined properly
         n_groups = 1  # no grouping by default
         if groups_label is not None:
