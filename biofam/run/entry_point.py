@@ -23,9 +23,9 @@ class entry_point(object):
         banner = r""" 
 
          _     _        __                       |￣￣￣￣￣￣￣|
-        | |__ (_) ___  / _| __ _ _ __ ___        |            | 
-        | '_ \| |/ _ \| |_ / _` | '_ ` _ \       |    MOFA2   |  
-        | |_) | | (_) |  _| (_| | | | | | |      |            | 
+        | |__ (_) ___  / _| __ _ _ __ ___        |              | 
+        | '_ \| |/ _ \| |_ / _` | '_ ` _ \       |    MOFA2     |  
+        | |_) | | (_) |  _| (_| | | | | | |      |              | 
         |_.__/|_|\___/|_|  \__,_|_| |_| |_|      | ＿＿＿＿＿＿_|  
                                                  (\__/) ||  
                                                  (•ㅅ•) ||  
@@ -68,7 +68,7 @@ class entry_point(object):
 
         # Save dimensionalities
         M = self.dimensionalities["M"] = len(data)
-        G = self.dimensionalities["P"] = len(data[0])
+        G = self.dimensionalities["G"] = len(data[0])
         N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
@@ -180,10 +180,10 @@ class entry_point(object):
         self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
 
         # set dimensionalities of the model
-        M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
+        M = self.dimensionalities["M"] = len(set(self.io_opts['views_names']))
         N = self.dimensionalities["N"] = self.data[0].shape[0]
         D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
-        self.dimensionalities['P'] = len(set(self.io_opts['groups_names']))
+        self.dimensionalities["G"] = len(set(self.io_opts['groups_names']))
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -237,10 +237,10 @@ class entry_point(object):
 
         # Define dimensionalities
         self.dimensionalities = {}
-        self.dimensionalities['M'] = len(self.data_opts['views_names'])
-        self.dimensionalities['N'] = len(self.data_opts['samples_names'])
-        self.dimensionalities['P'] = len(self.data_opts['groups_names'])
-        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
+        self.dimensionalities["M"] = len(self.data_opts['views_names'])
+        self.dimensionalities["N"] = len(self.data_opts['samples_names'])
+        self.dimensionalities["G"] = len(self.data_opts['groups_names'])
+        self.dimensionalities["D"] = [len(x) for x in self.data_opts['features_names']]
 
         # Count the number of features per view and the number of samples per group
         tmp_samples = data[["sample","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["sample"].nunique()
@@ -257,6 +257,57 @@ class entry_point(object):
 
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
+    def set_data_from_anndata(self, adata, groups_label=None):
+        """ Method to input the data in AnnData format
+
+        PARAMETERS
+        ----------
+        adata: an AnnotationData object
+        groups_label (optional): a column name in adata.obs for grouping the samples
+        """
+
+        # Check groups_label is defined properly
+        n_groups = 1  # no grouping by default
+        if groups_label is not None:
+            if not isinstance(groups_label, str):
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+            if groups_label not in adata.obs.columns:
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+            n_groups = adata.obs[groups_label].unique().shape[0]
+
+        # Save dimensionalities
+        M = self.dimensionalities["M"] = 1
+        G = self.dimensionalities["G"] = n_groups
+        N = self.dimensionalities["N"] = adata.shape[0]
+        D = self.dimensionalities["D"] = [adata.shape[1]]
+        n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby('louvain').size().values
+
+        # Define views names and features names
+        self.data_opts['views_names'] = ["rna"]
+        self.data_opts['features_names'] = [adata.var_names]
+
+        # Define groups and samples names
+        if groups_label is None:
+            self.data_opts['groups_names'] = "group1"
+            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
+            self.data_opts['samples_groups'] = ["group1"] * N
+        else:
+            self.data_opts['groups_names'] = adata.obs[groups_label].unique()
+            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
+            self.data_opts['samples_groups'] = adata.obs[groups_label].values
+
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
+        print("\n")
+        # Process the data (center, scaling, etc.)
+        self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
+
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
@@ -495,7 +546,7 @@ class entry_point(object):
         assert hasattr(self, 'model'), "No trained model found"
 
         # Create output directory
-        if not os.path.isdir(os.path.dirname(outfile)):
+        if not os.path.isdir(os.path.dirname(outfile)) and (os.path.dirname(outfile) != ''):
             print("Output directory does not exist, creating it...")
             os.makedirs(os.path.dirname(outfile))
         print("Saving model in %s...\n" % outfile)

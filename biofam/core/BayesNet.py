@@ -109,12 +109,12 @@ class BayesNet(object):
         # Get groups
         groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
 
-        r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['P']
+        r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['G']
         for m in range(self.dim['M']):
             mask = self.nodes["Y"].getNodes()[m].getMask()
             # Ypred_m = s.dot(Z, W[m].T)
             # Ypred_m[mask] = 0.
-            for g in range(self.dim['P']):
+            for g in range(self.dim['G']):
                 gg = groups==g
                 SS = s.square(Y[m][gg,:]).sum()
                 for k in range(self.dim['K']):
@@ -158,7 +158,7 @@ class BayesNet(object):
         if min_r2 is not None:
             r2 = self.calculate_variance_explained()
 
-            tmp = [ s.where( (r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
+            tmp = [ s.where( (r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['G']) ]
             drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
             if len(drop_dic["min_r2"]) > 0:
                 drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
@@ -496,7 +496,7 @@ class StochasticBayesNet(BayesNet):
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
                 # print("Fraction of zero samples: %.0f%%" % (100*bar))
-            print("\n")
+            # print("\n")
 
             iter_time[i] = time()-t
             
