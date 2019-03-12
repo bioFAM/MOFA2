@@ -54,21 +54,21 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
       for (p in group_names) {
         if (on_disk) {
           # as DelayedArrays
-          training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, p) ) )
+          training_data[[m]][[g]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, g) ) )
         } else {
           # as matrices
-          training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s", m, p) )
+          training_data[[m]][[g]] <- h5read(file, sprintf("data/%s/%s", m, g) )
         }
         # Replace NaN by NA
-        training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA # this realised into memory, TO FIX
+        training_data[[m]][[g]][is.nan(training_data[[m]][[g]])] <- NA # this realised into memory, TO FIX
       }
     }
   # Create training data (as nested list of empty matrices, with the correct dimensions)
   } else {
     for (m in view_names) {
       training_data[[m]] <- list()
-      for (p in group_names) {
-        training_data[[m]][[p]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[p]])
+      for (g in group_names) {
+        training_data[[m]][[g]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[g]])
       }
     }
   }
