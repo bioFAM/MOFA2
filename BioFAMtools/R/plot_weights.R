@@ -327,7 +327,7 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
 
-  gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group))
+  gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group)) +
     # scale_y_continuous(expand = c(0.01,0.01)) + scale_x_discrete(expand = c(0.01,0.01)) +
     # scale_y_discrete(expand = c(0.01, 0.01)) +
     scale_x_discrete(expand = c(0.01, 0.01)) +
