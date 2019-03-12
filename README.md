@@ -26,8 +26,7 @@ cd biofam
 
 python setup.py install
 
-R CMD build BioFAMtools
-R CMD install BioFAMtools
+R CMD INSTALL --build BioFAMtools
 ```
 
 
