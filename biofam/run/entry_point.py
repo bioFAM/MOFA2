@@ -284,7 +284,7 @@ class entry_point(object):
         G = self.dimensionalities["G"] = n_groups
         N = self.dimensionalities["N"] = adata.shape[0]
         D = self.dimensionalities["D"] = [adata.shape[1]]
-        n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby('louvain').size().values
+        n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby(groups_label).size().values
 
         # Define views names and features names
         self.data_opts['views_names'] = ["rna"]
