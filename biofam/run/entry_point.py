@@ -310,7 +310,7 @@ class entry_point(object):
         print("\n")
         # Process the data (center, scaling, etc.)
         if use_raw:
-            self.data = process_data([adata.raw[:,adata.var_names].X], self.data_opts, self.data_opts['samples_groups'])
+            self.data = process_data([adata.raw[:,adata.var_names].X.todense()], self.data_opts, self.data_opts['samples_groups'])
         else:
             self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
 
