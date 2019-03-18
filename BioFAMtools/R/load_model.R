@@ -51,7 +51,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   if (load_training_data) {
     for (m in view_names) {
       training_data[[m]] <- list()
-      for (p in group_names) {
+      for (g in group_names) {
         if (on_disk) {
           # as DelayedArrays
           training_data[[m]][[g]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, g) ) )
