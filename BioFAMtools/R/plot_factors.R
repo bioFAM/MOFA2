@@ -162,7 +162,7 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
 #' @import ggplot2
 #' @export
 plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
-                         color_by = NULL, shape_by = NULL, color_name="", shape_name="") {
+                         color_by = NULL, shape_by = NULL, color_name=NULL, shape_name=NULL) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -176,6 +176,12 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
     p <- do.call(.plot_multiple_factors, .args)
     return(p)
   }
+
+  # Remember color_name and shape_name if not provided
+  if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))
+    color_name <- color_by
+  if (!is.null(shape_by) && (length(shape_by) == 1) && is.null(shape_name))
+    shape_name <- shape_by
   
   # Get factors
   if (is.numeric(factors)) {
