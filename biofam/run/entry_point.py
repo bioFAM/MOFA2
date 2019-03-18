@@ -261,7 +261,7 @@ class entry_point(object):
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
 
-    def set_data_from_anndata(self, adata, groups_label=None):
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False):
         """ Method to input the data in AnnData format
 
         PARAMETERS
@@ -309,7 +309,10 @@ class entry_point(object):
                 print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
         print("\n")
         # Process the data (center, scaling, etc.)
-        self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
+        if use_raw:
+            self.data = process_data([adata.raw[:,adata.var_names].X.shape], self.data_opts, self.data_opts['samples_groups'])
+        else:
+            self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
