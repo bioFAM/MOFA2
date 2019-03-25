@@ -43,11 +43,9 @@ TODO: basic usage, studying factors, multi-omics tutorials.
 
 ### scRNA-seq data
 
-bioFAM comes with interfaces to build and train a model directly from objects commonly used for scRNA-seq data analysis, namely [AnnData](https://github.com/theislab/anndata)([scanpy](https://github.com/theislab/scanpy)) in Python and [Seurat](https://github.com/satijalab/seurat) in R.
+bioFAM comes with interfaces to build and train a model directly from objects commonly used for scRNA-seq data analysis, namely [AnnData](https://github.com/theislab/anndata) ([scanpy](https://github.com/theislab/scanpy)) in Python and [Seurat](https://github.com/satijalab/seurat) in R.
 
 #### With scanpy
-
-Use an AnnData object to build and train a MOFA model:
 
 ```{python}
 mf.set_data_from_anndata(adata, "louvain")
