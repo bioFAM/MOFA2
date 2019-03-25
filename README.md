@@ -37,6 +37,29 @@ You can build an image with biofam python library and R package using the provid
 docker build -t biofam .
 ```
 
+## Usage
+
+TODO: basic usage, studying factors, multi-omics tutorials.
+
+### scRNA-seq data
+
+#### With scanpy
+
+Use an AnnData object to build and train a MOFA model:
+
+```{python}
+mf.set_data_from_anndata(adata, "louvain")
+```
+
+For more information see this tutorial (TODO: tutorial on PBMC with scanpy).
+
+#### With Seurat
+
+```{r}
+mf <- create _biofam(seurat_object, "louvain")
+```
+
+For more information see this tutorial (TODO: tutorial on PBMC with Seurat).
 
 ## Authors
 
