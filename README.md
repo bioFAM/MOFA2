@@ -69,12 +69,6 @@ Loom files can be used to train the model in Python:
 mf.set_data_from_loom(loom, groups_label="Tissue")
 ```
 
-as well as in R:
-
-```{r}
-mf <- create_biofam(loom, groups_label="Tissue")
-```
-
 To learn more about using loom files, see [loompy documentation](https://linnarssonlab.org/loompy/index.html) and [loomR](https://github.com/mojaveazure/loomR) for Python and R respectively.
 
 
