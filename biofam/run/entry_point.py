@@ -24,7 +24,7 @@ class entry_point(object):
 
          _     _        __                       |￣￣￣￣￣￣￣|
         | |__ (_) ___  / _| __ _ _ __ ___        |              | 
-        | '_ \| |/ _ \| |_ / _` | '_ ` _ \       |    MOFA2     |  
+        | '_ \| |/ _ \| |_ / _` | '_ ` _ \       |    MOFA+     |  
         | |_) | | (_) |  _| (_| | | | | | |      |              | 
         |_.__/|_|\___/|_|  \__,_|_| |_| |_|      | ＿＿＿＿＿＿_|  
                                                  (\__/) ||  
@@ -268,6 +268,7 @@ class entry_point(object):
         ----------
         adata: an AnnotationData object
         groups_label (optional): a column name in adata.obs for grouping the samples
+        use_raw (optional): use raw slot of AnnData as input values
         """
 
         # Sanity checks
@@ -313,6 +314,65 @@ class entry_point(object):
             self.data = process_data([np.array(adata.raw[:,adata.var_names].X.todense())], self.data_opts, self.data_opts['samples_groups'])
         else:
             self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
+
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
+
+    def set_data_from_loom(self, loom, groups_label=None, layer=None):
+        """ Method to input the data in Loom format
+
+        PARAMETERS
+        ----------
+        loom: connection to loom file (loompy.loompy.LoomConnection)
+        groups_label (optional): a key in loom.ca for grouping the samples
+        layer (optional): a layer to be used instead of the main matrix
+        """
+
+        # Sanity checks
+        assert hasattr(self, 'data_opts'), "Data options not defined"
+
+        # Check groups_label is defined properly
+        n_groups = 1  # no grouping by default
+        if groups_label is not None:
+            if not isinstance(groups_label, str):
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+            if groups_label not in loom.ca.keys():
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+            n_groups = pd.unique(loom.ca[groups_label]).shape[0]
+
+        # Save dimensionalities
+        M = self.dimensionalities["M"] = 1
+        G = self.dimensionalities["G"] = n_groups
+        N = self.dimensionalities["N"] = loom.shape[1]
+        D = self.dimensionalities["D"] = [loom.shape[0]]
+        n_grouped = [loom.shape[1]] if n_groups == 1 else pd.DataFrame({'label': loom.ca[groups_label]}).groupby('label').size().values
+
+        # Define views names and features names
+        self.data_opts['views_names'] = ["rna"]
+        self.data_opts['features_names'] = [loom.ra.Accession] if 'Accession' in loom.ra.keys() else [loom.ra.Gene]
+
+        # Define groups and samples names
+        if groups_label is None:
+            self.data_opts['groups_names'] = "group1"
+            self.data_opts['samples_names'] = loom.ca.CellID
+            self.data_opts['samples_groups'] = ["group1"] * N
+        else:
+            self.data_opts['groups_names'] = pd.unique(loom.ca[groups_label])
+            self.data_opts['samples_names'] = loom.ca.CellID
+            self.data_opts['samples_groups'] = loom.ca[groups_label]
+
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
+        print("\n")
+        # Process the data (center, scaling, etc.)
+        if layer is not None:
+            self.data = process_data([loom.layers[layer]], self.data_opts, self.data_opts['samples_groups'])
+        else:
+            self.data = process_data([loom[:,:]], self.data_opts, self.data_opts['samples_groups'])
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
