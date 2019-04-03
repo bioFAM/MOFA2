@@ -48,7 +48,7 @@ bioFAM comes with interfaces to build and train a model directly from objects co
 #### With scanpy
 
 ```{python}
-mf.set_data_from_anndata(adata, "louvain")
+mf.set_data_from_anndata(adata, groups_label="louvain")
 ```
 
 For more information see this tutorial (TODO: tutorial on PBMC with scanpy).
@@ -56,10 +56,27 @@ For more information see this tutorial (TODO: tutorial on PBMC with scanpy).
 #### With Seurat
 
 ```{r}
-mf <- create_biofam(seurat_object, "louvain")
+mf <- create_biofam(seurat_object, groups_label="louvain")
 ```
 
 For more information see this tutorial (TODO: tutorial on PBMC with Seurat).
+
+#### With loom files
+
+Loom files can be used to train the model in Python:
+
+```{python}
+mf.set_data_from_loom(loom, groups_label="Tissue")
+```
+
+as well as in R:
+
+```{r}
+mf <- create_biofam(loom, groups_label="Tissue")
+```
+
+To learn more about using loom files, see [loompy documentation](https://linnarssonlab.org/loompy/index.html) and [loomR](https://github.com/mojaveazure/loomR) for Python and R respectively.
+
 
 ## Authors
 
