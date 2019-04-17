@@ -33,15 +33,18 @@
 #' @import ggbeeswarm
 #' @import grDevices
 #' @export
-plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TRUE, add_violin=TRUE, show_missing = TRUE, dot_size = 1,
-                                 color_by = NULL, color_name = "", shape_by = NULL, alpha=0.25, shape_name = "", rasterize = FALSE, dodge=FALSE) {
+plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
+                                 color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
+                                 jitter = TRUE, dots_alpha = 1.0,
+                                 violin_alpha = 0.5, violin_color = NA, color_violin = TRUE,
+                                 rasterize = FALSE, dodge = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factor values
   Z <- get_factors(object, factors=factors, as.data.frame=T)
-  Z$factor <- as.factor(Z$factor)
+  Z$factor <- factor(Z$factor, levels=unique(Z$factor))
   
   # Set group/color/shape
   group_by <- .set_groupby(object, group_by)
@@ -79,10 +82,16 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
       legend.direction = "vertical",
       legend.key = element_blank()
     ) 
+
   
   # Add dots
   if (add_dots) {
-    if (rasterize) {
+    if (jitter) {
+      if (rasterize || dodge)
+        warning("Rasterize or dodge options are not active when using jitter")
+      p <- p + geom_jitter(size = dot_size, alpha = dots_alpha)
+    }
+    else if (rasterize) {
       if (dodge) {
         p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1)
       } else {
@@ -100,19 +109,20 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   
   # Add violin plot
   if (add_violin) {
-    if (dodge) {
+    if (color_violin) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       if (min(tmp$n)==1) {
         warning("Warning: some 'color_by' groups have only one observation, violin plots are not displayed")
       } else {
-        p <- p + geom_violin(aes(fill=color_by), color="black", alpha=alpha, trim=F, scale="width", position=position_dodge(width = 1))
-        if (add_dots) p <- p + scale_fill_discrete(guide = FALSE)
+        violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
+        p <- p + geom_violin(aes(fill=color_by), color=violin_color, alpha=violin_alpha, trim=F, scale="width", position=position_dodge(width = 1))
+        if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
-      p <- p + geom_violin(color="black", fill="grey", alpha=alpha, trim=F, scale="width")
+      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=F, scale="width")
     }
   }
-  
+
   # If 'color_by' is numeric, define the default gradient
   if (is.numeric(df$color))
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
@@ -130,12 +140,28 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   } else { 
     p <- p + guides(shape = FALSE) 
   }
+
+  # Use unified theme across the plots
+  p <- p +
+    theme_minimal() +
+    theme_bw() + 
+    theme(
+        strip.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(size=.1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        axis.title.y = element_text(size=18),
+        axis.text.y = element_text(size=12),
+        legend.text=element_text(size=14),
+        strip.text.x = element_text(size = 12)
+    )
   
   return(p)
 }
 
 #' @title Scatterplots of two factor values
-#' @name plot_factors
+#' @name plot_factors_scatter
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
@@ -161,7 +187,7 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
+plot_factors_scatter <- function(object, factors, show_missing = TRUE, dot_size=1,
                          color_by = NULL, shape_by = NULL, color_name=NULL, shape_name=NULL) {
   
   # Sanity checks
