@@ -153,7 +153,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   }
 
   fvar_mk_df$factor <- factor(fvar_mk_df$factor, levels = factors)
-  fvar_mk_df$group <- factor(fvar_mk_df$group)
+  fvar_mk_df$group <- factor(fvar_mk_df$group, levels = groups_names(object))
 
   fvar_m_df <- reshape2::melt(lapply(fvar_m, function(x) lapply(x, function(z) z)),
                               varnames=c("view", "group"), value.name="R2")
