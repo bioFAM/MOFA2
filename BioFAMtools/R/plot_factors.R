@@ -43,8 +43,15 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factor values
+  if (factors == "all") {
+    factors <- factors_names(object)
+  } else if (is.numeric(factors)) {
+    factors <- factors_names(object)[factors]
+  } else { 
+    stopifnot(all(factors %in% factors_names(object)))
+  }
   Z <- get_factors(object, factors=factors, as.data.frame=T)
-  Z$factor <- factor(Z$factor, levels=unique(Z$factor))
+  Z$factor <- factor(Z$factor, levels=factors)
   
   # Set group/color/shape
   group_by <- .set_groupby(object, group_by)
@@ -161,7 +168,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 }
 
 #' @title Scatterplots of two factor values
-#' @name plot_factors_scatter
+#' @name plot_embeddings
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
@@ -182,13 +189,14 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
-#' Similar functions are \code{\link{plot_factor_scatters}} for doing multiple scatter plots and 
-#' \code{\link{plot_factor_beeswarm}} for doing Beeswarm plots for single factors.
+#' Similar function is
+#' \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_factors_scatter <- function(object, factors, show_missing = TRUE, dot_size=1,
-                         color_by = NULL, shape_by = NULL, color_name=NULL, shape_name=NULL) {
+plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
+                            color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
+                            dot_size = 1, alpha = 0.5) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -196,7 +204,7 @@ plot_factors_scatter <- function(object, factors, show_missing = TRUE, dot_size=
   # If plotting one or multiple factors, re-direct to other functions 
   if (length(factors)==1) {
     .args <- as.list(match.call()[-1])
-    do.call(plot_factor_beeswarm, .args)   
+    do.call(plot_factors, .args)   
   } else if (length(factors)>2) {
     .args <- as.list(match.call()[-1])
     p <- do.call(.plot_multiple_factors, .args)
@@ -210,13 +218,15 @@ plot_factors_scatter <- function(object, factors, show_missing = TRUE, dot_size=
     shape_name <- shape_by
   
   # Get factors
-  if (is.numeric(factors)) {
+  if ((length(factors) == 1) && (factors[1] == "all")) {
+    factors <- factors_names(object)
+  } else if (is.numeric(factors)) {
     factors <- factors_names(object)[factors]
   } else { 
     stopifnot(all(factors %in% factors_names(object)))
   }
   Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
-  Z$factor <- as.factor(Z$factor)
+  Z$factor <- factor(Z$factor, levels=factors)
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)
@@ -234,11 +244,12 @@ plot_factors_scatter <- function(object, factors, show_missing = TRUE, dot_size=
   
   # spread over factors
   df <- tidyr::spread(df, key="factor", value="value")
-  df <- magrittr::set_colnames(df,c(colnames(df)[1:4],"x","y"))
+  df <- df[,c(colnames(df)[1:4], factors)]
+  df <- magrittr::set_colnames(df,c(colnames(df)[1:4], "x", "y"))
   
-  # Generate plot  
+  # Generate plot
   p <- ggplot(df, aes(x=x, y=y)) + 
-    geom_point(aes(color = color_by, shape = shape_by)) +
+    geom_point(aes(color = color_by, shape = shape_by), alpha = alpha) +
     # ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
@@ -275,8 +286,7 @@ plot_factors_scatter <- function(object, factors, show_missing = TRUE, dot_size=
   
   return(p)
 }
-  
-  
+
 
   
 # Plot multiple factors as pairwise scatterplots
