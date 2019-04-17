@@ -141,7 +141,9 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   colnames(fvar_mk_df)[ncol(fvar_mk_df)] <- "group"
 
   # Subset factors for plotting
-  if (!((length(factors) == 1) && (factors[1] == "all"))) {
+  if ((length(factors) == 1) && (factors[1] == "all")) {
+    factors <- factors_names(object)
+  } else {
     if (is.numeric(factors)) {
       factors <- factors_names(object)[factors]
     } else { 
@@ -150,7 +152,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     fvar_mk_df <- fvar_mk_df[fvar_mk_df$factor %in% factors,]
   }
 
-  fvar_mk_df$factor <- factor(fvar_mk_df$factor)
+  fvar_mk_df$factor <- factor(fvar_mk_df$factor, levels = factors)
   fvar_mk_df$group <- factor(fvar_mk_df$group)
 
   fvar_m_df <- reshape2::melt(lapply(fvar_m, function(x) lapply(x, function(z) z)),
