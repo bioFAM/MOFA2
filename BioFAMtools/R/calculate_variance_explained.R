@@ -110,7 +110,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @importFrom cowplot plot_grid
 #' @export
 plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, 
-                                    factors = "all", gradient_colors = NA, ...) {
+                                    factors = "all", gradient_colors = NA, total_fill_color = NA, ...) {
 
   # Calculate variance explained
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
@@ -216,12 +216,20 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     
     # Join the two plots
     if (plot_total) {
+
+      # Choose colors for the gradient
+      if (all(is.na(total_fill_color))) {
+        # Old MOFA color: "deepskyblue4"
+        total_fill_color <- "#333333"
+      } else {
+        stopifnot(length(total_fill_color) == 1)
+      }
       
       # Barplot with variance explained per view/group (across all factors)
       m_title <- sprintf("%s\nTotal variance explained per %s", i, x)
       bplt <- ggplot(fvar_m_df[fvar_m_df[[split_by]] == i,], aes_string(x=x, y="R2")) + 
         ggtitle(m_title) +
-        geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
+        geom_bar(stat="identity", fill=total_fill_color, width=0.9) +
         xlab("") + ylab("R2") +
         scale_y_continuous(limits=c(min_lim_bplt, max_lim_bplt), expand=c(0.01, 0.01)) +
         theme(
