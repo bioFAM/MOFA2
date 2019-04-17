@@ -180,7 +180,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   # if ( length(groups)>1 ) { x="group"; split_by="view" }
 
   # Choose colors for the gradient
-  if (is.na(gradient_colors)) {
+  if (all(is.na(gradient_colors))) {
     # Old MOFA colors: c("gray97","darkblue")
     gradient_colors <- c("#e3f2fd", "#0d47a1")
   } else {
