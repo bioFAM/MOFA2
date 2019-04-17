@@ -106,16 +106,16 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 
     # Use samples annotation
     if (!is.null(annotate_samples)) {
-      stopifnot(annotate_samples %in% colnames(samples(object)))
-      ann_samples <- data.frame(ID = samples(object)$group_name)
-      rownames(ann_samples) <- samples(object)$sample_name
+      stopifnot(annotate_samples %in% colnames(samples_metadata(object)))
+      ann_samples <- data.frame(ID = samples_metadata(object)$group_name)
+      rownames(ann_samples) <- samples_metadata(object)$sample_name
     }
 
     # Use features annotation
     if (!is.null(annotate_features)) {
-      stopifnot(annotate_features %in% colnames(features(object)))
-      ann_features <- data.frame(ID = features(object)$view_name)
-      rownames(ann_features) <- features(object)$feature_name
+      stopifnot(annotate_features %in% colnames(features_metadata(object)))
+      ann_features <- data.frame(ID = features_metadata(object)$view_name)
+      rownames(ann_features) <- features_metadata(object)$feature_name
     }
 
     # Plot heatmap with annotations
