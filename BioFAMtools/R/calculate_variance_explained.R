@@ -109,7 +109,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, ...) {
+plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, 
+                                    factors = "all", gradient_colors = NA, ...) {
 
   # Calculate variance explained
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
@@ -138,6 +139,17 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     ), id.vars=c("factor", "view", "value")
   )
   colnames(fvar_mk_df)[ncol(fvar_mk_df)] <- "group"
+
+  # Subset factors for plotting
+  if (!((length(factors) == 1) && (factors[1] == "all"))) {
+    if (is.numeric(factors)) {
+      factors <- factors_names(object)[factors]
+    } else { 
+      stopifnot(all(factors %in% factors_names(object)))
+    }
+    fvar_mk_df <- fvar_mk_df[fvar_mk_df$factor %in% factors,]
+  }
+
   fvar_mk_df$factor <- factor(fvar_mk_df$factor)
   fvar_mk_df$group <- factor(fvar_mk_df$group)
 
@@ -167,6 +179,14 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   # x="view";  split_by="group"; y="factor
   # if ( length(groups)>1 ) { x="group"; split_by="view" }
 
+  # Choose colors for the gradient
+  if (is.na(gradient_colors)) {
+    # Old MOFA colors: c("gray97","darkblue")
+    gradient_colors <- c("#e3f2fd", "#0d47a1")
+  } else {
+    stopifnot(length(gradient_colors) == 2)
+  }
+
   plot_list <- list()
   for (i in levels(fvar_mk_df[[split_by]])) {
     
@@ -177,7 +197,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
       guides(fill=guide_colorbar("R2")) +
       # ylab("Latent factor") +
       labs(x="", y="", title="") +
-      scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_lim_p1,max_lim_p1)) +
+      scale_fill_gradientn(colors=gradient_colors, guide="colorbar", limits=c(min_lim_p1, max_lim_p1)) +
       guides(fill=guide_colorbar("R2")) +
       theme(
         # plot.margin = margin(5,5,5,5),
