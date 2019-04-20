@@ -43,10 +43,10 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factor values
-  if (factors == "all") {
+  if ((length(factors) == 1) && (factors == "all")) {
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-    factors <- factors_names(object)[factors]
+    factors <- factors_names(object)[unique(factors)]
   } else { 
     stopifnot(all(factors %in% factors_names(object)))
   }
@@ -202,10 +202,10 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # If plotting one or multiple factors, re-direct to other functions 
-  if (length(factors)==1) {
+  if (length(unique(factors)) == 1) {
     .args <- as.list(match.call()[-1])
-    do.call(plot_factors, .args)   
-  } else if (length(factors)>2) {
+    return(do.call(plot_factors, .args))
+  } else if (length(factors) > 2) {
     .args <- as.list(match.call()[-1])
     p <- do.call(.plot_multiple_factors, .args)
     return(p)
@@ -221,12 +221,12 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   if ((length(factors) == 1) && (factors[1] == "all")) {
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-    factors <- factors_names(object)[factors]
+    factors <- factors_names(object)[unique(factors)]
   } else { 
     stopifnot(all(factors %in% factors_names(object)))
   }
   Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
-  Z$factor <- factor(Z$factor, levels=factors)
+  # Z$factor <- factor(Z$factor, levels=factors)
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)
@@ -245,7 +245,7 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   # spread over factors
   df <- tidyr::spread(df, key="factor", value="value")
   df <- df[,c(colnames(df)[1:4], factors)]
-  df <- magrittr::set_colnames(df,c(colnames(df)[1:4], "x", "y"))
+  df <- magrittr::set_colnames(df, c(colnames(df)[1:4], "x", "y"))
   
   # Generate plot
   p <- ggplot(df, aes(x=x, y=y)) + 
@@ -349,7 +349,7 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
     title = "", 
     legend = legend
     )
-  p <- p + theme_bw() + theme(axis.text = element_text(color="black", size=rel(0.75)))
+  p <- p + theme_minimal() + theme_bw() + theme(axis.text = element_text(color="black", size=rel(0.75)))
   
   return(p)
 }
