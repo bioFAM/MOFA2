@@ -11,18 +11,24 @@
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_weights_signature <- function(object, factors = "all", ...) {
+plot_weights_signature <- function(object, factors = "all", n_top = 10, ...) {
   
   W <- get_weights(object, factors = factors, as.data.frame = TRUE)
 
-  top_features <- W %>% group_by(factor) %>% top_n(n = 10, wt = abs(value)) %>% pull(feature) %>% unique
+  top_features <- W %>% group_by(factor) %>% top_n(n = n_top, wt = abs(value)) %>% pull(feature) %>% unique
 
   df <- W %>% filter(feature %in% top_features)
+  df$factor <- factor(df$factor, levels = unique(df$factor))
+
+  df <- df[order(-abs(df$value)),]
+  df$feature <- factor(df$feature, levels = unique(df$feature))
+
 
   df %>% 
   	ggplot(., aes(x = feature, y = value)) + 
   		geom_bar(stat = 'identity') + 
-  		facet_wrap(~factor, ...) +
+  		facet_grid(factor ~ view, ...) +
+  		ylab("Feature loading") +
 	    theme(
 	        strip.background = element_blank(),
 	        panel.background = element_blank(),
@@ -33,7 +39,9 @@ plot_weights_signature <- function(object, factors = "all", ...) {
 	        axis.title.y = element_text(size=18),
 	        axis.text.y = element_text(size=12),
 	        legend.text=element_text(size=14),
-	        strip.text.x = element_text(size = 12)
+
+	        strip.text.x = element_text(size = 12),
+	        strip.text.y = element_text(angle = 0)
 	    )
 }
 
