@@ -32,6 +32,7 @@
 #' @import ggplot2
 #' @import ggbeeswarm
 #' @import grDevices
+#' @import RColorBrewer
 #' @export
 plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
                                  color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
@@ -187,6 +188,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 #' @param color_name name for color legend (usually only used if color_by is not a character itself)
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself)
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
 #' Similar function is
@@ -196,7 +198,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 #' @export
 plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
                             color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                            dot_size = 1, alpha = 0.5) {
+                            dot_size = 1, alpha = 0.5, return_data = FALSE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -246,6 +248,10 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   df <- tidyr::spread(df, key="factor", value="value")
   df <- df[,c(colnames(df)[1:4], factors)]
   df <- magrittr::set_colnames(df, c(colnames(df)[1:4], "x", "y"))
+
+  # Return data if requested instead of plotting
+  if (return_data)
+    return(df)
   
   # Generate plot
   p <- ggplot(df, aes(x=x, y=y)) + 
