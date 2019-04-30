@@ -380,7 +380,7 @@ class entry_point(object):
 
     def set_train_options(self,
         iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
-        startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
+        startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
         ):
         """ Set training options """
@@ -402,6 +402,7 @@ class entry_point(object):
 
         # Verbosity
         self.train_opts['verbose'] = bool(verbose)
+        self.train_opts['quiet'] = bool(quiet)
 
         # GPU mode
         if gpu_mode:
@@ -641,3 +642,39 @@ class entry_point(object):
         tmp.saveTrainOptions()
         tmp.saveTrainingStats()
         tmp.saveData()
+
+
+def mofa(adata, groups_label=None, use_raw=False,
+         likelihood: str = "gaussian", n_factors: int = 10,
+         n_iterations: int = 1000, convergence_mode: str = "fast",
+         seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
+         verbose = False):
+    """
+    Helper function to init and build the model in a single call
+    from annotation data object
+
+    PARAMETERS
+    ----------
+    adata: an AnnotationData object
+    groups_label (optional): a column name in adata.obs for grouping the samples
+    use_raw (optional): use raw slot of AnnData as input values
+    likelihood: likelihood to use, default is gaussian
+    n_factors: number of factors to train the model with
+    n_iterations: upper limit on the number of iterations
+    convergence_mode: fast, medium, or slow convergence mode
+    seed: random seed
+    outfile: path to HDF5 file to store the model
+    """
+
+    ent = entry_point()
+    
+    lik = [likelihood]
+    
+    ent.set_data_options(lik, center_features_per_group=True, scale_features=True, scale_views=False)
+    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
+    ent.set_model_options(ard_z=True, sl_w=True, sl_z=True, ard_w=True, factors=n_factors, likelihoods=lik)
+    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=False, quiet=True)
+
+    ent.build()
+    ent.run()
+    ent.save(outfile)
