@@ -1,9 +1,9 @@
+import numpy as np
 import pandas as pd
 import scipy as s
 import sys
 from time import sleep
 from time import time
-import pandas as pd
 import imp
 
 from biofam.core.BayesNet import *
@@ -648,7 +648,7 @@ def mofa(adata, groups_label=None, use_raw=False,
          likelihood: str = "gaussian", n_factors: int = 10,
          n_iterations: int = 1000, convergence_mode: str = "fast",
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
-         verbose = False):
+         verbose = False, quiet = True, copy = False):
     """
     Helper function to init and build the model in a single call
     from annotation data object
@@ -664,6 +664,9 @@ def mofa(adata, groups_label=None, use_raw=False,
     convergence_mode: fast, medium, or slow convergence mode
     seed: random seed
     outfile: path to HDF5 file to store the model
+    verbose: print verbose information during traing
+    quiet: silence messages during training procedure
+    copy: return a copy of AnnData instead of writing to the provided object
     """
 
     ent = entry_point()
@@ -678,3 +681,24 @@ def mofa(adata, groups_label=None, use_raw=False,
     ent.build()
     ent.run()
     ent.save(outfile)
+
+    try:
+        import h5py
+    except ImportError:
+        h5py = None
+
+
+    if h5py:
+        f = h5py.File(outfile)
+        if copy:
+            adata = adata.copy()
+        adata.obsm['X_mofa'] = np.concatenate([v[:,:] for k, v in f['expectations']['Z'].items()], axis=1).T
+        adata.varm['LFs'] = np.concatenate([v[:,:] for k, v in f['expectations']['W'].items()], axis=1).T
+        if copy:
+            return adata
+        else:
+            print("Saved MOFA embeddings in adata.obsm.X_mofa slot and their loadings in adata.varm.LFs.")
+    else:
+        print("Can not add embeddings and loadings to AnnData object since h5py is not installed.")
+
+
