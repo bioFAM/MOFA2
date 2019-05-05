@@ -60,3 +60,4 @@ test_that("plot factor values", {
 test_that("plot factors correlation", {
 	expect_error(plot_factor_cor(load_model("test_biofam.hdf5")), NA)
 })
+

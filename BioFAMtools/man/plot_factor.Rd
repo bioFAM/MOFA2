@@ -2,12 +2,15 @@
 % Please edit documentation in R/plot_factors.R
 \name{plot_factor}
 \alias{plot_factor}
+\alias{plot_factors}
 \title{Beeswarm plots of factor values}
 \usage{
-plot_factor(object, factors = "all", group_by = "group",
+plot_factors(object, factors = "all", group_by = "group",
   add_dots = TRUE, add_violin = TRUE, show_missing = TRUE,
   dot_size = 1, color_by = NULL, color_name = "", shape_by = NULL,
-  alpha = 0.25, shape_name = "", rasterize = FALSE, dodge = FALSE)
+  shape_name = "", jitter = TRUE, dots_alpha = 1,
+  violin_alpha = 0.5, violin_color = NA, color_violin = TRUE,
+  rasterize = FALSE, dodge = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
