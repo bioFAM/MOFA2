@@ -36,23 +36,25 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   Y <- lapply(Y, function(x) lapply(x,t))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
-  for (p in groups) {
-    Z[[p]][is.na(Z[[p]])] <- 0
+  for (g in groups) {
+    Z[[g]][is.na(Z[[g]])] <- 0
   }
 
   # Check that data observations are centered
-  for (m in views) { for (p in groups) {
-    if (!all(DelayedArray::colMeans(Y[[m]][[p]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
-      cat(sprintf("Warning: data for view %s is not centered\n",m))
-  }}
+  for (m in views) { 
+    for (g in groups) {
+      if (!all(DelayedArray::colMeans(Y[[m]][[g]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
+        cat(sprintf("Warning: data for view %s and group %s is not centered\n", m, g))
+    }
+  }
 
   Y <- .name_views_and_groups(Y, views, groups)
 
   # Calculate coefficient of determination per group and view
   fvar_m <- tryCatch({
-    lapply(groups, function(p) lapply(views, function(m) {
-        a <- sum((Y[[m]][[p]] - tcrossprod(Z[[p]], W[[m]]))**2, na.rm = TRUE)
-        b <- sum(Y[[m]][[p]]**2, na.rm = TRUE)
+    lapply(groups, function(g) lapply(views, function(m) {
+        a <- sum((as.matrix(Y[[m]][[g]]) - DelayedArray::tcrossprod(Z[[g]], W[[m]]))**2, na.rm = TRUE)
+        b <- sum(Y[[m]][[g]]**2, na.rm = TRUE)
         return(1 - a/b)
       })
     )}, error = function(err) {
@@ -64,10 +66,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   fvar_m <- .name_views_and_groups(fvar_m, groups, views)
 
   # Calculate coefficient of determination per group, factor and view
-  fvar_mk <- lapply(groups, function(p) {
+  fvar_mk <- lapply(groups, function(g) {
     tmp <- sapply(views, function(m) { sapply(factors, function(k) {
-        a <- sum((Y[[m]][[p]] - tcrossprod(Z[[p]][,k], W[[m]][,k]))**2, na.rm = TRUE)
-        b <- sum(Y[[m]][[p]]**2, na.rm = TRUE)
+        a <- sum((as.matrix(Y[[m]][[g]]) - DelayedArray::tcrossprod(Z[[g]][,k], W[[m]][,k]))**2, na.rm = TRUE)
+        b <- sum(Y[[m]][[g]]**2, na.rm = TRUE)
         return(1 - a/b)
       })
     })
