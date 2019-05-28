@@ -11,7 +11,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   if (is(data, "MultiAssayExperiment")) {
     stop("Not functional")
 
-  } else if (is(data, "seurat")) {
+  } else if (is(data, "Seurat")) {
     message("Creating BioFAM object from a Seurat object...")
     
     object <- .create_biofam_from_seurat(data, samples_groups)
@@ -103,7 +103,7 @@ create_biofam <- function(data, samples_groups = NULL) {
     groups_names(object) <- names(object@input_data[[1]])
     
   } else {
-    stop("Error: input data has to be provided as a list of matrices, a data frame (long format), or a suerat object.")
+    stop("Error: input data has to be provided as a list of matrices, a data frame (long format), or a Seurat object.")
   }
   
   print(object)
@@ -175,7 +175,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   return(object)
 }
 
-.create_biofam_from_seurat <- function(srt, samples_groups) {
+.create_biofam_from_seurat <- function(srt, samples_groups, assay = "RNA") {
   if (is(samples_groups, 'character') && (length(samples_groups) == 1)) {
     if (!(samples_groups %in% colnames(srt@meta.data)))
       stop(paste0(samples_groups, " is not found in the Seurat@meta.data.\n",
@@ -187,10 +187,10 @@ create_biofam <- function(data, samples_groups = NULL) {
 
   if (is.null(samples_groups)) {
     message("No samples_groups provided as argument... we assume that all samples are coming from the same group.\n")
-    samples_groups <- rep("group1", ncol(srt@data))
+    samples_groups <- rep("group1", dim(GetAssay(object = srt, assay = assay))[2])
   }
 
-  data_matrices <- list("rna" = .split_seurat_into_groups(srt, samples_groups))
+  data_matrices <- list("rna" = .split_seurat_into_groups(srt, samples_groups, assay))
 
   object <- new("BioFAModel")
   object@status <- "untrained"
@@ -224,15 +224,18 @@ create_biofam <- function(data, samples_groups = NULL) {
   tmp
 }
 
-.split_seurat_into_groups <- function(srt, samples_groups) {
+#' @title Split Seurat into groups
+#' @name .split_seurat_into_groups
+#' @description Split data in Seurat object into a list of matrices
+.split_seurat_into_groups <- function(srt, samples_groups, assay = "RNA") {
   groups_names <- unique(samples_groups)
   tmp <- lapply(groups_names, function(g) {
     # If group name is NA, it has to be treated separately
     # due to the way R handles NAs and equal signs
     if (is.na(g)) {
-      t(srt@data[,is.na(samples_groups)])
+      t(GetAssayData(object = srt, assay = assay, slot = "data")[,is.na(samples_groups)])
     } else {
-      BiocGenerics::t(srt@data[,which(samples_groups == g)])
+      BiocGenerics::t(GetAssayData(object = srt, assay = assay, slot = "data")[,which(samples_groups == g)])
     }
   })
   names(tmp) <- groups_names
