@@ -54,6 +54,8 @@ class entry_point(object):
                 data = list(data.values())
             else:
                 print("Error: Data not recognised"); sys.stdout.flush(); exit()
+        if len(data)==0:
+            print("Error: Data is empty"); sys.stdout.flush(); exit()
 
         # Convert input data to numpy array format
         for m in range(len(data)):
