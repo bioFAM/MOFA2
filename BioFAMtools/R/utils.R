@@ -113,7 +113,7 @@ return(model)
 
 .check_and_get_groups <- function(object, groups) {
   if (is.numeric(groups)) {
-    stopifnot(all(groups <= object@dimensions$P))
+    stopifnot(all(groups <= object@dimensions$G))
     groups_names(object)[groups] 
   } else {
     if (paste0(groups, collapse = "") == "all") { 

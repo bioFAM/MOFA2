@@ -13,7 +13,7 @@ subset_groups <- function(object, groups) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-  stopifnot(length(groups) <= object@dimensions[["P"]])
+  stopifnot(length(groups) <= object@dimensions[["G"]])
   
   if (is.numeric(groups) | is.logical(groups))  {
     groups <- groups_names(object)[groups] 
@@ -32,7 +32,7 @@ subset_groups <- function(object, groups) {
   object@training_data <- sapply(object@training_data, function(x) x[groups], simplify = F, USE.NAMES = T) 
   
   # Update dimensionality
-  object@dimensions[["P"]] <- length(groups)
+  object@dimensions[["G"]] <- length(groups)
   object@dimensions[["N"]] <- object@dimensions[["N"]][groups]
   
   # Update view names

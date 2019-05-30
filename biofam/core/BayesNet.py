@@ -48,6 +48,7 @@ class BayesNet(object):
         assert "start_drop" in train_opts, "'start_drop' not found in the training options dictionary"
         assert "freq_drop" in train_opts, "'freq_drop' not found in the training options dictionary"
         assert "verbose" in train_opts, "'verbose' not found in the training options dictionary"
+        assert "quiet" in train_opts, "'quiet' not found in the training options dictionary"
         assert "tolerance" in train_opts, "'tolerance' not found in the training options dictionary"
         assert "convergence_mode" in train_opts, "'convergence_mode' not found in the training options dictionary"
         assert "forceiter" in train_opts, "'forceiter' not found in the training options dictionary"
@@ -109,12 +110,12 @@ class BayesNet(object):
         # Get groups
         groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
 
-        r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['P']
+        r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['G']
         for m in range(self.dim['M']):
             mask = self.nodes["Y"].getNodes()[m].getMask()
             # Ypred_m = s.dot(Z, W[m].T)
             # Ypred_m[mask] = 0.
-            for g in range(self.dim['P']):
+            for g in range(self.dim['G']):
                 gg = groups==g
                 SS = s.square(Y[m][gg,:]).sum()
                 for k in range(self.dim['K']):
@@ -158,7 +159,7 @@ class BayesNet(object):
         if min_r2 is not None:
             r2 = self.calculate_variance_explained()
 
-            tmp = [ s.where( (r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['P']) ]
+            tmp = [ s.where( (r2[g]>min_r2).sum(axis=0) == 0)[0] for g in range(self.dim['G']) ]
             drop_dic["min_r2"] = list(set.intersection(*map(set,tmp)))
             if len(drop_dic["min_r2"]) > 0:
                 drop_dic["min_r2"] = [ s.random.choice(drop_dic["min_r2"]) ]
@@ -190,7 +191,8 @@ class BayesNet(object):
             print("ELBO before training:")
             print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % elbo["total"])
         else:
-            print('ELBO before training: %.2f' % elbo["total"])
+            if not self.options['quiet']:
+                print('ELBO before training: %.2f' % elbo["total"])
         print("\n")
 
         return elbo
@@ -241,8 +243,9 @@ class BayesNet(object):
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
 
                 # Print ELBO monitoring
-                print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
-                if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
+                if not self.options['quiet']:
+                    print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
+                    if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
                 # Print ELBO decomposed by node and variance explained
                 if self.options['verbose']:
@@ -258,7 +261,7 @@ class BayesNet(object):
 
             # Do not calculate lower bound
             else:
-                print("Iteration %d: time=%.2f, Factors=%d" % (i,time()-t,self.dim["K"]))
+                if not self.options['quiet']: print("Iteration %d: time=%.2f, Factors=%d" % (i,time()-t,self.dim["K"]))
 
             # Print other statistics
             if self.options['verbose']:
@@ -275,7 +278,7 @@ class BayesNet(object):
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
                 # print("Fraction of zero samples: %.0f%%" % (100*bar))
-            print("\n")
+                print("\n")
 
             iter_time[i] = time()-t
             
@@ -496,7 +499,7 @@ class StochasticBayesNet(BayesNet):
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
                 # print("Fraction of zero samples: %.0f%%" % (100*bar))
-            print("\n")
+            # print("\n")
 
             iter_time[i] = time()-t
             

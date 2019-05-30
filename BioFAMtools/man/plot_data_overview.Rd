@@ -4,7 +4,7 @@
 \alias{plot_data_overview}
 \title{Tile plot of the multi-omics data}
 \usage{
-plot_data_overview(object, colors = NULL)
+plot_data_overview(object, colors = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

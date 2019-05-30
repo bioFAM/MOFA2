@@ -1,9 +1,9 @@
+import numpy as np
 import pandas as pd
 import scipy as s
 import sys
 from time import sleep
 from time import time
-import pandas as pd
 import imp
 
 from biofam.core.BayesNet import *
@@ -20,13 +20,16 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the biofam banner """
 
-        banner = """
-         _     _        __
-        | |__ (_) ___  / _| __ _ _ __ ___
-        | '_ \| |/ _ \| |_ / _` | '_ ` _ \
-        | |_) | | (_) |  _| (_| | | | | | |
-        |_.__/|_|\___/|_|  \__,_|_| |_| |_|
+        banner = r""" 
 
+         _     _        __                       |￣￣￣￣￣￣￣|
+        | |__ (_) ___  / _| __ _ _ __ ___        |              | 
+        | '_ \| |/ _ \| |_ / _` | '_ ` _ \       |    MOFA+     |  
+        | |_) | | (_) |  _| (_| | | | | | |      |              | 
+        |_.__/|_|\___/|_|  \__,_|_| |_| |_|      | ＿＿＿＿＿＿_|  
+                                                 (\__/) ||  
+                                                 (•ㅅ•) ||  
+                                                 / 　 づ 
         """
 
         print(banner)
@@ -65,7 +68,7 @@ class entry_point(object):
 
         # Save dimensionalities
         M = self.dimensionalities["M"] = len(data)
-        G = self.dimensionalities["P"] = len(data[0])
+        G = self.dimensionalities["G"] = len(data[0])
         N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
@@ -177,10 +180,10 @@ class entry_point(object):
         self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
 
         # set dimensionalities of the model
-        M = self.dimensionalities['M'] = len(set(self.io_opts['views_names']))
+        M = self.dimensionalities["M"] = len(set(self.io_opts['views_names']))
         N = self.dimensionalities["N"] = self.data[0].shape[0]
         D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
-        self.dimensionalities['P'] = len(set(self.io_opts['groups_names']))
+        self.dimensionalities["G"] = len(set(self.io_opts['groups_names']))
 
         # NOTE: Usage of covariates is currently not functional
         self.data_opts['covariates'] = None
@@ -234,10 +237,10 @@ class entry_point(object):
 
         # Define dimensionalities
         self.dimensionalities = {}
-        self.dimensionalities['M'] = len(self.data_opts['views_names'])
-        self.dimensionalities['N'] = len(self.data_opts['samples_names'])
-        self.dimensionalities['P'] = len(self.data_opts['groups_names'])
-        self.dimensionalities['D'] = [len(x) for x in self.data_opts['features_names']]
+        self.dimensionalities["M"] = len(self.data_opts['views_names'])
+        self.dimensionalities["N"] = len(self.data_opts['samples_names'])
+        self.dimensionalities["G"] = len(self.data_opts['groups_names'])
+        self.dimensionalities["D"] = [len(x) for x in self.data_opts['features_names']]
 
         # Count the number of features per view and the number of samples per group
         tmp_samples = data[["sample","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["sample"].nunique()
@@ -258,9 +261,126 @@ class entry_point(object):
         self.data_opts['covariates'] = None
         self.data_opts['scale_covariates'] = False
 
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False):
+        """ Method to input the data in AnnData format
+
+        PARAMETERS
+        ----------
+        adata: an AnnotationData object
+        groups_label (optional): a column name in adata.obs for grouping the samples
+        use_raw (optional): use raw slot of AnnData as input values
+        """
+
+        # Sanity checks
+        assert hasattr(self, 'data_opts'), "Data options not defined"
+
+        # Check groups_label is defined properly
+        n_groups = 1  # no grouping by default
+        if groups_label is not None:
+            if not isinstance(groups_label, str):
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+            if groups_label not in adata.obs.columns:
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+            n_groups = adata.obs[groups_label].unique().shape[0]
+
+        # Save dimensionalities
+        M = self.dimensionalities["M"] = 1
+        G = self.dimensionalities["G"] = n_groups
+        N = self.dimensionalities["N"] = adata.shape[0]
+        D = self.dimensionalities["D"] = [adata.shape[1]]
+        n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby(groups_label).size().values
+
+        # Define views names and features names
+        self.data_opts['views_names'] = ["rna"]
+        self.data_opts['features_names'] = [adata.var_names]
+
+        # Define groups and samples names
+        if groups_label is None:
+            self.data_opts['groups_names'] = "group1"
+            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
+            self.data_opts['samples_groups'] = ["group1"] * N
+        else:
+            self.data_opts['groups_names'] = adata.obs[groups_label].unique()
+            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
+            self.data_opts['samples_groups'] = adata.obs[groups_label].values
+
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
+        print("\n")
+        # Process the data (center, scaling, etc.)
+        if use_raw:
+            self.data = process_data([np.array(adata.raw[:,adata.var_names].X.todense())], self.data_opts, self.data_opts['samples_groups'])
+        else:
+            self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
+
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
+
+    def set_data_from_loom(self, loom, groups_label=None, layer=None):
+        """ Method to input the data in Loom format
+
+        PARAMETERS
+        ----------
+        loom: connection to loom file (loompy.loompy.LoomConnection)
+        groups_label (optional): a key in loom.ca for grouping the samples
+        layer (optional): a layer to be used instead of the main matrix
+        """
+
+        # Sanity checks
+        assert hasattr(self, 'data_opts'), "Data options not defined"
+
+        # Check groups_label is defined properly
+        n_groups = 1  # no grouping by default
+        if groups_label is not None:
+            if not isinstance(groups_label, str):
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+            if groups_label not in loom.ca.keys():
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+            n_groups = pd.unique(loom.ca[groups_label]).shape[0]
+
+        # Save dimensionalities
+        M = self.dimensionalities["M"] = 1
+        G = self.dimensionalities["G"] = n_groups
+        N = self.dimensionalities["N"] = loom.shape[1]
+        D = self.dimensionalities["D"] = [loom.shape[0]]
+        n_grouped = [loom.shape[1]] if n_groups == 1 else pd.DataFrame({'label': loom.ca[groups_label]}).groupby('label').size().values
+
+        # Define views names and features names
+        self.data_opts['views_names'] = ["rna"]
+        self.data_opts['features_names'] = [loom.ra.Accession] if 'Accession' in loom.ra.keys() else [loom.ra.Gene]
+
+        # Define groups and samples names
+        if groups_label is None:
+            self.data_opts['groups_names'] = "group1"
+            self.data_opts['samples_names'] = loom.ca.CellID
+            self.data_opts['samples_groups'] = ["group1"] * N
+        else:
+            self.data_opts['groups_names'] = pd.unique(loom.ca[groups_label])
+            self.data_opts['samples_names'] = loom.ca.CellID
+            self.data_opts['samples_groups'] = loom.ca[groups_label]
+
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
+        print("\n")
+        # Process the data (center, scaling, etc.)
+        if layer is not None:
+            self.data = process_data([loom.layers[layer]], self.data_opts, self.data_opts['samples_groups'])
+        else:
+            self.data = process_data([loom[:,:]], self.data_opts, self.data_opts['samples_groups'])
+
+        # NOTE: Usage of covariates is currently not functional
+        self.data_opts['covariates'] = None
+        self.data_opts['scale_covariates'] = False
+
     def set_train_options(self,
         iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
-        startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, seed=None,
+        startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
         ):
         """ Set training options """
@@ -282,6 +402,7 @@ class entry_point(object):
 
         # Verbosity
         self.train_opts['verbose'] = bool(verbose)
+        self.train_opts['quiet'] = bool(quiet)
 
         # GPU mode
         if gpu_mode:
@@ -492,7 +613,7 @@ class entry_point(object):
         assert hasattr(self, 'model'), "No trained model found"
 
         # Create output directory
-        if not os.path.isdir(os.path.dirname(outfile)):
+        if not os.path.isdir(os.path.dirname(outfile)) and (os.path.dirname(outfile) != ''):
             print("Output directory does not exist, creating it...")
             os.makedirs(os.path.dirname(outfile))
         print("Saving model in %s...\n" % outfile)
@@ -521,3 +642,63 @@ class entry_point(object):
         tmp.saveTrainOptions()
         tmp.saveTrainingStats()
         tmp.saveData()
+
+
+def mofa(adata, groups_label=None, use_raw=False,
+         likelihood: str = "gaussian", n_factors: int = 10,
+         n_iterations: int = 1000, convergence_mode: str = "fast",
+         seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
+         verbose = False, quiet = True, copy = False):
+    """
+    Helper function to init and build the model in a single call
+    from annotation data object
+
+    PARAMETERS
+    ----------
+    adata: an AnnotationData object
+    groups_label (optional): a column name in adata.obs for grouping the samples
+    use_raw (optional): use raw slot of AnnData as input values
+    likelihood: likelihood to use, default is gaussian
+    n_factors: number of factors to train the model with
+    n_iterations: upper limit on the number of iterations
+    convergence_mode: fast, medium, or slow convergence mode
+    seed: random seed
+    outfile: path to HDF5 file to store the model
+    verbose: print verbose information during traing
+    quiet: silence messages during training procedure
+    copy: return a copy of AnnData instead of writing to the provided object
+    """
+
+    ent = entry_point()
+    
+    lik = [likelihood]
+    
+    ent.set_data_options(lik, center_features_per_group=True, scale_features=True, scale_views=False)
+    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
+    ent.set_model_options(ard_z=True, sl_w=True, sl_z=True, ard_w=True, factors=n_factors, likelihoods=lik)
+    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=False, quiet=True)
+
+    ent.build()
+    ent.run()
+    ent.save(outfile)
+
+    try:
+        import h5py
+    except ImportError:
+        h5py = None
+
+
+    if h5py:
+        f = h5py.File(outfile)
+        if copy:
+            adata = adata.copy()
+        adata.obsm['X_mofa'] = np.concatenate([v[:,:] for k, v in f['expectations']['Z'].items()], axis=1).T
+        adata.varm['LFs'] = np.concatenate([v[:,:] for k, v in f['expectations']['W'].items()], axis=1).T
+        if copy:
+            return adata
+        else:
+            print("Saved MOFA embeddings in adata.obsm.X_mofa slot and their loadings in adata.varm.LFs.")
+    else:
+        print("Can not add embeddings and loadings to AnnData object since h5py is not installed.")
+
+

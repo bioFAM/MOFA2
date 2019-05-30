@@ -19,10 +19,10 @@ groups_names(object) <- value
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{value}{character vector with the names for each view}
+\item{value}{character vector with the names for each sample group}
 }
 \value{
-character vector with the names for each view
+character vector with the names for each sample group
 }
 \description{
 groups_names: set and retrieve view names

@@ -33,40 +33,40 @@
 #' @aliases BioFAModel-class
 #' @exportClass BioFAModel
 setClass("BioFAModel", 
-         slots=c(input_data        = "list",
-                 training_data     = "list",
-                 imputed_data      = "list",
-                 samples_metadata  = "list",
-                 features_metadata = "list",
-                 expectations      = "list", 
-                 training_stats    = "list",
-                 training_options  = "list",
-                 data_options      = "list",
-                 model_options     = "list",
-                 dimensions        = "list",
-                 on_disk           = "logical",
-                 cache             = "list",
-                 status            = "character")
+		slots=c(input_data        = "list",
+				training_data     = "list",
+				imputed_data      = "list",
+				samples_metadata  = "list",
+				features_metadata = "list",
+				expectations      = "list", 
+				training_stats    = "list",
+				training_options  = "list",
+				data_options      = "list",
+				model_options     = "list",
+				dimensions        = "list",
+				on_disk           = "logical",
+				cache             = "list",
+				status            = "character")
 )
 
 # Printing method
 setMethod("show", "BioFAModel", function(object) {
   
   if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
-    stop("Error: dimensions not defined")
+	stop("Error: dimensions not defined")
   if (!.hasSlot(object, "status") | length(object@status) == 0)
-    stop("Error: status not defined")
+	stop("Error: status not defined")
   
   if (object@status == "trained") {
-    nfactors <- object@dimensions[["K"]]
-    cat(sprintf("Trained BioFAModel with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of sample groups: %d \n Sample groups names: %s \n Number of samples per group: %s \n Number of factors: %d \n",
-                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
-                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
-                nfactors))
+	nfactors <- object@dimensions[["K"]]
+	cat(sprintf("Trained BioFAModel with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of sample groups: %d \n Sample groups names: %s \n Number of samples per group: %s \n Number of factors: %d \n",
+				object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
+				object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
+				nfactors))
   } else {
-    cat(sprintf("Untrained BioFAModel model with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of sample groups: %d \n Sample groups names: %s \n Number of samples per group: %s \n",
-                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
-                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+	cat(sprintf("Untrained BioFAModel model with the following characteristics: \n Number of views: %d \n View names: %s \n Number of features per view: %s \n Number of sample groups: %d \n Sample groups names: %s \n Number of samples per group: %s \n",
+				object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+				object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
   }
   cat("\n")
 })
