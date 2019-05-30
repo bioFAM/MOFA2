@@ -206,7 +206,7 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   
   # Generate plot  
   p <- ggplot(df, aes(x=x, y=y)) + 
-    geom_point(aes(color = color_by, shape = shape_by)) +
+    geom_point(aes(color = color_by, shape = shape_by), size=dot_size) +
     # ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
