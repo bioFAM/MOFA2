@@ -148,7 +148,7 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
 
   # Fetch data
   train_data <- lapply(object@training_data[views], function(e) e[groups])
-  train_data <- lapply(1:length(train_data), function(m) lapply(1:length(train_data[[1]]), function(p) train_data[[m]][[p]][features[[m]],,drop=F]))
+  train_data <- lapply(1:length(train_data), function(m) lapply(1:length(train_data[[1]]), function(p) train_data[[m]][[p]][as.character(features[[m]]),,drop=F]))
   train_data <- .name_views_and_groups(train_data, views, groups)
   
   # Convert to long data frame

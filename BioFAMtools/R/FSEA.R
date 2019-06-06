@@ -48,9 +48,6 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
         stopifnot(all(factors %in% factors_names(object))) 
       }
   }
-
-  # remove intercept factors
-  factors <- factors[factors!="intercept"]
   
   # Collect observed data
   data <- object@training_data[[view]]

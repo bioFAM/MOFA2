@@ -120,8 +120,10 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   }
 
   # Check if some of x, y, or split_by are the same
-  if (length(unique(c(x, y, split_by))) != 3) stop(paste0("Please ensure x, y, and split_by arguments are different.\n",
-                                                          "  Possible values are `view`, `group`, and `factor`."))
+  if (length(unique(c(x, y, split_by))) != 3) {
+    stop(paste0("Please ensure x, y, and split_by arguments are different.\n",
+          "  Possible values are `view`, `group`, and `factor`."))
+  }
 
   # Automatically fill split_by in
   if (is.na(split_by)) split_by <- setdiff(c("view", "factor", "group"), c(x, y, split_by))
