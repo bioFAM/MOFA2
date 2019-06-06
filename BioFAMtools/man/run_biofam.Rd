@@ -4,7 +4,7 @@
 \alias{run_biofam}
 \title{train a BioFAM model}
 \usage{
-run_biofam(object, outfile)
+run_biofam(object, outfile = NA)
 }
 \arguments{
 \item{object}{an untrained \code{\link{bioFAMmodel}} object}

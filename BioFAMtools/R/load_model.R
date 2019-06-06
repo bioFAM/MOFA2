@@ -22,6 +22,8 @@
 
 load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE, set_names = TRUE) {
 
+  options(stringsAsFactors = FALSE)
+
   # Create new bioFAModel object
   if (is.null(object)) object <- new("BioFAModel")
   object@status <- "trained"
@@ -49,24 +51,24 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   if (load_training_data) {
     for (m in view_names) {
       training_data[[m]] <- list()
-      for (p in group_names) {
+      for (g in group_names) {
         if (on_disk) {
           # as DelayedArrays
-          training_data[[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, p) ) )
+          training_data[[m]][[g]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, g) ) )
         } else {
           # as matrices
-          training_data[[m]][[p]] <- h5read(file, sprintf("data/%s/%s", m, p) )
+          training_data[[m]][[g]] <- h5read(file, sprintf("data/%s/%s", m, g) )
         }
         # Replace NaN by NA
-        training_data[[m]][[p]][is.nan(training_data[[m]][[p]])] <- NA # this realised into memory, TO FIX
+        training_data[[m]][[g]][is.nan(training_data[[m]][[g]])] <- NA # this realised into memory, TO FIX
       }
     }
   # Create training data (as nested list of empty matrices, with the correct dimensions)
   } else {
     for (m in view_names) {
       training_data[[m]] <- list()
-      for (p in group_names) {
-        training_data[[m]][[p]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[p]])
+      for (g in group_names) {
+        training_data[[m]][[g]] <- .create_matrix_placeholder(rownames = feature_names[[m]], colnames = sample_names[[g]])
       }
     }
   }
@@ -116,7 +118,11 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     expectations[["Y"]][[m]] <- list()
     for (p in group_names) {
       if (on_disk) {
-        expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
+        if (tmp[[m]]=="gaussian") {
+          expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]]
+        } else {
+          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) ) 
+        }
       } else {
         # expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
         if (tmp[[m]]=="gaussian") {

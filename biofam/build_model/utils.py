@@ -10,7 +10,6 @@ import h5py
 
 from biofam.core.nodes import *
 
-
 def mask_data(data, mask_fraction):
     """ Method to mask data values, mainly used to evaluate imputation
 
@@ -198,3 +197,4 @@ def loadDataGroups(data_opts):
         return None
     sample_labels = np.genfromtxt(data_opts['samples_groups_file'], dtype='str')
     return sample_labels
+

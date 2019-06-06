@@ -32,16 +32,27 @@
 #' @import ggplot2
 #' @import ggbeeswarm
 #' @import grDevices
+#' @import RColorBrewer
 #' @export
-plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TRUE, add_violin=TRUE, show_missing = TRUE, dot_size = 1,
-                                 color_by = NULL, color_name = "", shape_by = NULL, alpha=0.25, shape_name = "", rasterize = FALSE, dodge=FALSE) {
+plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
+                                 color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
+                                 jitter = TRUE, dots_alpha = 1.0,
+                                 violin_alpha = 0.5, violin_color = NA, color_violin = TRUE,
+                                 rasterize = FALSE, dodge = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factor values
+  if ((length(factors) == 1) && (factors == "all")) {
+    factors <- factors_names(object)
+  } else if (is.numeric(factors)) {
+    factors <- factors_names(object)[unique(factors)]
+  } else { 
+    stopifnot(all(factors %in% factors_names(object)))
+  }
   Z <- get_factors(object, factors=factors, as.data.frame=T)
-  Z$factor <- as.factor(Z$factor)
+  Z$factor <- factor(Z$factor, levels=factors)
   
   # Set group/color/shape
   group_by <- .set_groupby(object, group_by)
@@ -79,10 +90,16 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
       legend.direction = "vertical",
       legend.key = element_blank()
     ) 
+
   
   # Add dots
   if (add_dots) {
-    if (rasterize) {
+    if (jitter) {
+      if (rasterize || dodge)
+        warning("Rasterize or dodge options are not active when using jitter")
+      p <- p + geom_jitter(size = dot_size, alpha = dots_alpha)
+    }
+    else if (rasterize) {
       if (dodge) {
         p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1)
       } else {
@@ -100,19 +117,20 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   
   # Add violin plot
   if (add_violin) {
-    if (dodge) {
+    if (color_violin) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       if (min(tmp$n)==1) {
         warning("Warning: some 'color_by' groups have only one observation, violin plots are not displayed")
       } else {
-        p <- p + geom_violin(aes(fill=color_by), color="black", alpha=alpha, trim=F, scale="width", position=position_dodge(width = 1))
-        if (add_dots) p <- p + scale_fill_discrete(guide = FALSE)
+        violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
+        p <- p + geom_violin(aes(fill=color_by), color=violin_color, alpha=violin_alpha, trim=F, scale="width", position=position_dodge(width = 1))
+        if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
-      p <- p + geom_violin(color="black", fill="grey", alpha=alpha, trim=F, scale="width")
+      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=F, scale="width")
     }
   }
-  
+
   # If 'color_by' is numeric, define the default gradient
   if (is.numeric(df$color))
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
@@ -130,12 +148,28 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
   } else { 
     p <- p + guides(shape = FALSE) 
   }
+
+  # Use unified theme across the plots
+  p <- p +
+    theme_minimal() +
+    theme_bw() + 
+    theme(
+        strip.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(size=.1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        axis.title.y = element_text(size=18),
+        axis.text.y = element_text(size=12),
+        legend.text=element_text(size=14),
+        strip.text.x = element_text(size = 12)
+    )
   
   return(p)
 }
 
 #' @title Scatterplots of two factor values
-#' @name plot_factors
+#' @name plot_embeddings
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
@@ -154,37 +188,47 @@ plot_factor <- function(object, factors = "all", group_by = "group", add_dots=TR
 #' @param color_name name for color legend (usually only used if color_by is not a character itself)
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself)
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
-#' Similar functions are \code{\link{plot_factor_scatters}} for doing multiple scatter plots and 
-#' \code{\link{plot_factor_beeswarm}} for doing Beeswarm plots for single factors.
+#' Similar function is
+#' \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
-                         color_by = NULL, shape_by = NULL, color_name="", shape_name="") {
+plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
+                            color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
+                            dot_size = 1, alpha = 0.5, return_data = FALSE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   
   # If plotting one or multiple factors, re-direct to other functions 
-  if (length(factors)==1) {
+  if (length(unique(factors)) == 1) {
     .args <- as.list(match.call()[-1])
-    do.call(plot_factor_beeswarm, .args)   
-  } else if (length(factors)>2) {
+    return(do.call(plot_factors, .args))
+  } else if (length(factors) > 2) {
     .args <- as.list(match.call()[-1])
     p <- do.call(.plot_multiple_factors, .args)
     return(p)
   }
+
+  # Remember color_name and shape_name if not provided
+  if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))
+    color_name <- color_by
+  if (!is.null(shape_by) && (length(shape_by) == 1) && is.null(shape_name))
+    shape_name <- shape_by
   
   # Get factors
-  if (is.numeric(factors)) {
-    factors <- factors_names(object)[factors]
+  if ((length(factors) == 1) && (factors[1] == "all")) {
+    factors <- factors_names(object)
+  } else if (is.numeric(factors)) {
+    factors <- factors_names(object)[unique(factors)]
   } else { 
     stopifnot(all(factors %in% factors_names(object)))
   }
   Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
-  Z$factor <- as.factor(Z$factor)
+  # Z$factor <- factor(Z$factor, levels=factors)
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)
@@ -202,11 +246,16 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   
   # spread over factors
   df <- tidyr::spread(df, key="factor", value="value")
-  df <- magrittr::set_colnames(df,c(colnames(df)[1:4],"x","y"))
+  df <- df[,c(colnames(df)[1:4], factors)]
+  df <- magrittr::set_colnames(df, c(colnames(df)[1:4], "x", "y"))
+
+  # Return data if requested instead of plotting
+  if (return_data)
+    return(df)
   
-  # Generate plot  
+  # Generate plot
   p <- ggplot(df, aes(x=x, y=y)) + 
-    geom_point(aes(color = color_by, shape = shape_by)) +
+    geom_point(aes(color = color_by, shape = shape_by), size=dot_size, alpha=alpha) +
     # ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
     xlab(factors[1]) + ylab(factors[2]) +
     theme(
@@ -243,8 +292,7 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
   
   return(p)
 }
-  
-  
+
 
   
 # Plot multiple factors as pairwise scatterplots
@@ -307,7 +355,7 @@ plot_factors <- function(object, factors, show_missing = TRUE, dot_size=1,
     title = "", 
     legend = legend
     )
-  p <- p + theme_bw() + theme(axis.text = element_text(color="black", size=rel(0.75)))
+  p <- p + theme_minimal() + theme_bw() + theme(axis.text = element_text(color="black", size=rel(0.75)))
   
   return(p)
 }
@@ -361,8 +409,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     group_by = factor(group_by, levels=groups_names(object))
     
     # Option 2: by a metadata column in object@samples$metadata
-  } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples(object)))) {
-      group_by <- samples(object)[,group_by]
+  } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples_metadata(object)))) {
+      group_by <- samples_metadata(object)[,group_by]
 
     # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
@@ -400,7 +448,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     
   # Option 1: by default group
   } else if (color_by[1] == "group") {
-    color_by <- samples_groups(x)$group_name
+    color_by <- samples_groups(object)$group_name
     
   # Option 2: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
@@ -410,8 +458,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
       color_by <- training_data[[viewidx]][color_by,]
     
   # Option 3: by a metadata column in object@samples$metadata
-  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples(object)))) {
-      color_by <- samples(object)[,color_by]
+  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+      color_by <- samples_metadata(object)[,color_by]
         
   # Option 4: input is a data.frame with columns (sample, color)
   } else if (is(color_by, "data.frame")) {
@@ -460,8 +508,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(model))))
 
     # Option 3: by a metadata column in object@samples$metadata
-  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples(object)))) {
-      shape_by <- samples(object)[,shape_by]
+  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
+      shape_by <- samples_metadata(object)[,shape_by]
     
   # Option 4: shape_by is a vector of length N
   } else if (length(shape_by) > 1) {

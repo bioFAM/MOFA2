@@ -106,16 +106,16 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 
     # Use samples annotation
     if (!is.null(annotate_samples)) {
-      stopifnot(annotate_samples %in% colnames(samples(object)))
-      ann_samples <- data.frame(ID = samples(object)$group_name)
-      rownames(ann_samples) <- samples(object)$sample_name
+      stopifnot(annotate_samples %in% colnames(samples_metadata(object)))
+      ann_samples <- data.frame(ID = samples_metadata(object)$group_name)
+      rownames(ann_samples) <- samples_metadata(object)$sample_name
     }
 
     # Use features annotation
     if (!is.null(annotate_features)) {
-      stopifnot(annotate_features %in% colnames(features(object)))
-      ann_features <- data.frame(ID = features(object)$view_name)
-      rownames(ann_features) <- features(object)$feature_name
+      stopifnot(annotate_features %in% colnames(features_metadata(object)))
+      ann_features <- data.frame(ID = features_metadata(object)$view_name)
+      rownames(ann_features) <- features_metadata(object)$feature_name
     }
 
     # Plot heatmap with annotations
@@ -301,7 +301,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 #' @import dplyr
 #' @import reshape2
 #' @export
-plot_data_overview <- function(object, colors = NULL) {
+plot_data_overview <- function(object, colors = NULL, ...) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -315,7 +315,7 @@ plot_data_overview <- function(object, colors = NULL) {
   
   # Define colors  
   if (is.null(colors)) {
-    colors <- rep("#5CACEE",M)
+    colors <- rep("#5CACEE", M)
     # palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
     #              "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
     #              "#A65628", "#F781BF", "#1B9E77")
@@ -371,7 +371,7 @@ plot_data_overview <- function(object, colors = NULL) {
     scale_fill_manual(values = c("missing"="grey", colors)) +
     xlab(paste0("Samples (N=", n, ")")) + ylab("") +
     guides(fill=F) + 
-    facet_wrap(~group_label, scales="free_x") +
+    facet_wrap(~group_label, scales="free_x", ...) +
     theme(
       panel.background = element_rect(fill="white"),
       text = element_text(size=14),
