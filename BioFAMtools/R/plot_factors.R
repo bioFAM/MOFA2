@@ -35,16 +35,16 @@
 #' @import RColorBrewer
 #' @export
 plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
-                                 color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
-                                 jitter = TRUE, dots_alpha = 1.0,
-                                 violin_alpha = 0.5, violin_color = NA, color_violin = TRUE,
+                                 color_by = "group", color_name = "", shape_by = NULL, shape_name = "", 
+                                 jitter = TRUE, dots_alpha = 1.0, legend = TRUE,
+                                 violin_alpha = 0.5,
                                  rasterize = FALSE, dodge = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factor values
-  if ((length(factors) == 1) && (factors == "all")) {
+  if ((length(factors)==1) && (factors == "all")) {
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
     factors <- factors_names(object)[unique(factors)]
@@ -67,31 +67,18 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   df <- merge(df, color_by, by="sample")
   df <- merge(df, shape_by, by="sample")
   
+  df$color_by <- as.character(df$color_by)
+  df$group_by <- as.character(df$group_by)
+  df$shape_by <- as.character(df$shape_by)
+  
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   
   # Generate plot
   p <- ggplot(df, aes(x=group_by, y=value, color=color_by, shape=shape_by)) +
     facet_wrap(~factor, scales="free") +
-    ylab("Factor value") + xlab("") +
-    theme(
-      axis.text = element_text(size = rel(1.1), color = "black"),
-      axis.title.y = element_text(size = rel(1.1), color = "black"),
-      axis.line = element_line(color = "black", size = 0.5),
-      axis.ticks.length = unit(0.25,"cm"),
-      axis.ticks = element_line(color = "black"),
-      panel.border = element_blank(), 
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(), 
-      panel.background = element_blank(),
-      legend.title = element_text(size=rel(1.1), hjust=0.5, color="black"),
-      legend.text = element_text(size=rel(1.1), hjust=0, color="black"),
-      legend.position = "right", 
-      legend.direction = "vertical",
-      legend.key = element_blank()
-    ) 
+    labs(x="", y="Factor value")
 
-  
   # Add dots
   if (add_dots) {
     if (jitter) {
@@ -122,9 +109,9 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
       if (min(tmp$n)==1) {
         warning("Warning: some 'color_by' groups have only one observation, violin plots are not displayed")
       } else {
-        violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
-        p <- p + geom_violin(aes(fill=color_by), color=violin_color, alpha=violin_alpha, trim=F, scale="width", position=position_dodge(width = 1))
-        if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
+        # violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
+        p <- p + geom_violin(aes(fill=color_by), alpha=violin_alpha, trim=F, scale="width", position=position_dodge(width = 1))
+        # if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
       p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=F, scale="width")
@@ -139,31 +126,54 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   if (length(unique(df$color_by))>1) { 
     p <- p + labs(color_by=color_name)
   } else { 
-    p <- p + guides(fill=FALSE) 
+    p <- p + guides(fill=F, color=F) + 
+      scale_color_manual(values="black") +
+      scale_fill_manual(values="gray60")
   }
   
   # Add legend for shape
   if (length(unique(df$shape))>1) { 
     p <- p + labs(shape=shape_name)
   } else { 
-    p <- p + guides(shape = FALSE) 
+    p <- p + guides(shape=F) 
   }
 
   # Use unified theme across the plots
   p <- p +
-    theme_minimal() +
     theme_bw() + 
     theme(
-        strip.background = element_blank(),
         panel.border = element_blank(),
         panel.grid.minor = element_blank(),
         panel.grid.major = element_line(size=.1),
-        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-        axis.title.y = element_text(size=18),
-        axis.text.y = element_text(size=12),
-        legend.text=element_text(size=14),
-        strip.text.x = element_text(size = 12)
+        panel.spacing = unit(1, "lines"),
+        # axis.text.x = element_text(size=rel(1.0), color="black", angle=30, hjust=0, vjust=0.5),
+        axis.text.x = element_text(size=rel(1.0), color="black"),
+        axis.text.y = element_text(size=rel(1.0)),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=rel(0.9), color="black"),
+        # axis.line = element_line(color="black", size=1.0),
+        axis.ticks = element_line(color = "black"),
+        axis.title = element_text(size=rel(1.2)),
     )
+  
+  if (length(unique(df$factor))>1) {
+    p <- p + scale_y_continuous(breaks=NULL)
+  }
+  
+  # Add legend
+  if (legend) {
+    p <- p + theme(
+      legend.title = element_text(size=rel(1.1), hjust=0.5, color="black"),
+      legend.text = element_text(size=rel(1.1), hjust=0, color="black"),
+      legend.position = "right", 
+      legend.direction = "vertical",
+      legend.key = element_blank()
+    )
+  } else {
+    p <- p + theme(
+      legend.position = "none"
+    )
+  }
   
   return(p)
 }
@@ -196,9 +206,9 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
+plot_embeddings <- function(object, factors = c(1,2), show_missing = TRUE,
                             color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                            dot_size = 1, alpha = 0.5, return_data = FALSE) {
+                            dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -250,26 +260,19 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   df <- magrittr::set_colnames(df, c(colnames(df)[1:4], "x", "y"))
 
   # Return data if requested instead of plotting
-  if (return_data)
-    return(df)
+  if (return_data) return(df)
   
   # Generate plot
   p <- ggplot(df, aes(x=x, y=y)) + 
     geom_point(aes(color = color_by, shape = shape_by), size=dot_size, alpha=alpha) +
     # ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
-    xlab(factors[1]) + ylab(factors[2]) +
+    labs(x=factors[1], y=factors[2]) +
+    theme_classic() +
     theme(
       axis.text = element_text(size = rel(1.0), color = "black"), 
-      axis.title = element_text(size = rel(1.3)), 
+      axis.title = element_text(size = rel(1.3), color = "black"), 
       axis.line = element_line(color = "black", size = 0.5), 
-      axis.ticks = element_line(color = "black", size = 0.5),
-      panel.border = element_blank(), 
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(), 
-      panel.background = element_blank(),
-      legend.key = element_rect(fill = "white"),
-      legend.text = element_text(size=rel(1.2)),
-      legend.title = element_text(size=rel(1.2))
+      axis.ticks = element_line(color = "black", size = 0.5)
     )
   
   # If color is numeric, define the default gradient
@@ -280,14 +283,24 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   if (length(unique(df$color))>1) { 
     p <- p + labs(color=color_name)
   } else { 
-    p <- p + guides(color = FALSE) 
+    p <- p + guides(color=F) + scale_color_manual(values="black")
   }
   
   # Add legend for shape
   if (length(unique(df$shape))>1) { 
     p <- p + labs(shape=shape_name)
   } else { 
-    p <- p + guides(shape = FALSE) 
+    p <- p + guides(shape=F) 
+  }
+  
+  if (legend) {
+    p <- p + theme(
+      legend.key = element_rect(fill = "white"),
+      legend.text = element_text(size=rel(1.2)),
+      legend.title = element_text(size=rel(1.2))
+    )
+  } else {
+      p <- p + theme(legend.position = "none")
   }
   
   return(p)
@@ -297,7 +310,7 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   
 # Plot multiple factors as pairwise scatterplots
 .plot_multiple_factors <- function(object, factors = "all", show_missing = TRUE, dot_size = 1,
-                                   color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
+                                   color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", legend = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -339,8 +352,8 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
       legend.text = element_text(size=rel(1.2)),
       legend.title = element_text(size=rel(1.2))
     )
-  if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color = FALSE) }
-  if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
+  if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color=F) + scale_color_manual(values="black") }
+  if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
   if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
   if (length(unique(df$color))>1 | length(unique(df$shape))>1) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
   
@@ -349,13 +362,21 @@ plot_embeddings <- function(object, factors = c(1, 2), show_missing = TRUE,
   p <- GGally::ggpairs(df, 
     columns = factors,
     lower = list(continuous=GGally::wrap("points", size=dot_size)), 
-    diag = list(continuous='blankDiag'), 
+    diag = list(continuous='densityDiag'), 
     upper = list(continuous=GGally::wrap("points", size=dot_size)), 
     mapping = aes(color=color_by, shape=shape_by), 
     title = "", 
     legend = legend
     )
-  p <- p + theme_minimal() + theme_bw() + theme(axis.text = element_text(color="black", size=rel(0.75)))
+  p <- p + theme_bw() + theme(
+    # axis.line = element_line(color="black", size=rel(1.0)),
+    panel.grid.major = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
+  
+  if (!legend)
+    p <- p + theme(legend.position = "none")
   
   return(p)
 }
@@ -398,7 +419,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Option 0: no group
   if (is.null(group_by)) {
-    group_by <- rep(TRUE,sum(object@dimensions[["N"]]))
+    group_by <- rep("1",sum(object@dimensions[["N"]]))
     
     # Option 1: by default group
   } else if (group_by[1] == "group") {
@@ -444,7 +465,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Option 0: no color
   if (is.null(color_by)) {
-    color_by <- rep(TRUE,sum(object@dimensions[["N"]]))
+    color_by <- rep("1",sum(object@dimensions[["N"]]))
     
   # Option 1: by default group
   } else if (color_by[1] == "group") {
@@ -493,7 +514,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Option 0: no color
   if (is.null(shape_by)) {
-    shape_by <- rep(TRUE,sum(object@dimensions[["N"]]))
+    shape_by <- rep("1",sum(object@dimensions[["N"]]))
     
   # Option 1: by default group
   } else if (shape_by[1] == "group") {
