@@ -240,7 +240,11 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   views <- .check_and_get_views(object, views)
-
+  
+  ##################
+  ## Collect data ##
+  ##################
+  
   # Get factor
   if (factors[1] == "all") {
     factors <- factors_names(object)
@@ -265,13 +269,18 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   # Collect expectations  
   W <- get_weights(object, views = views, factors = factors, as.data.frame = T)
   W <- W[(W$factor %in% factors) & (W$view %in% views),]
+  
   # Convert factor names to a factor to preserve order
   W$factor <- factor(W$factor, levels = unique(W$factor))
+
+  ################
+  ## Parse data ##
+  ################
   
   # Scale values
   if (scale) W$value <- W$value / max(abs(W$value))
   
-  # Parse the weights
+  # Take the absolute value
   if (abs) W$value <- abs(W$value)
     
   # Define groups for labelling
@@ -289,7 +298,7 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   # Define group of features to label manually
   if(!is.null(manual)) {
     if (is.null(color_manual)) {
-      color_manual <- hcl(h = seq(15, 375, length = length(manual) + 1), l = 65, c = 100)[1:length(manual)]
+      color_manual <- hcl(h = seq(15, 375, length=length(manual)+1), l=65, c=100)[1:length(manual)]
     } else {
       stopifnot(length(color_manual)==length(manual)) 
     }
@@ -319,73 +328,75 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   }
   W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
   
-  # Define plot title
-  # if(is.null(main)) main <- paste("Distribution of weigths of LF", factor, "in", view, "view")
-  
-  # Generate plot
-
   # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
+  
+  ###################
+  ## Generate plot ##
+  ###################
 
-  gg_W <- ggplot(W, aes(x=feature_id, y=value, col=group)) +
-    # scale_y_continuous(expand = c(0.01,0.01)) + scale_x_discrete(expand = c(0.01,0.01)) +
-    # scale_y_discrete(expand = c(0.01, 0.01)) +
+  p <- ggplot(W, aes(x=feature_id, y=value, col=group)) +
     scale_x_discrete(expand = c(0.01, 0.01)) +
-    geom_point(aes(size=tmp)) + labs(x="Rank position", y="Loading", size=dot_size) +
-    ggrepel::geom_text_repel(data = W[W$group!="0",], aes(label = feature, col = group),
-                             size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, box.padding = unit(0.5, "lines"), show.legend=F)
+    geom_point(aes(size=tmp)) + 
+    labs(x="Rank position", y="Loading", size=dot_size) +
+    geom_text_repel(
+      force = 10,
+      data = W[W$group!="0",], aes(label = feature, col = group),
+      size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
+      box.padding = unit(0.5,"lines"), show.legend=F)
   
   if (scale) {
-    gg_W <- gg_W + coord_cartesian(ylim=c(-1,1))
+    if (abs) {
+      p <- p + 
+        coord_cartesian(ylim=c(0,1)) +
+        scale_y_continuous(breaks=c(0,1)) +
+        expand_limits(y=c(0,1))
+    } else {
+      p <- p + 
+        coord_cartesian(ylim=c(-1,1)) +
+        scale_y_continuous(breaks=c(-1,0,1)) +
+        expand_limits(y=c(-1,1))
+    }
   }
   
-  # Define size
-  gg_W <- gg_W + scale_size_manual(values=c(dot_size,dot_size*2)) + guides(size=F)
+  # Define dot size
+  p <- p + scale_size_manual(values=c(dot_size,dot_size*2)) + guides(size=F)
   
-  # Define colors
+  # Define dot colors
   cols <- c("grey", "black", color_manual)
-  gg_W <- gg_W + scale_color_manual(values=cols) + guides(col=F)
+  p <- p + scale_color_manual(values=cols) + guides(col=F)
   
   # Facet if multiple views and for multiple factors
   if ((length(unique(W$view)) > 1) && (length(unique(W$factor)) > 1)) {
-    gg_W <- gg_W + facet_wrap(view ~ factor, scales="free")
+    p <- p + facet_wrap(view ~ factor, scales="free")
+  } else if (length(unique(W$factor)) > 1) {
+    p <- p + facet_wrap(~factor, nrow=1, scales="free")
+  } else if (length(unique(W$view)) > 1) {
+    p <- p + facet_wrap(~view, ncol=1, scales="free")
   }
-  else if (length(unique(W$factor)) > 1) {
-    gg_W <- gg_W + facet_wrap(~factor, nrow=1, scales="free")
-  }
-  else if (length(unique(W$view)) > 1) {
-    gg_W <- gg_W + facet_wrap(~view, ncol=1, scales="free")
-  }
-  
   
   # Add Theme  
-  gg_W <- gg_W +
-    theme_minimal() +
+  p <- p +
     theme_bw() + 
     theme(
-      # panel.spacing = margin(5,5,5,5),
-      # panel.border = element_rect(colour = "black", fill=NA, size=0.75),
       plot.title = element_text(size=rel(1.3), hjust=0.5),
-      # axis.title.x = element_blank(),
+      axis.title = element_text(size=rel(1.3), color="black"),
       axis.text.x = element_text(size=rel(1.3), color="black"),
       axis.text.y = element_blank(),  # loadings names are hidden by default
-      axis.title.y = element_text(size=rel(1.5), color="black"),
       axis.ticks.y = element_blank(),
+      
+      # facets
+      # strip.background = element_blank(),
+      strip.text = element_text(size=rel(1.2)),
+      panel.spacing = unit(1,"lines"),
 
-      # white background and dark border
-      # panel.background = element_rect(fill = "white", colour = NA),
-      # panel.border     = element_rect(fill = NA, colour = "grey20"),
-      strip.background = element_blank(),
-      panel.border = element_blank(),
-
-      # make gridlines dark, same contrast with white as in theme_grey
+      # gridlines
       panel.grid.major.y = element_blank(),
-      panel.grid.minor = element_blank()
-    ) + 
-    coord_flip() +
-    expand_limits(y = c(-1, 1))  # loadings axis
+      # panel.grid.minor = element_blank()
+      
+    ) + coord_flip()
   
-  return(gg_W)
+  return(p)
 }
 
 
