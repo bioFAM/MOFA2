@@ -136,10 +136,10 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
   
   # Add legend for color
-  if (length(unique(df$color))>1) { 
-    p <- p + labs(color=color_name)
+  if (length(unique(df$color_by))>1) { 
+    p <- p + labs(color_by=color_name)
   } else { 
-    p <- p + guides(color = FALSE) 
+    p <- p + guides(fill=FALSE) 
   }
   
   # Add legend for shape

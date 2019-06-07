@@ -24,7 +24,7 @@
 #'    N for the number of samples, 
 #'    P for the number of sample groups, 
 #'    D for the number of features of each view,
-#'    M for the number of feature_grups (views), 
+#'    M for the number of views, 
 #'    K for the number of factors.}
 #'    \item{\code{status}:}{Auxiliary variable indicating whether the model has been trained.}
 #'}
