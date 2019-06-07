@@ -37,7 +37,7 @@
 plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
                                  color_by = "group", color_name = "", shape_by = NULL, shape_name = "", 
                                  jitter = TRUE, dots_alpha = 1.0, legend = TRUE,
-                                 violin_alpha = 0.5,
+                                 violin_alpha = 0.5, color_violin=TRUE,
                                  rasterize = FALSE, dodge = FALSE) {
   
   # Sanity checks
@@ -82,11 +82,9 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   # Add dots
   if (add_dots) {
     if (jitter) {
-      if (rasterize || dodge)
-        warning("Rasterize or dodge options are not active when using jitter")
-      p <- p + geom_jitter(size = dot_size, alpha = dots_alpha)
-    }
-    else if (rasterize) {
+      if (rasterize) warning("Rasterize is not active when using jitter")
+      p <- p + geom_jitter(size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1))
+    } else if (rasterize) {
       if (dodge) {
         p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1)
       } else {
@@ -110,11 +108,11 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
         warning("Warning: some 'color_by' groups have only one observation, violin plots are not displayed")
       } else {
         # violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
-        p <- p + geom_violin(aes(fill=color_by), alpha=violin_alpha, trim=F, scale="width", position=position_dodge(width = 1))
+        p <- p + geom_violin(aes(fill=color_by), alpha=violin_alpha, trim=T, scale="width", position=position_dodge(width=1))
         # if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
-      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=F, scale="width")
+      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width")
     }
   }
 

@@ -8,10 +8,7 @@
 #' @export
 create_biofam <- function(data, samples_groups = NULL) {
   
-  if (is(data, "MultiAssayExperiment")) {
-    stop("Not functional")
-
-  } else if (is(data, "Seurat")) {
+  if (is(data, "Seurat")) {
     message("Creating BioFAM object from a Seurat object...")
     
     object <- .create_biofam_from_seurat(data, samples_groups)
@@ -140,34 +137,21 @@ create_biofam <- function(data, samples_groups = NULL) {
     df$feature_group <- factor(df$feature_group)
   }
   
-  # TO-FINISH.....
   
-  # samples <- as.character(unique(df$sample))
-  # data_matrix <- lapply(split(df,df$feature_group),
-  #   function(x) lapply(split(x,x$sample_group),
-  #     function(y) {
-  #       y <- .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE))
-  #       y <- .subset_augment(y,samples)
-  #       y
-  #     }
-  # ))
+  # TO-DO: IT MAY BE WRONG WITH MISSING VALUES
+  data_matrix <- lapply(split(df,df$feature_group), function(x)
+    lapply(split(droplevels.data.frame(x),x$sample_group), function(y) {
+        y <- droplevels.data.frame(y)
+        if (nrow(y)==0) {
+          # print(length(levels(y$sample)))
+          matrix(NA, nrow=length(levels(y$sample)), ncol=length(levels(y$feature)))
+        } else {
+          tmp <- .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE) )
+        }
+      }
+    )
+  )
   
-  # data_matrix <- lapply(split(df,df$feature_group), function(x) 
-  #   lapply(split(droplevels.data.frame(x),x$sample_group), function(y) {
-  #       y <- droplevels.data.frame(y)
-  #       if (nrow(y)==0) {
-  #         # print(length(levels(y$sample)))
-  #         matrix(NA, nrow=length(levels(y$sample)), ncol=length(levels(y$feature)))
-  #       } else {
-  #         tmp <- .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE) )
-  #       }
-  #     }
-  #   )
-  # )
-  
-  # data_matrix <- reshape2::dcast(df, sample~feature, value.var="value", fill=NA, drop=FALSE)
-  
-  levels(df$feature_group)
   object <- new("BioFAModel")
   object@status <- "untrained" # define status as untrained
   object@input_data <- data_matrix

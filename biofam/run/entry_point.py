@@ -121,10 +121,6 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
-        # NOTE: Usage of covariates is currently not functional
-        self.data_opts['covariates'] = None
-        self.data_opts['scale_covariates'] = False
-
     def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
         """ Load the data """
 
@@ -186,10 +182,6 @@ class entry_point(object):
         N = self.dimensionalities["N"] = self.data[0].shape[0]
         D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
         self.dimensionalities["G"] = len(set(self.io_opts['groups_names']))
-
-        # NOTE: Usage of covariates is currently not functional
-        self.data_opts['covariates'] = None
-        self.data_opts['scale_covariates'] = False
 
         self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
@@ -259,9 +251,6 @@ class entry_point(object):
 
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
-        # NOTE: Usage of covariates is currently not functional
-        self.data_opts['covariates'] = None
-        self.data_opts['scale_covariates'] = False
 
     def set_data_from_anndata(self, adata, groups_label=None, use_raw=False):
         """ Method to input the data in AnnData format
@@ -317,11 +306,6 @@ class entry_point(object):
         else:
             self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
 
-        # NOTE: Usage of covariates is currently not functional
-        self.data_opts['covariates'] = None
-        self.data_opts['scale_covariates'] = False
-
-
     def set_data_from_loom(self, loom, groups_label=None, layer=None):
         """ Method to input the data in Loom format
 
@@ -375,10 +359,6 @@ class entry_point(object):
             self.data = process_data([loom.layers[layer]], self.data_opts, self.data_opts['samples_groups'])
         else:
             self.data = process_data([loom[:,:]], self.data_opts, self.data_opts['samples_groups'])
-
-        # NOTE: Usage of covariates is currently not functional
-        self.data_opts['covariates'] = None
-        self.data_opts['scale_covariates'] = False
 
     def set_train_options(self,
         iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
@@ -527,7 +507,7 @@ class entry_point(object):
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson",'zero_inflated'])), "Available likelihoods are 'gaussian','bernoulli', 'poisson', 'zero_inflated'"
 
-    def set_data_options(self, likelihoods, center_features_per_group=False, scale_features=False, scale_views=False, features_in_rows=False, mask=None, mask_zeros=False):
+    def set_data_options(self, likelihoods, center_features_per_group=True, scale_features=False, scale_views=False, features_in_rows=False, mask=None, mask_zeros=False):
         """ Set data processing options """
 
         # TODO: more verbose messages
@@ -562,13 +542,6 @@ class entry_point(object):
             self.data_opts['mask'] = mask
         else:
             self.data_opts['mask'] = [0]*M
-
-       # Mask entire samples
-        # if maskNSamples is not None:
-        #     self.data_opts['maskNSamples'] = data_opts['maskNSamples']
-        #     assert len(self.data_opts['maskNSamples'])==M, "Length of MaskAtRandom and input files does not match"
-        # else:
-        #     self.data_opts['maskNSamples'] = [0]*M
 
     def build(self):
         """ Build the model """

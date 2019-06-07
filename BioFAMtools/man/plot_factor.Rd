@@ -7,10 +7,10 @@
 \usage{
 plot_factors(object, factors = "all", group_by = "group",
   add_dots = TRUE, add_violin = TRUE, show_missing = TRUE,
-  dot_size = 1, color_by = NULL, color_name = "", shape_by = NULL,
-  shape_name = "", jitter = TRUE, dots_alpha = 1,
-  violin_alpha = 0.5, violin_color = NA, color_violin = TRUE,
-  rasterize = FALSE, dodge = FALSE)
+  dot_size = 1, color_by = "group", color_name = "",
+  shape_by = NULL, shape_name = "", jitter = TRUE, dots_alpha = 1,
+  legend = TRUE, violin_alpha = 0.5, rasterize = FALSE,
+  dodge = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}

@@ -111,7 +111,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plot_variance_explained <- function(object, x = "group", y = "view", split_by = NA, cluster = TRUE, plot_total = FALSE, 
+plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, 
                                     factors = "all", gradient_colors = NA, total_fill_color = NA, legend = TRUE, ...) {
   
   # Sanity checks 

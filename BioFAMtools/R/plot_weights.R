@@ -97,12 +97,13 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' @import ggplot2
 #' @export
 plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, 
-                                 name_color="", name_shape="", showMissing = TRUE, abs=T) {
+                                 name_color="", name_shape="", showMissing = TRUE, abs = FALSE, legend = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(factors)==2)
-
+  
+  # Get views  
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(all(view %in% views_names(object))) 
 
@@ -140,7 +141,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
       stop("'color_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
-    color_by <- rep(TRUE, D)
+    color_by <- rep("1", D)
     colorLegend <- F
   }
 
@@ -165,7 +166,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
       stop("'shape_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
-    shape_by <- rep(TRUE, D)
+    shape_by <- rep("1", D)
     shapeLegend <- F
   }
   
@@ -185,29 +186,26 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
     df$y <- abs(df$y)
   }
   
-  xlabel <- paste("Latent factor", factors[1])
-  ylabel <- paste("Latent factor", factors[2])
-                                
-  p <- ggplot(df, aes_string(x = "x", y = "y")) + 
-      geom_point(aes_string(color = "color_by", shape = "shape_by")) + xlab(xlabel) + ylab(ylabel) +
-      # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
-      theme(plot.margin = margin(20, 20, 10, 10), 
-            axis.text = element_text(size = rel(1), color = "black"), 
-            axis.title = element_text(size = 16), 
-            axis.title.y = element_text(size = rel(1.1), margin = margin(0, 10, 0, 0)), 
-            axis.title.x = element_text(size = rel(1.1), margin = margin(10, 0, 0, 0)), 
-            axis.line = element_line(color = "black", size = 0.5), 
-            axis.ticks = element_line(color = "black", size = 0.5),
-            panel.border = element_blank(), 
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(), 
-            panel.background = element_blank(),
-            legend.key = element_rect(fill = "white"),
-            legend.text = element_text(size = 16),
-            legend.title = element_text(size =16)
-            )
-  if (colorLegend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
-  if (shapeLegend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
+  p <- ggplot(df, aes_string(x="x", y="y")) + 
+    geom_point(aes_string(color = "color_by", shape = "shape_by")) + 
+    labs(x=factors[1], y=factors[2]) +
+    # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
+    theme_classic() +
+    theme(
+      axis.text = element_text(size=rel(1), color="black"), 
+      axis.title = element_text(size=rel(1.3), color="black"), 
+      axis.ticks = element_line(color="black")
+    )
+  
+  if (legend) {
+    if (colorLegend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
+    if (shapeLegend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
+    p <- p + theme(
+      legend.key = element_rect(fill = "white"),
+      legend.text = element_text(size=16),
+      legend.title = element_text(size=16)
+    )
+  }
   return(p)
 }
 
@@ -231,7 +229,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2 ggrepel
 #' @export
-plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10, 
+plot_weights <- function(object, views = 1, factors = c(1,2), nfeatures = 10, 
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
                          sort_by_factor = "all",
                          dot_size = 1, text_size = 5) {
@@ -336,15 +334,20 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   ###################
 
   p <- ggplot(W, aes(x=feature_id, y=value, col=group)) +
-    scale_x_discrete(expand = c(0.01, 0.01)) +
+    scale_x_discrete(expand = c(0.03,0.03)) +
     geom_point(aes(size=tmp)) + 
-    labs(x="Rank position", y="Loading", size=dot_size) +
-    geom_text_repel(
+    labs(x="Rank position", y="Loading", size=dot_size)
+  
+  # Add labels to the top features
+  if (nfeatures>0) {
+    p <- p + geom_text_repel(
       force = 10,
       data = W[W$group!="0",], aes(label = feature, col = group),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
       box.padding = unit(0.5,"lines"), show.legend=F)
+  }
   
+  # Configure axis 
   if (scale) {
     if (abs) {
       p <- p + 
@@ -360,7 +363,7 @@ plot_weights <- function(object, views = "all", factors = "all", nfeatures = 10,
   }
   
   # Define dot size
-  p <- p + scale_size_manual(values=c(dot_size,dot_size*2)) + guides(size=F)
+  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size=F)
   
   # Define dot colors
   cols <- c("grey", "black", color_manual)
@@ -493,33 +496,3 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   
 }
 
-
-#' @title Plot correlation matrix between the columns of the weights (1 column = 1 factor) for a given view
-#' @name plot_weight_cor
-#' @description Function to plot the correlation matrix between the columns of the weights
-#' @param object a trained \code{\link{BioFAModel}} object.
-#' @param method a character indicating the type of correlation coefficient to be computed: pearson (default), kendall, or spearman.
-#' @param ... arguments passed to \code{\link[corrplot]{corrplot}}
-#' @details This method plots the correlation matrix between the weights columns. \cr 
-#' The model encourages the factors to be uncorrelated, so this function usually yields a diagonal correlation matrix. \cr 
-#' However, it is not a hard constraint such as in Principal Component Analysis and correlations between factors can occur, 
-#' particularly with large number factors. \cr
-#' Generally, correlated factors are redundant and should be avoided, as they make interpretation harder. Therefore, 
-#' if you have too many correlated factors we suggest you try reducing the number of factors.
-#' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
-#' @importFrom corrplot corrplot
-#' @export
-plot_weight_cor <- function(object, view, method = "pearson", ...) {
-  
-  # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
-  
-  # Fetch factors
-  W <- get_weights(object)[[view]]
-  
-  # Compute and plot correlation
-  r <- abs(cor(x=W, y=W, method=method, use = "complete.obs"))
-  p <- corrplot(r, tl.col="black", ...)
-  
-  return(r)
-}

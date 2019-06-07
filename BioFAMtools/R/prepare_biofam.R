@@ -19,13 +19,10 @@
 #' @return Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
 #' @export
 prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL,
-                           center=TRUE, regress_covariates=NULL ) {
+                           regress_covariates=NULL ) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  
-  # Create temporary folder to store data
-  # dir.create(dir_options$data_dir, showWarnings = FALSE)
   
   # Get data options
   message("Checking data options...")
@@ -63,12 +60,10 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   }
   
   # Center the data
-  if (center) {
-    print("Centering the data (per group)...")
-    for (m in views_names(object)) {
-      for (g in groups_names(object)) {
-        object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
-      }
+  print("Centering the features (per group)...")
+  for (m in views_names(object)) {
+    for (g in groups_names(object)) {
+      object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
     }
   }
   
@@ -136,7 +131,6 @@ get_default_training_options <- function(object) {
 #' \itemize{
 #'  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
 #'  As long as the scale differences between the data sets is not too high, this is not required. Default is FALSE.}
-#'  \item{\strong{center_features}:}{ logical indicating whether to center the features to zero mean. This only works for gaussian data. Default is TRUE.}
 #' }
 #' @return Returns a list with the default data options, which have to be passed as an argument to \code{\link{prepareMOFA}}
 #' @export
@@ -144,7 +138,6 @@ get_default_data_options <- function(object) {
   
   # Define default data options
   data_options <- list(
-    center_features_per_group = TRUE,  # (logical) Center features to zero mean, for each group separately
     scale_views = FALSE                # (logical) Scale views to unit variance
   )
   

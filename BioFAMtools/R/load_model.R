@@ -118,23 +118,20 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     expectations[["Y"]][[m]] <- list()
     for (p in group_names) {
       if (on_disk) {
-        expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) ) 
-        # if (tmp[[m]]=="gaussian") {
-        #   expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]]
-        # } else {
-        #   expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) ) 
-        # }
+        if (tmp[[m]]=="gaussian") {
+          expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]]
+        } else {
+          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
+        }
       } else {
-        expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
-        # if (tmp[[m]]=="gaussian") {
-        #   expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]]
-        # } else {
-        #   expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
-        # }
+        if (tmp[[m]]=="gaussian") {
+          expectations[["Y"]][[m]][[p]] <- training_data[[m]][[p]]
+        } else {
+          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
+        }
       }
     }
   }
-
   object@expectations <- expectations
 
   ##############################

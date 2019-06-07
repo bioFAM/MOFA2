@@ -6,7 +6,7 @@
 \usage{
 plot_embeddings(object, factors = c(1, 2), show_missing = TRUE,
   color_by = NULL, shape_by = NULL, color_name = NULL,
-  shape_name = NULL, dot_size = 1, alpha = 0.5,
+  shape_name = NULL, dot_size = 1.5, alpha = 1, legend = TRUE,
   return_data = FALSE)
 }
 \arguments{

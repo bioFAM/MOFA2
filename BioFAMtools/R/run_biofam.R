@@ -20,29 +20,22 @@ run_biofam <- function(object, outfile = NA) {
   # Sanity checks
   if (!is(object, "BioFAModel")) 
     stop("'object' has to be an instance of BioFAModel")
+  if (object@status=="trained") 
+    stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")
 
   # If not outfile is provided, store a file in the /temp folder with the respective timestamp
   if (is.na(outfile)) {
     outfile <- file.path("/tmp", paste0("biofam_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
     warning(paste0("No output filename provided. Using ", outfile, " to store the trained model."))
   }
-  
-  if (object@status=="trained") 
-    stop("The model is already trained! If you want to retrain, create a new untrained BioFAModel")
-  
   if (file.exists(outfile))
     message("Warning: Output file already exists, it will be replaced")
-  
-  # Sample names and feature names must be shorted than 50 characters
-  # unlist(lapply(object@input_data[[1]], rownames))
   
   # Initiate reticulate
   biofam <- import("biofam")
   
   # Call entry point
   biofam_entrypoint <- biofam$run.entry_point$entry_point()
-  
-  # Pass data
   
   # Set data options
   biofam_entrypoint$set_data_options(
