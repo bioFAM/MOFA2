@@ -27,8 +27,16 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
                      if (length(value) != object@dimensions["K"])
                        stop("Length of factor names does not match the dimensionality of the latent variable matrix")
                    
+                   # Modify expectations
                    object <- .set_expectations_names(object, entity = 'factors', value)
                    
+                   # Modify cache
+                   if ((methods::.hasSlot(object, "cache")) & ("variance_explained" %in% names(object@cache))) {
+                     for (i in 1:length(object@cache$variance_explained$r2_per_factor)) {
+                       rownames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
+                     }
+                   }
+                     
                    object
                  })
 

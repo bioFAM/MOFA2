@@ -26,7 +26,7 @@ run_biofam <- function(object, outfile = NA) {
   # If not outfile is provided, store a file in the /temp folder with the respective timestamp
   if (is.na(outfile)) {
     outfile <- file.path("/tmp", paste0("biofam_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
-    warning(paste0("No output filename provided. Using ", outfile, " to store the trained model."))
+    warning(paste0("No output filename provided. Using ", outfile, " to store the trained model.\n\n"))
   }
   if (file.exists(outfile))
     message("Warning: Output file already exists, it will be replaced")
@@ -45,11 +45,19 @@ run_biofam <- function(object, outfile = NA) {
   )
   
   # Set the data
-  biofam_entrypoint$set_data_matrix(
-    data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
-    samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
-    features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
+  # biofam_entrypoint$set_data_matrix(
+  #   # data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
+  #   # data = r_to_py(object@input_data),
+  #   data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
+  #   samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
+  #   features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
+  # )
+  
+  biofam_entrypoint$set_data_df(
+    data = data
   )
+  
+  
   
   # Set model options 
   biofam_entrypoint$set_model_options(

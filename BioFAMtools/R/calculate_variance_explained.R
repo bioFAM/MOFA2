@@ -112,7 +112,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @importFrom cowplot plot_grid
 #' @export
 plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, 
-                                    factors = "all", gradient_colors = NA, total_fill_color = NA, legend = TRUE, ...) {
+                                    factors = "all", legend = TRUE, ...) {
   
   # Sanity checks 
   if (length(unique(c(x, y, split_by))) != 3) { 
@@ -126,7 +126,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   # Calculate variance explained
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
     message("Using cached variance explained...")
-    r2_list <- object@cache[["variance_explained"]]
+    r2_list <- object@cache$variance_explained
   } else {
     r2_list <- calculate_variance_explained(object, ...)
   }
@@ -185,12 +185,6 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   # x="view";  split_by="group"; y="factor
   # if ( length(groups)>1 ) { x="group"; split_by="view" }
 
-  # Choose colors for the gradient
-  if (all(is.na(gradient_colors))) {
-    gradient_colors <- c("gray97","darkblue") # c("#e3f2fd", "#0d47a1")
-  } else {
-    stopifnot(length(gradient_colors) == 2)
-  }
 
   plot_list <- list()
   for (i in levels(r2_mk_df[[split_by]])) {
@@ -201,7 +195,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
       guides(fill=guide_colorbar("R2")) +
       # ylab("Latent factor") +
       labs(x="", y="", title="") +
-      scale_fill_gradientn(colors=gradient_colors, guide="colorbar", limits=c(min_lim_p1, max_lim_p1)) +
+      scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_lim_p1, max_lim_p1)) +
       guides(fill=guide_colorbar("R2")) +
       theme(
         axis.title.x = element_blank(),
@@ -219,17 +213,10 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     # Join the two plots
     if (plot_total) {
 
-      # Choose colors for the gradient
-      if (all(is.na(total_fill_color))) {
-        total_fill_color <- "deepskyblue4" # "#333333"
-      } else {
-        stopifnot(length(total_fill_color) == 1)
-      }
-      
       # Barplot with variance explained per view/group (across all factors)
       bplt <- ggplot(r2_m_df[r2_m_df[[split_by]] == i,], aes_string(x=x, y="R2")) + 
         ggtitle(sprintf("%s\nTotal variance explained per %s", i, x)) +
-        geom_bar(stat="identity", fill=total_fill_color, width=0.9) +
+        geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
         xlab("") + ylab("R2") +
         scale_y_continuous(limits=c(min_lim_bplt, max_lim_bplt), expand=c(0.01, 0.01)) +
         theme(

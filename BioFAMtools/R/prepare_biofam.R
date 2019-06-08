@@ -47,6 +47,9 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
       stop("training_options are incorrectly specified, please read the documentation in get_default_training_options")
     object@training_options <- training_options
   }
+  if (is.na(object@training_options$drop_factor_threshold))
+    object@training_options$drop_factor_threshold <- -1
+  
   
   # Get model options
   message("Checking model options...")
@@ -108,7 +111,7 @@ get_default_training_options <- function(object) {
   training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
     convergence_mode = 'medium',   # (string) Convergence mode based on change in the evidence lower bound ("slow", "medium", "fast")
-    drop_factor_threshold = NULL,  # (numeric) Threshold on fraction of variance explained to drop a factor
+    drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity
     seed = 0                       # (numeric or NULL) random seed
   )

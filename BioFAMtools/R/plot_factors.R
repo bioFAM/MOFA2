@@ -36,7 +36,7 @@
 #' @export
 plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
                                  color_by = "group", color_name = "", shape_by = NULL, shape_name = "", 
-                                 jitter = TRUE, dots_alpha = 1.0, legend = TRUE,
+                                 dots_alpha = 1.0, legend = TRUE,
                                  violin_alpha = 0.5, color_violin=TRUE,
                                  rasterize = FALSE, dodge = FALSE) {
   
@@ -81,10 +81,8 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 
   # Add dots
   if (add_dots) {
-    if (jitter) {
-      if (rasterize) warning("Rasterize is not active when using jitter")
-      p <- p + geom_jitter(size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1))
-    } else if (rasterize) {
+    if (rasterize) {
+      warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
       if (dodge) {
         p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1)
       } else {
@@ -92,10 +90,9 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
       }
     } else {
       if (dodge) {
-        p <- p + ggbeeswarm::geom_quasirandom(size=dot_size, position="dodge", dodge.width=1)
+        p <- p + geom_jitter(size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1))
       } else {
-        p <- p + ggbeeswarm::geom_quasirandom(size=dot_size)
-        
+        p <- p + geom_jitter(size = dot_size, alpha = dots_alpha)
       }
     }
   }
