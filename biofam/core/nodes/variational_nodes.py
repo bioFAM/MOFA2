@@ -82,9 +82,6 @@ class Unobserved_Variational_Node(Variational_Node):
         if hasattr(self,"factors_axis"): axis = self.factors_axis
         if hasattr(self,"covariates"): self.covariates = self.covariates[s.arange(len(self.covariates)) != idx]
         if axis is not None:
-            print(axis)
-            print(idx)
-            print(self.P.dim)
             self.P.removeDimensions(axis=axis, idx=idx)
             self.Q.removeDimensions(axis=axis, idx=idx)
             self.updateDim(axis=axis, new_dim=self.dim[axis]-len(idx))

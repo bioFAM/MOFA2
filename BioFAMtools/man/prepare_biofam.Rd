@@ -5,7 +5,7 @@
 \title{prepare a BioFAModel for training}
 \usage{
 prepare_biofam(object, data_options = NULL, model_options = NULL,
-  training_options = NULL, center = TRUE, regress_covariates = NULL)
+  training_options = NULL, regress_covariates = NULL)
 }
 \arguments{
 \item{object}{an untrained \code{\link{BioFAModel}}}

@@ -4,14 +4,12 @@
 \alias{plot_weights}
 \title{Plot Weights}
 \usage{
-plot_weights(object, views = "all", factors = "all", nfeatures = 10,
+plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
   abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE,
   sort_by_factor = "all", dot_size = 1, text_size = 5)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
-
-\item{views}{character vector with the voiew name, or numeric vector with the index of the view to use.}
 
 \item{factors}{character vector with the factor name, or numeric vector with the index of the factor to use.}
 
@@ -27,6 +25,8 @@ plot_weights(object, views = "all", factors = "all", nfeatures = 10,
 
 \item{sort_by_factor}{name or numeric value for the factor to sort all loadings by, or all (default)
 when "all", features between factors do not match}
+
+\item{views}{character vector with the voiew name, or numeric vector with the index of the view to use.}
 }
 \description{
 An important step to annotate factors is to visualise the corresponding feature loadings. \cr

@@ -15,6 +15,7 @@ import math
 import resource
 
 from biofam.core.nodes.variational_nodes import Variational_Node
+from biofam.core import gpu_utils
 from .utils import corr, nans, infer_platform
 
 import warnings
@@ -39,6 +40,9 @@ class BayesNet(object):
         # Training and simulations flag
         self.trained = False
         self.simulated = False
+
+        # Set GPU mode
+        # gpu_utils.gpu_mode = options['gpu_mode']
 
     def setTrainOptions(self, train_opts):
         """ Method to store training options """
@@ -113,8 +117,6 @@ class BayesNet(object):
         r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['G']
         for m in range(self.dim['M']):
             mask = self.nodes["Y"].getNodes()[m].getMask()
-            # Ypred_m = s.dot(Z, W[m].T)
-            # Ypred_m[mask] = 0.
             for g in range(self.dim['G']):
                 gg = groups==g
                 SS = s.square(Y[m][gg,:]).sum()
@@ -217,7 +219,6 @@ class BayesNet(object):
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
-                # if any(self.options['drop'].values()):
                 if self.options['drop']["min_r2"] is not None:
                     self.removeInactiveFactors(**self.options['drop'])
                 number_factors[i] = self.dim["K"]
@@ -266,7 +267,7 @@ class BayesNet(object):
             # Print other statistics
             if self.options['verbose']:
                 # Memory usage
-                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
                 # Variance explained
                 r2 = self.calculate_total_variance_explained()
                 print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
@@ -278,7 +279,7 @@ class BayesNet(object):
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
                 # print("Fraction of zero samples: %.0f%%" % (100*bar))
-                print("\n")
+                # print("\n")f
 
             iter_time[i] = time()-t
             
@@ -353,16 +354,12 @@ class StochasticBayesNet(BayesNet):
         super().__init__(dim=dim, nodes=nodes)
 
     def step_size(self, i):
-        # return the step size for the considered iterration
-        tau = self.options['tau']
-        kappa = self.options['forgetting_rate']
-        return (i + tau)**(-kappa)
+        # return the step size for the considered iteration
+        return (i + self.options['learning_rate'])**(-self.options['forgetting_rate'])
 
     def step_size2(self, i):
-        # return the step size for the considered iterration
-        tau = self.options['tau']
-        kappa = self.options['forgetting_rate']
-        return tau / ((1 + kappa * i)**(3./4.))
+        # return the step size for the considered iteration
+        return self.options['learning_rate'] / ((1 + self.options['forgetting_rate'] * i)**(3./4.))
 
     def sample_mini_batch(self):
         # TODO if multiple group, sample indices in each group evenly ? prob yes
@@ -425,7 +422,7 @@ class StochasticBayesNet(BayesNet):
 
         # Print stochastic settings before training
         print("Using stochastic variational inference with the following parameters:")
-        print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n- Tau: %.2f\n" % (100*self.options['batch_size'], self.options['forgetting_rate'], self.options['tau']) )
+        print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n- Tau: %.2f\n" % (100*self.options['batch_size'], self.options['forgetting_rate'], self.options['learning_rate']) )
         ix = None
 
         for i in range(1,self.options['maxiter']):
@@ -499,7 +496,7 @@ class StochasticBayesNet(BayesNet):
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
                 # print("Fraction of zero samples: %.0f%%" % (100*bar))
-            # print("\n")
+            print("")
 
             iter_time[i] = time()-t
             

@@ -45,17 +45,17 @@ run_biofam <- function(object, outfile = NA) {
   )
   
   # Set the data
-  # biofam_entrypoint$set_data_matrix(
-  #   # data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
-  #   # data = r_to_py(object@input_data),
-  #   data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
-  #   samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
-  #   features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
-  # )
-  
-  biofam_entrypoint$set_data_df(
-    data = data
+  biofam_entrypoint$set_data_matrix(
+    # data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
+    # data = r_to_py(object@input_data),
+    data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
+    samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
+    features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
   )
+  
+  # biofam_entrypoint$set_data_df(
+  #   data = data
+  # )
   
   
   
@@ -73,11 +73,21 @@ run_biofam <- function(object, outfile = NA) {
   biofam_entrypoint$set_train_options(
     iter             = object@training_options$maxiter,
     convergence_mode = object@training_options$convergence_mode,
-    dropR2           = object@training_options$drop_factor_threshold,
+    # dropR2           = object@training_options$drop_factor_threshold,
+    startELBO        = object@training_options$startELBO,
+    elbofreq         = object@training_options$freqELBO,
     seed             = object@training_options$seed, 
     verbose          = object@training_options$verbose
   )
   
+  # Set stochastic options
+  if (object@training_options$stochastic) {
+    biofam_entrypoint$set_stochastic_options(
+      learning_rate     = object@stochastic_options$learning_rate,
+      forgetting_rate     = object@stochastic_options$forgetting_rate,
+      batch_size     = object@stochastic_options$batch_size
+    )
+  }
   
   # Build the model
   biofam_entrypoint$build()

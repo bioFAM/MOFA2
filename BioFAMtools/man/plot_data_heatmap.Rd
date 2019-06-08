@@ -5,8 +5,8 @@
 \title{Plot heatmap of relevant features}
 \usage{
 plot_data_heatmap(object, view, factor, groups = "all", features = 50,
-  transpose = FALSE, imputed = FALSE, annotate_samples = NULL,
-  annotate_features = NULL, ...)
+  transpose = FALSE, imputed = FALSE, denoise = FALSE,
+  annotate_samples = NULL, annotate_features = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

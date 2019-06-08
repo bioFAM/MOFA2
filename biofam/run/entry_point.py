@@ -395,20 +395,26 @@ class entry_point(object):
                 print("GPU mode is activated\n")
             except ImportError:
                 print("GPU mode is activated, but GPU not found... switching to CPU mode")
-                print('For GPU mode, you need to install the CUPY library')
-                print ('1 - Make sure that you are running MOFA+ on a machine with an NVIDIA GPU')
-                print ('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html\n')
+                print('For GPU mode, you need:')
+                print('1 - Make sure that you are running MOFA+ on a machine with an NVIDIA GPU')
+                print('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html\n')
                 sys.stdout.flush()
                 gpu_mode = False
         self.train_opts['gpu_mode'] = gpu_mode
 
         # Minimum Variance explained threshold to drop inactive factors
-        if dropR2 < 0: dropR2 = None
-        if dropR2 is not None: dropR2 = float(dropR2)
+        if dropR2 is not None: 
+            dropR2 = float(dropR2)
+            if dropR2 < 0: dropR2 = None
         self.train_opts['drop'] = { "min_r2":dropR2 }
         self.train_opts['start_drop'] = int(startDrop)
         self.train_opts['freq_drop'] = int(freqDrop)
         if ((dropR2 is not None) & (verbose is True)): print("\nDropping factors with minimum threshold of {0}% variance explained\n".format(dropR2))
+
+        if ((dropR2 is not None) & (self.dimensionalities["N"]>1e4)):
+            print("Warning: actively dropping factors during model training can be slow in large data sets.")
+            print("Consider training the model with set drop_factor_threshold = -1 and prune them a posteriori")
+        
 
         # Tolerance level for convergence
         self.train_opts['tolerance'] = float(tolerance)
@@ -463,20 +469,23 @@ class entry_point(object):
         # Use TauTrick to speed up ELBO computation?
         self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
 
-    def set_stochasticity_options(self, tau=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
+    def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
         # Sanity checks
         assert hasattr(self, 'train_opts'), "Train options not defined"
-        assert tau > 0, 'tau must be greater than zero'
-        assert 0 <= forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
+        assert 0 < learning_rate <= 1, 'Learning rate must range from 0 and 1'
+        assert 0 < forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
         assert 0 < batch_size <= 1, 'Batch size must range from 0 to 1'
 
         self.train_opts['stochastic'] = True
         self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick only works in non-stochastic mode
-        self.train_opts['tau'] = tau
+        self.train_opts['learning_rate'] = learning_rate
         self.train_opts['forgetting_rate'] = forgetting_rate
         self.train_opts['start_stochastic'] = start_stochastic
         self.train_opts['batch_size'] = batch_size
+
+
+        self.train_opts['drop']["min_r2"] = None
 
     def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False):
         """ Set model options """

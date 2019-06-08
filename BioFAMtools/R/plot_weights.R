@@ -48,20 +48,6 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   # Get relevant data
   W <- get_weights(object, views=view, factors=factors)[[1]][features,]
   
-
-  # Set title
-  # if (is.null(main)) { main <- paste("Loadings of Latent Factors on", view) }
-  
-  # set colors and breaks if not specified
-  # if (is.null(color) & is.null(breaks)) {
-  #   palLength <- 100
-  #   minV <- min(W)
-  #   maxV <- max(W)
-  #   color <- colorRampPalette(colors=c("black", "blue", "white", "orange","red"))(palLength)
-  #   breaks <- c(seq(minV, 0, length.out=ceiling(palLength/2) + 1), 
-  #               seq(maxV/palLength,maxV, length.out=floor(palLength/2)))
-  # }
-  
   # apply thresholding of loadings
   W <- W[!apply(W,1,function(r) all(abs(r)<threshold)),]
   W <- W[,!apply(W,2,function(r) all(abs(r)<threshold))]
@@ -229,19 +215,21 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2 ggrepel
 #' @export
-plot_weights <- function(object, views = 1, factors = c(1,2), nfeatures = 10, 
+plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
                          sort_by_factor = "all",
                          dot_size = 1, text_size = 5) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  
-  views <- .check_and_get_views(object, views)
+  stopifnot(length(view)==1)
   
   ##################
   ## Collect data ##
   ##################
+  
+  # Get views
+  view <- .check_and_get_views(object, view)
   
   # Get factor
   if (factors[1] == "all") {
@@ -265,18 +253,30 @@ plot_weights <- function(object, views = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Collect expectations  
-  W <- get_weights(object, views = views, factors = factors, as.data.frame = T)
-  W <- W[(W$factor %in% factors) & (W$view %in% views),]
+  W <- get_weights(object, views = view, factors = factors, as.data.frame = T)
+  W <- W[(W$factor %in% factors) & (W$view %in% view),]
+  
+  # Remove factors which all-zero loadings
+  to.remove <- sapply(factors, function(i) sum(W[W$factor==i,"value"]==0)>nfeatures)
+  if (any(to.remove)) {
+    print(sprintf("Removing %s, loadings are all zero",paste0(names(which(to.remove)),collapse=" ")))
+    W <- W[!W$factor %in% names(which(to.remove)),]
+    if (nrow(W)==0) stop("No factors to display...")
+  }
   
   # Convert factor names to a factor to preserve order
   W$factor <- factor(W$factor, levels = unique(W$factor))
 
+  if (sum(W$value==0)>nfeatures) {
+    nfeatures <- sum(W$value>0)
+  }
+  
   ################
   ## Parse data ##
   ################
   
   # Scale values
-  if (scale) W$value <- W$value / max(abs(W$value))
+  if (scale & sum(W$value>0)>0) W$value <- W$value / max(abs(W$value))
   
   # Take the absolute value
   if (abs) W$value <- abs(W$value)
@@ -288,8 +288,8 @@ plot_weights <- function(object, views = 1, factors = c(1,2), nfeatures = 10,
   if (nfeatures > 0) {
     for (f in factors) {
       # This uses dplyr
-      features <- W %>% filter(factor == f) %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
-      W[(W$feature %in% features) & (W$factor == f),"group"] <- "1"
+      features <- W %>% filter(factor==f) %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
+      W[(W$feature %in% features) & (W$factor==f),"group"] <- "1"
     }
   }
   
@@ -306,10 +306,10 @@ plot_weights <- function(object, views = 1, factors = c(1,2), nfeatures = 10,
   
   # Make features names unique
   W$feature_id <- W$feature
-  if ((length(unique(W$view)) > 1) && (nfeatures > 0) && (any(duplicated(W[W$factor == factors[1],]$feature_id)))) {
-    message("Duplicated feature names across views, we will add the view name as a prefix")
-    W$feature_id <- paste(W$view, W$feature, sep="_")
-  }
+  # if ((length(unique(W$view)) > 1) && (nfeatures > 0) && (any(duplicated(W[W$factor == factors[1],]$feature_id)))) {
+  #   message("Duplicated feature names across views, we will add the view name as a prefix")
+  #   W$feature_id <- paste(W$view, W$feature, sep="_")
+  # }
 
   # Sort by loading
   if (!is.null(sort_by_factor)) {
@@ -369,13 +369,9 @@ plot_weights <- function(object, views = 1, factors = c(1,2), nfeatures = 10,
   cols <- c("grey", "black", color_manual)
   p <- p + scale_color_manual(values=cols) + guides(col=F)
   
-  # Facet if multiple views and for multiple factors
-  if ((length(unique(W$view)) > 1) && (length(unique(W$factor)) > 1)) {
-    p <- p + facet_wrap(view ~ factor, scales="free")
-  } else if (length(unique(W$factor)) > 1) {
+  # Facet if multiple factors
+  if (length(unique(W$factor)) > 1) {
     p <- p + facet_wrap(~factor, nrow=1, scales="free")
-  } else if (length(unique(W$view)) > 1) {
-    p <- p + facet_wrap(~view, ncol=1, scales="free")
   }
   
   # Add Theme  
@@ -408,7 +404,7 @@ plot_weights <- function(object, views = 1, factors = c(1,2), nfeatures = 10,
 #' @description Plot top weights for a given latent in a given view.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param view character vector with the view name, or numeric vector with the index of the view to use.
-#' @param factor character vector with the factor name, or numeric vector with the index of the factor to use.
+#' @param factors character vector with the factor name, or numeric vector with the index of the factor to use.
 #' @param nfeatures number of top features to display.
 #' Default is 10
 #' @param abs logical indicating whether to use the absolute value of the weights.

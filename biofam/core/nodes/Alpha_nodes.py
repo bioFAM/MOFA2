@@ -14,7 +14,7 @@ class AlphaW_Node(Gamma_Unobserved_Variational_Node):
 
     def precompute(self, options=None):
         """ Method to precompute some terms to speed up the calculations """
-        self.factors_axis = 1
+        self.factors_axis = 0
 
     def getExpectations(self, expand=False):
         QExp = self.Q.getExpectations()

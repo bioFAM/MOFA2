@@ -45,11 +45,11 @@ test_that("plot weights correlation", {
 # Plotting factor values
 
 test_that("plot factor values", {
-	expect_error(plot_factor(load_model("test_biofam.hdf5")), NA)
-	expect_error(plot_factor(load_model("test_biofam.hdf5"), factors = 1:2), NA)
-	expect_error(plot_factor(load_model("test_biofam.hdf5"), factors = 1:2, color_by = 'group_name'), NA)
-	expect_error(plot_factor(load_model("test_biofam.hdf5"), factors = 1:2, shape_by = 'group_name'), NA)
-	expect_error(plot_factor(load_model("test_biofam.hdf5"), factors = 1:2, group_by = 'group_name'), NA)
+	expect_error(plot_factors(load_model("test_biofam.hdf5")), NA)
+	expect_error(plot_factors(load_model("test_biofam.hdf5"), factors = 1:2), NA)
+	expect_error(plot_factors(load_model("test_biofam.hdf5"), factors = 1:2, color_by = 'group_name'), NA)
+	expect_error(plot_factors(load_model("test_biofam.hdf5"), factors = 1:2, shape_by = 'group_name'), NA)
+	expect_error(plot_factors(load_model("test_biofam.hdf5"), factors = 1:2, group_by = 'group_name'), NA)
 })
 
 test_that("plot factor values", {

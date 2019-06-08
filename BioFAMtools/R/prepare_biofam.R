@@ -18,7 +18,7 @@
 #' If NULL, default training options are used.
 #' @return Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
 #' @export
-prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL,
+prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL,
                            regress_covariates=NULL ) {
   
   # Sanity checks
@@ -38,32 +38,66 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
     warning("Due to string size limitations in the HDF5 format, sample names will be trimmed to less than 50 characters")
   
   # Get training options
-  message("Checking training options...")
   if (is.null(training_options)) {
     message("No training options specified, using default...")
     object@training_options <- get_default_training_options(object)
   } else {
+    message("Checking training options...")
     if(!is(training_options,"list") | !setequal(names(training_options), names(get_default_training_options(object)) ))
       stop("training_options are incorrectly specified, please read the documentation in get_default_training_options")
     object@training_options <- training_options
+    
+    # if (is.na(object@training_options$drop_factor_threshold))
+    #   object@training_options$drop_factor_threshold <- -1
+    # if (object@training_options$drop_factor_threshold>0.1)
+    #   warning("Fraction of variance explained to drop factors is very high...")
+    if (object@training_options$maxiter<=10)
+      warning("Maximum number of iterations is very small")
+    if (object@training_options$startELBO<1) object@training_options$startELBO <- 1
+    if (object@training_options$freqELBO<1) object@training_options$freqELBO <- 1
+    if (!object@training_options$convergence_mode %in% c("fast","medium","slow")) 
+      stop("Convergence mode has to be either 'fast', 'medium', or 'slow'")
   }
-  if (is.na(object@training_options$drop_factor_threshold))
-    object@training_options$drop_factor_threshold <- -1
   
+  # Get stochastic options
+  if (training_options$stochastic) {
+    if (is.null(stochastic_options)) {
+      message("No stochastic options specified, using default...")
+      object@stochastic_options <- get_default_stochastic_options(object)
+    } else {
+        message("Checking stochastic inference options...")
+      if(!is(stochastic_options,"list") | !setequal(names(stochastic_options), names(get_default_stochastic_options(object)) ))
+        stop("stochastic_options are incorrectly specified, please read the documentation in get_default_stochastic_options")
+      
+      if (stochastic_options$batch_size<=0 || stochastic_options$batch_size>1)
+        stop("A batch size has to be a value between 0 and 1")
+      if (stochastic_options$batch_size==1)
+        warning("A batch size equal to 1 is equivalent to non-stochastic inference. Please set object@train_options$stochastic <- FALSE")
+      
+      # TO-DO: BATCH SIZE 0.05, 0.10, ETC.
+      
+      if (stochastic_options$learning_rate<=0 || stochastic_options$learning_rate>1)
+        stop("The learning rate has to be a value between 0 and 1")
+      if (stochastic_options$forgetting_rate<=0 || stochastic_options$forgetting_rate>1)
+        stop("The forgetting rate has to be a value between 0 and 1")
+      
+      object@stochastic_options <- stochastic_options
+    }
+  }
   
   # Get model options
-  message("Checking model options...")
   if (is.null(model_options)) {
     message("No model options specified, using default...")
     object@model_options <- get_default_model_options(object)
   } else {
+    message("Checking model options...")
     if (!is(model_options,"list") | !setequal(names(model_options), names(get_default_model_options(object)) ))
       stop("model_options are incorrectly specified, please read the documentation in get_default_model_options")
     object@model_options <- model_options
   }
   
   # Center the data
-  print("Centering the features (per group)...")
+  # message("Centering the features (per group, this is a mandatory requirement)...")
   for (m in views_names(object)) {
     for (g in groups_names(object)) {
       object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
@@ -77,7 +111,6 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   # See https://github.com/rstudio/reticulate/issues/72
   for (m in views_names(object)) {
     for (g in groups_names(object)) {
-      print("checking sparsity...")
       if (class(object@input_data[[m]][[g]]) %in% c("dgCMatrix", "dgTMatrix"))
         object@input_data[[m]][[g]] <- as(object@input_data[[m]][[g]], "matrix")
     }
@@ -110,9 +143,12 @@ get_default_training_options <- function(object) {
   # Get default train options
   training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
-    convergence_mode = 'medium',   # (string) Convergence mode based on change in the evidence lower bound ("slow", "medium", "fast")
-    drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
+    convergence_mode = 'medium',   # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
+    # drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity
+    startELBO = 1,                 # First iteration to compute the ELBO
+    freqELBO = 5,                  # Frequency of ELBO calculation
+    stochastic = FALSE,            # (logical) Do stochastic variational inference
     seed = 0                       # (numeric or NULL) random seed
   )
   
@@ -203,8 +239,6 @@ get_default_model_options <- function(object) {
 
 
 
-
-
 .regress_covariates <- function(object, covariates, min_observations = 10) {
 
   # First round of sanity checks
@@ -260,3 +294,36 @@ get_default_model_options <- function(object) {
   
   return(object)
 }
+
+#' @title Get default stochastic options
+#' @name get_default_stochastic_options
+#' @description Function to obtain the default options for stochastic variational inference.
+#' @param object an untrained \code{\link{BioFAModel}}
+#' @details The training options are the following: \cr
+#' \itemize{
+#'  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
+#'  Default is 0.5 (half of the data set).
+#'  \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
+#'  Default is 0.75 
+#'  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
+#'  Default is 1.0
+#'  }
+#' @return Returns a list with default training options
+#' @export
+
+get_default_stochastic_options <- function(object) {
+  
+  # Get default stochastic options
+  stochastic_options <- list(
+    batch_size = 0.5,       # Batch size (as a fraction)
+    learning_rate = 0.75,   # Starting learning rate
+    forgetting_rate = 0.1  # Forgetting rate
+  )
+  
+  # if stochastic_options already exist, replace the default values but keep the additional ones
+  if (length(object@stochastic_options)>0)
+    stochastic_options <- modifyList(stochastic_options, object@stochastic_options)
+  
+  return(stochastic_options)
+}
+

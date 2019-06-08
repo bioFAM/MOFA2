@@ -6,7 +6,7 @@
 \usage{
 plot_weight_scatter(object, view, factors, color_by = NULL,
   shape_by = NULL, name_color = "", name_shape = "",
-  showMissing = TRUE, abs = T)
+  showMissing = TRUE, abs = FALSE, legend = TRUE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}

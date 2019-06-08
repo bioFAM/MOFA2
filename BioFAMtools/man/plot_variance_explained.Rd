@@ -8,10 +8,9 @@ Returns a list of plots with specifies axes.
 
 Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.}
 \usage{
-plot_variance_explained(object, x = "group", y = "view",
+plot_variance_explained(object, x = "view", y = "factor",
   split_by = NA, cluster = TRUE, plot_total = FALSE,
-  factors = "all", gradient_colors = NA, total_fill_color = NA,
-  legend = TRUE, ...)
+  factors = "all", legend = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFAmodel}} object}
