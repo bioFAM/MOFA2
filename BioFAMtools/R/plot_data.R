@@ -29,7 +29,7 @@
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 #' @import pheatmap
 #' @export
-plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, 
+plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE,
                               annotate_samples = NULL, annotate_features = NULL, ...) {
   
   # Sanity checks
@@ -61,7 +61,11 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   if (imputed) {
     data <- get_imputed_data(object, view, groups)[[1]]
   } else {
-    data <- get_training_data(object, view, groups)[[1]]
+    if (denoise) {
+      data <- predict(object, view=view, groups=groups, factors=factor)[[1]]
+    } else {
+      data <- get_training_data(object, views=view, groups=groups)[[1]]
+    }
   }
 
   # NOTE: Currently groups are concatenated
@@ -98,8 +102,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   # Transpose the data
   if (transpose) data <- t(data)
 
-
-
+  # Define samples annotations and features annotations
   if (!is.null(annotate_samples) || !is.null(annotate_features)) {
     ann_samples  <- NULL
     ann_features <- NULL
@@ -122,7 +125,8 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
     pheatmap::pheatmap(data, annotation_col = ann_samples, annotation_row = ann_features, ...)
 
   } else {
-    # Plot heatmap
+    
+    # Plot heatmap without annotations
     pheatmap::pheatmap(data, ...)
   }
   

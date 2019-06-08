@@ -50,7 +50,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
   Z <- get_factors(object, groups = groups, factors = factors)
   Z[is.na(Z)] <- 0 # set missing values in Z to 0 to exclude from imputations
   
-  # Predict data based on BioFAModel
+  # Do predictions
   predictedData <- lapply(views, function(m) { lapply(groups, function(g) {
     
       # calculate terms based on linear model
@@ -63,21 +63,15 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
       if (type != "link") {
         lk <- lks[m]
         
-        # gaussian
         if (lk == "gaussian") { 
           pred <- pred 
-        }
-        # bernoulli
-        else if (lk == "bernoulli") { 
+        } else if (lk == "bernoulli") { 
           pred <- (exp(pred)/(1 + exp(pred)))
           if (type == "inRange") pred <- round(pred)
-          
-        # poisson
         } else if (lk == "poisson") { 
           pred <- log(1 + exp(pred))
           if (type == "inRange") pred <- round(pred)
         }
-        
       }
       pred
     })

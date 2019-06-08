@@ -112,7 +112,11 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
       p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width")
     }
   }
-
+  
+  # Add p-values to group comparisons
+  # my_comparisons <- list( c("0.5", "1"), c("1", "2"), c("0.5", "2") )
+  # stat_compare_means(comparisons = my_comparisons, color_by)
+  
   # If 'color_by' is numeric, define the default gradient
   if (is.numeric(df$color))
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
