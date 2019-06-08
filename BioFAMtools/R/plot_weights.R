@@ -57,8 +57,8 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 }
 
 
-#' @title Scatterplot of weights for two factors
-#' @name plot_weight_scatter
+#' @title Scatterplot of weights for combinations of factors
+#' @name plot_weights_scatter
 #' @description Scatterplot of the weights values for two factors
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param view character vector with the voiew name, or numeric vector with the index of the view to use.
@@ -82,8 +82,8 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, 
-                                 name_color="", name_shape="", showMissing = TRUE, abs = FALSE, legend = TRUE) {
+plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, 
+                                 name_color="", name_shape="", showMissing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -162,16 +162,24 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
   # remove values missing color or shape annotation
   if (!showMissing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
 
-  #turn into factors
+  # turn into factors
   df$shape_by[is.na(df$shape_by)] <- "NA"
   df$shape_by <- as.factor(df$shape_by)
   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
  
+  # Calculate absolute value
   if (abs) {
     df$x <- abs(df$x)
     df$y <- abs(df$y)
   }
   
+  # Scale values from 0 to 1
+  if (scale) {
+    df$x <- W$x/max(abs(W$x))
+    df$y <- W$x/max(abs(W$y))
+  }
+  
+  # Create plot
   p <- ggplot(df, aes_string(x="x", y="y")) + 
     geom_point(aes_string(color = "color_by", shape = "shape_by")) + 
     labs(x=factors[1], y=factors[2]) +
@@ -183,6 +191,7 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
       axis.ticks = element_line(color="black")
     )
   
+  # Add legend
   if (legend) {
     if (colorLegend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
     if (shapeLegend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
@@ -192,28 +201,30 @@ plot_weight_scatter <- function (object, view, factors, color_by = NULL, shape_b
       legend.title = element_text(size=16)
     )
   }
+  
   return(p)
 }
 
 
-#' @title Plot Weights
+#' @title Plot weights (loadings)
 #' @name plot_weights
 #' @description An important step to annotate factors is to visualise the corresponding feature loadings. \cr
 #' This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
 #' In contrast, the function \code{\link{plot_top_weights}} displays only the top features with highest loading.
 #' @param object a \code{\link{BioFAModel}} object.
-#' @param views character vector with the voiew name, or numeric vector with the index of the view to use.
-#' @param factors character vector with the factor name, or numeric vector with the index of the factor to use.
+#' @param view a string with the view name, or an integer with the index of the view.
+#' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s).
 #' @param nfeatures number of top features to label.
 #' @param abs logical indicating whether to use the absolute value of the weights.
 #' @param manual A nested list of character vectors with features to be manually labelled.
 #' @param color_manual a character vector with colors, one for each element of 'manual'
-#' @param scale logical indicating whether to scale all loadings from 0 to 1.
+#' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).
 #' @param sort_by_factor name or numeric value for the factor to sort all loadings by, or all (default)
 #' when "all", features between factors do not match
-#' @details The weights of the features within a view are relative andthey should not be interpreted in an absolute scale.
-#' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
+#' @param dot_size numeric indicating the dot size.
+#' @param text_size numeric indicating the text size.
 #' @import ggplot2 ggrepel
+#' @importFrom magrittr %>%
 #' @export
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
@@ -333,10 +344,10 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   ## Generate plot ##
   ###################
 
-  p <- ggplot(W, aes(x=feature_id, y=value, col=group)) +
-    scale_x_discrete(expand = c(0.03,0.03)) +
+  p <- ggplot(W, aes(x=value, y=feature_id, col=group)) +
+    scale_y_discrete(expand = c(0.03,0.03)) +
     geom_point(aes(size=tmp)) + 
-    labs(x="Rank position", y="Loading", size=dot_size)
+    labs(x="Loading", y="Rank position", size=dot_size)
   
   # Add labels to the top features
   if (nfeatures>0) {
@@ -351,14 +362,14 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (scale) {
     if (abs) {
       p <- p + 
-        coord_cartesian(ylim=c(0,1)) +
-        scale_y_continuous(breaks=c(0,1)) +
-        expand_limits(y=c(0,1))
+        coord_cartesian(xlim=c(0,1)) +
+        scale_x_continuous(breaks=c(0,1)) +
+        expand_limits(x=c(0,1))
     } else {
       p <- p + 
-        coord_cartesian(ylim=c(-1,1)) +
-        scale_y_continuous(breaks=c(-1,0,1)) +
-        expand_limits(y=c(-1,1))
+        coord_cartesian(xlim=c(-1,1)) +
+        scale_x_continuous(breaks=c(-1,0,1)) +
+        expand_limits(x=c(-1,1))
     }
   }
   
@@ -393,7 +404,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
       panel.grid.major.y = element_blank(),
       # panel.grid.minor = element_blank()
       
-    ) + coord_flip()
+    )
   
   return(p)
 }
@@ -401,18 +412,15 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
 
 #' @title Plot top weights
 #' @name plot_top_weights
-#' @description Plot top weights for a given latent in a given view.
+#' @description Plot top weights for a given factor and view.
 #' @param object a trained \code{\link{BioFAModel}} object.
-#' @param view character vector with the view name, or numeric vector with the index of the view to use.
-#' @param factors character vector with the factor name, or numeric vector with the index of the factor to use.
+#' @param view a string with the view name, or an integer with the index of the view.
+#' @param factors a string with the factor name, or an integer with the index of the factor.
 #' @param nfeatures number of top features to display.
 #' Default is 10
-#' @param abs logical indicating whether to use the absolute value of the weights.
-#' Default is TRUE
-#' @param sign can be 'positive', 'negative' or 'both' to show only positive, negative or all weigths, respectively.
-#' Default is 'both'.
-#' @param scale logical indicating whether to scale all loadings from 0 to 1.
-#' Default is TRUE.
+#' @param abs logical indicating whether to use the absolute value of the weights. Default is FALSE
+#' @param sign can be 'positive', 'negative' or 'both' to show only positive, negative or all weigths, respectively. Default is 'both'.
+#' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.
 #' @details An important step to annotate factors is to visualise the corresponding feature loadings. \cr
 #' This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all loadings for a given latent factor and view. \cr
 #' Importantly, the weights of the features within a view have relative values and they should not be interpreted in an absolute scale.

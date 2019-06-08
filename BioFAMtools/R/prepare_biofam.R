@@ -8,15 +8,15 @@
 #' @description Function to prepare a \code{\link{BioFAModel}} object for training. 
 #' It requires defining data, model and training options.
 #' @param object an untrained \code{\link{BioFAModel}}
-#' @param dir_options list with Input/Output options, which must contain a 'data_dir' element where temporary text files will be stored 
-#' and an 'outFile' with hdf5 extension where the final model will be stored.
 #' @param data_options list of data_options (see \code{\link{get_default_data_options}} details). 
-#' If NULL, default data options are used.
+#' If NULL, default options are used.
 #' @param model_options list of model options (see \code{\link{get_default_model_options}} for details). 
-#' If NULL, default model options are used.
+#' If NULL, default options are used.
 #' @param training_options list of training options (see \code{\link{get_default_training_options}} for details). 
-#' If NULL, default training options are used.
-#' @return Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
+#' If NULL, default options are used.
+#' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
+#' If NULL, default options are used.
+#' @return Returns an untrained \code{\link{BioFAModel}} with specified options filled in the corresponding slots
 #' @export
 prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL,
                            regress_covariates=NULL ) {
@@ -128,11 +128,13 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
 #' @details The training options are the following: \cr
 #' \itemize{
 #'  \item{\strong{maxiter}:}{ numeric value indicating the maximum number of iterations. 
-#'  Default is 5000, but we recommend using the 'tolerance' as convergence criteria.}
-#'  \item{\strong{tolerance}:}{ numeric value indicating the convergence threshold based on the change in Evidence Lower Bound (deltaELBO). 
-#'  For quick exploration we recommend this to be around 1.0, and for a thorough training we recommend a value of 0.01. Default is 0.1}
-#'  \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
+#'  Default is 5000 (a lot). Convergence is assessed using the ELBO statistic.}
+#'  \item{\strong{drop_factor_threshold}:}{ (not functional yet) numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
+#'  \item{\strong{convergence_criteria}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast".}
+#'  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets).}
+#'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO}
+#'  \item{\strong{frewELBO}:}{ integer indicating the first iteration to compute the ELBO}
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
 #'  \item{\strong{seed}:}{ random seed for reproducibility (default is 0, random seed).}
 #' }
@@ -180,7 +182,7 @@ get_default_data_options <- function(object) {
     scale_views = FALSE                # (logical) Scale views to unit variance
   )
   
-  # if data_options already exist, replace the default values but keep the additional ones
+  # if data_options already exists, replace the default values but keep the additional ones
   if (length(object@data_options)>0)
     data_options <- modifyList(data_options, object@data_options)
   
@@ -196,8 +198,7 @@ get_default_data_options <- function(object) {
 #'  \item{\strong{likelihood}:}{ character vector with data likelihoods per view: 
 #'  'gaussian' for continuous data, 'bernoulli' for binary data and 'poisson' for count data.
 #'  By default, they are guessed internally.}
-#'  \item{\strong{num_factors}:}{ numeric value indicating the initial number of factors. 
-#'  If you want to learn the number of factors automatically we recommend setting this to a large value, around 50. Default is 25.}
+#'  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
 #'  }
 #' @return Returns a list with the default model options, which have to be passed as an argument to \code{\link{prepareMOFA}}
 #' @export
@@ -221,7 +222,7 @@ get_default_model_options <- function(object) {
   # Define default model options
   model_options <- list(
     likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    num_factors = 25,            # (numeric) initial number of latent factors
+    num_factors = 15,            # (numeric) initial number of latent factors
     sl_z = TRUE,
     sl_w = TRUE,
     ard_w = TRUE,

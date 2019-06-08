@@ -2,7 +2,18 @@
 #' @title create a BioFAM object
 #' @name create_biofam
 #' @description Method to create a \code{\link{BioFAModel}} object
-#' @param data TO SPECIFY
+#' @param data Input data can be in several formats:
+#' \itemize{
+#'  \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
+#'  The "group" column indicates the condition or the experiment (a label for the samples). 
+#'  The view indicates the assay or the -omic (a label for the features).
+#'  \item{\strong{Seurat object}:}{}
+#'  \item{\strong{List of matrices}:}{ A nested list of matrices \code{Y[[i]][[j]]}. 
+#'  The first index \code{i} for the views. 
+#'  The second index \code{j} for the groups. 
+#'  Sample are stored in rows and features in columns.}
+#'  }
+#' @param samples_groups ignore...
 #' @return Returns an untrained \code{\link{BioFAModel}} object
 #' @import BiocGenerics
 #' @export
@@ -63,8 +74,8 @@ create_biofam <- function(data, samples_groups = NULL) {
     
     # Initialise BioFAM object
     object <- new("BioFAModel")
-    object@status <- "untrained" # define status as untrained
-    object@input_data <- .split_data_into_groups(data, samples_groups) # pass input data
+    object@status <- "untrained"
+    object@input_data <- .split_data_into_groups(data, samples_groups)
     
     # Set dimensionalities
     object@dimensions[["M"]] <- length(data)
@@ -159,6 +170,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   return(object)
 }
 
+# (Hidden) function to initialise a BioFAModel object using a Seurat object
 .create_biofam_from_seurat <- function(srt, samples_groups, assay = "RNA") {
   if (is(samples_groups, 'character') && (length(samples_groups) == 1)) {
     if (!(samples_groups %in% colnames(srt@meta.data)))
@@ -208,9 +220,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   tmp
 }
 
-#' @title Split Seurat into groups
-#' @name .split_seurat_into_groups
-#' @description Split data in Seurat object into a list of matrices
+# (Hidden) function to split data in Seurat object into a list of matrices
 .split_seurat_into_groups <- function(srt, samples_groups, assay = "RNA") {
   groups_names <- unique(samples_groups)
   tmp <- lapply(groups_names, function(g) {

@@ -4,7 +4,7 @@
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
-#' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
+#' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R^2),
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
@@ -101,11 +101,13 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' 
 #' @name plot_variance_explained
 #' @param object a \code{\link{MOFAmodel}} object
-#' @param x string specifying the X axis (view, factor, or group)
-#' @param y string specifying the Y axis (view, factor, or group)
-#' @param split_by string specifying the dimension to split a plot by (view, factor, or group)
+#' @param x string specifying the x-axis ("view", "factor", or "group")
+#' @param y string specifying the y-axis ("view", "factor", or "group")
+#' @param split_by string specifying the dimension to be faceted ("view", "factor", or "group")
 #' @param cluster logical value indicating whether to do hierarchical clustering on the plot
-#' @param plot_total logical value to indicate if to plot the total variance explained along the X axis
+#' @param factors TO-FILL. Default is "all"
+#' @param plot_total logical value to indicate if to plot the total variance explained (for the variable in the x-axis)
+#' @param legend logical indicating whether to add a legend
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
 #' @import pheatmap ggplot2 reshape2

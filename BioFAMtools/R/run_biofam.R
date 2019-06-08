@@ -11,7 +11,7 @@
 #' \code{reticulate::use_python}. \cr
 #' This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
 #' @param object an untrained \code{\link{bioFAMmodel}} object
-#' @param outfile output file (hdf5 format)
+#' @param outfile output file (use .hdf5 format)
 #' @return a trained \code{\link{bioFAMmodel}} object
 #' @import reticulate
 #' @export
@@ -46,18 +46,10 @@ run_biofam <- function(object, outfile = NA) {
   
   # Set the data
   biofam_entrypoint$set_data_matrix(
-    # data = r_to_py(lapply(object@input_data, function(x) lapply(x,unname))),
-    # data = r_to_py(object@input_data),
     data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
     samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
     features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
   )
-  
-  # biofam_entrypoint$set_data_df(
-  #   data = data
-  # )
-  
-  
   
   # Set model options 
   biofam_entrypoint$set_model_options(

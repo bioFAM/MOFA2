@@ -8,19 +8,18 @@
 #' @description Function to plot a heatmap of the input data for relevant features, 
 #' usually the ones with highest loadings in a given factor.
 #' @param object a \code{\link{BioFAModel}} object.
-#' @param view character vector with the view name, or numeric vector with the index of the view.
-#' @param factor character vector with the factor name, or numeric vector with the index of the factor.
+#' @param view a string vector with the view name, or an integer with the index of the view.
+#' @param factor a string with the factor name, or an integer with the index of the factor.
+#' @param groups TO-FILL
 #' @param features if an integer, the total number of features to plot, based on the absolute value of the loading.
-#' If a character vector, a set of manually-defined features. 
-#' Default is 50.
-#' @param include_weights logical indicating whether to include the weight of each feature as an extra annotation in the heatmap. 
-#' Default is FALSE.
+#' If a character vector, a set of manually-defined features. Default is 50.
 #' @param transpose logical indicating whether to transpose the output heatmap. 
 #' Default corresponds to features as rows and samples as columns.
 #' @param imputed logical indicating whether to plot the imputed data instead of the original data. 
 #' Default is FALSE.
-#' @param sort_samples logical indicating whether to sort samples using the corresponding values in the latent factor, rather than clustering. 
-#' Default is FALSE.
+#' @param denoise logical indicating whether to plot the input data or to plot a potentially denoised version based on the data reconstruction from the MOFA factors.
+#' @param annotate_samples TO-FILL
+#' @param annotate_features TO-FILL
 #' @param ... further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}
 #' @details One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
 #' using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, which show you which are the top features that are driving the heterogeneity. \cr
@@ -295,12 +294,11 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 
 #' @title Tile plot of the multi-omics data
 #' @name plot_data_overview
-#' @description Function to do a tile plot showing the missing value structure of the multi-omics input data
+#' @description Function to do a tile plot showing the missing value structure of the input data
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param colors a vector specifying the colors per view.
-#' @details This function is helpful to get an overview of the missing value structure of the training data used for BioFAM. 
-#' It shows the number of samples, the number of views, the number of features, and the structure of missing values.
-#' In particular, it is useful to visualise incomplete data sets, where some samples are missing subsets of assays.
+#' @details This function is helpful to get an overview of the structure of the training data. 
+#' It shows the number of samples, groups, views and features and it indicates which measurements are missing.
 #' @import ggplot2
 #' @import dplyr
 #' @import reshape2
