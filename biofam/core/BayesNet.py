@@ -382,7 +382,7 @@ class StochasticBayesNet(BayesNet):
         batch_ix = i % n_batches
         epoch = int(i / n_batches)
         if batch_ix == 0:
-            print("## Epoch %d ##" % epoch)
+            print("## Epoch %s ##" % str(epoch+1))
             print("-------------------------------------------------------------------------------------------")
             self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
 
@@ -422,16 +422,19 @@ class StochasticBayesNet(BayesNet):
 
         # Print stochastic settings before training
         print("Using stochastic variational inference with the following parameters:")
-        print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n- Tau: %.2f\n" % (100*self.options['batch_size'], self.options['forgetting_rate'], self.options['learning_rate']) )
+        print("- Batch size (fraction of samples): %.2f\n- Forgetting rate: %.2f\n- Learning rate: %.2f\n- Starts at iteration: %d \n" % 
+            (100*self.options['batch_size'], self.options['forgetting_rate'], self.options['learning_rate'], self.options['start_stochastic']) )
         ix = None
 
         for i in range(1,self.options['maxiter']):
             t = time();
 
             # Sample mini-batch and define step size for stochastic inference
-            if self.options['stochastic'] and (i >= self.options["start_stochastic"]-1):
-                ix, epoch = self.sample_mini_batch_no_replace(i)
+            if i>=(self.options["start_stochastic"]):
+                ix, epoch = self.sample_mini_batch_no_replace(i-(self.options["start_stochastic"]-1))
                 ro = self.step_size2(epoch)
+            else:
+                ro = 1.
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
@@ -484,7 +487,7 @@ class StochasticBayesNet(BayesNet):
             print("Step size (rho): %.3f" % ro )
             if self.options['verbose']:
                 # Memory usage
-                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
                 # Variance explained
                 r2 = self.calculate_total_variance_explained()
                 print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
