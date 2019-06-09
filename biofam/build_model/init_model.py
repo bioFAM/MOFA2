@@ -234,10 +234,17 @@ class initModel(object):
             if isinstance(qmean_S1,str):
 
                 if qmean_S1 == "random":
-                    # print("Initialising weights randomly")
                     qmean_S1_tmp = stats.norm.rvs(loc=0, scale=1., size=(self.D[m],self.K))
                 elif qmean_S1 == "pca":
-                    # print("Initialising weights with PCA solution")
+                    # if np.any(np.isnan(Y[m])):
+                    #     print("Initialising weights with PCA solution, but data has missing values. Doing quick feature-wise mean imputation (just for the initialisation)... ")
+                    #     # TO-DO: BE CAREFUL WITH NON-GAUSSIAN DATA...
+                    #     from sklearn.impute import SimpleImputer
+                    #     imp = SimpleImputer(missing_values=np.nan, strategy='mean') # using the mean along each column
+                    #     imp.fit(Y[m])
+                    #     imp.transform(Y[m])
+                    #     import pdb; pdb.set_trace()
+
                     pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                     pca.fit(Y[m])
                     qmean_S1_tmp = pca.components_.T
@@ -245,7 +252,7 @@ class initModel(object):
                 else:
                     print("%s initialisation not implemented for W" % qmean_S1)
                     exit()
-                
+
                 # Scale weights to the variance of the view
                 # if Y is not None:
                 #     qmean_S1_tmp *= np.nanstd(Y[m]) 

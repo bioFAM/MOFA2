@@ -83,9 +83,9 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
                    
                    value_groups <- rep(names(value), lengths(value))
 
+                   # Modify sample names in the sample metadata
                    object@samples_metadata$sample_name <- unlist(value, use.names = FALSE)
                    object@samples_metadata$group_name  <- value_groups
-
                    if (class(object@samples_metadata) == "list") {
                     object@samples_metadata <- data.frame(object@samples_metadata)
                    }
@@ -320,6 +320,9 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             # Set view names in data options
             old_views <- object@data_options$views
             object@data_options$views <- value
+            
+            # Set view names in features_metadata 
+            object@features_metadata$view_name <- as.character(object@features_metadata$view_name)
             if (!is.null(object@features_metadata) && (length(object@features_metadata) != 0)) {
               for (i in 1:object@dimensions[["M"]]) {
                 old_name <- old_views[i]
@@ -327,6 +330,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
                 object@features_metadata[object@features_metadata$view_name == old_name, "view_name"] <- new_name
               }
             }
+            object@features_metadata$view_name <- as.factor(object@features_metadata$view_name)
             
             # Set view names in cache
             if (!is.null(object@cache$variance_explained)) {
@@ -395,6 +399,9 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             # Set sample group names in data options
             old_groups <- object@data_options$groups
             object@data_options$groups <- value
+            
+            # Set sample group names in samples_metadata
+            object@samples_metadata$group_name <- as.character(object@samples_metadata$group_name)
             if (!is.null(object@samples_metadata) && (length(object@samples_metadata) != 0)) {
               for (i in 1:object@dimensions[["G"]]) {
                 old_name <- old_groups[i]
@@ -402,6 +409,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
                 object@samples_metadata[object@samples_metadata$group_name == old_name, "group_name"] <- new_name
               }
             }
+            object@samples_metadata$group_name <- as.factor(object@samples_metadata$group_name)
               
             # Set sample group names in cache
             if (!is.null(object@cache$variance_explained)) {
