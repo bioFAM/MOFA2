@@ -27,7 +27,7 @@ test_that("plot weights heatmap", {
 })
 
 test_that("plot weights scatter", {
-	expect_error(plot_weight_scatter(load_model("test_biofam.hdf5"), view = 1, factors = 1:2), NA)
+	expect_error(plot_weights_scatter(load_model("test_biofam.hdf5"), view = 1, factors = 1:2), NA)
 })
 
 test_that("plot weights", {
@@ -36,10 +36,6 @@ test_that("plot weights", {
 
 test_that("plot top weights", {
 	expect_error(plot_top_weights(load_model("test_biofam.hdf5"), view = 1, factor = 1), NA)
-})
-
-test_that("plot weights correlation", {
-	expect_error(plot_weight_cor(load_model("test_biofam.hdf5"), view = 1), NA)
 })
 
 # Plotting factor values
