@@ -1,8 +1,8 @@
 Package: BioFAMtools
 Type: Package
-Maintainer: Ricard Argelaguet <ricard@ebi.ac.uk>
 Title: Multi-Omics Factor Analysis v2
 Version: 0.99.1
+Maintainer: Ricard Argelaguet <ricard@ebi.ac.uk>
 Author: Ricard Argelaguet, Damien Arnol, Oliver Stegle
 Date: 2018-04-01
 License: GPL (>= 2)

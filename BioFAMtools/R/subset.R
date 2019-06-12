@@ -132,11 +132,12 @@ subset_factors <- function(object, factors) {
   # Update dimensionality
   object@dimensions[["K"]] <- length(factors)
   
+  # Re-compute variance explained
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  
   # Update factor names
   factors_names(object) <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
   
-  # Re-compute variance explained
-  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }

@@ -279,7 +279,7 @@ class BayesNet(object):
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
                 # print("Fraction of zero samples: %.0f%%" % (100*bar))
-                # print("\n")f
+                print("\n")
 
             iter_time[i] = time()-t
             

@@ -84,13 +84,13 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
     if (rasterize) {
       warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
       if (dodge) {
-        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1)
+        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1 )
       } else {
         p <- p + ggrastr::geom_quasirandom_rast(size=dot_size)
       }
     } else {
       if (dodge) {
-        p <- p + geom_jitter(size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1))
+        p <- p + geom_jitter(size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
         p <- p + geom_jitter(size = dot_size, alpha = dots_alpha)
       }
@@ -144,7 +144,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
         panel.border = element_blank(),
         panel.grid.minor = element_blank(),
         panel.grid.major = element_line(size=.1),
-        panel.spacing = unit(1, "lines"),
+        panel.spacing = unit(5, "lines"),
         # axis.text.x = element_text(size=rel(1.0), color="black", angle=30, hjust=0, vjust=0.5),
         axis.text.x = element_text(size=rel(1.0), color="black"),
         axis.text.y = element_text(size=rel(1.0)),

@@ -48,68 +48,9 @@ create_biofam <- function(data, samples_groups = NULL) {
               all(sapply(data, function(x) is(x, "dgTMatrix"))))) {
     
     message("Creating BioFAM object from a list of matrices... make sure that features are stored in columns and samples in rows\n")
-    
-    # Quality controls
-    stopifnot(all(sapply(data, function(g) all(is.numeric(g)))) || all(sapply(data, function(x) class(x) %in% c("dgTMatrix", "dgCMatrix"))))
+      
+    object <- .create_biofam_from_matrix(data, samples_groups)
 
-    # Make a dgCMatrix out of dgTMatrix
-    if (all(sapply(data, function(x) is(x, "dgTMatrix")))) {
-      data <- lapply(data, function(m) as(m, "dgCMatrix"))
-    }
-    
-    # Set samples groups
-    if (is.null(samples_groups)) {
-      message("No samples_groups provided as argument... we assume that all samples are coming from the same group.\n")
-      samples_groups <- rep("group1", nrow(data[[1]]))
-    }
-    groups_names <- as.character(unique(samples_groups))
-    
-    # Set views names
-    if (is.null(names(data))) {
-      default_views_names <- paste0("view_", 1:length(data))
-      message(paste0("View names are not specified in the data, using default: ", paste(default_views_names, collapse=", "), "\n"))
-      names(data) <- default_views_names
-    }
-    views_names <- as.character(names(data))
-    
-    # Initialise BioFAM object
-    object <- new("BioFAModel")
-    object@status <- "untrained"
-    object@input_data <- .split_data_into_groups(data, samples_groups)
-    
-    # Set dimensionalities
-    object@dimensions[["M"]] <- length(data)
-    object@dimensions[["G"]] <- length(groups_names)
-    object@dimensions[["D"]] <- sapply(data, function(m) ncol(m))
-    object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(samples_groups == x))
-    object@dimensions[["K"]] <- 0
-
-    # Set features names
-    for (m in 1:length(data)) {
-      if (is.null(colnames(data[[m]]))) {
-        warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d, feature2_v%d...", m, m, m))
-        for (g in 1:length(object@input_data[[m]])) {
-          colnames(object@input_data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@input_data[[m]][[g]]), "_v", m)
-        }
-      }
-    }
-    
-    # Set samples names
-    for (g in 1:object@dimensions[["G"]]) {
-      if (is.null(rownames(object@input_data[[1]][[g]]))) {
-        warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
-        for (m in 1:object@dimensions[["M"]]) {
-          rownames(object@input_data[[m]][[g]]) <- paste0("sample_", 1:nrow(object@input_data[[m]][[g]]), "_g", g)
-        }
-      }
-    }
-    
-    # Set view names
-    views_names(object) <- names(object@input_data)
-
-    # Set samples group names
-    groups_names(object) <- names(object@input_data[[1]])
-    
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame (long format), or a Seurat object.")
   }
@@ -166,6 +107,8 @@ create_biofam <- function(data, samples_groups = NULL) {
   object <- new("BioFAModel")
   object@status <- "untrained" # define status as untrained
   object@input_data <- data_matrix
+  
+  # TO-DO: Validate input data (-inf values, samples with full missing vlaues, etc. etc.)
   
   return(object)
 }
@@ -252,3 +195,81 @@ create_biofam <- function(data, samples_groups = NULL) {
 }
 
 
+
+.create_biofam_from_matrix <- function(data, samples_groups) {
+  
+  # Quality controls
+  stopifnot(all(sapply(data, function(g) all(is.numeric(g)))) || all(sapply(data, function(x) class(x) %in% c("dgTMatrix", "dgCMatrix"))))
+  stopifnot(length(Reduce("intersect",lapply(data,rownames)))>1)
+  
+  # Make a dgCMatrix out of dgTMatrix
+  if (all(sapply(data, function(x) is(x, "dgTMatrix")))) {
+    data <- lapply(data, function(m) as(m, "dgCMatrix"))
+  }
+  
+  # If number of rows are not identical, fill missing values
+  # if (!all.equal(sapply(data,nrow)))
+  samples <- Reduce("union",sapply(data,rownames))
+  data <- sapply(data, function(x) {
+    aug_x <- matrix(NA, ncol=ncol(x), nrow=length(samples))
+    aug_x <- x[match(samples,rownames(x)),,drop=FALSE]
+    rownames(aug_x) <- samples
+    colnames(aug_x) <- colnames(x)
+    return(aug_x)
+  }, USE.NAMES = T, simplify = F)
+
+  # Set samples groups
+  if (is.null(samples_groups)) {
+    message("No samples_groups provided as argument... we assume that all samples are coming from the same group.\n")
+    samples_groups <- rep("group1", nrow(data[[1]]))
+  }
+  groups_names <- as.character(unique(samples_groups))
+  
+  # Set views names
+  if (is.null(names(data))) {
+    default_views_names <- paste0("view_", 1:length(data))
+    message(paste0("View names are not specified in the data, using default: ", paste(default_views_names, collapse=", "), "\n"))
+    names(data) <- default_views_names
+  }
+  views_names <- as.character(names(data))
+  
+  # Initialise BioFAM object
+  object <- new("BioFAModel")
+  object@status <- "untrained"
+  object@input_data <- .split_data_into_groups(data, samples_groups)
+  
+  # Set dimensionalities
+  object@dimensions[["M"]] <- length(data)
+  object@dimensions[["G"]] <- length(groups_names)
+  object@dimensions[["D"]] <- sapply(data, function(m) ncol(m))
+  object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(samples_groups == x))
+  object@dimensions[["K"]] <- 0
+  
+  # Set features names
+  for (m in 1:length(data)) {
+    if (is.null(colnames(data[[m]]))) {
+      warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d, feature2_v%d...", m, m, m))
+      for (g in 1:length(object@input_data[[m]])) {
+        colnames(object@input_data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@input_data[[m]][[g]]), "_v", m)
+      }
+    }
+  }
+  
+  # Set samples names
+  for (g in 1:object@dimensions[["G"]]) {
+    if (is.null(rownames(object@input_data[[1]][[g]]))) {
+      warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
+      for (m in 1:object@dimensions[["M"]]) {
+        rownames(object@input_data[[m]][[g]]) <- paste0("sample_", 1:nrow(object@input_data[[m]][[g]]), "_g", g)
+      }
+    }
+  }
+  
+  # Set view names
+  views_names(object) <- names(object@input_data)
+  
+  # Set samples group names
+  groups_names(object) <- names(object@input_data[[1]])
+  
+  return(object)
+}

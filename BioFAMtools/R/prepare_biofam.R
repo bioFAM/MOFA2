@@ -99,8 +99,10 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
   for (m in views_names(object)) {
-    for (g in groups_names(object)) {
-      object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
+    if (model_options$likelihood[[m]] == "gaussian") {
+      for (g in groups_names(object)) {
+        object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
+      }
     }
   }
   

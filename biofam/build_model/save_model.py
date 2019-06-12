@@ -38,8 +38,7 @@ class saveModel():
         self.views_names = views_names
         self.samples_names = samples_names
         self.features_names = features_names
-        self.groups_names = set(samples_groups)
-
+        self.groups_names = np.unique(samples_groups)
 
 
     def saveData(self):
