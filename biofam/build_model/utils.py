@@ -76,7 +76,6 @@ def loadData(data_opts, verbose=True):
             # Read files as views
             file = data_opts['input_files'][m]
             Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
-            # if data_opts['features_in_rows']: Y[m] = Y[m].T
             group_name = data_opts["groups_names"][0] if "groups_names" in data_opts else 'group_0'
             samples_groups = list([group_name for e in range(Y[m].shape[0])])
             print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
@@ -92,7 +91,6 @@ def loadData(data_opts, verbose=True):
                 file = data_opts["input_files"][i]
                 group = data_opts["groups_names"][i]
                 group_y[j] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
-                # if data_opts['features_in_rows']: group_y[j] = group_y[j].T
                 samples_groups.extend([group for e in range(group_y[j].shape[0])])
                 print("Loaded %s with dim (%d, %d)..." % (file, group_y[j].shape[0], group_y[j].shape[1]))
             Y[m] = pd.concat(group_y)
@@ -101,15 +99,6 @@ def loadData(data_opts, verbose=True):
     # Deprecated for 2d models
     # Check that the dimensions match
     # if len(set([Y[m].shape[0] for m in range(M)])) != 1:
-    #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
-    #         print("\nWarning: Columns seem to be the shared axis, transposing the data...")
-    #         for m in range(M): Y[m] = Y[m].T
-    #     else:
-    #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
-    #         exit()
-
-    # if data_opts['features_in_rows']:
-    #     for m in range(M): Y[m] = Y[m].T
     #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
     #         print("\nWarning: Columns seem to be the shared axis, transposing the data...")
     #         for m in range(M): Y[m] = Y[m].T
@@ -162,26 +151,21 @@ def process_data(data, data_opts, samples_groups):
 
             # Center features
             if data_opts['center_features_per_group']:
-                for gp_name in data_opts['groups_names']:
-                    filt = [gp==gp_name for gp in samples_groups]
+                for g in data_opts['groups_names']:
+                    filt = [gp==g for gp in samples_groups]
                     parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
             else:
                 parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
 
             # Scale views to unit variance
             if data_opts['scale_views']:
-                print("Scaling entire views (not features!) to unit variance")
                 parsed_data[m] /= np.nanstd(parsed_data[m])
 
-            # quantile normalise features
-            # if data_opts['gaussianise_features'][m]:
-            #     print("Gaussianising features for view " + str(m) + "...")
-            #     parsed_data[m] = gaussianise(parsed_data[m])
-
-            # Scale features to unit variance
-            if data_opts['scale_features']:
-                print("Scaling features to unit variance")
-                parsed_data[m] /= np.nanstd(parsed_data[m], axis=0)
+            # Scale groups to unit variance
+            if data_opts['scale_groups']:
+                for g in data_opts['groups_names']:
+                    filt = [gp==g for gp in samples_groups]
+                    parsed_data[m][filt,:] /= np.nanstd(parsed_data[m][filt,:])
 
             # reset zeros if zero infalted likelihood
             if data_opts["likelihoods"][m] == "zero_inflated":

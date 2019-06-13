@@ -77,8 +77,8 @@ class entry_point(object):
         # Define views names and features names
         if features_names_dict is None:
             print("Views and features names not provided, using default naming convention:")
-            print("Views: view1, view2, ..., viewM")
-            print("Features: feature1_view1, featureD_viewM\n")
+            print("- Views: view1, view2, ..., viewM")
+            print("- Features: feature1_view1, featureD_viewM\n")
             self.data_opts['views_names'] = [ "view" + str(m) for m in range(M) ]
             self.data_opts['features_names'] = [ ["feature%d_view%d" % (d,m) for d in range(D[m])] for m in range(M) ]
         else:
@@ -89,8 +89,8 @@ class entry_point(object):
         # Define groups and samples names
         if samples_names_dict is None:
             print("Samples and groups names not provided, using default naming convention:")
-            print("Groups: group1, group2, ..., groupG")
-            print("samples: sample1_group1, sampleN_groupG\n")
+            print("- Groups: group1, group2, ..., groupG")
+            print("- Samples: sample1_group1, sample2_group1, sample1_group2, ..., sampleN_groupG\n")
             self.data_opts['groups_names'] = [ "group" + str(g) for g in range(G) ]
             self.data_opts['samples_names'] = [ "sample%d_group%d" % (n,g) for g in range(G) for n in range(N[g]) ]
         else:
@@ -354,6 +354,7 @@ class entry_point(object):
             for g in range(G):
                 print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
         print("\n")
+
         # Process the data (center, scaling, etc.)
         if layer is not None:
             self.data = process_data([loom.layers[layer]], self.data_opts, self.data_opts['samples_groups'])
@@ -518,15 +519,12 @@ class entry_point(object):
         assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
         assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson",'zero_inflated'])), "Available likelihoods are 'gaussian','bernoulli', 'poisson', 'zero_inflated'"
 
-    def set_data_options(self, likelihoods, center_features_per_group=True, scale_features=False, scale_views=False, features_in_rows=False, mask=None, mask_zeros=False):
+    def set_data_options(self, likelihoods, center_features_per_group=True, scale_views=False, scale_groups=False, mask=None, mask_zeros=False):
         """ Set data processing options """
 
         # TODO: more verbose messages
         # TODO Sanity checks
         self.data_opts = {}
-
-        if features_in_rows is True:
-            self.data_opts['features_in_rows'] = features_in_rows
 
         # Define likelihoods
         if type(likelihoods) is not list:
@@ -540,9 +538,11 @@ class entry_point(object):
 
         # Scale views to unit variance
         self.data_opts['scale_views'] = scale_views
+        if (scale_views): print("Scaling views to unit variance...\n")
 
-        # Scale features to unit variance
-        self.data_opts['scale_features'] = scale_features
+        # Scale groups to unit variance
+        self.data_opts['scale_groups'] = scale_groups
+        if (scale_groups): print("Scaling groups to unit variance...\n")
 
         # Do we want to mask zeros in the data (provide list if depends on view)
         self.data_opts['mask_zeros'] = mask_zeros
