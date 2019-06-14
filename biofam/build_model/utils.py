@@ -119,9 +119,11 @@ def process_data(data, data_opts, samples_groups):
 
     for m in range(len(data)):
 
-        # Convert data to numpy array format
+        # Convert data to numpy array float64 format
         if isinstance(parsed_data[m], pd.DataFrame):
             parsed_data[m] = parsed_data[m].values
+        # parsed_data[m].astype(np.float64)
+
 
         # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
         parsed_data[m][parsed_data[m] == -2147483648] = np.nan
@@ -133,21 +135,21 @@ def process_data(data, data_opts, samples_groups):
         #     parsed_data[m].drop(parsed_data[m].columns[np.where(var==0.)], axis=1, inplace=True)
 
         # Mask values
-        if data_opts["mask"][m] > 0:
-            print("Masking %.1f%% of values in view '%s'..." % (data_opts["mask"][m]*100, data_opts["views_names"][m]))
-            parsed_data[m] = mask_data(parsed_data[m], data_opts['mask'][m])
+        # if data_opts["mask"][m] > 0:
+        #     print("Masking %.1f%% of values in view '%s'..." % (data_opts["mask"][m]*100, data_opts["views_names"][m]))
+        #     parsed_data[m] = mask_data(parsed_data[m], data_opts['mask'][m])
 
-        if data_opts['mask_zeros'][m]:
-            print('Masking zeros for view ', m)
-            parsed_data[m][parsed_data[m] == 0] = np.nan
+        # if data_opts['mask_zeros'][m]:
+        #     print('Masking zeros for view ', m)
+        #     parsed_data[m][parsed_data[m] == 0] = np.nan
 
         # Centering and scaling is only appropriate for gaussian data
         if data_opts["likelihoods"][m] in ["gaussian", "zero_inflated"]:
 
             # mask zeros if zero inflated likelihood
-            if data_opts["likelihoods"][m] == "zero_inflated":
-                zeros_mask = parsed_data[m]==0
-                parsed_data[m][zeros_mask] = np.nan
+            # if data_opts["likelihoods"][m] == "zero_inflated":
+            #     zeros_mask = parsed_data[m]==0
+            #     parsed_data[m][zeros_mask] = np.nan
 
             # Center features
             if data_opts['center_features_per_group']:

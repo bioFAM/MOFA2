@@ -57,7 +57,7 @@ class entry_point(object):
         if len(data)==0:
             print("Error: Data is empty"); sys.stdout.flush(); exit()
 
-        # Convert input data to numpy array format
+        # Convert input data to numpy array float64 format
         for m in range(len(data)):
             if isinstance(data[m], dict):
                 data[m] = list(data[m].values())
@@ -67,6 +67,7 @@ class entry_point(object):
                         data[m][p] = data[m][p].values
                     else:
                         print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
+                data[m][p] = data[m][p].astype(np.float64)
 
         # Save dimensionalities
         M = self.dimensionalities["M"] = len(data)

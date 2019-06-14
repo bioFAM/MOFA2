@@ -53,14 +53,17 @@ setReplaceMethod("factors_names", signature(object="BioFAModel", value="vector")
 #' @export
 setMethod("samples_names", signature(object="BioFAModel"), 
           function(object) {
+            
             # When the model is not trained, the samples slot is not initialized yet
             if (!("samples_metadata" %in% slotNames(object)) || (length(object@samples_metadata) == 0)) {
               return(list())
             }
+            
             # The default case when samples are initialized (trained model)
             samples_list <- lapply(object@data_options$groups, function(g) {
               with(object@samples_metadata, object@samples_metadata[group_name == g, "sample_name"])
             })
+            
             names(samples_list) <- object@data_options$groups
             return(samples_list)
           })
@@ -85,17 +88,15 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 
                    # Modify sample names in the sample metadata
                    object@samples_metadata$sample_name <- unlist(value, use.names = FALSE)
-                   object@samples_metadata$group_name  <- value_groups
+                   object@samples_metadata$group_name  <- as.factor( value_groups )
                    if (class(object@samples_metadata) == "list") {
-                    object@samples_metadata <- data.frame(object@samples_metadata)
+                    object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors=FALSE)
                    }
                    
                    # Add samples names to the expectations matrices
                    object <- .set_expectations_names(object, entity = 'samples', value)
                    
                    # Add samples names to the data matrices
-                   # if (!is.null(dim(object@training_data[[1]][[1]]))) {
-                   # }
                    object <- .set_data_names(object, entity = 'samples', value)
                    
                    object
@@ -206,10 +207,10 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
                    value_groups <- rep(names(value), lengths(value))
 
                    object@features_metadata$feature_name <- unlist(value, use.names = FALSE)
-                   object@features_metadata$view_name    <- value_groups
+                   object@features_metadata$view_name <- value_groups
 
                    if (class(object@features_metadata) == "list") {
-                    object@features_metadata <- data.frame(object@features_metadata)
+                    object@features_metadata <- data.frame(object@features_metadata, stringsAsFactors = FALSE)
                    }
                    
                    # Add features names to the expectations matrices
@@ -321,15 +322,19 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             old_views <- object@data_options$views
             object@data_options$views <- value
             
+            # Set view names in model options
+            if (length(object@model_options$likelihoods)>0)
+              object@model_options$likelihoods <- value
+          
+            
             # Set view names in features_metadata 
             if (!is.null(object@features_metadata) && (length(object@features_metadata) != 0)) {
-              object@features_metadata$view_name <- as.character(object@features_metadata$view_name)
+              # object@features_metadata$view_name <- as.character(object@features_metadata$view_name)
               for (i in 1:object@dimensions[["M"]]) {
                 old_name <- old_views[i]
                 new_name <- value[i]
                 object@features_metadata[object@features_metadata$view_name == old_name, "view_name"] <- new_name
               }
-              object@features_metadata$view_name <- as.factor(object@features_metadata$view_name)
             }
             
             # Set view names in cache
@@ -402,13 +407,12 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             
             # Set sample group names in samples_metadata
             if (!is.null(object@samples_metadata) && (length(object@samples_metadata) != 0)) {
-              object@samples_metadata$group_name <- as.character(object@samples_metadata$group_name)
+              # object@samples_metadata$group_name <- as.character(object@samples_metadata$group_name)
               for (i in 1:object@dimensions[["G"]]) {
                 old_name <- old_groups[i]
                 new_name <- value[i]
                 object@samples_metadata[object@samples_metadata$group_name == old_name, "group_name"] <- new_name
               }
-              object@samples_metadata$group_name <- as.factor(object@samples_metadata$group_name)
             }
               
             # Set sample group names in cache

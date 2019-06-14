@@ -43,7 +43,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   # Check that data observations are centered
   for (m in views) { 
     for (g in groups) {
-      if (!all(DelayedArray::colMeans(Y[[m]][[g]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
+      if (object@model_options$likelihoods[m]=="gaussian" & 
+          !all(DelayedArray::colMeans(Y[[m]][[g]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
         cat(sprintf("Warning: data for view %s and group %s is not centered\n", m, g))
     }
   }

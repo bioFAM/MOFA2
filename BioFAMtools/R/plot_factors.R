@@ -55,6 +55,8 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   Z$factor <- factor(Z$factor, levels=factors)
   
   # Set group/color/shape
+  if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
+  if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
   group_by <- .set_groupby(object, group_by)
   color_by <- .set_colorby(object, color_by)
   shape_by <- .set_shapeby(object, shape_by)
@@ -67,9 +69,13 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   df <- merge(df, color_by, by="sample")
   df <- merge(df, shape_by, by="sample")
   
-  df$color_by <- as.character(df$color_by)
+  # df$color_by <- as.character(df$color_by)
   df$group_by <- as.character(df$group_by)
   df$shape_by <- as.character(df$shape_by)
+  
+  # QC
+  if (length(unique(df$color_by))>10 & is.numeric(df$color_by)) 
+    add_violin <- FALSE; dodge <- FALSE
   
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
@@ -123,7 +129,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   
   # Add legend for color
   if (length(unique(df$color_by))>1) { 
-    p <- p + labs(color_by=color_name)
+    p <- p + labs(color=color_name)
   } else { 
     p <- p + guides(fill=F, color=F) + 
       scale_color_manual(values="black") +
@@ -237,11 +243,10 @@ plot_embeddings <- function(object, factors = c(1,2), show_missing = TRUE,
     stopifnot(all(factors %in% factors_names(object)))
   }
   Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
-  # Z$factor <- factor(Z$factor, levels=factors)
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)
-  shape_by <- .set_shapeby(object, shape_by)
+  shape_by <- .set_shapeby(object, shape_by )
   
   # Remove samples with missing values
   Z <- Z[complete.cases(Z),]
@@ -249,6 +254,7 @@ plot_embeddings <- function(object, factors = c(1,2), show_missing = TRUE,
   # Merge factor values with color and shape information
   df <- merge(Z, color_by, by="sample")
   df <- merge(df, shape_by, by="sample")
+  df$shape_by <- as.character(df$shape_by)
   
   # Remove missing values
   if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
@@ -474,7 +480,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
       training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
       features_names <- lapply(training_data, rownames)
-      viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
+      viewidx <- which(sapply(features_names, function(x) color_by %in% x))
       color_by <- training_data[[viewidx]][color_by,]
     
   # Option 3: by a metadata column in object@samples$metadata
@@ -522,16 +528,23 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
       shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
     }
     
-  # Option 2: input is a data.frame with columns (sample,color)
+  # Option 2: by a feature present in the training data    
+  } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
+    training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
+    features_names <- lapply(training_data, rownames)
+    viewidx <- which(sapply(features_names, function(x) shape_by %in% x))
+    shape_by <- training_data[[viewidx]][shape_by,]
+    
+  # Option 3: input is a data.frame with columns (sample,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("sample","color")))
     stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(model))))
 
-    # Option 3: by a metadata column in object@samples$metadata
+  # Option 4: by a metadata column in object@samples$metadata
   } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
       shape_by <- samples_metadata(object)[,shape_by]
     
-  # Option 4: shape_by is a vector of length N
+  # Option 5: shape_by is a vector of length N
   } else if (length(shape_by) > 1) {
     stopifnot(length(shape_by) == sum(object@dimensions[["N"]]))
     

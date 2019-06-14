@@ -99,7 +99,7 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
   for (m in views_names(object)) {
-    if (model_options$likelihood[[m]] == "gaussian") {
+    if (model_options$likelihoods[[m]] == "gaussian") {
       for (g in groups_names(object)) {
         object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
       }
@@ -197,7 +197,7 @@ get_default_data_options <- function(object) {
 #' @param object an untrained \code{\link{BioFAModel}} object
 #' @details The model options are the following: \cr
 #' \itemize{
-#'  \item{\strong{likelihood}:}{ character vector with data likelihoods per view: 
+#'  \item{\strong{likelihoods}:}{ character vector with data likelihoods per view: 
 #'  'gaussian' for continuous data, 'bernoulli' for binary data and 'poisson' for count data.
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
@@ -217,13 +217,13 @@ get_default_model_options <- function(object) {
   }
   
   # Guess likelihoods from the data
-  # likelihood <- .infer_likelihoods(object) THIS DOES NOT WORK 
-  likelihood <- rep(x="gaussian", times=object@dimensions$M)
-  names(likelihood) <- views_names(object)
+  likelihoods <- .infer_likelihoods(object)
+  # likelihoods <- rep(x="gaussian", times=object@dimensions$M)
+  names(likelihoods) <- views_names(object)
   
   # Define default model options
   model_options <- list(
-    likelihood = likelihood,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
+    likelihoods = likelihoods,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
     num_factors = 15,            # (numeric) initial number of latent factors
     sl_z = TRUE,
     sl_w = TRUE,
@@ -257,7 +257,7 @@ get_default_model_options <- function(object) {
   # Y <- get_input_data(object, views=views, groups=groups)
   
   # Second round of sanity checks
-  if (any(object@model_options$likelihood[views]!="gaussian")) 
+  if (any(object@model_options$likelihoods[views]!="gaussian")) 
     stop("Some of the specified views contains discrete data. \nRegressing out covariates only works in views with continuous (gaussian) data")
   
   # Prepare data.frame with covariates

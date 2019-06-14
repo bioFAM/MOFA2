@@ -5,15 +5,16 @@
   likelihood <- rep(x="gaussian", times=object@dimensions$M)
   names(likelihood) <- views_names(object)
   
-  for (view in views_names(object)) {
-    data <- get_training_data(object, view)[[1]][[1]]  # take only first group
+  for (m in views_names(object)) {
+    # data <- get_training_data(object, views=m)[[1]][[1]]  # take only first group
+    data <- object@input_data[[m]][[1]]
     
     # bernoulli
     if (length(unique(data[!is.na(data)]))==2) {
-      likelihood[view] <- "bernoulli"
+      likelihood[m] <- "bernoulli"
     # poisson
     } else if (all(data[!is.na(data)]%%1==0)) {
-      likelihood[view] <- "poisson"
+      likelihood[m] <- "poisson"
     }
   }
   

@@ -200,8 +200,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   }
 
   # Add views names to likelihood vector
-  if (is.null(names(object@model_options$likelihood))) {
-    names(object@model_options$likelihood) <- views_names(object)
+  if (is.null(names(object@model_options$likelihoods))) {
+    names(object@model_options$likelihoods) <- views_names(object)
   }
 
   ##########################################
