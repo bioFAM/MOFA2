@@ -48,7 +48,7 @@ run_biofam <- function(object, outfile = NA) {
   # np <- import("numpy", convert = FALSE)
   biofam_entrypoint$set_data_matrix(
     data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
-    data = lapply(unname(object@input_data), function(x) r_to_py(unname(lapply(x, function(y) np_array(t(y), dtype = np$float64) )))),
+    # data = lapply(unname(object@input_data), function(x) r_to_py(unname(lapply(x, function(y) np_array(t(y), dtype = np$float64) )))),
     samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
     features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
   )

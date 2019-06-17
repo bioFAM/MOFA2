@@ -103,63 +103,29 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   # Collect relevant data  
   D <- object@dimensions[["D"]][view]
   W <- get_weights(object, views=view, factors=factors, as.data.frame = F)
-  W <- W[[view]][,factors]
+  W <- as.data.frame(W); colnames(W) <- c("x","y")
+  W$view <- view
+  W$feature <- features_names(object)[[view]]
   
-  # Set color
-  colorLegend <- T
-  if (!is.null(color_by)) {
-    
-    # It is the name of a covariate or a feature in the TrainData
-    if (length(color_by) == 1 & is.character(color_by)) {
-      if(name_color=="") name_color <- color_by
-      training_data <- get_training_data(object)
-      features_names <- features_names(object)
-      if(color_by %in% Reduce(union, features_names)) {
-        viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
-        color_by <- training_data[[viewidx]][[1]][color_by,]
-      }
-      
-    # It is a vector of length N
-    } else if (length(color_by) > 1) {
-      stopifnot(length(color_by) == N)
-      # color_by <- as.factor(color_by)
-    } else {
-      stop("'color_by' was specified but it was not recognised, please read the documentation")
-    }
-  } else {
-    color_by <- rep("1", D)
-    colorLegend <- F
-  }
-
-  # Set shape
-  shapeLegend <- T
-  if (!is.null(shape_by)) {
-    
-    # It is the name of a covariate 
-    if (length(shape_by) == 1 & is.character(shape_by)) {
-      if(name_shape=="") name_shape <- shape_by
-      features_names <- features_names(object)
-      training_data <- get_training_data(object)
-      if (shape_by %in% Reduce(union,features_names)) {
-        viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
-        shape_by <- training_data[[viewidx]][[1]][shape_by,]
-      }
-
-    # It is a vector of length N
-    } else if (length(shape_by) > 1) {
-      stopifnot(length(shape_by) == N)
-    } else {
-      stop("'shape_by' was specified but it was not recognised, please read the documentation")
-    }
-  } else {
-    shape_by <- rep("1", D)
-    shapeLegend <- F
-  }
+  # Set color and shape
+  if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
+  if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
+  color_by <- .set_colorby(object, color_by, view)
+  shape_by <- .set_shapeby(object, shape_by, view)
   
   # Create data frame to plot
-  df <- data.frame(x = W[, factors[1]], y = W[, factors[2]], shape_by = shape_by, color_by = color_by)
+  # df <- data.frame(
+  #   x = W[, factors[1]], y = W[, factors[2]], 
+  #   shape_by = shape_by, color_by = color_by
+  # )
+  # Remove features with missing values
+  W <- W[complete.cases(W),]
   
-  # remove values missing color or shape annotation
+  # Merge factor values with group/color/shape information
+  df <- merge(W, color_by, by=c("feature","view"))
+  df <- merge(df, shape_by, by=c("feature","view"))
+  
+  # Remove values missing color or shape annotation
   if (!showMissing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
 
   # turn into factors
@@ -175,8 +141,8 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   
   # Scale values from 0 to 1
   if (scale) {
-    df$x <- W$x/max(abs(W$x))
-    df$y <- W$x/max(abs(W$y))
+    df$x <- df$x/max(abs(df$x))
+    df$y <- df$y/max(abs(df$y))
   }
   
   # Create plot
@@ -192,14 +158,17 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
     )
   
   # Add legend
-  if (legend) {
-    if (colorLegend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
-    if (shapeLegend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
-    p <- p + theme(
+  if ((length(unique(df$color_by))>1 | length(unique(df$shape_by))>1) & legend) {
+    p <- p + labs(color = name_color, shape = name_shape) + 
+      theme(
       legend.key = element_rect(fill = "white"),
       legend.text = element_text(size=16),
       legend.title = element_text(size=16)
     )
+  } else {
+    p <- p + theme(
+        legend.position = "none"
+      )
   }
   
   return(p)
@@ -500,3 +469,81 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   
 }
 
+
+
+# (Hidden) function to define the shape
+.set_shapeby <- function(object, shape_by, view) {
+  
+  # Option 1: no color
+  if (is.null(shape_by)) {
+    shape_by <- rep("1",sum(object@dimensions[["D"]][view]))
+    
+  # Option 2: input is a data.frame with columns (feature,color)
+  } else if (is(shape_by,"data.frame")) {
+    stopifnot(all(colnames(shape_by) %in% c("feature","color")))
+    stopifnot(all(unique(shape_by$feature) %in% features_names(model)[[view]]))
+    
+  # Option 3: by a feature_metadata column
+  } else if ((length(shape_by)==1) && is.character(shape_by) & (shape_by %in% colnames(features_metadata(object)))) {
+    tmp <- features_metadata(object)
+    shape_by <- tmp[tmp$view_name==view,shape_by]
+    
+  # Option 4: shape_by is a vector of length D
+  } else if (length(shape_by) > 1) {
+    stopifnot(length(shape_by) == object@dimensions[["D"]][[view]])
+    
+  # Option not recognised
+  } else {
+    stop("'shape_by' was specified but it was not recognised, please read the documentation")
+  }
+  
+  # Create data.frame with columns (feature,shape)
+  if (!is(shape_by,"data.frame")) {
+    df = data.frame(
+      feature = features_names(object)[[view]],
+      shape_by = shape_by,
+      view = view
+    )
+  }
+  
+  return(df)
+}
+
+
+# (Hidden) function to define the color
+.set_colorby <- function(object, color_by, view) {
+  
+  # Option 1: no color
+  if (is.null(color_by)) {
+    color_by <- rep("1",sum(object@dimensions[["D"]][view]))
+    
+    # Option 2: input is a data.frame with columns (feature,color)
+  } else if (is(color_by,"data.frame")) {
+    stopifnot(all(colnames(color_by) %in% c("feature","color")))
+    stopifnot(all(unique(color_by$feature) %in% features_names(model)[[view]]))
+    
+    # Option 3: by a feature_metadata column
+  } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {
+    tmp <- features_metadata(object)
+    color_by <- tmp[tmp$view_name==view,color_by]
+    
+    # Option 4: color_by is a vector of length D
+  } else if (length(color_by) > 1) {
+    stopifnot(length(color_by) == object@dimensions[["D"]][[view]])
+    
+    # Option not recognised
+  } else {
+    stop("'color_by' was specified but it was not recognised, please read the documentation")
+  }
+  
+  # Create data.frame with columns (feature,color)
+  if (!is(color_by,"data.frame")) {
+    df = data.frame(
+      feature = features_names(object)[[view]],
+      color_by = color_by,
+      view = view
+    )
+  }
+  
+  return(df)
+}
