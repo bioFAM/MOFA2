@@ -153,6 +153,7 @@ get_default_training_options <- function(object) {
     startELBO = 1,                 # First iteration to compute the ELBO
     freqELBO = 5,                  # Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference
+    gpu_mode = FALSE,              # (logical) Use GPU?
     seed = 0                       # (numeric or NULL) random seed
   )
   

@@ -71,6 +71,7 @@ run_biofam <- function(object, outfile = NA) {
     startELBO        = object@training_options$startELBO,
     elbofreq         = object@training_options$freqELBO,
     seed             = object@training_options$seed, 
+    gpu_mode          = object@training_options$gpu_mode,
     verbose          = object@training_options$verbose
   )
   
