@@ -46,11 +46,14 @@ run_biofam <- function(object, outfile = NA) {
   
   # Set the data
   # np <- import("numpy", convert = FALSE)
+  od <- import("collections", convert = FALSE)
   biofam_entrypoint$set_data_matrix(
     data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
     # data = lapply(unname(object@input_data), function(x) r_to_py(unname(lapply(x, function(y) np_array(t(y), dtype = np$float64) )))),
-    samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
-    features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
+    # samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
+    samples_names_dict = od$OrderedDict(lapply(object@input_data[[1]], rownames)),
+    # features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
+    features_names_dict = od$OrderedDict(lapply(object@input_data, function(m) colnames(m[[1]])))
   )
   
   # Set model options 
@@ -90,7 +93,7 @@ run_biofam <- function(object, outfile = NA) {
   # Run the model
   biofam_entrypoint$run()
   
-  # Save the model as an hdf5 file
+  # Save the model output as an hdf5 file
   biofam_entrypoint$save(outfile)
   
   # Load the trained model

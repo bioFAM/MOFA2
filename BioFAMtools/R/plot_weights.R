@@ -309,10 +309,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
   
-  ###################
-  ## Generate plot ##
-  ###################
-
+  # Generate plot
   p <- ggplot(W, aes(x=value, y=feature_id, col=group)) +
     scale_y_discrete(expand = c(0.03,0.03)) +
     geom_point(aes(size=tmp)) + 

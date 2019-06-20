@@ -20,7 +20,7 @@
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE, set_names = TRUE) {
+load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_training_data = TRUE) {
 
   # options(stringsAsFactors = FALSE)
 
@@ -146,23 +146,21 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])                # number of factors
 
   # Assign sample and feature names (slow for large matrices)
-  if (set_names) {
-    
-    # Create default features names if they are null
-    if (is.null(feature_names)) {
-      print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
-      feature_names <- lapply(1:object@dimensions[["M"]],
-        function(m) sprintf("feature%d_view_&d", as.character(1:object@dimensions[["D"]][m]), m))
-    }
-    features_names(object) <- feature_names
-    
-    # Create default samples names if they are null
-    if (is.null(sample_names)) {
-      print("Samples names not found, generating default: sample1, ..., sampleN")
-      sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
-    }
-    samples_names(object) <- sample_names
+  
+  # Create default features names if they are null
+  if (is.null(feature_names)) {
+    print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
+    feature_names <- lapply(1:object@dimensions[["M"]],
+      function(m) sprintf("feature%d_view_&d", as.character(1:object@dimensions[["D"]][m]), m))
   }
+  features_names(object) <- feature_names
+  
+  # Create default samples names if they are null
+  if (is.null(sample_names)) {
+    print("Samples names not found, generating default: sample1, ..., sampleN")
+    sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
+  }
+  samples_names(object) <- sample_names
   
   # Set views names
   if (is.null(names(object@training_data))) {
