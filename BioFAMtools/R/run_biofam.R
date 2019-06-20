@@ -51,9 +51,11 @@ run_biofam <- function(object, outfile = NA) {
     data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
     # data = lapply(unname(object@input_data), function(x) r_to_py(unname(lapply(x, function(y) np_array(t(y), dtype = np$float64) )))),
     # samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
-    samples_names_dict = od$OrderedDict(lapply(object@input_data[[1]], rownames)),
     # features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
-    features_names_dict = od$OrderedDict(lapply(object@input_data, function(m) colnames(m[[1]])))
+    views_names = r_to_py(as.list(names(object@input_data))),
+    groups_names = r_to_py(as.list(names(object@input_data[[1]]))),
+    samples_names = r_to_py(unname(lapply(object@input_data[[1]], rownames))),
+    features_names = r_to_py(unname(lapply(object@input_data, function(x) colnames(x[[1]]))))
   )
   
   # Set model options 

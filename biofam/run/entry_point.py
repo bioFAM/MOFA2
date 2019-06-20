@@ -35,7 +35,7 @@ class entry_point(object):
         print(banner)
         sys.stdout.flush()
 
-    def set_data_matrix(self, data, samples_names_dict=None, features_names_dict=None):
+    def set_data_matrix(self, data, views_names=None, groups_names=None, samples_names=None, features_names=None):
         """ Method to input the data in a wide matrix
 
         PARAMETERS
@@ -75,28 +75,38 @@ class entry_point(object):
         N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
-        # Define views names and features names
-        if features_names_dict is None:
-            print("Views and features names not provided, using default naming convention:")
-            print("- Views: view1, view2, ..., viewM")
-            print("- Features: feature1_view1, featureD_viewM\n")
+        # Define views names
+        if views_names is None:
+            print("View names not provided, using default naming convention:")
+            print("- view1, view2, ..., viewM")
             self.data_opts['views_names'] = [ "view" + str(m) for m in range(M) ]
+        else:
+            self.data_opts['views_names']  = views_names
+
+        # Define features names
+        if features_names is None:
+            print("Features names not provided, using default naming convention:")
+            print("- feature1_view1, featureD_viewM\n")
             self.data_opts['features_names'] = [ ["feature%d_view%d" % (d,m) for d in range(D[m])] for m in range(M) ]
         else:
-            self.data_opts['views_names']  = [k for k in features_names_dict.keys()]
-            self.data_opts['features_names'] = [v for v in features_names_dict.values()]
+            self.data_opts['features_names'] = features_names
 
 
-        # Define groups and samples names
-        if samples_names_dict is None:
-            print("Samples and groups names not provided, using default naming convention:")
-            print("- Groups: group1, group2, ..., groupG")
-            print("- Samples: sample1_group1, sample2_group1, sample1_group2, ..., sampleN_groupG\n")
+        # Define groups names
+        if groups_names is None:
+            print("Groups names not provided, using default naming convention:")
+            print("- group1, group2, ..., groupG")
             self.data_opts['groups_names'] = [ "group" + str(g) for g in range(G) ]
+        else:
+            self.data_opts['groups_names'] = groups_names
+
+        # Define samples names
+        if samples_names is None:
+            print("Samples names not provided, using default naming convention:")
+            print("- sample1_group1, sample2_group1, sample1_group2, ..., sampleN_groupG\n")
             self.data_opts['samples_names'] = [ "sample%d_group%d" % (n,g) for g in range(G) for n in range(N[g]) ]
         else:
-            self.data_opts['groups_names'] = [k for k in samples_names_dict.keys()]
-            self.data_opts['samples_names']  = [v for l in samples_names_dict.values() for v in l]
+            self.data_opts['samples_names']  = samples_names
 
         # Set samples groups (list with dimensionality N where each row is the corresponding group name)
         # self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
