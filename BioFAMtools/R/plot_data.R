@@ -289,7 +289,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (add_lm) {
     p <- p +
       stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
-      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size)
+      ggpubr::stat_cor(label=..p.adj.., method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size)
   }
   
   # Add legend for color
