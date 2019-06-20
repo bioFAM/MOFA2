@@ -158,9 +158,10 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @import ggplot2
 #' @import dplyr
 #' @export
-plot_data_scatter <- function(object, view, factor, groups = "all", features = 10,
-                              color_by=NULL, name_color="",  
-                              shape_by=NULL, name_shape="") {
+plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="both",
+                              color_by=NULL, name_color="", color_legend = TRUE,
+                              shape_by=NULL, name_shape="", shape_legend = TRUE,
+                              dot_size=1, text_size=5, add_lm = TRUE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -182,12 +183,21 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   N <- get_dimensions(object)[["N"]]
   W <- get_weights(object)[[view]][,factor]
   Y <- do.call(cbind, object@training_data[[view]][groups])
+  
   # NOTE: By default concatenate all the groups
   Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
   Z <- do.call(rbind, Z)[,1]
   Z <- Z[!is.na(Z)]
   
   # Get features
+  if (sign=="both") {
+    W <- abs(W)
+  } else if (sign=="positive") {
+    W <- W[W>0]
+  } else if (sign=="negative") {
+    W <- W[W<0]
+  }
+  
   if (class(features) == "numeric") {
     if (length(features) == 1) {
       features <- names(tail(sort(abs(W)), n=features))
@@ -226,7 +236,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
       stop("'color_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
-    color_by <- rep(TRUE, ncol(Y))
+    color_by <- rep("1", ncol(Y))
     color_legend <- FALSE
   }
   
@@ -250,7 +260,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
       stop("'shape_by' was specified but it was not recognised, please read the documentation")
     }
   } else {
-    shape_by <- rep(TRUE, ncol(Y))
+    shape_by <- rep("1", ncol(Y))
     shape_legend <- F
   }
   
@@ -265,34 +275,46 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value", color = "color_by", shape = "shape_by")) + 
-    geom_point() +
-    stat_smooth(method="lm", color="blue", alpha=0.5) +
-    facet_wrap(~feature, scales="free_y") +
+    geom_point(size=dot_size) +
     scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
-    theme(plot.margin = margin(20, 20, 10, 10), 
-          axis.text = element_text(size = rel(1), color = "black"), 
-          axis.title = element_text(size = 16), 
-          axis.title.y = element_text(size = rel(1.1), margin = margin(0, 15, 0, 0)), 
-          axis.title.x = element_text(size = rel(1.1), margin = margin(15, 0, 0, 0)), 
-          axis.line = element_line(color = "black", size = 0.5), 
-          axis.ticks = element_line(color = "black", size = 0.5),
-          panel.border = element_blank(), 
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(), 
-          panel.background = element_blank(),
-          legend.key = element_rect(fill = "white")
-          # legend.text = element_text(size = titlesize),
-          # legend.title = element_text(size =titlesize)
-          )
-  if (color_legend) { p <- p + labs(color = name_color) } else { p <- p + guides(color = FALSE) }
-  if (shape_legend) { p <- p + labs(shape = name_shape) }  else { p <- p + guides(shape = FALSE) }
+    labs(x="Factor values", y="") +
+    facet_wrap(~feature, scales="fixed") +
+    theme_classic() + theme(
+      axis.text = element_text(size = rel(1), color = "black"), 
+      axis.title = element_text(size = rel(1.0), color="black"), 
+      legend.key = element_rect(fill = "white")
+    )
+  
+  # Add linear regression line
+  if (add_lm) {
+    p <- p +
+      stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
+      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size)
+  }
+  
+  # Add legend for color
+  if (length(unique(df$color_by))==1)
+    p <- p + scale_colour_manual(values="black")
+  
+  if (color_legend) { 
+    p <- p + labs(color = name_color) 
+  } else { 
+    p <- p + guides(color = FALSE)
+  }
+  
+  # Add legend for shape
+  if (shape_legend) { 
+    p <- p + labs(shape = name_shape) 
+  }  else { 
+    p <- p + guides(shape = FALSE) 
+  }
   
   return(p)
 }
 
 
 
-#' @title Tile plot of the multi-omics data
+#' @title Overview of the input data
 #' @name plot_data_overview
 #' @description Function to do a tile plot showing the missing value structure of the input data
 #' @param object a \code{\link{BioFAModel}} object.
