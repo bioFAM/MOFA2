@@ -147,7 +147,7 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
   }
 
   # Fetch data
-  train_data <- lapply(object@training_data[views], function(e) e[groups])
+  train_data <- lapply(object@training_data[views], function(x) x[groups])
   train_data <- lapply(1:length(train_data), function(m) lapply(1:length(train_data[[1]]), function(p) train_data[[m]][[p]][as.character(features[[m]]),,drop=F]))
   train_data <- .name_views_and_groups(train_data, views, groups)
   
@@ -163,6 +163,7 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
     })
     train_data <- do.call(rbind, do.call(rbind, tmp))
     train_data[,c("view","group","feature","sample")] <- sapply(train_data[,c("view","group","feature","sample")], as.character)
+    
   }# else if ((length(views)==1) && (as.data.frame==F)) {
   #  train_data <- train_data[[views]]
   #}

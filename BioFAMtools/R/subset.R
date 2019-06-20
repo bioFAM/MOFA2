@@ -35,7 +35,13 @@ subset_groups <- function(object, groups) {
   object@dimensions[["G"]] <- length(groups)
   object@dimensions[["N"]] <- object@dimensions[["N"]][groups]
   
-  # Update view names
+  # Update sample metadata
+  new_factor_levels <- groups
+  stopifnot(groups%in%unique(object@samples_metadata$group_name))
+  object@samples_metadata <- object@samples_metadata[object@samples_metadata$group_name %in% groups,]
+  object@samples_metadata$group_name <- factor(object@samples_metadata$group_name, levels=groups)
+  
+  # Update groups names
   groups_names(object) <- groups
   
   # Re-compute variance explained

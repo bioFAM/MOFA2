@@ -35,7 +35,7 @@
 #' @import RColorBrewer
 #' @export
 plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
-                                 color_by = "group", color_name = "", shape_by = NULL, shape_name = "", 
+                                 color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
                                  dots_alpha = 1.0, legend = TRUE,
                                  violin_alpha = 0.5, color_violin=TRUE,
                                  rasterize = FALSE, dodge = FALSE) {
@@ -70,18 +70,24 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   df <- merge(df, shape_by, by="sample")
   
   # df$color_by <- as.character(df$color_by)
-  df$group_by <- as.character(df$group_by)
-  df$shape_by <- as.character(df$shape_by)
+  # df$group_by <- as.character(df$group_by)
+  # df$shape_by <- as.character(df$shape_by)
   
   # QC
-  if (length(unique(df$color_by))>10 & is.numeric(df$color_by)) 
+  if (length(unique(df$color_by))>10 & is.numeric(df$color_by)) {
     add_violin <- FALSE; dodge <- FALSE
+  }
   
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
+  if (is.factor(df$color_by))
+    df$color_by <- forcats::fct_explicit_na(df$color_by)
+  if (is.factor(df$shape_by))
+    df$shape_by <- forcats::fct_explicit_na(df$shape_by)
+  
   
   # Generate plot
-  p <- ggplot(df, aes(x=group_by, y=value, color=color_by, shape=shape_by)) +
+  p <- ggplot(df, aes(x=group_by, y=value)) +
     facet_wrap(~factor, scales="free") +
     labs(x="", y="Factor value")
 
@@ -90,15 +96,15 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
     if (rasterize) {
       warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
       if (dodge) {
-        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size, position="dodge", dodge.width=1 )
+        p <- p + ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size, position="dodge", dodge.width=1 )
       } else {
-        p <- p + ggrastr::geom_quasirandom_rast(size=dot_size)
+        p <- p + ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size)
       }
     } else {
       if (dodge) {
-        p <- p + geom_jitter(size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
+        p <- p + geom_jitter(aes(color=color_by, shape=shape_by), size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
-        p <- p + geom_jitter(size = dot_size, alpha = dots_alpha)
+        p <- p + geom_jitter(aes(color=color_by, shape=shape_by), size = dot_size, alpha = dots_alpha)
       }
     }
   }
@@ -108,14 +114,15 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
     if (color_violin) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       if (min(tmp$n)==1) {
-        warning("Warning: some 'color_by' groups have only one observation, violin plots are not displayed")
+        warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be coloured")
+        p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width", show.legend = FALSE)
       } else {
         # violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
-        p <- p + geom_violin(aes(fill=color_by), alpha=violin_alpha, trim=T, scale="width", position=position_dodge(width=1))
+        p <- p + geom_violin(aes(fill=color_by), alpha=violin_alpha, trim=T, scale="width", position=position_dodge(width=1), show.legend = FALSE)
         # if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
-      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width")
+      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width", show.legend = FALSE)
     }
   }
   
@@ -145,18 +152,18 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 
   # Use unified theme across the plots
   p <- p +
-    theme_bw() + 
+    theme_classic() +
     theme(
-        panel.border = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_line(size=.1),
+        # panel.border = element_blank(),
+        # panel.grid.minor = element_blank(),
+        # panel.grid.major = element_line(size=.1),
         panel.spacing = unit(5, "lines"),
         # axis.text.x = element_text(size=rel(1.0), color="black", angle=30, hjust=0, vjust=0.5),
         axis.text.x = element_text(size=rel(1.0), color="black"),
         axis.text.y = element_text(size=rel(1.0)),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(0.9), color="black"),
-        # axis.line = element_line(color="black", size=1.0),
+        axis.line = element_line(color="black", size=0.5),
         axis.ticks = element_line(color = "black"),
         axis.title = element_text(size=rel(1.2)),
     )
@@ -286,9 +293,9 @@ plot_embeddings <- function(object, factors = c(1,2), show_missing = TRUE,
   
   # Add legend for color
   if (length(unique(df$color))>1) { 
-    p <- p + labs(color=color_name)
+    p <- p + guides(fill=F) + labs(color=color_name)
   } else { 
-    p <- p + guides(color=F) + scale_color_manual(values="black")
+    p <- p + guides(color=F, fill=F) + scale_color_manual(values="black")
   }
   
   # Add legend for shape
@@ -456,7 +463,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   if (!is(group_by,"data.frame")) {
     df = data.frame(
       sample = unlist(samples_names(object)),
-      group_by = group_by
+      group_by = group_by,
+      stringsAsFactors = FALSE
     )
     
   }
@@ -505,7 +513,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   if (!is(color_by,"data.frame")) {
     df = data.frame(
       sample = unlist(samples_names(object)),
-      color_by = color_by
+      color_by = color_by,
+      stringsAsFactors = F
     )
   }
   if (length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
@@ -557,7 +566,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   if (!is(shape_by,"data.frame")) {
     df = data.frame(
       sample = unlist(samples_names(object)),
-      shape_by = as.factor(shape_by)
+      shape_by = as.factor(shape_by),
+      stringsAsFactors = FALSE
     )
   }
 

@@ -85,11 +85,11 @@ detect_passengers <- function(object, views = "all", groups = "all", factors = "
 
 
 .flip_factor <- function(model, factor){
-  for(groupnm in names(model@expectations$Z)) {
-    model@expectations$Z[[groupnm]][,factor] <- - model@expectations$Z[[groupnm]][,factor]
+  for(g in names(model@expectations$Z)) {
+    model@expectations$Z[[g]][,factor] <- - model@expectations$Z[[g]][,factor]
   }
-  for(viewnm in names(model@expectations$W)) {
-    model@expectations$W[[viewnm]][,factor] <- -model@expectations$W[[viewnm]][,factor]
+  for(m in names(model@expectations$W)) {
+    model@expectations$W[[m]][,factor] <- -model@expectations$W[[m]][,factor]
   }
 return(model)
 }
@@ -164,11 +164,11 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
 #' @name flip_factor
 #' @export
 flip_factor <- function(model, factor){
-  for(groupnm in names(model@expectations$Z)) {
-    model@expectations$Z[[groupnm]][,factor] <- - model@expectations$Z[[groupnm]][,factor]
+  for(g in names(model@expectations$Z)) {
+    model@expectations$Z[[g]][,factor] <- - model@expectations$Z[[g]][,factor]
   }
-  for(viewnm in names(model@expectations$W)) {
-    model@expectations$W[[viewnm]][,factor] <- -model@expectations$W[[viewnm]][,factor]
+  for(m in names(model@expectations$W)) {
+    model@expectations$W[[m]][,factor] <- -model@expectations$W[[m]][,factor]
   }
   return(model)
 }

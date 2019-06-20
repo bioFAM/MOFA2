@@ -93,7 +93,7 @@ run_biofam <- function(object, outfile = NA) {
   biofam_entrypoint$save(outfile)
   
   # Load the trained model
-  object <- load_model(outfile, object)
+  object <- load_model(outfile)
   
   return(object)
 }

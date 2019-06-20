@@ -41,13 +41,13 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   }
 
   # Check that data observations are centered
-  for (m in views) { 
-    for (g in groups) {
-      if (object@model_options$likelihoods[m]=="gaussian" & 
-          !all(DelayedArray::colMeans(Y[[m]][[g]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
-        cat(sprintf("Warning: data for view %s and group %s is not centered\n", m, g))
-    }
-  }
+  # for (m in views) { 
+  #   for (g in groups) {
+  #     if (object@model_options$likelihoods[m]=="gaussian" & 
+  #         !all(DelayedArray::colMeans(Y[[m]][[g]], na.rm = TRUE) < 1e-2, na.rm = TRUE))
+  #       cat(sprintf("Warning: data for view %s and group %s is not centered\n", m, g))
+  #   }
+  # }
 
   Y <- .name_views_and_groups(Y, views, groups)
 
@@ -116,8 +116,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @import pheatmap ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
-plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, cluster = TRUE, plot_total = FALSE, 
-                                    factors = "all", legend = TRUE, ...) {
+plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, plot_total = FALSE, 
+                                    factors = "all", min_r2=0, legend = TRUE, ...) {
   
   # Sanity checks 
   if (length(unique(c(x, y, split_by))) != 3) { 
@@ -168,15 +168,16 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   colnames(r2_m_df)[(ncol(r2_m_df)-1):ncol(r2_m_df)] <- c("view", "group")
 
   # sort views according to hierarchical clustering on the variance explained pattern
-  g <- which.max(sapply(r2_m, function(x) sum(unlist(x)))) # use group with the highest variance explained
-  if (cluster & ncol(r2_mk[[g]])>1) {
-    hc <- hclust(dist(t(r2_mk[[g]])))
-    r2_mk_df$view <- factor(r2_mk_df$view, levels = colnames(r2_mk[[g]])[hc$order])
-    r2_m_df$view <- factor(r2_m_df$view, levels = colnames(r2_mk[[g]])[hc$order])
-  }
+  # g <- which.max(sapply(r2_m, function(x) sum(unlist(x)))) # use group with the highest variance explained
+  # if (cluster & ncol(r2_mk[[g]])>1) {
+  #   hc <- hclust(dist(t(r2_mk[[g]])))
+  #   r2_mk_df$view <- factor(r2_mk_df$view, levels = colnames(r2_mk[[g]])[hc$order])
+  #   r2_m_df$view <- factor(r2_m_df$view, levels = colnames(r2_mk[[g]])[hc$order])
+  # }
 
   # Heatmaps (grid plots) for variance explained per factor
-  min_lim_p1 <- min(r2_mk_df$value)
+  # min_lim_p1 <- min(r2_mk_df$value)
+  min_lim_p1 <- 0
   max_lim_p1 <- max(r2_mk_df$value)
 
   # Barplots for total variance explained
@@ -187,6 +188,8 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
 
+  r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
+  
   # Grid plot with the variance explained per factor and view/group
   p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
     geom_tile(aes(fill=value), color="black") +
