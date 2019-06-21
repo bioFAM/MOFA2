@@ -626,6 +626,7 @@ class entry_point(object):
           samples_names = self.data_opts['samples_names'],
           features_names = self.data_opts['features_names'],
           views_names = self.data_opts['views_names'],
+          groups_names = self.data_opts['groups_names'],
           compression_level = 9
         )
 

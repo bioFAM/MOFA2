@@ -10,7 +10,7 @@ from biofam.core.nodes import *
 
 
 class saveModel():
-    def __init__(self, model, outfile, data, samples_groups, train_opts, model_opts, features_names, views_names, samples_names, compression_level=9):
+    def __init__(self, model, outfile, data, samples_groups, train_opts, model_opts, features_names, views_names, samples_names, groups_names, compression_level=9):
 
         # Check that the model is trained
         assert model.trained, "Model is not trained"        
@@ -38,7 +38,7 @@ class saveModel():
         self.views_names = views_names
         self.samples_names = samples_names
         self.features_names = features_names
-        self.groups_names = np.unique(samples_groups)
+        self.groups_names = groups_names
 
 
     def saveData(self):
@@ -50,11 +50,12 @@ class saveModel():
         samples_grp  = self.hdf5.create_group("samples")
 
         # Save samples names
-        for g in self.groups_names:
-            samples_idx = np.where(np.array(self.samples_groups) == g)[0]
-            samples_names = [s for s in [self.samples_names[e] for e in samples_idx]]
-            # samples_grp.create_dataset(g, data=[str(s).encode('utf8') for s in [self.samples_names[e] for e in samples_idx]])
-            samples_grp.create_dataset(g, data=np.array(samples_names, dtype='S50'))
+        for g in range(len(self.groups_names)):
+            samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
+            # samples_names = [s for s in [self.samples_names[e] for e in samples_idx]]
+            # import pdb; pdb.set_trace()
+            # samples_grp.create_dataset(self.groups_names[g], data=[str(s).encode('utf8') for s in [self.samples_names[g] for e in samples_idx]])
+            samples_grp.create_dataset(self.groups_names[g], data=np.array(self.samples_names[g], dtype='S50'))
 
         # Save feature names
         for m in range(len(self.data)):
@@ -64,15 +65,15 @@ class saveModel():
         # Save data
         for m in range(len(self.data)):
             view_subgrp = data_grp.create_group(self.views_names[m])
-            for g in self.groups_names:
+            for g in range(len(self.groups_names)):
                 # Subset group
-                samples_idx = np.where(np.array(self.samples_groups) == g)[0]
+                samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
                 tmp = self.data[m][samples_idx,:]
 
                 # Mask missing values
                 tmp[self.mask[m][samples_idx,:]] = np.nan
                 
-                view_subgrp.create_dataset(g, data=tmp, compression="gzip", compression_opts=self.compression_level)
+                view_subgrp.create_dataset(self.groups_names[g], data=tmp, compression="gzip", compression_opts=self.compression_level)
 
     def saveExpectations(self, nodes="all"):
 
