@@ -11,13 +11,14 @@ plot_data_heatmap(object, view, factor, groups = "all", features = 50,
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{view}{character vector with the view name, or numeric vector with the index of the view.}
+\item{view}{a string vector with the view name, or an integer with the index of the view.}
 
-\item{factor}{character vector with the factor name, or numeric vector with the index of the factor.}
+\item{factor}{a string with the factor name, or an integer with the index of the factor.}
+
+\item{groups}{TO-FILL}
 
 \item{features}{if an integer, the total number of features to plot, based on the absolute value of the loading.
-If a character vector, a set of manually-defined features. 
-Default is 50.}
+If a character vector, a set of manually-defined features. Default is 50.}
 
 \item{transpose}{logical indicating whether to transpose the output heatmap. 
 Default corresponds to features as rows and samples as columns.}
@@ -25,13 +26,13 @@ Default corresponds to features as rows and samples as columns.}
 \item{imputed}{logical indicating whether to plot the imputed data instead of the original data. 
 Default is FALSE.}
 
+\item{denoise}{logical indicating whether to plot the input data or to plot a potentially denoised version based on the data reconstruction from the MOFA factors.}
+
+\item{annotate_samples}{TO-FILL}
+
+\item{annotate_features}{TO-FILL}
+
 \item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}
-
-\item{include_weights}{logical indicating whether to include the weight of each feature as an extra annotation in the heatmap. 
-Default is FALSE.}
-
-\item{sort_samples}{logical indicating whether to sort samples using the corresponding values in the latent factor, rather than clustering. 
-Default is FALSE.}
 }
 \description{
 Function to plot a heatmap of the input data for relevant features, 

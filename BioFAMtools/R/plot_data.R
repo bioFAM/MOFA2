@@ -155,8 +155,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates scatterplots of features against factors, so that you can observe the association between them. \cr
 #' A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
-#' @import ggplot2
-#' @import dplyr
+#' @import ggplot2 dplyr ggpubr
 #' @export
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="both",
                               color_by=NULL, name_color="", color_legend = TRUE,
@@ -321,9 +320,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 #' @param colors a vector specifying the colors per view.
 #' @details This function is helpful to get an overview of the structure of the training data. 
 #' It shows the number of samples, groups, views and features and it indicates which measurements are missing.
-#' @import ggplot2
-#' @import dplyr
-#' @import reshape2
+#' @import ggplot2 dplyr reshape2
 #' @export
 plot_data_overview <- function(object, colors = NULL, ...) {
   
@@ -374,7 +371,7 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   
   # Melt to data.frame
   # ovw <- cbind(ovw, sample = rownames(ovw))
-  molten_ovw <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
+  molten_ovw <- reshape2::melt(ovw, id.vars = c("sample", "group"), var=c("view"))
   
   # order samples
   molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw))
@@ -387,7 +384,7 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   molten_ovw$ptotal <- paste("D=", sapply(training_data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
     
   # Define y-axis label
-  molten_ovw <- mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
+  molten_ovw <- dplyr::mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
   
   # Plot
   p <- ggplot(molten_ovw, aes_string(x="sample", y="view_label", fill="combi")) +

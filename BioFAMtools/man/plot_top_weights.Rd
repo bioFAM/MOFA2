@@ -10,27 +10,24 @@ plot_top_weights(object, view, factor, nfeatures = 10, abs = TRUE,
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
 
-\item{view}{character vector with the view name, or numeric vector with the index of the view to use.}
-
-\item{factor}{character vector with the factor name, or numeric vector with the index of the factor to use.}
+\item{view}{a string with the view name, or an integer with the index of the view.}
 
 \item{nfeatures}{number of top features to display.
 Default is 10}
 
-\item{abs}{logical indicating whether to use the absolute value of the weights.
-Default is TRUE}
+\item{abs}{logical indicating whether to use the absolute value of the weights. Default is FALSE}
 
-\item{scale}{logical indicating whether to scale all loadings from 0 to 1.
-Default is TRUE.}
+\item{scale}{logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.}
 
-\item{sign}{can be 'positive', 'negative' or 'both' to show only positive, negative or all weigths, respectively.
-Default is 'both'.}
+\item{sign}{can be 'positive', 'negative' or 'both' to show only positive, negative or all weigths, respectively. Default is 'both'.}
+
+\item{factors}{a string with the factor name, or an integer with the index of the factor.}
 }
 \value{
 Returns a \code{ggplot2} object
 }
 \description{
-Plot top weights for a given latent in a given view.
+Plot top weights for a given factor and view.
 }
 \details{
 An important step to annotate factors is to visualise the corresponding feature loadings. \cr

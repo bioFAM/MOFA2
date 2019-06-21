@@ -5,25 +5,26 @@
 \title{prepare a BioFAModel for training}
 \usage{
 prepare_biofam(object, data_options = NULL, model_options = NULL,
-  training_options = NULL, regress_covariates = NULL)
+  training_options = NULL, stochastic_options = NULL,
+  regress_covariates = NULL)
 }
 \arguments{
 \item{object}{an untrained \code{\link{BioFAModel}}}
 
 \item{data_options}{list of data_options (see \code{\link{get_default_data_options}} details). 
-If NULL, default data options are used.}
+If NULL, default options are used.}
 
 \item{model_options}{list of model options (see \code{\link{get_default_model_options}} for details). 
-If NULL, default model options are used.}
+If NULL, default options are used.}
 
 \item{training_options}{list of training options (see \code{\link{get_default_training_options}} for details). 
-If NULL, default training options are used.}
+If NULL, default options are used.}
 
-\item{dir_options}{list with Input/Output options, which must contain a 'data_dir' element where temporary text files will be stored 
-and an 'outFile' with hdf5 extension where the final model will be stored.}
+\item{stochastic_options}{list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
+If NULL, default options are used.}
 }
 \value{
-Returns an untrained \code{\link{BioFAModel}} with specified data, model and training options
+Returns an untrained \code{\link{BioFAModel}} with specified options filled in the corresponding slots
 }
 \description{
 Function to prepare a \code{\link{BioFAModel}} object for training. 

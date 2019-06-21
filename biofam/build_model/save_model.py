@@ -53,7 +53,6 @@ class saveModel():
         for g in range(len(self.groups_names)):
             samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
             # samples_names = [s for s in [self.samples_names[e] for e in samples_idx]]
-            # import pdb; pdb.set_trace()
             # samples_grp.create_dataset(self.groups_names[g], data=[str(s).encode('utf8') for s in [self.samples_names[g] for e in samples_idx]])
             samples_grp.create_dataset(self.groups_names[g], data=np.array(self.samples_names[g], dtype='S50'))
 

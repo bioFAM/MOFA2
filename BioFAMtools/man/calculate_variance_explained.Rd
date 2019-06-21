@@ -23,7 +23,7 @@ a list with matrices with the amount of variation explained per factor and view,
 Calculate variance explained by the model
 }
 \details{
-This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R2),
+This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R^2),
 i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).
 In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
 }

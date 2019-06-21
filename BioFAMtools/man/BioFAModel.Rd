@@ -22,6 +22,7 @@ The \code{BioFAModel} is an S4 class used to store all relevant data to analyse 
    \item{\code{training_stats}:}{ list with training statistics such as evidence lower bound (ELBO) and number of factors per iteration}
    \item{\code{data_options}:}{ list with the data processing options such as whether to center or scale the data.}
    \item{\code{training_options}:}{ list with the training options such as maximum number of iterations, tolerance for convergence, etc.}
+   \item{\code{stochastic_options}:}{ list with the options for stochastic variational inference}
    \item{\code{model_options}:}{ list with the model options such as likelihoods, whether the intercept was learnt, etc.}
    \item{\code{dimensions}:}{ list with the relevant dimensionalities of the model. 
    N for the number of samples, 

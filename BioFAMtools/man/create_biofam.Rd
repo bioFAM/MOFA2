@@ -7,7 +7,19 @@
 create_biofam(data, samples_groups = NULL)
 }
 \arguments{
-\item{data}{TO SPECIFY}
+\item{data}{Input data can be in several formats:
+\itemize{
+ \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
+ The "group" column indicates the condition or the experiment (a label for the samples). 
+ The view indicates the assay or the -omic (a label for the features).}
+ \item{\strong{Seurat object}:}{}
+ \item{\strong{List of matrices}:}{ A nested list of matrices \code{Y[[i]][[j]]}. 
+ The first index \code{i} for the views. 
+ The second index \code{j} for the groups. 
+ Sample are stored in rows and features in columns.}
+ }}
+
+\item{samples_groups}{ignore...}
 }
 \value{
 Returns an untrained \code{\link{BioFAModel}} object

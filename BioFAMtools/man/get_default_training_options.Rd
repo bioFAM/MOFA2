@@ -19,11 +19,13 @@ Function to obtain the default training options.
 The training options are the following: \cr
 \itemize{
  \item{\strong{maxiter}:}{ numeric value indicating the maximum number of iterations. 
- Default is 5000, but we recommend using the 'tolerance' as convergence criteria.}
- \item{\strong{tolerance}:}{ numeric value indicating the convergence threshold based on the change in Evidence Lower Bound (deltaELBO). 
- For quick exploration we recommend this to be around 1.0, and for a thorough training we recommend a value of 0.01. Default is 0.1}
- \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
+ Default is 5000 (a lot). Convergence is assessed using the ELBO statistic.}
+ \item{\strong{drop_factor_threshold}:}{ (not functional yet) numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
+ \item{\strong{convergence_criteria}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast".}
+ \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets).}
+ \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO}
+ \item{\strong{frewELBO}:}{ integer indicating the first iteration to compute the ELBO}
  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
  \item{\strong{seed}:}{ random seed for reproducibility (default is 0, random seed).}
 }

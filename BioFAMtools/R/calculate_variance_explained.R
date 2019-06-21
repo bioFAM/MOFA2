@@ -113,7 +113,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @param legend logical indicating whether to add a legend
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
-#' @import pheatmap ggplot2 reshape2
+#' @import ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
 plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, plot_total = FALSE, 

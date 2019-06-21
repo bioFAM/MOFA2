@@ -192,7 +192,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' when "all", features between factors do not match
 #' @param dot_size numeric indicating the dot size.
 #' @param text_size numeric indicating the text size.
-#' @import ggplot2 ggrepel
+#' @import ggplot2 dplyr tidyr ggrepel
 #' @importFrom magrittr %>%
 #' @export
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
@@ -203,10 +203,6 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(view)==1)
-  
-  ##################
-  ## Collect data ##
-  ##################
   
   # Get views
   view <- .check_and_get_views(object, view)
@@ -434,8 +430,6 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
     geom_point(size=2) +
     geom_segment(aes(xend=feature, yend=0), size=0.75) +
     scale_colour_gradient(low="grey", high="black") +
-    # scale_colour_manual(values=c("#F8766D","#00BFC4")) +
-    # guides(colour = guide_legend(title.position="top", title.hjust = 0.5)) +
     coord_flip() +
     theme(
       axis.title.x = element_text(size=rel(1.5), color='black'),
@@ -444,11 +438,10 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
       axis.text.x = element_text(size=rel(1.5), color='black'),
       axis.ticks.y = element_blank(),
       axis.ticks.x = element_line(),
-      legend.position='top',
-      # legend.title=element_text(size=rel(1.5), color="black"),
-      legend.title=element_blank(),
-      legend.text=element_text(size=rel(1.3), color="black"),
-      legend.key=element_rect(fill='transparent'),
+      legend.position = 'top',
+      legend.title = element_blank(),
+      legend.text = element_text(size=rel(1.3), color="black"),
+      legend.key = element_rect(fill='transparent'),
       panel.background = element_blank(),
       aspect.ratio = .7
       )

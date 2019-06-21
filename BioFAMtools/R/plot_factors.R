@@ -29,10 +29,7 @@
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factor_scatter}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} object
-#' @import ggplot2
-#' @import ggbeeswarm
-#' @import grDevices
-#' @import RColorBrewer
+#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats
 #' @export
 plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
                                  color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
@@ -216,7 +213,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 #' Similar function is
 #' \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 #' @return Returns a \code{ggplot2} object
-#' @import ggplot2
+#' @import ggplot2 magrittr tidyr GGally
 #' @export
 plot_embeddings <- function(object, factors = c(1,2), show_missing = TRUE,
                             color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,

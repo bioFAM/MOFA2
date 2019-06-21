@@ -15,3 +15,14 @@ Returns a list with default training options
 \description{
 Function to obtain the default options for stochastic variational inference.
 }
+\details{
+The training options are the following: \cr
+\itemize{
+ \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
+ Default is 0.5 (half of the data set).
+ \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
+ Default is 0.75 
+ \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
+ Default is 1.0
+ }
+}

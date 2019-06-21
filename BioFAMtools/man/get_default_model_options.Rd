@@ -18,10 +18,9 @@ Function to obtain the default model options.
 \details{
 The model options are the following: \cr
 \itemize{
- \item{\strong{likelihood}:}{ character vector with data likelihoods per view: 
+ \item{\strong{likelihoods}:}{ character vector with data likelihoods per view: 
  'gaussian' for continuous data, 'bernoulli' for binary data and 'poisson' for count data.
  By default, they are guessed internally.}
- \item{\strong{num_factors}:}{ numeric value indicating the initial number of factors. 
- If you want to learn the number of factors automatically we recommend setting this to a large value, around 50. Default is 25.}
+ \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
  }
 }

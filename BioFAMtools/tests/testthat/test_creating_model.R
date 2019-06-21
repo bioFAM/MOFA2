@@ -3,10 +3,10 @@ library(BioFAMtools)
 
 
 test_that("a model can be created from a list of matrices", {
-	m <- as.matrix(read.csv('matrix.csv'))
-	expect_is(create_biofam(list("view1" = m)), "BioFAModel")
-	expect_warning(create_biofam(list("view1" = m)))
-	expect_error(create_biofam(m))
+	m <- list("view1"=matrix(rnorm(100 * 5), ncol = 5), "view2"=matrix(rnorm(100 * 5), ncol = 5))
+	expect_is(create_biofam(m, "BioFAModel"))
+	# expect_warning(create_biofam(list("view1" = m)))
+	# expect_error(create_biofam(m))
 })
 
 test_that("a model can be created from a list of sparse matrices", {

@@ -5,7 +5,7 @@
 \title{loading a trained BioFAModel}
 \usage{
 load_model(file, object = NULL, sort_factors = TRUE, on_disk = FALSE,
-  load_training_data = TRUE, set_names = TRUE)
+  load_training_data = TRUE)
 }
 \arguments{
 \item{file}{an hdf5 file saved by the biofam Python framework}

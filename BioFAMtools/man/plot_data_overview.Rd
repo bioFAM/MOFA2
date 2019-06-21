@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_data.R
 \name{plot_data_overview}
 \alias{plot_data_overview}
-\title{Tile plot of the multi-omics data}
+\title{Overview of the input data}
 \usage{
 plot_data_overview(object, colors = NULL, ...)
 }
@@ -12,10 +12,9 @@ plot_data_overview(object, colors = NULL, ...)
 \item{colors}{a vector specifying the colors per view.}
 }
 \description{
-Function to do a tile plot showing the missing value structure of the multi-omics input data
+Function to do a tile plot showing the missing value structure of the input data
 }
 \details{
-This function is helpful to get an overview of the missing value structure of the training data used for BioFAM. 
-It shows the number of samples, the number of views, the number of features, and the structure of missing values.
-In particular, it is useful to visualise incomplete data sets, where some samples are missing subsets of assays.
+This function is helpful to get an overview of the structure of the training data. 
+It shows the number of samples, groups, views and features and it indicates which measurements are missing.
 }

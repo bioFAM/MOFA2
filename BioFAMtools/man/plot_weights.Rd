@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_weights.R
 \name{plot_weights}
 \alias{plot_weights}
-\title{Plot Weights}
+\title{Plot weights (loadings)}
 \usage{
 plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
   abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE,
@@ -11,7 +11,9 @@ plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{factors}{character vector with the factor name, or numeric vector with the index of the factor to use.}
+\item{view}{a string with the view name, or an integer with the index of the view.}
+
+\item{factors}{character vector with the factor name(s), or numeric vector with the index of the factor(s).}
 
 \item{nfeatures}{number of top features to label.}
 
@@ -21,19 +23,17 @@ plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
 
 \item{color_manual}{a character vector with colors, one for each element of 'manual'}
 
-\item{scale}{logical indicating whether to scale all loadings from 0 to 1.}
+\item{scale}{logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).}
 
 \item{sort_by_factor}{name or numeric value for the factor to sort all loadings by, or all (default)
 when "all", features between factors do not match}
 
-\item{views}{character vector with the voiew name, or numeric vector with the index of the view to use.}
+\item{dot_size}{numeric indicating the dot size.}
+
+\item{text_size}{numeric indicating the text size.}
 }
 \description{
 An important step to annotate factors is to visualise the corresponding feature loadings. \cr
 This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
 In contrast, the function \code{\link{plot_top_weights}} displays only the top features with highest loading.
-}
-\details{
-The weights of the features within a view are relative andthey should not be interpreted in an absolute scale.
-Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 }

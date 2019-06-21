@@ -6,7 +6,7 @@
 #' \itemize{
 #'  \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
 #'  The "group" column indicates the condition or the experiment (a label for the samples). 
-#'  The view indicates the assay or the -omic (a label for the features).
+#'  The view indicates the assay or the -omic (a label for the features).}
 #'  \item{\strong{Seurat object}:}{}
 #'  \item{\strong{List of matrices}:}{ A nested list of matrices \code{Y[[i]][[j]]}. 
 #'  The first index \code{i} for the views. 
