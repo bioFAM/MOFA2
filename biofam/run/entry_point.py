@@ -219,15 +219,15 @@ class entry_point(object):
         self.data_opts['views_names'] = data["feature_group"].unique().tolist()
         self.data_opts['groups_names'] = data["sample_group"].unique().tolist()
         self.data_opts['features_names'] = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
-        self.data_opts['samples_names'] = data["sample"].unique().tolist()
+        self.data_opts['samples_names'] = data.groupby(["sample_group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
 
         # Convert data frame to list of matrices
-        data['feature'] = data['feature'].astype(str) + data['feature_group'].astype(str) # make sure there are no duplicated feature names before pivoting
+        # data['feature'] = data['feature'].astype(str) + data['feature_group'].astype(str) # make sure there are no duplicated feature names before pivoting
         data_matrix = data.pivot(index='sample', columns='feature', values='value')
 
         # Sort rows and columns of the matrix according to the sample and feature names
         features_names_tmp = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
-        data_matrix = data_matrix.loc[self.data_opts['samples_names']]
+        data_matrix = data_matrix.loc[np.concatenate(self.data_opts['samples_names'])]
         data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
         # Split into a list of views, each view being a matrix
@@ -237,13 +237,14 @@ class entry_point(object):
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
-                                            .set_index('sample').loc[self.data_opts['samples_names']] \
+                                            .set_index('sample').loc[np.concatenate(self.data_opts['samples_names'])] \
                                             .sample_group.tolist()
 
         # Define dimensionalities
         self.dimensionalities = {}
         self.dimensionalities["M"] = len(self.data_opts['views_names'])
-        self.dimensionalities["N"] = len(self.data_opts['samples_names'])
+        # self.dimensionalities["N"] = len(self.data_opts['samples_names'])
+        self.dimensionalities["N"] = len(np.concatenate(self.data_opts['samples_names']))
         self.dimensionalities["G"] = len(self.data_opts['groups_names'])
         self.dimensionalities["D"] = [len(x) for x in self.data_opts['features_names']]
 

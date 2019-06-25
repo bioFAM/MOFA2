@@ -4,7 +4,7 @@
 ###########################################
 
 #' @title Beeswarm plots of factor values
-#' @name plot_factor
+#' @name plot_factors
 #' @description Beeswarm plot of the latent factor values.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
@@ -31,7 +31,7 @@
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats
 #' @export
-plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = TRUE, show_missing = TRUE, dot_size = 1,
+plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = FALSE, show_missing = TRUE, dot_size = 1,
                                  color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
                                  dots_alpha = 1.0, legend = TRUE,
                                  violin_alpha = 0.5, color_violin=TRUE,
@@ -157,7 +157,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
         panel.spacing = unit(5, "lines"),
         # axis.text.x = element_text(size=rel(1.0), color="black", angle=30, hjust=0, vjust=0.5),
         axis.text.x = element_text(size=rel(1.0), color="black"),
-        axis.text.y = element_text(size=rel(1.0)),
+        axis.text.y = element_text(size=rel(1.0), color="black"),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(0.9), color="black"),
         axis.line = element_line(color="black", size=0.5),

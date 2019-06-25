@@ -232,13 +232,13 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   W <- get_weights(object, views = view, factors = factors, as.data.frame = T)
   W <- W[(W$factor %in% factors) & (W$view %in% view),]
   
-  # Remove factors which all-zero loadings
-  to.remove <- sapply(factors, function(i) sum(W[W$factor==i,"value"]==0)>nfeatures)
-  if (any(to.remove)) {
-    print(sprintf("Removing %s, loadings are all zero",paste0(names(which(to.remove)),collapse=" ")))
-    W <- W[!W$factor %in% names(which(to.remove)),]
-    if (nrow(W)==0) stop("No factors to display...")
-  }
+  # Remove factors with all-zero loadings
+  # to.remove <- sapply(factors, function(i) sum(W[W$factor==i,"value"]==0)>nfeatures)
+  # if (any(to.remove)) {
+  #   print(sprintf("Removing %s, loadings are all zero",paste0(names(which(to.remove)),collapse=" ")))
+  #   W <- W[!W$factor %in% names(which(to.remove)),]
+  #   if (nrow(W)==0) stop("No factors to display...")
+  # }
   
   # Convert factor names to a factor to preserve order
   W$factor <- factor(W$factor, levels = unique(W$factor))
@@ -432,29 +432,30 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
     scale_colour_gradient(low="grey", high="black") +
     coord_flip() +
     theme(
-      axis.title.x = element_text(size=rel(1.5), color='black'),
+      axis.title.x = element_text(color='black'),
       axis.title.y = element_blank(),
-      axis.text.y = element_text(size=rel(1.2), hjust=1, color='black'),
-      axis.text.x = element_text(size=rel(1.5), color='black'),
+      axis.text.y = element_text(size=rel(1.1), hjust=1, color='black'),
+      axis.text.x = element_text(color='black'),
       axis.ticks.y = element_blank(),
       axis.ticks.x = element_line(),
       legend.position = 'top',
       legend.title = element_blank(),
-      legend.text = element_text(size=rel(1.3), color="black"),
+      legend.text = element_text(color="black"),
       legend.key = element_rect(fill='transparent'),
-      panel.background = element_blank(),
-      aspect.ratio = .7
-      )
+      panel.background = element_blank()
+    )
   
   if (sign=="negative") p <- p + scale_x_discrete(position = "top")
 
   # If absolute values are used, add the corresponding signs to the plot
-  if (abs) p <- p +  ylim(0,max(W$value)+0.1)+ geom_text(label=W$sign,y=max(W$value)+0.1, size=10)
+  if (abs) p <- p +  ylim(0,max(W$value)+0.1) + geom_text(label=W$sign,y=max(W$value)+0.1, size=10)
 
-  if(abs & scale) p <-  p + ylab(paste("Absolute loading on factor", factor))  
-  else if(abs & !scale) p <- p + ylab(paste("Absolute loading on factor", factor))
-  else if(!abs & scale) p <- p + ylab(paste("Loading on factor", factor))
-  else p <- p + ylab(paste("Loading on factor", factor))
+  # if(abs & scale) p <-  p + ylab(paste("(Absolute) loading on Factor", factor))  
+  # else if(abs & !scale) p <- p + ylab(paste("(Absolute) loading on Factor", factor))
+  # else if(!abs & scale) p <- p + ylab(paste("Loading on Factor", factor))
+  # else p <- p + ylab(paste("Loading on Factor", factor))
+  p <- p + ylab(paste("Loading on Factor", factor))
+  
   return(p)
   
 }
