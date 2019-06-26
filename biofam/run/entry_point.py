@@ -222,7 +222,7 @@ class entry_point(object):
         self.data_opts['samples_names'] = data.groupby(["sample_group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
 
         # Convert data frame to list of matrices
-        # data['feature'] = data['feature'].astype(str) + data['feature_group'].astype(str) # make sure there are no duplicated feature names before pivoting
+        data['feature'] = data['feature'].astype(str) + data['feature_group'].astype(str) # make sure there are no duplicated feature names before pivoting
         data_matrix = data.pivot(index='sample', columns='feature', values='value')
 
         # Sort rows and columns of the matrix according to the sample and feature names

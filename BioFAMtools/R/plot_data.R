@@ -288,7 +288,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (add_lm) {
     p <- p +
       stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
-      ggpubr::stat_cor(label=..p.adj.., method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size)
+      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size)
   }
   
   # Add legend for color
@@ -336,14 +336,20 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   
   # Define colors  
   if (is.null(colors)) {
-    colors <- rep("#5CACEE", M)
-    # palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
-    #              "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
-    #              "#A65628", "#F781BF", "#1B9E77")
-    # if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
+    # colors <- rep("#5CACEE", M)
+    palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
+                 "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
+                 "#A65628", "#F781BF", "#1B9E77")
+    if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
+    names(colors) <- views_names(object)
+  } else {
+    if (is.null(names(colors))) {
+      names(colors) <- views_names(object)
+    } else {
+      stopifnot(sort(names(colors))==sort(views_names(object)))
+    }
   }
   if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
-  names(colors) <- views_names(object)
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
   ovw.mx <- lapply(training_data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
@@ -388,11 +394,11 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   
   # Plot
   p <- ggplot(molten_ovw, aes_string(x="sample", y="view_label", fill="combi")) +
-    geom_raster() +
+    geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
     xlab(paste0("Samples (N=", n, ")")) + ylab("") +
     guides(fill=F) + 
-    facet_wrap(~group_label, scales="free_x", ...) +
+    facet_wrap(~group_label, scales="free_x") +
     theme(
       panel.background = element_rect(fill="white"),
       text = element_text(size=14),

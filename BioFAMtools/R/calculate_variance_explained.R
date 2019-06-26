@@ -66,6 +66,9 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
       return(err)
     })
   r2_m <- .name_views_and_groups(r2_m, groups, views)
+  
+  # Lower bound is zero
+  r2_m = lapply(r2_m, function(x){x[x < 0] = 0; return(x)})
 
   # Calculate coefficient of determination per group, factor and view
   r2_mk <- lapply(groups, function(g) {
@@ -81,8 +84,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
     return(tmp)
   }); names(r2_mk) <- groups
 
+  # Lower bound is 0
+  r2_mk = lapply(r2_mk, function(x){x[x < 0] = 0; return(x)})
+  
   # Store results
-  # r2_mk = lapply(r2_mk, function(x){x[x < 0] = 0; return(x)})
   r2_list <- list(r2_total = r2_m, r2_per_factor = r2_mk)
 
   return(r2_list)
