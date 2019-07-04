@@ -55,6 +55,9 @@ create_biofam <- function(data, samples_groups = NULL) {
     stop("Error: input data has to be provided as a list of matrices, a data frame (long format), or a Seurat object.")
   }
   
+  # Do quality control on the untrained MOFA object
+  # (...)
+  
   print(object)
   
   return(object)
@@ -89,13 +92,11 @@ create_biofam <- function(data, samples_groups = NULL) {
     df$feature_group <- factor(df$feature_group)
   }
   
-  
-  # TO-DO: IT MAY BE WRONG WITH MISSING VALUES
+  # Create matrix from data.frame
   data_matrix <- lapply(split(df,df$feature_group), function(x)
     lapply(split(droplevels.data.frame(x),x$sample_group), function(y) {
         y <- droplevels.data.frame(y)
         if (nrow(y)==0) {
-          # print(length(levels(y$sample)))
           matrix(NA, nrow=length(levels(y$sample)), ncol=length(levels(y$feature)))
         } else {
           tmp <- .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE) )
@@ -105,10 +106,8 @@ create_biofam <- function(data, samples_groups = NULL) {
   )
   
   object <- new("BioFAModel")
-  object@status <- "untrained" # define status as untrained
+  object@status <- "untrained"
   object@input_data <- data_matrix
-  
-  # TO-DO: Validate input data (-inf values, samples with full missing vlaues, etc. etc.)
   
   return(object)
 }
@@ -185,17 +184,8 @@ create_biofam <- function(data, samples_groups = NULL) {
   m
 }
 
-# (Hidden) function to fill NAs for missing samples
-.subset_augment<-function(mat, samples) {
-  aug_mat <- matrix(NA, ncol=ncol(mat), nrow=length(samples))
-  aug_mat <- mat[match(samples,rownames(mat)),,drop=FALSE]
-  rownames(aug_mat) <- samples
-  colnames(aug_mat) <- colnames(mat)
-  return(aug_mat)
-}
 
-
-
+# (Hidden) function to create MOFA object from a matrix
 .create_biofam_from_matrix <- function(data, samples_groups) {
   
   # Quality controls

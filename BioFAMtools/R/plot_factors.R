@@ -31,7 +31,8 @@
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats
 #' @export
-plot_factors <- function(object, factors = "all", group_by = "group", add_dots = TRUE, add_violin = FALSE, show_missing = TRUE, dot_size = 1,
+plot_factor <- function(object, factor = 1, group_by = "group", add_dots = TRUE, add_violin = FALSE, 
+                                 show_missing = TRUE, dot_size = 1, scale = FALSE,
                                  color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
                                  dots_alpha = 1.0, legend = TRUE,
                                  violin_alpha = 0.5, color_violin=TRUE,
@@ -41,15 +42,14 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factor values
-  if ((length(factors)==1) && (factors == "all")) {
-    factors <- factors_names(object)
-  } else if (is.numeric(factors)) {
-    factors <- factors_names(object)[unique(factors)]
+  stopifnot(length(factor)==1)
+  if (is.numeric(factor)) {
+    factor <- factors_names(object)[unique(factor)]
   } else { 
-    stopifnot(all(factors %in% factors_names(object)))
+    stopifnot(all(factor %in% factors_names(object)))
   }
-  Z <- get_factors(object, factors=factors, as.data.frame=T)
-  Z$factor <- factor(Z$factor, levels=factors)
+  Z <- get_factors(object, factors=factor, as.data.frame=T)
+  Z$factor <- factor(Z$factor, levels=factor)
   
   # Set group/color/shape
   if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
@@ -82,10 +82,15 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   if (is.factor(df$shape_by))
     df$shape_by <- forcats::fct_explicit_na(df$shape_by)
   
+  # Scale values from 0 to 1
+  if (scale) {
+    df$value <- df$value/max(abs(df$value))
+  }
   
   # Generate plot
   p <- ggplot(df, aes(x=group_by, y=value)) +
-    facet_wrap(~factor, scales="free") +
+    # facet_wrap(~group_by+factor, scales="free") +
+    facet_wrap(~group_by, nrow=1, scales="free_x") +
     labs(x="", y="Factor value")
 
   # Add dots
@@ -151,12 +156,14 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
   p <- p +
     theme_classic() +
     theme(
-        # panel.border = element_blank(),
+        panel.border = element_rect(color="black", size=0.1, fill=NA),
         # panel.grid.minor = element_blank(),
         # panel.grid.major = element_line(size=.1),
-        panel.spacing = unit(5, "lines"),
-        # axis.text.x = element_text(size=rel(1.0), color="black", angle=30, hjust=0, vjust=0.5),
-        axis.text.x = element_text(size=rel(1.0), color="black"),
+        # panel.spacing = unit(5,"lines"),
+        strip.background = element_rect(colour = "black", size=0.25),
+        panel.spacing = unit(0,"lines"),
+        # axis.text.x = element_text(size=rel(1.0), color="black"),
+        axis.text.x = element_blank(),
         axis.text.y = element_text(size=rel(1.0), color="black"),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(0.9), color="black"),
@@ -188,7 +195,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 }
 
 #' @title Scatterplots of two factor values
-#' @name plot_embeddings
+#' @name plot_factors
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
@@ -215,7 +222,7 @@ plot_factors <- function(object, factors = "all", group_by = "group", add_dots =
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2 magrittr tidyr GGally
 #' @export
-plot_embeddings <- function(object, factors = c(1,2), show_missing = TRUE,
+plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = FALSE,
                             color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                             dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
   
@@ -268,6 +275,12 @@ plot_embeddings <- function(object, factors = c(1,2), show_missing = TRUE,
   df <- df[,c(colnames(df)[1:4], factors)]
   df <- magrittr::set_colnames(df, c(colnames(df)[1:4], "x", "y"))
 
+  # Scale values from 0 to 1
+  if (scale) {
+    df$x <- df$x/max(abs(df$x))
+    df$y <- df$y/max(abs(df$y))
+  }
+  
   # Return data if requested instead of plotting
   if (return_data) return(df)
   

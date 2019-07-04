@@ -76,13 +76,13 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' or a vector of the same length as the number of samples specifying discrete groups.
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
 #' @param name_shape name for shape legend (usually only used if shape_by is not a character itself)
-#' @param showMissing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param showMissing logical indicating whether to include dots for which \code{shape_by} or \code{color_by} is missing
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, 
+plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, dot_size = 1,  
                                  name_color="", name_shape="", showMissing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
   
   # Sanity checks
@@ -147,9 +147,11 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   
   # Create plot
   p <- ggplot(df, aes_string(x="x", y="y")) + 
-    geom_point(aes_string(color = "color_by", shape = "shape_by")) + 
+    geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size) + 
     labs(x=factors[1], y=factors[2]) +
     # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
+    geom_segment(aes(x=min(df$x,na.rm=T), xend=max(df$x,na.rm=T), y=0, yend=0), size=0.25, color="orange") +
+    geom_segment(aes(y=min(df$y,na.rm=T), yend=max(df$y,na.rm=T), x=0, xend=0), size=0.25, color="orange") +
     theme_classic() +
     theme(
       axis.text = element_text(size=rel(1), color="black"), 
@@ -157,8 +159,11 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
       axis.ticks = element_line(color="black")
     )
   
+  if (length(unique(df$color_by))==1) 
+    p <- p + guides(color=F) + scale_color_manual(values="black")
+  
   # Add legend
-  if ((length(unique(df$color_by))>1 | length(unique(df$shape_by))>1) & legend) {
+  if ( (length(unique(df$color_by))>1 | length(unique(df$shape_by))>1) & legend) {
     p <- p + labs(color = name_color, shape = name_shape) + 
       theme(
       legend.key = element_rect(fill = "white"),
@@ -314,7 +319,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Add labels to the top features
   if (nfeatures>0) {
     p <- p + geom_text_repel(
-      force = 10,
+      force = 100,
       data = W[W$group!="0",], aes(label = feature, col = group),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
       box.padding = unit(0.5,"lines"), show.legend=F)
@@ -418,7 +423,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   
   # Extract relevant features
   W <- W[with(W, order(-abs(value))), ]
-  if (nfeatures>0) features <- head(W$feature,nfeatures) # Extract top hits
+  if (nfeatures>0) features <- head(W$feature, nfeatures)
   # if (!is.null(manual_features)) features <- W$feature[W$feature %in% manual_features] # Extract manual hits
   W <- W[W$feature %in% features,]
   

@@ -231,7 +231,7 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
   }
 
   # Mask passenger samples
-  # object <- detect_passengers(object)
+  object <- detect_passengers(object)
 
   ############################
   ## Update previous models ##

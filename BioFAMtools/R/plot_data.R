@@ -76,7 +76,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   data <- data[,names(Z)]
   
   # Ignore samples with full missing views
-  data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
+  # data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
   
   # Define features
   if (class(features) == "numeric") {
@@ -160,7 +160,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="both",
                               color_by=NULL, name_color="", color_legend = TRUE,
                               shape_by=NULL, name_shape="", shape_legend = TRUE,
-                              dot_size=1, text_size=5, add_lm = TRUE) {
+                              dot_size=1, text_size=5, add_lm = TRUE, imputed=FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -181,12 +181,17 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Collect relevant data
   N <- get_dimensions(object)[["N"]]
   W <- get_weights(object)[[view]][,factor]
-  Y <- do.call(cbind, object@training_data[[view]][groups])
+  
+  if (imputed) {
+    Y <- do.call(cbind, object@imputed_data[[view]][groups])
+  } else {
+    Y <- do.call(cbind, object@training_data[[view]][groups])
+  }
   
   # NOTE: By default concatenate all the groups
   Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
   Z <- do.call(rbind, Z)[,1]
-  Z <- Z[!is.na(Z)]
+  # Z <- Z[!is.na(Z)]
   
   # Get features
   if (sign=="both") {
@@ -210,7 +215,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     stop("Features need to be either a numeric or character vector")
   }
   W <- W[features]
-  Y <- Y[features,]
+  Y <- Y[features,,drop=F]
   
   
   # Set color
@@ -277,7 +282,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     geom_point(size=dot_size) +
     scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
     labs(x="Factor values", y="") +
-    facet_wrap(~feature, scales="fixed") +
+    facet_wrap(~feature, scales="free_y") +
     theme_classic() + theme(
       axis.text = element_text(size = rel(1), color = "black"), 
       axis.title = element_text(size = rel(1.0), color="black"), 
@@ -328,7 +333,15 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Collect relevant data
-  training_data <- object@training_data
+  # TO-FIX....
+  if (length(object@training_data)==0) {
+    training_data <- object@input_data
+    axis <- 1
+  } else {
+    training_data <- object@training_data
+    axis <- 2
+  }
+  
   M <- get_dimensions(object)[["M"]]
   G <- get_dimensions(object)[["G"]]
   if (M==1 & G==1) stop("This function is not useful when there is just one view and one group")
@@ -352,17 +365,9 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  ovw.mx <- lapply(training_data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
-
-  # ovw <- as.data.frame(ovw.mx)
-  # # ovw$group <- groups_names(object)
-  # ovw <- cbind(ovw, group = rep(names(samples_names(object)), times = P) )
-
-  # samples: unlist(samples_names(object), use.names = FALSE)
-  # samples_groups: samples_groups(object)$group
-  # feaures names: unlist(features_names(object), use.names=F)
+  tmp <- lapply(training_data, function(m) sapply(m, function(g) apply(g, axis, function(x) !all(is.na(x)))))
   ovw <- do.call(cbind, lapply(1:M, function(m) {
-    do.call(rbind, lapply(ovw.mx[[m]], as.data.frame))
+    do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))
   rownames(ovw) <- unlist(samples_names(object), use.names = FALSE)
   colnames(ovw) <- views_names(object)
@@ -370,16 +375,8 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   ovw$sample <- rownames(ovw)
   ovw$group  <- samples_groups(object)$group
 
-  
-  # Remove samples with no measurements
-  # ovw <- ovw[apply(ovw, 1, any),, drop=FALSE]
-  # if (is.null(rownames(ovw))) rownames(ovw) <- as.character(1:nrow(ovw))
-  
   # Melt to data.frame
-  # ovw <- cbind(ovw, sample = rownames(ovw))
   molten_ovw <- reshape2::melt(ovw, id.vars = c("sample", "group"), var=c("view"))
-  
-  # order samples
   molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw))
 
   n <- length(unique(molten_ovw$sample))
