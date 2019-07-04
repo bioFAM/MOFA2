@@ -226,10 +226,10 @@ get_default_model_options <- function(object) {
   model_options <- list(
     likelihoods = likelihoods,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
     num_factors = 15,            # (numeric) initial number of latent factors
-    sl_z = TRUE,
-    sl_w = TRUE,
-    ard_w = TRUE,
-    ard_z = TRUE
+    spikeslab_z = FALSE,         # Spike and Slab sparsity on the factors
+    spikeslab_w = TRUE,          # Spike and Slab sparsity on the loadins
+    ard_z = FALSE,                # Group-wise ARD sparsity on the factors
+    ard_w = TRUE                # Group-wise ARD sparsity on the loadings
   )
 
   # if model_options already exist, replace the default values but keep the additional ones
