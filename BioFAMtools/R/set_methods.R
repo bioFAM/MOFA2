@@ -145,7 +145,7 @@ setMethod("samples_metadata", signature(object="BioFAModel"),
 setReplaceMethod("samples_metadata", signature(object="BioFAModel", value="data.frame"), 
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") | length(object@data) == 0 | length(object@data[[1]]) == 0)
-                     stop("Before assigning samples metadata you have to assign the training data")
+                     stop("Before assigning samples metadata you have to assign the input data")
                    if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
                      stop("Before assigning samples metadata you have to assign the expectations")
                    if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)

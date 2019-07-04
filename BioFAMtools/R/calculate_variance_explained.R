@@ -32,7 +32,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   # Collect relevant expectations
   W <- get_weights(object, views=views, factors=factors)
   Z <- get_factors(object, groups=groups, factors=factors)
-  Y <- get_expectations(object, "Y")[views]
+  Y <- get_expectations(object,"Y")[views]
   Y <- lapply(Y, function(x) lapply(x,t))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
@@ -114,16 +114,19 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @param split_by character specifying the dimension to be faceted ("view", "factor", or "group").
 #' @param factors character vector with a factor name(s), or numeric vector with the index(es) of the factor(s). Default is "all".
 #' @param plot_total logical value to indicate if to plot the total variance explained (for the variable in the x-axis)
-#' @param min_r2 minimum variance explained for the color scheme.
+#' @param min_r2 minimum variance explained for the color scheme (default is 0).
 #' @param max_r2 maximum variance explained for the color scheme.
-#' @param legend logical indicating whether to add a legend to the plot.
+#' @param legend logical indicating whether to add a legend to the plot  (default is TRUE).
+#' @param use_cache logical indicating whether to use cache (default is TRUE)
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
 #' @import ggplot2 reshape2
 #' @importFrom cowplot plot_grid
+#' @importFrom stats as.formula
+#' @importFrom reshape2 melt
 #' @export
 plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, plot_total = FALSE, 
-                                    factors = "all", min_r2=0, max_r2=NULL, legend = TRUE, ...) {
+                                    factors = "all", min_r2 = 0, max_r2 = NULL, legend = TRUE, use_cache = TRUE, ...) {
   
   # Sanity checks 
   if (length(unique(c(x, y, split_by))) != 3) { 
@@ -135,10 +138,10 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   if (is.na(split_by)) split_by <- setdiff(c("view", "factor", "group"), c(x, y, split_by))
   
   # Calculate variance explained
-  if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+  if ((use_cache) & .hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
     r2_list <- object@cache$variance_explained
   } else {
-    r2_list <- calculate_variance_explained(object, ...)
+    r2_list <- calculate_variance_explained(object, factors = factors, ...)
   }
 
   r2_m <- r2_list$r2_total
@@ -147,9 +150,9 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   # r2_mk <- lapply(r2_list$r2_per_factor[groups], function(e) e[,views])
 
   # convert matrix to long data frame for ggplot2
-  r2_mk_df <- reshape2::melt(
+  r2_mk_df <- melt(
     lapply(r2_mk, function(x)
-      reshape2::melt(as.matrix(x), varnames = c("factor", "view"))
+      melt(as.matrix(x), varnames = c("factor", "view"))
     ), id.vars=c("factor", "view", "value")
   )
   colnames(r2_mk_df)[ncol(r2_mk_df)] <- "group"
@@ -169,17 +172,9 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   r2_mk_df$factor <- factor(r2_mk_df$factor, levels = factors)
   r2_mk_df$group <- factor(r2_mk_df$group, levels = groups_names(object))
 
-  r2_m_df <- reshape2::melt(lapply(r2_m, function(x) lapply(x, function(z) z)),
-                              varnames=c("view", "group"), value.name="R2")
+  r2_m_df <- melt(lapply(r2_m, function(x) lapply(x, function(z) z)),
+                  varnames=c("view", "group"), value.name="R2")
   colnames(r2_m_df)[(ncol(r2_m_df)-1):ncol(r2_m_df)] <- c("view", "group")
-
-  # sort views according to hierarchical clustering on the variance explained pattern
-  # g <- which.max(sapply(r2_m, function(x) sum(unlist(x)))) # use group with the highest variance explained
-  # if (cluster & ncol(r2_mk[[g]])>1) {
-  #   hc <- hclust(dist(t(r2_mk[[g]])))
-  #   r2_mk_df$view <- factor(r2_mk_df$view, levels = colnames(r2_mk[[g]])[hc$order])
-  #   r2_m_df$view <- factor(r2_m_df$view, levels = colnames(r2_mk[[g]])[hc$order])
-  # }
 
   # Barplots for total variance explained
   min_lim_bplt <- min(0, r2_m_df$R2)
@@ -193,7 +188,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   if (!is.null(max_r2)) r2_mk_df$value[r2_mk_df$value>max_r2] <- max_r2
   
   # Grid plot with the variance explained per factor and view/group
-  p1 <- ggplot(r2_mk_df, aes_string(x="x", y="y")) + 
+  p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
     geom_tile(aes_string(fill="value"), color="black") +
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
     guides(fill=guide_colorbar("R2")) +

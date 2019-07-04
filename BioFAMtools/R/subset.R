@@ -26,8 +26,6 @@ subset_groups <- function(object, groups) {
     object@expectations$Z <- object@expectations$Z[groups]
   if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0)
     object@expectations$Y <- sapply(object@expectations$Y, function(x) x[groups], simplify = F, USE.NAMES = T) 
-  if ("Tau" %in% names(object@expectations) & length(object@expectations$Tau)>0)
-    object@expectations$Tau <- sapply(object@expectations$Tau, function(x) x[groups], simplify = F, USE.NAMES = T)
   
   object@data <- sapply(object@data, function(x) x[groups], simplify = F, USE.NAMES = T) 
   
@@ -35,11 +33,19 @@ subset_groups <- function(object, groups) {
   object@dimensions[["G"]] <- length(groups)
   object@dimensions[["N"]] <- object@dimensions[["N"]][groups]
   
-  # Update sample metadata
-  new_factor_levels <- groups
+  # Subset sample metadata
   stopifnot(groups%in%unique(object@samples_metadata$group_name))
   object@samples_metadata <- object@samples_metadata[object@samples_metadata$group_name %in% groups,]
   object@samples_metadata$group_name <- factor(object@samples_metadata$group_name, levels=groups)
+  
+  # Re-order samples
+  samples <- unlist(lapply(object@data[[1]],colnames))
+  object@samples_metadata <- object@samples_metadata[match(samples, object@samples_metadata$sample_name),]
+  
+  # Sanity checks
+  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@data[[1]],colnames)))
+  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Z,rownames)))
+  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Y,colnames)))
   
   # Update groups names
   groups_names(object) <- groups
