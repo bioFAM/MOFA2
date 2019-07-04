@@ -5,7 +5,7 @@
 \title{Plot top weights}
 \usage{
 plot_top_weights(object, view, factor, nfeatures = 10, abs = TRUE,
-  scale = TRUE, sign = "both")
+  scale = TRUE, sign = "all")
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
@@ -15,11 +15,11 @@ plot_top_weights(object, view, factor, nfeatures = 10, abs = TRUE,
 \item{nfeatures}{number of top features to display.
 Default is 10}
 
-\item{abs}{logical indicating whether to use the absolute value of the weights. Default is FALSE}
+\item{abs}{logical indicating whether to use the absolute value of the weights (Default is FALSE).}
 
 \item{scale}{logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.}
 
-\item{sign}{can be 'positive', 'negative' or 'both' to show only positive, negative or all weigths, respectively. Default is 'both'.}
+\item{sign}{can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.}
 
 \item{factors}{a string with the factor name, or an integer with the index of the factor.}
 }

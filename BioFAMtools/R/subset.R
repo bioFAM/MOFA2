@@ -29,7 +29,7 @@ subset_groups <- function(object, groups) {
   if ("Tau" %in% names(object@expectations) & length(object@expectations$Tau)>0)
     object@expectations$Tau <- sapply(object@expectations$Tau, function(x) x[groups], simplify = F, USE.NAMES = T)
   
-  object@training_data <- sapply(object@training_data, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  object@data <- sapply(object@data, function(x) x[groups], simplify = F, USE.NAMES = T) 
   
   # Update dimensionality
   object@dimensions[["G"]] <- length(groups)
@@ -74,8 +74,8 @@ subset_views <- function(object, views) {
   object@expectations$W <- object@expectations$W[views]
   object@expectations$Y <- object@expectations$Y[views]
   object@expectations$Tau <- object@expectations$Tau[views]
-  object@training_data <- object@training_data[views]
-  # object@input_data <- object@input_data[,,,]
+  object@data <- object@data[views]
+  # object@data <- object@data[,,,]
   # if (length(object@imputed_data) != 0) {
   #   object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
   # }
@@ -173,7 +173,7 @@ subset_samples <- function(object, samples) {
     object@expectations$Z[[g]] <- object@expectations$Z[[g]][samples_g,, drop=F]
     for (m in views_names(object)) {
       object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=F]
-      object@training_data[[m]][[g]] <- object@training_data[[m]][[g]][,samples_g,drop=F]
+      object@data[[m]][[g]] <- object@data[[m]][[g]][,samples_g,drop=F]
       
     }
   }
@@ -221,8 +221,8 @@ subset_features <- function(object, view, features) {
   object@expectations$W <- lapply(object@expectations$W, function(x) x[features,, drop=F])
   object@expectations$Y[[view]] <- lapply(object@expectations$Y[[view]], function(x) x[features,])
   object@expectations$Tau[[view]] <- lapply(object@expectations$Tau[[view]], function(x) x[features,])
-  object@training_data <- lapply(object@training_data, function(x) sapply(x, function(y) y[features,], simplify = F, USE.NAMES = T))
-  # object@input_data <- object@input_data[,,,] 
+  object@data <- lapply(object@data, function(x) sapply(x, function(y) y[features,], simplify = F, USE.NAMES = T))
+  # object@data <- object@data[,,,] 
   if (length(object@imputed_data) != 0) {
     object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
   }

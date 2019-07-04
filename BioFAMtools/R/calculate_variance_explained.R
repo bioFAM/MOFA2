@@ -2,15 +2,15 @@
 #' @name calculate_variance_explained
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
-#' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
+#' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @details This function takes a trained BioFAModel as input and calculates for each view the coefficient of determination (R^2),
 #' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @import DelayedArray
 #' @export
-calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all", ...) {
+calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all") {
 
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -109,20 +109,21 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' 
 #' @name plot_variance_explained
 #' @param object a \code{\link{MOFAmodel}} object
-#' @param x string specifying the x-axis ("view", "factor", or "group")
-#' @param y string specifying the y-axis ("view", "factor", or "group")
-#' @param split_by string specifying the dimension to be faceted ("view", "factor", or "group")
-#' @param cluster logical value indicating whether to do hierarchical clustering on the plot
-#' @param factors TO-FILL. Default is "all"
+#' @param x character specifying the dimension for the x-axis ("view", "factor", or "group").
+#' @param y character specifying the dimension for the y-axis ("view", "factor", or "group").
+#' @param split_by character specifying the dimension to be faceted ("view", "factor", or "group").
+#' @param factors character vector with a factor name(s), or numeric vector with the index(es) of the factor(s). Default is "all".
 #' @param plot_total logical value to indicate if to plot the total variance explained (for the variable in the x-axis)
-#' @param legend logical indicating whether to add a legend
+#' @param min_r2 minimum variance explained for the color scheme.
+#' @param max_r2 maximum variance explained for the color scheme.
+#' @param legend logical indicating whether to add a legend to the plot.
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
 #' @import ggplot2 reshape2
 #' @importFrom cowplot plot_grid
 #' @export
 plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, plot_total = FALSE, 
-                                    factors = "all", min_r2=0, legend = TRUE, ...) {
+                                    factors = "all", min_r2=0, max_r2=NULL, legend = TRUE, ...) {
   
   # Sanity checks 
   if (length(unique(c(x, y, split_by))) != 3) { 
@@ -180,11 +181,6 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   #   r2_m_df$view <- factor(r2_m_df$view, levels = colnames(r2_mk[[g]])[hc$order])
   # }
 
-  # Heatmaps (grid plots) for variance explained per factor
-  # min_lim_p1 <- min(r2_mk_df$value)
-  min_lim_p1 <- 0
-  max_lim_p1 <- max(r2_mk_df$value)
-
   # Barplots for total variance explained
   min_lim_bplt <- min(0, r2_m_df$R2)
   max_lim_bplt <- max(r2_m_df$R2)
@@ -192,16 +188,17 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   # Detect whether to split by group or by view
   groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
-
-  r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
+  
+  if (!is.null(min_r2)) r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
+  if (!is.null(max_r2)) r2_mk_df$value[r2_mk_df$value>max_r2] <- max_r2
   
   # Grid plot with the variance explained per factor and view/group
-  p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
-    geom_tile(aes(fill=value), color="black") +
+  p1 <- ggplot(r2_mk_df, aes_string(x="x", y="y")) + 
+    geom_tile(aes_string(fill="value"), color="black") +
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
     guides(fill=guide_colorbar("R2")) +
     labs(x="", y="", title="") +
-    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_lim_p1, max_lim_p1)) +
+    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(0, max(r2_mk_df$value))) +
     guides(fill=guide_colorbar("R2")) +
     theme(
       axis.title.x = element_blank(),
@@ -223,7 +220,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     if (plot_total) {
 
       # Barplot with variance explained per view/group (across all factors)
-      p2 <- ggplot(r2_m_df, aes_string(x=x, y="R2")) + 
+      p2 <- ggplot(r2_m_df, aes_string(x="x", y="R2")) + 
         # ggtitle(sprintf("%s\nTotal variance explained per %s", i, x)) +
         geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
         facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +

@@ -10,6 +10,9 @@ get_factors(object, groups = "all", factors = "all",
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}
 
+\item{groups}{character vector with the group name(s), or numeric vector with the group index(es).
+Default is "all".}
+
 \item{factors}{character vector with the factor name(s), or numeric vector with the factor index(es).
 Default is "all".}
 

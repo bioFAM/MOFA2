@@ -63,7 +63,7 @@ plot_features <- function(object, views = "all", groups = "all", factors = "all"
   top_features <- W %>% group_by(factor) %>% top_n(n = n_top, wt = abs(value)) %>% pull(feature) %>% unique
 
   # Select relevant features in data
-  data <- get_training_data(object, views = views, groups = groups, as.data.frame = TRUE)
+  data <- get_data(object, views = views, groups = groups, as.data.frame = TRUE)
   # data <- lapply(data, function(m) {
   # 	lapply(m, function(g) {
   # 		g[rownames(g) %in% top_features,]

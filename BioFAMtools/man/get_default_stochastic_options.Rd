@@ -10,7 +10,7 @@ get_default_stochastic_options(object)
 \item{object}{an untrained \code{\link{BioFAModel}}}
 }
 \value{
-Returns a list with default training options
+Returns a list with default options
 }
 \description{
 Function to obtain the default options for stochastic variational inference.

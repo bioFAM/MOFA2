@@ -2,12 +2,9 @@
 % Please edit documentation in R/AllGenerics.R
 \name{expectations}
 \alias{expectations}
-\alias{expectations<-}
 \title{expectations: set and retrieve expectations}
 \usage{
 expectations(object)
-
-.expectations(object) <- value
 }
 \description{
 expectations: set and retrieve expectations

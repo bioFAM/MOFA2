@@ -10,26 +10,28 @@ Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.}
 \usage{
 plot_variance_explained(object, x = "view", y = "factor",
   split_by = NA, plot_total = FALSE, factors = "all", min_r2 = 0,
-  legend = TRUE, ...)
+  max_r2 = NULL, legend = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFAmodel}} object}
 
-\item{x}{string specifying the x-axis ("view", "factor", or "group")}
+\item{x}{character specifying the dimension for the x-axis ("view", "factor", or "group").}
 
-\item{y}{string specifying the y-axis ("view", "factor", or "group")}
+\item{y}{character specifying the dimension for the y-axis ("view", "factor", or "group").}
 
-\item{split_by}{string specifying the dimension to be faceted ("view", "factor", or "group")}
+\item{split_by}{character specifying the dimension to be faceted ("view", "factor", or "group").}
 
 \item{plot_total}{logical value to indicate if to plot the total variance explained (for the variable in the x-axis)}
 
-\item{factors}{TO-FILL. Default is "all"}
+\item{factors}{character vector with a factor name(s), or numeric vector with the index(es) of the factor(s). Default is "all".}
 
-\item{legend}{logical indicating whether to add a legend}
+\item{min_r2}{minimum variance explained for the color scheme.}
+
+\item{max_r2}{maximum variance explained for the color scheme.}
+
+\item{legend}{logical indicating whether to add a legend to the plot.}
 
 \item{...}{extra arguments to be passed to \code{\link{calculate_variance_explained}}}
-
-\item{cluster}{logical value indicating whether to do hierarchical clustering on the plot}
 }
 \value{
 ggplot object

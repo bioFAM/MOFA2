@@ -13,6 +13,9 @@ get_imputed_data(object, views = "all", groups = "all",
 \item{views}{character vector with the view name(s), or numeric vector with the view index(es). 
 Default is "all".}
 
+\item{groups}{character vector with the group name(s), or numeric vector with the group index(es).
+Default is "all".}
+
 \item{as.data.frame}{logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 Default is \code{FALSE}.}
 }

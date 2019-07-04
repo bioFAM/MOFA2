@@ -1,31 +1,3 @@
-##########
-## Plot ##
-##########
-
-#' @name plot
-#' @rdname plot
-#' @export
-setGeneric("plot", function(object) { standardGeneric("plot") })
-
-
-#' @rdname plot
-#' @param object a \code{\link{BioFAM}} object.
-#' @export
-setMethod("plot", signature(object="BioFAModel"), 
-          function(object) {
-            if (object@status == "untrained") {
-              plot_data_overview(object)  
-            } else if (object@status == "trained") {
-              stop("Not implemented")
-              # p1 <- plot_data_overview(object)  
-              # p2 <- plot_variance_explained(object)
-              # p <- cowplot::plot_grid(plotlist=list(p1,p2), ncol=2, nrow=1)
-              # return(p)
-            } else {
-              stop("Status of the model (trained or untrained) not recognised")
-            }
-          }
-)
 
 ##################
 ## Factor Names ##
@@ -102,21 +74,11 @@ setGeneric("features_names", function(object) { standardGeneric("features_names"
 #' @export
 setGeneric("features_names<-", function(object, value) { standardGeneric("features_names<-") })
 
-#############################
-## Features Groups (Views) ##
-#############################
-
-#' @title featurs_views: retrieve feature names and views
-#' @name features_views
-#' @rdname features_views
-#' @export
-setGeneric("features_views", function(object, format = "default") { standardGeneric("features_views") })
-
 ######################
 ## Feature Metadata ##
 ######################
 
-#' @title features_metadata: retrieve feature metadata
+#' @title features_metadata: set and retrieve feature metadata
 #' @name features_metadata
 #' @rdname features_metadata
 #' @export
@@ -165,14 +127,9 @@ setGeneric("groups_names<-", function(object, value) { standardGeneric("groups_n
 ################
 
 #' @title Set and retrieve input data
-#' @name input_data
+#' @name data
 #' @export
-setGeneric("input_data", function(object) { standardGeneric("input_data") })
-
-#' @name input_data
-#' @aliases inputData<-
-#' @export
-setGeneric(".input_data<-", function(object, value) { standardGeneric(".input_data<-") })
+setGeneric("data", function(object) { standardGeneric("data") })
 
 
 ##################
@@ -184,27 +141,6 @@ setGeneric(".input_data<-", function(object, value) { standardGeneric(".input_da
 #' @export
 setGeneric("imputed_data", function(object) { standardGeneric("imputed_data") })
 
-#' @name imputed_data
-#' @aliases imputed_data<-
-#' @export
-setGeneric(".imputed_data<-", function(object, value) { standardGeneric(".imputed_data<-") })
-
-################
-## Train Data ##
-################
-
-#' @title training_data: set and retrieve training data
-#' @name training_data
-#' @rdname training_data
-#' @export
-setGeneric("training_data", function(object) { standardGeneric("training_data") })
-
-#' @name training_data
-#' @aliases training_data<-
-#' @export
-setGeneric(".training_data<-", function(object, value) { standardGeneric(".training_data<-") })
-
-
 ###################
 ## Train Options ##
 ###################
@@ -214,12 +150,6 @@ setGeneric(".training_data<-", function(object, value) { standardGeneric(".train
 #' @rdname training_options
 #' @export
 setGeneric("training_options", function(object) { standardGeneric("training_options") })
-
-#' @name training_options
-#' @rdname training_options
-#' @aliases training_options<-
-#' @export
-setGeneric(".training_options<-", function(object, value) { standardGeneric(".training_options<-") })
 
 
 ###################
@@ -231,11 +161,6 @@ setGeneric(".training_options<-", function(object, value) { standardGeneric(".tr
 #' @export
 setGeneric("model_options", function(object) { standardGeneric("model_options") })
 
-#' @name model_options
-#' @aliases model_options<-
-#' @export
-setGeneric(".model_options<-", function(object, value) { standardGeneric(".model_options<-") })
-
 
 ######################
 ## Train Statistics ##
@@ -246,11 +171,6 @@ setGeneric(".model_options<-", function(object, value) { standardGeneric(".model
 #' @export
 setGeneric("training_stats", function(object) { standardGeneric("training_stats") })
 
-#' @name training_stats
-#' @aliases training_stats<-
-#' @export
-setGeneric(".training_stats<-", function(object, value) { standardGeneric(".training_stats<-") })
-
 ##################
 ## Expectations ##
 ##################
@@ -260,9 +180,3 @@ setGeneric(".training_stats<-", function(object, value) { standardGeneric(".trai
 #' @rdname expectations
 #' @export
 setGeneric("expectations", function(object) { standardGeneric("expectations") })
-
-#' @name expectations
-#' @rdname expectations
-#' @aliases expectations<-
-#' @export
-setGeneric(".expectations<-", function(object, value) { standardGeneric(".expectations<-") })

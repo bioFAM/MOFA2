@@ -6,8 +6,8 @@
   names(likelihood) <- views_names(object)
   
   for (m in views_names(object)) {
-    # data <- get_training_data(object, views=m)[[1]][[1]]  # take only first group
-    data <- object@input_data[[m]][[1]]
+    # data <- get_data(object, views=m)[[1]][[1]]  # take only first group
+    data <- object@data[[m]][[1]]
     
     # bernoulli
     if (length(unique(data[!is.na(data)]))==2) {
@@ -28,7 +28,7 @@
   nested_list
 }
 
-detect_outliers <- function(object, views = "all", groups = "all", factors = "all") {
+.detect_outliers <- function(object, views = "all", groups = "all", factors = "all") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -66,16 +66,14 @@ detect_outliers <- function(object, views = "all", groups = "all", factors = "al
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
       
-      # cutoff <- 10
-      # tmp <- abs((Z - median(Z))/mad(Z))
-      
-      cutoff <- 3 * 1.96
+      cutoff <- 4 * 1.96
       tmp <- abs(Z - mean(Z)) / sd(Z)
 
       outliers <- names(which(tmp>cutoff))
       
-      
-      if (length(outliers)>0) object@expectations$Z[[g]][,k][outliers] <- NA
+      if (length(outliers)>0) {
+        object@expectations$Z[[g]][,k][outliers] <- NA
+      }
       
     }
   }
@@ -93,7 +91,6 @@ detect_outliers <- function(object, views = "all", groups = "all", factors = "al
   }
 return(model)
 }
-
 
 
 
@@ -160,15 +157,4 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   mx
 }
 
-#' @title Flip factor
-#' @name flip_factor
-#' @export
-flip_factor <- function(model, factor){
-  for(g in names(model@expectations$Z)) {
-    model@expectations$Z[[g]][,factor] <- - model@expectations$Z[[g]][,factor]
-  }
-  for(m in names(model@expectations$W)) {
-    model@expectations$W[[m]][,factor] <- -model@expectations$W[[m]][,factor]
-  }
-  return(model)
-}
+

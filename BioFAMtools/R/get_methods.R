@@ -32,6 +32,8 @@ get_elbo <- function(object) {
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param factors character vector with the factor name(s), or numeric vector with the factor index(es).
 #' Default is "all".
+#' @param groups character vector with the group name(s), or numeric vector with the group index(es).
+#' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a matrix.
 #' Default is \code{FALSE}.
 #' @return By default it returns the latent factor matrix of dimensionality (N,K), where N is number of samples and K is number of factors. \cr
@@ -112,9 +114,9 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
 }
 
 
-#' @title get_training_data
-#' @name get_training_data
-#' @description Fetch the training data
+#' @title get_data
+#' @name get_data
+#' @description Fetch the input data
 #' @param object a \code{\link{BioFAModel}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
 #' Default is "all".
@@ -126,7 +128,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-get_training_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = F) {
+get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = F) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -147,28 +149,28 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
   }
 
   # Fetch data
-  train_data <- lapply(object@training_data[views], function(x) x[groups])
-  train_data <- lapply(1:length(train_data), function(m) lapply(1:length(train_data[[1]]), function(p) train_data[[m]][[p]][as.character(features[[m]]),,drop=F]))
-  train_data <- .name_views_and_groups(train_data, views, groups)
+  data <- lapply(object@data[views], function(x) x[groups])
+  data <- lapply(1:length(data), function(m) lapply(1:length(data[[1]]), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=F]))
+  data <- .name_views_and_groups(data, views, groups)
   
   # Convert to long data frame
   if (as.data.frame==T) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
-        tmp <- reshape2::melt(train_data[[m]][[p]])
+        tmp <- reshape2::melt(data[[m]][[p]])
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = p, tmp)
         return(tmp) 
       })
     })
-    train_data <- do.call(rbind, do.call(rbind, tmp))
-    train_data[,c("view","group","feature","sample")] <- sapply(train_data[,c("view","group","feature","sample")], as.character)
+    data <- do.call(rbind, do.call(rbind, tmp))
+    data[,c("view","group","feature","sample")] <- sapply(data[,c("view","group","feature","sample")], as.character)
     
   }# else if ((length(views)==1) && (as.data.frame==F)) {
-  #  train_data <- train_data[[views]]
+  #  data <- data[[views]]
   #}
   
-  return(train_data)
+  return(data)
 }
 
 
@@ -177,6 +179,8 @@ get_training_data <- function(object, views = "all", groups = "all", features = 
 #' @description Function to get the imputed data. It requires the previous use of the \code{\link{impute}} method.
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
+#' Default is "all".
+#' @param groups character vector with the group name(s), or numeric vector with the group index(es).
 #' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 #' Default is \code{FALSE}.
@@ -248,7 +252,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   if (variable == "Y") {
     if ((length(object@expectations$Y) == 0) && all(object@model_options$likelihood == "gaussian")) {
       message("Using training data slot as Y expectations since all the likelihoods are gaussian.")
-      exp <- object@training_data
+      exp <- object@data
     }
   }
   

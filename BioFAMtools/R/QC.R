@@ -26,10 +26,10 @@ qualityControl <- function(object, verbose = F) {
     D <- object@dimensions$D
     for (i in views_names(object)) {
       for (j in groups_names(object)) {
-        stopifnot(nrow(object@input_data[[i]][[j]]) == N[[j]])
-        stopifnot(ncol(object@input_data[[i]][[j]]) == D[[i]])
-        stopifnot(length(rownames(object@input_data[[i]][[j]])) == N[[j]])
-        stopifnot(length(colnames(object@input_data[[i]][[j]])) == D[[i]])
+        stopifnot(nrow(object@data[[i]][[j]]) == N[[j]])
+        stopifnot(ncol(object@data[[i]][[j]]) == D[[i]])
+        stopifnot(length(rownames(object@data[[i]][[j]])) == N[[j]])
+        stopifnot(length(colnames(object@data[[i]][[j]])) == D[[i]])
       }
     }
 
@@ -37,7 +37,7 @@ qualityControl <- function(object, verbose = F) {
     # if (verbose==T) message("Checking there are no features with zero variance...")
     # for (i in views_names(object)) {
     #   for (j in groups_names(object)) {
-    #   if (!all(apply(object@input_data[[i]][[j]],1,var,na.rm=T) > 0, na.rm=T)) {
+    #   if (!all(apply(object@data[[i]][[j]],1,var,na.rm=T) > 0, na.rm=T)) {
     #     print("Warning: you have features with zero variance, consider removing them...")
     #   }
     # }
@@ -46,7 +46,7 @@ qualityControl <- function(object, verbose = F) {
     # if (verbose==T) message("Checking there are no features with complete missing values...")
     # for (i in views_names(object)) {
     #   for (j in groups_names(object)) {
-    #   if (!all(apply(object@input_data[[i]][[j]],1, function(x) mean(is.na(x)))<1, na.rm=T)) {
+    #   if (!all(apply(object@data[[i]][[j]],1, function(x) mean(is.na(x)))<1, na.rm=T)) {
     #     print("Warning: you have features which do not contain any observation, consider removing them...")
     #   }
     # }

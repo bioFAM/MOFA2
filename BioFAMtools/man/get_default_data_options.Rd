@@ -10,7 +10,7 @@ get_default_data_options(object)
 \item{object}{an untrained \code{\link{BioFAModel}} object}
 }
 \value{
-Returns a list with the default data options, which have to be passed as an argument to \code{\link{prepareMOFA}}
+Returns a list with the default data options.
 }
 \description{
 Function to obtain the default data options.

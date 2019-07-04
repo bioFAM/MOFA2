@@ -5,8 +5,8 @@
 \title{Scatterplots of feature values against latent factors}
 \usage{
 plot_data_scatter(object, view, factor, groups = "all", features = 10,
-  sign = "both", color_by = NULL, name_color = "",
-  color_legend = TRUE, shape_by = NULL, name_shape = "",
+  sign = "all", color_by = NULL, color_name = "",
+  color_legend = TRUE, shape_by = NULL, shape_name = "",
   shape_legend = TRUE, dot_size = 1, text_size = 5, add_lm = TRUE,
   imputed = FALSE)
 }
@@ -17,19 +17,41 @@ plot_data_scatter(object, view, factor, groups = "all", features = 10,
 
 \item{factor}{character vector with a factor name, or numeric vector with the index of the factor.}
 
+\item{groups}{TO-FILL}
+
 \item{features}{if an integer, the total number of features to plot (10 by default). If a character vector, a set of manually-defined features.}
 
-\item{color_by}{specifies groups or values used to color the samples. 
-This can be either: 
-a character giving the name of a feature, 
-a character giving the same of a covariate (only if using MultiAssayExperiment as input), 
-or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
+\item{sign}{can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.}
 
-\item{shape_by}{specifies groups or values used to shape the samples. 
-This can be either: 
-a character giving the name of a feature present in the training data, 
-a character giving the same of a covariate (only if using MultiAssayExperiment as input), 
-or a vector of the same length as the number of samples specifying discrete groups.}
+\item{color_by}{specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
+\itemize{
+\item (default) the string "group", it the dots with respect to their predefined groups.
+\item a character giving the name of a feature that is present in the input data 
+\item a character giving the same of a column in the sample metadata slot
+\item a vector of the same length as the number of samples specifying the value for each sample. 
+\item a dataframe with two columns: "sample" and "color"
+}}
+
+\item{color_name}{name for color legend (usually only used if color_by is not a character itself).}
+
+\item{shape_by}{specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
+\itemize{
+\item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
+\item a character giving the name of a feature that is present in the input data 
+\item a character giving the same of a column in the sample metadata slot
+\item a vector of the same length as the number of samples specifying the value for each sample. 
+\item a dataframe with two columns: "sample" and "shape"
+}}
+
+\item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself).}
+
+\item{dot_size}{numeric indicating dot size.}
+
+\item{text_size}{numeric indicating text size.}
+
+\item{add_lm}{logical indicating whether to add a linear regression line for each plot}
+
+\item{imputed}{logical indicating whether to include imputed measurements}
 }
 \description{
 Function to do a scatterplot of the feature(s) values against the latent factor values.

@@ -2,12 +2,9 @@
 % Please edit documentation in R/AllGenerics.R
 \name{model_options}
 \alias{model_options}
-\alias{model_options<-}
 \title{model_options: set and retrieve Model options}
 \usage{
 model_options(object)
-
-.model_options(object) <- value
 }
 \description{
 model_options: set and retrieve Model options

@@ -18,7 +18,7 @@
 #' "link" gives the linear predictions, 
 #' "inRange" rounds the fitted values integer-valued distributions to the next integer (default). \cr
 #' @details the denoised and condensed low-dimensional representation of the data captures the main sources of heterogeneity of the data. 
-#' These representation can be used to do predictions using the equation Y = WX. This is the key step underlying imputation, see \code{\link{imputeMissing}} and Methods section of the article.
+#' These representation can be used to do predictions using the equation Y = WX. This is the key step underlying imputation, see \code{\link{impute}} and Methods section of the article.
 #' @return Returns a list with data predictions, each element corresponding to a view.
 #' @export
 predict <- function(object, views = "all", groups = "all", factors = "all", 
@@ -51,7 +51,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
   Z[is.na(Z)] <- 0 # set missing values in Z to 0 to exclude from imputations
   
   # Do predictions
-  predictedData <- lapply(views, function(m) { lapply(groups, function(g) {
+  predicted_data <- lapply(views, function(m) { lapply(groups, function(g) {
     
       # calculate terms based on linear model
       pred <- t(Z[[g]] %*% t(W[[m]])) 
@@ -77,7 +77,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
     })
   })
 
-  predictedData <- .name_views_and_groups(predictedData, views, groups)
+  predicted_data <- .name_views_and_groups(predicted_data, views, groups)
 
-  return(predictedData)
+  return(predicted_data)
 }

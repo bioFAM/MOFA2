@@ -226,7 +226,7 @@ compare_weights <- function(models, views = "all", comparison = "all", show_rown
 }
 
 #' @title Compare different trained \code{\link{BioFAModel}} objects in terms of the final value of the ELBO statistics and number of inferred factors
-#' @name compareModels
+#' @name compare_models
 #' @description Different objects of \code{\link{BioFAModel}} are compared in terms of the final value of the ELBO statistics.
 #' For model selection the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{BioFAModel}} objects.

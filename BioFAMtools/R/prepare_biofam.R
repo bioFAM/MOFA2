@@ -101,7 +101,7 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   for (m in views_names(object)) {
     if (model_options$likelihoods[[m]] == "gaussian") {
       for (g in groups_names(object)) {
-        object@input_data[[m]][[g]] <- scale(object@input_data[[m]][[g]], center=T, scale=F)
+        object@data[[m]][[g]] <- scale(object@data[[m]][[g]], center=T, scale=F)
       }
     }
   }
@@ -113,8 +113,8 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   # See https://github.com/rstudio/reticulate/issues/72
   for (m in views_names(object)) {
     for (g in groups_names(object)) {
-      if (class(object@input_data[[m]][[g]]) %in% c("dgCMatrix", "dgTMatrix"))
-        object@input_data[[m]][[g]] <- as(object@input_data[[m]][[g]], "matrix")
+      if (class(object@data[[m]][[g]]) %in% c("dgCMatrix", "dgTMatrix"))
+        object@data[[m]][[g]] <- as(object@data[[m]][[g]], "matrix")
     }
   }
   
@@ -133,14 +133,16 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
 #'  Default is 5000 (a lot). Convergence is assessed using the ELBO statistic.}
 #'  \item{\strong{drop_factor_threshold}:}{ (not functional yet) numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
-#'  \item{\strong{convergence_criteria}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast".}
-#'  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets).}
-#'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO}
-#'  \item{\strong{frewELBO}:}{ integer indicating the first iteration to compute the ELBO}
+#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast".}
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
-#'  \item{\strong{seed}:}{ random seed for reproducibility (default is 0, random seed).}
+#'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO}
+#'  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO}
+#'  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets).}
+#'  \item{\strong{gpu_mode}:}{ logical indicating whether to use GPUs (see details).}
+#'  \item{\strong{seed}:}{ numeric indicating the seed for reproducibility (default is 0, random seed).}
 #' }
 #' @return Returns a list with default training options
+#' @importFrom utils modifyList
 #' @export
 get_default_training_options <- function(object) {
   
@@ -152,9 +154,9 @@ get_default_training_options <- function(object) {
     verbose = FALSE,               # (logical) verbosity
     startELBO = 1,                 # First iteration to compute the ELBO
     freqELBO = 5,                  # Frequency of ELBO calculation
-    stochastic = FALSE,            # (logical) Do stochastic variational inference
+    stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
-    seed = 0                       # (numeric or NULL) random seed
+    seed = 0                       # (numeric) random seed
   )
   
   # if training_options already exist, replace the default values but keep the additional ones
@@ -163,8 +165,6 @@ get_default_training_options <- function(object) {
   
   return(training_options)
 }
-
-
 
 
 #' @title Get default data options
@@ -176,7 +176,8 @@ get_default_training_options <- function(object) {
 #'  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
 #'  As long as the scale differences between the data sets is not too high, this is not required. Default is FALSE.}
 #' }
-#' @return Returns a list with the default data options, which have to be passed as an argument to \code{\link{prepareMOFA}}
+#' @return Returns a list with the default data options.
+#' @importFrom utils modifyList
 #' @export
 get_default_data_options <- function(object) {
   
@@ -202,8 +203,13 @@ get_default_data_options <- function(object) {
 #'  'gaussian' for continuous data, 'bernoulli' for binary data and 'poisson' for count data.
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
+#'  \item{\strong{spikeslab_z}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
+#'  \item{\strong{spikeslab_w}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
+#'  \item{\strong{ard_z}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
+#'  \item{\strong{ard_w}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
 #'  }
-#' @return Returns a list with the default model options, which have to be passed as an argument to \code{\link{prepareMOFA}}
+#' @return Returns a list with the default model options.
+#' @importFrom utils modifyList
 #' @export
 get_default_model_options <- function(object) {
   
@@ -211,10 +217,10 @@ get_default_model_options <- function(object) {
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   if (!.hasSlot(object,"dimensions") | length(object@dimensions) == 0) 
     stop("dimensions of object need to be defined before getting the model options")
-  if (.hasSlot(object,"input_data")) {
-    if (length(object@input_data)==0) stop("input_data slot is empty")
+  if (.hasSlot(object,"data")) {
+    if (length(object@data)==0) stop("data slot is empty")
   } else {
-    stop("input_data slot not found")
+    stop("data slot not found")
   }
   
   # Guess likelihoods from the data
@@ -248,14 +254,14 @@ get_default_model_options <- function(object) {
   # First round of sanity checks
   if (!is(object, "BioFAModel")) 
     stop("'object' has to be an instance of BioFAModel")
-  if (length(object@input_data)==0)
+  if (length(object@data)==0)
     stop("Input data has not been provided")
   
   # Fetch data
   views <- names(covariates)
   groups <- names(covariates[[1]])
-  Y <- sapply(object@input_data[views], function(x) x[groups], simplify=F, USE.NAMES=T)
-  # Y <- get_input_data(object, views=views, groups=groups)
+  Y <- sapply(object@data[views], function(x) x[groups], simplify=F, USE.NAMES=T)
+  # Y <- get_data(object, views=views, groups=groups)
   
   # Second round of sanity checks
   if (any(object@model_options$likelihoods[views]!="gaussian")) 
@@ -294,7 +300,7 @@ get_default_model_options <- function(object) {
       })
     }
   }
-  object@input_data[views] <- Y_regressed
+  object@data[views] <- Y_regressed
   
   return(object)
 }
@@ -312,16 +318,16 @@ get_default_model_options <- function(object) {
 #'  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
 #'  Default is 1.0
 #'  }
-#' @return Returns a list with default training options
+#' @return Returns a list with default options
+#' @importFrom utils modifyList
 #' @export
-
 get_default_stochastic_options <- function(object) {
   
   # Get default stochastic options
   stochastic_options <- list(
     batch_size = 0.5,       # Batch size (as a fraction)
     learning_rate = 0.75,   # Starting learning rate
-    forgetting_rate = 0.1  # Forgetting rate
+    forgetting_rate = 0.1   # Forgetting rate
   )
   
   # if stochastic_options already exist, replace the default values but keep the additional ones

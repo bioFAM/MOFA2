@@ -5,7 +5,7 @@
 \alias{features_metadata}
 \alias{features_metadata<-}
 \alias{features_metadata<-,BioFAModel,data.frame-method}
-\title{features_metadata: retrieve feature metadata}
+\title{features_metadata: set and retrieve feature metadata}
 \usage{
 features_metadata(object, format = "default")
 
@@ -17,5 +17,5 @@ features_metadata(object) <- value
 \item{value}{data frame with feature information, has to contain columns feature_name and view_name}
 }
 \description{
-features_metadata: retrieve feature metadata
+features_metadata: set and retrieve feature metadata
 }

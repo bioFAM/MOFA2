@@ -12,14 +12,16 @@ impute(object, views = "all", groups = "all", factors = "all",
 
 \item{views}{character vector with the view name(s), or numeric vector with view index(es).}
 
-\item{groups}{character vector with the group name(s), or numeric vector with view index(es).}
+\item{groups}{character vector with the group name(s), or numeric vector with group index(es).}
 
 \item{factors}{character vector with the factor names, or numeric vector with the factor index(es).}
 
 \item{type}{type of imputation. 
-"response" gives mean for gaussian and poisson and probabilities for bernoulli,
-"link" gives the linear predictions,
-"inRange" (default) rounds the fitted values from "terms" for integer-valued distributions to the next integer.}
+\itemize{
+\item \strong{response}:{gives mean for gaussian and poisson and probabilities for bernoulli.}
+\item \strong{link}: {gives the linear predictions.}
+\item \strong{inRange}: {rounds the fitted values from "terms" for integer-valued distributions to the next integer (default).}
+}}
 }
 \description{
 This function uses the latent factors and the loadings to impute missing values.

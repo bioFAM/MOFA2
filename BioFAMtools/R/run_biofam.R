@@ -11,7 +11,7 @@
 #' \code{reticulate::use_python}. \cr
 #' This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
 #' @param object an untrained \code{\link{bioFAMmodel}} object
-#' @param outfile output file (use .hdf5 format)
+#' @param outfile output file for the model (.hdf5 format). If NULL, a temporary file is created.
 #' @return a trained \code{\link{bioFAMmodel}} object
 #' @import reticulate
 #' @export
@@ -48,14 +48,14 @@ run_biofam <- function(object, outfile = NA) {
   # np <- import("numpy", convert = FALSE)
   od <- import("collections", convert = FALSE)
   biofam_entrypoint$set_data_matrix(
-    data = unname(lapply(object@input_data, function(x) r_to_py(t(x)))),
-    # data = lapply(unname(object@input_data), function(x) r_to_py(unname(lapply(x, function(y) np_array(t(y), dtype = np$float64) )))),
-    # samples_names_dict = r_to_py(lapply(object@input_data[[1]], rownames)),
-    # features_names_dict = r_to_py(lapply(object@input_data, function(m) colnames(m[[1]])))
-    views_names = r_to_py(as.list(names(object@input_data))),
-    groups_names = r_to_py(as.list(names(object@input_data[[1]]))),
-    samples_names = r_to_py(unname(lapply(object@input_data[[1]], rownames))),
-    features_names = r_to_py(unname(lapply(object@input_data, function(x) colnames(x[[1]]))))
+    data = unname(lapply(object@data, function(x) r_to_py(t(x)))),
+    # data = lapply(unname(object@data), function(x) r_to_py(unname(lapply(x, function(y) np_array(t(y), dtype = np$float64) )))),
+    # samples_names_dict = r_to_py(lapply(object@data[[1]], rownames)),
+    # features_names_dict = r_to_py(lapply(object@data, function(m) colnames(m[[1]])))
+    views_names = r_to_py(as.list(names(object@data))),
+    groups_names = r_to_py(as.list(names(object@data[[1]]))),
+    samples_names = r_to_py(unname(lapply(object@data[[1]], rownames))),
+    features_names = r_to_py(unname(lapply(object@data, function(x) colnames(x[[1]]))))
   )
   
   # Set model options 

@@ -48,7 +48,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   }
   
   # Collect observed data
-  data <- object@training_data[[view]]
+  data <- object@data[[view]]
   if(class(data)=="list") data <- Reduce(cbind, data)
   data <- t(data)
 

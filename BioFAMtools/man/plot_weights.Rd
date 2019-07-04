@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_weights.R
 \name{plot_weights}
 \alias{plot_weights}
-\title{Plot weights (loadings)}
+\title{Plot distribution of feature weights (loadings)}
 \usage{
 plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
   abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE,
@@ -17,9 +17,9 @@ plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
 
 \item{nfeatures}{number of top features to label.}
 
-\item{abs}{logical indicating whether to use the absolute value of the weights.}
+\item{abs}{logical indicating whether to take the absolute value of the weights.}
 
-\item{manual}{A nested list of character vectors with features to be manually labelled.}
+\item{manual}{A nested list of character vectors with features to be manually labelled (see the example for details).}
 
 \item{color_manual}{a character vector with colors, one for each element of 'manual'}
 

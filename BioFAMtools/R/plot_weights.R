@@ -57,33 +57,39 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 }
 
 
-#' @title Scatterplot of weights for combinations of factors
+#' @title Scatterplots of weights
 #' @name plot_weights_scatter
 #' @description Scatterplot of the weights values for two factors
 #' @param object a trained \code{\link{BioFAModel}} object.
 #' @param view character vector with the voiew name, or numeric vector with the index of the view to use.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
 #' using the factor names, or as numeric with the index of the factors
-#' @param color_by specifies groups or values used to color the samples. 
-#' This can be either 
-#' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' @param shape_by specifies groups or values used to shape the samples. 
-#' This can be either
-#' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups.
+#' @param color_by specifies groups or values used to color the features. This can be either 
+#' \itemize{
+#' \item a character giving the same of a column in the feature metadata slot
+#' \item a vector specifying the value for each feature. 
+#' \item a dataframe with two columns: "feature" and "color"
+#'}
+#' @param shape_by specifies groups or values used to shape the features. This can be either 
+#' \itemize{
+#' \item a character giving the same of a column in the feature metadata slot
+#' \item a vector specifying the value for each feature. 
+#' \item a dataframe with two columns: "feature" and "shape"
+#'}
 #' @param name_color name for color legend (usually only used if color_by is not a character itself)
 #' @param name_shape name for shape legend (usually only used if shape_by is not a character itself)
-#' @param showMissing logical indicating whether to include dots for which \code{shape_by} or \code{color_by} is missing
+#' @param show_missing logical indicating whether to include dots for which \code{shape_by} or \code{color_by} is missing
+#' @param dot_size numeric indicating dot size.
+#' @param abs logical indicating whether to take the absolute value of the weights.
+#' @param scale logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE).
+#' @param legend logical indicating whether to add a legend to the plot (default is TRUE).
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
 plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, dot_size = 1,  
-                                 name_color="", name_shape="", showMissing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
+                                 name_color="", name_shape="", show_missing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -110,8 +116,8 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   # Set color and shape
   if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
   if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
-  color_by <- .set_colorby(object, color_by, view)
-  shape_by <- .set_shapeby(object, shape_by, view)
+  color_by <- .set_colorby_features(object, color_by, view)
+  shape_by <- .set_shapeby_features(object, shape_by, view)
   
   # Create data frame to plot
   # df <- data.frame(
@@ -126,7 +132,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   df <- merge(df, shape_by, by=c("feature","view"))
   
   # Remove values missing color or shape annotation
-  if (!showMissing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
+  if (!show_missing) df <- df[!is.na(df$shape_by) & !is.na(df$color_by),]
 
   # turn into factors
   df$shape_by[is.na(df$shape_by)] <- "NA"
@@ -150,8 +156,8 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
     geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size) + 
     labs(x=factors[1], y=factors[2]) +
     # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
-    geom_segment(aes(x=min(df$x,na.rm=T), xend=max(df$x,na.rm=T), y=0, yend=0), size=0.25, color="orange") +
-    geom_segment(aes(y=min(df$y,na.rm=T), yend=max(df$y,na.rm=T), x=0, xend=0), size=0.25, color="orange") +
+    geom_segment(x=min(df$x,na.rm=T), xend=max(df$x,na.rm=T), y=0, yend=0, size=0.25, color="orange") +
+    geom_segment(y=min(df$y,na.rm=T), yend=max(df$y,na.rm=T), x=0, xend=0, size=0.25, color="orange") +
     theme_classic() +
     theme(
       axis.text = element_text(size=rel(1), color="black"), 
@@ -180,7 +186,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 }
 
 
-#' @title Plot weights (loadings)
+#' @title Plot distribution of feature weights (loadings)
 #' @name plot_weights
 #' @description An important step to annotate factors is to visualise the corresponding feature loadings. \cr
 #' This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
@@ -189,8 +195,8 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param view a string with the view name, or an integer with the index of the view.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s).
 #' @param nfeatures number of top features to label.
-#' @param abs logical indicating whether to use the absolute value of the weights.
-#' @param manual A nested list of character vectors with features to be manually labelled.
+#' @param abs logical indicating whether to take the absolute value of the weights.
+#' @param manual A nested list of character vectors with features to be manually labelled (see the example for details).
 #' @param color_manual a character vector with colors, one for each element of 'manual'
 #' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).
 #' @param sort_by_factor name or numeric value for the factor to sort all loadings by, or all (default)
@@ -311,16 +317,16 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   W$tmp <- as.factor(W$group != "0")
   
   # Generate plot
-  p <- ggplot(W, aes(x=value, y=feature_id, col=group)) +
+  p <- ggplot(W, aes_string(x="value", y="feature_id", color="group")) +
     scale_y_discrete(expand = c(0.03,0.03)) +
-    geom_point(aes(size=tmp)) + 
+    geom_point(aes_string(size="tmp")) + 
     labs(x="Loading", y="Rank position", size=dot_size)
   
   # Add labels to the top features
   if (nfeatures>0) {
     p <- p + geom_text_repel(
       force = 100,
-      data = W[W$group!="0",], aes(label = feature, col = group),
+      data = W[W$group!="0",], aes_string(label = "feature", col = "group"),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
       box.padding = unit(0.5,"lines"), show.legend=F)
   }
@@ -385,8 +391,8 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
 #' @param factors a string with the factor name, or an integer with the index of the factor.
 #' @param nfeatures number of top features to display.
 #' Default is 10
-#' @param abs logical indicating whether to use the absolute value of the weights. Default is FALSE
-#' @param sign can be 'positive', 'negative' or 'both' to show only positive, negative or all weigths, respectively. Default is 'both'.
+#' @param abs logical indicating whether to use the absolute value of the weights (Default is FALSE).
+#' @param sign can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.
 #' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.
 #' @details An important step to annotate factors is to visualise the corresponding feature loadings. \cr
 #' This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all loadings for a given latent factor and view. \cr
@@ -395,7 +401,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
 #' @import ggplot2
 #' @return Returns a \code{ggplot2} object
 #' @export
-plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, scale = TRUE, sign = "both") {
+plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, scale = TRUE, sign = "all") {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -431,9 +437,9 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   W <- W[with(W, order(-value, decreasing = T)), ]
   W$feature <- factor(W$feature, levels=W$feature)
   
-  p <- ggplot(W, aes(x=feature, y=value)) +
+  p <- ggplot(W, aes_string(x="feature", y="value")) +
     geom_point(size=2) +
-    geom_segment(aes(xend=feature, yend=0), size=0.75) +
+    geom_segment(aes_string(xend="feature"), size=0.75, yend=0) +
     scale_colour_gradient(low="grey", high="black") +
     coord_flip() +
     theme(
@@ -468,7 +474,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
 
 
 # (Hidden) function to define the shape
-.set_shapeby <- function(object, shape_by, view) {
+.set_shapeby_features <- function(object, shape_by, view) {
   
   # Option 1: no color
   if (is.null(shape_by)) {
@@ -477,7 +483,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   # Option 2: input is a data.frame with columns (feature,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("feature","color")))
-    stopifnot(all(unique(shape_by$feature) %in% features_names(model)[[view]]))
+    stopifnot(all(unique(shape_by$feature) %in% features_names(object)[[view]]))
     
   # Option 3: by a feature_metadata column
   } else if ((length(shape_by)==1) && is.character(shape_by) & (shape_by %in% colnames(features_metadata(object)))) {
@@ -507,7 +513,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
 
 
 # (Hidden) function to define the color
-.set_colorby <- function(object, color_by, view) {
+.set_colorby_features <- function(object, color_by, view) {
   
   # Option 1: no color
   if (is.null(color_by)) {
@@ -516,7 +522,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
     # Option 2: input is a data.frame with columns (feature,color)
   } else if (is(color_by,"data.frame")) {
     stopifnot(all(colnames(color_by) %in% c("feature","color")))
-    stopifnot(all(unique(color_by$feature) %in% features_names(model)[[view]]))
+    stopifnot(all(unique(color_by$feature) %in% features_names(object)[[view]]))
     
     # Option 3: by a feature_metadata column
   } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {

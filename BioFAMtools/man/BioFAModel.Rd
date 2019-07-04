@@ -11,25 +11,24 @@ The \code{BioFAModel} is an S4 class used to store all relevant data to analyse 
 \section{Slots}{
 
  \itemize{
-   \item{\code{input_data}:}{ TO SPECIFY, the input data before being parsed to Training Data. 
-   }
-   \item{\code{training_data}:}{ TO SPECIFY the parsed data used to fit the BioFAModel 
-   }
-   \item{\code{imputed_data}:}{ TO SPECIFY the parsed data with the missing values imputed using the BioFAModel 
-   }
-   \item{\code{expectations}:}{ expected values of the different nodes of the model. }
-   
-   \item{\code{training_stats}:}{ list with training statistics such as evidence lower bound (ELBO) and number of factors per iteration}
-   \item{\code{data_options}:}{ list with the data processing options such as whether to center or scale the data.}
-   \item{\code{training_options}:}{ list with the training options such as maximum number of iterations, tolerance for convergence, etc.}
-   \item{\code{stochastic_options}:}{ list with the options for stochastic variational inference}
-   \item{\code{model_options}:}{ list with the model options such as likelihoods, whether the intercept was learnt, etc.}
-   \item{\code{dimensions}:}{ list with the relevant dimensionalities of the model. 
-   N for the number of samples, 
-   P for the number of sample groups, 
-   D for the number of features of each view,
+   \item{\code{data}:}{ The input data }
+   \item{\code{samples_metadata}:}{ Samples metadata }
+   \item{\code{features_metadata}:}{ Features metadata }
+   \item{\code{imputed_data}:}{ The imputed data. }
+   \item{\code{expectations}:}{ expected values of the factors and the loadings. }
+   \item{\code{training_stats}:}{ model training statistics. }
+   \item{\code{data_options}:}{ Data processing options. }
+   \item{\code{training_options}:}{ Model training options. }
+   \item{\code{stochastic_options}:}{ Stochastic variational inference options. }
+   \item{\code{model_options}:}{ Model options. }
+   \item{\code{dimensions}:}{ Dimensionalities of the model: 
    M for the number of views, 
+   G for the number of groups, 
+   N for the number of samples (per group), 
+   D for the number of features (per view),
    K for the number of factors.}
+   \item{\code{on_disk}:}{ Logical indicating whether data is loaded from disk. }
+   \item{\code{Cache}:}{ Cache.}
    \item{\code{status}:}{Auxiliary variable indicating whether the model has been trained.}
 }
 }

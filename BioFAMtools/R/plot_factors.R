@@ -3,40 +3,60 @@
 ## Functions to visualise latent factors ##
 ###########################################
 
-#' @title Beeswarm plots of factor values
-#' @name plot_factors
+#' @title Beeswarm plot of factor values
+#' @name plot_factor
 #' @description Beeswarm plot of the latent factor values.
 #' @param object a trained \code{\link{BioFAModel}} object.
-#' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
-#' Default is 'all'
-#' @param color_by specifies groups or values (discrete or continuous) used to color the samples
-#' This can be either: 
-#' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
-#' a character giving the name of a feature, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' or a dataframe with two columns : "sample" (names of the samples) and "color" (values for each sample)
-#' @param group_by specifies groups used to separate the samples : one plot per group 
-#' This can be either: 
-#' the string "group" : in this case, the plot will separate samples with respect to the groups they belong to
-#' a character giving the name of a feature, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups.
-#' or a dataframe with two columns : "sample" (names of the samples) and "group" (groups for each sample)
-#' @param color_name name for color legend (usually only used if color_by is not a character itself)
+#' @param factor character with the factor name, or numeric with the index of the factor to use.
+#' @param group_by specifies groups used to separate the samples : one plot per group. This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will color samples with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the sample metadata slot
+#' \item a vector of the same length as the number of samples specifying the value for each sample. 
+#' \item a dataframe with two columns: "sample" and "color"
+#'}
+#' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will color the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the sample metadata slot
+#' \item a vector of the same length as the number of samples specifying the value for each sample. 
+#' \item a dataframe with two columns: "sample" and "color"
+#' }
+#' @param shape_by specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the sample metadata slot
+#' \item a vector of the same length as the number of samples specifying the value for each sample. 
+#' \item a dataframe with two columns: "sample" and "shape"
+#' }
+#' @param add_dots logical indicating whether to add dots.
+#' @param dot_size numeric indicating dot size.
+#' @param dot_alpha numeric indicating dot transparency.
+#' @param add_violin logical indicating whether to add violin plots
+#' @param violin_alpha numeric indicating violin plot transparency.
+#' @param color_violin logical indicating whether to color violin plots.
 #' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
+#' @param scale logical indicating whether to scale factor values.
+#' @param dodge logical indicating whether to dodge the dots (default is FALSE).
+#' @param color_name name for color legend (usually only used if color_by is not a character itself).
+#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
+#' @param legend logical indicating whether to add a legend to the plot (default is TRUE).
+#' @param rasterize logical indicating whether to rasterize the plot (default is FALSE).
 #' @details One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
-#' Similar functions are \code{\link{plot_factor_scatter}} for doing scatter plots.
+#' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} object
-#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats
+#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats dplyr
 #' @export
-plot_factor <- function(object, factor = 1, group_by = "group", add_dots = TRUE, add_violin = FALSE, 
-                                 show_missing = TRUE, dot_size = 1, scale = FALSE,
-                                 color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", 
-                                 dots_alpha = 1.0, legend = TRUE,
-                                 violin_alpha = 0.5, color_violin=TRUE,
-                                 rasterize = FALSE, dodge = FALSE) {
+plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
+                        add_dots = TRUE, dot_size = 1, dot_alpha = 1,
+                        add_violin = FALSE, violin_alpha = 0.5, color_violin = TRUE,
+                        show_missing = TRUE, scale = FALSE, dodge = FALSE,
+                        color_name = "", shape_name = "", 
+                        legend = TRUE, rasterize = FALSE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -88,7 +108,7 @@ plot_factor <- function(object, factor = 1, group_by = "group", add_dots = TRUE,
   }
   
   # Generate plot
-  p <- ggplot(df, aes(x=group_by, y=value)) +
+  p <- ggplot(df, aes_string(x="group_by", y="value")) +
     # facet_wrap(~group_by+factor, scales="free") +
     facet_wrap(~group_by, nrow=1, scales="free_x") +
     labs(x="", y="Factor value")
@@ -98,15 +118,15 @@ plot_factor <- function(object, factor = 1, group_by = "group", add_dots = TRUE,
     if (rasterize) {
       warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
       if (dodge) {
-        p <- p + ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size, position="dodge", dodge.width=1 )
+        p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size, position="dodge", dodge.width=1 )
       } else {
-        p <- p + ggrastr::geom_quasirandom_rast(aes(color=color_by, shape=shape_by), size=dot_size)
+        p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size)
       }
     } else {
       if (dodge) {
-        p <- p + geom_jitter(aes(color=color_by, shape=shape_by), size = dot_size, alpha = dots_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
+        p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
-        p <- p + geom_jitter(aes(color=color_by, shape=shape_by), size = dot_size, alpha = dots_alpha)
+        p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha)
       }
     }
   }
@@ -120,7 +140,7 @@ plot_factor <- function(object, factor = 1, group_by = "group", add_dots = TRUE,
         p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width", show.legend = FALSE)
       } else {
         # violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
-        p <- p + geom_violin(aes(fill=color_by), alpha=violin_alpha, trim=T, scale="width", position=position_dodge(width=1), show.legend = FALSE)
+        p <- p + geom_violin(aes_string(fill="color_by"), alpha=violin_alpha, trim=T, scale="width", position=position_dodge(width=1), show.legend = FALSE)
         # if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
@@ -285,9 +305,9 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   if (return_data) return(df)
   
   # Generate plot
-  p <- ggplot(df, aes(x=x, y=y)) + 
-    geom_point(aes(color = color_by, shape = shape_by), size=dot_size, alpha=alpha) +
-    # ggrastr::geom_point_rast(aes(color = color_by, shape = shape_by)) +
+  p <- ggplot(df, aes_string(x="x", y="y")) + 
+    geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
+    # ggrastr::geom_point_rast(aes_string(color = "color_by", shape = "shape_by")) +
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
     theme(
@@ -386,7 +406,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
     lower = list(continuous=GGally::wrap("points", size=dot_size)), 
     diag = list(continuous='densityDiag'), 
     upper = list(continuous=GGally::wrap("points", size=dot_size)), 
-    mapping = aes(color=color_by, shape=shape_by), 
+    mapping = aes_string(color="color_by", shape="shape_by"), 
     title = "", 
     legend = legend
     )
@@ -458,7 +478,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
     stopifnot(all(colnames(group_by) %in% c("sample","group")))
-    stopifnot(all(unique(group_by$sample) %in% unlist(samples_names(model))))
+    stopifnot(all(unique(group_by$sample) %in% unlist(samples_names(object))))
     
     # Option 4: group_by is a vector of length N
   } else if (length(group_by) > 1) {
@@ -496,10 +516,10 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     
   # Option 2: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
-      training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
-      features_names <- lapply(training_data, rownames)
+      data <- lapply(get_data(object), function(l) Reduce(cbind, l))
+      features_names <- lapply(data, rownames)
       viewidx <- which(sapply(features_names, function(x) color_by %in% x))
-      color_by <- training_data[[viewidx]][color_by,]
+      color_by <- data[[viewidx]][color_by,]
     
   # Option 3: by a metadata column in object@samples$metadata
   } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
@@ -508,7 +528,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Option 4: input is a data.frame with columns (sample, color)
   } else if (is(color_by, "data.frame")) {
     stopifnot(all(colnames(color_by) %in% c("sample", "color")))
-    stopifnot(all(unique(color_by$sample) %in% unlist(samples_names(model))))
+    stopifnot(all(unique(color_by$sample) %in% unlist(samples_names(object))))
     
   # Option 5: color_by is a vector of length N
   } else if (length(color_by) > 1) {
@@ -549,15 +569,15 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     
   # Option 2: by a feature present in the training data    
   } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
-    training_data <- lapply(get_training_data(object), function(l) Reduce(cbind, l))
-    features_names <- lapply(training_data, rownames)
+    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
+    features_names <- lapply(data, rownames)
     viewidx <- which(sapply(features_names, function(x) shape_by %in% x))
-    shape_by <- training_data[[viewidx]][shape_by,]
+    shape_by <- data[[viewidx]][shape_by,]
     
   # Option 3: input is a data.frame with columns (sample,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("sample","color")))
-    stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(model))))
+    stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(object))))
 
   # Option 4: by a metadata column in object@samples$metadata
   } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {

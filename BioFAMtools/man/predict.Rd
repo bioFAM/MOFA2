@@ -32,5 +32,5 @@ This function uses the latent factors and the weights to do data predictions.
 }
 \details{
 the denoised and condensed low-dimensional representation of the data captures the main sources of heterogeneity of the data. 
-These representation can be used to do predictions using the equation Y = WX. This is the key step underlying imputation, see \code{\link{imputeMissing}} and Methods section of the article.
+These representation can be used to do predictions using the equation Y = WX. This is the key step underlying imputation, see \code{\link{impute}} and Methods section of the article.
 }

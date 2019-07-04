@@ -4,17 +4,17 @@
 \alias{plot_data_overview}
 \title{Overview of the input data}
 \usage{
-plot_data_overview(object, colors = NULL, ...)
+plot_data_overview(object, colors = NULL)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}
 
-\item{colors}{a vector specifying the colors per view.}
+\item{colors}{a vector specifying the colors per view (see example for details).}
 }
 \description{
 Function to do a tile plot showing the missing value structure of the input data
 }
 \details{
-This function is helpful to get an overview of the structure of the training data. 
+This function is helpful to get an overview of the structure of the data. 
 It shows the number of samples, groups, views and features and it indicates which measurements are missing.
 }

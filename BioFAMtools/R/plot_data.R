@@ -1,7 +1,7 @@
 
-##############################################
-## Functions to visualise the training data ##
-##############################################
+###########################################
+## Functions to visualise the input data ##
+###########################################
 
 #' @title Plot heatmap of relevant features
 #' @name plot_data_heatmap
@@ -61,9 +61,9 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
     data <- get_imputed_data(object, view, groups)[[1]]
   } else {
     if (denoise) {
-      data <- predict(object, view=view, groups=groups, factors="all")[[1]]
+      data <- predict(object, views=view, groups=groups, factors="all")[[1]]
     } else {
-      data <- get_training_data(object, views=view, groups=groups)[[1]]
+      data <- get_data(object, views=view, groups=groups)[[1]]
     }
   }
 
@@ -140,16 +140,30 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @param view character vector with a view name, or numeric vector with the index of the view.
 #' @param factor character vector with a factor name, or numeric vector with the index of the factor.
 #' @param features if an integer, the total number of features to plot (10 by default). If a character vector, a set of manually-defined features.
-#' @param color_by specifies groups or values used to color the samples. 
-#' This can be either: 
-#' a character giving the name of a feature, 
-#' a character giving the same of a covariate (only if using MultiAssayExperiment as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' @param shape_by specifies groups or values used to shape the samples. 
-#' This can be either: 
-#' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a covariate (only if using MultiAssayExperiment as input), 
-#' or a vector of the same length as the number of samples specifying discrete groups.
+#' @param groups TO-FILL
+#' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
+#' \itemize{
+#' \item (default) the string "group", it the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the sample metadata slot
+#' \item a vector of the same length as the number of samples specifying the value for each sample. 
+#' \item a dataframe with two columns: "sample" and "color"
+#' }
+#' @param shape_by specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the sample metadata slot
+#' \item a vector of the same length as the number of samples specifying the value for each sample. 
+#' \item a dataframe with two columns: "sample" and "shape"
+#' }
+#' @param sign can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.
+#' @param dot_size numeric indicating dot size.
+#' @param text_size numeric indicating text size.
+#' @param add_lm logical indicating whether to add a linear regression line for each plot
+#' @param imputed logical indicating whether to include imputed measurements
+#' @param color_name name for color legend (usually only used if color_by is not a character itself).
+#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
 #' @details One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, 
 #' which show you which features drive the heterogeneity of each factor. 
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
@@ -157,9 +171,9 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
 #' @import ggplot2 dplyr ggpubr
 #' @export
-plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="both",
-                              color_by=NULL, name_color="", color_legend = TRUE,
-                              shape_by=NULL, name_shape="", shape_legend = TRUE,
+plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="all",
+                              color_by=NULL, color_name="", color_legend = TRUE,
+                              shape_by=NULL, shape_name="", shape_legend = TRUE,
                               dot_size=1, text_size=5, add_lm = TRUE, imputed=FALSE) {
   
   # Sanity checks
@@ -185,7 +199,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (imputed) {
     Y <- do.call(cbind, object@imputed_data[[view]][groups])
   } else {
-    Y <- do.call(cbind, object@training_data[[view]][groups])
+    Y <- do.call(cbind, object@data[[view]][groups])
   }
   
   # NOTE: By default concatenate all the groups
@@ -194,7 +208,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Z <- Z[!is.na(Z)]
   
   # Get features
-  if (sign=="both") {
+  if (sign=="all") {
     W <- abs(W)
   } else if (sign=="positive") {
     W <- W[W>0]
@@ -222,14 +236,14 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   color_legend <- TRUE
   if (!is.null(color_by)) {
     
-    # It is the name of a covariate or a feature in the training_data
+    # It is the name of a covariate or a feature in the data
     if (length(color_by) == 1 & is.character(color_by)) {
-      if(name_color=="") name_color <- color_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      if(color_name=="") color_name <- color_by
+      data <- get_data(object)
+      features_names <- lapply(data, rownames)
       if (color_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
-        color_by <- training_data[[viewidx]][color_by,]
+        color_by <- data[[viewidx]][color_by,]
       }
       
     # It is a vector of length N
@@ -249,12 +263,12 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (!is.null(shape_by)) {
     # It is the name of a covariate 
     if (length(shape_by) == 1 & is.character(shape_by)) {
-      if(name_shape=="") name_shape <- shape_by
-      training_data <- get_training_data(object)
-      features_names <- lapply(training_data(object), rownames)
+      if(shape_name=="") shape_name <- shape_by
+      data <- get_data(object)
+      features_names <- lapply(data, rownames)
       if (shape_by %in% Reduce(union,features_names)) {
         viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
-        shape_by <- training_data[[viewidx]][shape_by,]
+        shape_by <- data[[viewidx]][shape_by,]
       }
       
     # It is a vector of length N
@@ -271,7 +285,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   
   # Create data frame 
   df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = F)
-  df2 <- get_training_data(object, views = view, groups = groups, features = list(features), as.data.frame = T)
+  df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = T)
   df <- dplyr::left_join(df1, df2, by = "sample")
   
   #remove values missing color or shape annotation
@@ -301,14 +315,14 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     p <- p + scale_colour_manual(values="black")
   
   if (color_legend) { 
-    p <- p + labs(color = name_color) 
+    p <- p + labs(color = color_name) 
   } else { 
     p <- p + guides(color = FALSE)
   }
   
   # Add legend for shape
   if (shape_legend) { 
-    p <- p + labs(shape = name_shape) 
+    p <- p + labs(shape = shape_name) 
   }  else { 
     p <- p + guides(shape = FALSE) 
   }
@@ -322,30 +336,24 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 #' @name plot_data_overview
 #' @description Function to do a tile plot showing the missing value structure of the input data
 #' @param object a \code{\link{BioFAModel}} object.
-#' @param colors a vector specifying the colors per view.
-#' @details This function is helpful to get an overview of the structure of the training data. 
+#' @param colors a vector specifying the colors per view (see example for details).
+#' @details This function is helpful to get an overview of the structure of the data. 
 #' It shows the number of samples, groups, views and features and it indicates which measurements are missing.
 #' @import ggplot2 dplyr reshape2
 #' @export
-plot_data_overview <- function(object, colors = NULL, ...) {
+plot_data_overview <- function(object, colors = NULL) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
-  # Collect relevant data
-  # TO-FIX....
-  if (length(object@training_data)==0) {
-    training_data <- object@input_data
-    axis <- 1
-  } else {
-    training_data <- object@training_data
-    axis <- 2
-  }
+  # Collect relevant data (TO FIX.....)
+  data <- object@data
+  axis <- 2
   
   M <- get_dimensions(object)[["M"]]
   G <- get_dimensions(object)[["G"]]
   if (M==1 & G==1) stop("This function is not useful when there is just one view and one group")
-  if (is.null(dim(training_data[[1]][[1]]))) stop("Training data not found")
+  if (is.null(dim(data[[1]][[1]]))) stop("Data not found")
   
   # Define colors  
   if (is.null(colors)) {
@@ -365,7 +373,7 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  tmp <- lapply(training_data, function(m) sapply(m, function(g) apply(g, axis, function(x) !all(is.na(x)))))
+  tmp <- lapply(data, function(m) sapply(m, function(g) apply(g, axis, function(x) !all(is.na(x)))))
   ovw <- do.call(cbind, lapply(1:M, function(m) {
     do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))
@@ -383,8 +391,8 @@ plot_data_overview <- function(object, colors = NULL, ...) {
   
   # Add number of samples and features per view/group
   molten_ovw$combi  <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
-  molten_ovw$ntotal <- paste("N=", sapply(training_data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
-  molten_ovw$ptotal <- paste("D=", sapply(training_data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
+  molten_ovw$ntotal <- paste("N=", sapply(data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
+  molten_ovw$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
     
   # Define y-axis label
   molten_ovw <- dplyr::mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
@@ -395,7 +403,7 @@ plot_data_overview <- function(object, colors = NULL, ...) {
     scale_fill_manual(values = c("missing"="grey", colors)) +
     xlab(paste0("Samples (N=", n, ")")) + ylab("") +
     guides(fill=F) + 
-    facet_wrap(~group_label, scales="free_x") +
+    facet_wrap(~group_label, scales="free_x", nrow=length(unique(molten_ovw$view_label))) +
     theme(
       panel.background = element_rect(fill="white"),
       text = element_text(size=14),
@@ -449,9 +457,9 @@ biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x 
   vis_lines      <- c(vis_lines, groups_line, nsamples_line) 
 
   # Calculate percentage of missing values in every view and every group
-  content_pct <- lapply(object@input_data, function(view) sapply(view, function(group) sum(is.na(group))))
+  content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))
   if (length(content_pct) == 0) {
-    content_pct <- lapply(object@training_data, function(view) sapply(view, function(group) sum(is.na(group))))
+    content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))
   }
   content_pct <- lapply(1:length(content_pct), function(m) {
     paste0(as.character(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100), sep = "%")

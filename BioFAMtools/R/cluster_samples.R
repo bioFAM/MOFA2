@@ -17,7 +17,8 @@
 #' @details In some cases, due to model technicalities, samples can have missing values in the latent factor space. 
 #' In such a case, these samples are currently ignored in the clustering procedure.
 #' @return output from \code{\link{kmeans}} function
-#' @export
+#' @importFrom stats kmeans
+#' @export 
 #' 
 cluster_samples <- function(object, k, factors = "all", ...) {
   

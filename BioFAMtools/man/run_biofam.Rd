@@ -9,7 +9,7 @@ run_biofam(object, outfile = NA)
 \arguments{
 \item{object}{an untrained \code{\link{bioFAMmodel}} object}
 
-\item{outfile}{output file (use .hdf5 format)}
+\item{outfile}{output file for the model (.hdf5 format). If NULL, a temporary file is created.}
 }
 \value{
 a trained \code{\link{bioFAMmodel}} object

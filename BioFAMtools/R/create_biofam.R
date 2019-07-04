@@ -111,7 +111,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   
   object <- new("BioFAModel")
   object@status <- "untrained"
-  object@input_data <- data_matrix
+  object@data <- data_matrix
   
   return(object)
 }
@@ -136,7 +136,7 @@ create_biofam <- function(data, samples_groups = NULL) {
 
   object <- new("BioFAModel")
   object@status <- "untrained"
-  object@input_data <- data_matrices
+  object@data <- data_matrices
   
   # Define dimensions
   object@dimensions[["M"]] <- 1
@@ -230,7 +230,7 @@ create_biofam <- function(data, samples_groups = NULL) {
   # Initialise BioFAM object
   object <- new("BioFAModel")
   object@status <- "untrained"
-  object@input_data <- .split_data_into_groups(data, samples_groups)
+  object@data <- .split_data_into_groups(data, samples_groups)
   
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data)
@@ -243,27 +243,27 @@ create_biofam <- function(data, samples_groups = NULL) {
   for (m in 1:length(data)) {
     if (is.null(colnames(data[[m]]))) {
       warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d, feature2_v%d...", m, m, m))
-      for (g in 1:length(object@input_data[[m]])) {
-        colnames(object@input_data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@input_data[[m]][[g]]), "_v", m)
+      for (g in 1:length(object@data[[m]])) {
+        colnames(object@data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@data[[m]][[g]]), "_v", m)
       }
     }
   }
   
   # Set samples names
   for (g in 1:object@dimensions[["G"]]) {
-    if (is.null(rownames(object@input_data[[1]][[g]]))) {
+    if (is.null(rownames(object@data[[1]][[g]]))) {
       warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
       for (m in 1:object@dimensions[["M"]]) {
-        rownames(object@input_data[[m]][[g]]) <- paste0("sample_", 1:nrow(object@input_data[[m]][[g]]), "_g", g)
+        rownames(object@data[[m]][[g]]) <- paste0("sample_", 1:nrow(object@data[[m]][[g]]), "_g", g)
       }
     }
   }
   
   # Set view names
-  views_names(object) <- names(object@input_data)
+  views_names(object) <- names(object@data)
   
   # Set samples group names
-  groups_names(object) <- names(object@input_data[[1]])
+  groups_names(object) <- names(object@data[[1]])
   
   return(object)
 }
