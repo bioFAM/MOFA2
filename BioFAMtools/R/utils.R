@@ -28,7 +28,7 @@
   nested_list
 }
 
-detect_passengers <- function(object, views = "all", groups = "all", factors = "all") {
+detect_outliers <- function(object, views = "all", groups = "all", factors = "all") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")

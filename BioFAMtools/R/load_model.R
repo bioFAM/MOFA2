@@ -230,14 +230,8 @@ load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE
     object <- subset_factors(object, order_factors)
   }
 
-  # Mask passenger samples
-  object <- detect_passengers(object)
-
-  ############################
-  ## Update previous models ##
-  ############################
-
-  # object <- .update_old_model(object)
+  # Mask outliers
+  object <- detect_outliers(object)
 
   ######################
   ## Quality controls ##

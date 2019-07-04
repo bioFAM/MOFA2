@@ -19,12 +19,15 @@
 #' @export
 create_biofam <- function(data, samples_groups = NULL) {
   
+  # Creating BioFAM object from a Seurat object
   if (is(data, "Seurat")) {
-    message("Creating BioFAM object from a Seurat object...")
     
+    message("Creating BioFAM object from a Seurat object...")
     object <- .create_biofam_from_seurat(data, samples_groups)
     
+  # Creating BioFAM object from a data.frame object
   } else if (is(data, "data.frame")) {
+    
     message("Creating BioFAM object from a dataframe...")
     
     object <- .create_biofam_from_df(data)
@@ -41,7 +44,8 @@ create_biofam <- function(data, samples_groups = NULL) {
     
     # Set sample group names
     groups_names(object) <- as.character(unique(data$sample_group))
-    
+  
+  # Creating BioFAM object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
              (all(sapply(data, function(x) is(x, "matrix"))) || 
               all(sapply(data, function(x) is(x, "dgCMatrix"))) || 
@@ -52,11 +56,11 @@ create_biofam <- function(data, samples_groups = NULL) {
     object <- .create_biofam_from_matrix(data, samples_groups)
 
   } else {
-    stop("Error: input data has to be provided as a list of matrices, a data frame (long format), or a Seurat object.")
+    stop("Error: input data has to be provided as a list of matrices, a data frame  or a Seurat object. Please read the documentation.")
   }
   
   # Do quality control on the untrained MOFA object
-  # (...)
+  # qualityControl(object)
   
   print(object)
   
