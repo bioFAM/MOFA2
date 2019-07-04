@@ -7,7 +7,8 @@
 plot_data_scatter(object, view, factor, groups = "all", features = 10,
   sign = "both", color_by = NULL, name_color = "",
   color_legend = TRUE, shape_by = NULL, name_shape = "",
-  shape_legend = TRUE, dot_size = 1, text_size = 5, add_lm = TRUE)
+  shape_legend = TRUE, dot_size = 1, text_size = 5, add_lm = TRUE,
+  imputed = FALSE)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

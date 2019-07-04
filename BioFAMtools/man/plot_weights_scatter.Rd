@@ -5,7 +5,7 @@
 \title{Scatterplot of weights for combinations of factors}
 \usage{
 plot_weights_scatter(object, view, factors, color_by = NULL,
-  shape_by = NULL, name_color = "", name_shape = "",
+  shape_by = NULL, dot_size = 1, name_color = "", name_shape = "",
   showMissing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE)
 }
 \arguments{
@@ -32,7 +32,7 @@ or a vector of the same length as the number of samples specifying discrete grou
 
 \item{name_shape}{name for shape legend (usually only used if shape_by is not a character itself)}
 
-\item{showMissing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
+\item{showMissing}{logical indicating whether to include dots for which \code{shape_by} or \code{color_by} is missing}
 }
 \value{
 Returns a \code{ggplot2} object

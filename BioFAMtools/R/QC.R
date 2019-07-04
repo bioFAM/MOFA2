@@ -65,7 +65,7 @@ qualityControl <- function(object, verbose = F) {
     
     # Check expectations
     # stopifnot(identical(sort(c("W","Z","Theta","Tau","AlphaW","Y")), sort(names(object@Expectations))))
-    stopifnot(all(c("W","Z") %in% names(object@expectations))
+    stopifnot(all(c("W","Z") %in% names(object@expectations)))
     if (verbose==T) message("Checking expectations...")
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
