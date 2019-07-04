@@ -147,7 +147,7 @@ class saveModel():
         # (1) RENAME SL_Z and SL_W to SPARsity_z AND SPARSITY_w
 
         # Subset model options
-        opts = dict((k, self.model_opts[k]) for k in ["likelihoods", "sl_z", "sl_w"])
+        opts = dict((k, self.model_opts[k]) for k in ["likelihoods", "spikeslab_z", "spikeslab_w"])
 
         # Create HDF5 group
         grp = self.hdf5.create_group('model_options')

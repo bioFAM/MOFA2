@@ -449,11 +449,11 @@ class entry_point(object):
             # schedule = ['Y', 'W', 'Z', 'Tau']
 
             # Insert ThetaW after W if Spike and Slab prior on W
-            if self.model_opts['sl_w']:
+            if self.model_opts['spikeslab_w']:
                 ix = schedule.index("W"); schedule.insert(ix+1, 'ThetaW')
 
             # Insert ThetaZ after Z if Spike and Slab prior on Z
-            if self.model_opts['sl_z']:
+            if self.model_opts['spikeslab_z']:
                 ix = schedule.index("Z"); schedule.insert(ix+1, 'ThetaZ')
 
             # Insert AlphaW after W if ARD prior on W
@@ -468,8 +468,8 @@ class entry_point(object):
             assert set(["Y","W","Z","Tau"]) <= set(schedule)
             if self.model_opts['ard_z']: assert "AlphaZ" in schedule
             if self.model_opts['ard_w']: assert "AlphaW" in schedule
-            if self.model_opts['sl_z']: assert "ThetaZ" in schedule
-            if self.model_opts['sl_w']: assert "ThetaW" in schedule
+            if self.model_opts['spikeslab_z']: assert "ThetaZ" in schedule
+            if self.model_opts['spikeslab_w']: assert "ThetaW" in schedule
 
         self.train_opts['schedule'] = schedule
 
@@ -501,7 +501,7 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_model_options(self, factors, likelihoods, sl_z=False, sl_w=False, ard_z=False, ard_w=False):
+    def set_model_options(self, factors, likelihoods, spikeslab_z=False, spikeslab_w=False, ard_z=False, ard_w=False):
         """ Set model options """
 
         # TODO: SANITY CHECKS AND:
@@ -510,10 +510,10 @@ class entry_point(object):
         self.model_opts = {}
 
         # Define whether to use sample-wise spike and slab prior for Z
-        self.model_opts['sl_z'] = sl_z
+        self.model_opts['spikeslab_z'] = spikeslab_z
 
         # Define whether to use feature-wise spike and slab prior for W
-        self.model_opts['sl_w'] = sl_w
+        self.model_opts['spikeslab_w'] = spikeslab_w
 
         # Define whether to use sample_group and factor-wise ARD prior for Z
         self.model_opts['ard_z'] = ard_z
@@ -674,7 +674,7 @@ def mofa(adata, groups_label=None, use_raw=False,
     
     ent.set_data_options(lik, center_features_per_group=True, scale_features=True, scale_views=False)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
-    ent.set_model_options(ard_z=True, sl_w=True, sl_z=True, ard_w=True, factors=n_factors, likelihoods=lik)
+    ent.set_model_options(ard_z=True, spikeslab_w=True, spikeslab_z=True, ard_w=True, factors=n_factors, likelihoods=lik)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=False, quiet=True)
 
     ent.build()

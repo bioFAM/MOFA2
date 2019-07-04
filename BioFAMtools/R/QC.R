@@ -19,19 +19,19 @@ qualityControl <- function(object, verbose = F) {
   stopifnot(!is.null(groups_names(object)))
   stopifnot(!duplicated(groups_names(object)))
   
-  # Check samples names
-  if (verbose==T) message("Checking samples names...")
-  stopifnot(!is.null(samples_names(object)))
-  stopifnot(!duplicated(unlist(samples_names(object))))
-  
-  # Check features names
-  if (verbose==T) message("Checking features names...")
-  stopifnot(!is.null(features_names(object)))
-  stopifnot(!duplicated(unlist(features_names(object))))
-  
-
   if (object@Status == "untrained") {
+    
     # Check dimensionalities in the input data
+    N <- object@dimensions$N
+    D <- object@dimensions$D
+    for (i in views_names(object)) {
+      for (j in groups_names(object)) {
+        stopifnot(nrow(object@input_data[[i]][[j]]) == N[[j]])
+        stopifnot(ncol(object@input_data[[i]][[j]]) == D[[i]])
+        stopifnot(length(rownames(object@input_data[[i]][[j]])) == N[[j]])
+        stopifnot(length(colnames(object@input_data[[i]][[j]])) == D[[i]])
+      }
+    }
 
     # Check that there are no features with zero variance
     # if (verbose==T) message("Checking there are no features with zero variance...")
@@ -52,6 +52,17 @@ qualityControl <- function(object, verbose = F) {
     # }
     
   } else if (object@Status == "trained") {
+    
+    # Check samples names
+    if (verbose==T) message("Checking samples names...")
+    stopifnot(!is.null(samples_names(object)))
+    stopifnot(!duplicated(unlist(samples_names(object))))
+    
+    # Check features names
+    if (verbose==T) message("Checking features names...")
+    stopifnot(!is.null(features_names(object)))
+    stopifnot(!duplicated(unlist(features_names(object))))
+    
     # Check expectations
     # stopifnot(identical(sort(c("W","Z","Theta","Tau","AlphaW","Y")), sort(names(object@Expectations))))
     stopifnot(all(c("W","Z") %in% names(object@expectations))

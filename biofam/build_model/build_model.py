@@ -66,11 +66,11 @@ class buildBiofam(buildModel):
             self.build_AlphaW()
 
         # define feature-wise spike and slab sparsity in Z
-        if self.model_opts['sl_z']:
+        if self.model_opts['spikeslab_z']:
             self.build_ThetaZ()
 
         # define feature-wise spike and slab sparsity in W
-        if self.model_opts['sl_w']:
+        if self.model_opts['spikeslab_w']:
             self.build_ThetaW()
 
     def build_Y(self):
@@ -79,7 +79,7 @@ class buildBiofam(buildModel):
 
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
-        if self.model_opts['sl_z']:
+        if self.model_opts['spikeslab_z']:
             self.init_model.initSZ(qmean_T1=0)
             # self.init_model.initSZ(qmean_T1="random")
             # self.init_model.initSZ(qmean_T1="pca", Y=self.data)
@@ -90,7 +90,7 @@ class buildBiofam(buildModel):
 
     def build_W(self):
         """ Build node W for the weights """
-        if self.model_opts['sl_w']:
+        if self.model_opts['spikeslab_w']:
             # self.init_model.initSW(qmean_S1=0)
             self.init_model.initSW(qmean_S1="random", Y=self.data)
             # self.init_model.initSW(qmean_S1="pca", Y=self.data)
@@ -154,12 +154,12 @@ class buildBiofam(buildModel):
         nodes['Tau'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Z=nodes["Z"])
 
         # Add ThetaZ in the markov blanket of Z and viceversa if Spike and Slab prior on Z
-        if self.model_opts['sl_z']:
+        if self.model_opts['spikeslab_z']:
             nodes['Z'].addMarkovBlanket(ThetaZ=nodes["ThetaZ"])
             nodes["ThetaZ"].addMarkovBlanket(Z=nodes["Z"])
 
         # Add ThetaW in the markov blanket of W and viceversa if Spike and Slab prior on Z
-        if self.model_opts['sl_w']:
+        if self.model_opts['spikeslab_w']:
             nodes['W'].addMarkovBlanket(ThetaW=nodes["ThetaW"])
             nodes["ThetaW"].addMarkovBlanket(W=nodes["W"])
 
