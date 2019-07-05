@@ -28,31 +28,16 @@ create_biofam <- function(data, samples_groups = NULL) {
   # Creating BioFAM object from a data.frame object
   } else if (is(data, "data.frame")) {
     
-    message("Creating BioFAM object from a dataframe...")
-    
+    message("Creating BioFAM object from a data.frame...")
     object <- .create_biofam_from_df(data)
     
-    # Set dimensionalities
-    object@dimensions[["M"]] <- length(unique(data$feature_group))
-    object@dimensions[["D"]] <- sapply(unique(data$feature_group), function(m) length(unique(data[data$feature_group==m,]$feature)))
-    object@dimensions[["G"]] <- length(unique(data$sample_group))
-    object@dimensions[["N"]] <- sapply(unique(data$sample_group), function(p) length(unique(data[data$sample_group==p,]$sample)))
-    object@dimensions[["K"]] <- 0
-    
-    # Set view names
-    views_names(object) <- as.character(unique(data$feature_group))
-    
-    # Set sample group names
-    groups_names(object) <- as.character(unique(data$sample_group))
-  
   # Creating BioFAM object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
              (all(sapply(data, function(x) is(x, "matrix"))) || 
               all(sapply(data, function(x) is(x, "dgCMatrix"))) || 
               all(sapply(data, function(x) is(x, "dgTMatrix"))))) {
     
-    message("Creating BioFAM object from a list of matrices... make sure that features are stored in columns and samples in rows\n")
-      
+    message("Creating BioFAM object from a list of matrices (features as rows, sample as columns)...\n")
     object <- .create_biofam_from_matrix(data, samples_groups)
 
   } else {
@@ -62,7 +47,13 @@ create_biofam <- function(data, samples_groups = NULL) {
   # Do quality control on the untrained MOFA object
   # qualityControl(object)
   
-  print(object)
+  # Create sample metadata
+  tmp <- data.frame(
+    sample_name = unlist(lapply(object@data[[1]],colnames)),
+    group_name = unlist(lapply(1:object@dimensions$G, function(x) rep(groups_names(object)[[x]], object@dimensions$N[[x]]) )),
+    stringsAsFactors = FALSE
+  )
+  samples_metadata(object) <- tmp
   
   return(object)
 }
@@ -100,24 +91,39 @@ create_biofam <- function(data, samples_groups = NULL) {
   data_matrix <- lapply(split(df,df$feature_group), function(x)
     lapply(split(droplevels.data.frame(x),x$sample_group), function(y) {
         y <- droplevels.data.frame(y)
-        if (nrow(y)==0) {
-          matrix(NA, nrow=length(levels(y$sample)), ncol=length(levels(y$feature)))
+        if (ncol(y)==0) {
+          matrix(NA, ncol=length(levels(y$sample)), nrow=length(levels(y$feature)))
         } else {
-          tmp <- .df_to_matrix( reshape2::dcast(y, sample~feature, value.var="value", fill=NA, drop=TRUE) )
+          tmp <- .df_to_matrix( reshape2::dcast(y, feature~group, value.var="value", fill=NA, drop=TRUE) )
         }
       }
     )
   )
   
+  # Create MOFA object
   object <- new("BioFAModel")
   object@status <- "untrained"
   object@data <- data_matrix
+  
+  # Set dimensionalities
+  object@dimensions[["M"]] <- length(unique(data$feature_group))
+  object@dimensions[["D"]] <- sapply(unique(data$feature_group), function(m) length(unique(data[data$feature_group==m,]$feature)))
+  object@dimensions[["G"]] <- length(unique(data$sample_group))
+  object@dimensions[["N"]] <- sapply(unique(data$sample_group), function(p) length(unique(data[data$sample_group==p,]$sample)))
+  object@dimensions[["K"]] <- 0
+  
+  # Set view names
+  views_names(object) <- as.character(unique(data$feature_group))
+  
+  # Set sample group names
+  groups_names(object) <- as.character(unique(data$sample_group))
   
   return(object)
 }
 
 # (Hidden) function to initialise a BioFAModel object using a Seurat object
 .create_biofam_from_seurat <- function(srt, samples_groups, assay = "RNA") {
+  stop("TO UPDATE, SAMPLE AS COLUMNS, FEATURES AS ROWS")
   if (is(samples_groups, 'character') && (length(samples_groups) == 1)) {
     if (!(samples_groups %in% colnames(srt@meta.data)))
       stop(paste0(samples_groups, " is not found in the Seurat@meta.data.\n",
@@ -155,9 +161,9 @@ create_biofam <- function(data, samples_groups = NULL) {
 
 .split_data_into_groups <- function(data, samples_groups) {
   groups_names <- unique(samples_groups)
-  tmp <- lapply(data, function(view) {
+  tmp <- lapply(data, function(x) {
     tmp_view <- lapply(groups_names, function(p) {
-      view[samples_groups == p,]
+      x[,samples_groups == p]
     })
     names(tmp_view) <- groups_names
     tmp_view
@@ -188,13 +194,12 @@ create_biofam <- function(data, samples_groups = NULL) {
   m
 }
 
-
 # (Hidden) function to create MOFA object from a matrix
 .create_biofam_from_matrix <- function(data, samples_groups) {
   
   # Quality controls
   stopifnot(all(sapply(data, function(g) all(is.numeric(g)))) || all(sapply(data, function(x) class(x) %in% c("dgTMatrix", "dgCMatrix"))))
-  stopifnot(length(Reduce("intersect",lapply(data,rownames)))>1)
+  stopifnot(length(Reduce("intersect",lapply(data,colnames)))>1)
   
   # Make a dgCMatrix out of dgTMatrix
   if (all(sapply(data, function(x) is(x, "dgTMatrix")))) {
@@ -203,19 +208,19 @@ create_biofam <- function(data, samples_groups = NULL) {
   
   # If number of rows are not identical, fill missing values
   # if (!all.equal(sapply(data,nrow)))
-  samples <- Reduce("union",sapply(data,rownames))
+  samples <- Reduce("union",sapply(data,colnames))
   data <- sapply(data, function(x) {
-    aug_x <- matrix(NA, ncol=ncol(x), nrow=length(samples))
-    aug_x <- x[match(samples,rownames(x)),,drop=FALSE]
-    rownames(aug_x) <- samples
-    colnames(aug_x) <- colnames(x)
+    aug_x <- matrix(NA, nrow=nrow(x), ncol=length(samples))
+    aug_x <- x[,match(samples,colnames(x)),drop=FALSE]
+    rownames(aug_x) <- rownames(x)
+    colnames(aug_x) <- samples
     return(aug_x)
   }, USE.NAMES = T, simplify = F)
 
-  # Set samples groups
+  # Set groups names
   if (is.null(samples_groups)) {
     message("No samples_groups provided as argument... we assume that all samples are coming from the same group.\n")
-    samples_groups <- rep("group1", nrow(data[[1]]))
+    samples_groups <- rep("group1", ncol(data[[1]]))
   }
   groups_names <- as.character(unique(samples_groups))
   
@@ -235,26 +240,26 @@ create_biofam <- function(data, samples_groups = NULL) {
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data)
   object@dimensions[["G"]] <- length(groups_names)
-  object@dimensions[["D"]] <- sapply(data, function(m) ncol(m))
+  object@dimensions[["D"]] <- sapply(data, function(m) nrow(m))
   object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(samples_groups == x))
   object@dimensions[["K"]] <- 0
   
   # Set features names
   for (m in 1:length(data)) {
-    if (is.null(colnames(data[[m]]))) {
+    if (is.null(rownames(data[[m]]))) {
       warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d, feature2_v%d...", m, m, m))
       for (g in 1:length(object@data[[m]])) {
-        colnames(object@data[[m]][[g]]) <- paste0("feature_", 1:ncol(object@data[[m]][[g]]), "_v", m)
+        rownames(object@data[[m]][[g]]) <- paste0("feature_", 1:nrow(object@data[[m]][[g]]), "_v", m)
       }
     }
   }
   
   # Set samples names
   for (g in 1:object@dimensions[["G"]]) {
-    if (is.null(rownames(object@data[[1]][[g]]))) {
+    if (is.null(colnames(object@data[[1]][[g]]))) {
       warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
       for (m in 1:object@dimensions[["M"]]) {
-        rownames(object@data[[m]][[g]]) <- paste0("sample_", 1:nrow(object@data[[m]][[g]]), "_g", g)
+        colnames(object@data[[m]][[g]]) <- paste0("sample_", 1:ncol(object@data[[m]][[g]]), "_g", g)
       }
     }
   }

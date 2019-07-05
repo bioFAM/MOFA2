@@ -346,9 +346,8 @@ plot_data_overview <- function(object, colors = NULL) {
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
-  # Collect relevant data (TO FIX.....)
+  # Collect relevant data
   data <- object@data
-  axis <- 2
   
   M <- get_dimensions(object)[["M"]]
   G <- get_dimensions(object)[["G"]]
@@ -364,16 +363,12 @@ plot_data_overview <- function(object, colors = NULL) {
     if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
     names(colors) <- views_names(object)
   } else {
-    if (is.null(names(colors))) {
-      names(colors) <- views_names(object)
-    } else {
       stopifnot(sort(names(colors))==sort(views_names(object)))
-    }
   }
   if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  tmp <- lapply(data, function(m) sapply(m, function(g) apply(g, axis, function(x) !all(is.na(x)))))
+  tmp <- lapply(data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
   ovw <- do.call(cbind, lapply(1:M, function(m) {
     do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))

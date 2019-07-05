@@ -205,6 +205,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param text_size numeric indicating the text size.
 #' @import ggplot2 dplyr tidyr ggrepel
 #' @importFrom magrittr %>%
+#' @importFrom ggrepel geom_text_repel
 #' @export
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
@@ -218,15 +219,16 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Get views
   view <- .check_and_get_views(object, view)
   
-  # Get factor
-  if (factors[1] == "all") {
+  # Get factor names
+  if (paste0(factors, collapse = "") == "all") { 
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
+    if (!all(factors %in% 1:object@dimensions$K)) stop("Factor(s) not found")
     factors <- factors_names(object)[factors]
-  } else {
-    stopifnot(factors %in% factors_names(object)) 
+  } else { 
+    if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
   }
-
+  
   # Get factor to sort by
   if (!is.null(sort_by_factor)) {
     if (is.numeric(sort_by_factor)) {
@@ -254,9 +256,9 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Convert factor names to a factor to preserve order
   W$factor <- factor(W$factor, levels = unique(W$factor))
 
-  if (sum(W$value==0)>nfeatures) {
-    nfeatures <- sum(W$value>0)
-  }
+  # if (sum(W$value==0)>nfeatures) {
+  #   nfeatures <- sum(W$value>0)
+  # }
   
   ################
   ## Parse data ##
@@ -275,7 +277,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (nfeatures > 0) {
     for (f in factors) {
       # This uses dplyr
-      features <- W %>% filter(factor==f) %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
+      features <- W[W$factor==f,] %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
       W[(W$feature %in% features) & (W$factor==f),"group"] <- "1"
     }
   }

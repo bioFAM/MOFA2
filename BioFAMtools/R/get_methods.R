@@ -49,12 +49,13 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   groups <- .check_and_get_groups(object, groups)
 
   # Get factor names
-  if (paste0(factors, collapse="") == "all") { 
-    factors <- factors_names(object) 
+  if (paste0(factors, collapse = "") == "all") { 
+    factors <- factors_names(object)
   } else if (is.numeric(factors)) {
+    if (!all(factors %in% 1:object@dimensions$K)) stop("Factor(s) not found")
     factors <- factors_names(object)[factors]
-  } else {
-    stopifnot(all(factors %in% factors_names(object)))
+  } else { 
+    if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
   }
   
   # Collect factors
@@ -97,9 +98,10 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   if (paste0(factors, collapse = "") == "all") { 
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
+    if (!all(factors %in% 1:object@dimensions$K)) stop("Factor(s) not found")
     factors <- factors_names(object)[factors]
   } else { 
-    stopifnot(all(factors %in% factors_names(object)))
+    if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
   }
   
   # Fetch weights

@@ -53,6 +53,18 @@ qualityControl <- function(object, verbose = F) {
     
   } else if (object@Status == "trained") {
     
+    # Check dimensionalities in the input data
+    N <- object@dimensions$N
+    D <- object@dimensions$D
+    for (i in views_names(object)) {
+      for (j in groups_names(object)) {
+        stopifnot(ncol(object@data[[i]][[j]]) == N[[j]])
+        stopifnot(nrow(object@data[[i]][[j]]) == D[[i]])
+        stopifnot(length(colnames(object@data[[i]][[j]])) == N[[j]])
+        stopifnot(length(rownames(object@data[[i]][[j]])) == D[[i]])
+      }
+    }
+    
     # Check samples names
     if (verbose==T) message("Checking samples names...")
     stopifnot(!is.null(samples_names(object)))

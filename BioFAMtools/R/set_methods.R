@@ -146,8 +146,8 @@ setReplaceMethod("samples_metadata", signature(object="BioFAModel", value="data.
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") | length(object@data) == 0 | length(object@data[[1]]) == 0)
                      stop("Before assigning samples metadata you have to assign the input data")
-                   if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
-                     stop("Before assigning samples metadata you have to assign the expectations")
+                   # if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                   #   stop("Before assigning samples metadata you have to assign the expectations")
                    if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
                      if (nrow(value) != sum(object@dimensions[["N"]]))
                        stop("Number of rows in samples metadata does not match the dimensionality of the model")
@@ -160,7 +160,7 @@ setReplaceMethod("samples_metadata", signature(object="BioFAModel", value="data.
                    if (colnames(value)[1] != "sample_name")
                      message("Note that sample_name is currently not the first column of the samples metadata.")
                    
-                   object@samples_metadata <- value
+                   object@samples_metadata <- as.data.frame(value)
                    
                    object
                  })
