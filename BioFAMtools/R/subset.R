@@ -168,28 +168,60 @@ subset_samples <- function(object, samples) {
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(samples) <= sum(object@dimensions[["N"]]))
   stopifnot(all(samples %in% unlist(samples_names(object))))
+  stopifnot(!any(duplicated(samples)))
   
-  groups <- object@data_options$samples_groups
-  new_samples_names <-  sapply(groups, function(g) samples_names(object)[[g]][samples_names(object)[[g]] %in% samples])
+  # Subset sample metadata
+  # object@samples_metadata <- object@samples_metadata[match(samples, object@samples_metadata$sample_name),]
+  # groups <- as.character(unique(object@samples_metadata$group_name))
+  # object@samples_metadata$group_name <- factor(object@samples_metadata$group_name, levels=groups)
   
-  # Subset relevant slots
-  for (g in names(new_samples_names)) {
-    samples_g <- new_samples_names[[g]]
+  # Check if an entire group needs to be removed
+  groups <- as.character(unique(object@samples_metadata[match(samples, object@samples_metadata$sample_name),]$group_name))
+  if (length(groups)<length(groups_names(object))) object <- subset_groups(object, groups)
+  
+  
+  # Subset data and expectations
+  
+  tmp <- lapply(groups, function(g) samples_names(object)[[g]][samples_names(object)[[g]] %in% samples])
+  names(tmp) <- groups
+  
+  for (g in groups) {
+    samples_g <- tmp[[g]]
     
-    object@expectations$Z[[g]] <- object@expectations$Z[[g]][samples_g,, drop=F]
-    for (m in views_names(object)) {
-      object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=F]
-      object@data[[m]][[g]] <- object@data[[m]][[g]][,samples_g,drop=F]
-      
+    if ("Z" %in% names(object@expectations) & length(object@expectations$Z)>0) {
+      object@expectations$Z[[g]] <- object@expectations$Z[[g]][samples_g,, drop=F]
     }
+    
+    if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0) {
+      for (m in views_names(object)) {
+        object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=F]
+      }  
+    }
+
+    if (length(object@data)>0) { 
+      for (m in views_names(object)) {
+        object@data[[m]][[g]] <- object@data[[m]][[g]][,samples_g,drop=F]
+      }
+    }
+    
+    if (length(object@imputed_data)>0) { 
+      for (m in views_names(object)) {
+        object@imputed_data[[m]][[g]] <- object@imputed_data[[m]][[g]][,samples_g,drop=F]
+      }
+    }
+    
   }
-  # if (length(object@ImputedData)==0) { object@ImputedData <- sapply(object@ImputedData, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) }
 
   # Update dimensionality
-  object@dimensions[["N"]] <- sapply(new_samples_names, length)
+  object@dimensions[["N"]] <- sapply(tmp, length)
   
   # Update sample names
-  samples_names(object) <- new_samples_names
+  samples_names(object) <- tmp
+  
+  # Sanity checks
+  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@data[[1]],colnames)))
+  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Z,rownames)))
+  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Y,colnames)))
   
   # Re-compute variance explained
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)

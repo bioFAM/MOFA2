@@ -234,9 +234,13 @@ get_default_model_options <- function(object) {
     num_factors = 15,            # (numeric) initial number of latent factors
     spikeslab_z = FALSE,         # Spike and Slab sparsity on the factors
     spikeslab_w = TRUE,          # Spike and Slab sparsity on the loadins
-    ard_z = FALSE,                # Group-wise ARD sparsity on the factors
+    ard_z = FALSE,              # Group-wise ARD sparsity on the factors
     ard_w = TRUE                # Group-wise ARD sparsity on the loadings
   )
+  
+  # Group-wise ARD sparsity on the factors only if there are multiple groups
+  if (object@dimensions$G==1)
+    model_options$ard_z <-FALSE
 
   # if model_options already exist, replace the default values but keep the additional ones
   if (length(object@model_options)>0)
