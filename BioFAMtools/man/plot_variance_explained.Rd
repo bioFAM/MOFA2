@@ -10,7 +10,7 @@ Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.}
 \usage{
 plot_variance_explained(object, x = "view", y = "factor",
   split_by = NA, plot_total = FALSE, factors = "all", min_r2 = 0,
-  max_r2 = NULL, legend = TRUE, ...)
+  max_r2 = NULL, legend = TRUE, use_cache = TRUE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFAmodel}} object}
@@ -25,11 +25,13 @@ plot_variance_explained(object, x = "view", y = "factor",
 
 \item{factors}{character vector with a factor name(s), or numeric vector with the index(es) of the factor(s). Default is "all".}
 
-\item{min_r2}{minimum variance explained for the color scheme.}
+\item{min_r2}{minimum variance explained for the color scheme (default is 0).}
 
 \item{max_r2}{maximum variance explained for the color scheme.}
 
-\item{legend}{logical indicating whether to add a legend to the plot.}
+\item{legend}{logical indicating whether to add a legend to the plot  (default is TRUE).}
+
+\item{use_cache}{logical indicating whether to use cache (default is TRUE)}
 
 \item{...}{extra arguments to be passed to \code{\link{calculate_variance_explained}}}
 }

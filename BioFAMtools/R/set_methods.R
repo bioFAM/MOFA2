@@ -107,12 +107,12 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
 ## Retrieve samples groups ##
 #############################
 
-#' @rdname samples_groups
+#' @rdname groups
 #' @param object a \code{\link{BioFAModel}} object.
-#' @aliases samples_groups, BioFAModel-method
+#' @aliases groups, BioFAModel-method
 #' @return data.frame with the sample names and a group for each sample
 #' @export
-setMethod("samples_groups", signature(object="BioFAModel"), 
+setMethod("groups", signature(object="BioFAModel"), 
           function(object, format = "default") {
             tmp <- data.frame(sample_name = object@samples_metadata$sample_name,
                               group_name  = object@samples_metadata$group_name,
@@ -157,8 +157,6 @@ setReplaceMethod("samples_metadata", signature(object="BioFAModel", value="data.
                      stop("Metadata has to contain the column sample_name")
                    if (!("group_name" %in% colnames(value)))
                      stop("Metadata has to contain the column group_name")
-                   if (colnames(value)[1] != "sample_name")
-                     message("Note that sample_name is currently not the first column of the samples metadata.")
                    
                    object@samples_metadata <- as.data.frame(value)
                    

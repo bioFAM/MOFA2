@@ -66,7 +66,7 @@
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
       
-      cutoff <- 4 * 1.96
+      cutoff <- 5 * 1.96
       tmp <- abs(Z - mean(Z)) / sd(Z)
 
       outliers <- names(which(tmp>cutoff))

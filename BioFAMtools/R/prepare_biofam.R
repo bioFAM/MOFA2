@@ -203,10 +203,10 @@ get_default_data_options <- function(object) {
 #'  'gaussian' for continuous data, 'bernoulli' for binary data and 'poisson' for count data.
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
-#'  \item{\strong{spikeslab_z}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
-#'  \item{\strong{spikeslab_w}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
-#'  \item{\strong{ard_z}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
-#'  \item{\strong{ard_w}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
+#'  \item{\strong{spikeslab_factors}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
+#'  \item{\strong{spikeslab_weights}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
+#'  \item{\strong{ard_factors}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
+#'  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
 #'  }
 #' @return Returns a list with the default model options.
 #' @importFrom utils modifyList
@@ -232,15 +232,15 @@ get_default_model_options <- function(object) {
   model_options <- list(
     likelihoods = likelihoods,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
     num_factors = 15,            # (numeric) initial number of latent factors
-    spikeslab_z = FALSE,         # Spike and Slab sparsity on the factors
-    spikeslab_w = TRUE,          # Spike and Slab sparsity on the loadins
-    ard_z = FALSE,              # Group-wise ARD sparsity on the factors
-    ard_w = TRUE                # Group-wise ARD sparsity on the loadings
+    spikeslab_factors = FALSE,         # Spike and Slab sparsity on the factors
+    spikeslab_weights = TRUE,          # Spike and Slab sparsity on the loadins
+    ard_factors = FALSE,              # Group-wise ARD sparsity on the factors
+    ard_weights = TRUE                # Group-wise ARD sparsity on the loadings
   )
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups
   if (object@dimensions$G==1)
-    model_options$ard_z <-FALSE
+    model_options$ard_factors <-FALSE
 
   # if model_options already exist, replace the default values but keep the additional ones
   if (length(object@model_options)>0)

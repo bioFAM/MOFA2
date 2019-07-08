@@ -215,7 +215,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     if (plot_total) {
 
       # Barplot with variance explained per view/group (across all factors)
-      p2 <- ggplot(r2_m_df, aes_string(x="x", y="R2")) + 
+      p2 <- ggplot(r2_m_df, aes_string(x=x, y="R2")) + 
         # ggtitle(sprintf("%s\nTotal variance explained per %s", i, x)) +
         geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
         facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +

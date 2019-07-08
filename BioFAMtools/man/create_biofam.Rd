@@ -4,7 +4,7 @@
 \alias{create_biofam}
 \title{create a BioFAM object}
 \usage{
-create_biofam(data, samples_groups = NULL)
+create_biofam(data, groups = NULL)
 }
 \arguments{
 \item{data}{Input data can be in several formats:
@@ -19,7 +19,7 @@ create_biofam(data, samples_groups = NULL)
  Sample are stored in rows and features in columns.}
  }}
 
-\item{samples_groups}{ignore...}
+\item{groups}{ignore...}
 }
 \value{
 Returns an untrained \code{\link{BioFAModel}} object

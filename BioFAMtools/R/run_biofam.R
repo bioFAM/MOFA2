@@ -63,10 +63,10 @@ run_biofam <- function(object, outfile = NA) {
   biofam_entrypoint$set_model_options(
     factors     = object@model_options$num_factors,
     likelihoods = unname(object@model_options$likelihood),
-    spikeslab_z = object@model_options$spikeslab_z, 
-    spikeslab_w = object@model_options$spikeslab_w, 
-    ard_w       = object@model_options$ard_w, 
-    ard_z       = object@model_options$ard_z
+    spikeslab_z = object@model_options$spikeslab_factors, 
+    spikeslab_w = object@model_options$spikeslab_weights, 
+    ard_z       = object@model_options$ard_factors,
+    ard_w       = object@model_options$ard_weights 
   )
   
   # Set training options  

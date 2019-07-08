@@ -311,8 +311,8 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
     theme(
-      axis.text = element_text(size = rel(1.0), color = "black"), 
-      axis.title = element_text(size = rel(1.3), color = "black"), 
+      axis.text = element_text(size = rel(0.9), color = "black"), 
+      axis.title = element_text(size = rel(1.2), color = "black"), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5)
     )
@@ -323,9 +323,9 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   
   # Add legend for color
   if (length(unique(df$color))>1) { 
-    p <- p + guides(fill=F) + labs(color=color_name)
+    p <- p + labs(color=color_name)
   } else { 
-    p <- p + guides(color=F, fill=F) + scale_color_manual(values="black")
+    p <- p + guides(color=F) + scale_color_manual(values="black")
   }
   
   # Add legend for shape
@@ -337,7 +337,6 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   
   if (legend) {
     p <- p + theme(
-      legend.key = element_rect(fill = "white"),
       legend.text = element_text(size=rel(1.2)),
       legend.title = element_text(size=rel(1.2))
     )
@@ -352,7 +351,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   
 # Plot multiple factors as pairwise scatterplots
 .plot_multiple_factors <- function(object, factors = "all", show_missing = TRUE, dot_size = 1,
-                                   color_by = NULL, color_name = "", shape_by = NULL, shape_name = "", legend = TRUE) {
+                                   color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
   
   # Sanity checks
   if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
@@ -417,8 +416,8 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
     axis.text = element_blank()
   )
   
-  if (!legend)
-    p <- p + theme(legend.position = "none")
+  # if (!legend)
+  #   p <- p + theme(legend.position = "none")
   
   return(p)
 }
@@ -512,7 +511,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     
   # Option 1: by default group
   } else if (color_by[1] == "group") {
-    color_by <- samples_groups(object)$group_name
+    color_by <- groups(object)$group_name
     
   # Option 2: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {

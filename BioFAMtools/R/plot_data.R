@@ -376,7 +376,7 @@ plot_data_overview <- function(object, colors = NULL) {
   colnames(ovw) <- views_names(object)
 
   ovw$sample <- rownames(ovw)
-  ovw$group  <- samples_groups(object)$group
+  ovw$group  <- groups(object)$group
 
   # Melt to data.frame
   molten_ovw <- reshape2::melt(ovw, id.vars = c("sample", "group"), var=c("view"))
