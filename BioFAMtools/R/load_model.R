@@ -21,13 +21,11 @@
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, object = NULL, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE,
+load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE,
                        remove_outliers = FALSE) {
 
-  # options(stringsAsFactors = FALSE)
-
   # Create new bioFAModel object
-  if (is.null(object)) object <- new("BioFAModel")
+  object <- new("BioFAModel")
   object@status <- "trained"
   
   # Set on_disk option
