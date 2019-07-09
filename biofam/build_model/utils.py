@@ -129,19 +129,16 @@ def process_data(data, data_opts, samples_groups):
         parsed_data[m][parsed_data[m] == -2147483648] = np.nan
 
         # Removing features with no variance
-        # var = parsed_data[m].std(axis=0)
-        # if np.any(var==0.):
-        #     print("Warning: %d features(s) have zero variance, removing them..." % (var==0.).sum())
-        #     parsed_data[m].drop(parsed_data[m].columns[np.where(var==0.)], axis=1, inplace=True)
+        var = parsed_data[m].std(axis=0)
+        if np.any(var==0.):
+            print("Warning: %d features(s) in view %d have zero variance, consider removing them before training the model..." % (var==0.).sum(), m)
 
-        # Mask values
-        # if data_opts["mask"][m] > 0:
-        #     print("Masking %.1f%% of values in view '%s'..." % (data_opts["mask"][m]*100, data_opts["views_names"][m]))
-        #     parsed_data[m] = mask_data(parsed_data[m], data_opts['mask'][m])
+        # Check that there are no features full of missing values
+        tmp = np.isnan(parsed_data[m]).mean(axis=0)
+        if np.any(tmp==1.):
+            print("Error: %d features(s) in view %d are full of missing values, please remove them before training the model..." % (tmp==0.).sum(), m)
+            exit()
 
-        # if data_opts['mask_zeros'][m]:
-        #     print('Masking zeros for view ', m)
-        #     parsed_data[m][parsed_data[m] == 0] = np.nan
 
         # Centering and scaling is only appropriate for gaussian data
         if data_opts["likelihoods"][m] in ["gaussian", "zero_inflated"]:

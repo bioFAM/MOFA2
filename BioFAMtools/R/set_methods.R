@@ -524,7 +524,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
 }
 
 
-# (Hidden) General function to set dimensions names for the data
+# (Hidden) General function to set dimensions names for the data and intercepts
 .set_data_names <- function(object, entity, values) {
   
   stopifnot(entity %in% c("features", "samples"))
@@ -539,6 +539,9 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
       } else {
         colnames(object@data[[m]][[p]]) <- values[[deduced_ind]]
       }
+      
+      if (entity=="features")
+        tryCatch(names(object@intercepts[[m]][[p]]) <- values[[deduced_ind]], error = function(e) { NULL })
     }
   }
   

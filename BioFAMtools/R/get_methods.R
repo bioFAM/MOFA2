@@ -130,7 +130,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = F) {
+get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
@@ -155,8 +155,22 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   data <- lapply(1:length(data), function(m) lapply(1:length(data[[1]]), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=F]))
   data <- .name_views_and_groups(data, views, groups)
   
+  # Add feature intercepts
+  tryCatch( {
+    
+    if (add_intercept) {
+      intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
+      intercepts <- .name_views_and_groups(intercepts, views, groups)
+      
+      for (m in names(data)) {
+        for (g in names(data[[m]])) {
+          data[[m]][[g]] <- data[[m]][[g]] + intercepts[[m]][[g]]
+        }
+      }
+    } }, error = function(e) { NULL })
+
   # Convert to long data frame
-  if (as.data.frame==T) {
+  if (as.data.frame) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
         tmp <- reshape2::melt(data[[m]][[p]])
@@ -167,10 +181,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
     })
     data <- do.call(rbind, do.call(rbind, tmp))
     data[,c("view","group","feature","sample")] <- sapply(data[,c("view","group","feature","sample")], as.character)
-    
-  }# else if ((length(views)==1) && (as.data.frame==F)) {
-  #  data <- data[[views]]
-  #}
+  }
   
   return(data)
 }
@@ -189,17 +200,31 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 #' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-get_imputed_data <- function(object, views = "all", groups = "all", as.data.frame = FALSE) {
+get_imputed_data <- function(object, views = "all", groups = "all", as.data.frame = FALSE, add_intercept = TRUE) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  
+  if (length(object@imputed_data)==0) stop("imputed data not found, did you run: 'object <- impute(object)'?")
   # Get views and groups
   if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
   # Fetch data
   imputed_data <- sapply(object@imputed_data[views], function(e) e[groups], simplify = FALSE,USE.NAMES = TRUE)
+  
+  # Add feature intercepts
+  tryCatch( {
+    
+    if (add_intercept) {
+      intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
+      intercepts <- .name_views_and_groups(intercepts, views, groups)
+      
+      for (m in names(imputed_data)) {
+        for (g in names(imputed_data[[m]])) {
+          imputed_data[[m]][[g]] <- imputed_data[[m]][[g]] + intercepts[[m]][[g]]
+        }
+      }
+    } }, error = function(e) { NULL })
   
   # Convert to long data frame
   if (as.data.frame==T) {

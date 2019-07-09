@@ -52,7 +52,7 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
     # if (object@training_options$drop_factor_threshold>0.1)
     #   warning("Fraction of variance explained to drop factors is very high...")
     if (object@training_options$maxiter<=10)
-      warning("Maximum number of iterations is very small")
+      warning("Maximum number of iterations is very small\n")
     if (object@training_options$startELBO<1) object@training_options$startELBO <- 1
     if (object@training_options$freqELBO<1) object@training_options$freqELBO <- 1
     if (!object@training_options$convergence_mode %in% c("fast","medium","slow")) 
@@ -98,13 +98,13 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
-  for (m in views_names(object)) {
-    if (model_options$likelihoods[[m]] == "gaussian") {
-      for (g in groups_names(object)) {
-        object@data[[m]][[g]] <- scale(object@data[[m]][[g]], center=T, scale=F)
-      }
-    }
-  }
+  # for (m in views_names(object)) {
+  #   if (model_options$likelihoods[[m]] == "gaussian") {
+  #     for (g in groups_names(object)) {
+  #       object@data[[m]][[g]] <- scale(object@data[[m]][[g]], center=T, scale=F)
+  #     }
+  #   }
+  # }
   
   # Regress out covariates
   # object <- .regress_covariates(object, covariates)

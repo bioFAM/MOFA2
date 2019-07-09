@@ -260,7 +260,7 @@ subset_features <- function(object, view, features) {
   object@expectations$Y[[view]] <- lapply(object@expectations$Y[[view]], function(x) x[features,])
   object@expectations$Tau[[view]] <- lapply(object@expectations$Tau[[view]], function(x) x[features,])
   object@data <- lapply(object@data, function(x) sapply(x, function(y) y[features,], simplify = F, USE.NAMES = T))
-  # object@data <- object@data[,,,] 
+  object@intercepts <- lapply(object@intercepts, function(x) sapply(x, function(y) y[features], simplify = F, USE.NAMES = T))
   if (length(object@imputed_data) != 0) {
     object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
   }

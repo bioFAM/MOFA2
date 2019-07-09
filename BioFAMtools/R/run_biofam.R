@@ -45,16 +45,10 @@ run_biofam <- function(object, outfile = NA) {
   )
   
   # Set the data
-  # np <- import("numpy", convert = FALSE)
-  # od <- import("collections", convert = FALSE)
   biofam_entrypoint$set_data_matrix(
-    # data = unname(lapply(object@data, function(x) r_to_py(t(x)))),
     data = unname(lapply(object@data, function(x) lapply(x, function(y) r_to_py(t(y)) ))),
-    # data = lapply(unname(object@data), function(x) r_to_py(unname(lapply(x, function(y) np_array(t(y), dtype = np$float64) )))),
-    # samples_names_dict = r_to_py(lapply(object@data[[1]], rownames)),
-    # features_names_dict = r_to_py(lapply(object@data, function(m) colnames(m[[1]])))
-    views_names = r_to_py(as.list(names(object@data))),
-    groups_names = r_to_py(as.list(names(object@data[[1]]))),
+    views_names = r_to_py(as.list(object@data_options$views)),
+    groups_names = r_to_py(as.list(object@data_options$groups)),
     samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
     features_names = r_to_py(unname(lapply(object@data, function(x) rownames(x[[1]]))))
   )

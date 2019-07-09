@@ -21,8 +21,7 @@
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE,
-                       remove_outliers = FALSE) {
+load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, remove_outliers = FALSE) {
 
   # Create new bioFAModel object
   object <- new("BioFAModel")
@@ -48,9 +47,11 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
 
   # Load training data (as nested list of matrices)
   data <- list()
+  intercepts <- list()
   if (load_data) {
     for (m in view_names) {
       data[[m]] <- list()
+      intercepts[[m]] <- list()
       for (g in group_names) {
         if (on_disk) {
           # as DelayedArrays
@@ -58,12 +59,15 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
         } else {
           # as matrices
           data[[m]][[g]] <- h5read(file, sprintf("data/%s/%s", m, g) )
+          tryCatch(intercepts[[m]][[g]] <- as.numeric( h5read(file, sprintf("intercepts/%s/%s", m, g) ) ), error = function(e) { NULL })
+          
         }
         # Replace NaN by NA
         data[[m]][[g]][is.nan(data[[m]][[g]])] <- NA # this realised into memory, TO FIX
       }
     }
-  # Create training data (as nested list of empty matrices, with the correct dimensions)
+    
+  # Create empty training data (as nested list of empty matrices, with the correct dimensions)
   } else {
     for (m in view_names) {
       data[[m]] <- list()
@@ -86,6 +90,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # }, error = function(x) { cat("Error defining feature and sample names\n") })
 
   object@data <- data
+  object@intercepts <- intercepts
 
   #######################
   ## Load expectations ##
@@ -99,6 +104,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if ("AlphaZ" %in% node_names)
     expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
   if ("Z" %in% node_names)
+    
     expectations[["Z"]] <- h5read(file, "expectations/Z")
   if ("W" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/W")
@@ -137,7 +143,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ##############################
   ## Specify dimensionalities ##
   ##############################
-
+ 
   # Specify dimensionality of the data
   object@dimensions[["M"]] <- length(data)                           # number of views (groups of features)
   object@dimensions[["G"]] <- length(data[[1]])                      # number of groups (groups of samples)

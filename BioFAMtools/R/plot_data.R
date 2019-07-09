@@ -62,6 +62,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   } else {
     if (denoise) {
       data <- predict(object, views=view, groups=groups, factors="all")[[1]]
+      # TO-DO: ADD INTERCEPTS
     } else {
       data <- get_data(object, views=view, groups=groups)[[1]]
     }
@@ -76,7 +77,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   data <- data[,names(Z)]
   
   # Ignore samples with full missing views
-  # data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
+  data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
   
   # Define features
   if (class(features) == "numeric") {
@@ -396,7 +397,8 @@ plot_data_overview <- function(object, colors = NULL) {
   p <- ggplot(molten_ovw, aes_string(x="sample", y="view_label", fill="combi")) +
     geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
-    xlab(paste0("Samples (N=", n, ")")) + ylab("") +
+    # xlab(paste0("Samples (N=", n, ")")) + ylab("") +
+    xlab("") + ylab("") +
     guides(fill=F) + 
     facet_wrap(~group_label, scales="free_x", nrow=length(unique(molten_ovw$view_label))) +
     theme(

@@ -10,7 +10,7 @@ from biofam.core.nodes import *
 
 
 class saveModel():
-    def __init__(self, model, outfile, data, samples_groups, train_opts, model_opts, features_names, views_names, samples_names, groups_names, compression_level=9):
+    def __init__(self, model, outfile, data, intercepts, samples_groups, train_opts, model_opts, features_names, views_names, samples_names, groups_names, compression_level=9):
 
         # Check that the model is trained
         assert model.trained, "Model is not trained"        
@@ -30,6 +30,9 @@ class saveModel():
         assert len(samples_groups) == data[0].shape[0], "length of samples groups does not match the number of samples in the data"
         self.samples_groups = samples_groups
 
+        # Initialise intercepts
+        self.intercepts = intercepts
+
         # Initialise options
         self.train_opts = train_opts
         self.model_opts = model_opts
@@ -46,6 +49,7 @@ class saveModel():
         
         # Create HDF5 groups
         data_grp = self.hdf5.create_group("data")
+        intercept_grp = self.hdf5.create_group("intercepts")
         features_grp = self.hdf5.create_group("features")
         samples_grp  = self.hdf5.create_group("samples")
 
@@ -61,10 +65,13 @@ class saveModel():
             # features_grp.create_dataset(self.views_names[m], data=[str(x).encode('utf8') for x in self.features_names[m]])
             features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
 
+
         # Save data
         for m in range(len(self.data)):
-            view_subgrp = data_grp.create_group(self.views_names[m])
+            data_subgrp = data_grp.create_group(self.views_names[m])
+            intercept_subgrp = intercept_grp.create_group(self.views_names[m])
             for g in range(len(self.groups_names)):
+
                 # Subset group
                 samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
                 tmp = self.data[m][samples_idx,:]
@@ -72,7 +79,11 @@ class saveModel():
                 # Mask missing values
                 tmp[self.mask[m][samples_idx,:]] = np.nan
                 
-                view_subgrp.create_dataset(self.groups_names[g], data=tmp, compression="gzip", compression_opts=self.compression_level)
+                # Create hdf5 data set for data
+                data_subgrp.create_dataset(self.groups_names[g], data=tmp, compression="gzip", compression_opts=self.compression_level)
+                
+                # Create hdf5 data set for intercepts
+                intercept_subgrp.create_dataset(self.groups_names[g], data=self.intercepts[m][g])
 
     def saveExpectations(self, nodes="all"):
 

@@ -40,12 +40,8 @@ class entry_point(object):
 
         PARAMETERS
         ----------
-        data: two options:
-            - a dictionary where each key is the view names and the object is a numpy array or a pandas data frame
-            - a list where each element is a numpy array or a pandas data frame
-            in both cases, the dimensions of each matrix must be (samples,features)
-        samples_names_dict (optional): dictionary mapping groups names (keys) to samples names (values)
-        features_names_dict (optional): dictionary mapping views names (keys) to features names (values)
+        data: a nested list, first dimension for views, second dimension for groups.
+              The dimensions of each matrix must be (samples,features)
         """
 
         # Sanity check
@@ -104,7 +100,7 @@ class entry_point(object):
         if samples_names is None:
             print("Samples names not provided, using default naming convention:")
             print("- sample1_group1, sample2_group1, sample1_group2, ..., sampleN_groupG\n")
-            self.data_opts['samples_names'] = [ "sample%d_group%d" % (n,g) for g in range(G) for n in range(N[g]) ]
+            self.data_opts['samples_names'] = [ ["sample%d_group%d" % (n,g) for n in range(N[g])] for g in range(G) ]
         else:
             self.data_opts['samples_names']  = samples_names
 
@@ -124,6 +120,9 @@ class entry_point(object):
                 print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
         print("\n")
 
+        # Store intercepts
+        self.intercepts = [ [ np.nanmean(data[m][g],axis=0) for g in range(G)] for m in range(M) ]
+
         # Concatenate groups
         for m in range(len(data)):
             data[m] = np.concatenate(data[m])
@@ -131,70 +130,6 @@ class entry_point(object):
 
         # Process the data (center, scaling, etc.)
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
-
-    def set_data_from_files(self, inFiles, views, groups, header_rows=False, header_cols=False, delimiter=' '):
-        """ Load the data """
-
-        # TODO: sanity checks
-        # - Check that input file exists
-        # - Check that output directory exists: warning if not
-        # TODO: Verbosity, print messages
-
-        self.io_opts = {}
-
-        # I/O
-        if type(inFiles) is not list:
-            inFiles = [inFiles]
-        self.io_opts['input_files'] = inFiles
-        self.io_opts['delimiter'] = delimiter
-
-        # View names and group names (sample groups)
-        if type(views) is not list:
-            views = [views]
-        if type(groups) is not list:
-            groups = [groups]
-
-        self.io_opts['views_names'] = views
-        self.io_opts['groups_names'] = groups
-
-        # Headers
-        if header_rows is True:
-            self.io_opts['rownames'] = 0
-        else:
-            self.io_opts['rownames'] = None
-
-        if header_cols is True:
-            self.io_opts['colnames'] = 0
-        else:
-            self.io_opts['colnames'] = None
-
-        # Load observations
-        self.data_opts.update(self.io_opts)
-        # TODO reindex
-        self.data, self.samples_groups = loadData(self.data_opts)
-
-        # data frame needs reindexing if no header row
-        if not header_rows:
-            self.data[0] = self.data[0].reset_index(drop=True)
-        # save feature, sample names, sample groups
-        self.data_opts['samples_names'] = self.data[0].index
-        self.data_opts['features_names'] = [dt.columns.values for dt in self.data]
-        # TODO check that we have the right dictionary
-        # TODO check that what is used later in the code is ok for this
-        self.data_opts['samples_groups'] = self.samples_groups
-        # taking unique view and group names in the
-        ix = np.unique(self.data_opts['views_names'], return_index=True)[1]
-        self.data_opts['views_names'] = (np.array(self.data_opts['views_names'])[ix]).tolist()
-        ix = np.unique(self.data_opts['groups_names'], return_index=True)[1]
-        self.data_opts['groups_names'] = (np.array(self.data_opts['groups_names'])[ix]).tolist()
-
-        # set dimensionalities of the model
-        M = self.dimensionalities["M"] = len(set(self.io_opts['views_names']))
-        N = self.dimensionalities["N"] = self.data[0].shape[0]
-        D = self.dimensionalities["D"] = [self.data[m].shape[1] for m in range(M)]
-        self.dimensionalities["G"] = len(set(self.io_opts['groups_names']))
-
-        self.data = process_data(self.data, self.data_opts,  self.samples_groups)
 
     def set_data_df(self, data):
         """Method to input the data in a long data.frame format
@@ -242,11 +177,11 @@ class entry_point(object):
 
         # Define dimensionalities
         self.dimensionalities = {}
-        self.dimensionalities["M"] = len(self.data_opts['views_names'])
+        self.dimensionalities["M"] = M = len(self.data_opts['views_names'])
         # self.dimensionalities["N"] = len(self.data_opts['samples_names'])
-        self.dimensionalities["N"] = len(np.concatenate(self.data_opts['samples_names']))
-        self.dimensionalities["G"] = len(self.data_opts['groups_names'])
-        self.dimensionalities["D"] = [len(x) for x in self.data_opts['features_names']]
+        self.dimensionalities["N"] = N = len(np.concatenate(self.data_opts['samples_names']))
+        self.dimensionalities["G"] = G = len(self.data_opts['groups_names'])
+        self.dimensionalities["D"] = D = [len(x) for x in self.data_opts['features_names']]
 
         # Count the number of features per view and the number of samples per group
         tmp_samples = data[["sample","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["sample"].nunique()
@@ -258,8 +193,14 @@ class entry_point(object):
                 try:
                     print("Loaded group='%s' view='%s' with N=%d samples and D=%d features..." % (g, m, tmp_samples[g][m], tmp_features[g][m]) )
                 except:
-                    print("No data found for group='%s', view='%s',..." % (g, m))
+                    print("No data found for group='%s' and view='%s'..." % (g, m))
         print("\n")
+
+        # Store intercepts
+        self.intercepts = [None for m in range(M)]
+        tmp = [ len(x) for x in self.data_opts['samples_names'] ]
+        for m in range(M):
+            self.intercepts[m] = [np.nanmean(x,axis=0) for x in np.split(data_matrix[m], np.cumsum(tmp)[:-1], axis=0)]
 
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
@@ -621,6 +562,7 @@ class entry_point(object):
           model = self.model,
           outfile = outfile,
           data = self.data,
+          intercepts = self.intercepts,
           samples_groups = self.data_opts['samples_groups'],
           train_opts = self.train_opts,
           model_opts = self.model_opts,

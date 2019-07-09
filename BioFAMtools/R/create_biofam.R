@@ -29,7 +29,7 @@ create_biofam <- function(data, groups = NULL) {
   } else if (is(data, "data.frame")) {
     
     message("Creating BioFAM object from a data.frame...")
-    object <- .create_biofam_from_df(data)
+    object <- .create_biofam_from_df(as.data.frame(data))
     
   # Creating BioFAM object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
@@ -87,18 +87,24 @@ create_biofam <- function(data, groups = NULL) {
     df$feature_group <- factor(df$feature_group)
   }
   
-  # Create matrix from data.frame
-  data_matrix <- lapply(split(df,df$feature_group), function(x)
-    lapply(split(droplevels.data.frame(x),x$sample_group), function(y) {
-        y <- droplevels.data.frame(y)
-        if (ncol(y)==0) {
-          matrix(NA, ncol=length(levels(y$sample)), nrow=length(levels(y$feature)))
-        } else {
-          tmp <- .df_to_matrix( reshape2::dcast(y, feature~group, value.var="value", fill=NA, drop=TRUE) )
-        }
+  data_matrix <- list()
+  for (m in levels(df$feature_group)) {
+    data_matrix[[m]] <- list()
+    features <- as.character( unique( df[df$feature_group==m,"feature"] ) )
+    for (g in levels(df$sample_group)) {
+      samples <- as.character( unique( df[df$sample_group==g,"sample"] ) )
+      Y <- df[df$feature_group==m & df$sample_group==g,]
+      Y$sample <- factor(Y$sample, levels=samples)
+      Y$feature <- factor(Y$feature, levels=features)
+      if (nrow(Y)==0) {
+        data_matrix[[m]][[g]] <- matrix(as.numeric(NA), ncol=length(samples), nrow=length(features))
+        rownames(data_matrix[[m]][[g]]) <- features
+        colnames(data_matrix[[m]][[g]]) <- samples
+      } else {
+        data_matrix[[m]][[g]] <- .df_to_matrix( reshape2::dcast(Y, feature~sample, value.var="value", fill=NA, drop=FALSE) )
       }
-    )
-  )
+    }
+  }
   
   # Create MOFA object
   object <- new("BioFAModel")
@@ -113,10 +119,10 @@ create_biofam <- function(data, groups = NULL) {
   object@dimensions[["K"]] <- 0
   
   # Set view names
-  views_names(object) <- as.character(unique(data$feature_group))
+  views_names(object) <- levels(df$feature_group)
   
-  # Set sample group names
-  groups_names(object) <- as.character(unique(data$sample_group))
+  # Set group names
+  groups_names(object) <- levels(df$sample_group)
   
   return(object)
 }
@@ -207,7 +213,6 @@ create_biofam <- function(data, groups = NULL) {
   }
   
   # If number of rows are not identical, fill missing values
-  # if (!all.equal(sapply(data,nrow)))
   samples <- Reduce("union",sapply(data,colnames))
   data <- sapply(data, function(x) {
     aug_x <- matrix(NA, nrow=nrow(x), ncol=length(samples))

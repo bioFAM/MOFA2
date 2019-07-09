@@ -8,8 +8,9 @@
 #' The \code{BioFAModel} is an S4 class used to store all relevant data to analyse a BioFAModel
 #' @section Slots:
 #'  \itemize{
-#'    \item{\code{data}:}{ The input data }
-#'    \item{\code{samples_metadata}:}{ Samples metadata }
+#'    \item{\code{data}:}{ The input data. }
+#'    \item{\code{intercepts}:}{ Feature intercepts. }
+#'    \item{\code{samples_metadata}:}{ Samples metadata. }
 #'    \item{\code{features_metadata}:}{ Features metadata }
 #'    \item{\code{imputed_data}:}{ The imputed data. }
 #'    \item{\code{expectations}:}{ expected values of the factors and the loadings. }
@@ -35,6 +36,7 @@
 setClass("BioFAModel", 
 		slots=c(
 		  data                = "list",
+		  intercepts                = "list",
 			imputed_data        = "list",
 			samples_metadata    = "list",
 			features_metadata   = "list",
