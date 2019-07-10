@@ -398,7 +398,6 @@ plot_data_overview <- function(object, colors = NULL) {
     geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
     # xlab(paste0("Samples (N=", n, ")")) + ylab("") +
-    xlab("") + ylab("") +
     guides(fill=F) + 
     facet_wrap(~group_label, scales="free_x", nrow=length(unique(molten_ovw$view_label))) +
     theme(
@@ -406,6 +405,7 @@ plot_data_overview <- function(object, colors = NULL) {
       text = element_text(size=14),
       axis.line = element_blank(),
       axis.ticks = element_blank(),
+      axis.title = element_blank(),
       axis.text.x = element_blank(),
       axis.text.y = element_text(color="black"),
       strip.background = element_blank(),

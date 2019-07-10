@@ -142,6 +142,8 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   # Get features
   if (class(features) == "list") {
     stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
+    stopifnot(length(features)==length(views))
+    if (is.null(names(features))) names(features) <- views
   } else {
     if (paste0(features, collapse="") == "all") { 
       features <- features_names(object)[views]
@@ -164,7 +166,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
       
       for (m in names(data)) {
         for (g in names(data[[m]])) {
-          data[[m]][[g]] <- data[[m]][[g]] + intercepts[[m]][[g]]
+          data[[m]][[g]] <- data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
         }
       }
     } }, error = function(e) { NULL })

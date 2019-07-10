@@ -81,7 +81,7 @@ class saveModel():
                 
                 # Create hdf5 data set for data
                 data_subgrp.create_dataset(self.groups_names[g], data=tmp, compression="gzip", compression_opts=self.compression_level)
-                
+                import pdb; pdb.set_trace()
                 # Create hdf5 data set for intercepts
                 intercept_subgrp.create_dataset(self.groups_names[g], data=self.intercepts[m][g])
 

@@ -131,17 +131,17 @@ def process_data(data, data_opts, samples_groups):
         # Removing features with no variance
         var = parsed_data[m].std(axis=0)
         if np.any(var==0.):
-            print("Warning: %d features(s) in view %d have zero variance, consider removing them before training the model..." % (var==0.).sum(), m)
+            print("Warning: %d features(s) in view %d have zero variance, consider removing them before training the model..." % ((var==0.).sum(), m))
 
         # Check that there are no features full of missing values
         tmp = np.isnan(parsed_data[m]).mean(axis=0)
         if np.any(tmp==1.):
-            print("Error: %d features(s) in view %d are full of missing values, please remove them before training the model..." % (tmp==0.).sum(), m)
+            print("Error: %d features(s) in view %d are full of missing values, please remove them before training the model..." % ((tmp==0.).sum(), m))
             exit()
 
 
         # Centering and scaling is only appropriate for gaussian data
-        if data_opts["likelihoods"][m] in ["gaussian", "zero_inflated"]:
+        if data_opts["likelihoods"][m] in ["gaussian"]:
 
             # mask zeros if zero inflated likelihood
             # if data_opts["likelihoods"][m] == "zero_inflated":
@@ -167,8 +167,8 @@ def process_data(data, data_opts, samples_groups):
                     parsed_data[m][filt,:] /= np.nanstd(parsed_data[m][filt,:])
 
             # reset zeros if zero infalted likelihood
-            if data_opts["likelihoods"][m] == "zero_inflated":
-                parsed_data[m][zeros_mask] = 0.
+            # if data_opts["likelihoods"][m] == "zero_inflated":
+            #     parsed_data[m][zeros_mask] = 0.
 
     return parsed_data
 
