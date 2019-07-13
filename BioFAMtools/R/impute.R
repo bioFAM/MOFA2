@@ -34,7 +34,7 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
 
   # Replace NAs with predicted values
   # TO-DO: HOW TO REPLACE  VALUES WITH DELAYEDARRAYS??
-  imputed <- get_data(object, views=views, groups=groups)
+  imputed <- get_data(object, views=views, groups=groups, add_intercept = FALSE)
   for (m in views) {
     for (g in groups) {
       non_observed <- which(is.na(imputed[[m]][[g]]), arr.ind = T)

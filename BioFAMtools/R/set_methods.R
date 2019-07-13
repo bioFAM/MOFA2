@@ -300,7 +300,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             
             # Set view names in model options
             if (length(object@model_options$likelihoods)>0)
-              object@model_options$likelihoods <- value
+              names(object@model_options$likelihoods) <- value
           
             
             # Set view names in features_metadata 

@@ -39,7 +39,7 @@ subset_groups <- function(object, groups) {
   object@samples_metadata$group_name <- factor(object@samples_metadata$group_name, levels=groups)
   
   # Re-order samples
-  samples <- unlist(lapply(object@data[[1]],colnames))
+  samples <- unname(unlist(lapply(object@data[[1]],colnames)))
   object@samples_metadata <- object@samples_metadata[match(samples, object@samples_metadata$sample_name),]
   
   # Sanity checks
@@ -48,7 +48,8 @@ subset_groups <- function(object, groups) {
   stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Y,colnames)))
   
   # Update groups names
-  groups_names(object) <- groups
+  # groups_names(object) <- groups
+  object@data_options$groups <- groups
   
   # Re-compute variance explained
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)

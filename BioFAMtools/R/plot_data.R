@@ -204,9 +204,12 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   }
   
   # NOTE: By default concatenate all the groups
-  Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
-  Z <- do.call(rbind, Z)[,1]
+  # Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
+  # Z <- do.call(rbind, Z)[,1]
   # Z <- Z[!is.na(Z)]
+  Z <- get_factors(object, factors=factor, groups = groups, as.data.frame=T)
+  Z <- Z[,c("sample","value")]
+  colnames(Z) <- c("sample","x")
   
   # Get features
   if (sign=="all") {
@@ -232,62 +235,20 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   W <- W[features]
   Y <- Y[features,,drop=F]
   
+  # Set group/color/shape
+  if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
+  if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
+  color_by <- .set_colorby(object, color_by)
+  shape_by <- .set_shapeby(object, shape_by)
   
-  # Set color
-  color_legend <- TRUE
-  if (!is.null(color_by)) {
-    
-    # It is the name of a covariate or a feature in the data
-    if (length(color_by) == 1 & is.character(color_by)) {
-      if(color_name=="") color_name <- color_by
-      data <- get_data(object)
-      features_names <- lapply(data, rownames)
-      if (color_by %in% Reduce(union,features_names)) {
-        viewidx <- which(sapply(features_names, function(vnm) color_by %in% vnm))
-        color_by <- data[[viewidx]][color_by,]
-      }
-      
-    # It is a vector of length N
-    } else if (length(color_by) > 1) {
-      stopifnot(length(color_by) == ncol(Y))
-      # color_by <- as.factor(color_by)
-    } else {
-      stop("'color_by' was specified but it was not recognised, please read the documentation")
-    }
-  } else {
-    color_by <- rep("1", ncol(Y))
-    color_legend <- FALSE
-  }
-  
-  # Set shape
-  shape_legend <- TRUE
-  if (!is.null(shape_by)) {
-    # It is the name of a covariate 
-    if (length(shape_by) == 1 & is.character(shape_by)) {
-      if(shape_name=="") shape_name <- shape_by
-      data <- get_data(object)
-      features_names <- lapply(data, rownames)
-      if (shape_by %in% Reduce(union,features_names)) {
-        viewidx <- which(sapply(features_names, function(vnm) shape_by %in% vnm))
-        shape_by <- data[[viewidx]][shape_by,]
-      }
-      
-    # It is a vector of length N
-    } else if (length(shape_by) > 1) {
-      stopifnot(length(shape_by) == ncol(Y))
-    } else {
-      stop("'shape_by' was specified but it was not recognised, please read the documentation")
-    }
-  } else {
-    shape_by <- rep("1", ncol(Y))
-    shape_legend <- F
-  }
-  
+  # Merge factor values with color and shape information
+  df1 <- merge(Z, color_by, by="sample")
+  df1 <- merge(df1, shape_by, by="sample")
   
   # Create data frame 
-  df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = F)
+  # df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = F)
   df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = T)
-  df <- dplyr::left_join(df1, df2, by = "sample")
+  df <- left_join(df1, df2, by = "sample")
   
   #remove values missing color or shape annotation
   # if(!showMissing) df <- df[!(is.nan(df$shape_by) & !(is.nan(df$color_by))]
@@ -308,24 +269,25 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (add_lm) {
     p <- p +
       stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
-      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size)
+      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size, color="black")
   }
   
   # Add legend for color
-  if (length(unique(df$color_by))==1)
-    p <- p + scale_colour_manual(values="black")
-  
-  if (color_legend) { 
-    p <- p + labs(color = color_name) 
-  } else { 
-    p <- p + guides(color = FALSE)
+  if (length(unique(df$color_by))>1) {
+    if (color_legend) { 
+      p <- p + labs(color = color_name) 
+    } else { 
+      p <- p + guides(color = FALSE)
+    }
+  } else {
+    p <- p + guides(color = FALSE) + scale_colour_manual(values="black")
   }
   
   # Add legend for shape
-  if (shape_legend) { 
-    p <- p + labs(shape = shape_name) 
-  }  else { 
-    p <- p + guides(shape = FALSE) 
+  if (length(unique(df$shape))>1 & shape_legend) { 
+    p <- p + labs(shape=shape_name)
+  } else { 
+    p <- p + guides(shape=F) 
   }
   
   return(p)
@@ -517,3 +479,104 @@ biofam   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x 
   paste(vals, collapse = collapse)
 }
 
+
+# (Hidden) function to define the color
+.set_colorby <- function(object, color_by) {
+  
+  # Option 0: no color
+  if (is.null(color_by)) {
+    color_by <- rep("1",sum(object@dimensions[["N"]]))
+    
+    # Option 1: by default group
+  } else if (color_by[1] == "group") {
+    color_by <- groups(object)$group_name
+    
+    # Option 2: by a feature present in the training data    
+  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
+    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
+    features_names <- lapply(data, rownames)
+    viewidx <- which(sapply(features_names, function(x) color_by %in% x))
+    color_by <- data[[viewidx]][color_by,]
+    
+    # Option 3: by a metadata column in object@samples$metadata
+  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+    color_by <- samples_metadata(object)[,color_by]
+    
+    # Option 4: input is a data.frame with columns (sample, color)
+  } else if (is(color_by, "data.frame")) {
+    stopifnot(all(colnames(color_by) %in% c("sample", "color")))
+    stopifnot(all(unique(color_by$sample) %in% unlist(samples_names(object))))
+    
+    # Option 5: color_by is a vector of length N
+  } else if (length(color_by) > 1) {
+    stopifnot(length(color_by) == sum(get_dimensions(object)$N))
+    
+    # Option not recognised
+  } else {
+    stop("'color_by' was specified but it was not recognised, please read the documentation")
+  }
+  
+  # Create data.frame with columns (sample,color)
+  if (!is(color_by,"data.frame")) {
+    df = data.frame(
+      sample = unlist(samples_names(object)),
+      color_by = color_by,
+      stringsAsFactors = F
+    )
+  }
+  if (length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
+  
+  return(df)
+}
+
+
+# (Hidden) function to define the shape
+.set_shapeby <- function(object, shape_by) {
+  
+  # Option 0: no color
+  if (is.null(shape_by)) {
+    shape_by <- rep("1",sum(object@dimensions[["N"]]))
+    
+    # Option 1: by default group
+  } else if (shape_by[1] == "group") {
+    shape_by = c()
+    for (group in names(samples_names(object))){
+      shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
+    }
+    
+    # Option 2: by a feature present in the training data    
+  } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
+    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
+    features_names <- lapply(data, rownames)
+    viewidx <- which(sapply(features_names, function(x) shape_by %in% x))
+    shape_by <- data[[viewidx]][shape_by,]
+    
+    # Option 3: input is a data.frame with columns (sample,color)
+  } else if (is(shape_by,"data.frame")) {
+    stopifnot(all(colnames(shape_by) %in% c("sample","color")))
+    stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(object))))
+    
+    # Option 4: by a metadata column in object@samples$metadata
+  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
+    shape_by <- samples_metadata(object)[,shape_by]
+    
+    # Option 5: shape_by is a vector of length N
+  } else if (length(shape_by) > 1) {
+    stopifnot(length(shape_by) == sum(object@dimensions[["N"]]))
+    
+    # Option not recognised
+  } else {
+    stop("'shape_by' was specified but it was not recognised, please read the documentation")
+  }
+  
+  # Create data.frame with columns (sample,shape)
+  if (!is(shape_by,"data.frame")) {
+    df = data.frame(
+      sample = unlist(samples_names(object)),
+      shape_by = as.factor(shape_by),
+      stringsAsFactors = FALSE
+    )
+  }
+  
+  return(df)
+}

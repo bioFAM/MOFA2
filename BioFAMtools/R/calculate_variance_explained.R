@@ -49,7 +49,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   #   }
   # }
 
-  Y <- .name_views_and_groups(Y, views, groups)
+  # Y <- .name_views_and_groups(Y, views, groups)
 
   # Calculate coefficient of determination per group and view
   r2_m <- tryCatch({

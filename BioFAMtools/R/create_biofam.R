@@ -112,10 +112,10 @@ create_biofam <- function(data, groups = NULL) {
   object@data <- data_matrix
   
   # Set dimensionalities
-  object@dimensions[["M"]] <- length(unique(df$feature_group))
-  object@dimensions[["D"]] <- sapply(unique(df$feature_group), function(m) length(unique(df[df$feature_group==m,]$feature)))
-  object@dimensions[["G"]] <- length(unique(df$sample_group))
-  object@dimensions[["N"]] <- sapply(unique(df$sample_group), function(p) length(unique(df[df$sample_group==p,]$sample)))
+  object@dimensions[["M"]] <- length(levels(df$feature_group))
+  object@dimensions[["D"]] <- sapply(levels(df$feature_group), function(m) length(unique(df[df$feature_group==m,]$feature)))
+  object@dimensions[["G"]] <- length(levels(df$sample_group))
+  object@dimensions[["N"]] <- sapply(levels(df$sample_group), function(g) length(unique(df[df$sample_group==g,]$sample)))
   object@dimensions[["K"]] <- 0
   
   # Set view names

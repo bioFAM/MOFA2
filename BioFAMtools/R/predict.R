@@ -35,7 +35,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
   if (paste0(factors, collapse="") == "all") { 
     factors <- factors_names(object) 
   } else if (is.numeric(factors)) {
-      factors <- factors_names(object)[factors]
+    factors <- factors_names(object)[factors]
   } else { 
     stopifnot(all(factors %in% factors_names(object))) 
   }
@@ -57,8 +57,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
       pred <- t(Z[[g]] %*% t(W[[m]])) 
       
       # make predicitons based on underlying likelihood
-      lks <- object@model_options$likelihood
-      names(lks) <- views_names(object)
+      lks <- object@model_options$likelihoods
 
       if (type != "link") {
         lk <- lks[m]

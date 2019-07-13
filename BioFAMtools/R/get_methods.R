@@ -207,12 +207,13 @@ get_imputed_data <- function(object, views = "all", groups = "all", as.data.fram
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   if (length(object@imputed_data)==0) stop("imputed data not found, did you run: 'object <- impute(object)'?")
+  
   # Get views and groups
   if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
   # Fetch data
-  imputed_data <- sapply(object@imputed_data[views], function(e) e[groups], simplify = FALSE,USE.NAMES = TRUE)
+  imputed_data <- sapply(object@imputed_data[views], function(e) e[groups], simplify = FALSE, USE.NAMES = TRUE)
   
   # Add feature intercepts
   tryCatch( {
@@ -229,16 +230,16 @@ get_imputed_data <- function(object, views = "all", groups = "all", as.data.fram
     } }, error = function(e) { NULL })
   
   # Convert to long data frame
-  if (as.data.frame==T) {
+  if (as.data.frame) {
     tmp <- lapply(views, function(m) { 
-      lapply(groups, function(h) { 
-        tmp <- reshape2::melt(imputed_data[[m]][[h]])
+      lapply(groups, function(g) { 
+        tmp <- reshape2::melt(imputed_data[[m]][[g]])
         colnames(tmp) <- c("feature", "sample", "value")
-        tmp <- cbind(view = m, group = h, tmp)
+        tmp <- cbind(view = m, group = g, tmp)
         return(tmp) 
       })
     })
-    imputed_data <- do.call(rbind, tmp)
+    imputed_data <- do.call(rbind, do.call(rbind, tmp))
     imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.character)
   }
   
@@ -310,11 +311,11 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     # Y node
     else if (variable=="Y") {
       tmp <- lapply(names(exp), function(m) {
-        tmp <- lapply(names(exp[[m]]), function(h) {
-          tmp <- reshape2::melt(exp[[m]][[h]])
+        tmp <- lapply(names(exp[[m]]), function(g) {
+          tmp <- reshape2::melt(exp[[m]][[g]])
           colnames(tmp) <- c("sample", "feature", "value")
           tmp$view <- m
-          tmp$group <- h
+          tmp$group <- g
           tmp[c("view","group","feature","factor")] <- sapply(tmp[c("view","group","feature","factor")], as.character)
           return(tmp) 
         })
