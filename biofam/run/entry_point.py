@@ -617,7 +617,7 @@ def mofa(adata, groups_label=None, use_raw=False,
     ent.set_data_options(lik, center_features_per_group=True, scale_views=False)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
     ent.set_model_options(ard_z=True, spikeslab_w=True, spikeslab_z=True, ard_w=True, factors=n_factors, likelihoods=lik)
-    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=False, quiet=True)
+    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
     ent.run()
