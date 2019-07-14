@@ -240,7 +240,7 @@ class entry_point(object):
 
         # Define groups and samples names
         if groups_label is None:
-            self.data_opts['groups_names'] = "group1"
+            self.data_opts['groups_names'] = ["group1"]
             self.data_opts['samples_names'] = adata.obs.index.values.tolist()
             self.data_opts['samples_groups'] = ["group1"] * N
         else:
@@ -253,10 +253,19 @@ class entry_point(object):
             for g in range(G):
                 print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
         print("\n")
+
+
+        # Store intercepts
+        self.intercepts = [None]
+        tmp = [ len(x) for x in self.data_opts['samples_names'] ]
+
         # Process the data (center, scaling, etc.)
         if use_raw:
-            self.data = process_data([np.array(adata.raw[:,adata.var_names].X.todense())], self.data_opts, self.data_opts['samples_groups'])
+            adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
+            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(adata_raw_dense, np.cumsum(tmp)[:-1], axis=0)]
+            self.data = process_data([adata_raw_dense], self.data_opts, self.data_opts['samples_groups'])
         else:
+            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(adata.X, np.cumsum(tmp)[:-1], axis=0)]
             self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_loom(self, loom, groups_label=None, layer=None):
@@ -294,7 +303,7 @@ class entry_point(object):
 
         # Define groups and samples names
         if groups_label is None:
-            self.data_opts['groups_names'] = "group1"
+            self.data_opts['groups_names'] = ["group1"]
             self.data_opts['samples_names'] = loom.ca.CellID
             self.data_opts['samples_groups'] = ["group1"] * N
         else:
@@ -308,10 +317,16 @@ class entry_point(object):
                 print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
         print("\n")
 
+        # Store intercepts
+        self.intercepts = [None]
+        tmp = [ len(x) for x in self.data_opts['samples_names'] ]
+
         # Process the data (center, scaling, etc.)
         if layer is not None:
+            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(loom.layers[layer], np.cumsum(tmp)[:-1], axis=0)]
             self.data = process_data([loom.layers[layer]], self.data_opts, self.data_opts['samples_groups'])
         else:
+            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(loom[:,:], np.cumsum(tmp)[:-1], axis=0)]
             self.data = process_data([loom[:,:]], self.data_opts, self.data_opts['samples_groups'])
 
     def set_train_options(self,
