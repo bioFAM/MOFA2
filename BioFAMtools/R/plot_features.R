@@ -25,24 +25,24 @@ plot_weights_signature <- function(object, factors = "all", n_top = 10, ...) {
 
 
   df %>% 
-  	ggplot(., aes(x = feature, y = value)) + 
-  		geom_bar(stat = 'identity') + 
-  		facet_grid(factor ~ view, ...) +
-  		ylab("Feature loading") +
-	    theme(
-	        strip.background = element_blank(),
-	        panel.background = element_blank(),
-	        panel.border = element_blank(),
-	        panel.grid.minor = element_blank(),
-	        panel.grid.major = element_blank(),
-	        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-	        axis.title.y = element_text(size=18),
-	        axis.text.y = element_text(size=12),
-	        legend.text=element_text(size=14),
+    ggplot(., aes(x = feature, y = value)) + 
+      geom_bar(stat = 'identity') + 
+      facet_grid(factor ~ view, ...) +
+      ylab("Feature loading") +
+      theme(
+          strip.background = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          axis.title.y = element_text(size=18),
+          axis.text.y = element_text(size=12),
+          legend.text=element_text(size=14),
 
-	        strip.text.x = element_text(size = 12),
-	        strip.text.y = element_text(angle = 0)
-	    )
+          strip.text.x = element_text(size = 12),
+          strip.text.y = element_text(angle = 0)
+      )
 }
 
 
@@ -56,7 +56,7 @@ plot_weights_signature <- function(object, factors = "all", n_top = 10, ...) {
 #' @import ggplot2
 #' @export
 plot_features <- function(object, views = "all", groups = "all", factors = "all", 
-						  n_top = 10, ...) {
+              n_top = 10, ...) {
   
   W <- get_weights(object, factors = factors, as.data.frame = TRUE)
 
@@ -65,9 +65,9 @@ plot_features <- function(object, views = "all", groups = "all", factors = "all"
   # Select relevant features in data
   data <- get_data(object, views = views, groups = groups, as.data.frame = TRUE)
   # data <- lapply(data, function(m) {
-  # 	lapply(m, function(g) {
-  # 		g[rownames(g) %in% top_features,]
-  # 	})
+  #   lapply(m, function(g) {
+  #     g[rownames(g) %in% top_features,]
+  #   })
   # })
   data <- data[data$feature %in% top_features,]
 
@@ -76,27 +76,27 @@ plot_features <- function(object, views = "all", groups = "all", factors = "all"
 
   message(paste0("Rendering ", length(top_features), " features across the dataset, this might take some time..."))
   data %>% 
-  	ggplot(., aes(x = sample, y = value)) + 
-  		geom_bar(aes(fill = group), stat = 'identity') + 
-  		facet_grid(feature ~ group, ...) +
-	    theme(
-	        strip.background = element_blank(),
-	        panel.background = element_blank(),
-	        panel.border = element_blank(),
+    ggplot(., aes(x = sample, y = value)) + 
+      geom_bar(aes(fill = group), stat = 'identity') + 
+      facet_grid(feature ~ group, ...) +
+      theme(
+          strip.background = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
 
-	        panel.grid.minor = element_blank(),
-	        panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
 
-	        # Remove x axis ticks and labels
-	        axis.title.x = element_blank(),
-        	axis.text.x = element_blank(),
-        	axis.ticks.x = element_blank(),
+          # Remove x axis ticks and labels
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
 
-	        axis.title.y = element_text(size=18),
-	        axis.text.y = element_text(size = 12),
-	        legend.text = element_text(size=14),
+          axis.title.y = element_text(size=18),
+          axis.text.y = element_text(size = 12),
+          legend.text = element_text(size=14),
 
-	        strip.text.x = element_text(size = 12),
-	        strip.text.y = element_text(angle = 0)
-	    )
+          strip.text.x = element_text(size = 12),
+          strip.text.y = element_text(angle = 0)
+      )
 }
