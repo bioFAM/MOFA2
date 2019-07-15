@@ -64,7 +64,7 @@ create_biofam <- function(data, groups = NULL) {
 .create_biofam_from_df <- function(df) {
   
   # Quality controls
-  stopifnot(all(colnames(df) %in% (c("sample","feature","value","sample_group","feature_group"))))
+  stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))
   stopifnot(all(is.numeric(df$value)))
   
   # Convert 'sample' and 'feature' columns to factors
@@ -73,27 +73,27 @@ create_biofam <- function(data, groups = NULL) {
   if (!is.factor(df$feature))
     df$feature <- as.factor(df$feature)
   
-  # Convert 'sample_group' columns to factors
-  if (!"sample_group" %in% colnames(df)) {
-    df$sample_group <- factor("sample_group1")
+  # Convert 'group' columns to factors
+  if (!"group" %in% colnames(df)) {
+    df$group <- factor("group1")
   } else {
-    df$sample_group <- factor(df$sample_group)
+    df$group <- factor(df$group)
   }
   
-  # Convert 'feature_group' columns to factors
-  if (!"feature_group" %in% colnames(df)) {
-    df$feature_group <- factor("feature_group1")
+  # Convert 'view' columns to factors
+  if (!"view" %in% colnames(df)) {
+    df$view <- factor("view1")
   } else {
-    df$feature_group <- factor(df$feature_group)
+    df$view <- factor(df$view)
   }
   
   data_matrix <- list()
-  for (m in levels(df$feature_group)) {
+  for (m in levels(df$view)) {
     data_matrix[[m]] <- list()
-    features <- as.character( unique( df[df$feature_group==m,"feature"] ) )
-    for (g in levels(df$sample_group)) {
-      samples <- as.character( unique( df[df$sample_group==g,"sample"] ) )
-      Y <- df[df$feature_group==m & df$sample_group==g,]
+    features <- as.character( unique( df[df$view==m,"feature"] ) )
+    for (g in levels(df$group)) {
+      samples <- as.character( unique( df[df$group==g,"sample"] ) )
+      Y <- df[df$view==m & df$group==g,]
       Y$sample <- factor(Y$sample, levels=samples)
       Y$feature <- factor(Y$feature, levels=features)
       if (nrow(Y)==0) {
@@ -112,17 +112,17 @@ create_biofam <- function(data, groups = NULL) {
   object@data <- data_matrix
   
   # Set dimensionalities
-  object@dimensions[["M"]] <- length(levels(df$feature_group))
-  object@dimensions[["D"]] <- sapply(levels(df$feature_group), function(m) length(unique(df[df$feature_group==m,]$feature)))
-  object@dimensions[["G"]] <- length(levels(df$sample_group))
-  object@dimensions[["N"]] <- sapply(levels(df$sample_group), function(g) length(unique(df[df$sample_group==g,]$sample)))
+  object@dimensions[["M"]] <- length(levels(df$view))
+  object@dimensions[["D"]] <- sapply(levels(df$view), function(m) length(unique(df[df$view==m,]$feature)))
+  object@dimensions[["G"]] <- length(levels(df$group))
+  object@dimensions[["N"]] <- sapply(levels(df$group), function(g) length(unique(df[df$group==g,]$sample)))
   object@dimensions[["K"]] <- 0
   
   # Set view names
-  views_names(object) <- levels(df$feature_group)
+  views_names(object) <- levels(df$view)
   
   # Set group names
-  groups_names(object) <- levels(df$sample_group)
+  groups_names(object) <- levels(df$group)
   
   return(object)
 }
