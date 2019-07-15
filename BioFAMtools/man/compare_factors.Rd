@@ -4,15 +4,14 @@
 \alias{compare_factors}
 \title{Plot the robustness of the latent factors across diferent trials}
 \usage{
-compare_factors(models, comparison = "all", show_rownames = FALSE,
-  show_colnames = FALSE, ...)
+compare_factors(models, ...)
 }
 \arguments{
 \item{models}{a list containing \code{\link{BioFAModel}} objects.}
 
-\item{comparison}{tye of comparison, either 'pairwise' or 'all'}
-
 \item{...}{extra arguments passed to pheatmap}
+
+\item{comparison}{tye of comparison, either 'pairwise' or 'all'}
 }
 \value{
 Plots a heatmap of correlation of Latent Factors in all models when 'comparison' is 'all'.
