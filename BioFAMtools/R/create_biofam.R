@@ -49,11 +49,19 @@ create_biofam <- function(data, groups = NULL) {
   
   # Create sample metadata
   tmp <- data.frame(
-    sample_name = unlist(lapply(object@data[[1]],colnames)),
+    sample_name = unname(unlist(lapply(object@data[[1]], colnames))),
     group_name = unlist(lapply(1:object@dimensions$G, function(x) rep(groups_names(object)[[x]], object@dimensions$N[[x]]) )),
     stringsAsFactors = FALSE
   )
   samples_metadata(object) <- tmp
+
+  # Create features metadata
+  tmp <- data.frame(
+    feature_name = unname(unlist(lapply(object@data[[1]], rownames))),
+    view_name = unlist(lapply(1:object@dimensions$M, function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
+    stringsAsFactors = FALSE
+  )
+  features_metadata(object) <- tmp
   
   return(object)
 }
@@ -129,7 +137,6 @@ create_biofam <- function(data, groups = NULL) {
 
 # (Hidden) function to initialise a BioFAModel object using a Seurat object
 .create_biofam_from_seurat <- function(srt, groups, assay = "RNA") {
-  stop("TO UPDATE, SAMPLE AS COLUMNS, FEATURES AS ROWS")
   if (is(groups, 'character') && (length(groups) == 1)) {
     if (!(groups %in% colnames(srt@meta.data)))
       stop(paste0(groups, " is not found in the Seurat@meta.data.\n",
@@ -152,9 +159,9 @@ create_biofam <- function(data, groups = NULL) {
   
   # Define dimensions
   object@dimensions[["M"]] <- 1
-  object@dimensions[["D"]] <- ncol(data_matrices[[1]][[1]])
+  object@dimensions[["D"]] <- nrow(data_matrices[[1]][[1]])
   object@dimensions[["G"]] <- length(data_matrices[[1]])
-  object@dimensions[["N"]] <- sapply(data_matrices[[1]], function(m) nrow(m))
+  object@dimensions[["N"]] <- sapply(data_matrices[[1]], function(m) ncol(m))
   object@dimensions[["K"]] <- 0
 
   # Set views & groups names
@@ -185,9 +192,9 @@ create_biofam <- function(data, groups = NULL) {
     # If group name is NA, it has to be treated separately
     # due to the way R handles NAs and equal signs
     if (is.na(g)) {
-      t(GetAssayData(object = srt, assay = assay, slot = "data")[,is.na(groups)])
+      GetAssayData(object = srt, assay = assay, slot = "data")[,is.na(groups)]
     } else {
-      BiocGenerics::t(GetAssayData(object = srt, assay = assay, slot = "data")[,which(groups == g)])
+      GetAssayData(object = srt, assay = assay, slot = "data")[,which(groups == g)]
     }
   })
   names(tmp) <- groups_names
