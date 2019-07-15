@@ -248,7 +248,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
                             dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
   
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # If plotting one or multiple factors, re-direct to other functions 
   if (length(unique(factors)) == 1) {
@@ -355,7 +355,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
                                    color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
   
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factors
   if (is.numeric(factors)) {
@@ -443,7 +443,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
 plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Fetch factors
   Z <- get_factors(object)

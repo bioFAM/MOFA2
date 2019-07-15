@@ -89,7 +89,7 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
                    # Modify sample names in the sample metadata
                    object@samples_metadata$sample_name <- unlist(value, use.names = FALSE)
                    object@samples_metadata$group_name  <- as.factor( value_groups )
-                   if (class(object@samples_metadata) == "list") {
+                   if (is(object@samples_metadata, "list")) {
                     object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors=FALSE)
                    }
                    
@@ -184,7 +184,7 @@ setReplaceMethod("features_names", signature(object="BioFAModel", value="list"),
                    object@features_metadata$feature_name <- unlist(value, use.names = FALSE)
                    object@features_metadata$view_name <- value_groups
 
-                   if (class(object@features_metadata) == "list") {
+                   if (is(object@features_metadata, "list")) {
                     object@features_metadata <- data.frame(object@features_metadata, stringsAsFactors = FALSE)
                    }
                    
@@ -301,7 +301,7 @@ setMethod("views_names<-", signature(object="BioFAModel", value="character"),
             # Set view names in expectations
             for (node in names(object@expectations)) {
               if (node %in% nodes_types$multiview_nodes | node %in% nodes_types$twodim_nodes) {
-                if (class(object@expectations[[node]]) == "list" & length(object@expectations[[node]]) == object@dimensions["M"]) {
+                if (is(object@expectations[[node]], "list") & length(object@expectations[[node]]) == object@dimensions["M"]) {
                   names(object@expectations[[node]]) <- value 
                 }
               }
@@ -374,7 +374,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             # Set sample group names in expectations
             for (node in nodes_types$multigroup_nodes) {
               if (node %in% names(object@expectations)) {
-                if (class(object@expectations[[node]])=="list" & length(object@expectations[[node]])==object@dimensions["G"]) {
+                if (is(object@expectations[[node]], "list") & length(object@expectations[[node]])==object@dimensions["G"]) {
                   names(object@expectations[[node]]) <- value 
                 }
               }
@@ -382,7 +382,7 @@ setMethod("groups_names<-", signature(object="BioFAModel", value="character"),
             for (node in nodes_types$twodim_nodes) {
               if (node %in% names(object@expectations)) {
                 for (m in 1:length(object@expectations[[node]])) {
-                  if (class(object@expectations[[node]][[m]])=="list" & length(object@expectations[[node]][[m]])==object@dimensions["G"]) {
+                  if (is(object@expectations[[node]][[m]], "list") & length(object@expectations[[node]][[m]])==object@dimensions["G"]) {
                     names(object@expectations[[node]][[m]]) <- value 
                   }
                 }

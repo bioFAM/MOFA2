@@ -13,7 +13,7 @@
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all") {
 
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
 
   # Define views and groups
   views  <- .check_and_get_views(object, views)
