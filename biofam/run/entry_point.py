@@ -269,12 +269,14 @@ class entry_point(object):
 
         # Process the data (center, scaling, etc.)
         if use_raw:
-            adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
-            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(adata_raw_dense, np.cumsum(tmp)[:-1], axis=0)]
-            self.data = process_data([adata_raw_dense], self.data_opts, self.data_opts['samples_groups'])
+                adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
+                self.intercepts[0] = [np.nanmean(x, axis=0) for x in [adata_raw_dense[np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
+                self.data = process_data([adata_raw_dense], self.data_opts, self.data_opts['samples_groups'])
         else:
-            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(adata.X, np.cumsum(tmp)[:-1], axis=0)]
-            self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
+            for g in self.data_opts['groups_names']:
+                samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
+                self.intercepts[0] = [np.nanmean(x, axis=0) for x in [adata.X[np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
+                self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_loom(self, loom, groups_label=None, layer=None):
         """ Method to input the data in Loom format
@@ -336,11 +338,11 @@ class entry_point(object):
 
         # Process the data (center, scaling, etc.)
         if layer is not None:
-            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(loom.layers[layer], np.cumsum(tmp)[:-1], axis=0)]
-            self.data = process_data([loom.layers[layer]], self.data_opts, self.data_opts['samples_groups'])
+            self.intercepts[0] = [np.nanmean(x, axis=1) for x in [loom.layers[layer][:,np.where(np.array(self.data_opts['samples_groups']) == g)[0]] for g in self.data_opts['groups_names']]]
+            self.data = process_data([loom.layers[layer][:,:].T], self.data_opts, self.data_opts['samples_groups'])
         else:
-            self.intercepts[0] = [np.nanmean(x, axis=0) for x in np.split(loom[:,:], np.cumsum(tmp)[:-1], axis=0)]
-            self.data = process_data([loom[:,:]], self.data_opts, self.data_opts['samples_groups'])
+            self.intercepts[0] = [np.nanmean(x, axis=1) for x in [loom[:,np.where(np.array(self.data_opts['samples_groups']) == g)[0]] for g in self.data_opts['groups_names']]]
+            self.data = process_data([loom[:,:].T], self.data_opts, self.data_opts['samples_groups'])
 
     def set_train_options(self,
         iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
