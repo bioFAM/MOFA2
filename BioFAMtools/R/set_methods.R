@@ -220,8 +220,8 @@ setReplaceMethod("features_metadata", signature(object="BioFAModel", value="data
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") | length(object@data) == 0 | length(object@data[[1]]) == 0)
                      stop("Before assigning features metadata you have to assign the training data")
-                   if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
-                     stop("Before assigning features metadata you have to assign the expectations")
+                   # if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                   #   stop("Before assigning features metadata you have to assign the expectations")
                    if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
                      if (nrow(value) != sum(object@dimensions[["D"]]))
                        stop("Number of rows in features metadata does not match the dimensionality of the model")
