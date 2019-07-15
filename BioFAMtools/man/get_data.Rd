@@ -5,7 +5,7 @@
 \title{get_data}
 \usage{
 get_data(object, views = "all", groups = "all", features = "all",
-  as.data.frame = F)
+  as.data.frame = FALSE, add_intercept = TRUE)
 }
 \arguments{
 \item{object}{a \code{\link{BioFAModel}} object.}

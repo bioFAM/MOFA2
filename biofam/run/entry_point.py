@@ -137,7 +137,7 @@ class entry_point(object):
         PARAMETERS
         ----------
         data: pd.DataFrame
-            a pandas DataFrame with columns ("sample","sample_group","feature","feature_group","value")
+            a pandas DataFrame with columns (sample,feature,view,group,value)
             the order is irrelevant
         """
 
@@ -145,35 +145,35 @@ class entry_point(object):
         assert hasattr(self, 'data_opts'), "Data options not defined"
         assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
         assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
-        assert 'sample_group' in data.columns, "'data' has to contain the column 'sample_group'"
+        assert 'group' in data.columns, "'data' has to contain the column 'group'"
         assert 'feature' in data.columns, "'data' has to contain the column 'feature'"
-        assert 'feature_group' in data.columns, "'data' has to contain the column 'feature_group'"
+        assert 'view' in data.columns, "'data' has to contain the column 'view'"
         assert 'value' in data.columns, "'data' has to contain the column 'value'"
 
         # Define feature group names and sample group names
-        self.data_opts['views_names'] = data["feature_group"].unique().tolist()
-        self.data_opts['groups_names'] = data["sample_group"].unique().tolist()
-        self.data_opts['features_names'] = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
-        self.data_opts['samples_names'] = data.groupby(["sample_group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
+        self.data_opts['views_names'] = data["view"].unique().tolist()
+        self.data_opts['groups_names'] = data["group"].unique().tolist()
+        self.data_opts['features_names'] = data.groupby(["view"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        self.data_opts['samples_names'] = data.groupby(["group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
 
         # Convert data frame to list of matrices
-        data['feature'] = data['feature'].astype(str) + data['feature_group'].astype(str) # make sure there are no duplicated feature names before pivoting
+        data['feature'] = data['feature'].astype(str) + data['view'].astype(str) # make sure there are no duplicated feature names before pivoting
         data_matrix = data.pivot(index='sample', columns='feature', values='value')
 
         # Sort rows and columns of the matrix according to the sample and feature names
-        features_names_tmp = data.groupby(["feature_group"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        features_names_tmp = data.groupby(["view"])["feature"].unique()[self.data_opts['views_names']].tolist()
         data_matrix = data_matrix.loc[np.concatenate(self.data_opts['samples_names'])]
         data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
         # Split into a list of views, each view being a matrix
-        tmp_features = data[["feature","feature_group"]].drop_duplicates().groupby("feature_group")["feature"].nunique()
+        tmp_features = data[["feature","view"]].drop_duplicates().groupby("view")["feature"].nunique()
         nfeatures = tmp_features.loc[self.data_opts['views_names']]
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
 
         # Define sample groups
-        self.data_opts['samples_groups'] = data[['sample', 'sample_group']].drop_duplicates() \
+        self.data_opts['samples_groups'] = data[['sample', 'group']].drop_duplicates() \
                                             .set_index('sample').loc[np.concatenate(self.data_opts['samples_names'])] \
-                                            .sample_group.tolist()
+                                            .group.tolist()
 
         # Define dimensionalities
         self.dimensionalities = {}
@@ -184,8 +184,8 @@ class entry_point(object):
         self.dimensionalities["D"] = D = [len(x) for x in self.data_opts['features_names']]
 
         # Count the number of features per view and the number of samples per group
-        tmp_samples = data[["sample","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["sample"].nunique()
-        tmp_features = data[["feature","sample_group","feature_group"]].drop_duplicates().groupby(["sample_group","feature_group"])["feature"].nunique()
+        tmp_samples = data[["sample","group","view"]].drop_duplicates().groupby(["group","view"])["sample"].nunique()
+        tmp_features = data[["feature","group","view"]].drop_duplicates().groupby(["group","view"])["feature"].nunique()
 
         # If everything successful, print verbose message
         for g in self.data_opts['groups_names']:
@@ -484,7 +484,7 @@ class entry_point(object):
         # Define whether to use feature-wise spike and slab prior for W
         self.model_opts['spikeslab_w'] = spikeslab_w
 
-        # Define whether to use sample_group and factor-wise ARD prior for Z
+        # Define whether to use group and factor-wise ARD prior for Z
         self.model_opts['ard_z'] = ard_z
 
         # Define whether to use view and factor-wise ARD prior for W

@@ -112,20 +112,13 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   W <- as.data.frame(W); colnames(W) <- c("x","y")
   W$view <- view
   W$feature <- features_names(object)[[view]]
+  # W <- W[complete.cases(W),]
   
   # Set color and shape
   if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
   if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
   color_by <- .set_colorby_features(object, color_by, view)
   shape_by <- .set_shapeby_features(object, shape_by, view)
-  
-  # Create data frame to plot
-  # df <- data.frame(
-  #   x = W[, factors[1]], y = W[, factors[2]], 
-  #   shape_by = shape_by, color_by = color_by
-  # )
-  # Remove features with missing values
-  W <- W[complete.cases(W),]
   
   # Merge factor values with group/color/shape information
   df <- merge(W, color_by, by=c("feature","view"))
@@ -164,6 +157,14 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
       axis.title = element_text(size=rel(1.3), color="black"), 
       axis.ticks = element_line(color="black")
     )
+  
+  if (scale) {
+    if (abs) {
+      p <- p + coord_cartesian(xlim=c(0,1), ylim=c(0,1))
+    } else {
+      p <- p + coord_cartesian(xlim=c(-1,1), ylim=c(-1,1))
+    }
+  }
   
   if (length(unique(df$color_by))==1) 
     p <- p + guides(color=F) + scale_color_manual(values="black")

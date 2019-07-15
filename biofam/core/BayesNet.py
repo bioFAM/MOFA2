@@ -476,7 +476,9 @@ class StochasticBayesNet(BayesNet):
                 if i>self.options["start_elbo"] and not self.options['forceiter']:
                     convergence_token, converged = self.assess_convergence(delta_elbo, elbo.iloc[0]["total"], convergence_token)
                     if converged:
-                        number_factors = number_factors[:i]; elbo = elbo[:i]
+                        number_factors = number_factors[:i]
+                        elbo = elbo[:i]
+                        iter_time = iter_time[:i]
                         print ("\nConverged!\n"); break
 
             # Do not calculate lower bound

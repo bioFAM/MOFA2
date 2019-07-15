@@ -4,13 +4,11 @@
 \alias{load_model}
 \title{loading a trained BioFAModel}
 \usage{
-load_model(file, object = NULL, sort_factors = TRUE, on_disk = FALSE,
+load_model(file, sort_factors = TRUE, on_disk = FALSE,
   load_data = TRUE, remove_outliers = FALSE)
 }
 \arguments{
 \item{file}{an hdf5 file saved by the biofam Python framework}
-
-\item{object}{either NULL (default) or an an existing untrained biofam object. If NULL, the \code{\link{BioFAModel}} object is created from the scratch.}
 
 \item{sort_factors}{logical indicating whether factors should be sorted by variance explained (default is TRUE)}
 
@@ -21,6 +19,8 @@ On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\li
 \item{load_data}{logical indicating whether to load the training data (default is TRUE, it can be memory expensive)}
 
 \item{remove_outliers}{logical indicating whether to mask outlier values.}
+
+\item{object}{either NULL (default) or an an existing untrained biofam object. If NULL, the \code{\link{BioFAModel}} object is created from the scratch.}
 }
 \value{
 a \code{\link{BioFAModel}} model

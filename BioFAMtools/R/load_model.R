@@ -145,11 +145,11 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ##############################
  
   # Specify dimensionality of the data
-  object@dimensions[["M"]] <- length(data)                           # number of views (groups of features)
-  object@dimensions[["G"]] <- length(data[[1]])                      # number of groups (groups of samples)
-  object@dimensions[["N"]] <- sapply(data[[1]], ncol)                # number of samples per sample_group
-  object@dimensions[["D"]] <- sapply(data, function(e) nrow(e[[1]])) # number of features per feature_group (view)
-  object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])                # number of factors
+  object@dimensions[["M"]] <- length(data)                            # number of views
+  object@dimensions[["G"]] <- length(data[[1]])                       # number of groups
+  object@dimensions[["N"]] <- sapply(data[[1]], ncol)                 # number of samples (per group)
+  object@dimensions[["D"]] <- sapply(data, function(e) nrow(e[[1]]))  # number of features (per view)
+  object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])        # number of factors
 
   # Assign sample and feature names (slow for large matrices)
   

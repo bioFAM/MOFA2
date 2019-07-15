@@ -32,16 +32,6 @@ setGeneric("samples_names", function(object) { standardGeneric("samples_names") 
 #' @export
 setGeneric("samples_names<-", function(object, value) { standardGeneric("samples_names<-") })
 
-###################
-## Sample Groups ##
-###################
-
-#' @title groups: retrieve sample names and groups
-#' @name groups
-#' @rdname groups
-#' @export
-setGeneric("groups", function(object, format = "default") { standardGeneric("groups") })
-
 #####################
 ## Sample Metadata ##
 #####################
@@ -126,7 +116,7 @@ setGeneric("groups_names<-", function(object, value) { standardGeneric("groups_n
 ## Input Data ##
 ################
 
-#' @title Set and retrieve input data
+#' @title Retrieve input data
 #' @name data
 #' @export
 setGeneric("data", function(object) { standardGeneric("data") })
