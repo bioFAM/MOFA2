@@ -108,7 +108,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   
   # Collect relevant data  
   D <- object@dimensions[["D"]][view]
-  W <- get_weights(object, views=view, factors=factors, as.data.frame = F)
+  W <- get_weights(object, views=view, factors=factors, as.data.frame = FALSE)
   W <- as.data.frame(W); colnames(W) <- c("x","y")
   W$view <- view
   W$feature <- features_names(object)[[view]]
@@ -149,8 +149,8 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
     geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size) + 
     labs(x=factors[1], y=factors[2]) +
     # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
-    geom_segment(x=min(df$x,na.rm=T), xend=max(df$x,na.rm=T), y=0, yend=0, size=0.25, color="orange") +
-    geom_segment(y=min(df$y,na.rm=T), yend=max(df$y,na.rm=T), x=0, xend=0, size=0.25, color="orange") +
+    geom_segment(x=min(df$x,na.rm=TRUE), xend=max(df$x,na.rm=TRUE), y=0, yend=0, size=0.25, color="orange") +
+    geom_segment(y=min(df$y,na.rm=TRUE), yend=max(df$y,na.rm=TRUE), x=0, xend=0, size=0.25, color="orange") +
     theme_classic() +
     theme(
       axis.text = element_text(size=rel(1), color="black"), 
@@ -167,7 +167,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   }
   
   if (length(unique(df$color_by))==1) 
-    p <- p + guides(color=F) + scale_color_manual(values="black")
+    p <- p + guides(color=FALSE) + scale_color_manual(values="black")
   
   # Add legend
   if ( (length(unique(df$color_by))>1 | length(unique(df$shape_by))>1) & legend) {
@@ -260,7 +260,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Collect expectations  
-  W <- get_weights(object, views = view, factors = factors, as.data.frame = T)
+  W <- get_weights(object, views = view, factors = factors, as.data.frame = TRUE)
   W <- W[(W$factor %in% factors) & (W$view %in% view),]
   
   # Remove factors with all-zero loadings
@@ -357,7 +357,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (length(unique(W$color_by)) > 1) { 
     p <- p + labs(color=color_name)
   } else { 
-    p <- p + guides(fill=F, color=F) + 
+    p <- p + guides(fill=FALSE, color=FALSE) + 
       scale_color_manual(values="black") +
       scale_fill_manual(values="gray60")
   }
@@ -366,7 +366,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (length(unique(W$shape_by)) > 1) { 
     p <- p + labs(shape=shape_name)
   } else { 
-    p <- p + guides(shape=F) 
+    p <- p + guides(shape=FALSE) 
   }
   
   # Add labels to the top features
@@ -375,7 +375,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
       force = 100,
       data = W[W$group!="0",], aes_string(label = "feature", col = "color_by"),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
-      box.padding = unit(0.5,"lines"), show.legend=F)
+      box.padding = unit(0.5,"lines"), show.legend=FALSE)
   }
   
   # Configure axis 
@@ -394,7 +394,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Define dot size
-  p <- p + scale_size_manual(values=c(dot_size/2, dot_size*2)) + guides(size=F)
+  p <- p + scale_size_manual(values=c(dot_size/2, dot_size*2)) + guides(size=FALSE)
   
   # Facet if multiple factors
   if (length(unique(W$factor)) > 1) {
@@ -454,7 +454,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   # if(!is.null(manual_features)) { stopifnot(class(manual_features)=="list"); stopifnot(all(Reduce(intersect,manual_features) %in% features_names(object)[[view]]))  }
   
   # Collect expectations  
-  W <- get_weights(object, factors=factor, views=view, as.data.frame=T)
+  W <- get_weights(object, factors=factor, views=view, as.data.frame=TRUE)
 
   # Scale values by loading with highest (absolute) value
   if(scale) W$value <- W$value/max(abs(W$value))
@@ -477,7 +477,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   W <- W[W$feature %in% features,]
   
   # Sort according to loadings
-  W <- W[with(W, order(-value, decreasing = T)), ]
+  W <- W[with(W, order(-value, decreasing = TRUE)), ]
   W$feature <- factor(W$feature, levels=W$feature)
   
   p <- ggplot(W, aes_string(x="feature", y="value")) +
