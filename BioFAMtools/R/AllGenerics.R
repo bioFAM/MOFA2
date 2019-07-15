@@ -116,7 +116,7 @@ setGeneric("groups_names<-", function(object, value) { standardGeneric("groups_n
 ## Input Data ##
 ################
 
-#' @title Set and retrieve input data
+#' @title Retrieve input data
 #' @name data
 #' @export
 setGeneric("data", function(object) { standardGeneric("data") })

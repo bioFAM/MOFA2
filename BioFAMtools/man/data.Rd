@@ -2,10 +2,10 @@
 % Please edit documentation in R/AllGenerics.R
 \name{data}
 \alias{data}
-\title{Set and retrieve input data}
+\title{Retrieve input data}
 \usage{
 data(object)
 }
 \description{
-Set and retrieve input data
+Retrieve input data
 }

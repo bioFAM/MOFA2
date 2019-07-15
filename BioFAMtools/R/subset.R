@@ -67,7 +67,7 @@ subset_groups <- function(object, groups) {
 subset_views <- function(object, views) {
   
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   stopifnot(length(views) <= object@dimensions[["M"]])
   # warning("Removing views a posteriori is fine for an exploratory analysis, but you should removing them before training!")
   

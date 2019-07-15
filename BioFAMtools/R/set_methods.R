@@ -102,29 +102,6 @@ setReplaceMethod("samples_names", signature(object="BioFAModel", value="list"),
                    object
                  })
 
-
-#############################
-## Retrieve samples groups ##
-#############################
-
-#' @rdname groups
-#' @param object a \code{\link{BioFAModel}} object.
-#' @aliases groups, BioFAModel-method
-#' @return data.frame with the sample names and a group for each sample
-#' @export
-setMethod("groups", signature(object="BioFAModel"), 
-          function(object, format = "default") {
-            tmp <- data.frame(sample_name = object@samples_metadata$sample_name,
-                              group_name  = object@samples_metadata$group_name,
-                              row.names   = c())
-            if (format == "pheatmap") {
-              rownames(tmp) <- tmp$sample_name
-              tmp <- tmp[,"group_name", drop = FALSE]
-              colnames(tmp) <- "ID"
-            }
-            tmp
-          })
-
 #######################################
 ## Set and retriveve sample metadata ##
 #######################################

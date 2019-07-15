@@ -5,7 +5,7 @@
 \title{get_imputed_data}
 \usage{
 get_imputed_data(object, views = "all", groups = "all",
-  as.data.frame = FALSE)
+  as.data.frame = FALSE, add_intercept = TRUE)
 }
 \arguments{
 \item{object}{a trained \code{\link{BioFAModel}} object.}

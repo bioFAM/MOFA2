@@ -11,7 +11,7 @@
 #' @param object a \code{\link{BioFAModel}} object.
 #' @export
 get_dimensions <- function(object) {
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   return(object@dimensions)
 }
 
@@ -22,7 +22,7 @@ get_dimensions <- function(object) {
 #' @param object a \code{\link{BioFAModel}} object.
 #' @export
 get_elbo <- function(object) {
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")  
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   return(tail(object@training_stats$elbo, 1))
 }
 
