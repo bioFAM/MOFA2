@@ -100,14 +100,14 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   # use own version for permutation test because of bugs in PCGSE package
   if (statistical.test == "permutation") {
     doParallel::registerDoParallel(cores=cores)
-    	
+      
     null_dist_tmp <- foreach(rnd=1:nperm) %dopar% {
       perm <- sample(ncol(data))
       # Permute rows of the weight matrix to obtain a null distribution
       W_null <- W[perm,]
       rownames(W_null) <- rownames(W); colnames(W_null) <- colnames(W)
       # Permute columns of the data matrix correspondingly (only matters for cor.adjusted test)
-	  data_null <- data[,perm]
+    data_null <- data[,perm]
       rownames(data_null) <- rownames(data)
       
       # Compute null statistic
@@ -127,9 +127,9 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
     # Calculate p-values based on fraction true statistic per factor and gene set is larger than permuted
     warning("A large number of permutations is required for the permutation approach!")
     xx <- array(unlist(null_dist_tmp), dim = c(nrow(null_dist_tmp[[1]]), ncol(null_dist_tmp[[1]]), length(null_dist_tmp)))
-	ll <- lapply(1:nperm, function(i) xx[,,i] > abs(s.true))
-	p.values <- Reduce("+",ll)/nperm
-	rownames(p.values) <- rownames(s.true); colnames(p.values) <- factors
+  ll <- lapply(1:nperm, function(i) xx[,,i] > abs(s.true))
+  p.values <- Reduce("+",ll)/nperm
+  rownames(p.values) <- rownames(s.true); colnames(p.values) <- factors
 
 # parametric version
   }
