@@ -196,6 +196,22 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param view a string with the view name, or an integer with the index of the view.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s).
 #' @param nfeatures number of top features to label.
+#' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (features). This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will color the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the features metadata slot
+#' \item a vector of the same length as the number of features specifying the value for each feature 
+#' \item a dataframe with two columns: "feature" and "color"
+#' }
+#' @param shape_by specifies groups or values (only discrete) used to shape the dots (features). This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the features metadata slot
+#' \item a vector of the same length as the number of features specifying the value for each feature 
+#' \item a dataframe with two columns: "feature" and "shape"
+#' }
 #' @param abs logical indicating whether to take the absolute value of the weights.
 #' @param manual A nested list of character vectors with features to be manually labelled (see the example for details).
 #' @param color_manual a character vector with colors, one for each element of 'manual'
