@@ -241,12 +241,20 @@ class entry_point(object):
         # Define groups and samples names
         if groups_label is None:
             self.data_opts['groups_names'] = ["group1"]
-            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
+            self.data_opts['samples_names'] = [adata.obs.index.values.tolist()]
             self.data_opts['samples_groups'] = ["group1"] * N
         else:
-            self.data_opts['groups_names'] = adata.obs[groups_label].unique()
-            self.data_opts['samples_names'] = adata.obs.index.values.tolist()
+            # While grouping the pandas.DataFrame, the group_label would be sorted.
+            # Hence the naive implementation `adata.obs[groups_label].unique()` to get group names
+            # wouldn't match samples_names if the samples are not ordered according to their group beforehand.
+
+            # List of names of groups, i.e. [group1, group2, ...]
+            self.data_opts['groups_names'] = adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values
+            # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
+            self.data_opts['samples_names'] = adata.obs.reset_index(drop=False).groupby(groups_label)["index"].apply(list).tolist()
+            # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
             self.data_opts['samples_groups'] = adata.obs[groups_label].values
+
 
         # If everything successful, print verbose message
         for m in range(M):
@@ -304,12 +312,17 @@ class entry_point(object):
         # Define groups and samples names
         if groups_label is None:
             self.data_opts['groups_names'] = ["group1"]
-            self.data_opts['samples_names'] = loom.ca.CellID
+            self.data_opts['samples_names'] = [loom.ca.CellID]
             self.data_opts['samples_groups'] = ["group1"] * N
         else:
-            self.data_opts['groups_names'] = pd.unique(loom.ca[groups_label])
-            self.data_opts['samples_names'] = loom.ca.CellID
-            self.data_opts['samples_groups'] = loom.ca[groups_label]
+            loom_metadata = pd.DataFrame(loom.ca["CellID", groups_label])
+            loom_metadata.columns = ["CellID", groups_label]
+            # List of names of groups, i.e. [group1, group2, ...]
+            self.data_opts['groups_names'] = loom_metadata.groupby(groups_label)[groups_label].apply(list).index.values
+            # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
+            self.data_opts['samples_names'] = loom_metadata.groupby(groups_label)["CellID"].apply(list).tolist()
+            # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
+            self.data_opts['samples_groups'] = loom_metadata[groups_label].values
 
         # If everything successful, print verbose message
         for m in range(M):
