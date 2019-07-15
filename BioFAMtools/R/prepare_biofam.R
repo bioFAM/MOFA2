@@ -62,7 +62,7 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   }
   
   # Get stochastic options
-  if (training_options$stochastic) {
+  if (object@training_options$stochastic) {
     if (sum(object@dimensions$N) < 1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000)")
       
     if (is.null(stochastic_options)) {
@@ -99,8 +99,8 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
       stop("model_options are incorrectly specified, please read the documentation in get_default_model_options")
     object@model_options <- model_options
   }
-  if (model_options$num_factors > 50) warning("The number of factors is very large, training will be slow...")
-  if (!model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
+  if (object@model_options$num_factors > 50) warning("The number of factors is very large, training will be slow...")
+  if (!object@model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
   
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
