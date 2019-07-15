@@ -19,10 +19,12 @@
 #' @return Returns an untrained \code{\link{BioFAModel}} with specified options filled in the corresponding slots
 #' @export
 prepare_biofam <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL,
-                           regress_covariates=NULL ) {
+                           regress_covariates = NULL ) {
   
   # Sanity checks
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
+  if (any(object@dimensions$N<25)) warning("It is not a hard requirement, but with less than ~25 samples (per group) it is hard to learn meaningful factors...")
+  if (any(object@dimensions$D<25)) warning("Some views have less than 25 features, they might be underrepresented...")
   
   # Get data options
   message("Checking data options...")
@@ -51,7 +53,7 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
     #   object@training_options$drop_factor_threshold <- -1
     # if (object@training_options$drop_factor_threshold>0.1)
     #   warning("Fraction of variance explained to drop factors is very high...")
-    if (object@training_options$maxiter<=10)
+    if (object@training_options$maxiter<=100)
       warning("Maximum number of iterations is very small\n")
     if (object@training_options$startELBO<1) object@training_options$startELBO <- 1
     if (object@training_options$freqELBO<1) object@training_options$freqELBO <- 1
@@ -61,6 +63,8 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   
   # Get stochastic options
   if (training_options$stochastic) {
+    if (sum(object@dimensions$N) < 1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000)")
+      
     if (is.null(stochastic_options)) {
       message("No stochastic options specified, using default...")
       object@stochastic_options <- get_default_stochastic_options(object)
@@ -95,6 +99,8 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
       stop("model_options are incorrectly specified, please read the documentation in get_default_model_options")
     object@model_options <- model_options
   }
+  if (model_options$num_factors > 50) warning("The number of factors is very large, training will be slow...")
+  if (!model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
   
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
