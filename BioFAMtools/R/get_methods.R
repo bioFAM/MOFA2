@@ -23,7 +23,7 @@ get_dimensions <- function(object) {
 #' @export
 get_elbo <- function(object) {
   if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
-  return(tail(object@training_stats$elbo, 1))
+  return(max(object@training_stats$elbo, na.rm=T))
 }
 
 #' @title get_factors
