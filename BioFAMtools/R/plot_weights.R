@@ -277,7 +277,6 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Define group of features to color according to the loading
   if (nfeatures > 0) {
     for (f in factors) {
-      # This uses dplyr
       features <- W[W$factor==f,] %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
       W[(W$feature %in% features) & (W$factor==f),"group"] <- "1"
     }

@@ -94,6 +94,11 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   }
   data <- data[features,]
   
+  # By default, sort features according to the loadings
+  W.filt <- W[features,]
+  order_features <- names(W.filt)[order(W.filt)]
+  data <- data[order_features,]
+  
   # By default, sort samples according to the factor values
   order_samples <- names(sort(Z, decreasing=T))
   order_samples <- order_samples[order_samples %in% colnames(data)]
