@@ -175,6 +175,8 @@ class saveModel():
         # Currently only numeric options can be saved due to compatibility problems between hdf5 and strings
         # For more information see: https://github.com/h5py/h5py/pull/1032 or https://github.com/h5py/h5py/issues/289
 
+        # Subset training options
+        opts = dict((k, self.model_opts[k]) for k in ["maxiter", "elbofreq", "start_elbo", "gpu_mode", "stochastic", "seed", "drop_min_r2"])
 
         # Replace dictionaries (not supported in hdf5) by lists 
         opts = self.train_opts
@@ -186,10 +188,13 @@ class saveModel():
 
         # Remove strings from training options
         # self.train_opts['schedule'] = '_'.join(self.train_opts['schedule'])
-        if 'schedule' in opts.keys():
-            del opts['schedule']
-        if 'convergence_mode' in opts.keys():
-            del opts['convergence_mode']
+        # if 'schedule' in opts.keys():
+        #     del opts['schedule']
+        # if 'convergence_mode' in opts.keys():
+        #     del opts['convergence_mode']
+
+        # Remove some training options
+        # del opts['quiet']; del opts['start_drop']; del opts['freq_drop']; del opts['forceiter']; del opts['start_sparsity']; del opts['Y_ELBO_TauTrick']
 
         # Create data set: only numeric options 
         self.hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
