@@ -49,7 +49,7 @@
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} object
-#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats dplyr
+#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats dplyr stats
 #' @export
 plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
