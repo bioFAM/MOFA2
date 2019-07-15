@@ -240,7 +240,7 @@ get_default_model_options <- function(object) {
     num_factors = 15,            # (numeric) initial number of latent factors
     spikeslab_factors = FALSE,         # Spike and Slab sparsity on the factors
     spikeslab_weights = TRUE,          # Spike and Slab sparsity on the loadins
-    ard_factors = FALSE,              # Group-wise ARD sparsity on the factors
+    ard_factors = TRUE,              # Group-wise ARD sparsity on the factors
     ard_weights = TRUE                # Group-wise ARD sparsity on the loadings
   )
   
