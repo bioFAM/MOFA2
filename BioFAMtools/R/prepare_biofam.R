@@ -119,7 +119,7 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
   # See https://github.com/rstudio/reticulate/issues/72
   for (m in views_names(object)) {
     for (g in groups_names(object)) {
-      if (class(object@data[[m]][[g]]) %in% c("dgCMatrix", "dgTMatrix"))
+      if (is(object@data[[m]][[g]], "dgCMatrix") || is(object@data[[m]][[g]], "dgTMatrix"))
         object@data[[m]][[g]] <- as(object@data[[m]][[g]], "matrix")
     }
   }

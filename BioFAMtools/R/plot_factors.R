@@ -49,7 +49,7 @@
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} object
-#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats dplyr
+#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats dplyr stats
 #' @export
 plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
@@ -68,7 +68,7 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
   } else { 
     stopifnot(all(factor %in% factors_names(object)))
   }
-  Z <- get_factors(object, factors=factor, as.data.frame=T)
+  Z <- get_factors(object, factors=factor, as.data.frame=TRUE)
   Z$factor <- factor(Z$factor, levels=factor)
   
   # Set group/color/shape
@@ -137,14 +137,14 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       if (min(tmp$n)==1) {
         warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be coloured")
-        p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width", show.legend = FALSE)
+        p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
       } else {
         # violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
-        p <- p + geom_violin(aes_string(fill="color_by"), alpha=violin_alpha, trim=T, scale="width", position=position_dodge(width=1), show.legend = FALSE)
+        p <- p + geom_violin(aes_string(fill="color_by"), alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
         # if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
-      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=T, scale="width", show.legend = FALSE)
+      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
     }
   }
   
@@ -160,7 +160,7 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
   if (length(unique(df$color_by))>1) { 
     p <- p + labs(color=color_name)
   } else { 
-    p <- p + guides(fill=F, color=F) + 
+    p <- p + guides(fill=FALSE, color=FALSE) + 
       scale_color_manual(values="black") +
       scale_fill_manual(values="gray60")
   }
@@ -169,7 +169,7 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
   if (length(unique(df$shape))>1) { 
     p <- p + labs(shape=shape_name)
   } else { 
-    p <- p + guides(shape=F) 
+    p <- p + guides(shape=FALSE) 
   }
 
   # Use unified theme across the plots
@@ -248,7 +248,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
                             dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
   
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # If plotting one or multiple factors, re-direct to other functions 
   if (length(unique(factors)) == 1) {
@@ -326,14 +326,14 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   if (length(unique(df$color))>1) { 
     p <- p + labs(color=color_name)
   } else { 
-    p <- p + guides(color=F) + scale_color_manual(values="black")
+    p <- p + guides(color=FALSE) + scale_color_manual(values="black")
   }
   
   # Add legend for shape
   if (length(unique(df$shape))>1) { 
     p <- p + labs(shape=shape_name)
   } else { 
-    p <- p + guides(shape=F) 
+    p <- p + guides(shape=FALSE) 
   }
   
   if (legend) {
@@ -355,7 +355,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
                                    color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
   
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Get factors
   if (is.numeric(factors)) {
@@ -394,7 +394,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
       legend.text = element_text(size=rel(1.2)),
       legend.title = element_text(size=rel(1.2))
     )
-  if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color=F) + scale_color_manual(values="black") }
+  if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color=FALSE) + scale_color_manual(values="black") }
   if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
   if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
   if (length(unique(df$color))>1 | length(unique(df$shape))>1) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
@@ -443,7 +443,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
 plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Sanity checks
-  if (class(object) != "BioFAModel") stop("'object' has to be an instance of BioFAModel")
+  if (!is(object, "BioFAModel")) stop("'object' has to be an instance of BioFAModel")
   
   # Fetch factors
   Z <- get_factors(object)
@@ -544,7 +544,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     df = data.frame(
       sample = unlist(samples_names(object)),
       color_by = color_by,
-      stringsAsFactors = F
+      stringsAsFactors = FALSE
     )
   }
   if (length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)

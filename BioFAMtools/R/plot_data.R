@@ -43,7 +43,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   
   # Get factors
   if (is.numeric(factor)) {
-  	factor <- factors_names(object)[factor]
+    factor <- factors_names(object)[factor]
   } else { 
     stopifnot(factor %in% factors_names(object)) 
   }

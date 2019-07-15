@@ -108,7 +108,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   
   # Collect relevant data  
   D <- object@dimensions[["D"]][view]
-  W <- get_weights(object, views=view, factors=factors, as.data.frame = F)
+  W <- get_weights(object, views=view, factors=factors, as.data.frame = FALSE)
   W <- as.data.frame(W); colnames(W) <- c("x","y")
   W$view <- view
   W$feature <- features_names(object)[[view]]
@@ -149,8 +149,8 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
     geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size) + 
     labs(x=factors[1], y=factors[2]) +
     # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
-    geom_segment(x=min(df$x,na.rm=T), xend=max(df$x,na.rm=T), y=0, yend=0, size=0.25, color="orange") +
-    geom_segment(y=min(df$y,na.rm=T), yend=max(df$y,na.rm=T), x=0, xend=0, size=0.25, color="orange") +
+    geom_segment(x=min(df$x,na.rm=TRUE), xend=max(df$x,na.rm=TRUE), y=0, yend=0, size=0.25, color="orange") +
+    geom_segment(y=min(df$y,na.rm=TRUE), yend=max(df$y,na.rm=TRUE), x=0, xend=0, size=0.25, color="orange") +
     theme_classic() +
     theme(
       axis.text = element_text(size=rel(1), color="black"), 
@@ -167,7 +167,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   }
   
   if (length(unique(df$color_by))==1) 
-    p <- p + guides(color=F) + scale_color_manual(values="black")
+    p <- p + guides(color=FALSE) + scale_color_manual(values="black")
   
   # Add legend
   if ( (length(unique(df$color_by))>1 | length(unique(df$shape_by))>1) & legend) {
@@ -196,6 +196,22 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param view a string with the view name, or an integer with the index of the view.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s).
 #' @param nfeatures number of top features to label.
+#' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (features). This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will color the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the features metadata slot
+#' \item a vector of the same length as the number of features specifying the value for each feature 
+#' \item a dataframe with two columns: "feature" and "color"
+#' }
+#' @param shape_by specifies groups or values (only discrete) used to shape the dots (features). This can be either: 
+#' \itemize{
+#' \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
+#' \item a character giving the name of a feature that is present in the input data 
+#' \item a character giving the same of a column in the features metadata slot
+#' \item a vector of the same length as the number of features specifying the value for each feature 
+#' \item a dataframe with two columns: "feature" and "shape"
+#' }
 #' @param abs logical indicating whether to take the absolute value of the weights.
 #' @param manual A nested list of character vectors with features to be manually labelled (see the example for details).
 #' @param color_manual a character vector with colors, one for each element of 'manual'
@@ -209,6 +225,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @importFrom ggrepel geom_text_repel
 #' @export
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
+                         color_by = NULL, shape_by = NULL,
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
                          sort_by_factor = "all",
                          dot_size = 1, text_size = 5) {
@@ -243,7 +260,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Collect expectations  
-  W <- get_weights(object, views = view, factors = factors, as.data.frame = T)
+  W <- get_weights(object, views = view, factors = factors, as.data.frame = TRUE)
   W <- W[(W$factor %in% factors) & (W$view %in% view),]
   
   # Remove factors with all-zero loadings
@@ -317,20 +334,47 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   
   # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
+
+  # Set color and shape
+  if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
+  if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
+  color_by <- .set_colorby_features(object, color_by, view)
+  shape_by <- .set_shapeby_features(object, shape_by, view)
+  
+  # Merge factor values with group/color/shape information
+  W <- merge(W, color_by, by=c("feature","view"))
+  W <- merge(W, shape_by, by=c("feature","view"))
+
   
   # Generate plot
-  p <- ggplot(W, aes_string(x="value", y="feature_id", color="group")) +
+  p <- ggplot(W, aes_string(x="value", y="feature_id")) +
     scale_y_discrete(expand = c(0.03,0.03)) +
-    geom_point(aes_string(size="tmp")) + 
+    geom_point(aes_string(size="tmp", color="color_by", shape="shape_by")) + 
     labs(x="Loading", y="Rank position", size=dot_size)
   
+  # Add legend for color
+  if (length(unique(W$color_by)) > 1) { 
+    p <- p + labs(color=color_name)
+  } else { 
+    p <- p + guides(fill=FALSE, color=FALSE) + 
+      scale_color_manual(values="black") +
+      scale_fill_manual(values="gray60")
+  }
+  
+  # Add legend for shape
+  if (length(unique(W$shape_by)) > 1) { 
+    p <- p + labs(shape=shape_name)
+  } else { 
+    p <- p + guides(shape=FALSE) 
+  }
+  
   # Add labels to the top features
-  if (nfeatures>0) {
+  if (nfeatures > 0) {
     p <- p + geom_text_repel(
       force = 100,
-      data = W[W$group!="0",], aes_string(label = "feature", col = "group"),
+      data = W[W$group!="0",], aes_string(label = "feature", col = "color_by"),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
-      box.padding = unit(0.5,"lines"), show.legend=F)
+      box.padding = unit(0.5,"lines"), show.legend=FALSE)
   }
   
   # Configure axis 
@@ -349,11 +393,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Define dot size
-  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size=F)
-  
-  # Define dot colors
-  cols <- c("grey", "black", color_manual)
-  p <- p + scale_color_manual(values=cols) + guides(col=F)
+  p <- p + scale_size_manual(values=c(dot_size/2, dot_size*2)) + guides(size=FALSE)
   
   # Facet if multiple factors
   if (length(unique(W$factor)) > 1) {
@@ -413,7 +453,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   # if(!is.null(manual_features)) { stopifnot(class(manual_features)=="list"); stopifnot(all(Reduce(intersect,manual_features) %in% features_names(object)[[view]]))  }
   
   # Collect expectations  
-  W <- get_weights(object, factors=factor, views=view, as.data.frame=T)
+  W <- get_weights(object, factors=factor, views=view, as.data.frame=TRUE)
 
   # Scale values by loading with highest (absolute) value
   if(scale) W$value <- W$value/max(abs(W$value))
@@ -436,7 +476,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   W <- W[W$feature %in% features,]
   
   # Sort according to loadings
-  W <- W[with(W, order(-value, decreasing = T)), ]
+  W <- W[with(W, order(-value, decreasing = TRUE)), ]
   W$feature <- factor(W$feature, levels=W$feature)
   
   p <- ggplot(W, aes_string(x="feature", y="value")) +
