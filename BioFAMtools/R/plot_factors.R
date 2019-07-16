@@ -512,7 +512,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     
   # Option 1: by default group
   } else if (color_by[1] == "group") {
-    color_by <- groups(object)$group_name
+    color_by <- samples_metadata(object)$group_name
     
   # Option 2: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {

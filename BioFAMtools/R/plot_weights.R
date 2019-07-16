@@ -347,34 +347,18 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
 
   
   # Generate plot
-  p <- ggplot(W, aes_string(x="value", y="feature_id")) +
+  p <- ggplot(W, aes(x=value, y=feature_id, col=group)) +
     scale_y_discrete(expand = c(0.03,0.03)) +
-    geom_point(aes_string(size="tmp", color="color_by", shape="shape_by")) + 
+    geom_point(aes(size=tmp)) + 
     labs(x="Loading", y="Rank position", size=dot_size)
   
-  # Add legend for color
-  if (length(unique(W$color_by)) > 1) { 
-    p <- p + labs(color=color_name)
-  } else { 
-    p <- p + guides(fill=FALSE, color=FALSE) + 
-      scale_color_manual(values="black") +
-      scale_fill_manual(values="gray60")
-  }
-  
-  # Add legend for shape
-  if (length(unique(W$shape_by)) > 1) { 
-    p <- p + labs(shape=shape_name)
-  } else { 
-    p <- p + guides(shape=FALSE) 
-  }
-  
   # Add labels to the top features
-  if (nfeatures > 0) {
+  if (nfeatures>0) {
     p <- p + geom_text_repel(
-      force = 100,
-      data = W[W$group!="0",], aes_string(label = "feature", col = "color_by"),
+      force = 10,
+      data = W[W$group!="0",], aes(label = feature, col = group),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
-      box.padding = unit(0.5,"lines"), show.legend=FALSE)
+      box.padding = unit(0.5,"lines"), show.legend=F)
   }
   
   # Configure axis 
@@ -393,7 +377,11 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Define dot size
-  p <- p + scale_size_manual(values=c(dot_size/2, dot_size*2)) + guides(size=FALSE)
+  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size=F)
+  
+  # Define dot colors
+  cols <- c("grey", "black", color_manual)
+  p <- p + scale_color_manual(values=cols) + guides(col=F)
   
   # Facet if multiple factors
   if (length(unique(W$factor)) > 1) {

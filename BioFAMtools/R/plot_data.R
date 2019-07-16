@@ -340,11 +340,11 @@ plot_data_overview <- function(object, colors = NULL) {
   ovw <- do.call(cbind, lapply(1:M, function(m) {
     do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))
-  rownames(ovw) <- unlist(samples_names(object), use.names = FALSE)
+  rownames(ovw) <- object@samples_metadata$sample_name
   colnames(ovw) <- views_names(object)
 
-  ovw$sample <- rownames(ovw)
-  ovw$group  <- groups(object)$group
+  ovw$sample <- object@samples_metadata$sample_name
+  ovw$group <- object@samples_metadata$group_name
 
   # Melt to data.frame
   molten_ovw <- reshape2::melt(ovw, id.vars = c("sample", "group"), var=c("view"))
