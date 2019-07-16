@@ -1,92 +1,96 @@
-# bioFAM
+# Multi-Omics Factor Analysis v2 (MOFA+)
 
-Biology Factor Analysis Models (biofam) is a flexible framework for biological data analysis. Relying on a flexible graphical model, biofam enables users to model different assumptions for their data. Example usage is applying biofam to the datasets with multiple data types for the same samples or to multiple groups of samples or cells with same observed features (e.g. gene expression values).
+MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in a completely unsupervised fashion.  
+Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple ‘omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional data representation in terms of (hidden) factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
 
-## Getting Started
+The first version of MOFA was largely aimed at bulk studies with relatively small sample size. When applied to large single-cell -omics data sets, the model suffers from severe drawbacks, including limited scalability and insufficient sparsity assumptions. In addition, the assumption of independent samples limits the application of the model for the simultaneous analysis across different experiments (or conditions). For this reason we developed MOFA v2 (MOFA+), which includes the following improvements:
+* Fast Stochastic variational inference framework amenable to GPU computations
+* Additional sparsity priors in the latent space that ensure the recovery of sparse sources of variation
+* Breaking the assumption of independent samples, which allows structured inference across multiple groups (at the same time as multiple views). This enables the model to integrate different data sets that are anchored by a common data modality.
 
-### Installing
 
-To install biofam with `pip` run:
+For more details you can read our papers: 
+- MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
+- MOFA v2: XXX
 
-```
-pip install git+https://github.com/bioFAM/biofam.git --user
-```
+<p align="center"> 
+<img src="images/logo.png" style="width: 50%; height: 50%"/>​
+</p>
 
-The BioFAMtools R package can be installed with `devtools`:
 
-```
-devtools::install_github("bioFAM/biofam", subdir="BioFAMtools")
-```
+## Installation
+The core of MOFA is implemented in Python. However, the whole procedure can be run with R and we provide the downstream analysis functions only in R.
 
-An alternative way is to clone the repository and install biofam library and BioFAMtools package from source:
-
-```
-git clone git@github.com:bioFAM/biofam.git
-cd biofam
-
-python setup.py install
-
-R CMD INSTALL --build BioFAMtools
+### Python dependencies 
+Python dependencies can be installed using pip (from the Unix terminal)
+```r
+pip install mofa2
 ```
 
+Alternatively, they can be installed from R itself using the reticulate package:
+```r
+library(reticulate)
+py_install("mofa2", envname = "r-reticulate", method="auto")
+```
+
+### MOFA2 R package
+This is the core software itself. Can be installed using R:
+```r
+devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data"))
+```
+--------------
 ### Using Docker image
 
-You can build an image with biofam python library and R package using the provided [Dockerfile](./Dockerfile):
+You can build an image with all dependencies installed using the provided [Dockerfile](./Dockerfile):
 
 ```
 docker build -t biofam .
 ```
 
+
 ## Usage
 
-TODO: basic usage, studying factors, multi-omics tutorials.
+### Step 1: Prepare the data
 
-### scRNA-seq data
-
-bioFAM comes with interfaces to build and train a model directly from objects commonly used for scRNA-seq data analysis, namely [AnnData](https://github.com/theislab/anndata) ([scanpy](https://github.com/theislab/scanpy)) in Python and [Seurat](https://github.com/satijalab/seurat) in R.
-
-#### With scanpy
-
-```{python}
-mf.set_data_from_anndata(adata, groups_label="louvain")
-```
-
-For more information see this tutorial (TODO: tutorial on PBMC with scanpy).
-
-#### With Seurat
-
-```{r}
-mf <- create_biofam(seurat_object, groups_label="louvain")
-```
-
-For more information see this tutorial (TODO: tutorial on PBMC with Seurat).
-
-#### With loom files
-
-Loom files can be used to train the model in Python:
-
-```{python}
-mf.set_data_from_loom(loom, groups_label="Tissue")
-```
-
-To learn more about using loom files, see [loompy documentation](https://linnarssonlab.org/loompy/index.html) and [loomR](https://github.com/mojaveazure/loomR) for Python and R respectively.
+- Data processing
+- Filtering
+- Regressing out technical variation
 
 
-## Authors
+If you work with single-cell data, MOFA+ comes with interfaces to build and train a model directly from objects commonly used for scRNA-seq data analysis, namely [AnnData](https://github.com/theislab/anndata) ([scanpy](https://github.com/theislab/scanpy)) in Python and [Seurat](https://github.com/satijalab/seurat) in R.
 
-In alphabetical order:
-
-* Ricard Argelaguet
-* Damien Arnol
-* Danila Bredikhin
-* Yonatan Deloro
-* Britta Velten
+See the vignette XXXX and the documentation for details
 
 
-[StatGenomics group on Twitter](https://twitter.com/statgenomics).
+### Step 2: Fitting the model
+
+### Step 3: Downstream analysis
+- Disentangling variance explained across views and groups
+- Visualisation of factors
+- Visualisation of loadings
+- Transfer learning and imputation
+	
+
+Downstream analysis: disentangle the variability between omics
+
+## Tutorials/Vignettes
+We currently provide the following vignettes:
+
+* **Data processing and creation of MOFA object**: bazzz
+* **Integration of heterogeneous scRNA-seq data**: foo.
+* **Integration of heterogeneous DNA methylation data**: bar.
+* **Integration of single-cell multi-modal data:**: baz.
+* **Transfer learning and imputation:**: baz.
+* **Model selection and robustness with simulated data**: bazz
 
 
-## License
 
-TBA
+
+
+
+## Frequently asked questions
+
+## Contact
+The package is maintained by Ricard Argelaguet (ricard@ebi.ac.uk) and Danila Bredikhin (danila.bredikhin@embl.de ). Please, reach us for problems, comments or suggestions. You can also contact us via a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLTkyZmE5YzNiMDc4OTkxYWExYWNlZTRhMWI2OWNkNzhmYmNlZjJiMjA4MjNiYjI2YTc4NjExNzU2ZTZiYzQyNjY).  
+
 
