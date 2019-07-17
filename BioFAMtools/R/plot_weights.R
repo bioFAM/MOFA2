@@ -225,7 +225,6 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
                          color_by = NULL, shape_by = NULL,
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
-                         sort_by_factor = "all",
                          dot_size = 1, text_size = 5) {
   
   # Sanity checks
