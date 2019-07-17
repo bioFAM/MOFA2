@@ -73,13 +73,10 @@ prepare_biofam <- function(object, data_options = NULL, model_options = NULL, tr
       if(!is(stochastic_options,"list") | !setequal(names(stochastic_options), names(get_default_stochastic_options(object)) ))
         stop("stochastic_options are incorrectly specified, please read the documentation in get_default_stochastic_options")
       
-      if (stochastic_options$batch_size<=0 || stochastic_options$batch_size>1)
-        stop("A batch size has to be a value between 0 and 1")
+      if (!stochastic_options %in% c(0.05,0.10,0.15,0.20,0.25,0.50))
+        stop("Batch size has to be one of the following values: 0.05, 0.10, 0.15, 0.20, 0.25, 0.50")
       if (stochastic_options$batch_size==1)
         warning("A batch size equal to 1 is equivalent to non-stochastic inference. Please set object@train_options$stochastic <- FALSE")
-      
-      # TO-DO: BATCH SIZE 0.05, 0.10, ETC.
-      
       if (stochastic_options$learning_rate<=0 || stochastic_options$learning_rate>1)
         stop("The learning rate has to be a value between 0 and 1")
       if (stochastic_options$forgetting_rate<=0 || stochastic_options$forgetting_rate>1)

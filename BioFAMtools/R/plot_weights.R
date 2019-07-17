@@ -216,8 +216,6 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param manual A nested list of character vectors with features to be manually labelled (see the example for details).
 #' @param color_manual a character vector with colors, one for each element of 'manual'
 #' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).
-#' @param sort_by_factor name or numeric value for the factor to sort all loadings by, or all (default)
-#' when "all", features between factors do not match
 #' @param dot_size numeric indicating the dot size.
 #' @param text_size numeric indicating the text size.
 #' @import ggplot2 dplyr tidyr ggrepel
@@ -245,18 +243,6 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
     factors <- factors_names(object)[factors]
   } else { 
     if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
-  }
-  
-  # Get factor to sort by
-  if (!is.null(sort_by_factor)) {
-    if (is.numeric(sort_by_factor)) {
-      sort_by_factor <- factors_names(object)[sort_by_factor]
-    } else if (sort_by_factor == "all") {
-      # 
-    } else { 
-      stopifnot(sort_by_factor %in% factors_names(object)) 
-    }
-    stopifnot(length(sort_by_factor) == 1)
   }
   
   # Collect expectations  
