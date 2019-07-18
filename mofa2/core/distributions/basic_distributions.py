@@ -15,7 +15,7 @@ TO-DO:
 
 import scipy as s
 
-from biofam.core.utils import *  # TODO prob not necessary ?
+from mofa2.core.utils import *  # TODO prob not necessary ?
 
 # General class for probability distributions
 class Distribution(object):

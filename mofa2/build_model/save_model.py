@@ -6,7 +6,7 @@ import numpy.ma as ma
 import os
 import h5py
 
-from biofam.core.nodes import *
+from mofa2.core.nodes import *
 
 
 class saveModel():

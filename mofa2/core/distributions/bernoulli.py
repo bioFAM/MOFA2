@@ -1,20 +1,15 @@
 import scipy as s
-import scipy.stats as stats
 from .basic_distributions import Distribution
 
-from biofam.core.utils import *
+from mofa2.core.utils import *
 
-class Poisson(Distribution):
+class Bernoulli(Distribution):
     """
-    Class to define Poisson distributions.
+    Class to define Bernoulli distributions
 
     Equations:
-    p(x|theta) = theta**x * exp(-theta) * 1/theta!
-    log p(x|a,b) = x*theta - theta - log(x!)
-    E[x] = theta
-    var[x] = theta
-    """
 
+    """
     def __init__(self, dim, theta, E=None):
         Distribution.__init__(self, dim)
 
@@ -37,16 +32,11 @@ class Poisson(Distribution):
 
     def density(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
-        assert x.dtype == int, "x has to be an integer array"
-        theta = self.params['theta'].flatten()
-        x = x.flatten()
-        # return s.prod (stats.poisson.pmf(x,theta) )
-        return s.prod( s.divide(theta**x * s.exp(-theta),s.misc.factorial(x)) )
+        return s.prod( self.params['theta']**x * (1-self.params['theta'])**(1-x) )
 
     def loglik(self, x):
         assert x.shape == self.dim, "Problem with the dimensionalities"
-        assert x.dtype == int, "x has to be an integer array"
-        theta = self.params['theta'].flatten()
-        x = x.flatten()
-        # return s.log( s.prod (stats.poisson.pmf(x,theta) ))
-        return s.sum( x*s.log(theta) - theta - s.log(s.misc.factorial(x)) )
+        return s.sum( x*s.log(self.params['theta']) + (1-x)*s.log(1-self.params['theta']) )
+
+    def sample(self):
+        return s.random.binomial(1, self.params['theta'])

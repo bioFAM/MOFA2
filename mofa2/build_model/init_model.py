@@ -7,7 +7,7 @@ import scipy.stats as stats
 from sys import path
 import sklearn.decomposition
 
-from biofam.core.nodes import *
+from mofa2.core.nodes import *
 
 class initModel(object):
     def __init__(self, dim, data, lik):

@@ -3,7 +3,7 @@ from .basic_distributions import Distribution
 from .bernoulli import Bernoulli
 from .univariate_gaussian import UnivariateGaussian
 
-from biofam.core.utils import *
+from mofa2.core.utils import *
 
 class BernoulliGaussian(Distribution):
     """

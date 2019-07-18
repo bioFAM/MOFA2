@@ -2,7 +2,7 @@ import scipy as s
 import scipy.stats as stats
 from .basic_distributions import Distribution
 
-from biofam.core.utils import *
+from mofa2.core.utils import *
 
 class UnivariateGaussian(Distribution):
     """

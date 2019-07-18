@@ -21,8 +21,8 @@ from .basic_nodes import *
 from .Y_nodes import Y_Node
 from .Tau_nodes import TauD_Node
 
-from biofam.core import gpu_utils
-from biofam.core.utils import sigmoid, lambdafn
+from mofa2.core import gpu_utils
+from mofa2.core.utils import sigmoid, lambdafn
 
 
 ##############################

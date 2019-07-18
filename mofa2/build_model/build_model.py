@@ -8,8 +8,8 @@ import numpy as np
 import scipy as s
 #from joblib import Parallel, delayed
 
-from biofam.build_model.init_model import initModel
-from biofam.build_model.utils import *
+from mofa2.build_model.init_model import initModel
+from mofa2.build_model.utils import *
 
 class buildModel(object):
     def __init__(self, data, data_opts, model_opts, dimensionalities):

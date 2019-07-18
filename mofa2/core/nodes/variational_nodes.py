@@ -3,7 +3,7 @@ from __future__ import division
 import scipy as s
 
 from .basic_nodes import *
-from biofam.core.distributions import *
+from mofa2.core.distributions import *
 
 
 """

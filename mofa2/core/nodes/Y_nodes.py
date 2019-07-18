@@ -4,8 +4,8 @@ import numpy as np
 import scipy as s
 import math
 
-from biofam.core.utils import dotd
-from biofam.core import gpu_utils
+from mofa2.core.utils import dotd
+from mofa2.core import gpu_utils
 
 # Import manually defined functions
 from .variational_nodes import Constant_Variational_Node

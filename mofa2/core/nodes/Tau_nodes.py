@@ -4,13 +4,13 @@ import numpy as np
 import scipy as s
 import scipy.special as special
 
-from biofam.core.utils import *
-from biofam.core import gpu_utils
+from mofa2.core.utils import *
+from mofa2.core import gpu_utils
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
 
-from biofam.core.distributions import *
+from mofa2.core.distributions import *
 
 
 class TauD_Node(Gamma_Unobserved_Variational_Node):

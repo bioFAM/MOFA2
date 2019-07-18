@@ -6,7 +6,7 @@ import scipy as s
 import pandas as pd
 import numpy as np
 
-from biofam.core.BayesNet import BayesNet
+from mofa2.core.BayesNet import BayesNet
 
 
 def train_model(model):

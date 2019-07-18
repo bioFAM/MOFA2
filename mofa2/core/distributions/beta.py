@@ -2,7 +2,7 @@ import scipy as s
 import scipy.special as special
 from .basic_distributions import Distribution
 
-from biofam.core.utils import *
+from mofa2.core.utils import *
 
 class Beta(Distribution):
     """

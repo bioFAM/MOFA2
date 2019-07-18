@@ -4,8 +4,8 @@ import numpy as np
 import scipy as s
 import math
 
-from biofam.core.utils import *
-from biofam.core import gpu_utils
+from mofa2.core.utils import *
+from mofa2.core import gpu_utils
 
 from time import time
 

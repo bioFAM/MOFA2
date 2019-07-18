@@ -14,8 +14,8 @@ import numpy.ma as ma
 import math
 import resource
 
-from biofam.core.nodes.variational_nodes import Variational_Node
-from biofam.core import gpu_utils
+from mofa2.core.nodes.variational_nodes import Variational_Node
+from mofa2.core import gpu_utils
 from .utils import corr, nans, infer_platform
 
 import warnings

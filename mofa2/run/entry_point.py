@@ -6,10 +6,10 @@ from time import sleep
 from time import time
 import imp
 
-from biofam.core.BayesNet import *
-from biofam.build_model.build_model import *
-from biofam.build_model.save_model import *
-from biofam.build_model.train_model import train_model
+from mofa2.core.BayesNet import *
+from mofa2.build_model.build_model import *
+from mofa2.build_model.save_model import *
+from mofa2.build_model.train_model import train_model
 
 class entry_point(object):
     def __init__(self):
@@ -18,7 +18,7 @@ class entry_point(object):
         self.model = None
 
     def print_banner(self):
-        """ Method to print the biofam banner """
+        """ Method to print the mofa2 banner """
 
         banner = r""" 
 
