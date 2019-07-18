@@ -1,5 +1,5 @@
 
-#' @title create a BioFAM object
+#' @title create a MOFA object
 #' @name create_mofa
 #' @description Method to create a \code{\link{MOFA}} object
 #' @param data Input data can be in several formats:
@@ -19,25 +19,25 @@
 #' @export
 create_mofa <- function(data, groups = NULL) {
   
-  # Creating BioFAM object from a Seurat object
+  # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
     
-    message("Creating BioFAM object from a Seurat object...")
+    message("Creating MOFA object from a Seurat object...")
     object <- .create_mofa_from_seurat(data, groups)
     
-  # Creating BioFAM object from a data.frame object
+  # Creating MOFA object from a data.frame object
   } else if (is(data, "data.frame")) {
     
-    message("Creating BioFAM object from a data.frame...")
+    message("Creating MOFA object from a data.frame...")
     object <- .create_mofa_from_df(as.data.frame(data))
     
-  # Creating BioFAM object from a (sparse) matrix object
+  # Creating MOFA object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
              (all(sapply(data, function(x) is(x, "matrix"))) || 
               all(sapply(data, function(x) is(x, "dgCMatrix"))) || 
               all(sapply(data, function(x) is(x, "dgTMatrix"))))) {
     
-    message("Creating BioFAM object from a list of matrices (features as rows, sample as columns)...\n")
+    message("Creating MOFA object from a list of matrices (features as rows, sample as columns)...\n")
     object <- .create_mofa_from_matrix(data, groups)
 
   } else {
@@ -244,7 +244,7 @@ create_mofa <- function(data, groups = NULL) {
   }
   views_names <- as.character(names(data))
   
-  # Initialise BioFAM object
+  # Initialise MOFA object
   object <- new("MOFA")
   object@status <- "untrained"
   object@data <- .split_data_into_groups(data, groups)

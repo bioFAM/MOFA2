@@ -301,20 +301,6 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   #   message("Duplicated feature names across views, we will add the view name as a prefix")
   #   W$feature_id <- paste(W$view, W$feature, sep="_")
   # }
-
-  # Sort by loading
-  if (!is.null(sort_by_factor)) {
-    W <- by(W, list(W$factor), function(x) {
-      x[order(x$value),]
-    })
-    if (sort_by_factor == "all") {
-      W <- do.call(rbind, W)
-      W$feature_id <- paste(W$view, W$feature, W$factor, sep="_")
-    } else {
-      W <- do.call(rbind, c(W[sort_by_factor], W[names(W) != sort_by_factor]))
-      W$feature_id <- W$feature
-    }
-  }
   W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
   
   # Convert plotting group
@@ -332,16 +318,16 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
 
   
   # Generate plot
-  p <- ggplot(W, aes(x=value, y=feature_id, col=group)) +
+  p <- ggplot(W, aes_string(x="value", y="feature_id", col="group")) +
     scale_y_discrete(expand = c(0.03,0.03)) +
-    geom_point(aes(size=tmp)) + 
+    geom_point(aes_string(size="tmp")) + 
     labs(x="Loading", y="Rank position", size=dot_size)
   
   # Add labels to the top features
   if (nfeatures>0) {
     p <- p + geom_text_repel(
       force = 10,
-      data = W[W$group!="0",], aes(label = feature, col = group),
+      data = W[W$group!="0",], aes_string(label = "feature", col = "group"),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
       box.padding = unit(0.5,"lines"), show.legend=F)
   }

@@ -224,13 +224,13 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
 #' @param color_by specifies groups or values used to color the samples. 
 #' This can be either 
 #' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
-#' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
+#' a character giving the name of a feature present in the training data.
+#' a character giving the same of a column present in the sample metadata.
 #' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
 #' @param shape_by specifies groups or values used to shape the samples. 
 #' This can be either
 #' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
+#' a character giving the same of a column present in the sample metadata.
 #' or a vector of the same length as the number of samples specifying discrete groups.
 #' @param color_name name for color legend (usually only used if color_by is not a character itself)
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself)

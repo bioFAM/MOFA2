@@ -28,7 +28,7 @@ the output varies depending on the variable of interest: \cr
 Function to extract the expectations from the (variational) posterior distributions of a trained \code{\link{MOFA}} object.
 }
 \details{
-Technical note: BioFAM is a Bayesian model where each variable has a prior distribution and a posterior distribution. 
+Technical note: MOFA is a Bayesian model where each variable has a prior distribution and a posterior distribution. 
 In particular, to achieve scalability we used the variational inference framework, thus true posterior distributions are replaced by approximated variational distributions.
 This function extracts the expectations of the variational distributions, which can be used as final point estimates to analyse the results of the model. \cr 
 The priors and variational distributions of each variable are extensively described in the supplementary methods of the original paper.

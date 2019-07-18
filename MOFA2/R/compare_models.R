@@ -6,18 +6,12 @@
 
 #' @title Plot the robustness of the latent factors across diferent trials
 #' @name compare_factors
-#' @description Different objects of \code{\link{MOFA}} are compared in terms of correlation between
-#' their latent factors. The correlation is calculated only on those samples which are present in all models.
-#' Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
-#' If not, it suggests that some factors are weak and not captured by all models.
-#' @param models a list containing \code{\link{MOFA}} objects.
-#' @param comparison tye of comparison, either 'pairwise' or 'all'
+#' @description Different \code{\link{MOFA}} objects are compared in terms of correlation between their factors.
+#' @param models a list with \code{\link{MOFA}} objects.
 #' @param ... extra arguments passed to pheatmap
-#' @details TO-FILL
-#' @return Plots a heatmap of correlation of Latent Factors in all models when 'comparison' is 'all'.
-#' Otherwise, for each pair of models, a seperate heatmap is produced comparing one model againt the other.
-#' The corresponding correlation matrix or list or pairwise correlation matrices is returned
-#' @references fill this
+#' @details If assessing model robustness across trials, the output should look like a block diagonal matrix, 
+#' suggesting that all factors are robustly detected in all model instances.
+#' @return Plots a heatmap of the Pearson correlation between latent factors across all input models.
 #' @importFrom stats cor
 #' @importFrom pheatmap pheatmap
 #' @importFrom grDevices colorRampPalette
@@ -103,7 +97,7 @@ compare_elbo <- function(models) {
 #' and the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{MOFA}} objects.
 #' @export
-select_model <- function(models, plotit = TRUE) {
+select_model <- function(models) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")

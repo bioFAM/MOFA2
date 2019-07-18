@@ -125,7 +125,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
 #' @param features list of character vectors with the feature names or list of numeric vectors with the feature indices. 
 #' Default is "all"
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices.
-#' Default is \code{FALSE}.
+#' @param add_intercept logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.
 #' @details By default this function returns a list where each element is a data matrix with dimensionality (D,N) 
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
@@ -251,10 +251,9 @@ get_imputed_data <- function(object, views = "all", groups = "all", as.data.fram
 #' @name get_expectations
 #' @description Function to extract the expectations from the (variational) posterior distributions of a trained \code{\link{MOFA}} object.
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param variable variable name: 'Z' for factors, 'W' for weights, 'Tau' for noise,
-#' 'Y' for pseudodata, 'Theta' for feature-wise spike-and-slab sparsity, 'AlphaW' for view and factor-wise ARD sparsity
+#' @param variable variable name: 'Z' for factors and 'W' for weights.
 #' @param as.data.frame logical indicating whether to output the result as a long data frame, default is \code{FALSE}.
-#' @details Technical note: BioFAM is a Bayesian model where each variable has a prior distribution and a posterior distribution. 
+#' @details Technical note: MOFA is a Bayesian model where each variable has a prior distribution and a posterior distribution. 
 #' In particular, to achieve scalability we used the variational inference framework, thus true posterior distributions are replaced by approximated variational distributions.
 #' This function extracts the expectations of the variational distributions, which can be used as final point estimates to analyse the results of the model. \cr 
 #' The priors and variational distributions of each variable are extensively described in the supplementary methods of the original paper.
@@ -262,9 +261,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", as.data.fram
 #' \itemize{
 #'  \item{"Z"}{a matrix with dimensions (samples,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)}
 #'  \item{"W"}{a list of length (views) where each element is a matrix with dimensions (features,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (view,feature,factor,value)}
-#'  \item{"Y"}{a list of length (views) where each element is a matrix with dimensions (features,samples). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (view,feature,sample,value)}
-#'  \item{"Theta"}{}
-#'  \item{"Tau"}{}
 #' }
 #' @export
 get_expectations <- function(object, variable, as.data.frame = FALSE) {

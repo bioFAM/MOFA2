@@ -9,7 +9,7 @@ plot_ascii_data(object, header = FALSE)
 \arguments{
 \item{object}{a \code{\link{MOFA}} object}
 
-\item{header}{a logical value specifying whether to show the BioFAM header.}
+\item{header}{a logical value specifying whether to show the MOFA header.}
 }
 \description{
 A Fancy printing method

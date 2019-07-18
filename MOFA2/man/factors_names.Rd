@@ -17,7 +17,7 @@ factors_names(object) <- value
 \S4method{factors_names}{MOFA,vector}(object) <- value
 }
 \arguments{
-\item{object}{a \code{\link{BioFAM}} object.}
+\item{object}{a \code{\link{MOFA}} object.}
 
 \item{value}{a character vector of factor names}
 }

@@ -7,7 +7,8 @@
 #' @name subset_groups
 #' @description Method to subset (or sort) groups
 #' @param object a \code{\link{MOFA}} object.
-#' @param groups character vector with the groups names, numeric vector with the groups indices or logical vector with the groups to be kept as TRUE.
+#' @param groups character vector with the groups names, numeric vector with the groups indices
+#' or logical vector with the groups to be kept as TRUE.
 #' @export
 subset_groups <- function(object, groups) {
   
@@ -62,7 +63,8 @@ subset_groups <- function(object, groups) {
 #' @name subset_views
 #' @description Method to subset (or sort) views
 #' @param object a \code{\link{MOFA}} object.
-#' @param views character vector with the views names, numeric vector with the views indices or logical vector with the views to be kept as TRUE.
+#' @param views character vector with the views names, numeric vector with the views indices,
+#' or logical vector with the views to be kept as TRUE.
 #' @export
 subset_views <- function(object, views) {
   
@@ -105,7 +107,8 @@ subset_views <- function(object, views) {
 #' @name subset_factors
 #' @description Method to subset (or sort) factors
 #' @param object a \code{\link{MOFA}} object.
-#' @param factors character vector with the factor names, or numeric vector with the index of the factors.
+#' @param factors character vector with the factor names, or numeric vector with the index of the factors, 
+#' or logical vector with the views to be kept as TRUE.
 #' @export
 subset_factors <- function(object, factors) {
   
@@ -235,8 +238,9 @@ subset_samples <- function(object, samples) {
 #' @name subset_features
 #' @description Method to subset (or sort) features
 #' @param object a \code{\link{MOFA}} object.
-#' @param view view name or view index
-#' @param features character vector with the sample names, numeric vector with the feature indices or logical vector with the samples to be kept as TRUE.
+#' @param view character vector with the view name or integer with the view index
+#' @param features character vector with the sample names, numeric vector with the feature indices 
+#' or logical vector with the samples to be kept as TRUE.
 #' @export
 subset_features <- function(object, view, features) {
   

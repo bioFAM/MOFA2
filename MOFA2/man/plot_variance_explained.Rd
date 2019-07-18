@@ -13,7 +13,7 @@ plot_variance_explained(object, x = "view", y = "factor",
   max_r2 = NULL, legend = TRUE, use_cache = TRUE, ...)
 }
 \arguments{
-\item{object}{a \code{\link{MOFAmodel}} object}
+\item{object}{a \code{\link{MOFA}} object}
 
 \item{x}{character specifying the dimension for the x-axis ("view", "factor", or "group").}
 

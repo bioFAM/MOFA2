@@ -358,7 +358,7 @@ plot_data_overview <- function(object, colors = NULL) {
   molten_ovw$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
     
   # Define y-axis label
-  molten_ovw <- dplyr::mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
+  molten_ovw <- mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
   
   # Plot
   p <- ggplot(molten_ovw, aes_string(x="sample", y="view_label", fill="combi")) +
@@ -386,7 +386,7 @@ plot_data_overview <- function(object, colors = NULL) {
 #' @name plot_ascii_data
 #' @description A Fancy printing method
 #' @param object a \code{\link{MOFA}} object
-#' @param header a logical value specifying whether to show the BioFAM header.
+#' @param header a logical value specifying whether to show the MOFA header.
 #' @details This function is helpful to get an overview of the structure of the data as a text output
 #' @export
 plot_ascii_data <- function(object, header = FALSE) {

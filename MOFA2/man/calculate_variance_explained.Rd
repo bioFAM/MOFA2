@@ -24,6 +24,6 @@ Calculate variance explained by the model
 }
 \details{
 This function takes a trained MOFA as input and calculates for each view the coefficient of determination (R^2),
-i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).
+i.e. the proportion of variance in the data explained by the MOFA factor(s) (both jointly and for each individual factor).
 In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
 }

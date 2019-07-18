@@ -5,7 +5,7 @@
 
 #' @title cluster_samples: K-means clustering on samples based on latent factors
 #' @name cluster_samples
-#' @description BioFAM factors are continuous in nature but they can be used to predict discrete clusters of samples. \cr
+#' @description MOFA factors are continuous in nature but they can be used to predict discrete clusters of samples. \cr
 #' The clustering can be performed in a single factor, which is equivalent to setting a manual threshold.
 #' More interestingly, it can be done using multiple factors, where multiple sources of variation are aggregated. \cr
 #' Importantly, this type of clustering is not weighted and does not take into account the different importance of the latent factors. 

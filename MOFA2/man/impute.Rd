@@ -8,7 +8,7 @@ impute(object, views = "all", groups = "all", factors = "all",
   type = c("inRange", "response", "link"))
 }
 \arguments{
-\item{object}{a \code{\link{BioFAM}} object.}
+\item{object}{a \code{\link{MOFA}} object.}
 
 \item{views}{character vector with the view name(s), or numeric vector with view index(es).}
 

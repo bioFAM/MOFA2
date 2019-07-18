@@ -5,7 +5,7 @@
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @details This function takes a trained MOFA as input and calculates for each view the coefficient of determination (R^2),
-#' i.e. the proportion of variance in the data explained by the BioFAM factor(s) (both jointly and for each individual factor).
+#' i.e. the proportion of variance in the data explained by the MOFA factor(s) (both jointly and for each individual factor).
 #' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
 #' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
 #' @import DelayedArray
@@ -108,7 +108,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.
 #' 
 #' @name plot_variance_explained
-#' @param object a \code{\link{MOFAmodel}} object
+#' @param object a \code{\link{MOFA}} object
 #' @param x character specifying the dimension for the x-axis ("view", "factor", or "group").
 #' @param y character specifying the dimension for the y-axis ("view", "factor", or "group").
 #' @param split_by character specifying the dimension to be faceted ("view", "factor", or "group").

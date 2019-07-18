@@ -2,7 +2,7 @@
 % Please edit documentation in R/create_mofa.R
 \name{create_mofa}
 \alias{create_mofa}
-\title{create a BioFAM object}
+\title{create a MOFA object}
 \usage{
 create_mofa(data, groups = NULL)
 }

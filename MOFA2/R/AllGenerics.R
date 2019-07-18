@@ -146,7 +146,7 @@ setGeneric("training_options", function(object) { standardGeneric("training_opti
 ## Model Options ##
 ###################
 
-#' @title model_options: set and retrieve Model options
+#' @title model_options: set and retrieve model options
 #' @name model_options
 #' @export
 setGeneric("model_options", function(object) { standardGeneric("model_options") })

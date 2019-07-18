@@ -6,7 +6,7 @@
 #' @title Impute missing values from a fitted MOFA
 #' @name impute
 #' @description This function uses the latent factors and the loadings to impute missing values.
-#' @param object a \code{\link{BioFAM}} object.
+#' @param object a \code{\link{MOFA}} object.
 #' @param views character vector with the view name(s), or numeric vector with view index(es).
 #' @param groups character vector with the group name(s), or numeric vector with group index(es).
 #' @param factors character vector with the factor names, or numeric vector with the factor index(es).

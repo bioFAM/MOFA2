@@ -1,18 +1,18 @@
 #######################################
-## Functions to train a BioFAM model ##
+## Functions to train a MOFA model ##
 #######################################
 
-#' @title train a BioFAM model
+#' @title train a MOFA model
 #' @name run_mofa
-#' @description Function to train an untrained \code{\link{MOFAmodel}} object.
+#' @description Function to train an untrained \code{\link{MOFA}} object.
 #' @details In this step the R package is calling the \code{mofapy2} Python package, where the the training is performed. \cr
 #' The interface with Python is done with the \code{\link{reticulate}} package. 
 #' If you have several versions of Python installed and Rstudio is not detecting the correct one, you can change it using
 #' \code{reticulate::use_python}. \cr
 #' This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
-#' @param object an untrained \code{\link{MOFAmodel}} object
+#' @param object an untrained \code{\link{MOFA}} object
 #' @param outfile output file for the model (.hdf5 format). If NULL, a temporary file is created.
-#' @return a trained \code{\link{MOFAmodel}} object
+#' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @export
 run_mofa <- function(object, outfile = NA) {

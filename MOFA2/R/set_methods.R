@@ -5,7 +5,7 @@
 ####################################
 
 #' @rdname factors_names
-#' @param object a \code{\link{BioFAM}} object.
+#' @param object a \code{\link{MOFA}} object.
 #' @aliases factors_names,MOFA-method
 #' @return character vector with the features names
 #' @export
@@ -116,7 +116,8 @@ setMethod("samples_metadata", signature(object="MOFA"),
           })
 
 #' @rdname samples_metadata
-#' @param value data frame with sample information, has to contain columns sample_name and group_name
+#' @param value data frame with sample metadata, it must at least contain the columns \code{sample_name} and \code{group_name}.
+#' The order of the rows must match the order of \code{samples_names(object)}
 #' @import methods
 #' @export
 setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"), 
@@ -199,9 +200,9 @@ setReplaceMethod("features_names", signature(object="MOFA", value="list"),
                    object
                  })
 
-########################################
-## Set and retriveve feature metadata ##
-########################################
+#######################################
+## Set and retrieve feature metadata ##
+#######################################
 
 #' @rdname features
 #' @param object a \code{\link{MOFA}} object.
@@ -213,7 +214,7 @@ setMethod("features_metadata", signature(object="MOFA"),
           })
 
 #' @rdname features_metadata
-#' @param value data frame with feature information, has to contain columns feature_name and view_name
+#' @param value data frame with feature information, it at least must contain the columns \code{feature_name} and \code{view_name}
 #' @import methods
 #' @export
 setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame"), 
@@ -334,7 +335,7 @@ setMethod("groups_names", signature(object="MOFA"),
 
 
 #' @rdname groups_names
-#' @param value character vector with the names for each sample group
+#' @param value character vector with the names for each group
 #' @import methods
 #' @export
 setMethod("groups_names<-", signature(object="MOFA", value="character"), 

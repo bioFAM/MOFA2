@@ -2,20 +2,20 @@
 % Please edit documentation in R/run_mofa.R
 \name{run_mofa}
 \alias{run_mofa}
-\title{train a BioFAM model}
+\title{train a MOFA model}
 \usage{
 run_mofa(object, outfile = NA)
 }
 \arguments{
-\item{object}{an untrained \code{\link{MOFAmodel}} object}
+\item{object}{an untrained \code{\link{MOFA}} object}
 
 \item{outfile}{output file for the model (.hdf5 format). If NULL, a temporary file is created.}
 }
 \value{
-a trained \code{\link{MOFAmodel}} object
+a trained \code{\link{MOFA}} object
 }
 \description{
-Function to train an untrained \code{\link{MOFAmodel}} object.
+Function to train an untrained \code{\link{MOFA}} object.
 }
 \details{
 In this step the R package is calling the \code{mofapy2} Python package, where the the training is performed. \cr
