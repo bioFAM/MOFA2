@@ -24,29 +24,22 @@ The core of MOFA is implemented in Python. However, the whole procedure can be r
 ### Python dependencies 
 Python dependencies can be installed using pip (from the Unix terminal)
 ```r
-pip install mofa2
+pip install mofapy2
 ```
 
 Alternatively, they can be installed from R itself using the reticulate package:
 ```r
 library(reticulate)
-py_install("mofa2", envname = "r-reticulate", method="auto")
+py_install("mofapy2", envname = "r-reticulate", method="auto")
 ```
 
 ### MOFA2 R package
-This is the core software itself. Can be installed using R:
+Can be installed using R:
 ```r
 devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data"))
 ```
 --------------
-### Using Docker image
-
-You can build an image with all dependencies installed using the provided [Dockerfile](./Dockerfile):
-
-```
-docker build -t biofam .
-```
-
+### Using Docker image (in preparation...)
 
 ## Usage
 
