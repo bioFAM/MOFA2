@@ -5,7 +5,7 @@ from setuptools import find_packages
 def setup_package():
   install_requires = ['pandas', 'scipy', 'numpy', 'sklearn', 'argparse', 'h5py']
   metadata = dict(
-      name = 'mofa2',
+      name = 'mofapy2',
       version = '0.1',
       description = 'Multi-Omics Factor Analysis v2, a statistical framework for the integration of multi-group and multi-omics data',
       url = 'http://github.com/PMBio/biofam',
