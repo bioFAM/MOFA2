@@ -49,7 +49,7 @@
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} object
-#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats dplyr stats
+#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats stats dplyr
 #' @export
 plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
@@ -220,25 +220,27 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
-#' using the factor names, or as numeric with the index of the factors
-#' @param color_by specifies groups or values used to color the samples. 
-#' This can be either 
-#' the string "group" : in this case, the plot will color samples with respect to the groups they belong to
-#' a character giving the name of a feature present in the training data.
-#' a character giving the same of a column present in the sample metadata.
-#' or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' @param shape_by specifies groups or values used to shape the samples. 
-#' This can be either
-#' a character giving the name of a feature present in the training data, 
-#' a character giving the same of a column present in the sample metadata.
-#' or a vector of the same length as the number of samples specifying discrete groups.
-#' @param color_name name for color legend (usually only used if color_by is not a character itself)
-#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself)
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param scale logical indicating whether to scale factor values.
+#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
+#' using the factor names, or as numeric with the index of the factors
+#' @param color_by specifies groups or values used to color the samples. This can be either:
+#' (1) a character giving the name of a feature present in the training data.
+#' (2) a character giving the same of a column present in the sample metadata.
+#' (3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
+#' @param shape_by specifies groups or values used to shape the samples. This can be either:
+#' (1) a character giving the name of a feature present in the training data, 
+#' (2) a character giving the same of a column present in the sample metadata.
+#' (3) a vector of the same length as the number of samples specifying discrete groups.
+#' @param color_name name for color legend.
+#' @param shape_name name for shape legend.
+#' @param dot_size numeric indicating dot size.
+#' @param alpha numeric indicating dot transparency.
+#' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
-#' Similar function is
+#' TO-FINISH...
 #' \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2 magrittr tidyr GGally

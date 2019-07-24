@@ -78,13 +78,16 @@ compare_elbo <- function(models) {
     ELBO = elbo_vals, 
     model = names(models)
   )
+  df$logELBO <- -log2(-df$ELBO)
   
-  gg <- ggplot(df, aes(x=model, y=-log2(-ELBO))) + 
+  gg <- ggplot(df, aes_string(x="model", y="logELBO")) + 
     geom_bar(stat="identity", color="black", fill="grey70") +
     labs(x="", y="log Evidence Lower Bound (ELBO)") +
     theme_classic()
   
-  gg <- gg + theme(axis.text.x=element_text(angle=60, vjust=1, hjust=1))
+  gg <- gg + theme(
+    axis.text.x=element_text(angle=60, vjust=1, hjust=1)
+  )
   
   return(gg)
 }

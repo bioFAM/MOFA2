@@ -57,7 +57,7 @@ create_mofa <- function(data, groups = NULL) {
 
   # Create features metadata
   tmp <- data.frame(
-    feature_name = unname(unlist(lapply(object@data[[1]], rownames))),
+    feature_name = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
     view_name = unlist(lapply(1:object@dimensions$M, function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )

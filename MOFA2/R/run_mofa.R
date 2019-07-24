@@ -40,7 +40,6 @@ run_mofa <- function(object, outfile = NA) {
   # Set data options
   mofa_entrypoint$set_data_options(
     likelihoods = unname(object@model_options$likelihoods),
-    center_features_per_group = object@data_options$center_features_per_group,
     scale_views = object@data_options$scale_views
   )
   

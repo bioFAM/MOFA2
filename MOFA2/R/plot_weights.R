@@ -297,11 +297,11 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   
   # Make features names unique
   W$feature_id <- W$feature
-  # if ((length(unique(W$view)) > 1) && (nfeatures > 0) && (any(duplicated(W[W$factor == factors[1],]$feature_id)))) {
-  #   message("Duplicated feature names across views, we will add the view name as a prefix")
-  #   W$feature_id <- paste(W$view, W$feature, sep="_")
-  # }
-  W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
+  if ((length(unique(W$view)) > 1) && (nfeatures > 0) && (any(duplicated(W[W$factor == factors[1],]$feature_id)))) {
+    message("Duplicated feature names across views, we will add the view name as a prefix")
+    W$feature_id <- paste(W$view, W$feature, sep="_")
+  }
+  
   
   # Convert plotting group
   W$tmp <- as.factor(W$group != "0")
@@ -316,6 +316,10 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   W <- merge(W, color_by, by=c("feature","view"))
   W <- merge(W, shape_by, by=c("feature","view"))
 
+  # Sort by loading
+  W <- by(W, list(W$factor), function(x) x[order(x$value),])
+  W <- do.call(rbind, W)
+  W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
   
   # Generate plot
   p <- ggplot(W, aes_string(x="value", y="feature_id", col="group")) +

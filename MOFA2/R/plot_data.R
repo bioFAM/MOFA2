@@ -169,7 +169,9 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
 #' @param imputed logical indicating whether to include imputed measurements
 #' @param color_name name for color legend (usually only used if color_by is not a character itself).
+#' @param color_legend logical indicating whether to add a legend for the color.
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
+#' @param shape_legend logical indicating whether to add a legend for the shape.
 #' @details One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, 
 #' which show you which features drive the heterogeneity of each factor. 
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr

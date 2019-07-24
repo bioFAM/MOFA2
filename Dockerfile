@@ -13,6 +13,6 @@ RUN R --vanilla -e "\
            'ggplot2', 'ggbeeswarm', 'scales', 'GGally', 'doParallel', 'RColorBrewer', \
            'cowplot', 'ggrepel', 'foreach', 'reticulate', 'HDF5Array', 'DelayedArray'), \ 
          BiocManager::install)"
-RUN R CMD INSTALL --build BioFAMtools
+RUN R CMD INSTALL --build MOFA2
 
 CMD []
