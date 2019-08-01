@@ -19,7 +19,8 @@ samples_metadata(object) <- value
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{value}{data frame with sample information, has to contain columns sample_name and group_name}
+\item{value}{data frame with sample metadata, it must at least contain the columns \code{sample_name} and \code{group_name}.
+The order of the rows must match the order of \code{samples_names(object)}}
 }
 \value{
 a data frame with sample metadata

@@ -9,8 +9,7 @@ get_expectations(object, variable, as.data.frame = FALSE)
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{variable}{variable name: 'Z' for factors, 'W' for weights, 'Tau' for noise,
-'Y' for pseudodata, 'Theta' for feature-wise spike-and-slab sparsity, 'AlphaW' for view and factor-wise ARD sparsity}
+\item{variable}{variable name: 'Z' for factors and 'W' for weights.}
 
 \item{as.data.frame}{logical indicating whether to output the result as a long data frame, default is \code{FALSE}.}
 }
@@ -19,9 +18,6 @@ the output varies depending on the variable of interest: \cr
 \itemize{
  \item{"Z"}{a matrix with dimensions (samples,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)}
  \item{"W"}{a list of length (views) where each element is a matrix with dimensions (features,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (view,feature,factor,value)}
- \item{"Y"}{a list of length (views) where each element is a matrix with dimensions (features,samples). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (view,feature,sample,value)}
- \item{"Theta"}{}
- \item{"Tau"}{}
 }
 }
 \description{

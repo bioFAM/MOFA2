@@ -19,7 +19,7 @@ groups_names(object) <- value
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{value}{character vector with the names for each sample group}
+\item{value}{character vector with the names for each group}
 }
 \value{
 character vector with the names for each sample group

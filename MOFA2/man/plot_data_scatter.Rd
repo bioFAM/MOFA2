@@ -34,6 +34,8 @@ plot_data_scatter(object, view, factor, groups = "all", features = 10,
 
 \item{color_name}{name for color legend (usually only used if color_by is not a character itself).}
 
+\item{color_legend}{logical indicating whether to add a legend for the color.}
+
 \item{shape_by}{specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
 \itemize{
 \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
@@ -44,6 +46,8 @@ plot_data_scatter(object, view, factor, groups = "all", features = 10,
 }}
 
 \item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself).}
+
+\item{shape_legend}{logical indicating whether to add a legend for the shape.}
 
 \item{dot_size}{numeric indicating dot size.}
 

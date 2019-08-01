@@ -16,8 +16,9 @@ Default is "all".}
 \item{features}{list of character vectors with the feature names or list of numeric vectors with the feature indices. 
 Default is "all"}
 
-\item{as.data.frame}{logical indicating whether to return a long data frame instead of a list of matrices.
-Default is \code{FALSE}.}
+\item{as.data.frame}{logical indicating whether to return a long data frame instead of a list of matrices.}
+
+\item{add_intercept}{logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.}
 }
 \description{
 Fetch the input data

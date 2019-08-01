@@ -12,29 +12,36 @@ plot_factors(object, factors = c(1, 2), show_missing = TRUE,
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{factors}{a vector of length two with the factors to plot. Factors can be specified either as a characters
-using the factor names, or as numeric with the index of the factors}
+\item{factors}{a vector of length two with the factors to plot. Factors can be specified either as a characters}
 
 \item{show_missing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
 
-\item{color_by}{specifies groups or values used to color the samples. 
-This can be either 
-the string "group" : in this case, the plot will color samples with respect to the groups they belong to
-a character giving the name of a feature present in the training data, 
-a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-or a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
+\item{scale}{logical indicating whether to scale factor values.}
 
-\item{shape_by}{specifies groups or values used to shape the samples. 
-This can be either
-a character giving the name of a feature present in the training data, 
-a character giving the same of a covariate (only if using \code{\link{MultiAssayExperiment}} as input), 
-or a vector of the same length as the number of samples specifying discrete groups.}
+\item{color_by}{specifies groups or values used to color the samples. This can be either:
+(1) a character giving the name of a feature present in the training data.
+(2) a character giving the same of a column present in the sample metadata.
+(3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
 
-\item{color_name}{name for color legend (usually only used if color_by is not a character itself)}
+\item{shape_by}{specifies groups or values used to shape the samples. This can be either:
+(1) a character giving the name of a feature present in the training data, 
+(2) a character giving the same of a column present in the sample metadata.
+(3) a vector of the same length as the number of samples specifying discrete groups.}
 
-\item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself)}
+\item{color_name}{name for color legend.}
+
+\item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself).
+using the factor names, or as numeric with the index of the factors}
+
+\item{dot_size}{numeric indicating dot size.}
+
+\item{alpha}{numeric indicating dot transparency.}
+
+\item{legend}{logical indicating whether to add legend.}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
+
+\item{shape_name}{name for shape legend.}
 }
 \value{
 Returns a \code{ggplot2} object
@@ -45,6 +52,6 @@ Scatterplot of the values of two latent factors.
 \details{
 One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 This method generates a single scatterplot for the combination of two latent factors.
-Similar function is
+TO-FINISH...
 \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 }

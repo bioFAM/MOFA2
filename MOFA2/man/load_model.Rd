@@ -19,8 +19,6 @@ On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\li
 \item{load_data}{logical indicating whether to load the training data (default is TRUE, it can be memory expensive)}
 
 \item{remove_outliers}{logical indicating whether to mask outlier values.}
-
-\item{object}{either NULL (default) or an an existing untrained mofa object. If NULL, the \code{\link{MOFA}} object is created from the scratch.}
 }
 \value{
 a \code{\link{MOFA}} model

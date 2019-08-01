@@ -7,26 +7,17 @@
 compare_factors(models, ...)
 }
 \arguments{
-\item{models}{a list containing \code{\link{MOFA}} objects.}
+\item{models}{a list with \code{\link{MOFA}} objects.}
 
 \item{...}{extra arguments passed to pheatmap}
-
-\item{comparison}{tye of comparison, either 'pairwise' or 'all'}
 }
 \value{
-Plots a heatmap of correlation of Latent Factors in all models when 'comparison' is 'all'.
-Otherwise, for each pair of models, a seperate heatmap is produced comparing one model againt the other.
-The corresponding correlation matrix or list or pairwise correlation matrices is returned
+Plots a heatmap of the Pearson correlation between latent factors across all input models.
 }
 \description{
-Different objects of \code{\link{MOFA}} are compared in terms of correlation between
-their latent factors. The correlation is calculated only on those samples which are present in all models.
-Ideally, the output should look like a block diagonal matrix, suggesting that all detected factors are robust under different initialisations.
-If not, it suggests that some factors are weak and not captured by all models.
+Different \code{\link{MOFA}} objects are compared in terms of correlation between their factors.
 }
 \details{
-TO-FILL
-}
-\references{
-fill this
+If assessing model robustness across trials, the output should look like a block diagonal matrix, 
+suggesting that all factors are robustly detected in all model instances.
 }

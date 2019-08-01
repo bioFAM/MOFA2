@@ -29,7 +29,7 @@ create_mofa <- function(data, groups = NULL) {
   } else if (is(data, "data.frame")) {
     
     message("Creating MOFA object from a data.frame...")
-    object <- .create_mofa_from_df(as.data.frame(data))
+    object <- .create_mofa_from_df(data)
     
   # Creating MOFA object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
@@ -72,6 +72,7 @@ create_mofa <- function(data, groups = NULL) {
 .create_mofa_from_df <- function(df) {
   
   # Quality controls
+  data <- as.data.frame(data)
   stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))
   stopifnot(all(is.numeric(df$value)))
   

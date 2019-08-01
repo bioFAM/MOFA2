@@ -4,7 +4,7 @@
 \alias{select_model}
 \title{Select a model from a list of trained \code{\link{MOFA}} objects based on the best ELBO value}
 \usage{
-select_model(models, plotit = TRUE)
+select_model(models)
 }
 \arguments{
 \item{models}{a list containing \code{\link{MOFA}} objects.}

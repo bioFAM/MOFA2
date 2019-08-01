@@ -9,7 +9,8 @@ subset_groups(object, groups)
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{groups}{character vector with the groups names, numeric vector with the groups indices or logical vector with the groups to be kept as TRUE.}
+\item{groups}{character vector with the groups names, numeric vector with the groups indices
+or logical vector with the groups to be kept as TRUE.}
 }
 \description{
 Method to subset (or sort) groups
