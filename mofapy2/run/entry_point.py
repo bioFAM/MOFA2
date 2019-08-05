@@ -347,7 +347,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
+        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False,
         ):
         """ Set training options """
 
@@ -452,6 +452,9 @@ class entry_point(object):
 
         # Use TauTrick to speed up ELBO computation?
         self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
+
+        # Save variational parameters?
+        self.train_opts['save_parameters'] = save_parameters
 
     def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
@@ -609,7 +612,8 @@ class entry_point(object):
         else:
             tmp.saveExpectations(nodes=["Y","W","Z"])
 
-        tmp.saveParameters(nodes=["W","Z"])
+        if self.train_opts["save_parameters"]:
+            tmp.saveParameters(nodes=["W","Z"])
 
         tmp.saveModelOptions()
         tmp.saveTrainOptions()
