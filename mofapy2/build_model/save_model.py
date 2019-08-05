@@ -150,7 +150,76 @@ class saveModel():
         pass
 
     def saveParameters(self, nodes="all"):
-        print("saveParameters is depreciated")
+
+        # Get nodes from the model
+        nodes_dic = self.model.getNodes()
+        if type(nodes) is str:
+            nodes = list(nodes_dic.keys()) if nodes=="all" else [nodes]
+        elif type(nodes) is list or type(nodes) is tuple:
+            assert set(nodes).issubset(["Z","W","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW"]), "Unrecognised nodes"
+        nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
+
+        # Define nodes which special characteristics 
+        # (note that this is ugly and is not proper class-oriented programming)
+        multigroup_nodes = ["Y","Tau","Z"]
+
+        # Create HDF5 group
+        grp = self.hdf5.create_group("parameters")
+
+        # Iterate over nodes
+        for n in nodes_dic:
+            # Create subgroup for the node
+            node_subgrp = grp.create_group(n)
+
+            # Collect node parameters
+            par = nodes_dic[n].getParameters()
+
+            # Multi-view nodes
+            if isinstance(nodes_dic[n],Multiview_Node):
+                for m in range(nodes_dic[n].M):
+
+                    # Create subgroup for the view
+                    view_subgrp = node_subgrp.create_group(self.views_names[m])
+
+                    # Multi-groups nodes
+                    if n in multigroup_nodes:
+
+                        for g in self.groups_names:
+                            grp_subgrp = view_subgrp.create_group(g)
+
+                            # create hdf5 data set for the parameter
+                            samp_indices = np.where(np.array(self.samples_groups) == g)[0]
+
+                            for k in par[m].keys():
+                                tmp = par[m][k][samp_indices,:]
+                                grp_subgrp.create_dataset(k, data=tmp, compression="gzip", compression_opts=self.compression_level)
+
+                    # Single-groups nodes
+                    else:
+                        for k in par[m].keys():
+                            # import pdb; pdb.set_trace()
+                            if k not in ["mean_B0","var_B0"]:
+                                tmp = par[m][k].T
+                                view_subgrp.create_dataset(k, data=tmp, compression="gzip", compression_opts=self.compression_level)
+
+            # Single-view nodes
+            else:
+
+                # Multi-group nodes
+                if n in multigroup_nodes:
+                    for g in self.groups_names:
+                        grp_subgrp = node_subgrp.create_group(g)
+                        samp_indices = np.where(np.array(self.samples_groups) == g)[0]
+
+                        for k in par.keys():
+                            tmp = par[k][samp_indices,:].T
+                            grp_subgrp.create_dataset(k, data=tmp, compression="gzip", compression_opts=self.compression_level)
+
+                # Single-group nodes
+                else:
+                    for k in par.keys():
+                        node_subgrp.create_dataset(k, data=par[k].T, compression="gzip", compression_opts=self.compression_level)
+
         pass
 
     def saveModelOptions(self):

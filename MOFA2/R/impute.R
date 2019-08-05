@@ -47,3 +47,36 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
   
   return(object)
 }
+
+
+impute2 <- function(object, views = "all", groups = "all", factors = "all") {
+  
+  # Get views and groups
+  views  <- .check_and_get_views(object, views)
+  groups <- .check_and_get_groups(object, groups)
+  
+
+  # Do predictions by sampling from the variational distributions
+  file = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
+  par =  h5read(file, "parameters")
+
+  # 
+  # (...)
+
+  # imputed should be a list containing mean and variance for each 
+  imputed <- get_data(object, views=views, groups=groups, add_intercept = FALSE)
+  for (m in views) {
+    for (g in groups) {
+      (...)
+    }
+  }
+
+  # Save imputed data in the corresponding slot  
+  object@imputed_data <- imputed
+  
+  return(object)
+}
+
+impute2.plot <- function() {
+
+}

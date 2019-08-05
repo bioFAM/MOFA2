@@ -609,6 +609,8 @@ class entry_point(object):
         else:
             tmp.saveExpectations(nodes=["Y","W","Z"])
 
+        tmp.saveParameters(nodes=["W","Z"])
+
         tmp.saveModelOptions()
         tmp.saveTrainOptions()
         tmp.saveTrainingStats()
