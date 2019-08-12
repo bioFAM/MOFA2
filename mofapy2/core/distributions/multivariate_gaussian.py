@@ -88,7 +88,6 @@ class MultivariateGaussian(Distribution):
         # Work but not useful now !
         #EXXT = self.params['cov'].copy()
         # TODO sort out index
-        # import pdb; pdb.set_trace()
 
         #if self.axis_cov == 1:
         #    for i in range(self.dim[0]):

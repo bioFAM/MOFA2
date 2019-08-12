@@ -53,7 +53,7 @@ class BayesNet(object):
         assert "freq_drop" in train_opts, "'freq_drop' not found in the training options dictionary"
         assert "verbose" in train_opts, "'verbose' not found in the training options dictionary"
         assert "quiet" in train_opts, "'quiet' not found in the training options dictionary"
-        assert "tolerance" in train_opts, "'tolerance' not found in the training options dictionary"
+        # assert "tolerance" in train_opts, "'tolerance' not found in the training options dictionary"
         assert "convergence_mode" in train_opts, "'convergence_mode' not found in the training options dictionary"
         assert "forceiter" in train_opts, "'forceiter' not found in the training options dictionary"
         assert "schedule" in train_opts, "'schedule' not found in the training options dictionary"
@@ -257,7 +257,9 @@ class BayesNet(object):
                 if i>self.options["start_elbo"] and not self.options['forceiter']:
                     convergence_token, converged = self.assess_convergence(delta_elbo, elbo.iloc[0]["total"], convergence_token)
                     if converged:
-                        number_factors = number_factors[:i]; elbo = elbo[:i]
+                        number_factors = number_factors[:i]
+                        elbo = elbo[:i]
+                        iter_time = iter_time[:i]
                         print ("\nConverged!\n"); break
 
             # Do not calculate lower bound
