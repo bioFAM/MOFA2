@@ -9,11 +9,11 @@ import pandas as pd
 
 # Option 1: a nested list of matrices, where the first index refers to the view and the second index refers to the group.
 #           samples are stored in the rows and features are stored in the columns.
-#           Importantly, all views for a given group G must the same number of samples. 
+#           Importantly, all views for a given group G must the same number of samples.
 #           If there is any sample that is missing a particular view, the column needs to be filled with NAs
 
 # Option 2: a data.frame with columns ["sample","feature","view","group","value"]
-#           In this case there is no need to have missing values in the data.frame, 
+#           In this case there is no need to have missing values in the data.frame,
 #           they will be automatically filled in when creating the corresponding matrices
 
 datadir = "/Users/ricard/data/mofaplus/test"
@@ -34,7 +34,7 @@ lik = ["gaussian"]*len(data)
 ## Initialise MOFA model ##
 ###########################
 
-# initialise the entry point    
+# initialise the entry point
 ent = entry_point()
 
 # Set data options
@@ -81,6 +81,7 @@ ent.set_train_options(iter=10, convergence_mode="fast", startELBO=1, elbofreq=1,
 
 ent.build()
 ent.run()
+ent.impute()
 
 ####################
 ## Save the model ##

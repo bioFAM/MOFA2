@@ -20,16 +20,16 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the mofapy2 banner """
 
-        banner = r""" 
+        banner = r"""
 
          _     _        __                       |￣￣￣￣￣￣￣|
-        | |__ (_) ___  / _| __ _ _ __ ___        |              | 
-        | '_ \| |/ _ \| |_ / _` | '_ ` _ \       |    MOFA+     |  
-        | |_) | | (_) |  _| (_| | | | | | |      |              | 
-        |_.__/|_|\___/|_|  \__,_|_| |_| |_|      | ＿＿＿＿＿＿_|  
-                                                 (\__/) ||  
-                                                 (•ㅅ•) ||  
-                                                 / 　 づ 
+        | |__ (_) ___  / _| __ _ _ __ ___        |              |
+        | '_ \| |/ _ \| |_ / _` | '_ ` _ \       |    MOFA+     |
+        | |_) | | (_) |  _| (_| | | | | | |      |              |
+        |_.__/|_|\___/|_|  \__,_|_| |_| |_|      | ＿＿＿＿＿＿_|
+                                                 (\__/) ||
+                                                 (•ㅅ•) ||
+                                                 / 　 づ
         """
 
         print(banner)
@@ -387,7 +387,7 @@ class entry_point(object):
         self.train_opts['gpu_mode'] = gpu_mode
 
         # Minimum Variance explained threshold to drop inactive factors
-        if dropR2 is not None: 
+        if dropR2 is not None:
             dropR2 = float(dropR2)
             if dropR2 < 0: dropR2 = None
         self.train_opts['drop'] = { "min_r2":dropR2 }
@@ -398,7 +398,7 @@ class entry_point(object):
         if ((dropR2 is not None) & (self.dimensionalities["N"]>1e4)):
             print("Warning: actively dropping factors during model training can be slow in large data sets.")
             print("Consider training the model with set drop_factor_threshold = -1 and prune them a posteriori")
-        
+
 
         # Tolerance level for convergence
         self.train_opts['tolerance'] = float(tolerance)
@@ -577,6 +577,28 @@ class entry_point(object):
         # Train the model
         train_model(self.model)
 
+    def impute(self, uncertainty=True):
+        """impute missing values with or without uncertainty estimates"""
+
+        # get the necessary parameters
+        W = [w['E'] for w in self.model.nodes['W'].getExpectations()]
+        Z = self.model.nodes['Z'].getExpectations()['E']
+
+        pred_mean = [Z.dot(w.T)for w in W]
+
+        if uncertainty:
+            W2 = [w['E2'] for w in self.model.nodes['W'].getExpectations()]
+            Z2 = self.model.nodes['Z'].getExpectations()['E2']
+            Tau = [tau['E'] for tau in self.model.nodes['Tau'].getExpectations()]
+
+            pred_var = [Z2.dot(W2[v].T) - (Z**2.).dot(W[v].T**2.) + 1./Tau[v] for v in range(len(W))]
+
+        # mask ?
+        self.pred = pred_mean
+        self.pred_uncertainty = pred_var
+
+
+
     def save(self, outfile):
         """ Save the model in an hdf5 file """
 
@@ -647,9 +669,9 @@ def mofa(adata, groups_label=None, use_raw=False,
     """
 
     ent = entry_point()
-    
+
     lik = [likelihood]
-    
+
     ent.set_data_options(lik, center_features_per_group=True, scale_views=False)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
     ent.set_model_options(ard_z=True, spikeslab_w=True, spikeslab_z=True, ard_w=True, factors=n_factors, likelihoods=lik)
@@ -677,5 +699,3 @@ def mofa(adata, groups_label=None, use_raw=False,
             print("Saved MOFA embeddings in adata.obsm.X_mofa slot and their loadings in adata.varm.LFs.")
     else:
         print("Can not add embeddings and loadings to AnnData object since h5py is not installed.")
-
-

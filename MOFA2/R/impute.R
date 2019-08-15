@@ -10,25 +10,25 @@
 #' @param views character vector with the view name(s), or numeric vector with view index(es).
 #' @param groups character vector with the group name(s), or numeric vector with group index(es).
 #' @param factors character vector with the factor names, or numeric vector with the factor index(es).
-#' @param type type of imputation. 
+#' @param type type of imputation.
 #' \itemize{
 #' \item \strong{response}:{gives mean for gaussian and poisson and probabilities for bernoulli.}
 #' \item \strong{link}: {gives the linear predictions.}
 #' \item \strong{inRange}: {rounds the fitted values from "terms" for integer-valued distributions to the next integer (default).}
 #' }
-#' @details matrix factorization models generate a denoised and condensed low-dimensional representation of the data which capture the main sources of heterogeneity of the data. 
+#' @details matrix factorization models generate a denoised and condensed low-dimensional representation of the data which capture the main sources of heterogeneity of the data.
 #' These representation can be used to do predictions using the equation \code{Y = WX}. For more details read the supplementary methods of the manuscript. \cr
 #' This method fills the \code{ImputedData} slot by replacing the missing values in the input data with the model predictions.
 #' @export
 impute <- function(object, views = "all", groups = "all", factors = "all", type = c("inRange", "response", "link")) {
-  
+
   # Get views and groups
   views  <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
-  
-  # Select imputation type  
+
+  # Select imputation type
   type <- match.arg(type)
-  
+
   # Do predictions
   pred <- predict(object, views=views, factors=factors, type=type)
 
@@ -42,41 +42,49 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
     }
   }
 
-  # Save imputed data in the corresponding slot  
+  # Save imputed data in the corresponding slot
   object@imputed_data <- imputed
-  
+
   return(object)
 }
 
-
-impute2 <- function(object, views = "all", groups = "all", factors = "all") {
-  
-  # Get views and groups
-  views  <- .check_and_get_views(object, views)
-  groups <- .check_and_get_groups(object, groups)
-  
-
-  # Do predictions by sampling from the variational distributions
-  file = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
-  par =  h5read(file, "parameters")
-
-  # 
-  # (...)
-
-  # imputed should be a list containing mean and variance for each 
-  imputed <- get_data(object, views=views, groups=groups, add_intercept = FALSE)
-  for (m in views) {
-    for (g in groups) {
-      (...)
-    }
-  }
-
-  # Save imputed data in the corresponding slot  
-  object@imputed_data <- imputed
-  
-  return(object)
-}
-
-impute2.plot <- function() {
-
-}
+# 
+# impute2 <- function(object, views = "all", groups = "all", factors = "all") {
+#
+#   # Get views and groups
+#   views  <- .check_and_get_views(object, views)
+#   groups <- .check_and_get_groups(object, groups)
+#
+#
+#   # Do predictions by sampling from the variational distributions
+#   # TODO fix that
+#   file = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
+#   par =  h5read(file, "parameters")
+#
+#   tmp <- predict2(object, par, views=views, factors=factors)
+#   pred_mean = tmp[[1]]
+#   pred_var = tmp[[2]]
+#
+#   # imputed should be a list containing mean and variance for each
+#   imputed_mean <- get_data(object, views=views, groups=groups, add_intercept = FALSE)
+#   imputed_var <- get_data(object, views=views, groups=groups, add_intercept = FALSE)
+#   for (m in views) {
+#     for (g in groups) {
+#       non_observed <- which(is.na(imputed_mean[[m]][[g]]), arr.ind = T)
+#
+#       imputed_mean[[m]][[g]][non_observed] <- pred_mean[[m]][[g]][non_observed]
+#       imputed_var[[m]][[g]][non_observed] <- pred_var[[m]][[g]][non_observed]
+#       imputed_var[[m]][[g]][-non_observed] <- 0 # TODO check that
+#     }
+#   }
+#
+#   # Save imputed data in the corresponding slot
+#   object@imputed_data <- imputed
+#   object@imputed_uncertainty <- imputed
+#
+#   return(object)
+# }
+#
+# impute2.plot <- function() {
+#
+# }
