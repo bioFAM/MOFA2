@@ -345,7 +345,7 @@ class entry_point(object):
             self.data = process_data([loom[:,:].T], self.data_opts, self.data_opts['samples_groups'])
 
     def set_train_options(self,
-        iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=0.01, convergence_mode="medium",
+        iter=5000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=None, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False,
         ):
@@ -401,7 +401,11 @@ class entry_point(object):
 
 
         # Tolerance level for convergence
-        self.train_opts['tolerance'] = float(tolerance)
+        if tolerance is not None:
+            print("Warning: tolerance argument is depreciated, use the 'convergence_mode' argument instead")
+            self.train_opts['tolerance'] = float(tolerance)
+
+        # Convergence mode
         self.train_opts['convergence_mode'] = str(convergence_mode)
         if verbose: print("Convergence mode: %s\n" % convergence_mode)
 

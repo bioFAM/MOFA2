@@ -243,7 +243,6 @@ class initModel(object):
                     #     imp = SimpleImputer(missing_values=np.nan, strategy='mean') # using the mean along each column
                     #     imp.fit(Y[m])
                     #     imp.transform(Y[m])
-                    #     import pdb; pdb.set_trace()
 
                     pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                     pca.fit(Y[m])

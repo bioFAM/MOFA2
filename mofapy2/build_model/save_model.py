@@ -197,7 +197,6 @@ class saveModel():
                     # Single-groups nodes
                     else:
                         for k in par[m].keys():
-                            # import pdb; pdb.set_trace()
                             if k not in ["mean_B0","var_B0"]:
                                 tmp = par[m][k].T
                                 view_subgrp.create_dataset(k, data=tmp, compression="gzip", compression_opts=self.compression_level)
