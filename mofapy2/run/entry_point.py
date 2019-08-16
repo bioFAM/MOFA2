@@ -597,6 +597,8 @@ class entry_point(object):
         self.pred = pred_mean
         self.pred_uncertainty = pred_var
 
+        import pdb; pdb.set_trace()
+
 
 
     def save(self, outfile):
