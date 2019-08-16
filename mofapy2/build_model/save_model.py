@@ -85,6 +85,29 @@ class saveModel():
                 # Create hdf5 data set for intercepts
                 intercept_subgrp.create_dataset(self.groups_names[g], data=self.intercepts[m][g])
 
+    def saveImputedData(self, mean, variance):
+        """ Method to save the training data"""
+        
+        # Create HDF5 groups
+        data_grp = self.hdf5.create_group("imputed_data")
+
+        # Save mean
+        for m in range(len(mean)):
+            view_subgrp = data_grp.create_group(self.views_names[m])
+            for g in range(len(self.groups_names)):
+
+                # Subset group
+                samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
+
+                # Create HDF5 subgroup
+                group_subgrp = view_subgrp.create_group(self.groups_names[g])
+
+                # Create hdf5 data sets for the mean and the variance
+                group_subgrp.create_dataset("mean", data=mean[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
+                if variance is not None:
+                    group_subgrp.create_dataset("variance", data=variance[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
+                
+
     def saveExpectations(self, nodes="all"):
 
         # Get nodes from the model

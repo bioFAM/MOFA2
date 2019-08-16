@@ -16,6 +16,7 @@ class entry_point(object):
         self.print_banner()
         self.dimensionalities = {}
         self.model = None
+        self.imputed = False # flag
 
     def print_banner(self):
         """ Method to print the mofapy2 banner """
@@ -596,14 +597,13 @@ class entry_point(object):
             Tau = [tau['E'] for tau in self.model.nodes['Tau'].getExpectations()]
 
             pred_var = [Z2.dot(W2[v].T) - (Z**2.).dot(W[v].T**2.) + 1./Tau[v] for v in range(len(W))]
+            self.imputed_data = { "mean":pred_mean, "variance":pred_var }
+        else:
+            self.imputed_data = { "mean":pred_mean, "variance":None }
 
-        # mask ?
-        self.pred = pred_mean
-        self.pred_uncertainty = pred_var
+        self.imputed = True # change flag
 
-        import pdb; pdb.set_trace()
-
-
+        # TO-DO: REPLACE ONLY MISSING ENTRIES. FOR HTE ONES WHICH ARE NOT MISSING AT VARIANCE =NA
 
     def save(self, outfile):
         """ Save the model in an hdf5 file """
@@ -647,6 +647,10 @@ class entry_point(object):
         tmp.saveTrainOptions()
         tmp.saveTrainingStats()
         tmp.saveData()
+
+        if self.imputed:
+            tmp.saveImputedData(self.imputed_data["mean"], self.imputed_data["variance"])
+
 
 
 def mofa(adata, groups_label=None, use_raw=False,

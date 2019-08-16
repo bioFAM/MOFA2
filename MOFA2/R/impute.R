@@ -84,7 +84,35 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
 #
 #   return(object)
 # }
-#
-# impute2.plot <- function() {
-#
-# }
+
+
+impute.plot <- function(object, view, features, factor, groups = "all") {
+  
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  
+  # Get view
+  if (is.numeric(view)) view <- views_names(object)[view]
+  stopifnot(view %in% views_names(object))
+  
+  # Get groups
+  groups <- .check_and_get_groups(object, groups)
+  
+  # Get factor
+  if (is.numeric(factor)) factor <- factors_names(object)[factor]
+  stopifnot(factor %in% factors_names(object)) 
+  Z.df <- get_factors(object, groups=groups, factors=factor, as.data.frame = TRUE)
+  colnames(Z.df) <- c("sample", "factor", "factor.value", "group")
+  
+  # Fetch data
+  imputed.df <- get_imputed_data2(object, views = view, groups = groups, features = "all", as.data.frame = TRUE)
+  df <- merge(Z.df, imputed.df, by=c("sample","group"))
+  df <- df[df$feature=="feature0_view0",]
+  
+
+  df2 <- reshape2::dcast(df, formula=sample+view+group+feature+factor+factor.value~estimate, value.var="value")
+  df2$stdev <- sqrt(df2$variance)
+  
+  ggplot(df2, aes_string(x="factor.value", y="mean")) +
+    geom_pointrange(aes(ymin=mean-stdev, ymax=mean+stdev)) +
+    theme_classic()

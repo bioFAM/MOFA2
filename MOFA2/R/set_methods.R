@@ -98,6 +98,7 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    
                    # Add samples names to the data matrices
                    object <- .set_data_names(object, entity = 'samples', value)
+                   object <- .set_imputed_data_names(object, entity = 'samples', value)
                    
                    object
                  })
@@ -193,9 +194,8 @@ setReplaceMethod("features_names", signature(object="MOFA", value="list"),
                    object <- .set_expectations_names(object, entity = 'features', value)
                    
                    # Add features names to the data matrices
-                   # if (!is.null(dim(object@data[[1]][[1]]))) {
-                   # }
                    object <- .set_data_names(object, entity = 'features', value)
+                   object <- .set_imputed_data_names(object, entity = 'features', value)
                    
                    object
                  })
@@ -312,6 +312,10 @@ setMethod("views_names<-", signature(object="MOFA", value="character"),
             if (length(object@data)>0)
               names(object@data) <- value
             
+            # Set view names in the imputed data
+            if (length(object@imputed_data)>0)
+              names(object@imputed_data) <- value
+            
             # Set view names in the dimensionalities
             names(object@dimensions$D) <- value
             
@@ -390,10 +394,16 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
               }
             }
             
-            # Set sample group names in training data
+            # Set sample group names in data
             if (length(object@data)>0) {
               for (m in names(object@data))
                 names(object@data[[m]]) <- value
+            }
+            
+            # Set sample group names in imputed data
+            if (length(object@imputed_data)>0) {
+              for (m in names(object@imputed_data))
+                names(object@imputed_data[[m]]) <- value
             }
             
             # Set sample group names in dimensionalities
@@ -502,7 +512,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
 }
 
 
-# (Hidden) General function to set dimensions names for the data and intercepts
+# (Hidden) Function to set dimensions names for the data and intercepts
 .set_data_names <- function(object, entity, values) {
   
   stopifnot(entity %in% c("features", "samples"))
@@ -510,19 +520,42 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
   axes_options <- list(features = 1, samples = 2)
   
   for (m in 1:length(object@data)) {
-    for (p in 1:length(object@data[[m]])) {
-      deduced_ind <- if (entity == "features") m else p  # since ind corresponds to views (groups of features)
+    for (g in 1:length(object@data[[m]])) {
+      deduced_ind <- if (entity == "features") m else g  # since ind corresponds to views (groups of features)
       if (axes_options[[entity]] == 1) {
-        rownames(object@data[[m]][[p]]) <- values[[deduced_ind]]
+        rownames(object@data[[m]][[g]]) <- values[[deduced_ind]]
       } else {
-        colnames(object@data[[m]][[p]]) <- values[[deduced_ind]]
+        colnames(object@data[[m]][[g]]) <- values[[deduced_ind]]
       }
       
       if (entity=="features")
-        tryCatch(names(object@intercepts[[m]][[p]]) <- values[[deduced_ind]], error = function(e) { NULL })
+        tryCatch(names(object@intercepts[[m]][[g]]) <- values[[deduced_ind]], error = function(e) { NULL })
     }
   }
   
+  object
+}
+
+
+# (Hidden) Function to set dimensions names for the imputed data
+.set_imputed_data_names <- function(object, entity, values) {
+  
+  stopifnot(entity %in% c("features", "samples"))
+  
+  axes_options <- list(features = 1, samples = 2)
+  
+  for (m in 1:length(object@data)) {
+    for (g in 1:length(object@data[[m]])) {
+      deduced_ind <- if (entity == "features") m else g  # since ind corresponds to views (groups of features)
+      if (axes_options[[entity]] == 1) {
+        rownames(object@imputed_data[[m]][[g]][["mean"]]) <- values[[deduced_ind]]
+        rownames(object@imputed_data[[m]][[g]][["variance"]]) <- values[[deduced_ind]]
+      } else {
+        colnames(object@imputed_data[[m]][[g]][["mean"]]) <- values[[deduced_ind]]
+        colnames(object@imputed_data[[m]][[g]][["variance"]]) <- values[[deduced_ind]]
+      }
+    }
+  }
   object
 }
 

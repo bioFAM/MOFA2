@@ -20,7 +20,7 @@
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, remove_outliers = FALSE) {
+load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, remove_outliers = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -87,10 +87,35 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   #   }
   #   object@data <- data
   # }, error = function(x) { cat("Error defining feature and sample names\n") })
-
+  
   object@data <- data
   object@intercepts <- intercepts
-
+  
+  #######################
+  ## Load imputed data ##
+  #######################
+  
+  imputed_data <- list()
+  if (load_imputed_data) {
+    for (m in view_names) {
+      imputed_data[[m]] <- list()
+      for (g in group_names) {
+        imputed_data[[m]][[g]] <- list()
+        if (on_disk) {
+          # as DelayedArrays
+          # imputed_data[[m]][[g]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("imputed_data/%s/%s", m, g) ) )
+        } else {
+          # as matrices
+          imputed_data[[m]][[g]][["mean"]] <- h5read(file, sprintf("imputed_data/%s/%s/mean", m, g) )
+          imputed_data[[m]][[g]][["variance"]] <- h5read(file, sprintf("imputed_data/%s/%s/variance", m, g) )
+        }
+        # Replace NaN by NA
+        # imputed_data[[m]][[g]][is.nan(imputed_data[[m]][[g]])] <- NA # this realises into memory, TO FIX
+      }
+    }
+  }
+  object@imputed_data <- imputed_data
+  
   #######################
   ## Load expectations ##
   #######################
@@ -103,7 +128,6 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if ("AlphaZ" %in% node_names)
     expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
   if ("Z" %in% node_names)
-    
     expectations[["Z"]] <- h5read(file, "expectations/Z")
   if ("W" %in% node_names)
     expectations[["W"]] <- h5read(file, "expectations/W")
