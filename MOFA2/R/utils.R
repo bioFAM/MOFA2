@@ -28,18 +28,10 @@
   nested_list
 }
 
-.detect_outliers <- function(object, views = "all", groups = "all", factors = "all") {
+.detect_outliers <- function(object, groups = "all", factors = "all") {
   
   # Sanity checks
   if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
-  
-  # Define views
-  if (paste0(views, sep="", collapse="") == "all") { 
-    views <- views_names(object) 
-  } else {
-    stopifnot(all(views %in% views_names(object)))  
-  }
-  M <- length(views)
   
   # Define groups
   if (paste0(groups, sep="", collapse="") == "all") { 
@@ -66,10 +58,10 @@
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
       
-      cutoff <- 5 * 1.96
+      cutoff <- 3 * 1.96
       tmp <- abs(Z - mean(Z)) / sd(Z)
 
-      outliers <- names(which(tmp>cutoff))
+      outliers <- names(which(tmp>cutoff & abs(Z)>1))
       
       if (length(outliers)>0) {
         object@expectations$Z[[g]][,k][outliers] <- NA

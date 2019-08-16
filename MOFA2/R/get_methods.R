@@ -160,7 +160,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   # Add feature intercepts
   tryCatch( {
     
-    if (add_intercept) {
+    if (add_intercept & length(object@intercepts[[1]])>0) {
       intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
       intercepts <- .name_views_and_groups(intercepts, views, groups)
       
@@ -197,12 +197,14 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 #' Default is "all".
 #' @param groups character vector with the group name(s), or numeric vector with the group index(es).
 #' Default is "all".
+#' @param features list of character vectors with the feature names or list of numeric vectors with the feature indices. 
+#' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 #' Default is \code{FALSE}.
 #' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-get_imputed_data <- function(object, views = "all", groups = "all", as.data.frame = FALSE, add_intercept = TRUE) {
+get_imputed_data <- function(object, views = "all", groups = "all", features="all", as.data.frame = FALSE, add_intercept = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -212,19 +214,34 @@ get_imputed_data <- function(object, views = "all", groups = "all", as.data.fram
   if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
+  # Get features
+  if (class(features) == "list") {
+    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
+    stopifnot(length(features)==length(views))
+    if (is.null(names(features))) names(features) <- views
+  } else {
+    if (paste0(features, collapse="") == "all") { 
+      features <- features_names(object)[views]
+    } else {
+      stop("features not recognised, please read the documentation")
+    }
+  }
+  
   # Fetch data
-  imputed_data <- sapply(object@imputed_data[views], function(e) e[groups], simplify = FALSE, USE.NAMES = TRUE)
+  imputed_data <- lapply(object@imputed_data[views], function(x) x[groups])
+  imputed_data <- lapply(1:length(imputed_data), function(m) lapply(1:length(imputed_data[[1]]), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=F]))
+  imputed_data <- .name_views_and_groups(imputed_data, views, groups)
   
   # Add feature intercepts
   tryCatch( {
     
-    if (add_intercept) {
+    if (add_intercept & length(object@intercepts[[1]])>0) {
       intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
       intercepts <- .name_views_and_groups(intercepts, views, groups)
       
       for (m in names(imputed_data)) {
         for (g in names(imputed_data[[m]])) {
-          imputed_data[[m]][[g]] <- imputed_data[[m]][[g]] + intercepts[[m]][[g]]
+          imputed_data[[m]][[g]] <- imputed_data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
         }
       }
     } }, error = function(e) { NULL })
