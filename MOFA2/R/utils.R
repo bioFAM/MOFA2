@@ -148,5 +148,3 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   mx@ncol <- length(colnames)
   mx
 }
-
-

@@ -93,12 +93,16 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                     object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors=FALSE)
                    }
                    
-                   # Add samples names to the expectations matrices
+                   # Add samples names to the expectations
                    object <- .set_expectations_names(object, entity = 'samples', value)
                    
-                   # Add samples names to the data matrices
-                   object <- .set_data_names(object, entity = 'samples', value)
-                   object <- .set_imputed_data_names(object, entity = 'samples', value)
+                   # Add samples names to the data
+                   if (length(object@data)>0)
+                    object <- .set_data_names(object, entity = 'samples', value)
+                   
+                   # Add samples names to the imputed data
+                   if (length(object@imputed_data)>0) 
+                    object <- .set_imputed_data_names(object, entity = 'samples', value)
                    
                    object
                  })
@@ -193,9 +197,13 @@ setReplaceMethod("features_names", signature(object="MOFA", value="list"),
                    # Add features names to the expectations matrices
                    object <- .set_expectations_names(object, entity = 'features', value)
                    
-                   # Add features names to the data matrices
-                   object <- .set_data_names(object, entity = 'features', value)
-                   object <- .set_imputed_data_names(object, entity = 'features', value)
+                   # Add features names to the data
+                   if (length(object@data)>0)
+                    object <- .set_data_names(object, entity = 'features', value)
+                   
+                   # Add samples names to the imputed data
+                   if (length(object@imputed_data)>0) 
+                    object <- .set_imputed_data_names(object, entity = 'features', value)
                    
                    object
                  })

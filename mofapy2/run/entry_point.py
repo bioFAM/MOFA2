@@ -585,25 +585,31 @@ class entry_point(object):
     def impute(self, uncertainty=True):
         """impute missing values with or without uncertainty estimates"""
 
-        # get the necessary parameters
+        # get the necessary expectations
         W = [w['E'] for w in self.model.nodes['W'].getExpectations()]
         Z = self.model.nodes['Z'].getExpectations()['E']
 
+        # Predict the mean
         pred_mean = [Z.dot(w.T)for w in W]
 
+        # Predict the variance
         if uncertainty:
             W2 = [w['E2'] for w in self.model.nodes['W'].getExpectations()]
             Z2 = self.model.nodes['Z'].getExpectations()['E2']
             Tau = [tau['E'] for tau in self.model.nodes['Tau'].getExpectations()]
-
             pred_var = [Z2.dot(W2[v].T) - (Z**2.).dot(W[v].T**2.) + 1./Tau[v] for v in range(len(W))]
             self.imputed_data = { "mean":pred_mean, "variance":pred_var }
         else:
             self.imputed_data = { "mean":pred_mean, "variance":None }
 
+        # Only impute missing data
+        for m in range(len(W)):
+            mask = self.model.nodes['Y'].getNodes()[m].getMask()
+            self.imputed_data["mean"][m][~mask] = self.data[m][~mask]
+            self.imputed_data["variance"][m][~mask] = np.nan
+
         self.imputed = True # change flag
 
-        # TO-DO: REPLACE ONLY MISSING ENTRIES. FOR HTE ONES WHICH ARE NOT MISSING AT VARIANCE =NA
 
     def save(self, outfile):
         """ Save the model in an hdf5 file """
