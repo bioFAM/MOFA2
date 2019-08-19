@@ -90,7 +90,7 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    object@samples_metadata$sample_name <- unlist(value, use.names = FALSE)
                    object@samples_metadata$group_name  <- as.factor( value_groups )
                    if (is(object@samples_metadata, "list")) {
-                    object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors=FALSE)
+                    object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors = FALSE)
                    }
                    
                    # Add samples names to the expectations

@@ -59,7 +59,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   stopifnot(rownames(data) == rownames(Z))
   
   # Check that there is no constant factor
-  stopifnot( all(apply(Z,2,var, na.rm=T)>0) )
+  stopifnot( all(apply(Z,2,var, na.rm=TRUE)>0) )
     
   # turn feature.sets into binary membership matrices if provided as list
   if (class(feature.sets) == "list") {
@@ -169,7 +169,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
 #' @return nothing
 #' @import ggplot2
 #' @export
-lineplot_FSEA <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adjust=T) {
+lineplot_FSEA <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adjust=TRUE) {
   
   # Sanity checks
   # (...)
@@ -200,7 +200,7 @@ lineplot_FSEA <- function(fsea.out, factor, threshold=0.1, max.pathways=25, adju
   # tmp$sig <- factor(tmp$pvalue<threshold)
   
   #order according to significance
-  tmp$pathway <- factor(tmp$pathway <- rownames(tmp), levels = tmp$pathway[order(tmp$pvalue, decreasing = T)])
+  tmp$pathway <- factor(tmp$pathway <- rownames(tmp), levels = tmp$pathway[order(tmp$pvalue, decreasing = TRUE)])
   
   p <- ggplot(tmp, aes(x=pathway, y=log)) +
     # ggtitle(paste("Enriched sets in factor", factor)) +
@@ -250,7 +250,7 @@ heatmap_FSEA <- function(fsea.out, factors="all", threshold = 0.05, max.pathways
     p.values <- head(p.values[order(apply(p.values, 1, function(x) min(x))),],n=max.pathways)
 
   # Apply Log transform
-  if (log==T) {
+  if (log == TRUE) {
     p.values <- -log10(p.values)
     threshold <- -log10(threshold)
     col <- colorRampPalette(c("lightgrey", "red"))(n=10)
@@ -429,13 +429,13 @@ compute_feature_statistics = function(data, prcomp.output, pc.index, feature.sta
 }
 
 # Compute enrichment via t-test
-pcgse_via_ttest = function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
+pcgse_via_ttest <- function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
   
   num.feature.sets = length(feature.set.indexes)
   n= nrow(data)
   p.values = matrix(0, nrow=num.feature.sets, ncol=length(pc.indexes))  
   rownames(p.values) = names(feature.set.indexes)
-  feature.set.statistics = matrix(T, nrow=num.feature.sets, ncol=length(pc.indexes))    
+  feature.set.statistics = matrix(TRUE, nrow=num.feature.sets, ncol=length(pc.indexes))    
   rownames(feature.set.statistics) = names(feature.set.indexes)    
   
   for (i in seq_len(num.feature.sets)) {
@@ -470,8 +470,8 @@ pcgse_via_ttest = function(data, prcomp.output, pc.indexes, feature.set.indexes,
       }
       feature.set.statistics[i,j] = t.stat      
       # compute the p-value via a two-sided test
-      lower.p = pt(t.stat, df=df, lower.tail=T)
-      upper.p = pt(t.stat, df=df, lower.tail=F)        
+      lower.p = pt(t.stat, df=df, lower.tail=TRUE)
+      upper.p = pt(t.stat, df=df, lower.tail=FALSE)        
       p.values[i,j] = 2*min(lower.p, upper.p)      
     }
   } 
@@ -485,13 +485,13 @@ pcgse_via_ttest = function(data, prcomp.output, pc.indexes, feature.set.indexes,
 }
 
 # Compute enrichment via Wilcoxon Mann Whitney 
-pcgse_via_WMW = function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
+pcgse_via_WMW <- function(data, prcomp.output, pc.indexes, feature.set.indexes, feature.statistics, cor.adjustment) {
   
   num.feature.sets = length(feature.set.indexes)
   n= nrow(data)
   p.values = matrix(0, nrow=num.feature.sets, ncol=length(pc.indexes))  
   rownames(p.values) = names(feature.set.indexes)
-  feature.set.statistics = matrix(T, nrow=num.feature.sets, ncol=length(pc.indexes))    
+  feature.set.statistics = matrix(TRUE, nrow=num.feature.sets, ncol=length(pc.indexes))    
   rownames(feature.set.statistics) = names(feature.set.indexes)    
   
   for (i in seq_len(num.feature.sets)) {
@@ -523,8 +523,8 @@ pcgse_via_WMW = function(data, prcomp.output, pc.indexes, feature.set.indexes, f
       z.stat = (rank.sum - (m1*m2)/2)/sqrt(var.rank.sum)
       feature.set.statistics[i,j] = z.stat      
       # compute the p-value via a two-sided z-test
-      lower.p = pnorm(z.stat, lower.tail=T)
-      upper.p = pnorm(z.stat, lower.tail=F)        
+      lower.p = pnorm(z.stat, lower.tail=TRUE)
+      upper.p = pnorm(z.stat, lower.tail=FALSE)        
       p.values[i,j] = 2*min(lower.p, upper.p)
     }
   } 

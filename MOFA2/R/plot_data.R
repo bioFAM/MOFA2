@@ -100,7 +100,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   data <- data[order_features,]
   
   # By default, sort samples according to the factor values
-  order_samples <- names(sort(Z, decreasing=T))
+  order_samples <- names(sort(Z, decreasing = TRUE))
   order_samples <- order_samples[order_samples %in% colnames(data)]
   data <- data[,order_samples]
   
@@ -182,7 +182,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="all",
                               color_by=NULL, color_name="", color_legend = TRUE,
                               shape_by=NULL, shape_name="", shape_legend = TRUE,
-                              dot_size=1, text_size=5, add_lm = TRUE, imputed=FALSE) {
+                              dot_size=1, text_size=5, add_lm = TRUE, imputed = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -214,7 +214,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
   # Z <- do.call(rbind, Z)[,1]
   # Z <- Z[!is.na(Z)]
-  Z <- get_factors(object, factors=factor, groups = groups, as.data.frame=T)
+  Z <- get_factors(object, factors=factor, groups = groups, as.data.frame = TRUE)
   Z <- Z[,c("sample","value")]
   colnames(Z) <- c("sample","x")
   
@@ -240,7 +240,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     stop("Features need to be either a numeric or character vector")
   }
   W <- W[features]
-  Y <- Y[features,,drop=F]
+  Y <- Y[features,,drop = FALSE]
   
   # Set group/color/shape
   if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
@@ -254,7 +254,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   
   # Create data frame 
   # df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = F)
-  df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = T)
+  df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = TRUE)
   df <- left_join(df1, df2, by = "sample")
   
   #remove values missing color or shape annotation
@@ -276,7 +276,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (add_lm) {
     p <- p +
       stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
-      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size, color="black")
+      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm = TRUE), size = text_size, color = "black")
   }
   
   # Add legend for color
@@ -292,9 +292,9 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   
   # Add legend for shape
   if (length(unique(df$shape))>1 & shape_legend) { 
-    p <- p + labs(shape=shape_name)
+    p <- p + labs(shape = shape_name)
   } else { 
-    p <- p + guides(shape=F) 
+    p <- p + guides(shape = FALSE) 
   }
   
   return(p)
@@ -367,7 +367,7 @@ plot_data_overview <- function(object, colors = NULL) {
     geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
     # xlab(paste0("Samples (N=", n, ")")) + ylab("") +
-    guides(fill=F) + 
+    guides(fill = FALSE) + 
     facet_wrap(~group_label, scales="free_x", nrow=length(unique(molten_ovw$view_label))) +
     theme(
       panel.background = element_rect(fill="white"),

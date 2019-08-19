@@ -333,7 +333,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
       force = 10,
       data = W[W$group!="0",], aes_string(label = "feature", col = "group"),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
-      box.padding = unit(0.5,"lines"), show.legend=F)
+      box.padding = unit(0.5,"lines"), show.legend = FALSE)
   }
   
   # Configure axis 
@@ -352,11 +352,11 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Define dot size
-  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size=F)
+  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size = FALSE)
   
   # Define dot colors
   cols <- c("grey", "black", color_manual)
-  p <- p + scale_color_manual(values=cols) + guides(col=F)
+  p <- p + scale_color_manual(values=cols) + guides(col = FALSE)
   
   # Facet if multiple factors
   if (length(unique(W$factor)) > 1) {
