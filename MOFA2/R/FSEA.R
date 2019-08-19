@@ -101,7 +101,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   if (statistical.test == "permutation") {
     doParallel::registerDoParallel(cores=cores)
       
-    null_dist_tmp <- foreach(rnd=1:nperm) %dopar% {
+    null_dist_tmp <- foreach(rnd=seq_len(nperm)) %dopar% {
       perm <- sample(ncol(data))
       # Permute rows of the weight matrix to obtain a null distribution
       W_null <- W[perm,]
@@ -111,7 +111,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
       rownames(data_null) <- rownames(data)
       
       # Compute null statistic
-      s.null <- pcgse(data=data_null, prcomp.output=list(rotation=W_null, x=Z), pc.indexes=1:length(factors), feature.sets=feature.sets, feature.statistic=local.statistic,
+      s.null <- pcgse(data=data_null, prcomp.output=list(rotation=W_null, x=Z), pc.indexes=seq_len(length(factors)), feature.sets=feature.sets, feature.statistic=local.statistic,
                       transformation=transformation, feature.set.statistic=global.statistic, feature.set.test="parametric", nperm=NA)$statistic
       abs(s.null)
     }
@@ -119,7 +119,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
     colnames(null_dist) <- factors
     
     # Compute true statistics
-    s.true <- pcgse(data=data, prcomp.output=list(rotation=W, x=Z), pc.indexes=1:length(factors), feature.sets=feature.sets, feature.statistic=local.statistic,
+    s.true <- pcgse(data=data, prcomp.output=list(rotation=W, x=Z), pc.indexes=seq_len(length(factors)), feature.sets=feature.sets, feature.statistic=local.statistic,
                     transformation=transformation, feature.set.statistic=global.statistic, feature.set.test="parametric", nperm=NA)$statistic
     colnames(s.true) <- factors
     rownames(s.true) <- rownames(feature.sets)
@@ -127,7 +127,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
     # Calculate p-values based on fraction true statistic per factor and gene set is larger than permuted
     warning("A large number of permutations is required for the permutation approach!")
     xx <- array(unlist(null_dist_tmp), dim = c(nrow(null_dist_tmp[[1]]), ncol(null_dist_tmp[[1]]), length(null_dist_tmp)))
-  ll <- lapply(1:nperm, function(i) xx[,,i] > abs(s.true))
+  ll <- lapply(seq_len(nperm), function(i) xx[,,i] > abs(s.true))
   p.values <- Reduce("+",ll)/nperm
   rownames(p.values) <- rownames(s.true); colnames(p.values) <- factors
 
@@ -135,7 +135,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   }
   
   else {
-    p.values <- pcgse(data=data, prcomp.output=list(rotation=W, x=Z), pc.indexes=1:length(factors), feature.sets=feature.sets, feature.statistic=local.statistic,
+    p.values <- pcgse(data=data, prcomp.output=list(rotation=W, x=Z), pc.indexes=seq_len(length(factors)), feature.sets=feature.sets, feature.statistic=local.statistic,
                       transformation=transformation, feature.set.statistic=global.statistic, feature.set.test=statistical.test, nperm=nperm)$p.values
     colnames(p.values) <- factors
     rownames(p.values) <- rownames(feature.sets)
@@ -143,7 +143,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   
   # adjust for multiple testing per factor
   if(!p.adj.method %in%  p.adjust.methods) stop("p.adj.method needs to be an element of p.adjust.methods")
-  adj.p.values <- apply(p.values, 2,function(lfw) p.adjust(lfw, method = p.adj.method))
+  adj.p.values <- apply(p.values, 2, function(lfw) p.adjust(lfw, method = p.adj.method))
 
   # list of significant pathwasy at level alpha
   sigPathways <- lapply(factors, function(j) rownames(adj.p.values)[adj.p.values[,j] <= alpha])
@@ -364,7 +364,7 @@ pcgse = function(data,
   
   # Compute the feature-level statistics.
   feature.statistics = matrix(0, nrow=p, ncol=length(pc.indexes))
-  for (i in 1:length(pc.indexes)) {
+  for (i in seq_len(length(pc.indexes))) {
     pc.index = pc.indexes[i]
     feature.statistics[,i] = compute_feature_statistics(data=data, prcomp.output=prcomp.output, pc.index=pc.index, feature.statistic, transformation)
   }
@@ -394,7 +394,7 @@ pcgse = function(data,
 # Turn the annotation matrix into a list of var group indexes for the valid sized var groups
 create_var_group_list = function(var.groups) {
   var.group.indexes = list()  
-  for (i in 1:nrow(var.groups)) {
+  for (i in seq_len(nrow(var.groups))) {
     member.indexes = which(var.groups[i,]==1)
     var.group.indexes[[i]] = member.indexes    
   }
@@ -438,10 +438,10 @@ pcgse_via_ttest = function(data, prcomp.output, pc.indexes, feature.set.indexes,
   feature.set.statistics = matrix(T, nrow=num.feature.sets, ncol=length(pc.indexes))    
   rownames(feature.set.statistics) = names(feature.set.indexes)    
   
-  for (i in 1:num.feature.sets) {
+  for (i in seq_len(num.feature.sets)) {
     indexes.for.feature.set = feature.set.indexes[[i]]
     m1 = length(indexes.for.feature.set)
-    not.feature.set.indexes = which(!(1:ncol(data) %in% indexes.for.feature.set))
+    not.feature.set.indexes = which(!(seq_len(ncol(data)) %in% indexes.for.feature.set))
     m2 = length(not.feature.set.indexes)
     
     if (cor.adjustment) {      
@@ -453,7 +453,7 @@ pcgse_via_ttest = function(data, prcomp.output, pc.indexes, feature.set.indexes,
       vif = 1 + (m1 -1)*mean.cor
     }
     
-    for (j in 1:length(pc.indexes)) {
+    for (j in seq_len(length(pc.indexes))) {
       # get the feature-level statistics for this PC
       pc.feature.stats = feature.statistics[,j]
       # compute the mean difference of the feature-level statistics
@@ -494,10 +494,10 @@ pcgse_via_WMW = function(data, prcomp.output, pc.indexes, feature.set.indexes, f
   feature.set.statistics = matrix(T, nrow=num.feature.sets, ncol=length(pc.indexes))    
   rownames(feature.set.statistics) = names(feature.set.indexes)    
   
-  for (i in 1:num.feature.sets) {
+  for (i in seq_len(num.feature.sets)) {
     indexes.for.feature.set = feature.set.indexes[[i]]
     m1 = length(indexes.for.feature.set)
-    not.feature.set.indexes = which(!(1:ncol(data) %in% indexes.for.feature.set))
+    not.feature.set.indexes = which(!(seq_len(ncol(data)) %in% indexes.for.feature.set))
     m2 = length(not.feature.set.indexes)
     
     if (cor.adjustment) {            
@@ -507,7 +507,7 @@ pcgse_via_WMW = function(data, prcomp.output, pc.indexes, feature.set.indexes, f
       mean.cor = (sum(cor.mat) - m1)/(m1*(m1-1))    
     }
     
-    for (j in 1:length(pc.indexes)) {
+    for (j in seq_len(length(pc.indexes))) {
       # get the feature-level statistics for this PC
       pc.feature.stats = feature.statistics[,j]
       # compute the rank sum statistic feature-level statistics

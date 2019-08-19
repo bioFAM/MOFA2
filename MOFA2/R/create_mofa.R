@@ -50,7 +50,7 @@ create_mofa <- function(data, groups = NULL) {
   # Create sample metadata
   tmp <- data.frame(
     sample_name = unname(unlist(lapply(object@data[[1]], colnames))),
-    group_name = unlist(lapply(1:object@dimensions$G, function(x) rep(groups_names(object)[[x]], object@dimensions$N[[x]]) )),
+    group_name = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups_names(object)[[x]], object@dimensions$N[[x]]) )),
     stringsAsFactors = FALSE
   )
   samples_metadata(object) <- tmp
@@ -58,7 +58,7 @@ create_mofa <- function(data, groups = NULL) {
   # Create features metadata
   tmp <- data.frame(
     feature_name = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
-    view_name = unlist(lapply(1:object@dimensions$M, function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
+    view_name = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )
   features_metadata(object) <- tmp
@@ -239,7 +239,7 @@ create_mofa <- function(data, groups = NULL) {
   
   # Set views names
   if (is.null(names(data))) {
-    default_views_names <- paste0("view_", 1:length(data))
+    default_views_names <- paste0("view_", seq_len(length(data)))
     message(paste0("View names are not specified in the data, using default: ", paste(default_views_names, collapse=", "), "\n"))
     names(data) <- default_views_names
   }
@@ -258,21 +258,21 @@ create_mofa <- function(data, groups = NULL) {
   object@dimensions[["K"]] <- 0
   
   # Set features names
-  for (m in 1:length(data)) {
+  for (m in seq_len(length(data))) {
     if (is.null(rownames(data[[m]]))) {
       warning(sprintf("Feature names are not specified for view %d, using default: feature1_v%d, feature2_v%d...", m, m, m))
-      for (g in 1:length(object@data[[m]])) {
-        rownames(object@data[[m]][[g]]) <- paste0("feature_", 1:nrow(object@data[[m]][[g]]), "_v", m)
+      for (g in seq_len(length(object@data[[m]]))) {
+        rownames(object@data[[m]][[g]]) <- paste0("feature_", seq_len(nrow(object@data[[m]][[g]])), "_v", m)
       }
     }
   }
   
   # Set samples names
-  for (g in 1:object@dimensions[["G"]]) {
+  for (g in seq_len(object@dimensions[["G"]])) {
     if (is.null(colnames(object@data[[1]][[g]]))) {
       warning(sprintf("Sample names for group %d are not specified, using default: sample1_g%d, sample2_g%d,...", g, g, g))
-      for (m in 1:object@dimensions[["M"]]) {
-        colnames(object@data[[m]][[g]]) <- paste0("sample_", 1:ncol(object@data[[m]][[g]]), "_g", g)
+      for (m in seq_len(object@dimensions[["M"]])) {
+        colnames(object@data[[m]][[g]]) <- paste0("sample_", seq_len(ncol(object@data[[m]][[g]])), "_g", g)
       }
     }
   }

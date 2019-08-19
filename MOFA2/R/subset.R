@@ -131,7 +131,7 @@ subset_factors <- function(object, factors) {
   nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
   stopifnot(all(nodes_with_factors$axes %in% c(0, 1, 2)))
 
-  for (i in 1:length(nodes_with_factors$nodes)) {
+  for (i in seq_len(length(nodes_with_factors$nodes))) {
     node <- nodes_with_factors$nodes[i]
     axis <- nodes_with_factors$axes[i]
     if (node %in% names(object@expectations)) {
@@ -152,7 +152,7 @@ subset_factors <- function(object, factors) {
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   # Update factor names
-  factors_names(object) <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
+  factors_names(object) <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
   
   
   return(object)

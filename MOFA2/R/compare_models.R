@@ -25,7 +25,7 @@ compare_factors <- function(models, ...) {
     stop("Each element of the the list 'models' has to be an instance of MOFA")
 
   # Give generic names if no names present
-  if(is.null(names(models))) names(models) <- paste("model", 1: length(models), sep="")
+  if(is.null(names(models))) names(models) <- paste("model", seq_len(length(models)), sep="")
 
   # Get latent factors
   LFs <- lapply(seq_along(models), function(i){

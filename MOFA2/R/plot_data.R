@@ -263,7 +263,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value", color = "color_by", shape = "shape_by")) + 
     geom_point(size=dot_size) +
-    scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
+    scale_shape_manual(values=c(19,1,2:18)[seq_len(length(unique(shape_by)))]) +
     labs(x="Factor values", y="") +
     facet_wrap(~feature, scales="free_y") +
     theme_classic() + theme(
@@ -330,7 +330,7 @@ plot_data_overview <- function(object, colors = NULL) {
     palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
                  "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
                  "#A65628", "#F781BF", "#1B9E77")
-    if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
+    if (M < 17) colors <- palette[seq_len(M)] else colors <- rainbow(M)
     names(colors) <- views_names(object)
   } else {
       stopifnot(sort(names(colors))==sort(views_names(object)))
@@ -339,7 +339,7 @@ plot_data_overview <- function(object, colors = NULL) {
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
   tmp <- lapply(data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
-  ovw <- do.call(cbind, lapply(1:M, function(m) {
+  ovw <- do.call(cbind, lapply(seq_len(M), function(m) {
     do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))
   rownames(ovw) <- object@samples_metadata$sample_name
@@ -427,11 +427,11 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
   if (length(content_pct) == 0) {
     content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))
   }
-  content_pct <- lapply(1:length(content_pct), function(m) {
+  content_pct <- lapply(seq_len(length(content_pct)), function(m) {
     paste0(as.character(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100), sep = "%")
   })
 
-  for (m in 1:length(views_names(object))) {
+  for (m in seq_len(length(views_names(object)))) {
     # browser()
     toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, hat, collapse = igr_sp)))
     midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, walls, collapse = igr_sp)))
@@ -463,7 +463,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
 }
 
 .insert_inside <- function(values, boxes) {
-  sapply(1:length(boxes), function(i) {
+  sapply(seq_len(length(boxes)), function(i) {
     box <- boxes[i]
     v <- values[i]
     paste0(substr(box, 1, 1), .cpaste(v, nchar(box) - 2), substr(box, length(box), length(box)))

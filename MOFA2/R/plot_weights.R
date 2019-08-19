@@ -238,7 +238,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (paste0(factors, collapse = "") == "all") { 
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-    if (!all(factors %in% 1:object@dimensions$K)) stop("Factor(s) not found")
+    if (!all(factors %in% seq_len(object@dimensions$K))) stop("Factor(s) not found")
     factors <- factors_names(object)[factors]
   } else { 
     if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
@@ -287,11 +287,11 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Define group of features to label manually
   if(!is.null(manual)) {
     if (is.null(color_manual)) {
-      color_manual <- hcl(h = seq(15, 375, length=length(manual)+1), l=65, c=100)[1:length(manual)]
+      color_manual <- hcl(h = seq(15, 375, length=length(manual)+1), l=65, c=100)[seq_len(length(manual))]
     } else {
       stopifnot(length(color_manual)==length(manual)) 
     }
-    for (m in 1:length(manual))
+    for (m in seq_len(length(manual)))
       W$group[W$feature %in% manual[[m]]] <- as.character(m+1)
   }
   
