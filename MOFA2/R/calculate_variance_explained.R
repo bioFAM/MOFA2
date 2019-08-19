@@ -120,7 +120,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @param use_cache logical indicating whether to use cache (default is TRUE)
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
-#' @import ggplot2 reshape2
+#' @import ggplot2
 #' @importFrom cowplot plot_grid
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt

@@ -53,7 +53,7 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   W <- W[,!apply(W,2,function(r) all(abs(r)<threshold))]
 
   # Plot heatmap
-  pheatmap::pheatmap(t(W), ...)
+  pheatmap(t(W), ...)
 }
 
 
@@ -218,7 +218,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).
 #' @param dot_size numeric indicating the dot size.
 #' @param text_size numeric indicating the text size.
-#' @import ggplot2 dplyr tidyr ggrepel
+#' @import ggplot2 dplyr tidyr
 #' @importFrom magrittr %>%
 #' @importFrom ggrepel geom_text_repel
 #' @export
@@ -374,14 +374,11 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
       axis.ticks.y = element_blank(),
       
       # facets
-      # strip.background = element_blank(),
       strip.text = element_text(size=rel(1.2)),
       panel.spacing = unit(1,"lines"),
 
       # gridlines
       panel.grid.major.y = element_blank(),
-      # panel.grid.minor = element_blank()
-      
     )
   
   return(p)

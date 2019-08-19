@@ -70,7 +70,7 @@ plot_factor(object, factor = 1, group_by = "group", color_by = NULL,
 \item{rasterize}{logical indicating whether to rasterize the plot (default is FALSE).}
 }
 \value{
-Returns a \code{ggplot2} object
+Returns a \code{ggplot2}
 }
 \description{
 Beeswarm plot of the latent factor values.

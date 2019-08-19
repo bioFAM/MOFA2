@@ -5,7 +5,8 @@
 \title{loading a trained MOFA}
 \usage{
 load_model(file, sort_factors = TRUE, on_disk = FALSE,
-  load_data = TRUE, remove_outliers = FALSE)
+  load_data = TRUE, load_imputed_data = FALSE,
+  remove_outliers = FALSE)
 }
 \arguments{
 \item{file}{an hdf5 file saved by the mofa Python framework}
