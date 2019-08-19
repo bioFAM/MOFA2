@@ -86,15 +86,6 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
 # }
 
 
-object <- model
-view <- 1
-factor <- 3
-features <- list(
-  "view0"=c("feature0_view0"),
-  "view1"=c("feature0_view1")
-)
-groups = "E7.5_scNMT"
-
 impute.scatterplot <- function(object, view, features, factor, groups = "all") {
   
   # Sanity checks
