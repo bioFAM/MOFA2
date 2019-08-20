@@ -92,7 +92,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
                                  name_color="", name_shape="", show_missing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factors)==2)
   
   # Get views  
@@ -413,7 +413,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(view %in% views_names(object))
-  # if(!is.null(manual_features)) { stopifnot(class(manual_features)=="list"); stopifnot(all(Reduce(intersect,manual_features) %in% features_names(object)[[view]]))  }
+  # if(!is.null(manual_features)) { stopifnot(is(manual_features,"list")); stopifnot(all(Reduce(intersect,manual_features) %in% features_names(object)[[view]]))  }
   
   # Collect expectations  
   W <- get_weights(object, factors=factor, views=view, as.data.frame=TRUE)

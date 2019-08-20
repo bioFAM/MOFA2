@@ -140,7 +140,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   groups <- .check_and_get_groups(object, groups)
   
   # Get features
-  if (class(features) == "list") {
+  if (is(features, "list")) {
     stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
@@ -215,7 +215,7 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
   # Get features
-  if (class(features) == "list") {
+  if (is(features, "list")) {
     stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
@@ -276,7 +276,7 @@ get_imputed_data2 <- function(object, views = "all", groups = "all", features = 
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
   # Get features
-  if (class(features) == "list") {
+  if (is(features, "list")) {
     stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views

@@ -49,20 +49,20 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
   
   # Collect observed data
   data <- object@data[[view]]
-  if(class(data)=="list") data <- Reduce(cbind, data)
+  if (is(data, "list")) data <- Reduce(cbind, data)
   data <- t(data)
 
   # Collect relevant expectations
   W <- get_weights(object, views=view, factors=factors)[[view]]
   Z <- get_factors(object, factors=factors)
-  if(class(Z)=="list") Z <- Reduce(rbind, Z)
+  if (is(Z, "list")) Z <- Reduce(rbind, Z)
   stopifnot(rownames(data) == rownames(Z))
   
   # Check that there is no constant factor
   stopifnot( all(apply(Z,2,var, na.rm=TRUE)>0) )
     
   # turn feature.sets into binary membership matrices if provided as list
-  if (class(feature.sets) == "list") {
+  if (is(feature.sets, "list")) {
     features <- Reduce(union, feature.sets)
     feature.sets <- sapply(names(feature.sets), function(nm) {
       tmp <- features %in% feature.sets[[nm]]
@@ -71,7 +71,7 @@ FSEA <- function(object, view, feature.sets, factors = "all", local.statistic = 
     })
     feature.sets <-t(feature.sets)*1
   }
-  if (!(class(feature.sets)=="matrix" & all(feature.sets %in% c(0,1)))) stop("feature.sets has to be a list or a binary matrix.")
+  if (!(is(feature.sets, "matrix") & all(feature.sets %in% c(0,1)))) stop("feature.sets has to be a list or a binary matrix.")
   
   # Check if some features do not intersect between the feature sets and the observed data and remove them
   features <- intersect(colnames(data),colnames(feature.sets))

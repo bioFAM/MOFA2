@@ -21,7 +21,7 @@ compare_factors <- function(models, ...) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")
-  if (!all(sapply(models, function (l) class(l)=="MOFA")))
+  if (!all(sapply(models, function (l) is(l, "MOFA"))))
     stop("Each element of the the list 'models' has to be an instance of MOFA")
 
   # Give generic names if no names present
@@ -64,7 +64,7 @@ compare_elbo <- function(models) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")
-  if (!all(sapply(models, function (l) class(l)=="MOFA")))
+  if (!all(sapply(models, function (l) is(l, "MOFA"))))
     stop("Each element of the the list 'models' has to be an instance of MOFA")
   
   # Give generic names if no names present
@@ -104,7 +104,7 @@ select_model <- function(models) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")
-  if (!all(sapply(models, function (l) class(l)=="MOFA")))
+  if (!all(sapply(models, function (l) is(l, "MOFA"))))
     stop("Each element of the the list 'models' has to be an instance of MOFA")
 
   elbo_vals <- sapply(models, get_elbo)

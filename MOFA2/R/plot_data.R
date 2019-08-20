@@ -69,7 +69,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   }
 
   # NOTE: Currently groups are concatenated
-  if (class(data) == "list") {
+  if (is(data, "list")) {
     data <- do.call(cbind, data)
   }
 
@@ -80,14 +80,14 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
   
   # Define features
-  if (class(features) == "numeric") {
+  if (is(features, "numeric")) {
     if (length(features) == 1) {
       features <- rownames(W)[tail(order(abs(W)), n=features)]
     } else {
       features <- rownames(W)[order(-abs(W))[features]]
     }
     stopifnot(all(features %in% features_names(object)[[view]]))  
-  } else if (class(features) == "character") {
+  } else if (is(features, "character")) {
     stopifnot(all(features %in% features_names(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
@@ -227,14 +227,14 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     W <- W[W<0]
   }
   
-  if (class(features) == "numeric") {
+  if (is(features, "numeric")) {
     if (length(features) == 1) {
       features <- names(tail(sort(abs(W)), n=features))
     } else {
       features <- names(sort(-abs(W))[features])
     }
     stopifnot(all(features %in% features_names(object)[[view]]))  
-  } else if (class(features)=="character") {
+  } else if (is(features, "character")) {
     stopifnot(all(features %in% features_names(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
@@ -392,7 +392,7 @@ plot_data_overview <- function(object, colors = NULL) {
 #' @details This function is helpful to get an overview of the structure of the data as a text output
 #' @export
 plot_ascii_data <- function(object, header = FALSE) {
-  stopifnot(class(object) == "MOFA")
+  stopifnot(is(object, "MOFA"))
 
   if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
     stop("Error: dimensions not defined")

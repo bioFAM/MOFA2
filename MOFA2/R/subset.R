@@ -13,7 +13,7 @@
 subset_groups <- function(object, groups) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(groups) <= object@dimensions[["G"]])
   
   if (is.numeric(groups) | is.logical(groups))  {
@@ -113,7 +113,7 @@ subset_views <- function(object, views) {
 subset_factors <- function(object, factors) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factors) <= object@dimensions[["K"]])
   
   # Get factors
@@ -169,7 +169,7 @@ subset_factors <- function(object, factors) {
 subset_samples <- function(object, samples) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(samples) <= sum(object@dimensions[["N"]]))
   stopifnot(all(samples %in% unlist(samples_names(object))))
   stopifnot(!any(duplicated(samples)))
@@ -245,7 +245,7 @@ subset_samples <- function(object, samples) {
 subset_features <- function(object, view, features) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(features) <= sapply(object@dimensions[["D"]], sum))
   warning("Removing features a posteriori is fine for an exploratory analysis, but we recommend removing them before training!")
 

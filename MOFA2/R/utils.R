@@ -31,7 +31,7 @@
 .detect_outliers <- function(object, groups = "all", factors = "all") {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   # Define groups
   if (paste0(groups, sep="", collapse="") == "all") { 
