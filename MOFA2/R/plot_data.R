@@ -26,7 +26,7 @@
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates a heatmap for selected features, which should reveal, im the original data space, the underlying pattern that is captured by the latent factor. \cr
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
-#' @import pheatmap
+#' @importFrom pheatmap pheatmap
 #' @export
 plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE,
                               annotate_samples = NULL, annotate_features = NULL, ...) {
@@ -127,12 +127,12 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
     }
 
     # Plot heatmap with annotations
-    pheatmap::pheatmap(data, annotation_col = ann_samples, annotation_row = ann_features, ...)
+    pheatmap(data, annotation_col = ann_samples, annotation_row = ann_features, ...)
 
   } else {
     
     # Plot heatmap without annotations
-    pheatmap::pheatmap(data, ...)
+    pheatmap(data, ...)
   }
   
 }
@@ -177,7 +177,8 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates scatterplots of features against factors, so that you can observe the association between them. \cr
 #' A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
-#' @import ggplot2 dplyr ggpubr
+#' @import ggplot2 dplyr
+#' @importFrom ggpubr stat_cor
 #' @export
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="all",
                               color_by=NULL, color_name="", color_legend = TRUE,
@@ -310,6 +311,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 #' @details This function is helpful to get an overview of the structure of the data. 
 #' It shows the number of samples, groups, views and features and it indicates which measurements are missing.
 #' @import ggplot2 dplyr reshape2
+#' @importFrom reshape2 melt
 #' @export
 plot_data_overview <- function(object, colors = NULL) {
   
@@ -349,7 +351,7 @@ plot_data_overview <- function(object, colors = NULL) {
   ovw$group <- object@samples_metadata$group_name
 
   # Melt to data.frame
-  molten_ovw <- reshape2::melt(ovw, id.vars = c("sample", "group"), var=c("view"))
+  molten_ovw <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
   molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw))
 
   n <- length(unique(molten_ovw$sample))

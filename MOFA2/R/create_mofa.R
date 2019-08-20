@@ -15,7 +15,6 @@
 #'  }
 #' @param groups ignore...
 #' @return Returns an untrained \code{\link{MOFA}} object
-#' @import BiocGenerics
 #' @export
 create_mofa <- function(data, groups = NULL) {
   

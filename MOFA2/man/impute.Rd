@@ -16,7 +16,7 @@ impute(object, views = "all", groups = "all", factors = "all",
 
 \item{factors}{character vector with the factor names, or numeric vector with the factor index(es).}
 
-\item{type}{type of imputation. 
+\item{type}{type of imputation.
 \itemize{
 \item \strong{response}:{gives mean for gaussian and poisson and probabilities for bernoulli.}
 \item \strong{link}: {gives the linear predictions.}
@@ -27,7 +27,7 @@ impute(object, views = "all", groups = "all", factors = "all",
 This function uses the latent factors and the loadings to impute missing values.
 }
 \details{
-matrix factorization models generate a denoised and condensed low-dimensional representation of the data which capture the main sources of heterogeneity of the data. 
+matrix factorization models generate a denoised and condensed low-dimensional representation of the data which capture the main sources of heterogeneity of the data.
 These representation can be used to do predictions using the equation \code{Y = WX}. For more details read the supplementary methods of the manuscript. \cr
 This method fills the \code{ImputedData} slot by replacing the missing values in the input data with the model predictions.
 }

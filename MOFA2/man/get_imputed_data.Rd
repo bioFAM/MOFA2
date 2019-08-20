@@ -5,7 +5,7 @@
 \title{get_imputed_data}
 \usage{
 get_imputed_data(object, views = "all", groups = "all",
-  as.data.frame = FALSE, add_intercept = TRUE)
+  features = "all", as.data.frame = FALSE, add_intercept = TRUE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
@@ -14,6 +14,9 @@ get_imputed_data(object, views = "all", groups = "all",
 Default is "all".}
 
 \item{groups}{character vector with the group name(s), or numeric vector with the group index(es).
+Default is "all".}
+
+\item{features}{list of character vectors with the feature names or list of numeric vectors with the feature indices. 
 Default is "all".}
 
 \item{as.data.frame}{logical indicating whether to return a long-formatted data frame instead of a list of matrices. 

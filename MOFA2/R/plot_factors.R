@@ -48,8 +48,10 @@
 #' @details One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
-#' @return Returns a \code{ggplot2} object
-#' @import ggplot2 ggbeeswarm grDevices RColorBrewer forcats stats dplyr
+#' @return Returns a \code{ggplot2} 
+#' @import ggplot2 grDevices RColorBrewer
+#' @importFrom forcats fct_explicit_na
+#' @importFrom RColorBrewer brewer.pal
 #' @export
 plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
@@ -86,10 +88,6 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
   df <- merge(df, color_by, by="sample")
   df <- merge(df, shape_by, by="sample")
   
-  # df$color_by <- as.character(df$color_by)
-  # df$group_by <- as.character(df$group_by)
-  # df$shape_by <- as.character(df$shape_by)
-  
   # QC
   if (length(unique(df$color_by))>10 & is.numeric(df$color_by)) {
     add_violin <- FALSE; dodge <- FALSE
@@ -98,9 +96,9 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   if (is.factor(df$color_by))
-    df$color_by <- forcats::fct_explicit_na(df$color_by)
+    df$color_by <- fct_explicit_na(df$color_by)
   if (is.factor(df$shape_by))
-    df$shape_by <- forcats::fct_explicit_na(df$shape_by)
+    df$shape_by <- fct_explicit_na(df$shape_by)
   
   # Scale values from 0 to 1
   if (scale) {
@@ -109,7 +107,6 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
   
   # Generate plot
   p <- ggplot(df, aes_string(x="group_by", y="value")) +
-    # facet_wrap(~group_by+factor, scales="free") +
     facet_wrap(~group_by, nrow=1, scales="free_x") +
     labs(x="", y="Factor value")
 
@@ -139,18 +136,12 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
         warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be coloured")
         p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
       } else {
-        # violin_color <- ifelse(is.na(violin_color), color_by, violin_color)
         p <- p + geom_violin(aes_string(fill="color_by"), alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
-        # if (add_dots) p <- p + scale_color_discrete(guide = FALSE)
       }
     } else {
       p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
     }
   }
-  
-  # Add p-values to group comparisons
-  # my_comparisons <- list( c("0.5", "1"), c("1", "2"), c("0.5", "2") )
-  # stat_compare_means(comparisons = my_comparisons, color_by)
   
   # If 'color_by' is numeric, define the default gradient
   if (is.numeric(df$color))
@@ -177,18 +168,13 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
     theme_classic() +
     theme(
         panel.border = element_rect(color="black", size=0.1, fill=NA),
-        # panel.grid.minor = element_blank(),
-        # panel.grid.major = element_line(size=.1),
-        # panel.spacing = unit(5,"lines"),
         strip.background = element_rect(colour = "black", size=0.25),
         panel.spacing = unit(0,"lines"),
-        # axis.text.x = element_text(size=rel(1.0), color="black"),
         axis.text.x = element_blank(),
         axis.text.y = element_text(size=rel(1.0), color="black"),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(0.9), color="black"),
         axis.line = element_line(color="black", size=0.25),
-        # axis.line = element_blank(),
         axis.ticks = element_line(color = "black"),
         axis.title = element_text(size=rel(1.2)),
     )
@@ -243,7 +229,9 @@ plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL,
 #' TO-FINISH...
 #' \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 #' @return Returns a \code{ggplot2} object
-#' @import ggplot2 magrittr tidyr GGally
+#' @import ggplot2 dplyr
+#' @importFrom tidyr spread
+#' @importFrom magrittr %>%
 #' @export
 plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = FALSE,
                             color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
@@ -294,9 +282,9 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   
   # spread over factors
-  df <- tidyr::spread(df, key="factor", value="value")
+  df <- spread(df, key="factor", value="value")
   df <- df[,c(colnames(df)[seq_len(4)], factors)]
-  df <- magrittr::set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
+  df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
 
   # Scale values from 0 to 1
   if (scale) {
@@ -440,7 +428,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
 #' Generally, correlated factors are redundant and should be avoided, as they make interpretation harder. Therefore, 
 #' if you have too many correlated factors we suggest you try reducing the number of factors.
 #' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
-#' @import corrplot
+#' @importFrom corrplot corrplot
 #' @export
 plot_factor_cor <- function(object, method = "pearson", ...) {
   
