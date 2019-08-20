@@ -22,13 +22,23 @@ subset_groups <- function(object, groups) {
     stopifnot(all(groups %in% groups_names(object)))
   }
   
-  # Subset relevant slots
-  if ("Z" %in% names(object@expectations) & length(object@expectations$Z)>0)
-    object@expectations$Z <- object@expectations$Z[groups]
-  if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0)
-    object@expectations$Y <- sapply(object@expectations$Y, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  # Subset expectations
+  if (length(object@expectations)>0) {
+    if ("Z" %in% names(object@expectations) & length(object@expectations$Z)>0)
+      object@expectations$Z <- object@expectations$Z[groups]
+    if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0)
+      object@expectations$Y <- sapply(object@expectations$Y, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  }
   
-  object@data <- sapply(object@data, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  # Subset data
+  if (length(object@data)>0) {
+    object@data <- sapply(object@data, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  }
+
+  # Subset imputed data
+  if (length(object@imputed_data)>0) {
+    object@imputed_data <- sapply(object@imputed_data, function(x) x[groups], simplify = F, USE.NAMES = T) 
+  }
   
   # Update dimensionality
   object@dimensions[["G"]] <- length(groups)
@@ -80,14 +90,20 @@ subset_views <- function(object, views) {
   }
   
   # Subset relevant slots
-  object@expectations$W <- object@expectations$W[views]
-  object@expectations$Y <- object@expectations$Y[views]
-  object@expectations$Tau <- object@expectations$Tau[views]
-  object@data <- object@data[views]
-  # object@data <- object@data[,,,]
-  # if (length(object@imputed_data) != 0) {
-  #   object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
-  # }
+  if (length(object@expectations)>0) {
+    object@expectations$W <- object@expectations$W[views]
+    object@expectations$Y <- object@expectations$Y[views]
+  }
+
+  # Subset data
+  if (length(object@data)>0) {
+    object@data <- object@data[views]
+  }
+  
+  # Subset imputed data
+  if (length(object@imputed_data)>0) {
+    object@imputed_data <- object@imputed_data[views]
+  }
   
   # Update dimensionality
   object@dimensions[["M"]] <- length(views)
@@ -131,16 +147,19 @@ subset_factors <- function(object, factors) {
   nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
   stopifnot(all(nodes_with_factors$axes %in% c(0, 1, 2)))
 
-  for (i in 1:length(nodes_with_factors$nodes)) {
-    node <- nodes_with_factors$nodes[i]
-    axis <- nodes_with_factors$axes[i]
-    if (node %in% names(object@expectations)) {
-      if (axis == 1) {
-        object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors,], simplify = F, USE.NAMES = T)
-      } else if (axis == 2) {
-        object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[,factors], simplify = F, USE.NAMES = T)
-      } else {
-        object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors], simplify = F, USE.NAMES = T)
+
+  if (length(object@expectations)>0) {
+    for (i in 1:length(nodes_with_factors$nodes)) {
+      node <- nodes_with_factors$nodes[i]
+      axis <- nodes_with_factors$axes[i]
+      if (node %in% names(object@expectations)) {
+        if (axis == 1) {
+          object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors,], simplify = F, USE.NAMES = T)
+        } else if (axis == 2) {
+          object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[,factors], simplify = F, USE.NAMES = T)
+        } else {
+          object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors], simplify = F, USE.NAMES = T)
+        }
       }
     }
   }
@@ -185,37 +204,45 @@ subset_samples <- function(object, samples) {
   
   
   # Subset data and expectations
-  
   tmp <- lapply(groups, function(g) samples_names(object)[[g]][samples_names(object)[[g]] %in% samples])
   names(tmp) <- groups
   
   for (g in groups) {
     samples_g <- tmp[[g]]
     
-    if ("Z" %in% names(object@expectations) & length(object@expectations$Z)>0) {
-      object@expectations$Z[[g]] <- object@expectations$Z[[g]][samples_g,, drop=F]
-    }
-    
-    if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0) {
-      for (m in views_names(object)) {
-        object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=F]
-      }  
+    # Subset expectations
+    if (length(object@expectations)>0) {
+      if ("Z" %in% names(object@expectations) & length(object@expectations$Z)>0) {
+        object@expectations$Z[[g]] <- object@expectations$Z[[g]][samples_g,, drop=F]
+      }
+      
+      if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0) {
+        for (m in views_names(object)) {
+          object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=F]
+        }  
+      }
     }
 
+    # Subset data
     if (length(object@data)>0) { 
       for (m in views_names(object)) {
         object@data[[m]][[g]] <- object@data[[m]][[g]][,samples_g,drop=F]
       }
     }
     
+    # Subset imputed data
     if (length(object@imputed_data)>0) { 
       for (m in views_names(object)) {
-        object@imputed_data[[m]][[g]] <- object@imputed_data[[m]][[g]][,samples_g,drop=F]
+        object@imputed_data[[m]][[g]]$mean <- object@imputed_data[[m]][[g]]$mean[,samples_g,drop=F]
+        object@imputed_data[[m]][[g]]$variance <- object@imputed_data[[m]][[g]]$variance[,samples_g,drop=F]
       }
     }
     
   }
 
+  # Subset sample metadata
+  object@samples_metadata <- object@samples_metadata[object@samples_metadata$sample_name %in% samples,]
+  
   # Update dimensionality
   object@dimensions[["N"]] <- sapply(tmp, length)
   
@@ -261,15 +288,23 @@ subset_features <- function(object, view, features) {
   }
   
   # Subset relevant slots
-  object@expectations$W <- lapply(object@expectations$W, function(x) x[features,, drop=F])
-  object@expectations$Y[[view]] <- lapply(object@expectations$Y[[view]], function(x) x[features,])
-  object@expectations$Tau[[view]] <- lapply(object@expectations$Tau[[view]], function(x) x[features,])
-  object@data <- lapply(object@data, function(x) sapply(x, function(y) y[features,], simplify = F, USE.NAMES = T))
-  object@intercepts <- lapply(object@intercepts, function(x) sapply(x, function(y) y[features], simplify = F, USE.NAMES = T))
-  if (length(object@imputed_data) != 0) {
-    object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
-  }
+  if (length(object@expectations)>0) {
+    if ("W" %in% names(object@expectations) & length(object@expectations$W)>0)
+      object@expectations$W <- lapply(object@expectations$W, function(x) x[features,, drop=F])
+    if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0)
+      object@expectations$Y[[view]] <- lapply(object@expectations$Y[[view]], function(x) x[features,])
 
+  if (length(object@data)>0)
+    object@data <- lapply(object@data, function(x) sapply(x, function(y) y[features,], simplify = F, USE.NAMES = T))
+
+  if (length(object@expectations)>0)
+  object@intercepts <- lapply(object@intercepts, function(x) sapply(x, function(y) y[features], simplify = F, USE.NAMES = T))
+
+  if (length(object@imputed_data) != 0) {
+    stop()
+    # object@imputed_data <- lapply(object@imputed_data, function(x) sapply(x, function(y) y[,samples], simplify = F, USE.NAMES = T)) 
+    }
+  }
   # Update dimensionality
   object@dimensions[["D"]][[view]] <- length(features)
   

@@ -208,6 +208,7 @@ plotEnrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathways
                            text_size = 1.0, dot_size = 5.0) {
   
   # Sanity checks
+  stopifnot(is.numeric(alpha)) 
   stopifnot(length(factor)==1) 
   if (is.numeric(factor)) factor <- colnames(enrichment.results$pval.adj)[factor]
   if(!factor %in% colnames(enrichment.results$pval)) 
@@ -217,9 +218,10 @@ plotEnrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathways
   if(adjust) p.values <- enrichment.results$pval.adj else p.values <- enrichment.results$pval
   
   # Get data  
-  tmp <- as.data.frame(p.values[,factor, drop=FALSE])
-  tmp$pathway <- rownames(tmp)
-  colnames(tmp) <- c("pvalue")
+  tmp <- data.frame(
+    pvalues=p.values[,factor, drop=TRUE], 
+    pathway = rownames(p.values)
+  )
   
   # Filter out pathways
   tmp <- tmp[tmp$pvalue<=alpha,,drop=FALSE]
