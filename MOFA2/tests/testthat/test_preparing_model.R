@@ -4,8 +4,12 @@ library(MOFA2)
 
 test_that("a MOFA model can be prepared from a list of matrices", {
 	m <- as.matrix(read.csv('matrix.csv'))
-	bfam <- create_mofa(list("view1" = m))
-	expect_is(prepare_mofa(bfam), "MOFA")
+	# Set feature names
+	rownames(m) <- paste("feature_", seq_len(nrow(m)), paste = "", sep = "")
+	# Set sample names
+	colnames(m) <- paste("sample_", seq_len(ncol(m)), paste = "", sep = "")
+	factor_model <- create_mofa(list("view1" = m))
+	expect_is(prepare_mofa(factor_model), "MOFA")
 })
 
 test_that("a model can be created from a list of sparse matrices", {
@@ -16,8 +20,14 @@ test_that("a model can be created from a list of sparse matrices", {
 	m[sample(1:nrow(m), 100, replace = TRUE), sample(1:ncol(m), 100, replace = TRUE)] <- 0
 	library(Matrix)
 	m <- Matrix(m, sparse = TRUE)
-	factor_model <- create_mofa(list("view1" = m))
 
+	# Set feature names
+	rownames(m) <- paste("feature_", seq_len(nrow(m)), paste = "", sep = "")
+	# Set sample names
+	colnames(m) <- paste("sample_", seq_len(ncol(m)), paste = "", sep = "")
+	# Initialise a model
+	factor_model <- create_mofa(list("view1" = m))
+	
 	# Test if a sparse matrix can be used to prepare the MOFA model for training
 	expect_is(prepare_mofa(factor_model), "MOFA")
 })
