@@ -21,9 +21,9 @@ setMethod("factors_names", signature(object="MOFA"),
 #' @export
 setReplaceMethod("factors_names", signature(object="MOFA", value="vector"), 
                  function(object, value) {
-                   if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                   if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
                      stop("Before assigning factor names you have to assign expectations")
-                   if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+                   if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
                      if (length(value) != object@dimensions["K"])
                        stop("Length of factor names does not match the dimensionality of the latent variable matrix")
                    
@@ -31,7 +31,7 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
                    object <- .set_expectations_names(object, entity = 'factors', value)
                    
                    # Modify cache
-                   if ((methods::.hasSlot(object, "cache")) & ("variance_explained" %in% names(object@cache))) {
+                   if ((methods::.hasSlot(object, "cache")) && ("variance_explained" %in% names(object@cache))) {
                      for (i in seq_len(length(object@cache$variance_explained$r2_per_factor))) {
                        rownames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
                      }
@@ -74,11 +74,11 @@ setMethod("samples_names", signature(object="MOFA"),
 #' @export
 setReplaceMethod("samples_names", signature(object="MOFA", value="list"), 
                  function(object, value) {
-                   if (!methods::.hasSlot(object, "data") | length(object@data) == 0 | length(object@data[[1]]) == 0)
+                   if (!methods::.hasSlot(object, "data") || length(object@data) == 0 || length(object@data[[1]]) == 0)
                      stop("Before assigning sample names you have to assign the training data")
-                   if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                   if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
                      stop("Before assigning sample names you have to assign the expectations")
-                   if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+                   if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
                      if (!all(sapply(value, length) == object@dimensions[["N"]]))
                        stop("Length of sample names does not match the dimensionality of the model")
                    if (!all(sapply(value, length) == sapply(object@data[[1]], ncol)))
@@ -127,11 +127,11 @@ setMethod("samples_metadata", signature(object="MOFA"),
 #' @export
 setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"), 
                  function(object, value) {
-                   if (!methods::.hasSlot(object, "data") | length(object@data) == 0 | length(object@data[[1]]) == 0)
+                   if (!methods::.hasSlot(object, "data") || length(object@data) == 0 || length(object@data[[1]]) == 0)
                      stop("Before assigning samples metadata you have to assign the input data")
-                   # if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                   # if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
                    #   stop("Before assigning samples metadata you have to assign the expectations")
-                   if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+                   if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
                      if (nrow(value) != sum(object@dimensions[["N"]]))
                        stop("Number of rows in samples metadata does not match the dimensionality of the model")
                    if (nrow(value) != sum(sapply(object@data[[1]], ncol)))
@@ -175,11 +175,11 @@ setMethod("features_names", signature(object="MOFA"),
 #' @export
 setReplaceMethod("features_names", signature(object="MOFA", value="list"),
                  function(object, value) {
-                   if (!methods::.hasSlot(object, "data")  | length(object@data) == 0)
+                   if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
                      stop("Before assigning feature names you have to assign the training data")
-                   if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                   if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
                      stop("Before assigning feature names you have to assign the expectations")
-                   if (methods::.hasSlot(object, "dimensions")  | length(object@dimensions) == 0)
+                   if (methods::.hasSlot(object, "dimensions") || length(object@dimensions) == 0)
                      if (!all(sapply(value, length) == object@dimensions[["D"]]))
                        stop("Length of feature names does not match the dimensionality of the model")
                    if (!all(sapply(value, length) == sapply(object@data, function(e) nrow(e[[1]]))))
@@ -227,11 +227,11 @@ setMethod("features_metadata", signature(object="MOFA"),
 #' @export
 setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame"), 
                  function(object, value) {
-                   if (!methods::.hasSlot(object, "data") | length(object@data) == 0 | length(object@data[[1]]) == 0)
+                   if (!methods::.hasSlot(object, "data") || length(object@data) == 0 || length(object@data[[1]]) == 0)
                      stop("Before assigning features metadata you have to assign the training data")
-                   # if (!methods::.hasSlot(object, "expectations") | length(object@expectations) == 0)
+                   # if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
                    #   stop("Before assigning features metadata you have to assign the expectations")
-                   if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+                   if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
                      if (nrow(value) != sum(object@dimensions[["D"]]))
                        stop("Number of rows in features metadata does not match the dimensionality of the model")
                    if (nrow(value) != sum(sapply(object@data, function(e) nrow(e[[1]]))))
@@ -269,9 +269,9 @@ setMethod("views_names", signature(object="MOFA"),
 #' @export
 setMethod("views_names<-", signature(object="MOFA", value="character"), 
           function(object, value) {
-            # if (!methods::.hasSlot(object, "data") | length(object@data) == 0)
+            # if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
             #   stop("Before assigning view names you have to assign the training data")
-            if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+            if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
               if (length(value) != object@dimensions[["M"]])
                 stop("Length of view names does not match the dimensionality of the model")
             # if (length(value) != length(object@data))
@@ -309,8 +309,8 @@ setMethod("views_names<-", signature(object="MOFA", value="character"),
             
             # Set view names in expectations
             for (node in names(object@expectations)) {
-              if (node %in% nodes_types$multiview_nodes | node %in% nodes_types$twodim_nodes) {
-                if (is(object@expectations[[node]], "list") & length(object@expectations[[node]]) == object@dimensions["M"]) {
+              if (node %in% nodes_types$multiview_nodes || node %in% nodes_types$twodim_nodes) {
+                if (is(object@expectations[[node]], "list") && length(object@expectations[[node]]) == object@dimensions["M"]) {
                   names(object@expectations[[node]]) <- value 
                 }
               }
@@ -352,9 +352,9 @@ setMethod("groups_names", signature(object="MOFA"),
 #' @export
 setMethod("groups_names<-", signature(object="MOFA", value="character"), 
           function(object, value) {
-            # if (!methods::.hasSlot(object, "data") | length(object@data) == 0)
+            # if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
             #   stop("Before assigning group names you have to assign the training data")
-            if (methods::.hasSlot(object, "dimensions") & length(object@dimensions) != 0)
+            if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
               if(length(value) != object@dimensions[["G"]])
                 stop("Length of group names does not match the dimensionality of the model")
             # if (length(value) != length(object@data[[1]]))
@@ -387,7 +387,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             # Set sample group names in expectations
             for (node in nodes_types$multigroup_nodes) {
               if (node %in% names(object@expectations)) {
-                if (is(object@expectations[[node]], "list") & length(object@expectations[[node]])==object@dimensions["G"]) {
+                if (is(object@expectations[[node]], "list") && length(object@expectations[[node]])==object@dimensions["G"]) {
                   names(object@expectations[[node]]) <- value 
                 }
               }
@@ -395,7 +395,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             for (node in nodes_types$twodim_nodes) {
               if (node %in% names(object@expectations)) {
                 for (m in seq_len(length(object@expectations[[node]]))) {
-                  if (is(object@expectations[[node]][[m]], "list") & length(object@expectations[[node]][[m]])==object@dimensions["G"]) {
+                  if (is(object@expectations[[node]][[m]], "list") && length(object@expectations[[node]][[m]])==object@dimensions["G"]) {
                     names(object@expectations[[node]][[m]]) <- value 
                   }
                 }
