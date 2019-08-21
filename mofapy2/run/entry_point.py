@@ -7,6 +7,7 @@ from time import time
 import imp
 
 from mofapy2.core.BayesNet import *
+from mofapy2.core import gpu_utils
 from mofapy2.build_model.build_model import *
 from mofapy2.build_model.save_model import *
 from mofapy2.build_model.train_model import train_model
@@ -582,8 +583,29 @@ class entry_point(object):
         # Train the model
         train_model(self.model)
 
+    def mask_outliers(self):
+
+        Z = self.model.nodes['Z'].getExpectation()
+        zscore_cutoff = 3 * 1.96   # z-score cutoff
+        value_cutoff = 1       # max factor value
+
+        for g in range(len(self.data_opts['groups_names'])):
+            idx = np.where(np.array(self.data_opts["samples_groups"]) == self.data_opts['groups_names'][g])[0]
+            Ztmp = Z[idx,:] # is this by reference? apparently not
+
+            # calculate outlier score
+            z_score = np.absolute((Ztmp-Ztmp.mean(axis=0))) / np.std(Ztmp, axis=0)
+
+            # mask outliers with np.nan
+            Ztmp[(z_score>zscore_cutoff) & (np.absolute(Z[idx,:])>value_cutoff)] = np.nan
+            Z[idx,:] = Ztmp
+
+
     def impute(self, uncertainty=True):
         """impute missing values with or without uncertainty estimates"""
+
+        # detect outliers
+        self.mask_outliers()
 
         # get the necessary expectations
         W = [w['E'] for w in self.model.nodes['W'].getExpectations()]

@@ -228,7 +228,8 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   }
   
   # Fetch data
-  imputed_data <- lapply(object@imputed_data[views], function(x) x[groups])
+  # imputed_data <- lapply(object@imputed_data[views], function(x) x[groups])
+  imputed_data <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","mean"))
   imputed_data <- lapply(1:length(imputed_data), function(m) lapply(1:length(imputed_data[[1]]), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=F]))
   imputed_data <- .name_views_and_groups(imputed_data, views, groups)
   
