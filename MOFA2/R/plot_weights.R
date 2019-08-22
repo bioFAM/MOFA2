@@ -92,7 +92,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
                                  name_color="", name_shape="", show_missing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factors)==2)
   
   # Get views  
@@ -238,7 +238,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (paste0(factors, collapse = "") == "all") { 
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-    if (!all(factors %in% 1:object@dimensions$K)) stop("Factor(s) not found")
+    if (!all(factors %in% seq_len(object@dimensions$K))) stop("Factor(s) not found")
     factors <- factors_names(object)[factors]
   } else { 
     if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
@@ -287,11 +287,11 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Define group of features to label manually
   if(!is.null(manual)) {
     if (is.null(color_manual)) {
-      color_manual <- hcl(h = seq(15, 375, length=length(manual)+1), l=65, c=100)[1:length(manual)]
+      color_manual <- hcl(h = seq(15, 375, length=length(manual)+1), l=65, c=100)[seq_len(length(manual))]
     } else {
       stopifnot(length(color_manual)==length(manual)) 
     }
-    for (m in 1:length(manual))
+    for (m in seq_len(length(manual)))
       W$group[W$feature %in% manual[[m]]] <- as.character(m+1)
   }
   
@@ -333,7 +333,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
       force = 10,
       data = W[W$group!="0",], aes_string(label = "feature", col = "group"),
       size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
-      box.padding = unit(0.5,"lines"), show.legend=F)
+      box.padding = unit(0.5,"lines"), show.legend = FALSE)
   }
   
   # Configure axis 
@@ -352,11 +352,11 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   }
   
   # Define dot size
-  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size=F)
+  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size = FALSE)
   
   # Define dot colors
   cols <- c("grey", "black", color_manual)
-  p <- p + scale_color_manual(values=cols) + guides(col=F)
+  p <- p + scale_color_manual(values=cols) + guides(col = FALSE)
   
   # Facet if multiple factors
   if (length(unique(W$factor)) > 1) {
@@ -410,7 +410,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(view %in% views_names(object))
-  # if(!is.null(manual_features)) { stopifnot(class(manual_features)=="list"); stopifnot(all(Reduce(intersect,manual_features) %in% features_names(object)[[view]]))  }
+  # if(!is.null(manual_features)) { stopifnot(is(manual_features,"list")); stopifnot(all(Reduce(intersect,manual_features) %in% features_names(object)[[view]]))  }
   
   # Collect expectations  
   W <- get_weights(object, factors=factor, views=view, as.data.frame=TRUE)

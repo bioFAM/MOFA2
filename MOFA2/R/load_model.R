@@ -179,34 +179,34 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # Create default features names if they are null
   if (is.null(feature_names)) {
     print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
-    feature_names <- lapply(1:object@dimensions[["M"]],
-      function(m) sprintf("feature%d_view_&d", as.character(1:object@dimensions[["D"]][m]), m))
+    feature_names <- lapply(seq_len(object@dimensions[["M"]]),
+      function(m) sprintf("feature%d_view_&d", as.character(seq_len(object@dimensions[["D"]][m])), m))
   }
   features_names(object) <- feature_names
   
   # Create default samples names if they are null
   if (is.null(sample_names)) {
     print("Samples names not found, generating default: sample1, ..., sampleN")
-    sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(1:n)))
+    sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(seq_len(n))))
   }
   samples_names(object) <- sample_names
   
   # Set views names
   if (is.null(names(object@data))) {
     print("Views names not found, generating default: view1, ..., viewM")
-    view_names <- paste0("view", as.character(1:object@dimensions[["M"]]))
+    view_names <- paste0("view", as.character(seq_len(object@dimensions[["M"]])))
   }
   views_names(object) <- view_names
   
   # Set groups names
   if (is.null(names(object@data[[1]]))) {
     print("Groups names not found, generating default: group1, ..., groupG")
-    group_names <- paste0("group", as.character(1:object@dimensions[["G"]]))
+    group_names <- paste0("group", as.character(seq_len(object@dimensions[["G"]])))
   }
   groups_names(object) <- group_names
 
   # Set factors names
-  factors_names(object)  <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
+  factors_names(object)  <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
 
   
   ########################

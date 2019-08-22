@@ -23,7 +23,7 @@ get_dimensions <- function(object) {
 #' @export
 get_elbo <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  return(max(object@training_stats$elbo, na.rm=T))
+  return(max(object@training_stats$elbo, na.rm=TRUE))
 }
 
 #' @title get_factors
@@ -52,7 +52,7 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   if (paste0(factors, collapse = "") == "all") { 
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-    if (!all(factors %in% 1:object@dimensions$K)) stop("Factor(s) not found")
+    if (!all(factors %in% seq_len(object@dimensions$K))) stop("Factor(s) not found")
     factors <- factors_names(object)[factors]
   } else { 
     if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
@@ -98,7 +98,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   if (paste0(factors, collapse = "") == "all") { 
     factors <- factors_names(object)
   } else if (is.numeric(factors)) {
-    if (!all(factors %in% 1:object@dimensions$K)) stop("Factor(s) not found")
+    if (!all(factors %in% seq_len(object@dimensions$K))) stop("Factor(s) not found")
     factors <- factors_names(object)[factors]
   } else { 
     if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
@@ -109,7 +109,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   if (as.data.frame) {
     weights <- weights[weights$view %in% views & weights$factor %in% factors, ]
   } else {
-    weights <- lapply(views, function(m) weights[[m]][,factors,drop=F])
+    weights <- lapply(views, function(m) weights[[m]][,factors,drop=FALSE])
     names(weights) <- views
   }
   return(weights)
@@ -140,8 +140,8 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   groups <- .check_and_get_groups(object, groups)
   
   # Get features
-  if (class(features) == "list") {
-    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
+  if (is(features, "list")) {
+    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
   } else {
@@ -154,7 +154,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 
   # Fetch data
   data <- lapply(object@data[views], function(x) x[groups])
-  data <- lapply(1:length(data), function(m) lapply(1:length(data[[1]]), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=F]))
+  data <- lapply(seq_len(length(data)), function(m) lapply(seq_len(length(data[[1]])), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   data <- .name_views_and_groups(data, views, groups)
   
   # Add feature intercepts
@@ -215,8 +215,8 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
   # Get features
-  if (class(features) == "list") {
-    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
+  if (is(features, "list")) {
+    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
   } else {
@@ -230,7 +230,8 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   # Fetch data
   # imputed_data <- lapply(object@imputed_data[views], function(x) x[groups])
   imputed_data <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","mean"))
-  imputed_data <- lapply(1:length(imputed_data), function(m) lapply(1:length(imputed_data[[1]]), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=F]))
+  # imputed_data <- lapply(1:length(imputed_data), function(m) lapply(1:length(imputed_data[[1]]), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=F]))
+  imputed_data <- lapply(seq_len(length(imputed_data)), function(m) lapply(seq_len(length(imputed_data[[1]])), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   imputed_data <- .name_views_and_groups(imputed_data, views, groups)
   
   # Add feature intercepts
@@ -277,8 +278,8 @@ get_imputed_data2 <- function(object, views = "all", groups = "all", features = 
   if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   
   # Get features
-  if (class(features) == "list") {
-    stopifnot(all(sapply(1:length(features), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
+  if (is(features, "list")) {
+    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
   } else {
@@ -291,11 +292,11 @@ get_imputed_data2 <- function(object, views = "all", groups = "all", features = 
   
   # Fetch data
   mean <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","mean"))
-  mean <- lapply(1:length(mean), function(m) lapply(1:length(mean[[1]]), function(p) mean[[m]][[p]][as.character(features[[m]]),,drop=F]))
+  mean <- lapply(seq_len(length(mean)), function(m) lapply(seq_len(length(mean[[1]])), function(p) mean[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   mean <- .name_views_and_groups(mean, views, groups)
   
   variance <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","variance"))
-  variance <- lapply(1:length(variance), function(m) lapply(1:length(variance[[1]]), function(p) variance[[m]][[p]][as.character(features[[m]]),,drop=F]))
+  variance <- lapply(seq_len(length(variance)), function(m) lapply(seq_len(length(variance[[1]])), function(p) variance[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   variance <- .name_views_and_groups(variance, views, groups)
   
   

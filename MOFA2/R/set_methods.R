@@ -32,7 +32,7 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
                    
                    # Modify cache
                    if ((methods::.hasSlot(object, "cache")) & ("variance_explained" %in% names(object@cache))) {
-                     for (i in 1:length(object@cache$variance_explained$r2_per_factor)) {
+                     for (i in seq_len(length(object@cache$variance_explained$r2_per_factor))) {
                        rownames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
                      }
                    }
@@ -90,7 +90,7 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    object@samples_metadata$sample_name <- unlist(value, use.names = FALSE)
                    object@samples_metadata$group_name  <- as.factor( value_groups )
                    if (is(object@samples_metadata, "list")) {
-                    object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors=FALSE)
+                    object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors = FALSE)
                    }
                    
                    # Add samples names to the expectations
@@ -292,7 +292,7 @@ setMethod("views_names<-", signature(object="MOFA", value="character"),
             # Set view names in features_metadata 
             if (!is.null(object@features_metadata) && (length(object@features_metadata) != 0)) {
               # object@features_metadata$view_name <- as.character(object@features_metadata$view_name)
-              for (i in 1:object@dimensions[["M"]]) {
+              for (i in seq_len(object@dimensions[["M"]])) {
                 old_name <- old_views[i]
                 new_name <- value[i]
                 object@features_metadata[object@features_metadata$view_name == old_name, "view_name"] <- new_name
@@ -370,7 +370,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             # Set sample group names in samples_metadata
             if (!is.null(object@samples_metadata) && (length(object@samples_metadata) != 0)) {
               object@samples_metadata$group_name <- as.character(object@samples_metadata$group_name)
-              for (i in 1:object@dimensions[["G"]]) {
+              for (i in seq_len(object@dimensions[["G"]])) {
                 old_name <- old_groups[i]
                 new_name <- value[i]
                 object@samples_metadata[object@samples_metadata$group_name == old_name, "group_name"] <- new_name
@@ -394,7 +394,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             }
             for (node in nodes_types$twodim_nodes) {
               if (node %in% names(object@expectations)) {
-                for (m in 1:length(object@expectations[[node]])) {
+                for (m in seq_len(length(object@expectations[[node]]))) {
                   if (is(object@expectations[[node]][[m]], "list") & length(object@expectations[[node]][[m]])==object@dimensions["G"]) {
                     names(object@expectations[[node]][[m]]) <- value 
                   }
@@ -453,7 +453,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
   # Iterate over node list depending on the entity
   nodes <- node_lists_options[[entity]]$nodes
   axes  <- node_lists_options[[entity]]$axes
-  for (i in 1:length(nodes)) {
+  for (i in seq_len(length(nodes))) {
     node <- nodes[i]
     axis <- axes[i]
     
@@ -463,7 +463,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
       # Update nodes with one level of nestedness (e.g. W or Z)
       if (any(node %in% nodes_types$multiview_node, node %in% nodes_types$multigroup_nodes)) {
         sub_dim <- length(object@expectations[[node]])
-        for (ind in 1:sub_dim) {
+        for (ind in seq_len(sub_dim)) {
           
           # No nestedness in values if factors
           vals <- if (entity == "factors") values else values[[ind]]
@@ -487,9 +487,9 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
       # Update nodes with two levels of nestedness (e.g. Y or Tau)
       } else if (node %in% nodes_types$twodim_nodes) {
         sub_dim <- length(object@expectations[[node]])
-        for (ind in 1:sub_dim) {
+        for (ind in seq_len(sub_dim)) {
           sub_dim2 <- length(object@expectations[[node]][[ind]])
-          for (ind2 in 1:sub_dim2) {
+          for (ind2 in seq_len(sub_dim2)) {
             
             # Infer which index to use to iterate over a provided list of values
             deduced_ind <- if (entity == "features") ind else ind2  # since ind corresponds to views (groups of features)
@@ -527,8 +527,8 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
   
   axes_options <- list(features = 1, samples = 2)
   
-  for (m in 1:length(object@data)) {
-    for (g in 1:length(object@data[[m]])) {
+  for (m in seq_len(length(object@data))) {
+    for (g in seq_len(length(object@data[[m]]))) {
       deduced_ind <- if (entity == "features") m else g  # since ind corresponds to views (groups of features)
       if (axes_options[[entity]] == 1) {
         rownames(object@data[[m]][[g]]) <- values[[deduced_ind]]
@@ -552,8 +552,8 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
   
   axes_options <- list(features = 1, samples = 2)
   
-  for (m in 1:length(object@data)) {
-    for (g in 1:length(object@data[[m]])) {
+  for (m in seq_len(length(object@data))) {
+    for (g in seq_len(length(object@data[[m]]))) {
       deduced_ind <- if (entity == "features") m else g  # since ind corresponds to views (groups of features)
       if (axes_options[[entity]] == 1) {
         rownames(object@imputed_data[[m]][[g]][["mean"]]) <- values[[deduced_ind]]

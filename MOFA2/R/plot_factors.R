@@ -283,8 +283,8 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   
   # spread over factors
   df <- spread(df, key="factor", value="value")
-  df <- df[,c(colnames(df)[1:4], factors)]
-  df <- set_colnames(df, c(colnames(df)[1:4], "x", "y"))
+  df <- df[,c(colnames(df)[seq_len(4)], factors)]
+  df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
 
   # Scale values from 0 to 1
   if (scale) {

@@ -13,7 +13,7 @@
 subset_groups <- function(object, groups) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(groups) <= object@dimensions[["G"]])
   
   if (is.numeric(groups) | is.logical(groups))  {
@@ -129,7 +129,7 @@ subset_views <- function(object, views) {
 subset_factors <- function(object, factors) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factors) <= object@dimensions[["K"]])
   
   # Get factors
@@ -149,7 +149,7 @@ subset_factors <- function(object, factors) {
 
 
   if (length(object@expectations)>0) {
-    for (i in 1:length(nodes_with_factors$nodes)) {
+    for (i in seq_len(length(nodes_with_factors$nodes))) {
       node <- nodes_with_factors$nodes[i]
       axis <- nodes_with_factors$axes[i]
       if (node %in% names(object@expectations)) {
@@ -171,7 +171,7 @@ subset_factors <- function(object, factors) {
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   # Update factor names
-  factors_names(object) <- paste0("Factor", as.character(1:object@dimensions[["K"]]))
+  factors_names(object) <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
   
   
   return(object)
@@ -188,7 +188,7 @@ subset_factors <- function(object, factors) {
 subset_samples <- function(object, samples) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(samples) <= sum(object@dimensions[["N"]]))
   stopifnot(all(samples %in% unlist(samples_names(object))))
   stopifnot(!any(duplicated(samples)))
@@ -272,7 +272,7 @@ subset_samples <- function(object, samples) {
 subset_features <- function(object, view, features) {
   
   # Sanity checks
-  if (class(object) != "MOFA") stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(features) <= sapply(object@dimensions[["D"]], sum))
   warning("Removing features a posteriori is fine for an exploratory analysis, but we recommend removing them before training!")
 

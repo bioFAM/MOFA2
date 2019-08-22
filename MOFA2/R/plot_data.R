@@ -69,7 +69,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   }
 
   # NOTE: Currently groups are concatenated
-  if (class(data) == "list") {
+  if (is(data, "list")) {
     data <- do.call(cbind, data)
   }
 
@@ -80,14 +80,14 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
   
   # Define features
-  if (class(features) == "numeric") {
+  if (is(features, "numeric")) {
     if (length(features) == 1) {
       features <- rownames(W)[tail(order(abs(W)), n=features)]
     } else {
       features <- rownames(W)[order(-abs(W))[features]]
     }
     stopifnot(all(features %in% features_names(object)[[view]]))  
-  } else if (class(features) == "character") {
+  } else if (is(features, "character")) {
     stopifnot(all(features %in% features_names(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
@@ -100,7 +100,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   data <- data[order_features,]
   
   # By default, sort samples according to the factor values
-  order_samples <- names(sort(Z, decreasing=T))
+  order_samples <- names(sort(Z, decreasing = TRUE))
   order_samples <- order_samples[order_samples %in% colnames(data)]
   data <- data[,order_samples]
   
@@ -183,7 +183,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="all",
                               color_by=NULL, color_name="", color_legend = TRUE,
                               shape_by=NULL, shape_name="", shape_legend = TRUE,
-                              dot_size=1, text_size=5, add_lm = TRUE, imputed=FALSE) {
+                              dot_size=1, text_size=5, add_lm = TRUE, imputed = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -215,7 +215,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
   # Z <- do.call(rbind, Z)[,1]
   # Z <- Z[!is.na(Z)]
-  Z <- get_factors(object, factors=factor, groups = groups, as.data.frame=T)
+  Z <- get_factors(object, factors=factor, groups = groups, as.data.frame = TRUE)
   Z <- Z[,c("sample","value")]
   colnames(Z) <- c("sample","x")
   
@@ -228,20 +228,20 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     W <- W[W<0]
   }
   
-  if (class(features) == "numeric") {
+  if (is(features, "numeric")) {
     if (length(features) == 1) {
       features <- names(tail(sort(abs(W)), n=features))
     } else {
       features <- names(sort(-abs(W))[features])
     }
     stopifnot(all(features %in% features_names(object)[[view]]))  
-  } else if (class(features)=="character") {
+  } else if (is(features, "character")) {
     stopifnot(all(features %in% features_names(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
   }
   W <- W[features]
-  Y <- Y[features,,drop=F]
+  Y <- Y[features,,drop = FALSE]
   
   # Set group/color/shape
   if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
@@ -255,7 +255,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   
   # Create data frame 
   # df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = F)
-  df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = T)
+  df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = TRUE)
   df <- left_join(df1, df2, by = "sample")
   
   #remove values missing color or shape annotation
@@ -264,7 +264,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value", color = "color_by", shape = "shape_by")) + 
     geom_point(size=dot_size) +
-    scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
+    scale_shape_manual(values=c(19,1,2:18)[seq_len(length(unique(shape_by)))]) +
     labs(x="Factor values", y="") +
     facet_wrap(~feature, scales="free_y") +
     theme_classic() + theme(
@@ -277,7 +277,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (add_lm) {
     p <- p +
       stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
-      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm=T), size=text_size, color="black")
+      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm = TRUE), size = text_size, color = "black")
   }
   
   # Add legend for color
@@ -293,9 +293,9 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   
   # Add legend for shape
   if (length(unique(df$shape))>1 & shape_legend) { 
-    p <- p + labs(shape=shape_name)
+    p <- p + labs(shape = shape_name)
   } else { 
-    p <- p + guides(shape=F) 
+    p <- p + guides(shape = FALSE) 
   }
   
   return(p)
@@ -332,7 +332,7 @@ plot_data_overview <- function(object, colors = NULL) {
     palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
                  "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
                  "#A65628", "#F781BF", "#1B9E77")
-    if (M < 17) colors <- palette[1:M] else colors <- rainbow(M)
+    if (M < 17) colors <- palette[seq_len(M)] else colors <- rainbow(M)
     names(colors) <- views_names(object)
   } else {
       stopifnot(sort(names(colors))==sort(views_names(object)))
@@ -341,7 +341,7 @@ plot_data_overview <- function(object, colors = NULL) {
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
   tmp <- lapply(data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
-  ovw <- do.call(cbind, lapply(1:M, function(m) {
+  ovw <- do.call(cbind, lapply(seq_len(M), function(m) {
     do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))
   rownames(ovw) <- object@samples_metadata$sample_name
@@ -369,7 +369,7 @@ plot_data_overview <- function(object, colors = NULL) {
     geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
     # xlab(paste0("Samples (N=", n, ")")) + ylab("") +
-    guides(fill=F) + 
+    guides(fill = FALSE) + 
     facet_wrap(~group_label, scales="free_x", nrow=length(unique(molten_ovw$view_label))) +
     theme(
       panel.background = element_rect(fill="white"),
@@ -394,7 +394,7 @@ plot_data_overview <- function(object, colors = NULL) {
 #' @details This function is helpful to get an overview of the structure of the data as a text output
 #' @export
 plot_ascii_data <- function(object, header = FALSE) {
-  stopifnot(class(object) == "MOFA")
+  stopifnot(is(object, "MOFA"))
 
   if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
     stop("Error: dimensions not defined")
@@ -429,11 +429,11 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
   if (length(content_pct) == 0) {
     content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))
   }
-  content_pct <- lapply(1:length(content_pct), function(m) {
+  content_pct <- lapply(seq_len(length(content_pct)), function(m) {
     paste0(as.character(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100), sep = "%")
   })
 
-  for (m in 1:length(views_names(object))) {
+  for (m in seq_len(length(views_names(object)))) {
     # browser()
     toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, hat, collapse = igr_sp)))
     midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, walls, collapse = igr_sp)))
@@ -465,7 +465,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
 }
 
 .insert_inside <- function(values, boxes) {
-  sapply(1:length(boxes), function(i) {
+  sapply(seq_len(length(boxes)), function(i) {
     box <- boxes[i]
     v <- values[i]
     paste0(substr(box, 1, 1), .cpaste(v, nchar(box) - 2), substr(box, length(box), length(box)))

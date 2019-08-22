@@ -37,7 +37,7 @@ cluster_samples <- function(object, k, factors = "all", ...) {
   
   # Collect relevant data
   Z <- get_factors(object, factors=factors)
-  if (class(Z) == "list") Z <- do.call(rbind, Z)
+  if (is(Z, "list")) Z <- do.call(rbind, Z)
   N <- nrow(Z)
   
   # For now remove sample with missing values on factors
