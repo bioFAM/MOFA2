@@ -81,7 +81,7 @@ subset_views <- function(object, views) {
   # warning("Removing views a posteriori is fine for an exploratory analysis, but you should removing them before training!")
   
   # Define views
-  views <- .check_and_get_views(views)
+  views <- .check_and_get_views(object, views)
   
   # Subset relevant slots
   if (length(object@expectations)>0) {
@@ -117,8 +117,7 @@ subset_views <- function(object, views) {
 #' @name subset_factors
 #' @description Method to subset (or sort) factors
 #' @param object a \code{\link{MOFA}} object.
-#' @param factors character vector with the factor names, or numeric vector with the index of the factors, 
-#' or logical vector with the views to be kept as TRUE.
+#' @param factors character vector with the factor names, or numeric vector with the index of the factors.
 #' @export
 subset_factors <- function(object, factors) {
   
@@ -127,7 +126,7 @@ subset_factors <- function(object, factors) {
   stopifnot(length(factors) <= object@dimensions[["K"]])
   
   # Define factors
-  factors <- .check_and_get_factors(factors)
+  factors <- .check_and_get_factors(object, factors)
   
   # Subset expectations
   nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
@@ -168,25 +167,19 @@ subset_factors <- function(object, factors) {
 #' @name subset_samples
 #' @description Method to subset (or sort) samples
 #' @param object a \code{\link{MOFA}} object.
-#' @param samples character vector with the sample names, numeric vector with the sample indices or logical vector with the samples to be kept as TRUE.
+#' @param samples character vector with the sample names or numeric vector with the sample indices.
 #' @export
 subset_samples <- function(object, samples) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  stopifnot(length(samples) <= sum(object@dimensions[["N"]]))
-  stopifnot(all(samples %in% unlist(samples_names(object))))
-  stopifnot(!any(duplicated(samples)))
   
-  # Subset sample metadata
-  # object@samples_metadata <- object@samples_metadata[match(samples, object@samples_metadata$sample_name),]
-  # groups <- as.character(unique(object@samples_metadata$group_name))
-  # object@samples_metadata$group_name <- factor(object@samples_metadata$group_name, levels=groups)
+  # Define samples
+  samples <- .check_and_get_samples(object, samples)
   
   # Check if an entire group needs to be removed
   groups <- as.character(unique(object@samples_metadata[match(samples, object@samples_metadata$sample_name),]$group_name))
   if (length(groups)<length(groups_names(object))) object <- subset_groups(object, groups)
-  
   
   # Subset data and expectations
   tmp <- lapply(groups, function(g) samples_names(object)[[g]][samples_names(object)[[g]] %in% samples])

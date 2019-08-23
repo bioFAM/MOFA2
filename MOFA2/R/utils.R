@@ -34,11 +34,11 @@
   if (is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   # Define groups
-  groups <- .check_and_get_groups(groups)
+  groups <- .check_and_get_groups(object, groups)
   H <- length(groups)
   
   # Define factors
-  factors <- .check_and_get_factors(factors)
+  factors <- .check_and_get_factors(object, factors)
   
   # Z <- get_factors(object)
   
@@ -77,6 +77,7 @@ return(model)
 
 
 .check_and_get_factors <- function(object, factors) {
+  stopifnot(!any(duplicated(factors)))
   if (is.numeric(factors)) {
     stopifnot(all(factors <= object@dimensions$K))
     factors_names(object)[factors] 
@@ -92,6 +93,7 @@ return(model)
 }
 
 .check_and_get_views <- function(object, views) {
+  stopifnot(!any(duplicated(views)))
   if (is.numeric(views)) {
     stopifnot(all(views <= object@dimensions$M))
     views_names(object)[views] 
@@ -107,6 +109,7 @@ return(model)
 
 
 .check_and_get_groups <- function(object, groups) {
+  stopifnot(!any(duplicated(groups)))
   if (is.numeric(groups)) {
     stopifnot(all(groups <= object@dimensions$G))
     groups_names(object)[groups] 
@@ -116,6 +119,22 @@ return(model)
     } else {
       stopifnot(all(groups %in% groups_names(object)))
       groups
+    }
+  }
+}
+
+
+.check_and_get_samples <- function(object, samples) {
+  stopifnot(!any(duplicated(samples)))
+  if (is.numeric(samples)) {
+    stopifnot(all(samples <= sum(object@dimensions$N)))
+    unlist(samples_names(object))[samples] 
+  } else {
+    if (paste0(samples, collapse = "") == "all") { 
+      unlist(samples_names(object))
+    } else {
+      stopifnot(all(samples %in% unlist(samples_names(object))))
+      samples
     }
   }
 }
