@@ -211,8 +211,10 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   if (length(object@imputed_data)==0) stop("imputed data not found, did you run: 'object <- impute(object)'?")
   
   # Get views and groups
-  if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
-  if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
+  # if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
+  # if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
+  views <- .check_and_get_views(object, views)
+  groups <- .check_and_get_groups(object, groups)
   
   # Get features
   if (is(features, "list")) {
@@ -267,86 +269,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
 
 
 
-get_imputed_data2 <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE) {
-  
-  # Sanity checks
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (length(object@imputed_data)==0) stop("imputed data not found")
-  
-  # Get views and groups
-  if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
-  if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
-  
-  # Get features
-  if (is(features, "list")) {
-    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
-    stopifnot(length(features)==length(views))
-    if (is.null(names(features))) names(features) <- views
-  } else {
-    if (paste0(features, collapse="") == "all") { 
-      features <- features_names(object)[views]
-    } else {
-      stop("features not recognised, please read the documentation")
-    }
-  }
-  
-  # Fetch data
-  mean <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","mean"))
-  mean <- lapply(seq_len(length(mean)), function(m) lapply(seq_len(length(mean[[1]])), function(p) mean[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
-  mean <- .name_views_and_groups(mean, views, groups)
-  
-  variance <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","variance"))
-  variance <- lapply(seq_len(length(variance)), function(m) lapply(seq_len(length(variance[[1]])), function(p) variance[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
-  variance <- .name_views_and_groups(variance, views, groups)
-  
-  
-  # Add feature intercepts
-  # tryCatch( {
-  #   
-  #   if (add_intercept & length(object@intercepts[[1]])>0) {
-  #     intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
-  #     intercepts <- .name_views_and_groups(intercepts, views, groups)
-  #     
-  #     for (m in names(imputed_data)) {
-  #       for (g in names(imputed_data[[m]])) {
-  #         imputed_data[[m]][[g]] <- imputed_data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
-  #       }
-  #     }
-  #   } }, error = function(e) { NULL })
-  
-  # Convert to long data frame
-  if (as.data.frame) {
-    mean <- lapply(views, function(m) { 
-      lapply(groups, function(g) { 
-        tmp <- reshape2::melt(mean[[m]][[g]])
-        colnames(tmp) <- c("feature", "sample", "value")
-        tmp <- cbind(view = m, group = g, tmp)
-        return(tmp) 
-      })
-    })
-    
-    variance <- lapply(views, function(m) { 
-      lapply(groups, function(g) { 
-        tmp <- reshape2::melt(variance[[m]][[g]])
-        colnames(tmp) <- c("feature", "sample", "value")
-        tmp <- cbind(view = m, group = g, tmp)
-        return(tmp) 
-      })
-    })
-    
-    mean <- do.call(rbind, do.call(rbind, mean))
-    mean$estimate <- "mean"
-    variance <- do.call(rbind, do.call(rbind, variance))
-    variance$estimate <- "variance"
-    
-    imputed_data <- rbind(mean,variance)
-    imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.character)
-  } else {
-    imputed_data <- list("mean"=mean, "variance"=variance)
-  }
-  
-  return(imputed_data)
-}
 
 
 #' @title get_expectations
