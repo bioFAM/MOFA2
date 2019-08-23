@@ -31,7 +31,7 @@
 .detect_outliers <- function(object, groups = "all", factors = "all") {
   
   # Sanity checks
-  if (is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   # Define groups
   groups <- .check_and_get_groups(object, groups)
@@ -40,11 +40,8 @@
   # Define factors
   factors <- .check_and_get_factors(object, factors)
   
-  # Z <- get_factors(object)
-  
   for (k in factors) {
     for (g in groups) {
-      # samples <- samples_names(object)[[g]]
     
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
