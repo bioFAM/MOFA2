@@ -27,14 +27,8 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(all(view %in% views_names(object)))  
   
-  # Get factors
-  if (paste0(factors, collapse="") == "all") { 
-  	factors <- factors_names(object)
-  } else if (is.numeric(factors)) {
-  	factors <- factors_names(object)[factors]
-  } else { 
-  	stopifnot(all(factors %in% factors_names(object)))
-  }
+  # Define factors
+  factors <- .check_and_get_factors(object, factors)
   
   # Define features
   if (paste(features, collapse="") =="all") { 

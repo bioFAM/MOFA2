@@ -15,18 +15,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
-  # Define views and groups
+  # Define factors, views and groups
   views  <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
-
-  # Define factors
-  if (paste0(factors, collapse="") == "all") {
-    factors <- factors_names(object)
-  } else if (is.numeric(factors)) {
-      factors <- factors_names(object)[factors]
-  } else {
-    stopifnot(all(factors %in% factors_names(object)))
-  }
+  factors <- .check_and_get_factors(object, factors)
   K <- length(factors)
 
   # Collect relevant expectations

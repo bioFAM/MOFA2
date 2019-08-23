@@ -256,14 +256,10 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   if (!is.null(shape_by) && (length(shape_by) == 1) && is.null(shape_name))
     shape_name <- shape_by
   
+  # Define factors
+  factors <- .check_and_get_factors(object, factors)
+  
   # Get factors
-  if ((length(factors) == 1) && (factors[1] == "all")) {
-    factors <- factors_names(object)
-  } else if (is.numeric(factors)) {
-    factors <- factors_names(object)[unique(factors)]
-  } else { 
-    stopifnot(all(factors %in% factors_names(object)))
-  }
   Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
   
   # Set color and shape
@@ -347,14 +343,8 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
-  # Get factors
-  if (is.numeric(factors)) {
-    factors <- factors_names(object)[factors] 
-  } else if (paste0(factors, collapse="") == "all") { 
-    factors <- factors_names(object) 
-  } else {
-    stopifnot(all(factors %in% factors_names(object)))  
-  }
+  # Define factors
+  factors <- .check_and_get_factors(object, factors)
   
   # Collect relevant data
   Z <- get_factors(object, factors=factors, as.data.frame=TRUE)

@@ -33,21 +33,14 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-
-  # Get views
-  if (is.numeric(view)) view <- views_names(object)[view]
-  stopifnot(view %in% views_names(object))
-
-  # Get groups
-  groups <- .check_and_get_groups(object, groups)
+  stopifnot(length(factor)==1)
+  stopifnot(length(view)==1)
   
-  # Get factors
-  if (is.numeric(factor)) {
-    factor <- factors_names(object)[factor]
-  } else { 
-    stopifnot(factor %in% factors_names(object)) 
-  }
-
+  # Define views, factors and groups
+  groups <- .check_and_get_groups(object, groups)
+  factor <- .check_and_get_factors(object, factor)
+  view <- .check_and_get_views(object, view)
+  
   # Get weights
   W <- do.call(rbind, get_weights(object, views=view, factors=factor, as.data.frame = F))
   
@@ -189,17 +182,12 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factor)==1)
   stopifnot(length(view)==1)
-  if (is.numeric(view)) view <- views_names(object)[view]
-  if (!view %in% views_names(object)) stop(sprintf("The view %s is not present in the object",view))
-
+  
+  # Define views, factors and groups
   groups <- .check_and_get_groups(object, groups)
+  factor <- .check_and_get_factors(object, factor)
+  view <- .check_and_get_views(object, view)
 
-  # Get factors
-  if (is.numeric(factor)) {
-    factor <- factors_names(object)[factor]
-  } else { 
-    stopifnot(factor %in% factors_names(object)) 
-  }
       
   # Collect relevant data
   N <- get_dimensions(object)[["N"]]

@@ -45,19 +45,10 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
-  # Get groups
+  # Get factors and groups
   groups <- .check_and_get_groups(object, groups)
+  factors <- .check_and_get_factors(object, factors)
 
-  # Get factor names
-  if (paste0(factors, collapse = "") == "all") { 
-    factors <- factors_names(object)
-  } else if (is.numeric(factors)) {
-    if (!all(factors %in% seq_len(object@dimensions$K))) stop("Factor(s) not found")
-    factors <- factors_names(object)[factors]
-  } else { 
-    if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
-  }
-  
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
   if (as.data.frame) {
@@ -93,16 +84,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   
   # Get views
   views <- .check_and_get_views(object, views)
-  
-  # Get factors
-  if (paste0(factors, collapse = "") == "all") { 
-    factors <- factors_names(object)
-  } else if (is.numeric(factors)) {
-    if (!all(factors %in% seq_len(object@dimensions$K))) stop("Factor(s) not found")
-    factors <- factors_names(object)[factors]
-  } else { 
-    if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
-  }
+  factors <- .check_and_get_factors(object, factors)
   
   # Fetch weights
   weights <- get_expectations(object, "W", as.data.frame)
@@ -211,8 +193,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   if (length(object@imputed_data)==0) stop("imputed data not found, did you run: 'object <- impute(object)'?")
   
   # Get views and groups
-  # if (paste0(views, collapse="") == "all") { views <- views_names(object) } else { stopifnot(all(views %in% views_names(object))) }
-  # if (paste0(groups, collapse="") == "all") { groups <- groups_names(object) } else { stopifnot(all(groups %in% groups_names(object))) }
   views <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
   

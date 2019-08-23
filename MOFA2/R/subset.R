@@ -16,11 +16,8 @@ subset_groups <- function(object, groups) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(groups) <= object@dimensions[["G"]])
   
-  if (is.numeric(groups) | is.logical(groups))  {
-    groups <- groups_names(object)[groups] 
-  } else {
-    stopifnot(all(groups %in% groups_names(object)))
-  }
+  # Define groups    
+  groups <- .check_and_get_groups(object, groups)
   
   # Subset expectations
   if (length(object@expectations)>0) {
@@ -83,11 +80,8 @@ subset_views <- function(object, views) {
   stopifnot(length(views) <= object@dimensions[["M"]])
   # warning("Removing views a posteriori is fine for an exploratory analysis, but you should removing them before training!")
   
-  if (is.numeric(views) | is.logical(views))  {
-    views <- views_names(object)[views] 
-  } else {
-    stopifnot(all(views %in% views_names(object)))
-  }
+  # Define views
+  views <- .check_and_get_views(views)
   
   # Subset relevant slots
   if (length(object@expectations)>0) {
@@ -132,16 +126,8 @@ subset_factors <- function(object, factors) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factors) <= object@dimensions[["K"]])
   
-  # Get factors
-  if (is.numeric(factors) | is.logical(factors)) {
-    stopifnot(length(factors) == length(unique(factors)))
-    factors <- factors_names(object)[factors]
-  } else if (is.logical(factors)) {
-    factors <- factors_names(object)[factors]
-  } else if (is.character(factors)) { 
-    stopifnot(length(factors) == length(unique(factors)))
-    stopifnot(all(factors %in% factors_names(object)))
-  }
+  # Define factors
+  factors <- .check_and_get_factors(factors)
   
   # Subset expectations
   nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
@@ -279,8 +265,7 @@ subset_features <- function(object, view, features) {
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(all(view %in% views_names(object)))  
 
-  
-  # Get samples
+  # Define features
   if (is.character(features)) {
     stopifnot(all(features %in% features_names(object)[[view]]))
   } else {

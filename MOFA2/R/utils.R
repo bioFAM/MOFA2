@@ -34,20 +34,11 @@
   if (is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   # Define groups
-  if (paste0(groups, sep="", collapse="") == "all") { 
-    groups <- groups_names(object) 
-  } else {
-    stopifnot(all(groups %in% groups_names(object)))  
-  }
+  groups <- .check_and_get_groups(groups)
   H <- length(groups)
   
   # Define factors
-  factors <- as.character(factors)
-  if (paste0(factors, collapse="") == "all") { 
-    factors <- factors_names(object)
-  } else {
-    stopifnot(all(factors %in% factors_names(object)))  
-  }
+  factors <- .check_and_get_factors(factors)
   
   # Z <- get_factors(object)
   
@@ -83,6 +74,7 @@
   }
 return(model)
 }
+
 
 .check_and_get_factors <- function(object, factors) {
   if (is.numeric(factors)) {

@@ -10,7 +10,7 @@
 #' More interestingly, it can be done using multiple factors, where multiple sources of variation are aggregated. \cr
 #' Importantly, this type of clustering is not weighted and does not take into account the different importance of the latent factors. 
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param k number of clusters
+#' @param k number of clusters (integer).
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
 #' Default is 'all'
 #' @param ... extra arguments  passed to \code{\link{kmeans}}
@@ -25,15 +25,8 @@ cluster_samples <- function(object, k, factors = "all", ...) {
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
-
   # Define factors
-  if (paste0(factors, collapse="") == "all") { 
-    factors <- factors_names(object) 
-  } else if (is.numeric(factors)) {
-    factors <- factors_names(object)[factors]
-  } else {
-    stopifnot(all(factors %in% factors_names(object)))
-  }
+  factors <- .check_and_get_factors(object, factors)
   
   # Collect relevant data
   Z <- get_factors(object, factors=factors)
@@ -45,6 +38,7 @@ cluster_samples <- function(object, k, factors = "all", ...) {
   haveAllZ <- apply(Z, 1, function(x) all(!is.na(x)))
   if(!all(haveAllZ)) warning(paste("Removing", sum(!haveAllZ), "samples with missing values on at least one factor"))
   Z <- Z[haveAllZ,]
+  
   # Perform k-means clustering
   kmeans.out <- kmeans(Z, centers=k,  ...)
 
