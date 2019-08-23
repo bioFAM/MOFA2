@@ -17,7 +17,7 @@ plot_data_scatter(object, view, factor, groups = "all", features = 10,
 
 \item{factor}{character vector with a factor name, or numeric vector with the index of the factor.}
 
-\item{groups}{TO-FILL}
+\item{groups}{groups to plot. Default is "all".}
 
 \item{features}{if an integer, the total number of features to plot (10 by default). If a character vector, a set of manually-defined features.}
 

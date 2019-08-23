@@ -5,31 +5,27 @@
 
 #' @title Plot heatmap of relevant features
 #' @name plot_data_heatmap
-#' @description Function to plot a heatmap of the input data for relevant features, 
-#' usually the ones with highest loadings in a given factor.
+#' @description Function to plot a heatmap of the data for relevant features, typically the ones with high loadings.
 #' @param object a \code{\link{MOFA}} object.
-#' @param view a string vector with the view name, or an integer with the index of the view.
+#' @param view a string with the view name, or an integer with the index of the view.
 #' @param factor a string with the factor name, or an integer with the index of the factor.
-#' @param groups TO-FILL
-#' @param features if an integer, the total number of features to plot, based on the absolute value of the loading.
-#' If a character vector, a set of manually-defined features. Default is 50.
-#' @param transpose logical indicating whether to transpose the output heatmap. 
+#' @param groups groups to plot. Default is "all".
+#' @param features if an integer (default), the total number of features to plot based on the absolute value of the loadings.
+#' If a character vector, a set of manually defined features.
+#' @param transpose logical indicating whether to transpose the heatmap. 
 #' Default corresponds to features as rows and samples as columns.
-#' @param imputed logical indicating whether to plot the imputed data instead of the original data. 
-#' Default is FALSE.
-#' @param denoise logical indicating whether to plot the input data or to plot a potentially denoised version based on the data reconstruction from the MOFA factors.
-#' @param annotate_samples TO-FILL
-#' @param annotate_features TO-FILL
+#' @param imputed logical indicating whether to plot the imputed data instead of the original data. Default is FALSE.
+#' @param denoise logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors. 
+#' See \code{\link{predict}}. Default is FALSE.
 #' @param ... further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}
 #' @details One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
-#' using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, which show you which are the top features that are driving the heterogeneity. \cr
+#' using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}. \cr
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
-#' This function generates a heatmap for selected features, which should reveal, im the original data space, the underlying pattern that is captured by the latent factor. \cr
+#' This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 #' @importFrom pheatmap pheatmap
 #' @export
-plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE,
-                              annotate_samples = NULL, annotate_features = NULL, ...) {
+plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -61,7 +57,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
     }
   }
 
-  # NOTE: Currently groups are concatenated
+  # Concatenate groups
   if (is(data, "list")) {
     data <- do.call(cbind, data)
   }
@@ -100,46 +96,20 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   # Transpose the data
   if (transpose) data <- t(data)
 
-  # Define samples annotations and features annotations
-  if (!is.null(annotate_samples) || !is.null(annotate_features)) {
-    ann_samples  <- NULL
-    ann_features <- NULL
-
-    # Use samples annotation
-    if (!is.null(annotate_samples)) {
-      stopifnot(annotate_samples %in% colnames(samples_metadata(object)))
-      ann_samples <- data.frame(ID = samples_metadata(object)$group_name)
-      rownames(ann_samples) <- samples_metadata(object)$sample_name
-    }
-
-    # Use features annotation
-    if (!is.null(annotate_features)) {
-      stopifnot(annotate_features %in% colnames(features_metadata(object)))
-      ann_features <- data.frame(ID = features_metadata(object)$view_name)
-      rownames(ann_features) <- features_metadata(object)$feature_name
-    }
-
-    # Plot heatmap with annotations
-    pheatmap(data, annotation_col = ann_samples, annotation_row = ann_features, ...)
-
-  } else {
-    
-    # Plot heatmap without annotations
-    pheatmap(data, ...)
-  }
-  
+  # Plot heatmap without annotations
+  pheatmap(data, ...)
 }
 
 
 
 #' @title Scatterplots of feature values against latent factors
 #' @name plot_data_scatter
-#' @description Function to do a scatterplot of the feature(s) values against the latent factor values.
+#' @description Function to do a scatterplot of features against factor values.
 #' @param object a \code{\link{MOFA}} object.
-#' @param view character vector with a view name, or numeric vector with the index of the view.
-#' @param factor character vector with a factor name, or numeric vector with the index of the factor.
-#' @param features if an integer, the total number of features to plot (10 by default). If a character vector, a set of manually-defined features.
-#' @param groups TO-FILL
+#' @param view string with the view name, or an integer with the index of the view.
+#' @param factor string with the factor name, or an integer with the index of the factor.
+#' @param features if an integer (default), the total number of features to plot. If a character vector, a set of manually-defined features.
+#' @param groups groups to plot. Default is "all".
 #' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
 #' \itemize{
 #' \item (default) the string "group", it the dots with respect to their predefined groups.
@@ -156,7 +126,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
 #' \item a dataframe with two columns: "sample" and "shape"
 #' }
-#' @param sign can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.
+#' @param sign can be 'positive', 'negative' or 'all' (default) to show only positive, negative or all weights, respectively.
 #' @param dot_size numeric indicating dot size.
 #' @param text_size numeric indicating text size.
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
@@ -165,13 +135,12 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @param color_legend logical indicating whether to add a legend for the color.
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
 #' @param shape_legend logical indicating whether to add a legend for the shape.
-#' @details One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, 
-#' which show you which features drive the heterogeneity of each factor. 
+#' @details One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
-#' This function generates scatterplots of features against factors, so that you can observe the association between them. \cr
 #' A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
-#' @import ggplot2 dplyr
+#' @import ggplot2
 #' @importFrom ggpubr stat_cor
+#' @importFrom dplyr left_join
 #' @export
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="all",
                               color_by=NULL, color_name="", color_legend = TRUE,
@@ -188,7 +157,6 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   factor <- .check_and_get_factors(object, factor)
   view <- .check_and_get_views(object, view)
 
-      
   # Collect relevant data
   N <- get_dimensions(object)[["N"]]
   W <- get_weights(object)[[view]][,factor]
@@ -297,9 +265,11 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 #' @param object a \code{\link{MOFA}} object.
 #' @param colors a vector specifying the colors per view (see example for details).
 #' @details This function is helpful to get an overview of the structure of the data. 
-#' It shows the number of samples, groups, views and features and it indicates which measurements are missing.
-#' @import ggplot2 dplyr reshape2
+#' It shows the model dimensionalities (number of samples, groups, views and features) 
+#' and it indicates which measurements are missing.
+#' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom dplyr mutate
 #' @export
 plot_data_overview <- function(object, colors = NULL) {
   

@@ -133,7 +133,6 @@ subset_factors <- function(object, factors) {
   nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
   stopifnot(all(nodes_with_factors$axes %in% c(0, 1, 2)))
 
-
   if (length(object@expectations)>0) {
     for (i in seq_len(length(nodes_with_factors$nodes))) {
       node <- nodes_with_factors$nodes[i]

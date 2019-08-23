@@ -22,15 +22,16 @@ Default is "all".}
 \item{type}{type of prediction returned, either:
 "response" gives the response vector, the mean for Gaussian and Poisson, and probabilities for Bernoulli,
 "link" gives the linear predictions,
-"inRange" rounds the fitted values integer-valued distributions to the next integer (default). \cr}
+"inRange" rounds the fitted values integer-valued distributions to the next integer (default).}
 }
 \value{
-Returns a list with data predictions, each element corresponding to a view.
+Returns a list with the data reconstructed by the model predictions.
 }
 \description{
 This function uses the latent factors and the weights to do data predictions.
 }
 \details{
-the denoised and condensed low-dimensional representation of the data captures the main sources of heterogeneity of the data.
-These representation can be used to do predictions using the equation Y = WX. This is the key step underlying imputation, see \code{\link{impute}} and Methods section of the article.
+MOFA generates a denoised and condensed low-dimensional representation of the data that captures the main sources of heterogeneity of the data.
+This representation can be used to reconstruct a denoised representation of the data, simply using the equation \code{Y = WX}. 
+For more mathematical details read the supplementary methods of the manuscript.
 }

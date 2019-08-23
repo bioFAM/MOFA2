@@ -16,7 +16,7 @@ create_mofa(data, groups = NULL)
  \item{\strong{List of matrices}:}{ A nested list of matrices \code{Y[[i]][[j]]}. 
  The first index \code{i} for the views. 
  The second index \code{j} for the groups. 
- Sample are stored in rows and features in columns.}
+ Samples are stored in columns and features in rows.}
  }}
 
 \item{groups}{ignore...}

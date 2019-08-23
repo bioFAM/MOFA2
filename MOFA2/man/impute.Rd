@@ -23,11 +23,17 @@ impute(object, views = "all", groups = "all", factors = "all",
 \item \strong{inRange}: {rounds the fitted values from "terms" for integer-valued distributions to the next integer (default).}
 }}
 }
+\value{
+This method fills the \code{imputed_data} slot by replacing the missing values in the input data with the model predictions.
+}
 \description{
 This function uses the latent factors and the loadings to impute missing values.
 }
 \details{
-matrix factorization models generate a denoised and condensed low-dimensional representation of the data which capture the main sources of heterogeneity of the data.
-These representation can be used to do predictions using the equation \code{Y = WX}. For more details read the supplementary methods of the manuscript. \cr
-This method fills the \code{ImputedData} slot by replacing the missing values in the input data with the model predictions.
+MOFA generates a denoised and condensed low-dimensional representation of the data that captures the main sources of heterogeneity of the data.
+This representation can be used to reconstruct the data, simply using the equation \code{Y = WX}. 
+For more details read the supplementary methods of the manuscript. \cr
+Note that with \code{\link{impute}} you can only generate the point estimates (the means of the posterior distributions). 
+If you want to add uncertainity estimates (the variance) you need to set \code{impute=TRUE} in the training options.
+See \code{\link{get_default_training_options}}.
 }

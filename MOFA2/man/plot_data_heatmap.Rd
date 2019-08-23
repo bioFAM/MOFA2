@@ -5,8 +5,7 @@
 \title{Plot heatmap of relevant features}
 \usage{
 plot_data_heatmap(object, view, factor, groups = "all", features = 50,
-  transpose = FALSE, imputed = FALSE, denoise = FALSE,
-  annotate_samples = NULL, annotate_features = NULL, ...)
+  transpose = FALSE, imputed = FALSE, denoise = FALSE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -15,28 +14,22 @@ plot_data_heatmap(object, view, factor, groups = "all", features = 50,
 
 \item{factor}{a string with the factor name, or an integer with the index of the factor.}
 
-\item{groups}{TO-FILL}
+\item{groups}{groups to plot. Default is "all".}
 
-\item{features}{if an integer, the total number of features to plot, based on the absolute value of the loading.
-If a character vector, a set of manually-defined features. Default is 50.}
+\item{features}{if an integer (default), the total number of features to plot based on the absolute value of the loadings.
+If a character vector, a set of manually defined features.}
 
-\item{transpose}{logical indicating whether to transpose the output heatmap. 
+\item{transpose}{logical indicating whether to transpose the heatmap. 
 Default corresponds to features as rows and samples as columns.}
 
-\item{imputed}{logical indicating whether to plot the imputed data instead of the original data. 
-Default is FALSE.}
+\item{imputed}{logical indicating whether to plot the imputed data instead of the original data. Default is FALSE.}
 
-\item{denoise}{logical indicating whether to plot the input data or to plot a potentially denoised version based on the data reconstruction from the MOFA factors.}
-
-\item{annotate_samples}{TO-FILL}
-
-\item{annotate_features}{TO-FILL}
+\item{denoise}{logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors. Default is FALSE.}
 
 \item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}
 }
 \description{
-Function to plot a heatmap of the input data for relevant features, 
-usually the ones with highest loadings in a given factor.
+Function to plot a heatmap of the data for relevant features, typically the ones with high loadings.
 }
 \details{
 One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 

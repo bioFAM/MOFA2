@@ -16,5 +16,6 @@ Function to do a tile plot showing the missing value structure of the input data
 }
 \details{
 This function is helpful to get an overview of the structure of the data. 
-It shows the number of samples, groups, views and features and it indicates which measurements are missing.
+It shows the model dimensionalities (number of samples, groups, views and features) 
+and it indicates which measurements are missing.
 }

@@ -9,7 +9,7 @@ cluster_samples(object, k, factors = "all", ...)
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{k}{number of clusters}
+\item{k}{number of clusters (integer).}
 
 \item{factors}{character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
 Default is 'all'}
