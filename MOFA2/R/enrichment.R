@@ -2,12 +2,13 @@
 ## Functions to perform Feature Set Enrichment Analysis ##
 ##########################################################
 
-#' @title Feature Set Enrichment Analysis
-#' @name feature_set_enrichment_analysis 
+#' @title Run feature set Enrichment Analysis
+#' @name run_enrichment 
 #' @description Method to perform feature set enrichment analysis. Here we use a slightly modified version of the \link[PCGSE]{pcgse} function.
 #' @param object a \code{\link{MOFA}} object.
-#' @param view name of the view
-#' @param feature.sets data structure that holds feature set membership information. Must be either a binary membership matrix (rows are feature sets and columns are features) or a list of feature set indexes (see vignette for details).
+#' @param view a character with the view name, or a numeric vector with the index of the view to use.
+#' @param feature.sets data structure that holds feature set membership information. 
+#' Must be a binary membership matrix (rows are feature sets and columns are features).
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors for which to perform the enrichment.
 #' @param local.statistic the feature statistic used to quantify the association between each feature and each factor. Must be one of the following: loading (default), cor, z.
 #' @param global.statistic the feature set statisic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".
@@ -20,7 +21,9 @@
 #' @param p.adj.method Method to adjust p-values factor-wise for multiple testing. Can be any method in p.adjust.methods(). Default uses Benjamini-Hochberg procedure.
 #' @param alpha FDR threshold to generate lists of significant pathways. Default is 0.1
 #' @details TO-DO
-#' @return a list with three components: pval and pval.adj contain matrices with p-values and adjusted p-values, repectively. sigPathways contains a list with significant pathwayd at FDR alpha per factor.
+#' @return a list with three components: 
+#' pval and pval.adj contain matrices with p-values and adjusted p-values, repectively. 
+#' sigPathways contains a list with significant pathwayd at FDR alpha per factor.
 #' @import foreach doParallel
 #' @importFrom stats p.adjust
 #' @export
@@ -28,25 +31,23 @@
 run_enrichment <- function(object, view, feature.sets, factors = "all",
                            local.statistic = c("loading", "cor", "z"), global.statistic = c("mean.diff", "rank.sum"),
                            statistical.test = c("parametric", "cor.adj.parametric", "permutation"), transformation = c("abs.value", "none"),
-                           min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH", alpha=0.1) {
+                           min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH", alpha = 0.1) {
   
+  # Quality control
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (!(is(feature.sets, "matrix") & all(feature.sets %in% c(0,1)))) stop("feature.sets has to be a list or a binary matrix.")
+  
+  # Define views
+  view  <- .check_and_get_views(object, view)
+  
+  # Define factors
+  factors  <- .check_and_get_factors(object, factors)
+
   # Parse inputs
   local.statistic <- match.arg(local.statistic)
   transformation <- match.arg(transformation)
   global.statistic <- match.arg(global.statistic)
   statistical.test <- match.arg(statistical.test)
-
-
-  # Define factors
-  if (paste0(factors,collapse="") == "all") { 
-    factors <- factors_names(object) 
-  } else { 
-      if (is.numeric(factors)) {
-        factors <- factors_names(object)[factors]
-    } else { 
-      stopifnot(all(factors %in% factors_names(object))) 
-    }
-  }
   
   # Collect observed data
   data <- get_data(object, views = view, as.data.frame = FALSE)[[1]]
@@ -59,24 +60,12 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(is(Z, "list")) Z <- Reduce(rbind, Z)
   stopifnot(rownames(data) == rownames(Z))
   
-  # Check that there is no constant factor
+  # Check that there is no empty factor
   stopifnot( all(apply(Z,2,var, na.rm=TRUE)>0) )
-    
-  # turn feature.sets into binary membership matrices if provided as list
-  if (is(feature.sets, "list")) {
-    features <- Reduce(union, feature.sets)
-    feature.sets <- sapply(names(feature.sets), function(nm) {
-      tmp <- features %in% feature.sets[[nm]]
-      names(tmp) <- features
-      tmp
-    })
-    feature.sets <-t(feature.sets)*1
-  }
-  if (!(is(feature.sets, "matrix") & all(feature.sets %in% c(0,1)))) stop("feature.sets has to be a list or a binary matrix.")
   
   # Check if some features do not intersect between the feature sets and the observed data and remove them
   features <- intersect(colnames(data),colnames(feature.sets))
-  if(length(features) == 0 ) stop("Feautre names in feature.sets do not match feature names in model.")
+  if(length(features) == 0 ) stop("Feature names in feature.sets do not match feature names in model.")
   data <- data[,features]
   W <- W[features,]
   feature.sets <- feature.sets[,features]
@@ -85,7 +74,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   feature.sets <- feature.sets[rowSums(feature.sets)>=min.size,]
     
   # Print options
-  message("Doing Feature Set Enrichment Analysis with the following options...")
+  message("Running feature set Enrichment Analysis with the following options...")
   message(sprintf("View: %s", view))
   message(sprintf("Number of feature sets: %d", nrow(feature.sets)))
   message(sprintf("Local statistic: %s", local.statistic))
@@ -138,7 +127,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
     colnames(s.true) <- factors
     rownames(s.true) <- rownames(feature.sets)
     
-    # Calculate p-values based on fraction true statistic per factor and gene set is larger than permuted
+    # Calculate p-values based on fraction true statistic per factor and feature set is larger than permuted
     warning("A large number of permutations is required for the permutation approach!")
     xx <- array(unlist(null_dist_tmp),
                 dim = c(nrow(null_dist_tmp[[1]]), ncol(null_dist_tmp[[1]]), length(null_dist_tmp)))
@@ -191,20 +180,21 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
 ########################
 
 
-#' @title Plot output of Feature Set Enrichment Analysis
-#' @name plotEnrichment
-#' @description Method to plot the results of the Feature Set Enrichment Analyisis (FSEA)
-#' @param object \code{\link{MOFAmodel}} object on which FSEA was performed
+#' @title Plot output of gene set Enrichment Analysis
+#' @name plot_enrichment
+#' @description Method to plot the results of the gene set Enrichment Analyisis
+#' @param object \code{\link{MOFAmodel}} object on which run_enrichment was performed
 #' @param enrichment.results output of \link{runEnrichmentAnalysis} function
-#' @param factor string with factor name or numeric with factor index
-#' @param alpha p.value threshold to filter out feature sets
+#' @param factor a string with the factor name or an integer with the factor index
+#' @param alpha p.value threshold to filter out gene sets
 #' @param max.pathways maximum number of enriched pathways to display
 #' @param adjust use adjusted p-values?
+#' @details it requires \code{\link{run_enrichment}} to be run beforehand.
 #' @return a \code{ggplot2} object
 #' @import ggplot2
 #' @importFrom utils head
 #' @export
-plotEnrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathways = 25, adjust = TRUE, 
+plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathways = 25, adjust = TRUE, 
                            text_size = 1.0, dot_size = 5.0) {
   
   # Sanity checks
@@ -212,14 +202,14 @@ plotEnrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathways
   stopifnot(length(factor)==1) 
   if (is.numeric(factor)) factor <- colnames(enrichment.results$pval.adj)[factor]
   if(!factor %in% colnames(enrichment.results$pval)) 
-    stop(paste0("No feature set enrichment calculated for factor ", factor))
+    stop(paste0("No gene set enrichment calculated for factor ", factor))
   
   # get p-values
   if(adjust) p.values <- enrichment.results$pval.adj else p.values <- enrichment.results$pval
   
   # Get data  
   tmp <- data.frame(
-    pvalues=p.values[,factor, drop=TRUE], 
+    pvalues = p.values[,factor, drop=TRUE], 
     pathway = rownames(p.values)
   )
   
@@ -259,26 +249,27 @@ plotEnrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathways
 }
 
 #' @title Heatmap of Feature Set Enrichment Analysis results
-#' @name plotEnrichmentHeatmap
+#' @name plot_enrichment_heatmap
 #' @description This method generates a heatmap with the adjusted p.values that
 #'  result from the the feature set enrichment analysis. Rows are feature sets and columns are factors.
 #' @param enrichment.results output of \link{runEnrichmentAnalysis} function
 #' @param alpha FDR threshold to filter out unsignificant feature sets which are
 #'  not represented in the heatmap. Default is 0.05.
-#' @param logScale boolean indicating whether to plot the log of the p.values.
+#' @param log_scale boolean indicating whether to plot the log of the p.values.
 #' @param ... extra arguments to be passed to \link{pheatmap} function
+#' @details it requires \code{\link{run_enrichment}} to be run beforehand.
 #' @return produces a heatmap
 #' @import pheatmap
 #' @importFrom grDevices colorRampPalette
 #' @export
-plotEnrichmentHeatmap <- function(enrichment.results, alpha = 0.05, logScale = TRUE, ...) {
+plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.05, log_scale = TRUE, ...) {
   
   # get p-values
   p.values <- enrichment.results$pval.adj
   p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha)) == ncol(p.values),, drop=FALSE]
   
   # Apply Log transform
-  if (logScale) {
+  if (log_scale) {
     p.values <- -log10(p.values)
     alpha <- -log10(alpha)
     col <- colorRampPalette(c("lightgrey", "red"))(n=10)
@@ -287,55 +278,9 @@ plotEnrichmentHeatmap <- function(enrichment.results, alpha = 0.05, logScale = T
   }
   
   # Generate heatmap
-  # if (ncol(p.values)==1) cluster_cols <-FALSE
   pheatmap::pheatmap(p.values, color = col, ...)
 }
 
-
-#' @title Barplot of Feature Set Enrichment Analysis results
-#' @name plotEnrichmentBars
-#' @description Method to generate a barplot with the number of enriched feature sets per factor
-#' @param enrichment.results output of \link{runEnrichmentAnalysis} function
-#' @param alpha FDR threshold for calling enriched feature sets. Default is 0.05
-#' @return a \link{ggplot2} object
-#' @import ggplot2
-#' @importFrom grDevices colorRampPalette
-#' @export
-plotEnrichmentBars <- function(enrichment.results, alpha = 0.05) {
-  
-  # Sanity checks
-  if(all(enrichment.results$pval.adj > alpha)) 
-    stop(paste0("No enriched gene sets found on the considered factors at the FDR alpha of ", alpha,"."))
-  
-  # Get enriched pathways at FDR of alpha
-  pathwayList <- lapply(colnames(enrichment.results$pval.adj), function(f) {
-    f <- enrichment.results$pval.adj[,f]
-    names(f)[f<=alpha]
-  })
-  names(pathwayList) <- colnames(enrichment.results$pval.adj)
-  pathwaysDF <- reshape2::melt(pathwayList, value.name="pathway")
-  colnames(pathwaysDF) <- c("pathway", "factor")
-  pathwaysDF <- dplyr::mutate(pathwaysDF, factor= factor(factor, levels = colnames(enrichment.results$pval)))
-  
-  # Count enriched gene sets per pathway
-  n_enriched <- table(pathwaysDF$factor)
-  pathwaysSummary <- data.frame(
-    n_enriched = as.numeric(n_enriched),
-    factor = factor(names(n_enriched), levels = colnames(enrichment.results$pval))
-  )
-  
-  # Generate plot
-  ggplot(pathwaysSummary, aes_string(x="factor", y="n_enriched")) +
-    geom_bar(stat="identity") + coord_flip() + 
-    ylab(paste0("Number of enriched gene sets at FDR ", alpha*100,"%")) +
-    xlab("Factor") + 
-    theme(
-      legend.position = "bottom",
-      axis.text.y = element_text(size=rel(1.2), hjust=1, color='black'),
-      axis.text.x = element_text(size=rel(1.2), vjust=0.5, color='black'),
-      panel.background = element_blank()
-    )
-}
 
 #' @title Plot detailed output of the Feature Set Enrichment Analysis
 #' @name plotEnrichmentDetailed
@@ -445,9 +390,9 @@ plotEnrichmentDetailed <- function(object, factor, feature.sets, enrichment.resu
 
 
 
-##############################################
-## From here downwards are internal methods ##
-##############################################
+#############################################################
+## Internal methods for enrichment analysis (not exported) ##
+#############################################################
 
 # This is a modified version of the PCGSE module
 .pcgse = function(data, prcomp.output, pc.indexes=1, feature.sets, feature.statistic="z", transformation="none", 

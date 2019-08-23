@@ -84,7 +84,20 @@
 return(model)
 }
 
-
+.check_and_get_factors <- function(object, factors) {
+  if (is.numeric(factors)) {
+    stopifnot(all(factors <= object@dimensions$K))
+    factors_names(object)[factors] 
+  } else {
+    if (paste0(factors, collapse = "") == "all") { 
+      factors_names(object)
+    } else {
+      stopifnot(all(factors %in% factors_names(object)))
+      factors
+    }
+  }
+  
+}
 
 .check_and_get_views <- function(object, views) {
   if (is.numeric(views)) {
