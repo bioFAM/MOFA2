@@ -56,3 +56,43 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
 
   return(object)
 }
+
+
+
+#' @title Filter imputation results
+#' @name filter_imputation
+#' @description This function uses the latent factors and the loadings to impute missing values.
+#' @param object a \code{\link{MOFA}} object.
+#' @param cutoff one of: "stringent", "medium", "lenient"
+#' @details (TO FINISH) MOFA is a probabilistic model and calculates uncertainity for the parameter estimates.
+#' This function can be used to filter the imputation results based on different thresholds of imputation confidence.
+#' The confidence score is calculated as the mean divided by the standard deviation, which provides a signal-to-noise ratio.
+#' @return a \code{\link{MOFA}} object where the imputed values that do not pass quality threshold have been masked with NA.
+#' @export
+filter_imputation <- function(object, cutoff = c("stringent", "medium", "lenient")) {
+  
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  cutoff = match.arg(cutoff)
+  
+  # Define numeric cutoff
+  predefined.cutoffs <- c(
+    "stringent" = 2,
+    "medium" = 5,
+    "lenient" = 10
+  )
+  cutoff = predefined.cutoffs[cutoff]
+  
+  # calculate signal-to-noise ratio as sdev/mean and filter imputation results by signal-to-noise ratio
+  sig2noise <- list()
+  for (m in views_names(object)) {
+    sig2noise[[m]] <- list()
+    for (g in groups_names(object)) {
+      sig2noise[[m]][[g]] <- sqrt(object@imputed_data[[m]][[g]]$var) / abs(object@imputed_data[[m]][[g]]$mean)
+      object@imputed_data[[m]][[g]]$mean[ sig2noise[[m]][[g]]>cutoff ] <- NaN
+      object@imputed_data[[m]][[g]]$variance[ sig2noise[[m]][[g]]>cutoff ] <- NaN
+    }
+  }
+  
+  return(object)
+}

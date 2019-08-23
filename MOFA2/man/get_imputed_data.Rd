@@ -5,7 +5,8 @@
 \title{get_imputed_data}
 \usage{
 get_imputed_data(object, views = "all", groups = "all",
-  features = "all", as.data.frame = FALSE, add_intercept = TRUE)
+  features = "all", as.data.frame = FALSE, add_intercept = TRUE,
+  only_mean = TRUE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
@@ -21,6 +22,9 @@ Default is "all".}
 
 \item{as.data.frame}{logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 Default is \code{FALSE}.}
+
+\item{only_mean}{logical indicating whether to return only the point estimates for the imputation. 
+If FALSE, it also retrieves the variance (only if it has been previously calculated).}
 }
 \value{
 By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr

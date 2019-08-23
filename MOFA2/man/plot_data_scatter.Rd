@@ -13,15 +13,15 @@ plot_data_scatter(object, view, factor, groups = "all", features = 10,
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{view}{character vector with a view name, or numeric vector with the index of the view.}
+\item{view}{string with the view name, or an integer with the index of the view.}
 
-\item{factor}{character vector with a factor name, or numeric vector with the index of the factor.}
+\item{factor}{string with the factor name, or an integer with the index of the factor.}
 
 \item{groups}{groups to plot. Default is "all".}
 
-\item{features}{if an integer, the total number of features to plot (10 by default). If a character vector, a set of manually-defined features.}
+\item{features}{if an integer (default), the total number of features to plot. If a character vector, a set of manually-defined features.}
 
-\item{sign}{can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.}
+\item{sign}{can be 'positive', 'negative' or 'all' (default) to show only positive, negative or all weights, respectively.}
 
 \item{color_by}{specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
 \itemize{
@@ -58,12 +58,10 @@ plot_data_scatter(object, view, factor, groups = "all", features = 10,
 \item{imputed}{logical indicating whether to include imputed measurements}
 }
 \description{
-Function to do a scatterplot of the feature(s) values against the latent factor values.
+Function to do a scatterplot of features against factor values.
 }
 \details{
-One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, 
-which show you which features drive the heterogeneity of each factor. 
+One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
-This function generates scatterplots of features against factors, so that you can observe the association between them. \cr
 A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
 }

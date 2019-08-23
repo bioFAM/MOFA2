@@ -9,8 +9,7 @@ subset_factors(object, factors)
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{factors}{character vector with the factor names, or numeric vector with the index of the factors, 
-or logical vector with the views to be kept as TRUE.}
+\item{factors}{character vector with the factor names, or numeric vector with the index of the factors.}
 }
 \description{
 Method to subset (or sort) factors

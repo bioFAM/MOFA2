@@ -30,7 +30,7 @@ The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA
    K for the number of factors.}
    \item{\code{on_disk}:}{ Logical indicating whether data is loaded from disk. }
    \item{\code{Cache}:}{ Cache.}
-   \item{\code{status}:}{Auxiliary variable indicating whether the model has been trained.}
+   \item{\code{status}:}{ Auxiliary variable indicating whether the model has been trained.}
 }
 }
 
