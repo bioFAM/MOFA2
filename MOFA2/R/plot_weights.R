@@ -313,6 +313,10 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Sort by loading
   W <- by(W, list(W$factor), function(x) x[order(x$value),])
   W <- do.call(rbind, W)
+
+  # In order to re-order features across multiple factors, 
+  # make them unique for different factors
+  W$feature_id <- paste(W$feature_id, W$factor, sep="_")
   W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
   
   # Generate plot
@@ -326,7 +330,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
     p <- p + geom_text_repel(
       force = 10,
       data = W[W$group!="0",], aes_string(label = "feature", col = "group"),
-      size=text_size, segment.alpha=0.1, segment.color="black", segment.size=0.3, 
+      size=text_size, segment.alpha=0.25, segment.color="black", segment.size=0.3, 
       box.padding = unit(0.5,"lines"), show.legend = FALSE)
   }
   
