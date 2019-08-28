@@ -128,6 +128,11 @@ class entry_point(object):
         # Concatenate groups
         for m in range(len(data)):
             data[m] = np.concatenate(data[m])
+            # Convert data to numpy.ndarray.
+            # This is required since some matrix operations
+            # are not defined e.g. for numpy.matrixlib.defmatrix.matrix
+            if type(data[m]) != np.ndarray:
+                data[m] = np.array(data[m])
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
         # Process the data (center, scaling, etc.)
@@ -267,7 +272,6 @@ class entry_point(object):
 
         # Store intercepts
         self.intercepts = [None]
-        tmp = [ len(x) for x in self.data_opts['samples_names'] ]
 
         # Process the data (center, scaling, etc.)
         if use_raw:
