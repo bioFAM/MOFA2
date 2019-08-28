@@ -10,7 +10,7 @@ plot_data_heatmap(object, view, factor, groups = "all", features = 50,
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{view}{a string vector with the view name, or an integer with the index of the view.}
+\item{view}{a string with the view name, or an integer with the index of the view.}
 
 \item{factor}{a string with the factor name, or an integer with the index of the factor.}
 
@@ -24,7 +24,8 @@ Default corresponds to features as rows and samples as columns.}
 
 \item{imputed}{logical indicating whether to plot the imputed data instead of the original data. Default is FALSE.}
 
-\item{denoise}{logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors. Default is FALSE.}
+\item{denoise}{logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors. 
+See \code{\link{predict}}. Default is FALSE.}
 
 \item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}
 }
@@ -33,8 +34,8 @@ Function to plot a heatmap of the data for relevant features, typically the ones
 }
 \details{
 One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
-using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}, which show you which are the top features that are driving the heterogeneity. \cr
+using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}. \cr
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
-This function generates a heatmap for selected features, which should reveal, im the original data space, the underlying pattern that is captured by the latent factor. \cr
+This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr
 A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 }

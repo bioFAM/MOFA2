@@ -9,7 +9,7 @@ subset_samples(object, samples)
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{samples}{character vector with the sample names, numeric vector with the sample indices or logical vector with the samples to be kept as TRUE.}
+\item{samples}{character vector with the sample names or numeric vector with the sample indices.}
 }
 \description{
 Method to subset (or sort) samples

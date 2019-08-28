@@ -4,7 +4,7 @@
 \alias{create_mofa}
 \title{create a MOFA object}
 \usage{
-create_mofa(data, groups = NULL)
+create_mofa(data, groups = NULL, ...)
 }
 \arguments{
 \item{data}{Input data can be in several formats:
