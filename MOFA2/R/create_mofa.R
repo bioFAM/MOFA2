@@ -16,13 +16,13 @@
 #' @param groups ignore...
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa <- function(data, groups = NULL) {
+create_mofa <- function(data, groups = NULL, ...) {
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
     
     message("Creating MOFA object from a Seurat object...")
-    object <- .create_mofa_from_seurat(data, groups)
+    object <- .create_mofa_from_seurat(data, groups, ...)
     
   # Creating MOFA object from a data.frame object
   } else if (is(data, "data.frame")) {
@@ -136,7 +136,7 @@ create_mofa <- function(data, groups = NULL) {
 }
 
 # (Hidden) function to initialise a MOFA object using a Seurat object
-.create_mofa_from_seurat <- function(srt, groups, assay = "RNA") {
+.create_mofa_from_seurat <- function(srt, groups, assay = "RNA", slot = "scale.data", features = NULL) {
   if (is(groups, 'character') && (length(groups) == 1)) {
     if (!(groups %in% colnames(srt@meta.data)))
       stop(paste0(groups, " is not found in the Seurat@meta.data.\n",
@@ -148,10 +148,10 @@ create_mofa <- function(data, groups = NULL) {
 
   if (is.null(groups)) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
-    groups <- rep("group1", dim(GetAssay(object = srt, assay = assay))[2])
+    groups <- rep("group1", dim(GetAssay(object = srt, slot = slot, assay = assay))[2])
   }
 
-  data_matrices <- list("rna" = .split_seurat_into_groups(srt, groups, assay))
+  data_matrices <- list("rna" = .split_seurat_into_groups(srt, groups = groups, assay = assay, slot = slot, features = features))
 
   object <- new("MOFA")
   object@status <- "untrained"
@@ -186,15 +186,20 @@ create_mofa <- function(data, groups = NULL) {
 }
 
 # (Hidden) function to split data in Seurat object into a list of matrices
-.split_seurat_into_groups <- function(srt, groups, assay = "RNA") {
+.split_seurat_into_groups <- function(srt, groups, assay = "RNA", slot = "data", features = NULL) {
+  # If no feature selection is provided, all features are used
+  if (is.null(features))
+    features <- seq_along(dim(GetAssay(object = pbmc, slot = slot, assay = assay))[1])
+
+  # Fetch assay data for every group of samples
   groups_names <- unique(groups)
   tmp <- lapply(groups_names, function(g) {
     # If group name is NA, it has to be treated separately
     # due to the way R handles NAs and equal signs
     if (is.na(g)) {
-      GetAssayData(object = srt, assay = assay, slot = "data")[,is.na(groups)]
+      GetAssayData(object = srt, assay = assay, slot = slot)[,is.na(groups)][features,]
     } else {
-      GetAssayData(object = srt, assay = assay, slot = "data")[,which(groups == g)]
+      GetAssayData(object = srt, assay = assay, slot = slot)[,which(groups == g)][features,]
     }
   })
   names(tmp) <- groups_names
