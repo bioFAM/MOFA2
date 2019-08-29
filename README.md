@@ -39,7 +39,13 @@ Can be installed using R:
 devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data"))
 ```
 --------------
-### Using Docker image (in preparation...)
+### Using Docker image
+
+You can build an image with `mofa2py` python library and `MOFA2` R package using the provided Dockerfile:
+
+```
+docker build -t mofa2 .
+```
 
 ## Usage
 
