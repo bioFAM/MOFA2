@@ -7,7 +7,7 @@
 #' @name plot_factor
 #' @description Beeswarm plot of the latent factor values.
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param factor character with the factor name, or numeric with the index of the factor to use.
+#' @param factor character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
 #' @param group_by specifies groups used to separate the samples : one plot per group. This can be either: 
 #' \itemize{
 #' \item (default) the string "group": in this case, the plot will color samples with respect to their predefined groups.
@@ -53,211 +53,12 @@
 #' @importFrom forcats fct_explicit_na
 #' @importFrom RColorBrewer brewer.pal
 #' @export
-plot_factor <- function(object, factor = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
+plot_factor <- function(object, factors = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
                         add_violin = FALSE, violin_alpha = 0.5, color_violin = TRUE,
                         show_missing = TRUE, scale = FALSE, dodge = FALSE,
                         color_name = "", shape_name = "", 
                         legend = TRUE, rasterize = FALSE) {
-  
-  # Sanity checks
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  
-  # Get factor values
-  stopifnot(length(factor)==1)
-  if (is.numeric(factor)) {
-    factor <- factors_names(object)[unique(factor)]
-  } else { 
-    stopifnot(all(factor %in% factors_names(object)))
-  }
-  Z <- get_factors(object, factors=factor, as.data.frame=TRUE)
-  Z$factor <- factor(Z$factor, levels=factor)
-  
-  # Set group/color/shape
-  if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
-  if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
-  group_by <- .set_groupby(object, group_by)
-  color_by <- .set_colorby(object, color_by)
-  shape_by <- .set_shapeby(object, shape_by)
-  
-  # Remove samples with missing values
-  Z <- Z[complete.cases(Z),]
-  
-  # Merge factor values with group/color/shape information
-  df <- merge(Z, group_by, by="sample")
-  df <- merge(df, color_by, by="sample")
-  df <- merge(df, shape_by, by="sample")
-  
-  # QC
-  if (length(unique(df$color_by))>10 & is.numeric(df$color_by)) {
-    add_violin <- FALSE; dodge <- FALSE
-  }
-  
-  # Remove samples with no sample metadata
-  if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
-  if (is.factor(df$color_by))
-    df$color_by <- fct_explicit_na(df$color_by)
-  if (is.factor(df$shape_by))
-    df$shape_by <- fct_explicit_na(df$shape_by)
-  
-  # Scale values from 0 to 1
-  if (scale) {
-    df$value <- df$value/max(abs(df$value))
-  }
-  
-  # Generate plot
-  p <- ggplot(df, aes_string(x="group_by", y="value")) +
-    facet_wrap(~group_by, nrow=1, scales="free_x") +
-    labs(x="", y="Factor value")
-
-  # Add dots
-  if (add_dots) {
-    if (rasterize) {
-      warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
-      if (dodge) {
-        p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size, position="dodge", dodge.width=1 )
-      } else {
-        p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size)
-      }
-    } else {
-      if (dodge) {
-        p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
-      } else {
-        p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha)
-      }
-    }
-  }
-  
-  # Add violin plot
-  if (add_violin) {
-    if (color_violin) {
-      tmp <- summarise(group_by(df, factor, color_by), n=n())
-      if (min(tmp$n)==1) {
-        warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be coloured")
-        p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
-      } else {
-        p <- p + geom_violin(aes_string(fill="color_by"), alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
-      }
-    } else {
-      p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
-    }
-  }
-  
-  # If 'color_by' is numeric, define the default gradient
-  if (is.numeric(df$color))
-    p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-  
-  # Add legend for color
-  if (length(unique(df$color_by))>1) { 
-    p <- p + labs(color=color_name)
-  } else { 
-    p <- p + guides(fill=FALSE, color=FALSE) + 
-      scale_color_manual(values="black") +
-      scale_fill_manual(values="gray60")
-  }
-  
-  # Add legend for shape
-  if (length(unique(df$shape))>1) { 
-    p <- p + labs(shape=shape_name)
-  } else { 
-    p <- p + guides(shape=FALSE) 
-  }
-
-  # Use unified theme across the plots
-  p <- p +
-    theme_classic() +
-    theme(
-        panel.border = element_rect(color="black", size=0.1, fill=NA),
-        strip.background = element_rect(colour = "black", size=0.25),
-        panel.spacing = unit(0,"lines"),
-        axis.text.x = element_blank(),
-        axis.text.y = element_text(size=rel(1.0), color="black"),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size=rel(0.9), color="black"),
-        axis.line = element_line(color="black", size=0.25),
-        axis.ticks = element_line(color = "black"),
-        axis.title = element_text(size=rel(1.2)),
-    )
-  
-  if (length(unique(df$factor))>1) {
-    p <- p + scale_y_continuous(breaks=NULL)
-  }
-  
-  # Add legend
-  if (legend) {
-    p <- p + theme(
-      legend.title = element_text(size=rel(1.1), hjust=0.5, color="black"),
-      legend.text = element_text(size=rel(1.1), hjust=0, color="black"),
-      legend.position = "right", 
-      legend.direction = "vertical",
-      legend.key = element_blank()
-    )
-  } else {
-    p <- p + theme(
-      legend.position = "none"
-    )
-  }
-  
-  return(p)
-}
-
-
-#' @title Violin plot of factors values
-#' @name plot_factors_violin
-#' @description Violin plot of the latent factor values.
-#' @param object a trained \code{\link{MOFA}} object.
-#' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
-#' @param group_by specifies groups used to separate the samples : one plot per group. This can be either: 
-#' \itemize{
-#' \item (default) the string "group": in this case, the plot will color samples with respect to their predefined groups.
-#' \item a character giving the name of a feature that is present in the input data 
-#' \item a character giving the same of a column in the sample metadata slot
-#' \item a vector of the same length as the number of samples specifying the value for each sample. 
-#' \item a dataframe with two columns: "sample" and "color"
-#'}
-#' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
-#' \itemize{
-#' \item (default) the string "group": in this case, the plot will color the dots with respect to their predefined groups.
-#' \item a character giving the name of a feature that is present in the input data 
-#' \item a character giving the same of a column in the sample metadata slot
-#' \item a vector of the same length as the number of samples specifying the value for each sample. 
-#' \item a dataframe with two columns: "sample" and "color"
-#' }
-#' @param shape_by specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
-#' \itemize{
-#' \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
-#' \item a character giving the name of a feature that is present in the input data 
-#' \item a character giving the same of a column in the sample metadata slot
-#' \item a vector of the same length as the number of samples specifying the value for each sample. 
-#' \item a dataframe with two columns: "sample" and "shape"
-#' }
-#' @param add_dots logical indicating whether to add dots.
-#' @param dot_size numeric indicating dot size.
-#' @param dot_alpha numeric indicating dot transparency.
-#' @param add_violin logical indicating whether to add violin plots
-#' @param violin_alpha numeric indicating violin plot transparency.
-#' @param color_violin logical indicating whether to color violin plots.
-#' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
-#' @param scale logical indicating whether to scale factor values.
-#' @param dodge logical indicating whether to dodge the dots (default is FALSE).
-#' @param color_name name for color legend (usually only used if color_by is not a character itself).
-#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
-#' @param legend logical indicating whether to add a legend to the plot (default is TRUE).
-#' @param rasterize logical indicating whether to rasterize the plot (default is FALSE).
-#' @details One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
-#' This function generates a violin plot of factor values for a set of factors. \cr
-#' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
-#' @return Returns a \code{ggplot2} 
-#' @import ggplot2 grDevices RColorBrewer
-#' @importFrom forcats fct_explicit_na
-#' @importFrom RColorBrewer brewer.pal
-#' @export
-plot_factors_violin <- function(object, factors = "all", group_by = "group", color_by = "group", shape_by = NULL, 
-                                add_dots = FALSE, dot_size = 1, dot_alpha = 1,
-                                add_violin = TRUE, violin_alpha = 0.5, color_violin = TRUE,
-                                show_missing = TRUE, scale = FALSE, dodge = FALSE,
-                                color_name = "", shape_name = "", 
-                                legend = TRUE, rasterize = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -366,9 +167,9 @@ plot_factors_violin <- function(object, factors = "all", group_by = "group", col
         panel.border = element_rect(color="black", size=0.1, fill=NA),
         strip.background = element_rect(colour = "black", size=0.25),
         panel.spacing = unit(0,"lines"),
-        axis.text.x = element_text(size=rel(1.0), color="black"),
-        axis.title.x = element_text(size=rel(0.9), color="black"),
+        axis.text.x = element_blank(),
         axis.text.y = element_text(size=rel(1.0), color="black"),
+        axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(0.9), color="black"),
         axis.line = element_line(color="black", size=0.25),
         axis.ticks = element_line(color = "black"),
