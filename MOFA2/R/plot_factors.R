@@ -7,7 +7,8 @@
 #' @name plot_factor
 #' @description Beeswarm plot of the latent factor values.
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param factor character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
+#' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
+#' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
 #' @param group_by specifies groups used to separate the samples : one plot per group. This can be either: 
 #' \itemize{
 #' \item (default) the string "group": in this case, the plot will color samples with respect to their predefined groups.
@@ -53,7 +54,8 @@
 #' @importFrom forcats fct_explicit_na
 #' @importFrom RColorBrewer brewer.pal
 #' @export
-plot_factor <- function(object, factors = 1, group_by = "group", color_by = NULL, shape_by = NULL, 
+plot_factor <- function(object, factors = 1, groups = "all",
+                        group_by = "group", color_by = "group", shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
                         add_violin = FALSE, violin_alpha = 0.5, color_violin = TRUE,
                         show_missing = TRUE, scale = FALSE, dodge = FALSE,
@@ -67,7 +69,7 @@ plot_factor <- function(object, factors = 1, group_by = "group", color_by = NULL
   factors <- .check_and_get_factors(object, factors)
 
   # Get factor values
-  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
+  Z <- get_factors(object, factors=factors, groups = groups, as.data.frame=TRUE)
   Z$factor <- factor(Z$factor, levels=factors)
   
   # Set group/color/shape
@@ -167,7 +169,7 @@ plot_factor <- function(object, factors = 1, group_by = "group", color_by = NULL
         panel.border = element_rect(color="black", size=0.1, fill=NA),
         strip.background = element_rect(colour = "black", size=0.25),
         panel.spacing = unit(0,"lines"),
-        axis.text.x = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         axis.text.y = element_text(size=rel(1.0), color="black"),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(0.9), color="black"),
