@@ -206,6 +206,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @description Scatterplot of the values of two latent factors.
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
+#' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @param scale logical indicating whether to scale factor values.
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
@@ -233,9 +234,10 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
 #' @export
-plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = FALSE,
-                            color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                            dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
+plot_factors <- function(object, factors = c(1, 2), groups = "all",
+                         show_missing = TRUE, scale = FALSE,
+                         color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
+                         dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -260,7 +262,7 @@ plot_factors <- function(object, factors = c(1,2), show_missing = TRUE, scale = 
   factors <- .check_and_get_factors(object, factors)
   
   # Get factors
-  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
+  Z <- get_factors(object, factors=factors, groups = groups, as.data.frame=TRUE)
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)
