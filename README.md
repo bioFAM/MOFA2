@@ -47,6 +47,17 @@ You can build an image with `mofa2py` python library and `MOFA2` R package using
 docker build -t mofa2 .
 ```
 
+You will then be able to use R or Python from the container. 
+
+```
+docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
+#                   ^
+#                   |
+#                    use `-v` to mount the map a folder on your machine to a container directory
+```
+
+The command above will launch R with MOFA2 and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
+
 ## Usage
 
 ### Step 1: Prepare the data
