@@ -24,19 +24,19 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
-  if (is.numeric(view)) view <- views_names(object)[view]
-  stopifnot(all(view %in% views_names(object)))  
+  if (is.numeric(view)) view <- views(object)[view]
+  stopifnot(all(view %in% views(object)))  
   
   # Define factors
   factors <- .check_and_get_factors(object, factors)
   
   # Define features
   if (paste(features, collapse="") =="all") { 
-    features <- features_names(object)[[view]]
+    features <- features(object)[[view]]
   } else if (is.numeric(features)) {
-  	features <- features_names(object)[[view]][features]
+  	features <- features(object)[[view]][features]
   } else {
-    stopifnot(all(features %in% features_names(object)[[view]]))  
+    stopifnot(all(features %in% features(object)[[view]]))  
   }
 
   # Get relevant data
@@ -90,14 +90,14 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   stopifnot(length(factors)==2)
   
   # Get views  
-  if (is.numeric(view)) view <- views_names(object)[view]
-  stopifnot(all(view %in% views_names(object))) 
+  if (is.numeric(view)) view <- views(object)[view]
+  stopifnot(all(view %in% views(object))) 
 
   # Get factor
   if(is.numeric(factors)) {
-    factors <- factors_names(object)[factors]
+    factors <- factors(object)[factors]
   } else { 
-    stopifnot(all(factors %in% factors_names(object)))
+    stopifnot(all(factors %in% factors(object)))
   }
   
   # Collect relevant data  
@@ -105,7 +105,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
   W <- get_weights(object, views=view, factors=factors, as.data.frame = FALSE)
   W <- as.data.frame(W); colnames(W) <- c("x","y")
   W$view <- view
-  W$feature <- features_names(object)[[view]]
+  W$feature <- features(object)[[view]]
   # W <- W[complete.cases(W),]
   
   # Set color and shape
@@ -402,9 +402,9 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
-  if (is.numeric(view)) view <- views_names(object)[view]
-  stopifnot(view %in% views_names(object))
-  # if(!is.null(manual_features)) { stopifnot(is(manual_features,"list")); stopifnot(all(Reduce(intersect,manual_features) %in% features_names(object)[[view]]))  }
+  if (is.numeric(view)) view <- views(object)[view]
+  stopifnot(view %in% views(object))
+  # if(!is.null(manual_features)) { stopifnot(is(manual_features,"list")); stopifnot(all(Reduce(intersect,manual_features) %in% features(object)[[view]]))  }
   
   # Collect expectations  
   W <- get_weights(object, factors=factor, views=view, as.data.frame=TRUE)
@@ -479,12 +479,12 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   # Option 2: input is a data.frame with columns (feature,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("feature","color")))
-    stopifnot(all(unique(shape_by$feature) %in% features_names(object)[[view]]))
+    stopifnot(all(unique(shape_by$feature) %in% features(object)[[view]]))
     
   # Option 3: by a feature_metadata column
   } else if ((length(shape_by)==1) && is.character(shape_by) & (shape_by %in% colnames(features_metadata(object)))) {
     tmp <- features_metadata(object)
-    shape_by <- tmp[tmp$view_name==view,shape_by]
+    shape_by <- tmp[tmp$view==view,shape_by]
     
   # Option 4: shape_by is a vector of length D
   } else if (length(shape_by) > 1) {
@@ -498,7 +498,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   # Create data.frame with columns (feature,shape)
   if (!is(shape_by,"data.frame")) {
     df = data.frame(
-      feature = features_names(object)[[view]],
+      feature = features(object)[[view]],
       shape_by = shape_by,
       view = view
     )
@@ -518,12 +518,12 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
     # Option 2: input is a data.frame with columns (feature,color)
   } else if (is(color_by,"data.frame")) {
     stopifnot(all(colnames(color_by) %in% c("feature","color")))
-    stopifnot(all(unique(color_by$feature) %in% features_names(object)[[view]]))
+    stopifnot(all(unique(color_by$feature) %in% features(object)[[view]]))
     
     # Option 3: by a feature_metadata column
   } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {
     tmp <- features_metadata(object)
-    color_by <- tmp[tmp$view_name==view,color_by]
+    color_by <- tmp[tmp$view==view,color_by]
     
     # Option 4: color_by is a vector of length D
   } else if (length(color_by) > 1) {
@@ -537,7 +537,7 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   # Create data.frame with columns (feature,color)
   if (!is(color_by,"data.frame")) {
     df = data.frame(
-      feature = features_names(object)[[view]],
+      feature = features(object)[[view]],
       color_by = color_by,
       view = view
     )

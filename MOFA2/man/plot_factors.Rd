@@ -4,15 +4,17 @@
 \alias{plot_factors}
 \title{Scatterplots of two factor values}
 \usage{
-plot_factors(object, factors = c(1, 2), show_missing = TRUE,
-  scale = FALSE, color_by = NULL, shape_by = NULL,
-  color_name = NULL, shape_name = NULL, dot_size = 1.5, alpha = 1,
-  legend = TRUE, return_data = FALSE)
+plot_factors(object, factors = c(1, 2), groups = "all",
+  show_missing = TRUE, scale = FALSE, color_by = NULL,
+  shape_by = NULL, color_name = NULL, shape_name = NULL,
+  dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
 \item{factors}{a vector of length two with the factors to plot. Factors can be specified either as a characters}
+
+\item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
 
 \item{show_missing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
 

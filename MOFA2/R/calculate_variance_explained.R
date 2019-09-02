@@ -151,18 +151,18 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 
   # Subset factors for plotting
   if ((length(factors) == 1) && (factors[1] == "all")) {
-    factors <- factors_names(object)
+    factors <- factors(object)
   } else {
     if (is.numeric(factors)) {
-      factors <- factors_names(object)[factors]
+      factors <- factors(object)[factors]
     } else { 
-      stopifnot(all(factors %in% factors_names(object)))
+      stopifnot(all(factors %in% factors(object)))
     }
     r2_mk_df <- r2_mk_df[r2_mk_df$factor %in% factors,]
   }
 
   r2_mk_df$factor <- factor(r2_mk_df$factor, levels = factors)
-  r2_mk_df$group <- factor(r2_mk_df$group, levels = groups_names(object))
+  r2_mk_df$group <- factor(r2_mk_df$group, levels = groups(object))
 
   r2_m_df <- melt(lapply(r2_m, function(x) lapply(x, function(z) z)),
                   varnames=c("view", "group"), value.name="R2")

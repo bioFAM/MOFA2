@@ -2,9 +2,13 @@
 % Please edit documentation in R/create_mofa.R
 \name{create_mofa}
 \alias{create_mofa}
+\alias{.create_mofa_from_seurat}
 \title{create a MOFA object}
 \usage{
 create_mofa(data, groups = NULL, ...)
+
+.create_mofa_from_seurat(srt, groups, assays = "RNA", slot = "data",
+  features = NULL)
 }
 \arguments{
 \item{data}{Input data can be in several formats:
@@ -20,10 +24,25 @@ create_mofa(data, groups = NULL, ...)
  }}
 
 \item{groups}{ignore...}
+
+\item{srt}{Seurat object}
+
+\item{assays}{assays to use for the MOFA model, default is RNA}
+
+\item{slot}{assay slot to be used such as scale.data or data}
+
+\item{features}{a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used}
+
+\item{groups}{a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample}
 }
 \value{
+Returns an untrained \code{\link{MOFA}} object
+
 Returns an untrained \code{\link{MOFA}} object
 }
 \description{
 Method to create a \code{\link{MOFA}} object
+
+Method to create a \code{\link{MOFA}} object
 }
+\keyword{internal}

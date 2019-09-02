@@ -3,9 +3,9 @@
   
   # Gaussian by default
   likelihood <- rep(x="gaussian", times=object@dimensions$M)
-  names(likelihood) <- views_names(object)
+  names(likelihood) <- views(object)
   
-  for (m in views_names(object)) {
+  for (m in views(object)) {
     # data <- get_data(object, views=m)[[1]][[1]]  # take only first group
     data <- object@data[[m]][[1]]
     
@@ -77,12 +77,12 @@ return(model)
   stopifnot(!any(duplicated(factors)))
   if (is.numeric(factors)) {
     stopifnot(all(factors <= object@dimensions$K))
-    factors_names(object)[factors] 
+    factors(object)[factors] 
   } else {
     if (paste0(factors, collapse = "") == "all") { 
-      factors_names(object)
+      factors(object)
     } else {
-      stopifnot(all(factors %in% factors_names(object)))
+      stopifnot(all(factors %in% factors(object)))
       factors
     }
   }
@@ -93,12 +93,12 @@ return(model)
   stopifnot(!any(duplicated(views)))
   if (is.numeric(views)) {
     stopifnot(all(views <= object@dimensions$M))
-    views_names(object)[views] 
+    views(object)[views] 
   } else {
     if (paste0(views, sep = "", collapse = "") == "all") { 
-      views_names(object)
+      views(object)
     } else {
-      stopifnot(all(views %in% views_names(object)))
+      stopifnot(all(views %in% views(object)))
       views
     }
   }
@@ -109,12 +109,12 @@ return(model)
   stopifnot(!any(duplicated(groups)))
   if (is.numeric(groups)) {
     stopifnot(all(groups <= object@dimensions$G))
-    groups_names(object)[groups] 
+    groups(object)[groups] 
   } else {
     if (paste0(groups, collapse = "") == "all") { 
-      groups_names(object)
+      groups(object)
     } else {
-      stopifnot(all(groups %in% groups_names(object)))
+      stopifnot(all(groups %in% groups(object)))
       groups
     }
   }
@@ -125,12 +125,12 @@ return(model)
   stopifnot(!any(duplicated(samples)))
   if (is.numeric(samples)) {
     stopifnot(all(samples <= sum(object@dimensions$N)))
-    unlist(samples_names(object))[samples] 
+    unlist(samples(object))[samples] 
   } else {
     if (paste0(samples, collapse = "") == "all") { 
-      unlist(samples_names(object))
+      unlist(samples(object))
     } else {
-      stopifnot(all(samples %in% unlist(samples_names(object))))
+      stopifnot(all(samples %in% unlist(samples(object))))
       samples
     }
   }

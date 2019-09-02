@@ -75,9 +75,9 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
     } else {
       features <- rownames(W)[order(-abs(W))[features]]
     }
-    stopifnot(all(features %in% features_names(object)[[view]]))  
+    stopifnot(all(features %in% features(object)[[view]]))  
   } else if (is(features, "character")) {
-    stopifnot(all(features %in% features_names(object)[[view]]))
+    stopifnot(all(features %in% features(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
   }
@@ -190,9 +190,9 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     } else {
       features <- names(sort(-abs(W))[features])
     }
-    stopifnot(all(features %in% features_names(object)[[view]]))  
+    stopifnot(all(features %in% features(object)[[view]]))  
   } else if (is(features, "character")) {
-    stopifnot(all(features %in% features_names(object)[[view]]))
+    stopifnot(all(features %in% features(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
   }
@@ -291,9 +291,9 @@ plot_data_overview <- function(object, colors = NULL) {
                  "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
                  "#A65628", "#F781BF", "#1B9E77")
     if (M < 17) colors <- palette[seq_len(M)] else colors <- rainbow(M)
-    names(colors) <- views_names(object)
+    names(colors) <- views(object)
   } else {
-      stopifnot(sort(names(colors))==sort(views_names(object)))
+      stopifnot(sort(names(colors))==sort(views(object)))
   }
   if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
 
@@ -302,11 +302,11 @@ plot_data_overview <- function(object, colors = NULL) {
   ovw <- do.call(cbind, lapply(seq_len(M), function(m) {
     do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))
-  rownames(ovw) <- object@samples_metadata$sample_name
-  colnames(ovw) <- views_names(object)
+  rownames(ovw) <- object@samples_metadata$sample
+  colnames(ovw) <- views(object)
 
-  ovw$sample <- object@samples_metadata$sample_name
-  ovw$group <- object@samples_metadata$group_name
+  ovw$sample <- object@samples_metadata$sample
+  ovw$group <- object@samples_metadata$group
 
   # Melt to data.frame
   molten_ovw <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
@@ -361,8 +361,8 @@ plot_ascii_data <- function(object, header = FALSE) {
 
   vis_lines <- ""
 
-  lpad <- max(sapply(views_names(object), function(v) nchar(v)))
-  wlim <- max(sapply(groups_names(object), function(v) nchar(v)))
+  lpad <- max(sapply(views(object), function(v) nchar(v)))
+  wlim <- max(sapply(groups(object), function(v) nchar(v)))
   igr_sp <- .rep_string(5, " ")
   s <- 8             # extra lpadding shift
   w <- max(8, wlim)  # width of one block (minus 2 walls)
@@ -378,7 +378,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
     ")
   }
 
-  groups_line    <- .pad_left(lpad + s, .cpaste(groups_names(object), w+2, collapse = igr_sp))
+  groups_line    <- .pad_left(lpad + s, .cpaste(groups(object), w+2, collapse = igr_sp))
   nsamples_line  <- .pad_left(lpad + s, .cpaste(get_dimensions(object)$N, w+2, collapse = igr_sp))
   vis_lines      <- c(vis_lines, groups_line, nsamples_line) 
 
@@ -391,13 +391,13 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
     paste0(as.character(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100), sep = "%")
   })
 
-  for (m in seq_len(length(views_names(object)))) {
+  for (m in seq_len(length(views(object)))) {
     # browser()
     toprect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, hat, collapse = igr_sp)))
     midrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, walls, collapse = igr_sp)))
     dfeatures_line <- .pad_left_with(lpad + s, 
                                      paste(.insert_inside(content_pct[[m]], rep(walls, get_dimensions(object)$G)), collapse = igr_sp), 
-                                     with = paste(c(views_names(object)[m], .cpaste(get_dimensions(object)$D[m], s)), collapse = ""))
+                                     with = paste(c(views(object)[m], .cpaste(get_dimensions(object)$D[m], s)), collapse = ""))
     botrect_line   <- .pad_left(lpad + s, paste(.rep_string(get_dimensions(object)$G, ground, collapse = igr_sp)))
 
     vis_lines      <- c(vis_lines, toprect_line, midrect_line, dfeatures_line, botrect_line)  
@@ -456,10 +456,10 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
     
     # Option 1: by default group
   } else if (color_by[1] == "group") {
-    color_by <- groups(object)$group_name
+    color_by <- groups(object)$group
     
     # Option 2: by a feature present in the training data    
-  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
+  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features(object)))) {
     data <- lapply(get_data(object), function(l) Reduce(cbind, l))
     features_names <- lapply(data, rownames)
     viewidx <- which(sapply(features_names, function(x) color_by %in% x))
@@ -472,7 +472,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
     # Option 4: input is a data.frame with columns (sample, color)
   } else if (is(color_by, "data.frame")) {
     stopifnot(all(colnames(color_by) %in% c("sample", "color")))
-    stopifnot(all(unique(color_by$sample) %in% unlist(samples_names(object))))
+    stopifnot(all(unique(color_by$sample) %in% unlist(samples(object))))
     
     # Option 5: color_by is a vector of length N
   } else if (length(color_by) > 1) {
@@ -486,7 +486,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
   # Create data.frame with columns (sample,color)
   if (!is(color_by,"data.frame")) {
     df = data.frame(
-      sample = unlist(samples_names(object)),
+      sample = unlist(samples(object)),
       color_by = color_by,
       stringsAsFactors = F
     )
@@ -507,12 +507,12 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
     # Option 1: by default group
   } else if (shape_by[1] == "group") {
     shape_by = c()
-    for (group in names(samples_names(object))){
-      shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
+    for (group in names(samples(object))){
+      shape_by <- c(shape_by,rep(group,length(samples(object)[[group]])))
     }
     
     # Option 2: by a feature present in the training data    
-  } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
+  } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features(object)))) {
     data <- lapply(get_data(object), function(l) Reduce(cbind, l))
     features_names <- lapply(data, rownames)
     viewidx <- which(sapply(features_names, function(x) shape_by %in% x))
@@ -521,7 +521,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
     # Option 3: input is a data.frame with columns (sample,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("sample","color")))
-    stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(object))))
+    stopifnot(all(unique(shape_by$sample) %in% unlist(samples(object))))
     
     # Option 4: by a metadata column in object@samples$metadata
   } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
@@ -539,7 +539,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
   # Create data.frame with columns (sample,shape)
   if (!is(shape_by,"data.frame")) {
     df = data.frame(
-      sample = unlist(samples_names(object)),
+      sample = unlist(samples(object)),
       shape_by = as.factor(shape_by),
       stringsAsFactors = FALSE
     )

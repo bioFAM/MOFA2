@@ -123,12 +123,12 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   
   # Get features
   if (is(features, "list")) {
-    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
+    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
   } else {
     if (paste0(features, collapse="") == "all") { 
-      features <- features_names(object)[views]
+      features <- features(object)[views]
     } else {
       stop("features not recognised, please read the documentation")
     }
@@ -198,12 +198,12 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   
   # Get features
   if (is(features, "list")) {
-    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
+    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
   } else {
     if (paste0(features, collapse="") == "all") { 
-      features <- features_names(object)[views]
+      features <- features(object)[views]
     } else {
       stop("features not recognised, please read the documentation")
     }

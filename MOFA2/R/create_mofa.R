@@ -196,8 +196,8 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@dimensions[["K"]] <- 0
 
   # Set views & groups names
-  groups_names(object) <- as.character(names(data_matrices[[1]]))
-  views_names(object)  <- tolower(assays)
+  groups(object) <- as.character(names(data_matrices[[1]]))
+  views(object)  <- tolower(assays)
 
   return(object)
 }

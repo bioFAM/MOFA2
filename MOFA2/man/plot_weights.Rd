@@ -6,7 +6,8 @@
 \usage{
 plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
   color_by = NULL, shape_by = NULL, abs = FALSE, manual = NULL,
-  color_manual = NULL, scale = TRUE, dot_size = 1, text_size = 5)
+  color_manual = NULL, scale = TRUE, dot_size = 1, text_size = 5,
+  return_data = FALSE)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -46,6 +47,8 @@ plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
 \item{dot_size}{numeric indicating the dot size.}
 
 \item{text_size}{numeric indicating the text size.}
+
+\item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 }
 \description{
 An important step to annotate factors is to visualise the corresponding feature loadings. \cr

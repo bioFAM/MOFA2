@@ -182,31 +182,31 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     feature_names <- lapply(seq_len(object@dimensions[["M"]]),
       function(m) sprintf("feature%d_view_&d", as.character(seq_len(object@dimensions[["D"]][m])), m))
   }
-  features_names(object) <- feature_names
+  features(object) <- feature_names
   
   # Create default samples names if they are null
   if (is.null(sample_names)) {
     print("Samples names not found, generating default: sample1, ..., sampleN")
     sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(seq_len(n))))
   }
-  samples_names(object) <- sample_names
+  samples(object) <- sample_names
   
   # Set views names
   if (is.null(names(object@data))) {
     print("Views names not found, generating default: view1, ..., viewM")
     view_names <- paste0("view", as.character(seq_len(object@dimensions[["M"]])))
   }
-  views_names(object) <- view_names
+  views(object) <- view_names
   
   # Set groups names
   if (is.null(names(object@data[[1]]))) {
     print("Groups names not found, generating default: group1, ..., groupG")
     group_names <- paste0("group", as.character(seq_len(object@dimensions[["G"]])))
   }
-  groups_names(object) <- group_names
+  groups(object) <- group_names
 
   # Set factors names
-  factors_names(object)  <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
+  factors(object)  <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
 
   
   ########################
@@ -228,7 +228,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
 
   # Add views names to likelihood vector
   if (is.null(names(object@model_options$likelihoods))) {
-    names(object@model_options$likelihoods) <- views_names(object)
+    names(object@model_options$likelihoods) <- views(object)
   }
 
   ##########################################

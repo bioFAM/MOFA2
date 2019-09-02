@@ -34,11 +34,11 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
 
   # Get factors
   if (paste0(factors, collapse="") == "all") {
-    factors <- factors_names(object)
+    factors <- factors(object)
   } else if (is.numeric(factors)) {
-    factors <- factors_names(object)[factors]
+    factors <- factors(object)[factors]
   } else {
-    stopifnot(all(factors %in% factors_names(object)))
+    stopifnot(all(factors %in% factors(object)))
   }
 
   # Get type of predictions wanted

@@ -3,34 +3,34 @@
 ## Factor Names ##
 ##################
 
-#' @title factors_names: set and retrieve factor names
-#' @name factors_names
-#' @rdname factors_names
+#' @title factors: set and retrieve factor names
+#' @name factors
+#' @rdname factors
 #' @export
-setGeneric("factors_names", function(object) { standardGeneric("factors_names") })
+setGeneric("factors", function(object) { standardGeneric("factors") })
 
-#' @name factors_names
-#' @rdname factors_names
-#' @aliases factors_names<-
+#' @name factors
+#' @rdname factors
+#' @aliases factors<-
 #' @export
-setGeneric("factors_names<-", function(object, value) { standardGeneric("factors_names<-") })
+setGeneric("factors<-", function(object, value) { standardGeneric("factors<-") })
 
 
 ##################
 ## Sample Names ##
 ##################
 
-#' @title samples_names: set and retrieve sample names
-#' @name samples_names
-#' @rdname samples_names
+#' @title samples: set and retrieve sample names
+#' @name samples
+#' @rdname samples
 #' @export
-setGeneric("samples_names", function(object) { standardGeneric("samples_names") })
+setGeneric("samples", function(object) { standardGeneric("samples") })
 
-#' @name samples_names
-#' @rdname samples_names
-#' @aliases samples_names<-
+#' @name samples
+#' @rdname samples
+#' @aliases samples<-
 #' @export
-setGeneric("samples_names<-", function(object, value) { standardGeneric("samples_names<-") })
+setGeneric("samples<-", function(object, value) { standardGeneric("samples<-") })
 
 #####################
 ## Sample Metadata ##
@@ -52,17 +52,17 @@ setGeneric("samples_metadata<-", function(object, value) { standardGeneric("samp
 ## Feature Names ##
 ###################
 
-#' @title features_names: set and retrieve feature names
-#' @name features_names
-#' @rdname features_names
+#' @title features: set and retrieve feature names
+#' @name features
+#' @rdname features
 #' @export
-setGeneric("features_names", function(object) { standardGeneric("features_names") })
+setGeneric("features", function(object) { standardGeneric("features") })
 
-#' @name features_names
-#' @rdname features_names
-#' @aliases features_names<-
+#' @name features
+#' @rdname features
+#' @aliases features<-
 #' @export
-setGeneric("features_names<-", function(object, value) { standardGeneric("features_names<-") })
+setGeneric("features<-", function(object, value) { standardGeneric("features<-") })
 
 ######################
 ## Feature Metadata ##
@@ -84,33 +84,33 @@ setGeneric("features_metadata<-", function(object, value) { standardGeneric("fea
 ## View Names ##
 ################
 
-#' @title views_names: set and retrieve view names
-#' @name views_names
-#' @rdname views_names
+#' @title views: set and retrieve view names
+#' @name views
+#' @rdname views
 #' @export
-setGeneric("views_names", function(object) { standardGeneric("views_names") })
+setGeneric("views", function(object) { standardGeneric("views") })
 
-#' @name views_names
-#' @rdname views_names
-#' @aliases views_names<-
+#' @name views
+#' @rdname views
+#' @aliases views<-
 #' @export
-setGeneric("views_names<-", function(object, value) { standardGeneric("views_names<-") })
+setGeneric("views<-", function(object, value) { standardGeneric("views<-") })
 
 ################
 ## group Names ##
 ################
 
-#' @title groups_names: set and retrieve view names
-#' @name groups_names
-#' @rdname groups_names
+#' @title groups: set and retrieve view names
+#' @name groups
+#' @rdname groups
 #' @export
-setGeneric("groups_names", function(object) { standardGeneric("groups_names") })
+setGeneric("groups", function(object) { standardGeneric("groups") })
 
-#' @name groups_names
-#' @rdname groups_names
-#' @aliases groups_names<-
+#' @name groups
+#' @rdname groups
+#' @aliases groups<-
 #' @export
-setGeneric("groups_names<-", function(object, value) { standardGeneric("groups_names<-") })
+setGeneric("groups<-", function(object, value) { standardGeneric("groups<-") })
 
 ################
 ## Input Data ##

@@ -4,22 +4,22 @@
 ## Set and retrieve factors names ##
 ####################################
 
-#' @rdname factors_names
+#' @rdname factors
 #' @param object a \code{\link{MOFA}} object.
-#' @aliases factors_names,MOFA-method
+#' @aliases factors,MOFA-method
 #' @return character vector with the features names
 #' @export
-setMethod("factors_names", signature(object="MOFA"), 
+setMethod("factors", signature(object="MOFA"), 
           function(object) {
             colnames(object@expectations$Z[[1]]) 
           }
 )
 
-#' @rdname factors_names
+#' @rdname factors
 #' @param value a character vector of factor names
 #' @import methods
 #' @export
-setReplaceMethod("factors_names", signature(object="MOFA", value="vector"), 
+setReplaceMethod("factors", signature(object="MOFA", value="vector"), 
                  function(object, value) {
                    if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
                      stop("Before assigning factor names you have to assign expectations")
@@ -46,12 +46,12 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
 ## Set and retrieve samples names ##
 ####################################
 
-#' @rdname samples_names
+#' @rdname samples
 #' @param object a \code{\link{MOFA}} object.
-#' @aliases samples_names,MOFA-method
+#' @aliases samples,MOFA-method
 #' @return list of character vectors with the sample names for each group
 #' @export
-setMethod("samples_names", signature(object="MOFA"), 
+setMethod("samples", signature(object="MOFA"), 
           function(object) {
             
             # When the model is not trained, the samples slot is not initialized yet
@@ -61,18 +61,18 @@ setMethod("samples_names", signature(object="MOFA"),
             
             # The default case when samples are initialized (trained model)
             samples_list <- lapply(object@data_options$groups, function(g) {
-              with(object@samples_metadata, object@samples_metadata[group_name == g, "sample_name"])
+              with(object@samples_metadata, object@samples_metadata[group == g, "sample"])
             })
             
             names(samples_list) <- object@data_options$groups
             return(samples_list)
           })
 
-#' @rdname samples_names
+#' @rdname samples
 #' @param value list of character vectors with the sample names for every group
 #' @import methods
 #' @export
-setReplaceMethod("samples_names", signature(object="MOFA", value="list"), 
+setReplaceMethod("samples", signature(object="MOFA", value="list"), 
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") || length(object@data) == 0 || length(object@data[[1]]) == 0)
                      stop("Before assigning sample names you have to assign the training data")
@@ -87,8 +87,8 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    value_groups <- rep(names(value), lengths(value))
 
                    # Modify sample names in the sample metadata
-                   object@samples_metadata$sample_name <- unlist(value, use.names = FALSE)
-                   object@samples_metadata$group_name  <- as.factor( value_groups )
+                   object@samples_metadata$sample <- unlist(value, use.names = FALSE)
+                   object@samples_metadata$group  <- as.factor( value_groups )
                    if (is(object@samples_metadata, "list")) {
                     object@samples_metadata <- data.frame(object@samples_metadata, stringsAsFactors = FALSE)
                    }
@@ -102,7 +102,7 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    
                    # Add samples names to the imputed data
                    if (length(object@imputed_data)>0) 
-                    object <- .set_imputed_data_names(object, entity = 'samples', value)
+                    object <- .set_imputed_data(object, entity = 'samples', value)
                    
                    object
                  })
@@ -121,8 +121,8 @@ setMethod("samples_metadata", signature(object="MOFA"),
           })
 
 #' @rdname samples_metadata
-#' @param value data frame with sample metadata, it must at least contain the columns \code{sample_name} and \code{group_name}.
-#' The order of the rows must match the order of \code{samples_names(object)}
+#' @param value data frame with sample metadata, it must at least contain the columns \code{sample} and \code{group}.
+#' The order of the rows must match the order of \code{samples(object)}
 #' @import methods
 #' @export
 setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"), 
@@ -136,10 +136,10 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
                        stop("Number of rows in samples metadata does not match the dimensionality of the model")
                    if (nrow(value) != sum(sapply(object@data[[1]], ncol)))
                      stop("sample names do not match the dimensionality of the data (columns)")
-                   if (!("sample_name" %in% colnames(value)))
-                     stop("Metadata has to contain the column sample_name")
-                   if (!("group_name" %in% colnames(value)))
-                     stop("Metadata has to contain the column group_name")
+                   if (!("sample" %in% colnames(value)))
+                     stop("Metadata has to contain the column sample")
+                   if (!("group" %in% colnames(value)))
+                     stop("Metadata has to contain the column group")
                    
                    object@samples_metadata <- as.data.frame(value)
                    
@@ -150,30 +150,30 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
 ## Set and retrieve features names ##
 #####################################
 
-#' @rdname features_names
+#' @rdname features
 #' @param object a \code{\link{MOFA}} object.
-#' @aliases features_names,MOFA-method
+#' @aliases features,MOFA-method
 #' @return list of character vectors with the feature names for each view
 #' @export
-setMethod("features_names", signature(object="MOFA"), 
+setMethod("features", signature(object="MOFA"), 
           function(object) {
             # When the model is not trained, the features slot is not initialized yet
             if (!("features_metadata" %in% slotNames(object)) || (length(object@features_metadata) == 0)) {
               return(list())
             }
             # The default case when features are initialized (trained model)
-            features_list <- lapply(object@data_options$views, function(g) {
-              with(object@features_metadata, object@features_metadata[view_name == g, "feature_name"])
+            features_list <- lapply(object@data_options$views, function(m) {
+              with(object@features_metadata, object@features_metadata[view == m, "feature"])
             })
             names(features_list) <- object@data_options$views
             return(features_list)
           })
 
-#' @rdname features_names
+#' @rdname features
 #' @param value list of character vectors with the feature names for every view
 #' @import methods
 #' @export
-setReplaceMethod("features_names", signature(object="MOFA", value="list"),
+setReplaceMethod("features", signature(object="MOFA", value="list"),
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
                      stop("Before assigning feature names you have to assign the training data")
@@ -187,8 +187,8 @@ setReplaceMethod("features_names", signature(object="MOFA", value="list"),
                    
                    value_groups <- rep(names(value), lengths(value))
 
-                   object@features_metadata$feature_name <- unlist(value, use.names = FALSE)
-                   object@features_metadata$view_name <- value_groups
+                   object@features_metadata$feature <- unlist(value, use.names = FALSE)
+                   object@features_metadata$view <- value_groups
 
                    if (is(object@features_metadata, "list")) {
                     object@features_metadata <- data.frame(object@features_metadata, stringsAsFactors = FALSE)
@@ -203,7 +203,7 @@ setReplaceMethod("features_names", signature(object="MOFA", value="list"),
                    
                    # Add samples names to the imputed data
                    if (length(object@imputed_data)>0) 
-                    object <- .set_imputed_data_names(object, entity = 'features', value)
+                    object <- .set_imputed_data(object, entity = 'features', value)
                    
                    object
                  })
@@ -222,7 +222,7 @@ setMethod("features_metadata", signature(object="MOFA"),
           })
 
 #' @rdname features_metadata
-#' @param value data frame with feature information, it at least must contain the columns \code{feature_name} and \code{view_name}
+#' @param value data frame with feature information, it at least must contain the columns \code{feature} and \code{view}
 #' @import methods
 #' @export
 setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame"), 
@@ -236,12 +236,12 @@ setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame
                        stop("Number of rows in features metadata does not match the dimensionality of the model")
                    if (nrow(value) != sum(sapply(object@data, function(e) nrow(e[[1]]))))
                      stop("Features names do not match the dimensionality of the data (rows)")
-                   if (!("feature_name" %in% colnames(value)))
-                     stop("Metadata has to contain the column feature_name")
-                   if (!("view_name" %in% colnames(value)))
-                     stop("Metadata has to contain the column view_name")
-                   if (colnames(value)[1] != "feature_name")
-                     message("Note that feature_name is currently not the first column of the features metadata.")
+                   if (!("feature" %in% colnames(value)))
+                     stop("Metadata has to contain the column feature")
+                   if (!("view" %in% colnames(value)))
+                     stop("Metadata has to contain the column view")
+                   if (colnames(value)[1] != "feature")
+                     message("Note that feature is currently not the first column of the features metadata.")
                    
                    object@features_metadata <- value
                    
@@ -252,22 +252,22 @@ setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame
 ## Set and retrieve views names ##
 ##################################
 
-#' @rdname views_names
+#' @rdname views
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each view
-#' @rdname views_names
+#' @rdname views
 #' @export
-setMethod("views_names", signature(object="MOFA"), 
+setMethod("views", signature(object="MOFA"), 
           function(object) {
             object@data_options$views
           })
 
 
-#' @rdname views_names
+#' @rdname views
 #' @param value character vector with the names for each view
 #' @import methods
 #' @export
-setMethod("views_names<-", signature(object="MOFA", value="character"), 
+setMethod("views<-", signature(object="MOFA", value="character"), 
           function(object, value) {
             # if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
             #   stop("Before assigning view names you have to assign the training data")
@@ -291,11 +291,11 @@ setMethod("views_names<-", signature(object="MOFA", value="character"),
             
             # Set view names in features_metadata 
             if (!is.null(object@features_metadata) && (length(object@features_metadata) != 0)) {
-              # object@features_metadata$view_name <- as.character(object@features_metadata$view_name)
+              # object@features_metadata$view <- as.character(object@features_metadata$view)
               for (i in seq_len(object@dimensions[["M"]])) {
                 old_name <- old_views[i]
                 new_name <- value[i]
-                object@features_metadata[object@features_metadata$view_name == old_name, "view_name"] <- new_name
+                object@features_metadata[object@features_metadata$view == old_name, "view"] <- new_name
               }
             }
             
@@ -335,22 +335,22 @@ setMethod("views_names<-", signature(object="MOFA", value="character"),
 ## Set and retrieve groups names ##
 ###################################
 
-#' @rdname groups_names
+#' @rdname groups
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each sample group
-#' @rdname groups_names
+#' @rdname groups
 #' @export
-setMethod("groups_names", signature(object="MOFA"), 
+setMethod("groups", signature(object="MOFA"), 
           function(object) {
             object@data_options$groups
           })
 
 
-#' @rdname groups_names
+#' @rdname groups
 #' @param value character vector with the names for each group
 #' @import methods
 #' @export
-setMethod("groups_names<-", signature(object="MOFA", value="character"), 
+setMethod("groups<-", signature(object="MOFA", value="character"), 
           function(object, value) {
             # if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
             #   stop("Before assigning group names you have to assign the training data")
@@ -369,13 +369,13 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             
             # Set sample group names in samples_metadata
             if (!is.null(object@samples_metadata) && (length(object@samples_metadata) != 0)) {
-              object@samples_metadata$group_name <- as.character(object@samples_metadata$group_name)
+              object@samples_metadata$group <- as.character(object@samples_metadata$group)
               for (i in seq_len(object@dimensions[["G"]])) {
                 old_name <- old_groups[i]
                 new_name <- value[i]
-                object@samples_metadata[object@samples_metadata$group_name == old_name, "group_name"] <- new_name
+                object@samples_metadata[object@samples_metadata$group == old_name, "group"] <- new_name
               }
-              object@samples_metadata$group_name <- factor(object@samples_metadata$group_name, levels=value)
+              object@samples_metadata$group <- factor(object@samples_metadata$group, levels=value)
             }
               
             # Set sample group names in cache

@@ -4,17 +4,19 @@
 \alias{plot_factor}
 \title{Beeswarm plot of factor values}
 \usage{
-plot_factor(object, factor = 1, group_by = "group", color_by = NULL,
-  shape_by = NULL, add_dots = TRUE, dot_size = 1, dot_alpha = 1,
-  add_violin = FALSE, violin_alpha = 0.5, color_violin = TRUE,
-  show_missing = TRUE, scale = FALSE, dodge = FALSE,
-  color_name = "", shape_name = "", legend = TRUE,
-  rasterize = FALSE)
+plot_factor(object, factors = 1, groups = "all", group_by = "group",
+  color_by = "group", shape_by = NULL, add_dots = TRUE,
+  dot_size = 1, dot_alpha = 1, add_violin = FALSE,
+  violin_alpha = 0.5, color_violin = TRUE, show_missing = TRUE,
+  scale = FALSE, dodge = FALSE, color_name = "", shape_name = "",
+  legend = TRUE, rasterize = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{factor}{character with the factor name, or numeric with the index of the factor to use.}
+\item{factors}{character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.}
+
+\item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
 
 \item{group_by}{specifies groups used to separate the samples : one plot per group. This can be either: 
 \itemize{

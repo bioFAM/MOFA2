@@ -14,7 +14,7 @@ features_metadata(object) <- value
 \S4method{features_metadata}{MOFA,data.frame}(object) <- value
 }
 \arguments{
-\item{value}{data frame with feature information, it at least must contain the columns \code{feature_name} and \code{view_name}}
+\item{value}{data frame with feature information, it at least must contain the columns \code{feature} and \code{view}}
 }
 \description{
 features_metadata: set and retrieve feature metadata

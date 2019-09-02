@@ -42,21 +42,21 @@ subset_groups <- function(object, groups) {
   object@dimensions[["N"]] <- object@dimensions[["N"]][groups]
   
   # Subset sample metadata
-  stopifnot(groups%in%unique(object@samples_metadata$group_name))
-  object@samples_metadata <- object@samples_metadata[object@samples_metadata$group_name %in% groups,]
-  object@samples_metadata$group_name <- factor(object@samples_metadata$group_name, levels=groups)
+  stopifnot(groups%in%unique(object@samples_metadata$group))
+  object@samples_metadata <- object@samples_metadata[object@samples_metadata$group %in% groups,]
+  object@samples_metadata$group <- factor(object@samples_metadata$group, levels=groups)
   
   # Re-order samples
   samples <- unname(unlist(lapply(object@data[[1]],colnames)))
-  object@samples_metadata <- object@samples_metadata[match(samples, object@samples_metadata$sample_name),]
+  object@samples_metadata <- object@samples_metadata[match(samples, object@samples_metadata$sample),]
   
   # Sanity checks
-  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@data[[1]],colnames)))
-  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Z,rownames)))
-  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Y,colnames)))
+  stopifnot(object@samples_metadata$sample == unlist(lapply(object@data[[1]],colnames)))
+  stopifnot(object@samples_metadata$sample == unlist(lapply(object@expectations$Z,rownames)))
+  stopifnot(object@samples_metadata$sample == unlist(lapply(object@expectations$Y,colnames)))
   
   # Update groups names
-  # groups_names(object) <- groups
+  # groups(object) <- groups
   object@data_options$groups <- groups
   
   # Re-compute variance explained
@@ -104,7 +104,7 @@ subset_views <- function(object, views) {
   object@dimensions[["D"]] <- object@dimensions[["D"]][views]
   
   # Update view names
-  views_names(object) <- views
+  views(object) <- views
   
   # Re-compute variance explained
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)
@@ -155,7 +155,7 @@ subset_factors <- function(object, factors) {
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   # Update factor names
-  factors_names(object) <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
+  factors(object) <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
   
   
   return(object)
@@ -178,11 +178,11 @@ subset_samples <- function(object, samples) {
   samples <- .check_and_get_samples(object, samples)
   
   # Check if an entire group needs to be removed
-  groups <- as.character(unique(object@samples_metadata[match(samples, object@samples_metadata$sample_name),]$group_name))
-  if (length(groups)<length(groups_names(object))) object <- subset_groups(object, groups)
+  groups <- as.character(unique(object@samples_metadata[match(samples, object@samples_metadata$sample),]$group))
+  if (length(groups)<length(groups(object))) object <- subset_groups(object, groups)
   
   # Subset data and expectations
-  tmp <- lapply(groups, function(g) samples_names(object)[[g]][samples_names(object)[[g]] %in% samples])
+  tmp <- lapply(groups, function(g) samples(object)[[g]][samples(object)[[g]] %in% samples])
   names(tmp) <- groups
   
   for (g in groups) {
@@ -195,7 +195,7 @@ subset_samples <- function(object, samples) {
       }
       
       if ("Y" %in% names(object@expectations) & length(object@expectations$Y)>0) {
-        for (m in views_names(object)) {
+        for (m in views(object)) {
           object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=F]
         }  
       }
@@ -203,14 +203,14 @@ subset_samples <- function(object, samples) {
 
     # Subset data
     if (length(object@data)>0) { 
-      for (m in views_names(object)) {
+      for (m in views(object)) {
         object@data[[m]][[g]] <- object@data[[m]][[g]][,samples_g,drop=F]
       }
     }
     
     # Subset imputed data
     if (length(object@imputed_data)>0) { 
-      for (m in views_names(object)) {
+      for (m in views(object)) {
         object@imputed_data[[m]][[g]]$mean <- object@imputed_data[[m]][[g]]$mean[,samples_g,drop=F]
         object@imputed_data[[m]][[g]]$variance <- object@imputed_data[[m]][[g]]$variance[,samples_g,drop=F]
       }
@@ -219,18 +219,18 @@ subset_samples <- function(object, samples) {
   }
 
   # Subset sample metadata
-  object@samples_metadata <- object@samples_metadata[object@samples_metadata$sample_name %in% samples,]
+  object@samples_metadata <- object@samples_metadata[object@samples_metadata$sample %in% samples,]
   
   # Update dimensionality
   object@dimensions[["N"]] <- sapply(tmp, length)
   
   # Update sample names
-  samples_names(object) <- tmp
+  samples(object) <- tmp
   
   # Sanity checks
-  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@data[[1]],colnames)))
-  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Z,rownames)))
-  stopifnot(object@samples_metadata$sample_name == unlist(lapply(object@expectations$Y,colnames)))
+  stopifnot(object@samples_metadata$sample == unlist(lapply(object@data[[1]],colnames)))
+  stopifnot(object@samples_metadata$sample == unlist(lapply(object@expectations$Z,rownames)))
+  stopifnot(object@samples_metadata$sample == unlist(lapply(object@expectations$Y,colnames)))
   
   # Re-compute variance explained
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)
@@ -254,14 +254,14 @@ subset_features <- function(object, view, features) {
   stopifnot(length(features) <= sapply(object@dimensions[["D"]], sum))
   warning("Removing features a posteriori is fine for an exploratory analysis, but we recommend removing them before training!")
 
-  if (is.numeric(view)) view <- views_names(object)[view]
-  stopifnot(all(view %in% views_names(object)))  
+  if (is.numeric(view)) view <- views(object)[view]
+  stopifnot(all(view %in% views(object)))  
 
   # Define features
   if (is.character(features)) {
-    stopifnot(all(features %in% features_names(object)[[view]]))
+    stopifnot(all(features %in% features(object)[[view]]))
   } else {
-    features <- features_names(object)[[view]][features]
+    features <- features(object)[[view]][features]
   }
   
   # Subset relevant slots
@@ -286,7 +286,7 @@ subset_features <- function(object, view, features) {
   object@dimensions[["D"]][[view]] <- length(features)
   
   # Update features names
-  features_names(object)[[view]] <- features
+  features(object)[[view]] <- features
   
   # Re-compute variance explained
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)
