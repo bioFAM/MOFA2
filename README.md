@@ -19,26 +19,34 @@ For more details you can read our papers:
 
 
 ## Installation
+
 The core of MOFA is implemented in Python. However, the whole procedure can be run with R and we provide the downstream analysis functions only in R.
 
 ### Python dependencies 
+
 Python dependencies can be installed using pip (from the Unix terminal)
+
 ```r
 pip install mofapy2
 ```
 
 Alternatively, they can be installed from R itself using the reticulate package:
+
 ```r
 library(reticulate)
 py_install("mofapy2", envname = "r-reticulate", method="auto")
 ```
 
 ### MOFA2 R package
+
 Can be installed using R:
+
 ```r
 devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data"))
 ```
+
 --------------
+
 ### Using Docker image
 
 You can build an image with `mofa2py` python library and `MOFA2` R package using the provided Dockerfile:
@@ -53,7 +61,7 @@ You will then be able to use R or Python from the container.
 docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
 #                   ^
 #                   |
-#                    use `-v` to mount the map a folder on your machine to a container directory
+#                    use `-v` to map a folder on your machine to a container directory
 ```
 
 The command above will launch R with MOFA2 and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
@@ -92,9 +100,6 @@ We currently provide the following vignettes:
 * **Integration of single-cell multi-modal data:**: baz.
 * **Transfer learning and imputation:**: baz.
 * **Model selection and robustness with simulated data**: bazz
-
-
-
 
 
 
