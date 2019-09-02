@@ -136,7 +136,18 @@ create_mofa <- function(data, groups = NULL, ...) {
 }
 
 # (Hidden) function to initialise a MOFA object using a Seurat object
-.create_mofa_from_seurat <- function(srt, groups, assay = "RNA", slot = "scale.data", features = NULL) {
+#' @title create a MOFA object
+#' @name create_mofa
+#' @description Method to create a \code{\link{MOFA}} object
+#' @param srt Seurat object
+#' @param groups a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample
+#' @param assays assays to use for the MOFA model, default is RNA
+#' @param slot assay slot to be used such as scale.data or data
+#' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
+#' @return Returns an untrained \code{\link{MOFA}} object
+#' @export
+#' @keywords internal
+.create_mofa_from_seurat <- function(srt, groups, assays = "RNA", slot = "data", features = NULL) {
   if (is(groups, 'character') && (length(groups) == 1)) {
     if (!(groups %in% colnames(srt@meta.data)))
       stop(paste0(groups, " is not found in the Seurat@meta.data.\n",
@@ -146,27 +157,47 @@ create_mofa <- function(data, groups = NULL, ...) {
     groups <- srt@meta.data[,groups]
   }
 
-  if (is.null(groups)) {
-    message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
-    groups <- rep("group1", dim(GetAssay(object = srt, slot = slot, assay = assay))[2])
+  # If features to subset are provided,
+  # make sure they are a list with respective views (assays) names.
+  # A vector is accepted if there's one assay to be used
+  if (!is.null(features)) {
+    if (is(features, "list")) {
+      if (!all(names(features) %in% assays)) {
+        stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
+      }
+    } else {
+      if (length(assays) > 1)
+         stop("When using multiple assays, subset features with a list with corresponding views (assays) names")
+      # Make a list out of a vector
+      features <- list(features)
+      names(features) <- assays
+    }
   }
 
-  data_matrices <- list("rna" = .split_seurat_into_groups(srt, groups = groups, assay = assay, slot = slot, features = features))
+  # If no groups provided, treat all samples as coming from one group
+  if (is.null(groups)) {
+    message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
+    groups <- rep("group1", dim(srt)[2])
+  }
+
+  data_matrices <- lapply(assays, function(assay) 
+    .split_seurat_into_groups(srt, groups = groups, assay = assay, slot = slot, features = features[[assay]]))
+  names(data_matrices) <- tolower(assays)
 
   object <- new("MOFA")
   object@status <- "untrained"
   object@data <- data_matrices
   
   # Define dimensions
-  object@dimensions[["M"]] <- 1
-  object@dimensions[["D"]] <- nrow(data_matrices[[1]][[1]])
+  object@dimensions[["M"]] <- length(assays)
+  object@dimensions[["D"]] <- vapply(data_matrices, function(m) nrow(m[[1]]), 1L)
   object@dimensions[["G"]] <- length(data_matrices[[1]])
-  object@dimensions[["N"]] <- sapply(data_matrices[[1]], function(m) ncol(m))
+  object@dimensions[["N"]] <- vapply(data_matrices[[1]], function(g) ncol(g), 1L)
   object@dimensions[["K"]] <- 0
 
   # Set views & groups names
   groups_names(object) <- as.character(names(data_matrices[[1]]))
-  views_names(object)  <- c("rna")
+  views_names(object)  <- tolower(assays)
 
   return(object)
 }
@@ -189,7 +220,7 @@ create_mofa <- function(data, groups = NULL, ...) {
 .split_seurat_into_groups <- function(srt, groups, assay = "RNA", slot = "data", features = NULL) {
   # If no feature selection is provided, all features are used
   if (is.null(features))
-    features <- seq_along(dim(GetAssay(object = pbmc, slot = slot, assay = assay))[1])
+    features <- seq_len(dim(GetAssay(object = srt, slot = slot, assay = assay))[1])
 
   # Fetch assay data for every group of samples
   groups_names <- unique(groups)
