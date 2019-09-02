@@ -212,6 +212,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).
 #' @param dot_size numeric indicating the dot size.
 #' @param text_size numeric indicating the text size.
+#' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @import ggplot2 dplyr tidyr
 #' @importFrom magrittr %>%
 #' @importFrom ggrepel geom_text_repel
@@ -219,7 +220,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
                          color_by = NULL, shape_by = NULL,
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
-                         dot_size = 1, text_size = 5) {
+                         dot_size = 1, text_size = 5, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -229,18 +230,10 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   view <- .check_and_get_views(object, view)
   
   # Get factor names
-  if (paste0(factors, collapse = "") == "all") { 
-    factors <- factors_names(object)
-  } else if (is.numeric(factors)) {
-    if (!all(factors %in% seq_len(object@dimensions$K))) stop("Factor(s) not found")
-    factors <- factors_names(object)[factors]
-  } else { 
-    if (!all(factors %in% factors_names(object))) stop("Factor(s) not found")
-  }
+  factors <- .check_and_get_factors(object, factors)
   
   # Collect expectations  
   W <- get_weights(object, views = view, factors = factors, as.data.frame = TRUE)
-  W <- W[(W$factor %in% factors) & (W$view %in% view),]
   
   # Remove factors with all-zero loadings
   # to.remove <- sapply(factors, function(i) sum(W[W$factor==i,"value"]==0)>nfeatures)
@@ -251,7 +244,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # }
   
   # Convert factor names to a factor to preserve order
-  W$factor <- factor(W$factor, levels = unique(W$factor))
+  W$factor <- factor(W$factor, levels = unique(factors))
 
   # if (sum(W$value==0)>nfeatures) {
   #   nfeatures <- sum(W$value>0)
@@ -318,6 +311,9 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # make them unique for different factors
   W$feature_id <- paste(W$feature_id, W$factor, sep="_")
   W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
+
+  # Return data if requested instead of plotting
+  if (return_data) return(W)
   
   # Generate plot
   p <- ggplot(W, aes_string(x="value", y="feature_id", col="group")) +
