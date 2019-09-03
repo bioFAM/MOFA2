@@ -36,7 +36,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
       stop("data_options are incorrectly specified, please read the documentation in get_default_data_options")
     object@data_options <- data_options
   }
-  if (any(nchar(unlist(samples_names(object)))>50))
+  if (any(nchar(unlist(samples(object)))>50))
     warning("Due to string size limitations in the HDF5 format, sample names will be trimmed to less than 50 characters")
   
   # Get training options
@@ -101,9 +101,9 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
-  # for (m in views_names(object)) {
+  # for (m in views(object)) {
   #   if (model_options$likelihoods[[m]] == "gaussian") {
-  #     for (g in groups_names(object)) {
+  #     for (g in groups(object)) {
   #       object@data[[m]][[g]] <- scale(object@data[[m]][[g]], center=T, scale=F)
   #     }
   #   }
@@ -114,8 +114,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
 
   # Transform sparse matrices into dense ones
   # See https://github.com/rstudio/reticulate/issues/72
-  for (m in views_names(object)) {
-    for (g in groups_names(object)) {
+  for (m in views(object)) {
+    for (g in groups(object)) {
       if (is(object@data[[m]][[g]], "dgCMatrix") || is(object@data[[m]][[g]], "dgTMatrix"))
         object@data[[m]][[g]] <- as(object@data[[m]][[g]], "matrix")
     }
@@ -229,7 +229,7 @@ get_default_model_options <- function(object) {
   # Guess likelihoods from the data
   likelihoods <- .infer_likelihoods(object)
   # likelihoods <- rep(x="gaussian", times=object@dimensions$M)
-  names(likelihoods) <- views_names(object)
+  names(likelihoods) <- views(object)
   
   # Define default model options
   model_options <- list(

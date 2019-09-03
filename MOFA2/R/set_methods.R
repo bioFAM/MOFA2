@@ -7,7 +7,7 @@
 #' @rdname factors
 #' @param object a \code{\link{MOFA}} object.
 #' @aliases factors,MOFA-method
-#' @return character vector with the features names
+#' @return character vector with the factor names
 #' @export
 setMethod("factors", signature(object="MOFA"), 
           function(object) {

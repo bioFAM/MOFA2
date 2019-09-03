@@ -499,8 +499,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Option 2: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features(object)))) {
       data <- lapply(get_data(object), function(l) Reduce(cbind, l))
-      features_names <- lapply(data, rownames)
-      viewidx <- which(sapply(features_names, function(x) color_by %in% x))
+      features <- lapply(data, rownames)
+      viewidx <- which(sapply(features, function(x) color_by %in% x))
       color_by <- data[[viewidx]][color_by,]
     
   # Option 3: by a metadata column in object@samples$metadata
@@ -552,8 +552,8 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Option 2: by a feature present in the training data    
   } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features(object)))) {
     data <- lapply(get_data(object), function(l) Reduce(cbind, l))
-    features_names <- lapply(data, rownames)
-    viewidx <- which(sapply(features_names, function(x) shape_by %in% x))
+    features <- lapply(data, rownames)
+    viewidx <- which(sapply(features, function(x) shape_by %in% x))
     shape_by <- data[[viewidx]][shape_by,]
     
   # Option 3: input is a data.frame with columns (sample,color)

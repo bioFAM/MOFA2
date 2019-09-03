@@ -11,21 +11,21 @@ qualityControl <- function(object, verbose = F) {
   
   # Check views names
   if (verbose==T) message("Checking views names...")
-  stopifnot(!is.null(views_names(object)))
-  stopifnot(!duplicated(views_names(object)))
+  stopifnot(!is.null(views(object)))
+  stopifnot(!duplicated(views(object)))
   
   # Check groups names
   if (verbose==T) message("Checking groups names...")
-  stopifnot(!is.null(groups_names(object)))
-  stopifnot(!duplicated(groups_names(object)))
+  stopifnot(!is.null(groups(object)))
+  stopifnot(!duplicated(groups(object)))
   
   if (object@Status == "untrained") {
     
     # Check dimensionalities in the input data
     N <- object@dimensions$N
     D <- object@dimensions$D
-    for (i in views_names(object)) {
-      for (j in groups_names(object)) {
+    for (i in views(object)) {
+      for (j in groups(object)) {
         stopifnot(nrow(object@data[[i]][[j]]) == N[[j]])
         stopifnot(ncol(object@data[[i]][[j]]) == D[[i]])
         stopifnot(length(rownames(object@data[[i]][[j]])) == N[[j]])
@@ -35,8 +35,8 @@ qualityControl <- function(object, verbose = F) {
 
     # Check that there are no features with zero variance
     # if (verbose==T) message("Checking there are no features with zero variance...")
-    # for (i in views_names(object)) {
-    #   for (j in groups_names(object)) {
+    # for (i in views(object)) {
+    #   for (j in groups(object)) {
     #   if (!all(apply(object@data[[i]][[j]],1,var,na.rm=T) > 0, na.rm=T)) {
     #     print("Warning: you have features with zero variance, consider removing them...")
     #   }
@@ -44,8 +44,8 @@ qualityControl <- function(object, verbose = F) {
     
     # Check that there are no features with complete missing values
     # if (verbose==T) message("Checking there are no features with complete missing values...")
-    # for (i in views_names(object)) {
-    #   for (j in groups_names(object)) {
+    # for (i in views(object)) {
+    #   for (j in groups(object)) {
     #   if (!all(apply(object@data[[i]][[j]],1, function(x) mean(is.na(x)))<1, na.rm=T)) {
     #     print("Warning: you have features which do not contain any observation, consider removing them...")
     #   }
@@ -56,8 +56,8 @@ qualityControl <- function(object, verbose = F) {
     # Check dimensionalities in the input data
     N <- object@dimensions$N
     D <- object@dimensions$D
-    for (i in views_names(object)) {
-      for (j in groups_names(object)) {
+    for (i in views(object)) {
+      for (j in groups(object)) {
         stopifnot(ncol(object@data[[i]][[j]]) == N[[j]])
         stopifnot(nrow(object@data[[i]][[j]]) == D[[i]])
         stopifnot(length(colnames(object@data[[i]][[j]])) == N[[j]])
@@ -67,13 +67,13 @@ qualityControl <- function(object, verbose = F) {
     
     # Check samples names
     if (verbose==T) message("Checking samples names...")
-    stopifnot(!is.null(samples_names(object)))
-    stopifnot(!duplicated(unlist(samples_names(object))))
+    stopifnot(!is.null(samples(object)))
+    stopifnot(!duplicated(unlist(samples(object))))
     
     # Check features names
     if (verbose==T) message("Checking features names...")
-    stopifnot(!is.null(features_names(object)))
-    stopifnot(!duplicated(unlist(features_names(object))))
+    stopifnot(!is.null(features(object)))
+    stopifnot(!duplicated(unlist(features(object))))
     
     # Check expectations
     # stopifnot(identical(sort(c("W","Z","Theta","Tau","AlphaW","Y")), sort(names(object@Expectations))))

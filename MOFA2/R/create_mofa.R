@@ -49,7 +49,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   # Create sample metadata
   tmp <- data.frame(
     sample_name = unname(unlist(lapply(object@data[[1]], colnames))),
-    group_name = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups_names(object)[[x]], object@dimensions$N[[x]]) )),
+    group_name = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups(object)[[x]], object@dimensions$N[[x]]) )),
     stringsAsFactors = FALSE
   )
   samples_metadata(object) <- tmp
@@ -57,7 +57,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   # Create features metadata
   tmp <- data.frame(
     feature_name = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
-    view_name = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
+    view_name = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )
   features_metadata(object) <- tmp
@@ -127,10 +127,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@dimensions[["K"]] <- 0
   
   # Set view names
-  views_names(object) <- levels(df$view)
+  views(object) <- levels(df$view)
   
   # Set group names
-  groups_names(object) <- levels(df$group)
+  groups(object) <- levels(df$group)
   
   return(object)
 }
@@ -204,12 +204,12 @@ create_mofa <- function(data, groups = NULL, ...) {
 
 
 .split_data_into_groups <- function(data, groups) {
-  groups_names <- unique(groups)
+  groups <- unique(groups)
   tmp <- lapply(data, function(x) {
-    tmp_view <- lapply(groups_names, function(p) {
+    tmp_view <- lapply(groups, function(p) {
       x[,groups == p]
     })
-    names(tmp_view) <- groups_names
+    names(tmp_view) <- groups
     tmp_view
   })
   names(tmp) <- names(data)
@@ -223,8 +223,8 @@ create_mofa <- function(data, groups = NULL, ...) {
     features <- seq_len(dim(GetAssay(object = srt, slot = slot, assay = assay))[1])
 
   # Fetch assay data for every group of samples
-  groups_names <- unique(groups)
-  tmp <- lapply(groups_names, function(g) {
+  groups <- unique(groups)
+  tmp <- lapply(groups, function(g) {
     # If group name is NA, it has to be treated separately
     # due to the way R handles NAs and equal signs
     if (is.na(g)) {
@@ -233,7 +233,7 @@ create_mofa <- function(data, groups = NULL, ...) {
       GetAssayData(object = srt, assay = assay, slot = slot)[,which(groups == g)][features,]
     }
   })
-  names(tmp) <- groups_names
+  names(tmp) <- groups
   tmp
 }
 
@@ -273,15 +273,15 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", ncol(data[[1]]))
   }
-  groups_names <- as.character(unique(groups))
+  groups <- as.character(unique(groups))
   
   # Set views names
   if (is.null(names(data))) {
-    default_views_names <- paste0("view_", seq_len(length(data)))
-    message(paste0("View names are not specified in the data, using default: ", paste(default_views_names, collapse=", "), "\n"))
-    names(data) <- default_views_names
+    default_views <- paste0("view_", seq_len(length(data)))
+    message(paste0("View names are not specified in the data, using default: ", paste(default_views, collapse=", "), "\n"))
+    names(data) <- default_views
   }
-  views_names <- as.character(names(data))
+  views <- as.character(names(data))
   
   # Initialise MOFA object
   object <- new("MOFA")
@@ -290,9 +290,9 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data)
-  object@dimensions[["G"]] <- length(groups_names)
+  object@dimensions[["G"]] <- length(groups)
   object@dimensions[["D"]] <- sapply(data, function(m) nrow(m))
-  object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(groups == x))
+  object@dimensions[["N"]] <- sapply(groups, function(x) sum(groups == x))
   object@dimensions[["K"]] <- 0
   
   # Set features names
@@ -316,10 +316,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   }
   
   # Set view names
-  views_names(object) <- names(object@data)
+  views(object) <- names(object@data)
   
   # Set samples group names
-  groups_names(object) <- names(object@data[[1]])
+  groups(object) <- names(object@data[[1]])
   
   return(object)
 }
