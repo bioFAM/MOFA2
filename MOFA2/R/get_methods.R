@@ -185,8 +185,8 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 #' Default is \code{FALSE}.
 #' @param only_mean logical indicating whether to return only the point estimates for the imputation. 
 #' If FALSE, it also retrieves the variance (only if it has been previously calculated).
-#' @return By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
-#' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
+#' @details TO FINISH 
+#' @return TO FINISH 
 #' @export
 get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, 
                              add_intercept = TRUE, only_mean = TRUE) {
@@ -254,7 +254,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
     mean <- do.call(rbind, do.call(rbind, mean))
     
     if (only_mean) {
-      mean$estimate <- "mean"
       imputed_data <- mean
     } else {
       variance <- lapply(views, function(m) { 
@@ -266,6 +265,7 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
         })
       })
       variance <- do.call(rbind, do.call(rbind, variance))
+      mean$estimate <- "mean"
       variance$estimate <- "variance"
       imputed_data <- rbind(mean,variance)
     }
@@ -273,7 +273,13 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
     imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.character)
     
   } else {
-    imputed_data <- list("mean"=mean, "variance"=variance)
+    
+    if (only_mean) {
+      imputed_data <- mean
+    } else {
+      imputed_data <- list("mean"=mean, "variance"=variance)
+    }
+    
   }
   
   return(imputed_data)
