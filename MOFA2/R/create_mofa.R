@@ -48,16 +48,16 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # Create sample metadata
   tmp <- data.frame(
-    sample_name = unname(unlist(lapply(object@data[[1]], colnames))),
-    group_name = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups(object)[[x]], object@dimensions$N[[x]]) )),
+    sample = unname(unlist(lapply(object@data[[1]], colnames))),
+    group = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups(object)[[x]], object@dimensions$N[[x]]) )),
     stringsAsFactors = FALSE
   )
   samples_metadata(object) <- tmp
 
   # Create features metadata
   tmp <- data.frame(
-    feature_name = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
-    view_name = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views(object)[[x]], object@dimensions$D[[x]]) )),
+    feature = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
+    view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )
   features_metadata(object) <- tmp
