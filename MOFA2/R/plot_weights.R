@@ -384,7 +384,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
 #' @description Plot top weights for a given factor and view.
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param view a string with the view name, or an integer with the index of the view.
-#' @param factors a string with the factor name, or an integer with the index of the factor.
+#' @param factors a character string with factors names, or an integer vector with factors indices.
 #' @param nfeatures number of top features to display.
 #' Default is 10
 #' @param abs logical indicating whether to use the absolute value of the weights (Default is FALSE).
@@ -397,17 +397,23 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
 #' @import ggplot2
 #' @return Returns a \code{ggplot2} object
 #' @export
-plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, scale = TRUE, sign = "all") {
+plot_top_weights <- function(object, view = 1, factors = c(1,2),
+                             nfeatures = 10, abs = TRUE, scale = TRUE, sign = "all") {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   if (is.numeric(view)) view <- views(object)[view]
   stopifnot(view %in% views(object))
-  # if(!is.null(manual_features)) { stopifnot(is(manual_features,"list")); stopifnot(all(Reduce(intersect,manual_features) %in% features(object)[[view]]))  }
+  
+  # Get views
+  view <- .check_and_get_views(object, view)
+  
+  # Get factor names
+  factors <- .check_and_get_factors(object, factors)
   
   # Collect expectations  
-  W <- get_weights(object, factors=factor, views=view, as.data.frame=TRUE)
+  W <- get_weights(object, factors = factors, views = view, as.data.frame=TRUE)
 
   # Scale values by loading with highest (absolute) value
   if(scale) W$value <- W$value/max(abs(W$value))
@@ -431,13 +437,29 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
   
   # Sort according to loadings
   W <- W[with(W, order(-value, decreasing = TRUE)), ]
-  W$feature <- factor(W$feature, levels=W$feature)
+
+
+  # Make features names unique
+  W$feature_id <- W$feature
+  if ((length(unique(W$view)) > 1) && (nfeatures > 0) && (any(duplicated(W[W$factor == factors[1],]$feature_id)))) {
+    message("Duplicated feature names across views, we will add the view name as a prefix")
+    W$feature_id <- paste(W$view, W$feature, sep="_")
+  }
+  
+
+  # In order to re-order features across multiple factors, 
+  # make them unique for different factors
+  W$feature_id <- paste(W$feature_id, W$factor, sep="_")
+  W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
   
   p <- ggplot(W, aes_string(x="feature", y="value")) +
     geom_point(size=2) +
     geom_segment(aes_string(xend="feature"), size=0.75, yend=0) +
     scale_colour_gradient(low="grey", high="black") +
     coord_flip() +
+
+    # Theme
+    theme_bw() +
     theme(
       axis.title.x = element_text(color='black'),
       axis.title.y = element_blank(),
@@ -449,19 +471,27 @@ plot_top_weights <- function(object, view, factor, nfeatures = 10, abs = TRUE, s
       legend.title = element_blank(),
       legend.text = element_text(color="black"),
       legend.key = element_rect(fill='transparent'),
-      panel.background = element_blank()
-    )
+      
+      # facets
+      strip.text = element_text(size=rel(1.2)),
+      panel.background = element_blank(),
+      panel.spacing = unit(1,"lines"),
+
+      # gridlines
+      panel.grid.major.y = element_blank(),
+    ) +
+    facet_wrap(~factor, nrow=1, scales="free")
   
   if (sign=="negative") p <- p + scale_x_discrete(position = "top")
 
   # If absolute values are used, add the corresponding signs to the plot
-  if (abs) p <- p +  ylim(0,max(W$value)+0.1) + geom_text(label=W$sign,y=max(W$value)+0.1, size=10)
+  if (abs) p <- p + ylim(0,max(W$value)+0.1) + geom_text(label=W$sign,y=max(W$value)+0.1, size=10)
 
   # if(abs & scale) p <-  p + ylab(paste("(Absolute) loading on Factor", factor))  
   # else if(abs & !scale) p <- p + ylab(paste("(Absolute) loading on Factor", factor))
   # else if(!abs & scale) p <- p + ylab(paste("Loading on Factor", factor))
   # else p <- p + ylab(paste("Loading on Factor", factor))
-  p <- p + ylab(paste("Loading on Factor", factor))
+  p <- p + ylab(paste("Loading on a factor"))
   
   return(p)
   
