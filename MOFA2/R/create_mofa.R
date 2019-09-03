@@ -273,7 +273,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", ncol(data[[1]]))
   }
-  groups <- as.character(unique(groups))
+  groups_names <- as.character(unique(groups))
   
   # Set views names
   if (is.null(names(data))) {
@@ -281,7 +281,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     message(paste0("View names are not specified in the data, using default: ", paste(default_views, collapse=", "), "\n"))
     names(data) <- default_views
   }
-  views <- as.character(names(data))
+  views_names <- as.character(names(data))
   
   # Initialise MOFA object
   object <- new("MOFA")
@@ -290,9 +290,9 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data)
-  object@dimensions[["G"]] <- length(groups)
-  object@dimensions[["D"]] <- sapply(data, function(m) nrow(m))
-  object@dimensions[["N"]] <- sapply(groups, function(x) sum(groups == x))
+  object@dimensions[["G"]] <- length(groups_names)
+  object@dimensions[["D"]] <- sapply(data, nrow)
+  object@dimensions[["N"]] <- sapply(groups_names, function(x) sum(groups == x))
   object@dimensions[["K"]] <- 0
   
   # Set features names
@@ -316,10 +316,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   }
   
   # Set view names
-  views(object) <- names(object@data)
+  views(object) <- views_names
   
   # Set samples group names
-  groups(object) <- names(object@data[[1]])
+  groups(object) <- groups_names
   
   return(object)
 }
