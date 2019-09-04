@@ -32,7 +32,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   }
   
   # Get groups and data set names from the hdf5 file object
-  foo <- h5ls(file, datasetinfo = F)
+  foo <- h5ls(file, datasetinfo = FALSE)
 
   ########################
   ## Load training data ##
@@ -138,7 +138,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if ("Tau" %in% node_names)
     expectations[["Tau"]] <- h5read(file, "expectations/Tau") # TO-DO: DELAYEDARRAY
   
-  tmp <- as.list(h5read(file, 'model_options', read.attributes=T))[["likelihoods"]]
+  tmp <- as.list(h5read(file, 'model_options', read.attributes = TRUE))[["likelihoods"]]
   names(tmp) <- names(data)
   
   # Load expectations of Y
@@ -214,7 +214,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ########################
 
   tryCatch( {
-    object@model_options <- as.list(h5read(file, 'model_options', read.attributes=T))
+    object@model_options <- as.list(h5read(file, 'model_options', read.attributes = TRUE))
   }, error = function(x) { print("Model options not found, not loading it...") })
 
   # Convert True/False strings to logical values
@@ -238,13 +238,13 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # Load training options
   if (length(object@training_options) == 0) {
     tryCatch( {
-      object@training_options <- as.list(h5read(file, 'training_opts', read.attributes=T))
+      object@training_options <- as.list(h5read(file, 'training_opts', read.attributes = TRUE))
     }, error = function(x) { print("Training opts not found, not loading it...") })
   }
 
   # Load training statistics
   tryCatch( {
-    object@training_stats <- h5read(file, 'training_stats', read.attributes=T)
+    object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
   }, error = function(x) { print("Training stats not found, not loading it...") })
 
   ###################
@@ -254,8 +254,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # Order factors in order of variance explained
   if (sort_factors) {
     object@cache[["variance_explained"]] <- calculate_variance_explained(object)
-    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e,na.rm=T)))
-    order_factors <- c(names(r2)[order(r2, decreasing = T)])
+    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
+    order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
     object <- subset_factors(object, order_factors)
   }
 

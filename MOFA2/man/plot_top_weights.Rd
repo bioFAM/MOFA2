@@ -4,13 +4,15 @@
 \alias{plot_top_weights}
 \title{Plot top weights}
 \usage{
-plot_top_weights(object, view, factor, nfeatures = 10, abs = TRUE,
-  scale = TRUE, sign = "all")
+plot_top_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
+  abs = TRUE, scale = TRUE, sign = "all")
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
 \item{view}{a string with the view name, or an integer with the index of the view.}
+
+\item{factors}{a character string with factors names, or an integer vector with factors indices.}
 
 \item{nfeatures}{number of top features to display.
 Default is 10}
@@ -20,8 +22,6 @@ Default is 10}
 \item{scale}{logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.}
 
 \item{sign}{can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.}
-
-\item{factors}{a string with the factor name, or an integer with the index of the factor.}
 }
 \value{
 Returns a \code{ggplot2} object

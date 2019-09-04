@@ -28,6 +28,7 @@
   nested_list
 }
 
+#' @importFrom stats sd
 .detect_outliers <- function(object, groups = "all", factors = "all") {
   
   # Sanity checks

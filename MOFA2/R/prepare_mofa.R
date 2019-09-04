@@ -255,7 +255,7 @@ get_default_model_options <- function(object) {
 
 
 
-
+#' @importFrom stats lm
 .regress_covariates <- function(object, covariates, min_observations = 10) {
 
   # First round of sanity checks
@@ -267,7 +267,7 @@ get_default_model_options <- function(object) {
   # Fetch data
   views <- names(covariates)
   groups <- names(covariates[[1]])
-  Y <- sapply(object@data[views], function(x) x[groups], simplify=F, USE.NAMES=T)
+  Y <- sapply(object@data[views], function(x) x[groups], simplify = FALSE, USE.NAMES = TRUE)
   # Y <- get_data(object, views=views, groups=groups)
   
   # Second round of sanity checks

@@ -5,17 +5,17 @@
 #' @param verbose logical indicating whether to generate a verbose output.
 #' @export
 #'
-qualityControl <- function(object, verbose = F) {
+qualityControl <- function(object, verbose = FALSE) {
   
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   # Check views names
-  if (verbose==T) message("Checking views names...")
+  if (verbose == TRUE) message("Checking views names...")
   stopifnot(!is.null(views(object)))
   stopifnot(!duplicated(views(object)))
   
   # Check groups names
-  if (verbose==T) message("Checking groups names...")
+  if (verbose == TRUE) message("Checking groups names...")
   stopifnot(!is.null(groups(object)))
   stopifnot(!duplicated(groups(object)))
   
@@ -34,7 +34,7 @@ qualityControl <- function(object, verbose = F) {
     }
 
     # Check that there are no features with zero variance
-    # if (verbose==T) message("Checking there are no features with zero variance...")
+    # if (verbose == TRUE) message("Checking there are no features with zero variance...")
     # for (i in views(object)) {
     #   for (j in groups(object)) {
     #   if (!all(apply(object@data[[i]][[j]],1,var,na.rm=T) > 0, na.rm=T)) {
@@ -43,7 +43,7 @@ qualityControl <- function(object, verbose = F) {
     # }
     
     # Check that there are no features with complete missing values
-    # if (verbose==T) message("Checking there are no features with complete missing values...")
+    # if (verbose == TRUE) message("Checking there are no features with complete missing values...")
     # for (i in views(object)) {
     #   for (j in groups(object)) {
     #   if (!all(apply(object@data[[i]][[j]],1, function(x) mean(is.na(x)))<1, na.rm=T)) {
@@ -66,24 +66,24 @@ qualityControl <- function(object, verbose = F) {
     }
     
     # Check samples names
-    if (verbose==T) message("Checking samples names...")
+    if (verbose == TRUE) message("Checking samples names...")
     stopifnot(!is.null(samples(object)))
     stopifnot(!duplicated(unlist(samples(object))))
     
     # Check features names
-    if (verbose==T) message("Checking features names...")
+    if (verbose == TRUE) message("Checking features names...")
     stopifnot(!is.null(features(object)))
     stopifnot(!duplicated(unlist(features(object))))
     
     # Check expectations
     # stopifnot(identical(sort(c("W","Z","Theta","Tau","AlphaW","Y")), sort(names(object@Expectations))))
     stopifnot(all(c("W","Z") %in% names(object@expectations)))
-    if (verbose==T) message("Checking expectations...")
+    if (verbose == TRUE) message("Checking expectations...")
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
 
     # Check that the likelihoods match the data distribution
-    # if (verbose==T) message("Checking likelihooods...")
+    # if (verbose == TRUE) message("Checking likelihooods...")
     # predicted_lik <- .inferLikelihoods(object)
     # for (view in viewNames(object)) {
     #   lk <- object@ModelOptions$likelihood[view]

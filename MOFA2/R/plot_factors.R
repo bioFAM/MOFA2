@@ -51,6 +51,7 @@
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} 
 #' @import ggplot2 grDevices RColorBrewer
+#' @importFrom stats complete.cases
 #' @importFrom forcats fct_explicit_na
 #' @importFrom RColorBrewer brewer.pal
 #' @export
@@ -231,8 +232,10 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2 dplyr
+#' @importFrom stats complete.cases
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
+#' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 plot_factors <- function(object, factors = c(1, 2), groups = "all",
                          show_missing = TRUE, scale = FALSE,
@@ -339,6 +342,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 
   
 # Plot multiple factors as pairwise scatterplots
+#' @importFrom stats complete.cases
 .plot_multiple_factors <- function(object, factors = "all", show_missing = TRUE, dot_size = 1,
                                    color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
   

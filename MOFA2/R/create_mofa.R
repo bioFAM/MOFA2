@@ -262,7 +262,7 @@ create_mofa <- function(data, groups = NULL, ...) {
       rownames(aug_x) <- rownames(x)
       colnames(aug_x) <- samples
       return(aug_x)
-    }, USE.NAMES = T, simplify = F)
+    }, USE.NAMES = TRUE, simplify = FALSE)
   }
 
   # Set groups names

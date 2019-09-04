@@ -4,7 +4,7 @@
 \alias{qualityControl}
 \title{qualityControl}
 \usage{
-qualityControl(object, verbose = F)
+qualityControl(object, verbose = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

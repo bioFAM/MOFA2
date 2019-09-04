@@ -25,7 +25,7 @@
 #' pval and pval.adj contain matrices with p-values and adjusted p-values, repectively. 
 #' sigPathways contains a list with significant pathwayd at FDR alpha per factor.
 #' @import foreach doParallel
-#' @importFrom stats p.adjust
+#' @importFrom stats p.adjust var p.adjust.methods
 #' @export
 
 run_enrichment <- function(object, view, feature.sets, factors = "all",
@@ -529,7 +529,7 @@ plotEnrichmentDetailed <- function(object, factor, feature.sets, enrichment.resu
 }
 
 # Compute enrichment via t-test
-#' @importFrom stats pt
+#' @importFrom stats pt var
 .pcgseViaTTest = function(data, prcomp.output, pc.indexes,
                           feature.set.indexes, feature.statistics, cor.adjustment) {
   

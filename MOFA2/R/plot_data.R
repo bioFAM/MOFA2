@@ -24,6 +24,7 @@
 #' This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
 #' @importFrom pheatmap pheatmap
+#' @importFrom utils tail
 #' @export
 plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE, ...) {
   
@@ -38,7 +39,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
   view <- .check_and_get_views(object, view)
   
   # Get weights
-  W <- do.call(rbind, get_weights(object, views=view, factors=factor, as.data.frame = F))
+  W <- do.call(rbind, get_weights(object, views=view, factors=factor, as.data.frame = FALSE))
   
   # NOTE: By default concatenate all the groups
   Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
@@ -141,6 +142,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @import ggplot2
 #' @importFrom ggpubr stat_cor
 #' @importFrom dplyr left_join
+#' @importFrom utils tail
 #' @export
 plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="all",
                               color_by=NULL, color_name="", color_legend = TRUE,
@@ -210,7 +212,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   df1 <- merge(df1, shape_by, by="sample")
   
   # Create data frame 
-  # df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = F)
+  # df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = FALSE)
   df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = TRUE)
   df <- left_join(df1, df2, by = "sample")
   
@@ -488,7 +490,7 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
     df = data.frame(
       sample = unlist(samples(object)),
       color_by = color_by,
-      stringsAsFactors = F
+      stringsAsFactors = FALSE
     )
   }
   if (length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)

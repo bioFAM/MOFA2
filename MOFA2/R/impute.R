@@ -45,7 +45,7 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
   for (m in views) {
     for (g in groups) {
       imputed[[m]][[g]] <- list("mean" = imputed[[m]][[g]])
-      non_observed <- which(is.na(imputed[[m]][[g]]), arr.ind = T)
+      non_observed <- which(is.na(imputed[[m]][[g]]), arr.ind = TRUE)
       imputed[[m]][[g]]$mean[non_observed] <- pred[[m]][[g]][non_observed]
       imputed[[m]][[g]]$variance <- list() # empty variance
     }
