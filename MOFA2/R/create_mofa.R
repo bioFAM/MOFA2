@@ -160,18 +160,16 @@ create_mofa <- function(data, groups = NULL, ...) {
   # If features to subset are provided,
   # make sure they are a list with respective views (assays) names.
   # A vector is accepted if there's one assay to be used
-  if (!is.null(features)) {
-    if (is(features, "list")) {
-      if (!all(names(features) %in% assays)) {
+  if (is(features, "list")) {
+    if (!is.null(features) && !all(names(features) %in% assays)) {
         stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
-      }
-    } else {
-      if (length(assays) > 1)
-         stop("When using multiple assays, subset features with a list with corresponding views (assays) names")
-      # Make a list out of a vector
-      features <- list(features)
-      names(features) <- assays
     }
+  } else {
+    if (!is.null(features) && (length(assays) > 1))
+       stop("When using multiple assays, subset features with a list with corresponding views (assays) names")
+    # Make a list out of a vector
+    features <- list(features)
+    names(features) <- assays
   }
 
   # If no groups provided, treat all samples as coming from one group
@@ -179,7 +177,6 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", dim(srt)[2])
   }
-
   data_matrices <- lapply(assays, function(assay) 
     .split_seurat_into_groups(srt, groups = groups, assay = assay, slot = slot, features = features[[assay]]))
   names(data_matrices) <- tolower(assays)
@@ -204,12 +201,12 @@ create_mofa <- function(data, groups = NULL, ...) {
 
 
 .split_data_into_groups <- function(data, groups) {
-  groups <- unique(groups)
+  groups_names <- unique(groups)
   tmp <- lapply(data, function(x) {
-    tmp_view <- lapply(groups, function(p) {
+    tmp_view <- lapply(groups_names, function(p) {
       x[,groups == p]
     })
-    names(tmp_view) <- groups
+    names(tmp_view) <- groups_names
     tmp_view
   })
   names(tmp) <- names(data)
@@ -220,11 +217,11 @@ create_mofa <- function(data, groups = NULL, ...) {
 .split_seurat_into_groups <- function(srt, groups, assay = "RNA", slot = "data", features = NULL) {
   # If no feature selection is provided, all features are used
   if (is.null(features))
-    features <- seq_len(dim(GetAssay(object = srt, slot = slot, assay = assay))[1])
+    features <- seq_len(dim(GetAssay(object = srt, assay = assay))[1])
 
   # Fetch assay data for every group of samples
-  groups <- unique(groups)
-  tmp <- lapply(groups, function(g) {
+  groups_names <- unique(groups)
+  tmp <- lapply(groups_names, function(g) {
     # If group name is NA, it has to be treated separately
     # due to the way R handles NAs and equal signs
     if (is.na(g)) {
@@ -233,7 +230,7 @@ create_mofa <- function(data, groups = NULL, ...) {
       GetAssayData(object = srt, assay = assay, slot = slot)[,which(groups == g)][features,]
     }
   })
-  names(tmp) <- groups
+  names(tmp) <- groups_names
   tmp
 }
 
