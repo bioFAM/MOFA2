@@ -100,7 +100,7 @@ setGeneric("views<-", function(object, value) { standardGeneric("views<-") })
 ## group Names ##
 ################
 
-#' @title groups: set and retrieve view names
+#' @title groups: set and retrieve group names
 #' @name groups
 #' @rdname groups
 #' @export

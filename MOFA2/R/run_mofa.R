@@ -2,7 +2,7 @@
 ## Functions to train a MOFA model ##
 #######################################
 
-#' @title train a MOFA model
+#' @title Train a MOFA model
 #' @name run_mofa
 #' @description Function to train an untrained \code{\link{MOFA}} object.
 #' @details In this step the R package is calling the \code{mofapy2} Python package, where the the training is performed. \cr

@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_methods.R
 \name{get_data}
 \alias{get_data}
-\title{get_data}
+\title{Get data}
 \usage{
 get_data(object, views = "all", groups = "all", features = "all",
   as.data.frame = FALSE, add_intercept = TRUE)

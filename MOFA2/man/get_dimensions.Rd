@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_methods.R
 \name{get_dimensions}
 \alias{get_dimensions}
-\title{get_dimensions}
+\title{Get dimensions}
 \usage{
 get_dimensions(object)
 }

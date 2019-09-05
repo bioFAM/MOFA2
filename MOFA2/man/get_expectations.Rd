@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_methods.R
 \name{get_expectations}
 \alias{get_expectations}
-\title{get_expectations}
+\title{Get expectations}
 \usage{
 get_expectations(object, variable, as.data.frame = FALSE)
 }

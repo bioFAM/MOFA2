@@ -2,7 +2,7 @@
 % Please edit documentation in R/QC.R
 \name{qualityControl}
 \alias{qualityControl}
-\title{qualityControl}
+\title{Quality control}
 \usage{
 qualityControl(object, verbose = FALSE)
 }

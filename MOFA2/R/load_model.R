@@ -3,7 +3,7 @@
 ## Functions to load a trained MOFA ##
 ############################################
 
-#' @title loading a trained MOFA
+#' @title Load a trained MOFA
 #' @name load_model
 #' @description Method to load a trained MOFA \cr
 #' The training of mofa is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.

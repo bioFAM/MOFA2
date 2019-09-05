@@ -3,7 +3,7 @@
 ## Functions to prepare a MOFA object for training ##
 #######################################################
 
-#' @title prepare a MOFA for training
+#' @title Prepare a MOFA for training
 #' @name prepare_mofa
 #' @description Function to prepare a \code{\link{MOFA}} object for training. 
 #' It requires defining data, model and training options.

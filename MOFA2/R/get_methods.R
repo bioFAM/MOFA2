@@ -3,7 +3,7 @@
 ## Get functions to fetch data from the model ##
 ################################################
 
-#' @title get_dimensions
+#' @title Get dimensions
 #' @name get_dimensions
 #' @description Extract dimensionalities from the model. 
 #' @details K indicates the number of factors, D indicates the number of features, 
@@ -15,7 +15,7 @@ get_dimensions <- function(object) {
   return(object@dimensions)
 }
 
-#' @title get_elbo
+#' @title Get ELBO
 #' @name get_elbo
 #' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
 #' @details This can be useful for model selection.
@@ -26,7 +26,7 @@ get_elbo <- function(object) {
   return(max(object@training_stats$elbo, na.rm=TRUE))
 }
 
-#' @title get_factors
+#' @title Get fractors
 #' @name get_factors
 #' @description Extract the latent factors from the model.
 #' @param object a trained \code{\link{MOFA}} object.
@@ -62,7 +62,7 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
 }
 
 
-#' @title get_weights
+#' @title Get weights
 #' @name get_weights
 #' @description Extract the weights from the model.
 #' @param object a trained \code{\link{MOFA}} object.
@@ -98,7 +98,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
 }
 
 
-#' @title get_data
+#' @title Get data
 #' @name get_data
 #' @description Fetch the input data
 #' @param object a \code{\link{MOFA}} object.
@@ -171,7 +171,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 }
 
 
-#' @title get_imputed_data
+#' @title Get imputed data
 #' @name get_imputed_data
 #' @description Function to get the imputed data. It requires the previous use of the \code{\link{impute}} method.
 #' @param object a trained \code{\link{MOFA}} object.
@@ -251,7 +251,7 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
 
 
 
-#' @title get_expectations
+#' @title Get expectations
 #' @name get_expectations
 #' @description Function to extract the expectations from the (variational) posterior distributions of a trained \code{\link{MOFA}} object.
 #' @param object a trained \code{\link{MOFA}} object.

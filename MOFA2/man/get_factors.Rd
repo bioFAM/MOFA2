@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_methods.R
 \name{get_factors}
 \alias{get_factors}
-\title{get_factors}
+\title{Get fractors}
 \usage{
 get_factors(object, groups = "all", factors = "all",
   as.data.frame = FALSE)

@@ -3,7 +3,7 @@
 ## Functions to cluster samples based on latent factors ##
 ##########################################################
 
-#' @title cluster_samples: K-means clustering on samples based on latent factors
+#' @title K-means clustering on samples based on latent factors
 #' @name cluster_samples
 #' @description MOFA factors are continuous in nature but they can be used to predict discrete clusters of samples. \cr
 #' The clustering can be performed in a single factor, which is equivalent to setting a manual threshold.

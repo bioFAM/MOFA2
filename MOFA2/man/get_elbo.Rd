@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_methods.R
 \name{get_elbo}
 \alias{get_elbo}
-\title{get_elbo}
+\title{Get ELBO}
 \usage{
 get_elbo(object)
 }

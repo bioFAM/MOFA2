@@ -2,7 +2,7 @@
 % Please edit documentation in R/load_model.R
 \name{load_model}
 \alias{load_model}
-\title{loading a trained MOFA}
+\title{Load a trained MOFA}
 \usage{
 load_model(file, sort_factors = TRUE, on_disk = FALSE,
   load_data = TRUE, load_imputed_data = FALSE,

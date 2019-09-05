@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_methods.R
 \name{get_imputed_data}
 \alias{get_imputed_data}
-\title{get_imputed_data}
+\title{Get imputed data}
 \usage{
 get_imputed_data(object, views = "all", groups = "all",
   features = "all", as.data.frame = FALSE, add_intercept = TRUE)

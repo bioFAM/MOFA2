@@ -2,7 +2,7 @@
 % Please edit documentation in R/cluster_samples.R
 \name{cluster_samples}
 \alias{cluster_samples}
-\title{cluster_samples: K-means clustering on samples based on latent factors}
+\title{K-means clustering on samples based on latent factors}
 \usage{
 cluster_samples(object, k, factors = "all", ...)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_mofa.R
 \name{run_mofa}
 \alias{run_mofa}
-\title{train a MOFA model}
+\title{Train a MOFA model}
 \usage{
 run_mofa(object, outfile = NA)
 }

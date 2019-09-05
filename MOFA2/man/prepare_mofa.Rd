@@ -2,7 +2,7 @@
 % Please edit documentation in R/prepare_mofa.R
 \name{prepare_mofa}
 \alias{prepare_mofa}
-\title{prepare a MOFA for training}
+\title{Prepare a MOFA for training}
 \usage{
 prepare_mofa(object, data_options = NULL, model_options = NULL,
   training_options = NULL, stochastic_options = NULL,

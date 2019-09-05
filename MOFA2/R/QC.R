@@ -1,4 +1,4 @@
-#' @title qualityControl
+#' @title Quality control
 #' @name qualityControl
 #' @description Function to do quality control on a \code{\link{MOFA}} object. \cr
 #' @param object a trained \code{\link{MOFA}} object.

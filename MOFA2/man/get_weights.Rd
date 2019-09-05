@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_methods.R
 \name{get_weights}
 \alias{get_weights}
-\title{get_weights}
+\title{Get weights}
 \usage{
 get_weights(object, views = "all", factors = "all",
   as.data.frame = FALSE)
