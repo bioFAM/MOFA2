@@ -353,9 +353,10 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
 #' @description A Fancy printing method
 #' @param object a \code{\link{MOFA}} object
 #' @param header a logical value specifying whether to show the MOFA header.
+#' @param nonzero a logical value specifying whether to calculate the fraction of non-zero values (non-NA values by default)
 #' @details This function is helpful to get an overview of the structure of the data as a text output
 #' @export
-plot_ascii_data <- function(object, header = FALSE) {
+plot_ascii_data <- function(object, header = FALSE, nonzero = FALSE) {
   stopifnot(is(object, "MOFA"))
 
   if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
@@ -377,7 +378,7 @@ plot_ascii_data <- function(object, header = FALSE) {
   if (header) {
     cat("
          \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   \U2588\U2588︎\U2588︎\U2588︎\U2588︎
-mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎
+mofa     \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎
          \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   
     ")
   }
@@ -387,8 +388,9 @@ mofa   \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U
   vis_lines      <- c(vis_lines, groups_line, nsamples_line) 
 
   # Calculate percentage of missing values in every view and every group
-  content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))
-  if (length(content_pct) == 0) {
+  if (isTRUE(nonzero)) {
+    content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(group == 0)))
+  } else {
     content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))
   }
   content_pct <- lapply(seq_len(length(content_pct)), function(m) {

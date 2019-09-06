@@ -24,7 +24,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   # Collect relevant expectations
   W <- get_weights(object, views=views, factors=factors)
   Z <- get_factors(object, groups=groups, factors=factors)
-  Y <- get_expectations(object,"Y")[views]
+  Y <- lapply(get_expectations(object,"Y")[views], function(view) view[groups])
   Y <- lapply(Y, function(x) lapply(x,t))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
