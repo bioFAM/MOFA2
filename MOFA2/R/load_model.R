@@ -41,8 +41,10 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # Load identity of features and samples
   feature_names <- h5read(file, "features")
   sample_names  <- h5read(file, "samples")
-  view_names <- foo[foo$group=="/data","name"]
-  group_names <- foo[foo$group==paste0("/data/",view_names[1]),"name"]
+  # view_names <- foo[foo$group=="/data","name"]
+  view_names <- names(feature_names)
+  # group_names <- foo[foo$group==paste0("/data/",view_names[1]),"name"]
+  group_names <- names(sample_names)
 
   # Load training data (as nested list of matrices)
   data <- list()
@@ -59,7 +61,6 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
           # as matrices
           data[[m]][[g]] <- h5read(file, sprintf("data/%s/%s", m, g) )
           tryCatch(intercepts[[m]][[g]] <- as.numeric( h5read(file, sprintf("intercepts/%s/%s", m, g) ) ), error = function(e) { NULL })
-          
         }
         # Replace NaN by NA
         data[[m]][[g]][is.nan(data[[m]][[g]])] <- NA # this realised into memory, TO FIX

@@ -604,7 +604,6 @@ class entry_point(object):
             Ztmp[(z_score>zscore_cutoff) & (np.absolute(Z[idx,:])>value_cutoff)] = np.nan
             Z[idx,:] = Ztmp
 
-
     def impute(self, uncertainty=True):
         """impute missing values with or without uncertainty estimates"""
 
@@ -635,7 +634,6 @@ class entry_point(object):
             self.imputed_data["variance"][m][~mask] = np.nan
 
         self.imputed = True # change flag
-
 
     def save(self, outfile):
         """ Save the model in an hdf5 file """
