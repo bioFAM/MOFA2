@@ -46,7 +46,10 @@ class entry_point(object):
               The dimensions of each matrix must be (samples,features)
         """
 
-        # Sanity check
+        # Sanity chech
+
+        print(type(data))
+
         if not isinstance(data, list):
             if isinstance(data, dict):
                 data = list(data.values())
@@ -71,6 +74,7 @@ class entry_point(object):
         M = self.dimensionalities["M"] = len(data)
         G = self.dimensionalities["G"] = len(data[0])
         N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
+        # import pdb; pdb.set_trace()
         D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
 
         # Define views names

@@ -43,25 +43,8 @@ class saveModel():
         self.features_names = features_names
         self.groups_names = groups_names
 
-        self.sort()
-
-    def sort(self):
-        """ Method to sort views and groups alphabetically (for h5py compatibility) """
-
-        self.views_idx = np.argsort(self.views_names)
-        # for i in view
-        # self.views_names = self.views_names[views_idx]
-        # self.features_names = self.features_names[views_idx]
-
-        self.groups_idx = np.argsort(self.groups_names)
-        # self.groups_names = self.groups_names[groups_idx]
-        # self.samples_names = self.samples_names[groups_idx]
-
-        # self.data = self.data[views_idx]
-        # self.intercepts = self.intercepts[views_idx]
-        # self.mask = self.mask[views_idx]
-
-        # import pdb; pdb.set_trace()
+        # To keep same order of views and groups in the hdf5 file
+        h5py.get_config().track_order = True
 
     def saveData(self):
         """ Method to save the training data"""
@@ -73,27 +56,23 @@ class saveModel():
         samples_grp  = self.hdf5.create_group("samples")
 
         # Save samples names
-        # for g in range(len(self.groups_names)):
-        for g in self.groups_idx:
+        for g in range(len(self.groups_names)):
             # samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
             # samples_names = [s for s in [self.samples_names[e] for e in samples_idx]]
             # samples_grp.create_dataset(self.groups_names[g], data=[str(s).encode('utf8') for s in [self.samples_names[g] for e in samples_idx]])
             samples_grp.create_dataset(self.groups_names[g], data=np.array(self.samples_names[g], dtype='S50'))
 
         # Save feature names
-        # for m in range(len(self.data)):
-        for m in self.views_idx:
+        for m in range(len(self.data)):
             # features_grp.create_dataset(self.views_names[m], data=[str(x).encode('utf8') for x in self.features_names[m]])
             features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
 
 
         # Save data
-        # for m in range(len(self.data)):
-        for m in self.views_idx:
+        for m in range(len(self.data)):
             data_subgrp = data_grp.create_group(self.views_names[m])
             intercept_subgrp = intercept_grp.create_group(self.views_names[m])
-            # for g in range(len(self.groups_names)):
-            for g in self.groups_idx:
+            for g in range(len(self.groups_names)):
 
                 # Subset group
                 samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]

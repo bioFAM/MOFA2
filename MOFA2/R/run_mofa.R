@@ -45,7 +45,8 @@ run_mofa <- function(object, outfile = NA) {
   
   # Set the data
   mofa_entrypoint$set_data_matrix(
-    data = unname(lapply(object@data, function(x) lapply(x, function(y) r_to_py(t(y)) ))),
+    # data = unname(lapply(object@data, function(x) lapply(x, function(y) r_to_py(t(y)) ))),
+    data = r_to_py( unname(lapply(object@data, function(x) lapply(x, function(y) r_to_py(t(y)) ))) ),
     views_names = r_to_py(as.list(object@data_options$views)),
     groups_names = r_to_py(as.list(object@data_options$groups)),
     samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
