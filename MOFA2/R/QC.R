@@ -1,11 +1,11 @@
 #' @title Quality control
-#' @name qualityControl
+#' @name quality_control
 #' @description Function to do quality control on a \code{\link{MOFA}} object. \cr
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param verbose logical indicating whether to generate a verbose output.
 #' @export
 #'
-qualityControl <- function(object, verbose = FALSE) {
+quality_control <- function(object, verbose = FALSE) {
   
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   

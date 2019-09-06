@@ -4,7 +4,7 @@
 \alias{plot_data_overview}
 \title{Overview of the input data}
 \usage{
-plot_data_overview(object, colors = NULL)
+plot_data_overview(object, colors = NULL, show_dimensions = TRUE)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
