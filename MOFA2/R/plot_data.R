@@ -273,7 +273,7 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
 #' @importFrom reshape2 melt
 #' @importFrom dplyr mutate
 #' @export
-plot_data_overview <- function(object, colors = NULL) {
+plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -318,12 +318,14 @@ plot_data_overview <- function(object, colors = NULL) {
   
   # Add number of samples and features per view/group
   molten_ovw$combi  <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
-  molten_ovw$ntotal <- paste("N=", sapply(data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
-  molten_ovw$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
+  if (show_dimensions) {
+    molten_ovw$ntotal <- paste("N=", sapply(data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
+    molten_ovw$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
+    molten_ovw <- mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
+  } else {
+    molten_ovw <- mutate(molten_ovw, view_label = view, group_label = group)
+  }
     
-  # Define y-axis label
-  molten_ovw <- mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
-  
   # Plot
   p <- ggplot(molten_ovw, aes_string(x="sample", y="view_label", fill="combi")) +
     geom_tile() +

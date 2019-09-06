@@ -132,11 +132,13 @@ def process_data(data, data_opts, samples_groups):
         var = parsed_data[m].std(axis=0)
         if np.any(var==0.):
             print("Warning: %d features(s) in view %d have zero variance, consider removing them before training the model..." % ((var==0.).sum(), m))
+            sys.stdout.flush()
 
         # Check that there are no features full of missing values
         tmp = np.isnan(parsed_data[m]).mean(axis=0)
         if np.any(tmp==1.):
             print("Error: %d features(s) in view %d are full of missing values, please remove them before training the model..." % ((tmp==0.).sum(), m))
+            sys.stdout.flush()
             exit()
 
 
