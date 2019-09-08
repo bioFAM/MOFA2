@@ -1,11 +1,11 @@
 #' @title Quality control
-#' @name qualityControl
+#' @name quality_control
 #' @description Function to do quality control on a \code{\link{MOFA}} object. \cr
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param verbose logical indicating whether to generate a verbose output.
 #' @export
 #'
-qualityControl <- function(object, verbose = FALSE) {
+quality_control <- function(object, verbose = FALSE) {
   
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
@@ -16,10 +16,15 @@ qualityControl <- function(object, verbose = FALSE) {
   
   # Check groups names
   if (verbose == TRUE) message("Checking groups names...")
+  if (any(grepl("/", groups(object)))) {
+    stop("Some of the groups names contain `/` symbol, which is not supported.
+  This can be fixed e.g. with:
+    groups(object) <- gsub(\"/\", \"-\", groups(object))")
+  } 
   stopifnot(!is.null(groups(object)))
   stopifnot(!duplicated(groups(object)))
   
-  if (object@Status == "untrained") {
+  if (object@status == "untrained") {
     
     # Check dimensionalities in the input data
     N <- object@dimensions$N
@@ -51,7 +56,7 @@ qualityControl <- function(object, verbose = FALSE) {
     #   }
     # }
     
-  } else if (object@Status == "trained") {
+  } else if (object@status == "trained") {
     
     # Check dimensionalities in the input data
     N <- object@dimensions$N
@@ -77,7 +82,7 @@ qualityControl <- function(object, verbose = FALSE) {
     
     # Check expectations
     # stopifnot(identical(sort(c("W","Z","Theta","Tau","AlphaW","Y")), sort(names(object@Expectations))))
-    stopifnot(all(c("W","Z") %in% names(object@expectations)))
+    stopifnot(all(c("W", "Z") %in% names(object@expectations)))
     if (verbose == TRUE) message("Checking expectations...")
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
@@ -92,5 +97,7 @@ qualityControl <- function(object, verbose = FALSE) {
     # }
     
   }
+
+  message("Everything seems to be right.")
 
 }
