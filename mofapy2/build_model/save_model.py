@@ -44,7 +44,7 @@ class saveModel():
         self.groups_names = groups_names
 
         # To keep same order of views and groups in the hdf5 file
-        h5py.get_config().track_order = True
+        # h5py.get_config().track_order = True
 
     def saveData(self):
         """ Method to save the training data"""
