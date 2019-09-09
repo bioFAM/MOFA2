@@ -277,7 +277,7 @@ plot_variance_explained_per_feature <- function(object, view, features, split_by
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
   # Fetch relevant features
-  features <- .check_and_get_features(object, features)
+  features <- .check_and_get_features_from_view(object, view = view, features)
 
   
   # Collect relevant expectations
