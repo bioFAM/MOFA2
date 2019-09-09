@@ -212,6 +212,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).
 #' @param dot_size numeric indicating the dot size.
 #' @param text_size numeric indicating the text size.
+#' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @import ggplot2 dplyr tidyr
 #' @importFrom magrittr %>%
@@ -220,7 +221,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
                          color_by = NULL, shape_by = NULL,
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
-                         dot_size = 1, text_size = 5, return_data = FALSE) {
+                         dot_size = 1, text_size = 5, legend = TRUE, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -261,13 +262,13 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (abs) W$value <- abs(W$value)
     
   # Define groups for labelling
-  W$group <- "0"
+  W$labelling_group <- "0"
   
   # Define group of features to color according to the loading
   if (nfeatures > 0) {
     for (f in factors) {
       features <- W[W$factor==f,] %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
-      W[(W$feature %in% features) & (W$factor==f),"group"] <- "1"
+      W[(W$feature %in% features) & (W$factor==f), "labelling_group"] <- "1"
     }
   }
   
@@ -279,7 +280,7 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
       stopifnot(length(color_manual)==length(manual)) 
     }
     for (m in seq_len(length(manual)))
-      W$group[W$feature %in% manual[[m]]] <- as.character(m+1)
+      W$labelling_group[W$feature %in% manual[[m]]] <- as.character(m+1)
   }
   
   # Make features names unique
@@ -291,17 +292,23 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   
   
   # Convert plotting group
-  W$tmp <- as.factor(W$group != "0")
+  W$labelling_indicator <- as.factor(W$labelling_group != "0")
 
   # Set color and shape
   if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
   if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
-  color_by <- .set_colorby_features(object, color_by, view)
-  shape_by <- .set_shapeby_features(object, shape_by, view)
+  obj_color_by <- .set_colorby_features(object, color_by, view)
+  obj_shape_by <- .set_shapeby_features(object, shape_by, view)
   
   # Merge factor values with group/color/shape information
-  W <- merge(W, color_by, by=c("feature","view"))
-  W <- merge(W, shape_by, by=c("feature","view"))
+  W <- merge(W, obj_color_by, by=c("feature", "view"))
+  W <- merge(W, obj_shape_by, by=c("feature", "view"))
+
+  # If no feature metadata to colour by is provided,
+  # highlight the labelled features
+  if (is.null(color_by)) {
+    W$color_by <- factor(as.character(as.integer(as.logical(W$labelling_indicator))), levels = c("1", "0"))
+  }
 
   # Sort by loading
   W <- by(W, list(W$factor), function(x) x[order(x$value),])
@@ -316,16 +323,16 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   if (return_data) return(W)
   
   # Generate plot
-  p <- ggplot(W, aes_string(x="value", y="feature_id", col="group")) +
+  p <- ggplot(W, aes_string(x = "value", y = "feature_id", col = "labelling_group")) +
     scale_y_discrete(expand = c(0.03,0.03)) +
-    geom_point(aes_string(size="tmp")) + 
+    geom_point(aes_string(color = "color_by", shape = "shape_by", size="labelling_indicator")) + 
     labs(x="Loading", y="Rank position", size=dot_size)
   
   # Add labels to the top features
   if (nfeatures>0) {
     p <- p + geom_text_repel(
       force = 10,
-      data = W[W$group!="0",], aes_string(label = "feature", col = "group"),
+      data = W[W$labelling_group != "0",], aes_string(label = "feature", col = "labelling_group"),
       size=text_size, segment.alpha=0.25, segment.color="black", segment.size=0.3, 
       box.padding = unit(0.5,"lines"), show.legend = FALSE)
   }
@@ -348,9 +355,19 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
   # Define dot size
   p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size = FALSE)
   
-  # Define dot colors
-  cols <- c("grey", "black", color_manual)
-  p <- p + scale_color_manual(values=cols) + guides(col = FALSE)
+  # Define dot colours and legend for colours
+  if (!is.null(color_by)) { 
+    p <- p + labs(color=color_name)
+  } else {
+    p <- p + guides(color=FALSE) + scale_color_manual(values=c("black", "grey", color_manual))
+  }
+  
+  # Add legend for shape
+  if (!is.null(shape_by)) { 
+    p <- p + labs(shape=shape_name)
+  } else { 
+    p <- p + guides(shape=FALSE) 
+  }
   
   # Facet if multiple factors
   if (length(unique(W$factor)) > 1) {
@@ -374,6 +391,17 @@ plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10,
       # gridlines
       panel.grid.major.y = element_blank(),
     )
+
+
+  # Configure the legend
+  if (legend) {
+    p <- p + theme(
+      legend.text = element_text(size=rel(1.2)),
+      legend.title = element_text(size=rel(1.2))
+    )
+  } else {
+      p <- p + theme(legend.position = "none")
+  }
   
   return(p)
 }
