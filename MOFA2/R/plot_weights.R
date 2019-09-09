@@ -446,11 +446,11 @@ plot_top_weights <- function(object, view = 1, factors = c(1,2),
   # Scale values by loading with highest (absolute) value
   if(scale) W$value <- W$value/max(abs(W$value))
 
-  # store sign
+  # Store sign
   W <- W[W$value!=0,]
   W$sign <- ifelse(W$value>0, "+", "-")
 
- # select subset of only positive or negative loadings
+  # Select subset of only positive or negative loadings
   if (sign=="positive") { W <- W[W$value>0,] } else if (sign=="negative") { W <- W[W$value<0,] }
 
    # Absolute value
