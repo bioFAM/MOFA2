@@ -139,16 +139,19 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   data <- lapply(seq_len(length(data)), function(m) lapply(seq_len(length(data[[1]])), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   data <- .name_views_and_groups(data, views, groups)
   
-  # Add feature intercepts
+  # Add feature intercepts (only for gaussian likelihoods)
   tryCatch( {
     
     if (add_intercept & length(object@intercepts[[1]])>0) {
       intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
+      intercepts <- lapply(seq_len(length(intercepts)), function(m) lapply(seq_len(length(intercepts[[1]])), function(p) intercepts[[m]][[p]][as.character(features[[m]])]))
       intercepts <- .name_views_and_groups(intercepts, views, groups)
       
       for (m in names(data)) {
-        for (g in names(data[[m]])) {
-          data[[m]][[g]] <- data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
+        if (object@model_options$likelihoods[[m]]=="gaussian") {
+          for (g in names(data[[m]])) {
+              data[[m]][[g]] <- data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
+          }
         }
       }
     } }, error = function(e) { NULL })

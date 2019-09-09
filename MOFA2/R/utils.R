@@ -47,10 +47,10 @@
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
       
-      cutoff <- 3 * 1.96
+      cutoff <- 2 * 1.96
       tmp <- abs(Z - mean(Z)) / sd(Z)
 
-      outliers <- names(which(tmp>cutoff & abs(Z)>1))
+      outliers <- names(which(tmp>cutoff & abs(Z)>0.5))
       
       if (length(outliers)>0) {
         object@expectations$Z[[g]][,k][outliers] <- NA
@@ -58,6 +58,9 @@
       
     }
   }
+  
+  # re-compute variance explained
+  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
