@@ -104,8 +104,8 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
 #' @param object a \code{\link{MOFA}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
 #' Default is "all".
-#' @param features list of character vectors with the feature names or list of numeric vectors with the feature indices. 
-#' Default is "all"
+#' @param features a *named* list of character vectors. Example: list("view1"=c("feature_1","feature_2"), "view2"=c("feature_3","feature_4"))
+#' Default is "all" If this is used, the argument views is ignored.
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices.
 #' @param add_intercept logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.
 #' @details By default this function returns a list where each element is a data matrix with dimensionality (D,N) 
@@ -123,9 +123,10 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   
   # Get features
   if (is(features, "list")) {
-    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features(object)[[views[i]]]))))
-    stopifnot(length(features)==length(views))
-    if (is.null(names(features))) names(features) <- views
+    if (is.null(names(features))) stop("features has to be a *named* list of character vectors. Please see the documentation")
+    if (!all(sapply(names(features), function(i) all(features[[i]] %in% features(object)[[i]]) ))) stop("features not recognised")
+    if (!all(sapply(features,length)>=1)) stop("features not recognised, please read the documentation")
+    views <- names(features)
   } else {
     if (paste0(features, collapse="") == "all") { 
       features <- features(object)[views]
@@ -167,7 +168,9 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
       })
     })
     data <- do.call(rbind, do.call(rbind, tmp))
-    data[,c("view","group","feature","sample")] <- sapply(data[,c("view","group","feature","sample")], as.factor)
+    factor.cols <- c("view","group","feature","sample")
+    data[factor.cols] <- lapply(data[factor.cols], factor)
+    
   }
   
   return(data)
@@ -244,7 +247,8 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
       })
     })
     imputed_data <- do.call(rbind, do.call(rbind, tmp))
-    imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.factor)
+    factor.cols <- c("view","group","feature","sample")
+    imputed_data[factor.cols] <- lapply(imputed_data[factor.cols], factor)
   }
   
   return(imputed_data)
@@ -294,7 +298,9 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     if (variable=="Z") {
       tmp <- reshape2::melt(exp, na.rm=T)
       colnames(tmp) <- c("sample", "factor", "value", "group")
-      tmp[c("sample", "factor", "group")] <- sapply(tmp[c("sample", "factor", "group")], as.factor)
+      
+      factor.cols <- c("sample", "factor", "group")
+      factor.cols[factor.cols] <- lapply(factor.cols[factor.cols], factor)
     }
     
     # W node
@@ -303,7 +309,8 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
         tmp <- reshape2::melt(exp[[m]], na.rm=T)
         colnames(tmp) <- c("feature","factor","value")
         tmp$view <- m
-        tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.factor)
+        factor.cols <- c("view", "feature", "factor")
+        tmp[factor.cols] <- lapply(tmp[factor.cols], factor)
         return(tmp)
       })
       tmp <- do.call(rbind.data.frame,tmp)
@@ -317,7 +324,8 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
           colnames(tmp) <- c("sample", "feature", "value")
           tmp$view <- m
           tmp$group <- g
-          tmp[c("view","group","feature","factor")] <- sapply(tmp[c("view","group","feature","factor")], as.factor)
+          factor.cols <- c("view", "group", "feature", "factor")
+          tmp[factor.cols] <- lapply(tmp[factor.cols], factor)
           return(tmp) 
         })
       })

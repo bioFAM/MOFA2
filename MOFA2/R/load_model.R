@@ -269,7 +269,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Quality controls ##
   ######################
 
-  # qualityControl(object)
+  object <- quality_control(object)
 
   return(object)
 }
