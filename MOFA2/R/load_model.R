@@ -182,6 +182,17 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
     feature_names <- lapply(seq_len(object@dimensions[["M"]]),
       function(m) sprintf("feature%d_view_&d", as.character(seq_len(object@dimensions[["D"]][m])), m))
+  } else {
+    # Check duplicated features names
+    all_names <- unname(unlist(feature_names))
+    duplicated_names <- unique(all_names[duplicated(all_names)])
+    if (length(duplicated_names)>0) 
+      warning("There are duplicated features names across different views. We will add the suffix *_view* only for those features 
+            Example: if you have both TP53 in mRNA and mutation data it will be renamed to TP53_mRNA, TP53_mutation")
+    for (m in names(feature_names)) {
+      tmp <- which(feature_names[[m]] %in% duplicated_names)
+      if (length(tmp)>0) feature_names[[m]][tmp] <- paste(feature_names[[m]][tmp], m, sep="_")
+    }
   }
   features(object) <- feature_names
   

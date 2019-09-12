@@ -126,7 +126,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
     if (is.null(names(features))) stop("features has to be a *named* list of character vectors. Please see the documentation")
     if (!(names(features)%in%views(object))) stop("Views not recognised")
     if (!all(sapply(names(features), function(i) all(features[[i]] %in% features(object)[[i]]) ))) stop("features not recognised")
-    if (!all(sapply(features,length)>=1)) stop("features not recognised, please read the documentation")
+    if (any(sapply(features,length)<1)) stop("features not recognised, please read the documentation")
     views <- names(features)
   } else {
     if (paste0(features, collapse="") == "all") { 

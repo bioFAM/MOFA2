@@ -19,30 +19,6 @@ quality_control <- function(object, verbose = FALSE) {
     views(object) <- gsub(\"/\", \"-\", views(object))")
   }
   
-  # Check features names
-  if (verbose == TRUE) message("Checking features names...")
-  tmp <- lapply(object@data, function(x) unique(lapply(x,rownames)))
-  for (x in tmp) stopifnot(length(x)==1)
-  for (x in tmp) if (any(duplicated(x[[1]]))) stop("There are duplicated features names within the same view. Please rename")
-  all_names <- unname(unlist(tmp))
-  duplicated_names <- unique(all_names[duplicated(all_names)])
-  if (length(duplicated_names)>0) 
-    warning("There are duplicated features names across different views. We will add the suffix *_view* only for those features 
-            Example: if you have both TP53 in mRNA and mutation data it will be renamed to TP53_mRNA, TP53_mutation")
-  for (i in names(object@data)) {
-    for (j in names(object@data[[i]])) {
-      tmp <- which(rownames(object@data[[i]][[j]]) %in% duplicated_names)
-      if (length(tmp)>0) {
-        rownames(object@data[[i]][[j]])[tmp] <- paste(rownames(object@data[[i]][[j]])[tmp], i, sep="_")
-        # TO-DO: UPDATE ALSO FEATURE METADATA IF IT EXISTS
-        # if (length(object@features_metadata)>0) {
-        #   foo <- object@features_metadata
-        #   foo[foo$feature==tmp & foo$view==m,]
-        # }
-      }
-    }
-  }
-  
   # Check groups names
   if (verbose == TRUE) message("Checking groups names...")
   if (any(grepl("/", groups(object)))) {
@@ -87,10 +63,31 @@ quality_control <- function(object, verbose = FALSE) {
   #     message(sprintf("Warning, view %s should follow a %s distribution rather than %s ", view, predicted_lik[view], lk))
   # }
   
+  # Sanity checks that are exclusive for an untrained model  
+  if (object@status == "untrained") {
+    
+    # Check features names
+    if (verbose == TRUE) message("Checking features names...")
+    tmp <- lapply(object@data, function(x) unique(lapply(x,rownames)))
+    for (x in tmp) stopifnot(length(x)==1)
+    for (x in tmp) if (any(duplicated(x[[1]]))) stop("There are duplicated features names within the same view. Please rename")
+    all_names <- unname(unlist(tmp))
+    duplicated_names <- unique(all_names[duplicated(all_names)])
+    if (length(duplicated_names)>0) 
+      warning("There are duplicated features names across different views. We will add the suffix *_view* only for those features 
+            Example: if you have both TP53 in mRNA and mutation data it will be renamed to TP53_mRNA, TP53_mutation")
+    for (i in names(object@data)) {
+      for (j in names(object@data[[i]])) {
+        tmp <- which(rownames(object@data[[i]][[j]]) %in% duplicated_names)
+        if (length(tmp)>0) {
+          rownames(object@data[[i]][[j]])[tmp] <- paste(rownames(object@data[[i]][[j]])[tmp], i, sep="_")
+        }
+      }
+    }
+    
   # Sanity checks that are exclusive for a trained model  
-  if (object@status == "trained") {
+  } else if (object@status == "trained") {
     # Check expectations
-    # stopifnot(identical(sort(c("W","Z","Theta","Tau","AlphaW","Y")), sort(names(object@Expectations))))
     stopifnot(all(c("W", "Z") %in% names(object@expectations)))
     if (verbose == TRUE) message("Checking expectations...")
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
