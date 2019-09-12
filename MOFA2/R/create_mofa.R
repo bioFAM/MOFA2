@@ -16,7 +16,7 @@
 #' \itemize{
 #' \item{If data is a data.frame this argument is not used}.
 #' \item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
-#' \itemi{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
+#' \item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
 #' Default is NULL (no groups)
 #' }
 #' @return Returns an untrained \code{\link{MOFA}} object

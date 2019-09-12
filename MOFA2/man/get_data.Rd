@@ -13,8 +13,8 @@ get_data(object, views = "all", groups = "all", features = "all",
 \item{views}{character vector with the view name(s), or numeric vector with the view index(es). 
 Default is "all".}
 
-\item{features}{list of character vectors with the feature names or list of numeric vectors with the feature indices. 
-Default is "all"}
+\item{features}{a *named* list of character vectors. Example: list("view1"=c("feature_1","feature_2"), "view2"=c("feature_3","feature_4"))
+Default is "all" If this is used, the argument views is ignored.}
 
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a list of matrices.}
 

@@ -17,13 +17,18 @@ create_mofa(data, groups = NULL, ...)
  The "group" column indicates the condition or the experiment (a label for the samples). 
  The view indicates the assay or the -omic (a label for the features).}
  \item{\strong{Seurat object}:}{}
- \item{\strong{List of matrices}:}{ A nested list of matrices \code{Y[[i]][[j]]}. 
- The first index \code{i} for the views. 
- The second index \code{j} for the groups. 
- Samples are stored in columns and features in rows.}
+ \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
+ Samples are stored in columns and features in rows. 
+ Missing values must be filled in prior to creating the MOFA object (see the example)}
  }}
 
-\item{groups}{ignore...}
+\item{groups}{information about the groups:
+\itemize{
+\item{If data is a data.frame this argument is not used}.
+\item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
+\item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
+Default is NULL (no groups)
+}}
 
 \item{srt}{Seurat object}
 

@@ -213,7 +213,8 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   
   # Create data frame 
   # df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = FALSE)
-  df2 <- get_data(object, views = view, groups = groups, features = list(features), as.data.frame = TRUE)
+  foo <- list(features); names(foo) <- view
+  df2 <- get_data(object, groups = groups, features = foo, as.data.frame = TRUE)
   df <- left_join(df1, df2, by = "sample")
   
   #remove values missing color or shape annotation
