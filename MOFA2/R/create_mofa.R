@@ -8,12 +8,17 @@
 #'  The "group" column indicates the condition or the experiment (a label for the samples). 
 #'  The view indicates the assay or the -omic (a label for the features).}
 #'  \item{\strong{Seurat object}:}{}
-#'  \item{\strong{List of matrices}:}{ A nested list of matrices \code{Y[[i]][[j]]}. 
-#'  The first index \code{i} for the views. 
-#'  The second index \code{j} for the groups. 
-#'  Samples are stored in columns and features in rows.}
+#'  \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
+#'  Samples are stored in columns and features in rows. 
+#'  Missing values must be filled in prior to creating the MOFA object (see the example)}
 #'  }
-#' @param groups ignore...
+#' @param groups information about the groups:
+#' \itemize{
+#' \item{If data is a data.frame this argument is not used}.
+#' \item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
+#' \itemi{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
+#' Default is NULL (no groups)
+#' }
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 create_mofa <- function(data, groups = NULL, ...) {
@@ -43,13 +48,15 @@ create_mofa <- function(data, groups = NULL, ...) {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
   
-  # Do quality control on the untrained MOFA object
-  # qualityControl(object)
+  # Do quality control
+  object <- quality_control(object)
   
   # Create sample metadata
+  foo <- lapply(object@data[[1]], colnames)
   tmp <- data.frame(
-    sample = unname(unlist(lapply(object@data[[1]], colnames))),
-    group = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups(object)[[x]], object@dimensions$N[[x]]) )),
+    sample = unname(unlist(foo)),
+    # group = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups(object)[[x]], object@dimensions$N[[x]]) )),
+    group = unlist(lapply(names(foo), function(x) rep(x, length(foo[[x]])) )),
     stringsAsFactors = FALSE
   )
   samples_metadata(object) <- tmp
@@ -243,27 +250,32 @@ create_mofa <- function(data, groups = NULL, ...) {
 # (Hidden) function to create MOFA object from a matrix
 .create_mofa_from_matrix <- function(data, groups) {
   
-  # Quality controls
+  # Quality control: check that the matrices are all numeric
   stopifnot(all(sapply(data, function(g) all(is.numeric(g)))) || all(sapply(data, function(x) class(x) %in% c("dgTMatrix", "dgCMatrix"))))
-  if (all(sapply(data, function(m) !is.null(colnames(m)))))
-    stopifnot(length(Reduce("intersect",lapply(data,colnames)))>1)
+  
+  # Quality control: check that all matrices have the same samples
+  tmp <- lapply(data, function(m) colnames(m))
+  if(length(unique(sapply(tmp,length)))>1)
+    stop("Views have different number of samples (columns)... please make sure that all views contain the same samples in the same order (see documentation)")
+  if (length(unique(tmp))>1) 
+    stop("Views have different sample names (columns)... please make sure that all views contain the same samples in the same order (see documentation)")
   
   # Make a dgCMatrix out of dgTMatrix
   if (all(sapply(data, function(x) is(x, "dgTMatrix")))) {
     data <- lapply(data, function(m) as(m, "dgCMatrix"))
   }
   
-  if (!all(sapply(data, function(x) is(x, "dgCMatrix")))) {
-    # If number of rows are not identical, fill missing values
-    samples <- Reduce("union",sapply(data,colnames))
-    data <- sapply(data, function(x) {
-      aug_x <- matrix(NA, nrow=nrow(x), ncol=length(samples))
-      aug_x <- x[,match(samples,colnames(x)),drop=FALSE]
-      rownames(aug_x) <- rownames(x)
-      colnames(aug_x) <- samples
-      return(aug_x)
-    }, USE.NAMES = TRUE, simplify = FALSE)
-  }
+  # if (!all(sapply(data, function(x) is(x, "dgCMatrix")))) {
+  #   # If number of rows are not identical, fill missing values
+  #   samples <- Reduce("union",sapply(data,colnames))
+  #   data <- sapply(data, function(x) {
+  #     aug_x <- matrix(NA, nrow=nrow(x), ncol=length(samples))
+  #     aug_x <- x[,match(samples,colnames(x)),drop=FALSE]
+  #     rownames(aug_x) <- rownames(x)
+  #     colnames(aug_x) <- samples
+  #     return(aug_x)
+  #   }, USE.NAMES = TRUE, simplify = FALSE)
+  # }
 
   # Set groups names
   if (is.null(groups)) {
