@@ -124,6 +124,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   # Get features
   if (is(features, "list")) {
     if (is.null(names(features))) stop("features has to be a *named* list of character vectors. Please see the documentation")
+    if (!(names(features)%in%views(model))) stop("Views not recognised")
     if (!all(sapply(names(features), function(i) all(features[[i]] %in% features(object)[[i]]) ))) stop("features not recognised")
     if (!all(sapply(features,length)>=1)) stop("features not recognised, please read the documentation")
     views <- names(features)
@@ -137,7 +138,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 
   # Fetch data
   data <- lapply(object@data[views], function(x) x[groups])
-  data <- lapply(seq_len(length(data)), function(m) lapply(seq_len(length(data[[1]])), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
+  data <- lapply(views, function(m) lapply(seq_len(length(data[[1]])), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   data <- .name_views_and_groups(data, views, groups)
   
   # Add feature intercepts (only for gaussian likelihoods)

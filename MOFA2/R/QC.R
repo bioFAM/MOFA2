@@ -32,8 +32,14 @@ quality_control <- function(object, verbose = FALSE) {
   for (i in names(object@data)) {
     for (j in names(object@data[[i]])) {
       tmp <- which(rownames(object@data[[i]][[j]]) %in% duplicated_names)
-      if (length(tmp)>0)
+      if (length(tmp)>0) {
         rownames(object@data[[i]][[j]])[tmp] <- paste(rownames(object@data[[i]][[j]])[tmp], i, sep="_")
+        # TO-DO: UPDATE ALSO FEATURE METADATA IF IT EXISTS
+        # if (length(object@features_metadata)>0) {
+        #   foo <- object@features_metadata
+        #   foo[foo$feature==tmp & foo$view==m,]
+        # }
+      }
     }
   }
   
