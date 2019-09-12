@@ -160,14 +160,14 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   if (as.data.frame) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
-        tmp <- reshape2::melt(data[[m]][[p]])
+        tmp <- reshape2::melt(data[[m]][[p]], na.rm=T)
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = p, tmp)
         return(tmp) 
       })
     })
     data <- do.call(rbind, do.call(rbind, tmp))
-    data[,c("view","group","feature","sample")] <- sapply(data[,c("view","group","feature","sample")], as.character)
+    data[,c("view","group","feature","sample")] <- sapply(data[,c("view","group","feature","sample")], as.factor)
   }
   
   return(data)
@@ -237,14 +237,14 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   if (as.data.frame) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(g) { 
-        tmp <- reshape2::melt(imputed_data[[m]][[g]])
+        tmp <- reshape2::melt(imputed_data[[m]][[g]], na.rm=T)
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = g, tmp)
         return(tmp) 
       })
     })
     imputed_data <- do.call(rbind, do.call(rbind, tmp))
-    imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.character)
+    imputed_data[,c("view","group","feature","sample")] <- sapply(imputed_data[,c("view","group","feature","sample")], as.factor)
   }
   
   return(imputed_data)
@@ -279,12 +279,10 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   # Get expectations in single matrix or list of matrices (for multi-view nodes)
   exp <- object@expectations[[variable]]
 
-  # For memory and space efficiency, when using only gaussian likelihoods,
-  # Y expectations are not saved to the trained model file by default.
-  # Load training data in that case
+  # For memory and space efficiency, Y expectations are not saved to the model file when using only gaussian likelihoods.
   if (variable == "Y") {
     if ((length(object@expectations$Y) == 0) && all(object@model_options$likelihood == "gaussian")) {
-      message("Using training data slot as Y expectations since all the likelihoods are gaussian.")
+      # message("Using training data slot as Y expectations since all the likelihoods are gaussian.")
       exp <- object@data
     }
   }
@@ -294,18 +292,18 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     
     # Z node
     if (variable=="Z") {
-      tmp <- reshape2::melt(exp)
+      tmp <- reshape2::melt(exp, na.rm=T)
       colnames(tmp) <- c("sample", "factor", "value", "group")
-      tmp[c("sample", "factor", "group")] <- sapply(tmp[c("sample", "factor", "group")], as.character)
+      tmp[c("sample", "factor", "group")] <- sapply(tmp[c("sample", "factor", "group")], as.factor)
     }
     
     # W node
     else if (variable=="W") {
       tmp <- lapply(names(exp), function(m) { 
-        tmp <- reshape2::melt(exp[[m]])
+        tmp <- reshape2::melt(exp[[m]], na.rm=T)
         colnames(tmp) <- c("feature","factor","value")
         tmp$view <- m
-        tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.character)
+        tmp[c("view","feature","factor")] <- sapply(tmp[c("view","feature","factor")], as.factor)
         return(tmp)
       })
       tmp <- do.call(rbind.data.frame,tmp)
@@ -315,11 +313,11 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     else if (variable=="Y") {
       tmp <- lapply(names(exp), function(m) {
         tmp <- lapply(names(exp[[m]]), function(g) {
-          tmp <- reshape2::melt(exp[[m]][[g]])
+          tmp <- reshape2::melt(exp[[m]][[g]], na.rm=T)
           colnames(tmp) <- c("sample", "feature", "value")
           tmp$view <- m
           tmp$group <- g
-          tmp[c("view","group","feature","factor")] <- sapply(tmp[c("view","group","feature","factor")], as.character)
+          tmp[c("view","group","feature","factor")] <- sapply(tmp[c("view","group","feature","factor")], as.factor)
           return(tmp) 
         })
       })
