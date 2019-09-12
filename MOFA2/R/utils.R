@@ -140,6 +140,21 @@ return(model)
   }
 }
 
+.check_and_get_features_from_view <- function(object, view, features) {
+  stopifnot(!any(duplicated(features)))
+  if (is.numeric(features)) {
+    stopifnot(all(features <= sum(object@dimensions$D[view])))
+    unname(unlist(features(object)[[view]])[features])
+  } else {
+    if (paste0(features, collapse = "") == "all") { 
+      unlist(features(object)[[view]])
+    } else {
+      stopifnot(all(features %in% unlist(features(object)[[view]])))
+      features
+    }
+  }
+}
+
 .get_nodes_types <- function() {
   nodes_types <- list(
     multiview_nodes  = c("W", "AlphaW", "ThetaW"),

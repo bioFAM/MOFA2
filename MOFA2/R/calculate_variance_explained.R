@@ -241,3 +241,152 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   
   return(plot_list)
 }
+
+
+#' @title Plot variance explained by the model for a set of features
+#' 
+#' Returns a tile plot with a group on the X axis and a feature along the Y axis
+#' 
+#' @name plot_variance_explained_per_feature
+#' @param object a \code{\link{MOFA}} object.
+#' @param view a view name or index.
+#' @param features a vector with indices or names for features from the respective view
+#' @param split_by_factor logical indicating whether to split R2 per factor or plot R2 jointly
+#' @param groups a vector with indices or names for sample groups (default is all)
+#' @param factors a vector with indices or names for factors (default is all)
+#' @param min_r2 minimum variance explained for the color scheme (default is 0).
+#' @param max_r2 maximum variance explained for the color scheme.
+#' @param legend logical indicating whether to add a legend to the plot  (default is TRUE).
+#' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
+#' @return ggplot object
+#' @import ggplot2
+#' @importFrom cowplot plot_grid
+#' @importFrom stats as.formula
+#' @importFrom reshape2 melt
+#' @export
+plot_variance_explained_per_feature <- function(object, view, features, split_by_factor = FALSE,
+                                                groups = "all", factors = "all",
+                                                min_r2 = 0, max_r2 = NULL, legend = TRUE, ...) {
+
+  # Check that one view is requested
+  view  <- .check_and_get_views(object, view)
+  if (length(view) != 1)
+    stop("Please choose a single view to plot features from")
+
+  # Fetch loadings, factors, and data  
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+
+  # Fetch relevant features
+  features <- .check_and_get_features_from_view(object, view = view, features)
+
+  
+  # Collect relevant expectations
+  groups <- .check_and_get_groups(object, groups)
+  factors <- .check_and_get_factors(object, factors)
+  # 1. Loadings: choose a view, one or multiple factors, and subset chosen features
+  W <- get_weights(object, views = view, factors = factors)
+  W <- lapply(W, function(W_m) W_m[rownames(W_m) %in% features,,drop=FALSE])
+  # 2. Factor values: choose one or multiple groups and factors
+  Z <- get_factors(object, groups = groups, factors = factors)
+  # 3. Data: Choose a view, one or multiple groups, and subset chosen features
+  Y <- lapply(get_expectations(object, "Y")[view], function(Y_m) Y_m[groups])
+  Y <- lapply(Y, function(x) lapply(x, t))
+  Y <- lapply(Y, function(Y_m) lapply(Y_m, function(Y_mg) Y_mg[,colnames(Y_mg) %in% features,drop=FALSE]))
+
+  # Replace masked values on Z by 0 (so that they do not contribute to predictions)
+  for (g in groups) {
+    Z[[g]][is.na(Z[[g]])] <- 0
+  }
+
+  m <- view  # Use shorter notation when calculating R2
+
+  if (isTRUE(split_by_factor)) {
+
+    # Calculate coefficient of determination per group, factor and feature
+    r2_gdk <- lapply(groups, function(g) {
+      r2_g <- sapply(features, function(d) { sapply(factors, function(k) {
+          a <- sum((as.matrix(Y[[m]][[g]][,d,drop=FALSE]) - tcrossprod(Z[[g]][,k,drop=FALSE], W[[m]][d,k,drop=FALSE]))**2, na.rm = TRUE)
+          b <- sum(Y[[m]][[g]][,d,drop=FALSE]**2, na.rm = TRUE)
+          return(1 - a/b)
+        })
+      })
+      r2_g <- matrix(r2_g, ncol = length(features), nrow = length(factors))
+      colnames(r2_g) <- features
+      rownames(r2_g) <- factors
+      # Lower bound is zero
+      r2_g[r2_g < 0] <- 0
+      r2_g
+    })
+    names(r2_gdk) <- groups
+
+    # Convert matrix to long data frame for ggplot2
+    r2_gdk_df <- do.call(rbind, r2_gdk)
+    r2_gdk_df <- data.frame(r2_gdk_df, 
+                            "group" = rep(groups, lapply(r2_gdk, nrow)),
+                            "factor" = rownames(r2_gdk_df))
+    r2_gdk_df <- melt(r2_gdk_df, id.vars = c("group", "factor"))
+    colnames(r2_gdk_df) <- c("group", "factor", "feature", "value")
+
+    r2_gdk_df$group <- factor(r2_gdk_df$group, levels = unique(r2_gdk_df$group))
+    
+    r2_df <- r2_gdk_df
+
+  } else {
+
+    # Calculate coefficient of determination per group and feature
+    r2_gd <- lapply(groups, function(g) {
+      r2_g <- lapply(features, function(d) {
+          a <- sum((as.matrix(Y[[m]][[g]][,d,drop=FALSE]) - tcrossprod(Z[[g]], W[[m]][d,,drop=FALSE]))**2, na.rm = TRUE)
+          b <- sum(Y[[m]][[g]][,d,drop=FALSE]**2, na.rm = TRUE)
+          return(1 - a/b)
+      })
+      names(r2_g) <- features
+      # Lower bound is zero
+      r2_g[r2_g < 0] <- 0
+      r2_g
+    })
+    names(r2_gd) <- groups
+
+    # Convert matrix to long data frame for ggplot2
+    r2_gd_df <- melt(as.matrix(data.frame(lapply(r2_gd, unlist))))
+    colnames(r2_gd_df) <- c("feature", "group", "value")
+
+    r2_gd_df$group <- factor(r2_gd_df$group, levels = unique(r2_gd_df$group))
+    
+    r2_df <- r2_gd_df
+
+  }
+  
+  if (!is.null(min_r2)) r2_df$value[r2_df$value<min_r2] <- 0.00001
+  if (!is.null(max_r2)) r2_df$value[r2_df$value>max_r2] <- max_r2
+  
+  # Grid plot with the variance explained per feature in every group
+  p <- ggplot(r2_df, aes(x = group, y = feature)) + 
+    geom_tile(aes(fill = value), color = "black") +
+    guides(fill = guide_colorbar("R2")) +
+    labs(x = "", y = "", title = "") +
+    ggtitle(paste0("Variance explained by ", length(factors), " factor", ifelse(length(factors) > 1, "s", ""), 
+                   " (", paste0(factors, collapse = ", "), ")")) +
+    scale_fill_gradientn(colors = c("gray97", "darkred"), guide = "colorbar", limits = c(0, max(r2_df$value))) +
+    guides(fill = guide_colorbar("R2")) +
+    theme(
+      axis.title.x = element_blank(),
+      axis.text.x = element_text(size = 12, angle = 90, hjust = 1, vjust = .5, color = "black"),
+      axis.text.y = element_text(size = 12, color = "black"),
+      axis.title.y = element_text(size = 14),
+      axis.line = element_blank(),
+      axis.ticks =  element_blank(),
+      panel.background = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(size = 12),
+      plot.title = element_text(size = 18)
+    )
+
+  if (isTRUE(split_by_factor))
+    p <- p + facet_wrap(~factor, nrow = 1)
+
+  if (!legend)
+    p <- p + theme(legend.position = "none")
+
+  return(p)
+}
