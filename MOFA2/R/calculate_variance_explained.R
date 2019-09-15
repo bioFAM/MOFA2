@@ -276,10 +276,9 @@ plot_variance_explained_per_feature <- function(object, view, features, split_by
   # Fetch loadings, factors, and data  
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
-  # Fetch relevant features
+  # Fetch relevant features)
   features <- .check_and_get_features_from_view(object, view = view, features)
 
-  
   # Collect relevant expectations
   groups <- .check_and_get_groups(object, groups)
   factors <- .check_and_get_factors(object, factors)
@@ -289,8 +288,7 @@ plot_variance_explained_per_feature <- function(object, view, features, split_by
   # 2. Factor values: choose one or multiple groups and factors
   Z <- get_factors(object, groups = groups, factors = factors)
   # 3. Data: Choose a view, one or multiple groups, and subset chosen features
-  Y <- lapply(get_expectations(object, "Y")[view], function(Y_m) Y_m[groups])
-  Y <- lapply(Y, function(x) lapply(x, t))
+  Y <- lapply(get_expectations(object, "Y")[view], function(Y_m) lapply(Y_m[groups], t))
   Y <- lapply(Y, function(Y_m) lapply(Y_m, function(Y_mg) Y_mg[,colnames(Y_mg) %in% features,drop=FALSE]))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
