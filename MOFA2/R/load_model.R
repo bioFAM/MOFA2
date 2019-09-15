@@ -20,7 +20,9 @@
 #' @importFrom DelayedArray DelayedArray
 #' @export
 
-load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, remove_outliers = FALSE) {
+load_model <- function(file, sort_factors = TRUE, 
+                       on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
+                       remove_outliers = FALSE, verbose = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -47,6 +49,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   group_names <- names(sample_names)
 
   # Load training data (as nested list of matrices)
+  if (isTRUE(verbose)) message("Loading data...")
   data <- list()
   intercepts <- list()
   if (load_data) {
@@ -98,6 +101,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   
   imputed_data <- list()
   if (load_imputed_data) {
+    if (isTRUE(verbose)) message("Loading imputed data...")
     for (m in view_names) {
       imputed_data[[m]] <- list()
       for (g in group_names) {
@@ -123,6 +127,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
 
   expectations <- list()
   node_names <- foo[foo$group=="/expectations","name"]
+
+  if (isTRUE(verbose)) message(paste0("Loading expectations for ", length(node_names), " nodes..."))
 
   if ("AlphaW" %in% node_names)
     expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")
@@ -225,6 +231,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Load model options ##
   ########################
 
+  if (isTRUE(verbose)) message("Loading model options...")
+
   tryCatch( {
     object@model_options <- as.list(h5read(file, 'model_options', read.attributes = TRUE))
   }, error = function(x) { print("Model options not found, not loading it...") })
@@ -247,6 +255,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Load training options and statistics ##
   ##########################################
 
+  if (isTRUE(verbose)) message("Loading training options and statistics...")
+
   # Load training options
   if (length(object@training_options) == 0) {
     tryCatch( {
@@ -265,6 +275,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
 
   # Order factors in order of variance explained
   if (sort_factors) {
+    if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
     object@cache[["variance_explained"]] <- calculate_variance_explained(object)
     r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
     order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
@@ -280,7 +291,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Quality controls ##
   ######################
 
-  object <- quality_control(object)
+  object <- quality_control(object, verbose = verbose)
 
   return(object)
 }
