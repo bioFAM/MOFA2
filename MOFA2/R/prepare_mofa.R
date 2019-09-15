@@ -291,11 +291,14 @@ get_default_model_options <- function(object) {
   for (m in views) {
     Y_regressed[[m]] <- list()
     for (g in groups) {
-      if (any(rowSums(!is.na(Y[[m]][[g]]))<min_observations) ) stop(sprintf("Some features do not have enough observations (N=%s) to fit the linear model",min_observations))
-      Y_regressed[[m]][[g]] <- apply(Y[[m]][[g]], 2, function(y) {
+      if (!(is(Y[[m]][[g]], "dgCMatrix") || is(Y[[m]][[g]], "dgTMatrix")))  # is.na only makes sense for non-sparse matrices
+        if (any(rowSums(!is.na(Y[[m]][[g]])) < min_observations))
+          stop(sprintf("Some features do not have enough observations (N=%s) to fit the linear model",min_observations))
+      
+      Y_regressed[[m]][[g]] <- apply(Y[[m]][[g]], 1, function(y) {
         
         # Fit linear model
-        df <- cbind(y,covariates[[m]][[g]])
+        df <- cbind(y, covariates[[m]][[g]])
         lm.out <- lm(y~., data=df)
         residuals <- lm.out[["residuals"]]
         
