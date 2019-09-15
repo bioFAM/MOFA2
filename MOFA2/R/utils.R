@@ -155,6 +155,20 @@ return(model)
   }
 }
 
+.get_top_features_by_loading <- function(object, view, factors, nfeatures = 10) {
+
+  # Collect expectations  
+  W <- get_weights(object, factors = factors, views = view, as.data.frame=TRUE)
+  # Work with absolute values to sort them
+  W$value <- abs(W$value)
+
+  # Extract relevant features
+  W <- W[with(W, order(-abs(value))), ]
+
+  return(as.character(head(W$feature, nfeatures)))
+}
+
+
 .get_nodes_types <- function() {
   nodes_types <- list(
     multiview_nodes  = c("W", "AlphaW", "ThetaW"),

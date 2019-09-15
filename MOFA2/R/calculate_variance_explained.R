@@ -250,7 +250,8 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 #' @name plot_variance_explained_per_feature
 #' @param object a \code{\link{MOFA}} object.
 #' @param view a view name or index.
-#' @param features a vector with indices or names for features from the respective view
+#' @param features a vector with indices or names for features from the respective view, 
+#' or number of top features to be fetched by their loadings across specified factors
 #' @param split_by_factor logical indicating whether to split R2 per factor or plot R2 jointly
 #' @param groups a vector with indices or names for sample groups (default is all)
 #' @param factors a vector with indices or names for factors (default is all)
@@ -277,6 +278,10 @@ plot_variance_explained_per_feature <- function(object, view, features, split_by
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
   # Fetch relevant features)
+  if (is.numeric(features) && (length(features) == 1)) {
+    features <- as.integer(features)
+    features <- .get_top_features_by_loading(object, view = view, factors = factors, nfeatures = features)
+  }
   features <- .check_and_get_features_from_view(object, view = view, features)
 
   # Collect relevant expectations

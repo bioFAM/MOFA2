@@ -15,7 +15,8 @@ plot_variance_explained_per_feature(object, view, features,
 
 \item{view}{a view name or index.}
 
-\item{features}{a vector with indices or names for features from the respective view}
+\item{features}{a vector with indices or names for features from the respective view, 
+or number of top features to be fetched by their loadings across specified factors}
 
 \item{split_by_factor}{logical indicating whether to split R2 per factor or plot R2 jointly}
 

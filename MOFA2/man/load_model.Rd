@@ -6,7 +6,7 @@
 \usage{
 load_model(file, sort_factors = TRUE, on_disk = FALSE,
   load_data = TRUE, load_imputed_data = FALSE,
-  remove_outliers = FALSE)
+  remove_outliers = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{file}{an hdf5 file saved by the mofa Python framework}
