@@ -49,9 +49,11 @@ quality_control <- function(object, verbose = FALSE) {
   # Check that there are no features with complete missing values (across all views)
   if (verbose == TRUE) message("Checking there are no features with complete missing values...")
   for (i in views(object)) {
-    tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = T))
-    if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))
-      warning("You have features which do not contain a single observation in any group, consider removing them...")
+    if (!(is(object@data[[i]][[1]], "dgCMatrix") || is(object@data[[i]][[1]], "dgTMatrix"))) {
+      tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = T))
+      if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))
+        warning("You have features which do not contain a single observation in any group, consider removing them...")
+    }
   }
     
   # Check that the likelihoods match the data distribution
