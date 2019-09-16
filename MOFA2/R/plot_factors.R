@@ -187,6 +187,9 @@ plot_factor <- function(object, factors = 1, groups = "all",
   
   if (length(unique(df$factor))>1) {
     p <- p + scale_y_continuous(breaks=NULL)
+  } else {
+    # Remove strip labels for groups, they are laballed along X axis
+    p <- p + theme(strip.text.x = element_blank())
   }
   
   # Add legend
