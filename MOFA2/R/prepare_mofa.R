@@ -306,8 +306,9 @@ get_default_model_options <- function(object) {
         all_samples <- colnames(Y[[m]][[g]])
         missing_samples <- all_samples[!all_samples %in% names(residuals)]
         residuals[missing_samples] <- NA
+        residuals[all_samples]
       }))
-      
+
     }
   }
   object@data[views] <- Y_regressed
