@@ -106,9 +106,15 @@ plot_factor <- function(object, factors = 1, groups = "all",
   }
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="group_by", y="value")) +
-    facet_wrap(~factor, nrow=1, scales="free_x") +
-    labs(x=group_by, y="Factor value")
+  p <- ggplot(df, aes_string(x="group_by", y="value"))
+
+  if (length(factors) == 1) {
+    p <- p + facet_wrap(~group, nrow=1, scales="free_x") +
+      labs(x=group_by, y=as.character(factors))
+  } else {
+    p <- p + facet_wrap(~factor, nrow=1, scales="free_x") +
+      labs(x=group_by, y="Factor value")
+  }
 
   # Add dots
   if (add_dots) {
