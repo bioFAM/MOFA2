@@ -295,19 +295,19 @@ get_default_model_options <- function(object) {
         if (any(rowSums(!is.na(Y[[m]][[g]])) < min_observations))
           stop(sprintf("Some features do not have enough observations (N=%s) to fit the linear model",min_observations))
       
-      Y_regressed[[m]][[g]] <- apply(Y[[m]][[g]], 1, function(y) {
-        
+      Y_regressed[[m]][[g]] <- t(apply(Y[[m]][[g]], 1, function(y) {
+
         # Fit linear model
-        df <- cbind(y, covariates[[m]][[g]])
+        df <- cbind(data.frame(y=y), covariates[[m]][[g]])
         lm.out <- lm(y~., data=df)
         residuals <- lm.out[["residuals"]]
         
         # Fill missing values
-        all_samples <- rownames(Y[[m]][[g]])
+        all_samples <- colnames(Y[[m]][[g]])
         missing_samples <- all_samples[!all_samples %in% names(residuals)]
         residuals[missing_samples] <- NA
-        residuals[all_samples]
-      })
+      }))
+      
     }
   }
   object@data[views] <- Y_regressed
