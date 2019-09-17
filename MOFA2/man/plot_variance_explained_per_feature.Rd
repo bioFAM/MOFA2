@@ -7,8 +7,9 @@
 Returns a tile plot with a group on the X axis and a feature along the Y axis}
 \usage{
 plot_variance_explained_per_feature(object, view, features,
-  split_by_factor = FALSE, groups = "all", factors = "all",
-  min_r2 = 0, max_r2 = NULL, legend = TRUE, ...)
+  split_by_factor = FALSE, group_features_by = NULL, groups = "all",
+  factors = "all", min_r2 = 0, max_r2 = NULL, legend = TRUE,
+  return_data = FALSE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -20,6 +21,8 @@ or number of top features to be fetched by their loadings across specified facto
 
 \item{split_by_factor}{logical indicating whether to split R2 per factor or plot R2 jointly}
 
+\item{group_features_by}{column name of features metadata to group features by}
+
 \item{groups}{a vector with indices or names for sample groups (default is all)}
 
 \item{factors}{a vector with indices or names for factors (default is all)}
@@ -29,6 +32,8 @@ or number of top features to be fetched by their loadings across specified facto
 \item{max_r2}{maximum variance explained for the color scheme.}
 
 \item{legend}{logical indicating whether to add a legend to the plot  (default is TRUE).}
+
+\item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 
 \item{...}{extra arguments to be passed to \code{\link{calculate_variance_explained}}}
 }

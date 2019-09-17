@@ -253,11 +253,13 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 #' @param features a vector with indices or names for features from the respective view, 
 #' or number of top features to be fetched by their loadings across specified factors
 #' @param split_by_factor logical indicating whether to split R2 per factor or plot R2 jointly
+#' @param group_features_by column name of features metadata to group features by
 #' @param groups a vector with indices or names for sample groups (default is all)
 #' @param factors a vector with indices or names for factors (default is all)
 #' @param min_r2 minimum variance explained for the color scheme (default is 0).
 #' @param max_r2 maximum variance explained for the color scheme.
 #' @param legend logical indicating whether to add a legend to the plot  (default is TRUE).
+#' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
 #' @return ggplot object
 #' @import ggplot2
@@ -265,9 +267,11 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt
 #' @export
-plot_variance_explained_per_feature <- function(object, view, features, split_by_factor = FALSE,
+plot_variance_explained_per_feature <- function(object, view, features,
+                                                split_by_factor = FALSE, group_features_by = NULL,
                                                 groups = "all", factors = "all",
-                                                min_r2 = 0, max_r2 = NULL, legend = TRUE, ...) {
+                                                min_r2 = 0, max_r2 = NULL, legend = TRUE,
+                                                return_data = FALSE, ...) {
 
   # Check that one view is requested
   view  <- .check_and_get_views(object, view)
@@ -362,6 +366,22 @@ plot_variance_explained_per_feature <- function(object, view, features, split_by
   
   if (!is.null(min_r2)) r2_df$value[r2_df$value<min_r2] <- 0.00001
   if (!is.null(max_r2)) r2_df$value[r2_df$value>max_r2] <- max_r2
+
+  if (!is.null(group_features_by)) {
+    features_indices <- match(r2_df$feature, features_metadata(object)$feature)
+    features_grouped <- features_metadata(object)[,group_features_by,drop=FALSE][features_indices,,drop=FALSE]
+    # If features grouped using multiple variables,
+    # concatenate them
+    if (length(group_features_by) > 1) {
+      features_grouped <- apply(features_grouped, 1, function(row) paste0(row, collapse="_"))
+    } else {
+      features_grouped <- features_grouped[,group_features_by,drop=TRUE]
+    }
+    r2_df["feature_group"] <- features_grouped
+  }
+
+  if (isTRUE(return_data))
+    return(r2_df)
   
   # Grid plot with the variance explained per feature in every group
   p <- ggplot(r2_df, aes(x = group, y = feature)) + 
@@ -385,8 +405,15 @@ plot_variance_explained_per_feature <- function(object, view, features, split_by
       plot.title = element_text(size = 18)
     )
 
-  if (isTRUE(split_by_factor))
+
+  if (!is.null(group_features_by) && isTRUE(split_by_factor)) {
+    p <- p + facet_grid(feature_group ~ factor, scales = "free_y")
+  } else if (isTRUE(split_by_factor)) {
     p <- p + facet_wrap(~factor, nrow = 1)
+  } else if (!is.null(group_features_by)) {
+    p <- p + facet_wrap(~feature_group, ncol = 1, scales = "free")
+  }
+  
 
   if (!legend)
     p <- p + theme(legend.position = "none")
