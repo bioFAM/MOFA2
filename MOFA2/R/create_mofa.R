@@ -146,7 +146,7 @@ create_mofa <- function(data, groups = NULL, ...) {
 #' @title create a MOFA object
 #' @name create_mofa
 #' @description Method to create a \code{\link{MOFA}} object
-#' @param srt Seurat object
+#' @param seurat Seurat object
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample
 #' @param assays assays to use for the MOFA model, default is RNA
 #' @param slot assay slot to be used such as scale.data or data
@@ -154,14 +154,14 @@ create_mofa <- function(data, groups = NULL, ...) {
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @keywords internal
-.create_mofa_from_seurat <- function(srt, groups, assays = "RNA", slot = "data", features = NULL) {
+.create_mofa_from_seurat <- function(seurat, groups, assays = "RNA", slot = "data", features = NULL) {
   if (is(groups, 'character') && (length(groups) == 1)) {
-    if (!(groups %in% colnames(srt@meta.data)))
+    if (!(groups %in% colnames(seurat@meta.data)))
       stop(paste0(groups, " is not found in the Seurat@meta.data.\n",
                   "If you want to use groups information from Seurat@meta.data,\n",
                   "please ensure to provide a column name that exists. The columns of meta data are:\n",
-                  paste0(colnames(srt@meta.data), sep = ", ")))
-    groups <- srt@meta.data[,groups]
+                  paste0(colnames(seurat@meta.data), sep = ", ")))
+    groups <- seurat@meta.data[,groups]
   }
 
   # If features to subset are provided,
@@ -182,10 +182,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   # If no groups provided, treat all samples as coming from one group
   if (is.null(groups)) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
-    groups <- rep("group1", dim(srt)[2])
+    groups <- rep("group1", dim(seurat)[2])
   }
   data_matrices <- lapply(assays, function(assay) 
-    .split_seurat_into_groups(srt, groups = groups, assay = assay, slot = slot, features = features[[assay]]))
+    .split_seurat_into_groups(seurat, groups = groups, assay = assay, slot = slot, features = features[[assay]]))
   names(data_matrices) <- tolower(assays)
 
   object <- new("MOFA")
@@ -221,10 +221,10 @@ create_mofa <- function(data, groups = NULL, ...) {
 }
 
 # (Hidden) function to split data in Seurat object into a list of matrices
-.split_seurat_into_groups <- function(srt, groups, assay = "RNA", slot = "data", features = NULL) {
+.split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "data", features = NULL) {
   # If no feature selection is provided, all features are used
   if (is.null(features))
-    features <- seq_len(dim(GetAssay(object = srt, assay = assay))[1])
+    features <- seq_len(dim(GetAssay(object = seurat, assay = assay))[1])
 
   # Fetch assay data for every group of samples
   groups_names <- unique(groups)
@@ -232,9 +232,9 @@ create_mofa <- function(data, groups = NULL, ...) {
     # If group name is NA, it has to be treated separately
     # due to the way R handles NAs and equal signs
     if (is.na(g)) {
-      GetAssayData(object = srt, assay = assay, slot = slot)[,is.na(groups)][features,]
+      GetAssayData(object = seurat, assay = assay, slot = slot)[,is.na(groups)][features,]
     } else {
-      GetAssayData(object = srt, assay = assay, slot = slot)[,which(groups == g)][features,]
+      GetAssayData(object = seurat, assay = assay, slot = slot)[,which(groups == g)][features,]
     }
   })
   names(tmp) <- groups_names

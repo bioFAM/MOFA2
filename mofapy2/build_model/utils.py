@@ -6,6 +6,7 @@ import scipy as s
 import pandas as pd
 import numpy.ma as ma
 import os
+import sys
 import h5py
 
 from mofapy2.core.nodes import *
