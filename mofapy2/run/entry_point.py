@@ -687,11 +687,13 @@ class entry_point(object):
 
 
 
-def mofa(adata, groups_label=None, use_raw=False,
+def mofa(adata, groups_label: bool = None, use_raw: bool = False,
          likelihood: str = "gaussian", n_factors: int = 10,
+         ard_w: bool = True, ard_z: bool = False,
+         spikeslab_w: bool = True, spikeslab_z: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
-         verbose = False, quiet = True, copy = False):
+         verbose: bool = False, quiet: bool = True, copy: bool = False):
     """
     Helper function to init and build the model in a single call
     from annotation data object
@@ -703,6 +705,10 @@ def mofa(adata, groups_label=None, use_raw=False,
     use_raw (optional): use raw slot of AnnData as input values
     likelihood: likelihood to use, default is gaussian
     n_factors: number of factors to train the model with
+    ard_w: use view-wise sparsity
+    ard_z: use group-wise sparsity
+    spikeslab_w: use feature-wise sparsity (e.g. gene-wise)
+    spikeslab_z: use sample-wise sparsity (e.g. cell-wise)
     n_iterations: upper limit on the number of iterations
     convergence_mode: fast, medium, or slow convergence mode
     seed: random seed
@@ -718,7 +724,7 @@ def mofa(adata, groups_label=None, use_raw=False,
 
     ent.set_data_options(lik, center_features_per_group=True, scale_views=False)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
-    ent.set_model_options(ard_z=True, spikeslab_w=True, spikeslab_z=True, ard_w=True, factors=n_factors, likelihoods=lik)
+    ent.set_model_options(ard_z=ard_z, spikeslab_w=spikeslab_w, spikeslab_z=spikeslab_z, ard_w=ard_z, factors=n_factors, likelihoods=lik)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
