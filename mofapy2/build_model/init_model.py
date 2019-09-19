@@ -2,10 +2,12 @@
 Module to initialise a bioFAM model
 """
 
+import numpy as np
 import scipy as s
 import scipy.stats as stats
 from sys import path
 import sklearn.decomposition
+from sklearn.impute import SimpleImputer
 
 from mofapy2.core.nodes import *
 
@@ -32,7 +34,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -46,6 +48,9 @@ class initModel(object):
         qvar: initial value of the variance of the variational distribution
         qE: initial value of the expectation of the variational distribution
         qE2: initial value of the second moment of the variational distribution
+        Y: matrix to run PCA on (when qmean="pca")
+        impute: logical value if to perform imputation before running PCA,
+            this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
         """
 
         ## Initialise prior distribution (P)
@@ -76,6 +81,13 @@ class initModel(object):
                 elif qmean == "pca":
                     pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                     Ytmp = s.concatenate(Y, axis=1)
+
+                    if impute == True:
+                        if np.any(np.isnan(Ytmp)):
+                            imp = SimpleImputer(missing_values=np.NaN, strategy="mean")
+                            imp.fit(Ytmp)
+                            Ytmp = imp.transform(Ytmp)
+
                     pca.fit(Ytmp)
                     qmean = pca.transform(Ytmp)
 
@@ -98,7 +110,7 @@ class initModel(object):
         )
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
-        qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None, Y=None):
+        qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None, Y=None, impute=False):
         """Method to initialise sparse factors with a spike and slab prior
 
         PARAMETERS
@@ -120,6 +132,13 @@ class initModel(object):
             elif qmean_T1 == "pca":
                 pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                 Ytmp = s.concatenate(Y, axis=1)
+
+                if impute == True:
+                    if np.any(np.isnan(Ytmp)):
+                        imp = SimpleImputer(missing_values=0., strategy="mean")
+                        imp.fit(Ytmp)
+                        Ytmp = imp.transform(Ytmp)
+
                 pca.fit(Ytmp)
                 qmean_T1 = pca.transform(Ytmp)
             else:
