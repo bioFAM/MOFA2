@@ -426,8 +426,12 @@ class entry_point(object):
 
         # Training schedule
         if schedule is None:
-            schedule = ['Y', 'Z', 'W', 'Tau']
-            # schedule = ['Y', 'W', 'Z', 'Tau']
+
+            # Stochastic inference requires Z to be updated first
+            if self.train_opts['stochastic']:
+                schedule = ['Y', 'Z', 'W', 'Tau']
+            else:
+                schedule = ['Y', 'W', 'Z', 'Tau']
 
             # Insert ThetaW after W if Spike and Slab prior on W
             if self.model_opts['spikeslab_w']:

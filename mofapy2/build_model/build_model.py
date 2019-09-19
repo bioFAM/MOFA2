@@ -80,13 +80,13 @@ class buildBiofam(buildModel):
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
         if self.model_opts['spikeslab_z']:
-            self.init_model.initSZ(qmean_T1=0)
+            # self.init_model.initSZ(qmean_T1=0)
             # self.init_model.initSZ(qmean_T1="random")
-            # self.init_model.initSZ(qmean_T1="pca", Y=self.data)
+            self.init_model.initSZ(qmean_T1="pca", Y=self.data)
         else:
-            self.init_model.initZ(qmean=0)
+            # self.init_model.initZ(qmean=0)
             # self.init_model.initZ(qmean="random")
-            # self.init_model.initZ(qmean="pca", Y=self.data)
+            self.init_model.initZ(qmean="pca", Y=self.data)
 
     def build_W(self):
         """ Build node W for the weights """
