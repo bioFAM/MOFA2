@@ -169,11 +169,8 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
     Y <- do.call(cbind, object@data[[view]][groups])
   }
   
-  # NOTE: By default concatenate all the groups
-  # Z <- lapply(get_factors(object)[groups], function(z) as.matrix(z[,factor]))
-  # Z <- do.call(rbind, Z)[,1]
-  # Z <- Z[!is.na(Z)]
-  Z <- get_factors(object, factors=factor, groups = groups, as.data.frame = TRUE)
+  # Feetch factors
+  Z <- get_factors(object, factors = factor, groups = groups, as.data.frame = TRUE)
   Z <- Z[,c("sample","value")]
   colnames(Z) <- c("sample","x")
   
@@ -212,10 +209,9 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
   df1 <- merge(df1, shape_by, by="sample")
   
   # Create data frame 
-  # df1 <- data.frame(sample = names(Z), x = Z, shape_by = shape_by, color_by = color_by, stringsAsFactors = FALSE)
   foo <- list(features); names(foo) <- view
   df2 <- get_data(object, groups = groups, features = foo, as.data.frame = TRUE)
-  df <- left_join(df1, df2, by = "sample")
+  df <- dplyr::left_join(df1, df2, by = "sample")
   
   #remove values missing color or shape annotation
   # if(!showMissing) df <- df[!(is.nan(df$shape_by) & !(is.nan(df$color_by))]
@@ -231,12 +227,12 @@ plot_data_scatter <- function(object, view, factor, groups = "all", features = 1
       axis.title = element_text(size = rel(1.0), color="black"), 
       legend.key = element_rect(fill = "white")
     )
-  
+
   # Add linear regression line
   if (add_lm) {
     p <- p +
       stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
-      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = max(df$value,na.rm = TRUE), size = text_size, color = "black")
+      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = quantile(df$value,na.rm=TRUE)[[4]], size = text_size, color = "black")
   }
   
   # Add legend for color

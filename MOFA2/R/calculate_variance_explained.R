@@ -1,13 +1,12 @@
 #' @title Calculate variance explained by the model
+#' @description  This function takes a trained MOFA model as input and calculates the proportion of variance explained 
+#' (i.e. the coefficient of determinations (R^2)) by the MOFA factors across the different views.
 #' @name calculate_variance_explained
 #' @param object a \code{\link{MOFA}} object.
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
-#' @details This function takes a trained MOFA as input and calculates for each view the coefficient of determination (R^2),
-#' i.e. the proportion of variance in the data explained by the MOFA factor(s) (both jointly and for each individual factor).
-#' In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
-#' @return a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
+#' @return a list with matrices with the amount of variation explained per factor and view.
 #' @import DelayedArray
 #' @export
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all") {
@@ -94,11 +93,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
 
 #' @title Plot variance explained by the model
-#' 
-#' Returns a list of plots with specifies axes.
-#' 
-#' Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.
-#' 
+#' @description plots the variance explained by the MOFA factors across different views and groups, as specified by the user.
+#' Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots that this function generates.
 #' @name plot_variance_explained
 #' @param object a \code{\link{MOFA}} object
 #' @param x character specifying the dimension for the x-axis ("view", "factor", or "group").
@@ -111,7 +107,6 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @param legend logical indicating whether to add a legend to the plot  (default is TRUE).
 #' @param use_cache logical indicating whether to use cache (default is TRUE)
 #' @param ... extra arguments to be passed to \code{\link{calculate_variance_explained}}
-#' @return ggplot object
 #' @import ggplot2
 #' @importFrom cowplot plot_grid
 #' @importFrom stats as.formula
