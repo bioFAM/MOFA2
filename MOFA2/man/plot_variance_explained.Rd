@@ -2,11 +2,7 @@
 % Please edit documentation in R/calculate_variance_explained.R
 \name{plot_variance_explained}
 \alias{plot_variance_explained}
-\title{Plot variance explained by the model
-
-Returns a list of plots with specifies axes.
-
-Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.}
+\title{Plot variance explained by the model}
 \usage{
 plot_variance_explained(object, x = "view", y = "factor",
   split_by = NA, plot_total = FALSE, factors = "all", min_r2 = 0,
@@ -35,13 +31,7 @@ plot_variance_explained(object, x = "view", y = "factor",
 
 \item{...}{extra arguments to be passed to \code{\link{calculate_variance_explained}}}
 }
-\value{
-ggplot object
-}
 \description{
-Plot variance explained by the model
-
-Returns a list of plots with specifies axes.
-
-Consider using cowplot::plot_grid(plotlist = ...) in order to combine plots.
+plots the variance explained by the MOFA factors across different views and groups, as specified by the user.
+Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots that this function generates.
 }

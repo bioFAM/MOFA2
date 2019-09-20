@@ -11,9 +11,10 @@
 #'    \item{\code{data}:}{ The input data. }
 #'    \item{\code{intercepts}:}{ Feature intercepts. }
 #'    \item{\code{samples_metadata}:}{ Samples metadata. }
-#'    \item{\code{features_metadata}:}{ Features metadata }
+#'    \item{\code{features_metadata}:}{ Features metadata. }
 #'    \item{\code{imputed_data}:}{ The imputed data. }
 #'    \item{\code{expectations}:}{ expected values of the factors and the loadings. }
+#'    \item{\code{dim_red}:}{ non-linear dimensionality reduction manifolds. }
 #'    \item{\code{training_stats}:}{ model training statistics. }
 #'    \item{\code{data_options}:}{ Data processing options. }
 #'    \item{\code{training_options}:}{ Model training options. }
@@ -26,7 +27,7 @@
 #'    D for the number of features (per view),
 #'    K for the number of factors.}
 #'    \item{\code{on_disk}:}{ Logical indicating whether data is loaded from disk. }
-#'    \item{\code{Cache}:}{ Cache.}
+#'    \item{\code{cache}:}{ Cache.}
 #'    \item{\code{status}:}{ Auxiliary variable indicating whether the model has been trained.}
 #'}
 #' @name MOFA
@@ -48,6 +49,7 @@ setClass("MOFA",
             model_options       = "list",
             dimensions          = "list",
             on_disk             = "logical",
+            dim_red             = "list",
             cache               = "list",
             status              = "character"
         )

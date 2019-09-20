@@ -7,7 +7,7 @@
 \usage{
 create_mofa(data, groups = NULL, ...)
 
-.create_mofa_from_seurat(srt, groups, assays = "RNA", slot = "data",
+.create_mofa_from_seurat(seurat, groups, assays = "RNA", slot = "data",
   features = NULL)
 }
 \arguments{
@@ -30,7 +30,7 @@ create_mofa(data, groups = NULL, ...)
 Default is NULL (no groups)
 }}
 
-\item{srt}{Seurat object}
+\item{seurat}{Seurat object}
 
 \item{assays}{assays to use for the MOFA model, default is RNA}
 

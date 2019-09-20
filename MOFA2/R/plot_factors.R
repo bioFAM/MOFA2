@@ -219,8 +219,6 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @param scale logical indicating whether to scale factor values.
-#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
-#' using the factor names, or as numeric with the index of the factors
 #' @param color_by specifies groups or values used to color the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data.
 #' (2) a character giving the same of a column present in the sample metadata.

@@ -17,13 +17,9 @@ calculate_variance_explained(object, views = "all", groups = "all",
 \item{factors}{character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'}
 }
 \value{
-a list with matrices with the amount of variation explained per factor and view, and optionally total variance explained per view and variance explained by each feature alone
+a list with matrices with the amount of variation explained per factor and view.
 }
 \description{
-Calculate variance explained by the model
-}
-\details{
-This function takes a trained MOFA as input and calculates for each view the coefficient of determination (R^2),
-i.e. the proportion of variance in the data explained by the MOFA factor(s) (both jointly and for each individual factor).
-In case of non-Gaussian data the variance explained on the Gaussian pseudo-data is calculated.
+This function takes a trained MOFA model as input and calculates the proportion of variance explained 
+(i.e. the coefficient of determinations (R^2)) by the MOFA factors across the different views.
 }
