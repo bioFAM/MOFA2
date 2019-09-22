@@ -24,3 +24,9 @@ If you have several versions of Python installed and Rstudio is not detecting th
 \code{reticulate::use_python}. \cr
 This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
 }
+\examples{
+simple_matrix <- readRDS("data/simple_matrix.rds")
+fm <- prepare_mofa(create_mofa(list("view1" = simple_matrix)))
+fm@model_options$num_factors <- 2; fm@training_options$maxiter <- 100
+fm <- run_mofa(fm)
+}

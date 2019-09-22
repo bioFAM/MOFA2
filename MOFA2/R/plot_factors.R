@@ -55,6 +55,9 @@
 #' @importFrom forcats fct_explicit_na
 #' @importFrom RColorBrewer brewer.pal
 #' @export
+#' @examples
+#' fm <- load_model("data/simple_model.rds")
+#' plot_factor(fm, factors = 1:2)
 plot_factor <- function(object, factors = 1, groups = "all",
                         group_by = "group", color_by = "group", shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
@@ -244,6 +247,9 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @importFrom magrittr %>% set_colnames
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
+#' @examples
+#' fm <- load_model("data/simple_model.rds")
+#' plot_factors(fm, factors = 1:2)
 plot_factors <- function(object, factors = c(1, 2), groups = "all",
                          show_missing = TRUE, scale = FALSE,
                          color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
@@ -433,6 +439,9 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 #' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
 #' @importFrom corrplot corrplot
 #' @export
+#' @examples
+#' fm <- load_model("data/simple_model.rds")
+#' plot_factor_cor(fm)
 plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Sanity checks

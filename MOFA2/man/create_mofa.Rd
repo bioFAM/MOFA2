@@ -13,14 +13,14 @@ create_mofa(data, groups = NULL, ...)
 \arguments{
 \item{data}{Input data can be in several formats:
 \itemize{
- \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
- The "group" column indicates the condition or the experiment (a label for the samples). 
- The view indicates the assay or the -omic (a label for the features).}
- \item{\strong{Seurat object}:}{}
- \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
- Samples are stored in columns and features in rows. 
- Missing values must be filled in prior to creating the MOFA object (see the example)}
- }}
+  \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
+  The "group" column indicates the condition or the experiment (a label for the samples). 
+  The view indicates the assay or the -omic (a label for the features).}
+  \item{\strong{Seurat object}:}{}
+  \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
+  Samples are stored in columns and features in rows. 
+  Missing values must be filled in prior to creating the MOFA object (see the example)}
+  }}
 
 \item{groups}{information about the groups:
 \itemize{
@@ -49,5 +49,9 @@ Returns an untrained \code{\link{MOFA}} object
 Method to create a \code{\link{MOFA}} object
 
 Method to create a \code{\link{MOFA}} object
+}
+\examples{
+simple_matrix <- readRDS("data/simple_matrix.rds")
+create_mofa(list("view1" = simple_matrix))
 }
 \keyword{internal}

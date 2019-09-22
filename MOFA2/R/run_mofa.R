@@ -15,6 +15,11 @@
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @export
+#' @examples
+#' simple_matrix <- readRDS("data/simple_matrix.rds")
+#' fm <- prepare_mofa(create_mofa(list("view1" = simple_matrix)))
+#' fm@model_options$num_factors <- 2; fm@training_options$maxiter <- 100
+#' fm <- run_mofa(fm, outfile = "data/simple_model.rds")
 run_mofa <- function(object, outfile = NA) {
   
   # Sanity checks

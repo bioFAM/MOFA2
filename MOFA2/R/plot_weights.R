@@ -218,6 +218,9 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @importFrom magrittr %>%
 #' @importFrom ggrepel geom_text_repel
 #' @export
+#' @examples
+#' fm <- load_model("data/simple_model.rds")
+#' plot_weights(fm, factors = 1:2, nfeature = 3)
 plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
                          color_by = NULL, shape_by = NULL,
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 

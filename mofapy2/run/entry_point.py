@@ -5,6 +5,7 @@ import sys
 from time import sleep
 from time import time
 import imp
+from typing import Union
 
 from mofapy2.core.BayesNet import *
 from mofapy2.core import gpu_utils
@@ -691,7 +692,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
          likelihood: str = "gaussian", n_factors: int = 10,
          ard_w: bool = True, ard_z: bool = False,
          spikeslab_w: bool = True, spikeslab_z: bool = False,
-         n_iterations: int = 1000, convergence_mode: str = "fast",
+         n_iterations: int = 1000, convergence_mode: str = "fast", dropR2: Union[int, float] = False,
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
          verbose: bool = False, quiet: bool = True, copy: bool = False):
     """
@@ -711,6 +712,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
     spikeslab_z: use sample-wise sparsity (e.g. cell-wise)
     n_iterations: upper limit on the number of iterations
     convergence_mode: fast, medium, or slow convergence mode
+    dropR2: minimum fraction of variance threshold to drop factors during training
     seed: random seed
     outfile: path to HDF5 file to store the model
     verbose: print verbose information during traing
@@ -725,7 +727,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
     ent.set_data_options(lik, center_features_per_group=True, scale_views=False)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
     ent.set_model_options(ard_z=ard_z, spikeslab_w=spikeslab_w, spikeslab_z=spikeslab_z, ard_w=ard_z, factors=n_factors, likelihoods=lik)
-    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
+    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet, dropR2=dropR2)
 
     ent.build()
     ent.run()

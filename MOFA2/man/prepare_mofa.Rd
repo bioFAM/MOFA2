@@ -30,3 +30,7 @@ Returns an untrained \code{\link{MOFA}} with specified options filled in the cor
 Function to prepare a \code{\link{MOFA}} object for training. 
 It requires defining data, model and training options.
 }
+\examples{
+simple_matrix <- readRDS("data/simple_matrix.rds")
+prepare_mofa(create_mofa(list("view1" = simple_matrix)))
+}
