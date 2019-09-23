@@ -56,3 +56,4 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
 
   return(object)
 }
+

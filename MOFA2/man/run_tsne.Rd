@@ -16,7 +16,7 @@ run_tsne(object, factors = "all", groups = "all", ...)
 \item{...}{arguments passed to \code{\link{Rtsne}}}
 }
 \value{
-Returns a \code{\link{MOFA}} object with the DimRed slot filled with the t-SNE output
+Returns a \code{\link{MOFA}} object with the dim_red slot filled with the t-SNE output
 }
 \description{
 Run t-SNE on the MOFA factors

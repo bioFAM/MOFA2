@@ -16,7 +16,7 @@ run_umap(object, factors = "all", groups = "all", ...)
 \item{...}{arguments passed to \code{\link{umap}}}
 }
 \value{
-Returns a \code{\link{MOFA}} object with the DimRed slot filled with the UMAP output
+Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
 }
 \description{
 Run UMAP on the MOFA factors
