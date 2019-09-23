@@ -27,9 +27,11 @@ Default is \code{FALSE}.}
 If FALSE, it also retrieves the variance (only if it has been previously calculated).}
 }
 \value{
-By default returns a list where each element is a matrix with dimensionality (D,N), where D is the number of features in this view and N is the number of samples. \cr
-Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns (view,feature,sample,value).
+TO FINISH
 }
 \description{
 Function to get the imputed data. It requires the previous use of the \code{\link{impute}} method.
+}
+\details{
+TO FINISH
 }
