@@ -23,7 +23,7 @@
 #' @return Returns a list with the data reconstructed by the model predictions.
 #' @export
 predict <- function(object, views = "all", groups = "all", factors = "all",
-                    type = c("inRange", "response", "link")) {
+                    type = c("inRange", "response", "link"), add_intercept = TRUE) {
 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -57,6 +57,15 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
       # calculate terms based on linear model
       pred <- t(Z[[g]] %*% t(W[[m]]))
 
+      # add feature-wise intercepts (i think this does not work for non-gaussian likelihhood, needs some verification)
+      tryCatch( {
+        if (add_intercept & length(object@intercepts[[1]])>0) {
+          intercepts <- object@intercepts[[m]][[g]]
+          intercepts[is.na(intercepts)] <- 0
+          pred <- pred + object@intercepts[[m]][[g]]
+          # pred <- sweep(pred, MARGIN=1, STATS=object@intercepts[[m]][[g]], FUN="+")
+        } }, error = function(e) { NULL })
+      
       # make predicitons based on underlying likelihood
       lks <- object@model_options$likelihoods
 

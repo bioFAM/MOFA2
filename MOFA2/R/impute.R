@@ -24,11 +24,12 @@
 #' See \code{\link{get_default_training_options}}.
 #' @return This method fills the \code{imputed_data} slot by replacing the missing values in the input data with the model predictions.
 #' @export
-impute <- function(object, views = "all", groups = "all", factors = "all", type = c("inRange", "response", "link")) {
+impute <- function(object, views = "all", groups = "all", factors = "all", 
+                   type = c("inRange", "response", "link"), add_intercept = TRUE) {
 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (length(object@imputed_data)>0) warning("imputed_data slot is already filled. It will be replaced")
+  if (length(object@imputed_data)>0) warning("imputed_data slot is already filled. It will be replaced and the variance estimates will be lost...")
   
   # Get views and groups
   views  <- .check_and_get_views(object, views)
@@ -38,14 +39,14 @@ impute <- function(object, views = "all", groups = "all", factors = "all", type 
   type <- match.arg(type)
 
   # Do predictions
-  pred <- predict(object, views=views, factors=factors, type=type)
+  pred <- predict(object, views=views, factors=factors, type=type, add_intercept=add_intercept)
 
   # Replace NAs with predicted values
-  imputed <- get_data(object, views=views, groups=groups, add_intercept = FALSE)
+  imputed <- get_data(object, views=views, groups=groups, add_intercept = add_intercept)
   for (m in views) {
     for (g in groups) {
       imputed[[m]][[g]] <- list("mean" = imputed[[m]][[g]])
-      non_observed <- which(is.na(imputed[[m]][[g]]), arr.ind = TRUE)
+      non_observed <- which(is.na(imputed[[m]][[g]]$mean), arr.ind = TRUE)
       imputed[[m]][[g]]$mean[non_observed] <- pred[[m]][[g]][non_observed]
       imputed[[m]][[g]]$variance <- list() # empty variance
     }

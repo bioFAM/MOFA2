@@ -4,7 +4,6 @@ import scipy as s
 import sys
 from time import sleep
 from time import time
-import imp
 
 from mofapy2.core.BayesNet import *
 from mofapy2.core import gpu_utils

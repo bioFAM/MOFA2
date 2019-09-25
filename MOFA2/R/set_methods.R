@@ -102,7 +102,7 @@ setReplaceMethod("samples", signature(object="MOFA", value="list"),
                    
                    # Add samples names to the imputed data
                    if (length(object@imputed_data)>0) 
-                    object <- .set_imputed_data(object, entity = 'samples', value)
+                    object <- .set_imputed_data_names(object, entity = 'samples', value)
                    
                    object
                  })
@@ -203,7 +203,7 @@ setReplaceMethod("features", signature(object="MOFA", value="list"),
                    
                    # Add samples names to the imputed data
                    if (length(object@imputed_data)>0) 
-                    object <- .set_imputed_data(object, entity = 'features', value)
+                    object <- .set_imputed_data_names(object, entity = 'features', value)
                    
                    object
                  })
@@ -320,6 +320,10 @@ setMethod("views<-", signature(object="MOFA", value="character"),
             if (length(object@data)>0)
               names(object@data) <- value
             
+            # Set view names in the intercepts
+            if (length(object@intercepts)>0)
+              names(object@intercepts) <- value
+            
             # Set view names in the imputed data
             if (length(object@imputed_data)>0)
               names(object@imputed_data) <- value
@@ -406,6 +410,12 @@ setMethod("groups<-", signature(object="MOFA", value="character"),
             if (length(object@data)>0) {
               for (m in names(object@data))
                 names(object@data[[m]]) <- value
+            }
+            
+            # Set sample group names in the intercepts
+            if (length(object@intercepts)>0) {
+              for (m in names(object@intercepts))
+                names(object@intercepts[[m]]) <- value
             }
             
             # Set sample group names in imputed data
