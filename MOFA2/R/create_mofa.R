@@ -22,7 +22,7 @@
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples
-#' simple_matrix <- readRDS("data/simple_matrix.rds")
+#' simple_matrix <- t(readRDS("data/simple_matrix.rds"))
 #' create_mofa(list("view1" = simple_matrix))
 create_mofa <- function(data, groups = NULL, ...) {
   

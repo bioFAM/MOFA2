@@ -31,6 +31,6 @@ Function to prepare a \code{\link{MOFA}} object for training.
 It requires defining data, model and training options.
 }
 \examples{
-simple_matrix <- readRDS("data/simple_matrix.rds")
+simple_matrix <- t(readRDS("data/simple_matrix.rds"))
 prepare_mofa(create_mofa(list("view1" = simple_matrix)))
 }

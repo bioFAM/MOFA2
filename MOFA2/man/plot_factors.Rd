@@ -54,3 +54,7 @@ This method generates a single scatterplot for the combination of two latent fac
 TO-FINISH...
 \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 }
+\examples{
+fm <- load_model("data/simple_model.hdf5")
+plot_factors(fm, factors = 1:2)
+}

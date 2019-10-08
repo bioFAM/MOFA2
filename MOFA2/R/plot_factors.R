@@ -56,7 +56,7 @@
 #' @importFrom RColorBrewer brewer.pal
 #' @export
 #' @examples
-#' fm <- load_model("data/simple_model.rds")
+#' fm <- load_model("data/simple_model.hdf5")
 #' plot_factor(fm, factors = 1:2)
 plot_factor <- function(object, factors = 1, groups = "all",
                         group_by = "group", color_by = "group", shape_by = NULL, 
@@ -248,7 +248,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 #' @examples
-#' fm <- load_model("data/simple_model.rds")
+#' fm <- load_model("data/simple_model.hdf5")
 #' plot_factors(fm, factors = 1:2)
 plot_factors <- function(object, factors = c(1, 2), groups = "all",
                          show_missing = TRUE, scale = FALSE,
@@ -440,7 +440,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 #' @importFrom corrplot corrplot
 #' @export
 #' @examples
-#' fm <- load_model("data/simple_model.rds")
+#' fm <- load_model("data/simple_model.hdf5")
 #' plot_factor_cor(fm)
 plot_factor_cor <- function(object, method = "pearson", ...) {
   

@@ -82,3 +82,7 @@ One of the main steps for the annotation of factors is to visualise and color th
 This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 }
+\examples{
+fm <- load_model("data/simple_model.hdf5")
+plot_factor(fm, factors = 1:2)
+}

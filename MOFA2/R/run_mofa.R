@@ -16,10 +16,10 @@
 #' @import reticulate
 #' @export
 #' @examples
-#' simple_matrix <- readRDS("data/simple_matrix.rds")
+#' simple_matrix <- t(readRDS("data/simple_matrix.rds"))
 #' fm <- prepare_mofa(create_mofa(list("view1" = simple_matrix)))
 #' fm@model_options$num_factors <- 2; fm@training_options$maxiter <- 100
-#' fm <- run_mofa(fm, outfile = "data/simple_model.rds")
+#' fm <- run_mofa(fm, outfile = "data/simple_model.hdf5")
 run_mofa <- function(object, outfile = NA) {
   
   # Sanity checks
