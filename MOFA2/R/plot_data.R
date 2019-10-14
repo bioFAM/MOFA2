@@ -280,7 +280,7 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
   
   M <- get_dimensions(object)[["M"]]
   G <- get_dimensions(object)[["G"]]
-  if (M==1 & G==1) stop("This function is not useful when there is just one view and one group")
+  if (M==1 & G==1) warning("This function is not useful when there is just one view and one group")
   if (is.null(dim(data[[1]][[1]]))) stop("Data not found")
   
   # Define colors  
