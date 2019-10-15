@@ -12,7 +12,7 @@ from sklearn.impute import SimpleImputer
 from mofapy2.core.nodes import *
 
 class initModel(object):
-    def __init__(self, dim, data, lik):
+    def __init__(self, dim, data, lik, seed):
         """
         PARAMETERS
         dim: dictionary with keyworded dimensionalities:
@@ -25,6 +25,9 @@ class initModel(object):
         lik: list of strings with length M
             likelihood for each view, choose from ('gaussian','poisson','bernoulli')
         """
+
+        s.random.seed(seed)
+
         self.data = data
         self.lik = lik
         self.N = dim["N"]
@@ -100,6 +103,7 @@ class initModel(object):
             else:
                 print("Wrong initialisation for Z")
                 exit()
+
 
         # Initialise the node
         self.nodes["Z"] = Z_Node(

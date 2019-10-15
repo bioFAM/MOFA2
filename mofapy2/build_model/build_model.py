@@ -12,11 +12,12 @@ from mofapy2.build_model.init_model import initModel
 from mofapy2.build_model.utils import *
 
 class buildModel(object):
-    def __init__(self, data, data_opts, model_opts, dimensionalities):
+    def __init__(self, data, data_opts, model_opts, dimensionalities, seed):
         self.data = data
         self.data_opts = data_opts
         self.model_opts = model_opts
         self.dim = dimensionalities
+        self.seed = seed
 
     def createMarkovBlankets(self):
         """ Define the markov blankets """
@@ -36,11 +37,11 @@ class buildModel(object):
 
 
 class buildBiofam(buildModel):
-    def  __init__(self, data, data_opts, model_opts, dimensionalities):
-        buildModel.__init__(self, data, data_opts, model_opts, dimensionalities)
+    def  __init__(self, data, data_opts, model_opts, dimensionalities, seed):
+        buildModel.__init__(self, data, data_opts, model_opts, dimensionalities, seed)
 
         # create an instance of initModel
-        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"])
+        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed=self.seed)
 
         # Build all nodes
         self.build_nodes()
@@ -58,19 +59,19 @@ class buildBiofam(buildModel):
         self.build_Y() # important to keep Y last. NAs get replaced by 0 and can mislead PCA initialisation
 
         # define ARD sparsity per sample group (on Z)
-        if self.model_opts['ard_z']:
+        if self.model_opts['ard_factors']:
             self.build_AlphaZ()
 
         # define ARD sparsity per feature_group, or view (on W)
-        if self.model_opts['ard_w']:
+        if self.model_opts['ard_weights']:
             self.build_AlphaW()
 
         # define feature-wise spike and slab sparsity in Z
-        if self.model_opts['spikeslab_z']:
+        if self.model_opts['spikeslab_factors']:
             self.build_ThetaZ()
 
         # define feature-wise spike and slab sparsity in W
-        if self.model_opts['spikeslab_w']:
+        if self.model_opts['spikeslab_weights']:
             self.build_ThetaW()
 
     def build_Y(self):
@@ -79,7 +80,7 @@ class buildBiofam(buildModel):
 
     def build_Z(self):
         """ Build node Z for the factors or latent variables """
-        if self.model_opts['spikeslab_z']:
+        if self.model_opts['spikeslab_factors']:
             # self.init_model.initSZ(qmean_T1=0)
             # self.init_model.initSZ(qmean_T1="random")
             self.init_model.initSZ(qmean_T1="pca", Y=self.data, impute=True)
@@ -90,7 +91,7 @@ class buildBiofam(buildModel):
 
     def build_W(self):
         """ Build node W for the weights """
-        if self.model_opts['spikeslab_w']:
+        if self.model_opts['spikeslab_weights']:
             # self.init_model.initSW(qmean_S1=0)
             self.init_model.initSW(qmean_S1="random", Y=self.data)
             # self.init_model.initSW(qmean_S1="pca", Y=self.data)
@@ -154,22 +155,22 @@ class buildBiofam(buildModel):
         nodes['Tau'].addMarkovBlanket(Y=nodes["Y"], W=nodes["W"], Z=nodes["Z"])
 
         # Add ThetaZ in the markov blanket of Z and viceversa if Spike and Slab prior on Z
-        if self.model_opts['spikeslab_z']:
+        if self.model_opts['spikeslab_factors']:
             nodes['Z'].addMarkovBlanket(ThetaZ=nodes["ThetaZ"])
             nodes["ThetaZ"].addMarkovBlanket(Z=nodes["Z"])
 
         # Add ThetaW in the markov blanket of W and viceversa if Spike and Slab prior on Z
-        if self.model_opts['spikeslab_w']:
+        if self.model_opts['spikeslab_weights']:
             nodes['W'].addMarkovBlanket(ThetaW=nodes["ThetaW"])
             nodes["ThetaW"].addMarkovBlanket(W=nodes["W"])
 
         # Add AlphaZ in the markov blanket of Z and viceversa if ARD prior on Z
-        if self.model_opts['ard_z']:
+        if self.model_opts['ard_factors']:
             nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
             nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
 
         # Add AlphaW in the markov blanket of W and viceversa if ARD prior on W
-        if self.model_opts['ard_w']:
+        if self.model_opts['ard_weights']:
             nodes['AlphaW'].addMarkovBlanket(W=nodes['W'])
             nodes['W'].addMarkovBlanket(AlphaW=nodes['AlphaW'])
 

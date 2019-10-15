@@ -4,7 +4,6 @@ import scipy as s
 import sys
 from time import sleep
 from time import time
-from typing import Union
 
 from mofapy2.core.BayesNet import *
 from mofapy2.core import gpu_utils
@@ -434,27 +433,27 @@ class entry_point(object):
                 schedule = ['Y', 'W', 'Z', 'Tau']
 
             # Insert ThetaW after W if Spike and Slab prior on W
-            if self.model_opts['spikeslab_w']:
+            if self.model_opts['spikeslab_weights']:
                 ix = schedule.index("W"); schedule.insert(ix+1, 'ThetaW')
 
             # Insert ThetaZ after Z if Spike and Slab prior on Z
-            if self.model_opts['spikeslab_z']:
+            if self.model_opts['spikeslab_factors']:
                 ix = schedule.index("Z"); schedule.insert(ix+1, 'ThetaZ')
 
             # Insert AlphaW after W if ARD prior on W
-            if self.model_opts['ard_w']:
+            if self.model_opts['ard_weights']:
                 ix = schedule.index("W"); schedule.insert(ix+1, 'AlphaW')
 
             # Insert AlphaZ after Z if ARD prior on Z
-            if self.model_opts['ard_z']:
+            if self.model_opts['ard_factors']:
                 ix = schedule.index("Z"); schedule.insert(ix+1, 'AlphaZ')
 
         else:
             assert set(["Y","W","Z","Tau"]) <= set(schedule)
-            if self.model_opts['ard_z']: assert "AlphaZ" in schedule
-            if self.model_opts['ard_w']: assert "AlphaW" in schedule
-            if self.model_opts['spikeslab_z']: assert "ThetaZ" in schedule
-            if self.model_opts['spikeslab_w']: assert "ThetaW" in schedule
+            if self.model_opts['ard_factors']: assert "AlphaZ" in schedule
+            if self.model_opts['ard_weights']: assert "AlphaW" in schedule
+            if self.model_opts['spikeslab_factors']: assert "ThetaZ" in schedule
+            if self.model_opts['spikeslab_weights']: assert "ThetaW" in schedule
 
         self.train_opts['schedule'] = schedule
 
@@ -462,7 +461,7 @@ class entry_point(object):
         if seed is None:  # Seed for the random number generator
             seed = int(round(time()*1000)%1e6)
         self.train_opts['seed'] = int(seed)
-        s.random.seed(self.train_opts['seed'])
+        # s.random.seed(self.train_opts['seed'])
 
         # Use TauTrick to speed up ELBO computation?
         self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
@@ -489,7 +488,7 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_model_options(self, factors, likelihoods, spikeslab_z=False, spikeslab_w=False, ard_z=False, ard_w=False):
+    def set_model_options(self, factors, likelihoods, spikeslab_factors=False, spikeslab_weights=False, ard_factors=False, ard_weights=False):
         """ Set model options """
 
         # TODO: SANITY CHECKS AND:
@@ -498,16 +497,16 @@ class entry_point(object):
         self.model_opts = {}
 
         # Define whether to use sample-wise spike and slab prior for Z
-        self.model_opts['spikeslab_z'] = spikeslab_z
+        self.model_opts['spikeslab_factors'] = spikeslab_factors
 
         # Define whether to use feature-wise spike and slab prior for W
-        self.model_opts['spikeslab_w'] = spikeslab_w
+        self.model_opts['spikeslab_weights'] = spikeslab_weights
 
         # Define whether to use group and factor-wise ARD prior for Z
-        self.model_opts['ard_z'] = ard_z
+        self.model_opts['ard_factors'] = ard_factors
 
         # Define whether to use view and factor-wise ARD prior for W
-        self.model_opts['ard_w'] = ard_w
+        self.model_opts['ard_weights'] = ard_weights
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
@@ -563,7 +562,7 @@ class entry_point(object):
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
 
         # Build the nodes
-        tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities)
+        tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities, self.train_opts['seed'])
 
         # Create BayesNet class
         if self.train_opts['stochastic']:
@@ -689,9 +688,9 @@ class entry_point(object):
 
 def mofa(adata, groups_label: bool = None, use_raw: bool = False,
          likelihood: str = "gaussian", n_factors: int = 10,
-         ard_w: bool = True, ard_z: bool = False,
-         spikeslab_w: bool = True, spikeslab_z: bool = False,
-         n_iterations: int = 1000, convergence_mode: str = "fast", dropR2: Union[int, float] = False,
+         ard_weights: bool = True, ard_factors: bool = False,
+         spikeslab_weights: bool = True, spikeslab_factors: bool = False,
+         n_iterations: int = 1000, convergence_mode: str = "fast",
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
          verbose: bool = False, quiet: bool = True, copy: bool = False):
     """
@@ -705,13 +704,12 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
     use_raw (optional): use raw slot of AnnData as input values
     likelihood: likelihood to use, default is gaussian
     n_factors: number of factors to train the model with
-    ard_w: use view-wise sparsity
-    ard_z: use group-wise sparsity
-    spikeslab_w: use feature-wise sparsity (e.g. gene-wise)
-    spikeslab_z: use sample-wise sparsity (e.g. cell-wise)
+    ard_weights: use view-wise sparsity
+    ard_factors: use group-wise sparsity
+    spikeslab_weights: use feature-wise sparsity (e.g. gene-wise)
+    spikeslab_factors: use sample-wise sparsity (e.g. cell-wise)
     n_iterations: upper limit on the number of iterations
     convergence_mode: fast, medium, or slow convergence mode
-    dropR2: minimum fraction of variance threshold to drop factors during training
     seed: random seed
     outfile: path to HDF5 file to store the model
     verbose: print verbose information during traing
@@ -725,8 +723,8 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
 
     ent.set_data_options(lik, center_features_per_group=True, scale_views=False)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
-    ent.set_model_options(ard_z=ard_z, spikeslab_w=spikeslab_w, spikeslab_z=spikeslab_z, ard_w=ard_z, factors=n_factors, likelihoods=lik)
-    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet, dropR2=dropR2)
+    ent.set_model_options(ard_factors=ard_factors, spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, ard_weights=ard_factors, factors=n_factors, likelihoods=lik)
+    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
     ent.run()
