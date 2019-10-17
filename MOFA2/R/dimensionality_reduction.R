@@ -61,7 +61,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
   Z[is.na(Z)] <- 0
   
   # Run UMAP
-  object@dim_red$UMAP <- umap(Z, ...)$layout
+  object@dim_red$UMAP <- umap(Z, ...)
   
   return(object)
   
