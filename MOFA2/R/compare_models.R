@@ -59,7 +59,7 @@ compare_factors <- function(models, ...) {
 #' For model selection the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{MOFA}} objects.
 #' @export
-compare_elbo <- function(models) {
+compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
   
   # Sanity checks
   if(!is.list(models))
@@ -78,11 +78,26 @@ compare_elbo <- function(models) {
     ELBO = elbo_vals, 
     model = names(models)
   )
-  df$logELBO <- -log2(-df$ELBO)
   
-  gg <- ggplot(df, aes_string(x="model", y="logELBO")) + 
+  
+  # take the log
+  # if (isTRUE(log)) {
+  #   message("Plotting the log of the negative of the ELBO (the higher the better)")
+  #   df$ELBO <- log2(-df$ELBO)
+  # }
+  if (all(df$ELBO<0)) {
+    df$ELBO <- abs(df$ELBO)
+    message("Plotting the absolute value of the ELBO for every model (the smaller the better)")
+} else {
+    message("Plotting the ELBO for every model (the higher the better)")
+  }
+  
+  # return data
+  if (isTRUE(return_data)) return(df)
+  
+  gg <- ggplot(df, aes_string(x="model", y="ELBO")) + 
     geom_bar(stat="identity", color="black", fill="grey70") +
-    labs(x="", y="log Evidence Lower Bound (ELBO)") +
+    labs(x="", y="Evidence Lower Bound (ELBO)") +
     theme_classic()
   
   gg <- gg + theme(

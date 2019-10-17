@@ -50,10 +50,11 @@
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} 
-#' @import ggplot2 grDevices RColorBrewer
+#' @import ggplot2 grDevices
 #' @importFrom stats complete.cases
 #' @importFrom forcats fct_explicit_na
 #' @importFrom RColorBrewer brewer.pal
+#' @importFrom dplyr summarise group_by
 #' @export
 #' @examples
 #' fm <- load_model("data/simple_model.hdf5")
@@ -99,9 +100,9 @@ plot_factor <- function(object, factors = 1, groups = "all",
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   if (is.factor(df$color_by))
-    df$color_by <- fct_explicit_na(df$color_by)
+    df$color_by <- forcats::fct_explicit_na(df$color_by)
   if (is.factor(df$shape_by))
-    df$shape_by <- fct_explicit_na(df$shape_by)
+    df$shape_by <- forcats::fct_explicit_na(df$shape_by)
   
   # Scale values from 0 to 1
   if (scale) {

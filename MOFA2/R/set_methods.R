@@ -321,7 +321,7 @@ setMethod("views<-", signature(object="MOFA", value="character"),
               names(object@data) <- value
             
             # Set view names in the intercepts
-            if (length(object@intercepts)>0)
+            if (length(object@intercepts[[1]])>0)
               names(object@intercepts) <- value
             
             # Set view names in the imputed data
@@ -413,7 +413,7 @@ setMethod("groups<-", signature(object="MOFA", value="character"),
             }
             
             # Set sample group names in the intercepts
-            if (length(object@intercepts)>0) {
+            if (length(object@intercepts[[1]])>0) {
               for (m in names(object@intercepts))
                 names(object@intercepts[[m]]) <- value
             }
