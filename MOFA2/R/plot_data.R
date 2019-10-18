@@ -469,15 +469,19 @@ mofa     \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x 
     color_by <- data[[viewidx]][color_by,]
     
     # Option 3: by a metadata column in object@samples$metadata
-  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% colnames(samples_metadata(object)))) {
     color_by <- samples_metadata(object)[,color_by]
+
+    # Option 4: by a factor value in x@expectations$Z
+  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% colnames(get_factors(object)[[1]]))) {
+    color_by <- do.call(rbind, get_factors(object))[,color_by]
     
-    # Option 4: input is a data.frame with columns (sample, color)
+    # Option 5: input is a data.frame with columns (sample, color)
   } else if (is(color_by, "data.frame")) {
     stopifnot(all(colnames(color_by) %in% c("sample", "color")))
     stopifnot(all(unique(color_by$sample) %in% unlist(samples(object))))
     
-    # Option 5: color_by is a vector of length N
+    # Option 6: color_by is a vector of length N
   } else if (length(color_by) > 1) {
     stopifnot(length(color_by) == sum(get_dimensions(object)$N))
     
