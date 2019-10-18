@@ -105,11 +105,22 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @importFrom magrittr %>% set_colnames
 #' @export
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
-                         color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                         dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
+                        color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
+                        dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+
+  # If UMAP or TSNE is requested but were not computed, compute the requested embedding
+  if ((method %in% c("UMAP", "TSNE")) && (!.hasSlot(object, "dim_red") || !(method %in% names(object@dim_red)))) {
+    message(paste0(method, " embedding was not computed. Running run_", tolower(method), "()..."))
+    if (method == "UMAP") {
+      object <- run_umap(object, ...)
+    } else {  # method == "TSNE"
+      object <- run_tsne(object, ...)
+    }
+  }
+
   method <- match.arg(method, names(object@dim_red))  # make sure the slot for the requested method exists
   
   # Remember color_name and shape_name if not provided
