@@ -28,7 +28,11 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
   Z[is.na(Z)] <- 0
   
   # Run t-SNE
-  object@dim_red$TSNE <- Rtsne(Z, check_duplicates=FALSE, pca=FALSE, ...)
+  tsne_embedding <- Rtsne(Z, check_duplicates = FALSE, pca = FALSE, ...)
+
+  # Add sample names and enumerate latent dimensions (e.g. TSNE1 and TSNE2)
+  object@dim_red$TSNE <- data.frame(rownames(Z), tsne_embedding$Y)
+  colnames(object@dim_red$TSNE) <- c("sample", paste0("TSNE", 1:ncol(tsne_embedding$Y)))
   
   return(object)
   
@@ -52,7 +56,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   # Get factor values
-  Z <- get_factors(object, factors=factors, groups=groups)
+  Z <- get_factors(object, factors = factors, groups = groups)
   
   # Concatenate groups
   Z <- do.call(rbind, Z)
@@ -61,7 +65,11 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
   Z[is.na(Z)] <- 0
   
   # Run UMAP
-  object@dim_red$UMAP <- umap(Z, ...)
+  umap_embedding <- umap(Z, ...)
+
+  # Add sample names and enumerate latent dimensions (e.g. UMAP1 and UMAP2)
+  object@dim_red$UMAP <- data.frame(rownames(Z), umap_embedding)
+  colnames(object@dim_red$UMAP) <- c("sample", paste0("UMAP", 1:ncol(umap_embedding)))
   
   return(object)
   
@@ -96,14 +104,13 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
 #' @export
-plot_dimred <- function(object, method = c("umap","tsne"), groups = "all", show_missing = TRUE,
+plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
                          color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                          dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  method = match.arg(method)
-  if (!method %in% names(object@dim_red)) stop(sprintf("%s not present in object@dim_red",method))
+  method <- match.arg(method, names(object@dim_red))  # make sure the slot for the requested method exists
   
   # Remember color_name and shape_name if not provided
   if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))
@@ -113,10 +120,12 @@ plot_dimred <- function(object, method = c("umap","tsne"), groups = "all", show_
   
   # Fetch latent manifold
   Z <- object@dim_red[[method]]
+  latent_dimensions_names <- colnames(Z)[-1]
+  Z <- gather(Z, -sample, key="latent_dimension", value="value")
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)
-  shape_by <- .set_shapeby(object, shape_by )
+  shape_by <- .set_shapeby(object, shape_by)
   
   # Merge factor values with color and shape information
   df <- merge(Z, color_by, by="sample")
@@ -126,19 +135,17 @@ plot_dimred <- function(object, method = c("umap","tsne"), groups = "all", show_
   # Remove missing values
   if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   
-  # spread over factors
-  df <- spread(df, key="factor", value="value")
-  df <- df[,c(colnames(df)[seq_len(4)], factors)]
-  df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
+  # spread over latent dimensions
+  df <- spread(df, key="latent_dimension", value="value")
+  df <- set_colnames(df, c(colnames(df)[seq_len(3)], "x", "y"))
   
   # Return data if requested instead of plotting
   if (return_data) return(df)
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="x", y="y")) + 
-    geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
-    # ggrastr::geom_point_rast(aes_string(color = "color_by", shape = "shape_by")) +
-    labs(x=factors[1], y=factors[2]) +
+  p <- ggplot(df, aes_string(x = "x", y = "y")) + 
+    geom_point(aes_string(color = "color_by", shape = "shape_by"), size = dot_size, alpha = alpha) +
+    labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
     theme_classic() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 
