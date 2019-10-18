@@ -286,10 +286,10 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
   # Define colors  
   if (is.null(colors)) {
     # colors <- rep("#5CACEE", M)
-    palette <- c("#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", "#66A61E",
-                 "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
-                 "#A65628", "#F781BF", "#1B9E77")
-    if (M < 17) colors <- palette[seq_len(M)] else colors <- rainbow(M)
+    palette <- c("#FF7F50", "#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", 
+                 "#66A61E", "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", 
+                 "#FFFF33", "#A65628", "#F781BF", "#1B9E77")
+    if (M < 18) colors <- palette[seq_len(M)] else colors <- rainbow(M)
     names(colors) <- views(object)
   } else {
       stopifnot(sort(names(colors))==sort(views(object)))
