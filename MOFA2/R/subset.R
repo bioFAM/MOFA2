@@ -37,6 +37,11 @@ subset_groups <- function(object, groups) {
     object@imputed_data <- sapply(object@imputed_data, function(x) x[groups], simplify = FALSE, USE.NAMES = TRUE) 
   }
   
+  # Subset intercepts
+  if (length(objectintercepts[[1]])>0) {
+    object@objectintercepts <- sapply(object@objectintercepts, function(x) x[groups], simplify = FALSE, USE.NAMES = TRUE) 
+  }
+  
   # Update dimensionality
   object@dimensions[["G"]] <- length(groups)
   object@dimensions[["N"]] <- object@dimensions[["N"]][groups]
@@ -56,7 +61,7 @@ subset_groups <- function(object, groups) {
   stopifnot(object@samples_metadata$sample == unlist(lapply(object@expectations$Y,colnames)))
   
   # Update groups names
-  # groups(object) <- groups
+  # groups(object) <- groups # don't need to run this
   object@data_options$groups <- groups
   
   # Re-compute variance explained
@@ -99,12 +104,23 @@ subset_views <- function(object, views) {
     object@imputed_data <- object@imputed_data[views]
   }
   
+  # Subset intercepts
+  if (length(object@intercepts[[1]])>0) {
+    object@intercepts <- object@intercepts[views]
+  }
+  
+  # Subset feature metadata
+  if (length(object@intercepts[[1]])>0) {
+    object@features_metadata <- object@features_metadata[object@features_metadata$view %in% views,]
+  }
+  
   # Update dimensionality
   object@dimensions[["M"]] <- length(views)
   object@dimensions[["D"]] <- object@dimensions[["D"]][views]
   
   # Update view names
-  views(object) <- views
+  # views(object) <- views # don't need to run this
+  object@data_options$views <- views
   
   # Re-compute variance explained
   object@cache[["variance_explained"]] <- calculate_variance_explained(object)

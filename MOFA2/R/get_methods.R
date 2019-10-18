@@ -108,11 +108,12 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
 #' Default is "all" If this is used, the argument views is ignored.
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices.
 #' @param add_intercept logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.
+#' @param na.rm remove NAs from the data.frame (only if as.data.frame is TRUE).
 #' @details By default this function returns a list where each element is a data matrix with dimensionality (D,N) 
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
 #' @export
-get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE) {
+get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE, na.rm = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -162,7 +163,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   if (as.data.frame) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
-        tmp <- reshape2::melt(data[[m]][[p]], na.rm=T)
+        tmp <- reshape2::melt(data[[m]][[p]], na.rm=na.rm)
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = p, tmp)
         return(tmp) 
