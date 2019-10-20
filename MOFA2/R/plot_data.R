@@ -7,8 +7,8 @@
 #' @name plot_data_heatmap
 #' @description Function to plot a heatmap of the data for relevant features, typically the ones with high loadings.
 #' @param object a \code{\link{MOFA}} object.
-#' @param view a string with the view name, or an integer with the index of the view.
 #' @param factor a string with the factor name, or an integer with the index of the factor.
+#' @param view a string with the view name, or an integer with the index of the view. Default is the first view.
 #' @param groups groups to plot. Default is "all".
 #' @param features if an integer (default), the total number of features to plot based on the absolute value of the loadings.
 #' If a character vector, a set of manually defined features.
@@ -26,7 +26,7 @@
 #' @importFrom pheatmap pheatmap
 #' @importFrom utils tail
 #' @export
-plot_data_heatmap <- function(object, view, factor, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE, ...) {
+plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -107,10 +107,10 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @name plot_data_scatter
 #' @description Function to do a scatterplot of features against factor values.
 #' @param object a \code{\link{MOFA}} object.
-#' @param view string with the view name, or an integer with the index of the view.
 #' @param factor string with the factor name, or an integer with the index of the factor.
-#' @param features if an integer (default), the total number of features to plot. If a character vector, a set of manually-defined features.
+#' @param view string with the view name, or an integer with the index of the view. Default is the first view.
 #' @param groups groups to plot. Default is "all".
+#' @param features if an integer (default), the total number of features to plot. If a character vector, a set of manually-defined features.
 #' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
 #' \itemize{
 #' \item (default) the string "group", it the dots with respect to their predefined groups.
@@ -144,7 +144,7 @@ plot_data_heatmap <- function(object, view, factor, groups = "all", features = 5
 #' @importFrom dplyr left_join
 #' @importFrom utils tail
 #' @export
-plot_data_scatter <- function(object, view, factor, groups = "all", features = 10, sign="all",
+plot_data_scatter <- function(object, factor, view = 1, groups = "all", features = 10, sign="all",
                               color_by=NULL, color_name="", color_legend = TRUE,
                               shape_by=NULL, shape_name="", shape_legend = TRUE,
                               dot_size=1, text_size=5, add_lm = TRUE, imputed = FALSE) {

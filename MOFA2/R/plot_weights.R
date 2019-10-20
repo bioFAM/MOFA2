@@ -10,16 +10,16 @@
 #' To inspect the loadings of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plot_top_weights}}
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param view character vector with the view name(s), or numeric vector with the index of the view(s) to use. 
-#' Default is 'all'
+#' Default is the first view.
 #' @param features character vector with the feature name(s), or numeric vector with the index of the feature(s) to use. 
-#' Default is 'all'
+#' Default is 'all'.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
-#' Default is 'all'
+#' Default is 'all'.
 #' @param threshold threshold on absolute weight values, so that loadings with a magnitude below this threshold (in all factors) are removed
 #' @param ... extra arguments passed to \code{\link[pheatmap]{pheatmap}}.
 #' @importFrom pheatmap pheatmap
 #' @export
-plot_weights_heatmap <- function(object, view, features = "all", factors = "all", threshold = 0, ...) {
+plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "all", threshold = 0, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -55,9 +55,9 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' @name plot_weights_scatter
 #' @description Scatterplot of the weights values for two factors
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param view character vector with the voiew name, or numeric vector with the index of the view to use.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
 #' using the factor names, or as numeric with the index of the factors
+#' @param view character vector with the voiew name, or numeric vector with the index of the view to use. Default is the first view.
 #' @param color_by specifies groups or values used to color the features. This can be either 
 #' \itemize{
 #' \item a character giving the same of a column in the feature metadata slot
@@ -82,7 +82,7 @@ plot_weights_heatmap <- function(object, view, features = "all", factors = "all"
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
-plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_by = NULL, dot_size = 1,  
+plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, shape_by = NULL, dot_size = 1,  
                                  name_color="", name_shape="", show_missing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
   
   # Sanity checks
@@ -221,7 +221,7 @@ plot_weights_scatter <- function (object, view, factors, color_by = NULL, shape_
 #' @examples
 #' fm <- load_model("data/simple_model.hdf5")
 #' plot_weights(fm, factors = 1:2, nfeature = 3)
-plot_weights <- function(object, view = 1, factors = c(1,2), nfeatures = 10, 
+plot_weights <- function(object, view = 1, factors = "all", nfeatures = 10, 
                          color_by = NULL, shape_by = NULL,
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
                          dot_size = 1, text_size = 5, legend = TRUE, return_data = FALSE) {
