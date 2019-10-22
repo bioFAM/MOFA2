@@ -106,7 +106,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @export
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
                         color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                        dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE, ...) {
+                        dot_size = 1.5, alpha_missing = 1, legend = TRUE, return_data = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -145,17 +145,18 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   
   # Remove missing values
   if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
+  df$observed <- as.factor(!is.na(df$color_by))
   
   # spread over latent dimensions
   df <- spread(df, key="latent_dimension", value="value")
-  df <- set_colnames(df, c(colnames(df)[seq_len(3)], "x", "y"))
+  df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
   
   # Return data if requested instead of plotting
   if (return_data) return(df)
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "y")) + 
-    geom_point(aes_string(color = "color_by", shape = "shape_by"), size = dot_size, alpha = alpha) +
+    geom_point(aes_string(color = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size) +
     labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
     theme_classic() +
     theme(
@@ -165,6 +166,14 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
       axis.ticks = element_line(color = "black", size = 0.5)
     )
   
+  # Add legend for color
+  if (length(unique(df$observed))>1) { 
+    p <- p + scale_alpha_manual(values = c("TRUE"=1.0, "FALSE"=alpha_missing))
+  } else { 
+    p <- p + scale_alpha_manual(values = 1.0)
+  }
+  p <- p + guides(alpha=FALSE)
+    
   # If color is numeric, define the default gradient
   if (is.numeric(df$color))
     p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 

@@ -385,7 +385,8 @@ plot_variance_explained_per_feature <- function(object, view, features,
     labs(x = "", y = "", title = "") +
     ggtitle(paste0("Variance explained by ", length(factors), " factor", ifelse(length(factors) > 1, "s", ""), 
                    " (", paste0(factors, collapse = ", "), ")")) +
-    scale_fill_gradientn(colors = c("gray97", "darkred"), guide = "colorbar", limits = c(0, max(r2_df$value))) +
+    # scale_fill_gradientn(colors = c("gray97", "darkred"), guide = "colorbar", limits = c(0, max(r2_df$value))) +
+    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(0, max(r2_df$value))) +
     guides(fill = guide_colorbar("R2")) +
     theme(
       axis.title.x = element_blank(),

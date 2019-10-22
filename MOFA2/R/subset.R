@@ -110,7 +110,7 @@ subset_views <- function(object, views) {
   }
   
   # Subset feature metadata
-  if (length(object@intercepts[[1]])>0) {
+  if (length(object@features_metadata)>0) {
     object@features_metadata <- object@features_metadata[object@features_metadata$view %in% views,]
   }
   
