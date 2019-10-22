@@ -262,7 +262,8 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   # If plotting one or multiple factors, re-direct to other functions 
   if (length(unique(factors)) == 1) {
     .args <- as.list(match.call()[-1])
-    return(do.call(plot_factors, .args))
+    .args <- .args[names(.args) != "factors"]
+    return(do.call(plot_factor, c(.args, list(factors = unique(factors)))))
   } else if (length(factors) > 2) {
     .args <- as.list(match.call()[-1])
     p <- do.call(.plot_multiple_factors, .args)
