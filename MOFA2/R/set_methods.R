@@ -414,14 +414,18 @@ setMethod("groups<-", signature(object="MOFA", value="character"),
             
             # Set sample group names in the intercepts
             if (length(object@intercepts)>0) {
-              for (m in names(object@intercepts))
-                names(object@intercepts[[m]]) <- value
+              for (m in names(object@intercepts)) {
+                if (length(object@intercepts[[m]])>0)
+                  names(object@intercepts[[m]]) <- value
+              }
             }
             
             # Set sample group names in imputed data
             if (length(object@imputed_data)>0) {
-              for (m in names(object@imputed_data))
-                names(object@imputed_data[[m]]) <- value
+              for (m in names(object@imputed_data)) {
+                if (length(object@imputed_data[[m]])>0)
+                  names(object@imputed_data[[m]]) <- value
+              }
             }
             
             # Set sample group names in dimensionalities
