@@ -64,8 +64,8 @@ subset_groups <- function(object, groups) {
   # groups(object) <- groups # don't need to run this
   object@data_options$groups <- groups
   
-  # Re-compute variance explained
-  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  # Subset variance explained (TO-DO)
+  # object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
@@ -122,8 +122,8 @@ subset_views <- function(object, views) {
   # views(object) <- views # don't need to run this
   object@data_options$views <- views
   
-  # Re-compute variance explained
-  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  # Subset variance explained (TO-DO)
+  # object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   return(object)
 }
@@ -164,11 +164,15 @@ subset_factors <- function(object, factors) {
     }
   }
   
+  
+  # Remove variance explained estimates  
+  if (length(factors) < object@dimensions[["K"]]) {
+    warning("After subsetting the factors the total variance explained estimates are not valid anymore, removing them...")
+    object@cache[["variance_explained"]]$r2_total <- NULL
+  }
+  
   # Update dimensionality
   object@dimensions[["K"]] <- length(factors)
-  
-  # Re-compute variance explained
-  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   
   # Update factor names
   factors(object) <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
@@ -248,8 +252,9 @@ subset_samples <- function(object, samples) {
   stopifnot(object@samples_metadata$sample == unlist(lapply(object@expectations$Z,rownames)))
   stopifnot(object@samples_metadata$sample == unlist(lapply(object@expectations$Y,colnames)))
   
-  # Re-compute variance explained
-  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  # Remove variance explained estimates  
+  warning("After subsetting the samples the variance explained estimates are not valid anymore, removing them...")
+  object@cache[["variance_explained"]] <- NULL
   
   return(object)
 }
@@ -304,8 +309,9 @@ subset_features <- function(object, view, features) {
   # Update features names
   features(object)[[view]] <- features
   
-  # Re-compute variance explained
-  object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  # Remove variance explained estimates  
+  warning("After subsetting the features the variance explained estimates are not valid anymore, removing them...")
+  object@cache[["variance_explained"]] <- NULL
   
   return(object)
 }

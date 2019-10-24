@@ -13,6 +13,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (any(object@model_options$likelihoods!="gaussian"))
+    stop("Not possible to recompute the variance explained estimates when using non-gaussian likelihoods.")
 
   # Define factors, views and groups
   views  <- .check_and_get_views(object, views)
@@ -23,7 +25,8 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   # Collect relevant expectations
   W <- get_weights(object, views=views, factors=factors)
   Z <- get_factors(object, groups=groups, factors=factors)
-  Y <- lapply(get_expectations(object,"Y")[views], function(view) view[groups])
+  # Y <- lapply(get_expectations(object,"Y")[views], function(view) view[groups])
+  Y <- lapply(get_data(object, add_intercept = F)[views], function(view) view[groups])
   Y <- lapply(Y, function(x) lapply(x,t))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
@@ -292,7 +295,8 @@ plot_variance_explained_per_feature <- function(object, view, features,
   # 2. Factor values: choose one or multiple groups and factors
   Z <- get_factors(object, groups = groups, factors = factors)
   # 3. Data: Choose a view, one or multiple groups, and subset chosen features
-  Y <- lapply(get_expectations(object, "Y")[view], function(Y_m) lapply(Y_m[groups], t))
+  # Y <- lapply(get_expectations(object, "Y")[view], function(Y_m) lapply(Y_m[groups], t))
+  Y <- lapply(get_data(object, add_intercept = F)[view], function(Y_m) lapply(Y_m[groups], t))
   Y <- lapply(Y, function(Y_m) lapply(Y_m, function(Y_mg) Y_mg[,colnames(Y_mg) %in% features,drop=FALSE]))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)

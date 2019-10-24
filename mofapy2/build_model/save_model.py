@@ -7,6 +7,7 @@ import os
 import h5py
 
 from mofapy2.core.nodes import *
+from mofapy2.core.nodes import *
 
 
 class saveModel():
@@ -109,7 +110,6 @@ class saveModel():
                 if variance is not None:
                     group_subgrp.create_dataset("variance", data=variance[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
                 
-
     def saveExpectations(self, nodes="all"):
 
         # Get nodes from the model
@@ -292,6 +292,24 @@ class saveModel():
         # Create data set: only numeric options 
         self.hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
         self.hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
+
+    def saveVarianceExplained(self):
+
+        # Store variance explained per factor in each view and group
+        grp = self.hdf5.create_group("variance_explained")
+
+        subgrp = grp.create_group("r2_per_factor")
+        r2 = self.model.calculate_variance_explained()
+        for g in range(len(r2)):
+            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
+                               compression_opts=self.compression_level)
+
+        # Store total variance explained for each view and group (using all factors)
+        subgrp = grp.create_group("r2_total")
+        r2 = self.model.calculate_variance_explained(total=True)
+        for g in range(len(r2)):
+            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
+                               compression_opts=self.compression_level)
 
     def saveTrainingStats(self):
         """ Method to save the training statistics """

@@ -104,7 +104,7 @@ class BayesNet(object):
         """ Method to return all nodes """
         return self.nodes
 
-    def calculate_variance_explained(self):
+    def calculate_variance_explained(self, total=False):
 
         # Collect relevant expectations
         Z = self.nodes['Z'].getExpectation()
@@ -114,38 +114,30 @@ class BayesNet(object):
         # Get groups
         groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
 
-        r2 = [ s.zeros([self.dim['M'], self.dim['K']])] * self.dim['G']
+        if total:
+            r2 = [ s.zeros(self.dim['M']) for g in range(self.dim['G'])]
+        else:
+            r2 = [ s.zeros([self.dim['M'], self.dim['K']])  for g in range(self.dim['G'])]
+
         for m in range(self.dim['M']):
-            mask = self.nodes["Y"].getNodes()[m].getMask()
+            # mask = self.nodes["Y"].getNodes()[m].getMask()
             for g in range(self.dim['G']):
                 gg = groups==g
                 SS = s.square(Y[m][gg,:]).sum()
-                for k in range(self.dim['K']):
-                    Ypred_mk = s.outer(Z[gg,k], W[m][:,k])
-                    Ypred_mk[mask[gg,:]] = 0.
-                    Res_k = ((Y[m][gg,:] - Ypred_mk)**2.).sum()
-                    r2[g][m,k] = 1. - Res_k/SS
-        return r2
 
-    def calculate_total_variance_explained(self):
+                # Total variance explained (using all factors)
+                if total:
+                    Ypred = s.dot(Z[gg,:], W[m].T)
+                    Res = s.nansum((Y[m][gg, :] - Ypred) ** 2.)
+                    r2[g][m] = 1. - Res / SS
 
-        # Collect relevant expectations
-        Z = self.nodes['Z'].getExpectation()
-        W = self.nodes["W"].getExpectation()
-        Y = self.nodes["Y"].getExpectation()
+                # Variance explained per factor
+                else:
+                    for k in range(self.dim['K']):
+                        Ypred = s.outer(Z[gg,k], W[m][:,k])
 
-        r2 = s.zeros(self.dim['M'])
-        for m in range(self.dim['M']):
-            mask = self.nodes["Y"].getNodes()[m].mask
-
-            Ypred_m = s.dot(Z, W[m].T)
-            Ypred_m[mask] = 0.
-
-            Res = ((Y[m].data - Ypred_m)**2.).sum()
-            SS = s.square(Y[m]).sum()
-
-            r2[m] = 1. - Res/SS
-
+                        Res = s.nansum((Y[m][gg,:] - Ypred)**2.)
+                        r2[g][m,k] = 1. - Res/SS
         return r2
 
     def removeInactiveFactors(self, min_r2=None):
@@ -270,9 +262,9 @@ class BayesNet(object):
             if self.options['verbose']:
                 # Memory usage
                 # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
-                # Variance explained
-                r2 = self.calculate_total_variance_explained()
-                print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+                # Variance explained (NEEDS TO BE FIXED)
+                # r2 = self.calculate_variance_explained(total=True)
+                # print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
                 # Sparsity levels of the weights
                 # W = self.nodes["W"].getExpectation()
                 # foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]

@@ -671,7 +671,7 @@ class entry_point(object):
         if all([i=="gaussian" for i in self.model_opts["likelihoods"]]):
             tmp.saveExpectations(nodes=["W","Z"])
         else:
-            tmp.saveExpectations(nodes=["Y","W","Z"])
+            tmp.saveExpectations(nodes=["W","Z"])
 
         if self.train_opts["save_parameters"]:
             tmp.saveParameters(nodes=["W","Z"])
@@ -679,6 +679,7 @@ class entry_point(object):
         tmp.saveModelOptions()
         tmp.saveTrainOptions()
         tmp.saveTrainingStats()
+        tmp.saveVarianceExplained()
         tmp.saveData()
 
         if self.imputed:

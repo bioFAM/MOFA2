@@ -9,6 +9,9 @@
 Rproj*
 
 
+# Pycharm
+.idea
+
 # Distribution / packaging
 .Python
 env/

@@ -34,7 +34,7 @@ load_model <- function(file, sort_factors = TRUE,
   }
   
   # Get groups and data set names from the hdf5 file object
-  foo <- h5ls(file, datasetinfo = FALSE)
+  h5ls.out <- h5ls(file, datasetinfo = FALSE)
 
   ########################
   ## Load training data ##
@@ -43,9 +43,7 @@ load_model <- function(file, sort_factors = TRUE,
   # Load identity of features and samples
   feature_names <- h5read(file, "features")
   sample_names  <- h5read(file, "samples")
-  # view_names <- foo[foo$group=="/data","name"]
   view_names <- names(feature_names)
-  # group_names <- foo[foo$group==paste0("/data/",view_names[1]),"name"]
   group_names <- names(sample_names)
 
   # Load training data (as nested list of matrices)
@@ -126,7 +124,7 @@ load_model <- function(file, sort_factors = TRUE,
   #######################
 
   expectations <- list()
-  node_names <- foo[foo$group=="/expectations","name"]
+  node_names <- h5ls.out[h5ls.out$group=="/expectations","name"]
 
   if (isTRUE(verbose)) message(paste0("Loading expectations for ", length(node_names), " nodes..."))
 
@@ -143,51 +141,106 @@ load_model <- function(file, sort_factors = TRUE,
   if ("ThetaZ" %in% node_names)
     expectations[["ThetaZ"]] <- h5read(file, "expectations/ThetaZ")
   if ("Tau" %in% node_names)
-    expectations[["Tau"]] <- h5read(file, "expectations/Tau") # TO-DO: DELAYEDARRAY
+    expectations[["Tau"]] <- h5read(file, "expectations/Tau")
   
   tmp <- as.list(h5read(file, 'model_options', read.attributes = TRUE))[["likelihoods"]]
   names(tmp) <- names(data)
   
   # Load expectations of Y
-  expectations[["Y"]] <- list()
-  for (m in view_names) {
-    expectations[["Y"]][[m]] <- list()
-    for (p in group_names) {
-      if (on_disk) {
-        if (tmp[[m]]=="gaussian") {
-          expectations[["Y"]][[m]][[p]] <- data[[m]][[p]]
-        } else {
-          expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
-        }
-      } else {
-        if (tmp[[m]]=="gaussian") {
-          expectations[["Y"]][[m]][[p]] <- data[[m]][[p]]
-        } else {
-          expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
-        }
-      }
-    }
-  }
+  # expectations[["Y"]] <- list()
+  # for (m in view_names) {
+  #   expectations[["Y"]][[m]] <- list()
+  #   for (p in group_names) {
+  #     if (on_disk) {
+  #       if (tmp[[m]]=="gaussian") {
+  #         expectations[["Y"]][[m]][[p]] <- data[[m]][[p]]
+  #       } else {
+  #         expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
+  #       }
+  #     } else {
+  #       if (tmp[[m]]=="gaussian") {
+  #         expectations[["Y"]][[m]][[p]] <- data[[m]][[p]]
+  #       } else {
+  #         expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
+  #       }
+  #     }
+  #   }
+  # }
   object@expectations <- expectations
 
+  
+  ########################
+  ## Load model options ##
+  ########################
+
+  if (isTRUE(verbose)) message("Loading model options...")
+
+  tryCatch( {
+    object@model_options <- as.list(h5read(file, 'model_options', read.attributes = TRUE))
+  }, error = function(x) { print("Model options not found, not loading it...") })
+
+  # Convert True/False strings to logical values
+  for (opt in names(object@model_options)) {
+    if (object@model_options[opt] == "False" | object@model_options[opt] == "True") {
+      object@model_options[opt] <- as.logical(object@model_options[opt])
+    } else {
+      object@model_options[opt] <- object@model_options[opt]
+    }
+  }
+
+  # Add views names to likelihood vector
+  # if (is.null(names(object@model_options$likelihoods))) {
+  #   names(object@model_options$likelihoods) <- views(object)
+  # }
+
+  ##########################################
+  ## Load training options and statistics ##
+  ##########################################
+
+  if (isTRUE(verbose)) message("Loading training options and statistics...")
+
+  # Load training options
+  if (length(object@training_options) == 0) {
+    tryCatch( {
+      object@training_options <- as.list(h5read(file, 'training_opts', read.attributes = TRUE))
+    }, error = function(x) { print("Training opts not found, not loading it...") })
+  }
+
+  # Load training statistics
+  tryCatch( {
+    object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
+  }, error = function(x) { print("Training stats not found, not loading it...") })
+
+  #######################################
+  ## Load variance explained estimates ##
+  #######################################
+  
+  if ("variance_explained"%in%h5ls.out$name) {
+    r2_list <- list(
+      r2_total = h5read(file, "variance_explained/r2_total"),
+      r2_per_factor = h5read(file, "variance_explained/r2_per_factor")
+    )
+    object@cache[["variance_explained"]] <- r2_list
+  }
+  
   ##############################
   ## Specify dimensionalities ##
   ##############################
- 
+  
   # Specify dimensionality of the data
   object@dimensions[["M"]] <- length(data)                            # number of views
   object@dimensions[["G"]] <- length(data[[1]])                       # number of groups
   object@dimensions[["N"]] <- sapply(data[[1]], ncol)                 # number of samples (per group)
   object@dimensions[["D"]] <- sapply(data, function(e) nrow(e[[1]]))  # number of features (per view)
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])        # number of factors
-
+  
   # Assign sample and feature names (slow for large matrices)
   
   # Create default features names if they are null
   if (is.null(feature_names)) {
     print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
     feature_names <- lapply(seq_len(object@dimensions[["M"]]),
-      function(m) sprintf("feature%d_view_&d", as.character(seq_len(object@dimensions[["D"]][m])), m))
+                            function(m) sprintf("feature%d_view_&d", as.character(seq_len(object@dimensions[["D"]][m])), m))
   } else {
     # Check duplicated features names
     all_names <- unname(unlist(feature_names))
@@ -222,53 +275,10 @@ load_model <- function(file, sort_factors = TRUE,
     group_names <- paste0("group", as.character(seq_len(object@dimensions[["G"]])))
   }
   groups(object) <- group_names
-
+  
   # Set factors names
   factors(object)  <- paste0("Factor", as.character(seq_len(object@dimensions[["K"]])))
-
   
-  ########################
-  ## Load model options ##
-  ########################
-
-  if (isTRUE(verbose)) message("Loading model options...")
-
-  tryCatch( {
-    object@model_options <- as.list(h5read(file, 'model_options', read.attributes = TRUE))
-  }, error = function(x) { print("Model options not found, not loading it...") })
-
-  # Convert True/False strings to logical values
-  for (opt in names(object@model_options)) {
-    if (object@model_options[opt] == "False" | object@model_options[opt] == "True") {
-      object@model_options[opt] <- as.logical(object@model_options[opt])
-    } else {
-      object@model_options[opt] <- object@model_options[opt]
-    }
-  }
-
-  # Add views names to likelihood vector
-  if (is.null(names(object@model_options$likelihoods))) {
-    names(object@model_options$likelihoods) <- views(object)
-  }
-
-  ##########################################
-  ## Load training options and statistics ##
-  ##########################################
-
-  if (isTRUE(verbose)) message("Loading training options and statistics...")
-
-  # Load training options
-  if (length(object@training_options) == 0) {
-    tryCatch( {
-      object@training_options <- as.list(h5read(file, 'training_opts', read.attributes = TRUE))
-    }, error = function(x) { print("Training opts not found, not loading it...") })
-  }
-
-  # Load training statistics
-  tryCatch( {
-    object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
-  }, error = function(x) { print("Training stats not found, not loading it...") })
-
   ###################
   ## Parse factors ##
   ###################
@@ -276,7 +286,8 @@ load_model <- function(file, sort_factors = TRUE,
   # Order factors in order of variance explained
   if (sort_factors) {
     if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
-    object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+    if (is.null(object@cache[["variance_explained"]])) 
+      object@cache[["variance_explained"]] <- calculate_variance_explained(object)
     r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
     order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
     object <- subset_factors(object, order_factors)
