@@ -120,7 +120,7 @@ class BayesNet(object):
             r2 = [ s.zeros([self.dim['M'], self.dim['K']])  for g in range(self.dim['G'])]
 
         for m in range(self.dim['M']):
-            # mask = self.nodes["Y"].getNodes()[m].getMask()
+            mask = self.nodes["Y"].getNodes()[m].getMask()
             for g in range(self.dim['G']):
                 gg = groups==g
                 SS = s.square(Y[m][gg,:]).sum()
@@ -128,6 +128,7 @@ class BayesNet(object):
                 # Total variance explained (using all factors)
                 if total:
                     Ypred = s.dot(Z[gg,:], W[m].T)
+                    Ypred[mask] = 0.
                     Res = s.nansum((Y[m][gg, :] - Ypred) ** 2.)
                     r2[g][m] = 1. - Res / SS
 
@@ -135,7 +136,7 @@ class BayesNet(object):
                 else:
                     for k in range(self.dim['K']):
                         Ypred = s.outer(Z[gg,k], W[m][:,k])
-
+                        Ypred[mask] = 0.
                         Res = s.nansum((Y[m][gg,:] - Ypred)**2.)
                         r2[g][m,k] = 1. - Res/SS
         return r2

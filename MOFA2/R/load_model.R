@@ -285,11 +285,18 @@ load_model <- function(file, sort_factors = TRUE,
 
   # Order factors in order of variance explained
   if (sort_factors) {
+    
+    # Sanity checks
     if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
-    if (is.null(object@cache[["variance_explained"]])) 
+    if (is.null(object@cache[["variance_explained"]])) {
       object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+    } 
+  
+    # Calculate variance explained pe factor across all views    
     r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
-    order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
+    order_factors <- c(names(r2)[order(r2, decreasing = FALSE)])
+    
+    # re-order factors
     object <- subset_factors(object, order_factors)
   }
 

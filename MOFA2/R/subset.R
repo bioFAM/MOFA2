@@ -64,8 +64,9 @@ subset_groups <- function(object, groups) {
   # groups(object) <- groups # don't need to run this
   object@data_options$groups <- groups
   
-  # Subset variance explained (TO-DO)
-  # object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  # Subset variance explained
+  object@cache[["variance_explained"]]$r2_per_factor <- object@cache[["variance_explained"]]$r2_per_factor[groups]
+  object@cache[["variance_explained"]]$r2_total <- object@cache[["variance_explained"]]$r2_total[groups]
   
   return(object)
 }
@@ -122,8 +123,9 @@ subset_views <- function(object, views) {
   # views(object) <- views # don't need to run this
   object@data_options$views <- views
   
-  # Subset variance explained (TO-DO)
-  # object@cache[["variance_explained"]] <- calculate_variance_explained(object)
+  # Subset variance explained
+  object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[,views])
+  object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_total, function(x) x[views])
   
   return(object)
 }
@@ -165,11 +167,15 @@ subset_factors <- function(object, factors) {
   }
   
   
-  # Remove variance explained estimates  
+  # Remove total variance explained estimates  
   if (length(factors) < object@dimensions[["K"]]) {
     warning("After subsetting the factors the total variance explained estimates are not valid anymore, removing them...")
     object@cache[["variance_explained"]]$r2_total <- NULL
   }
+  
+  # Subset per-factor variance explained estimates
+  object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[factors,])
+  
   
   # Update dimensionality
   object@dimensions[["K"]] <- length(factors)

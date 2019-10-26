@@ -134,9 +134,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     r2_list <- calculate_variance_explained(object, factors = factors, ...)
   }
 
-  r2_m <- r2_list$r2_total
   r2_mk <- r2_list$r2_per_factor
-  # r2_m  <- lapply(r2_list$r2_total[groups], function(e) e[views])
   # r2_mk <- lapply(r2_list$r2_per_factor[groups], function(e) e[,views])
 
   # convert matrix to long data frame for ggplot2
@@ -161,14 +159,6 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 
   r2_mk_df$factor <- factor(r2_mk_df$factor, levels = factors)
   r2_mk_df$group <- factor(r2_mk_df$group, levels = groups(object))
-
-  r2_m_df <- melt(lapply(r2_m, function(x) lapply(x, function(z) z)),
-                  varnames=c("view", "group"), value.name="R2")
-  colnames(r2_m_df)[(ncol(r2_m_df)-1):ncol(r2_m_df)] <- c("view", "group")
-
-  # Barplots for total variance explained
-  min_lim_bplt <- min(0, r2_m_df$R2)
-  max_lim_bplt <- max(r2_m_df$R2)
 
   # Detect whether to split by group or by view
   groups <- names(r2_list$r2_total)
@@ -203,7 +193,18 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     
     # Add total variance explained bar plots
     if (plot_total) {
+      
+      r2_m <- r2_list$r2_total
+      # r2_m  <- lapply(r2_list$r2_total[groups], function(e) e[views])
 
+      r2_m_df <- melt(lapply(r2_m, function(x) lapply(x, function(z) z)),
+                      varnames=c("view", "group"), value.name="R2")
+      colnames(r2_m_df)[(ncol(r2_m_df)-1):ncol(r2_m_df)] <- c("view", "group")
+      
+      # Barplots for total variance explained
+      min_lim_bplt <- min(0, r2_m_df$R2)
+      max_lim_bplt <- max(r2_m_df$R2)
+      
       # Barplot with variance explained per view/group (across all factors)
       p2 <- ggplot(r2_m_df, aes_string(x=x, y="R2")) + 
         # ggtitle(sprintf("%s\nTotal variance explained per %s", i, x)) +
