@@ -99,9 +99,10 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting
 #' @details TO-FINISH...
 #' @return Returns a \code{ggplot2} object or a long data.frame (if return_data is TRUE)
-#' @import ggplot2 dplyr
+#' @import ggplot2
+#' @importFrom dplyr filter
 #' @importFrom stats complete.cases
-#' @importFrom tidyr spread
+#' @importFrom tidyr spread gather
 #' @importFrom magrittr %>% set_colnames
 #' @export
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
@@ -133,6 +134,10 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   Z <- object@dim_red[[method]]
   latent_dimensions_names <- colnames(Z)[-1]
   Z <- gather(Z, -sample, key="latent_dimension", value="value")
+  
+  # Subset groups
+  groups <- .check_and_get_groups(object, groups)
+  Z <- Z[Z$sample%in%unlist(samples(object)[groups]),]
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)

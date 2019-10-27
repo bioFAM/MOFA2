@@ -22,7 +22,7 @@
 
 load_model <- function(file, sort_factors = TRUE, 
                        on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
-                       remove_outliers = FALSE, verbose = FALSE) {
+                       remove_outliers = TRUE, verbose = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -294,7 +294,7 @@ load_model <- function(file, sort_factors = TRUE,
   
     # Calculate variance explained pe factor across all views    
     r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
-    order_factors <- c(names(r2)[order(r2, decreasing = FALSE)])
+    order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
     
     # re-order factors
     object <- subset_factors(object, order_factors)

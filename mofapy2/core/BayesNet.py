@@ -129,7 +129,7 @@ class BayesNet(object):
                 if total:
                     Ypred = s.dot(Z[gg,:], W[m].T)
                     Ypred[mask[gg,:]] = 0.
-                    Res = s.nansum((Y[m][gg, :] - Ypred) ** 2.)
+                    Res = s.sum((Y[m][gg, :] - Ypred) ** 2.)
                     r2[g][m] = 1. - Res / SS
 
                 # Variance explained per factor
@@ -137,7 +137,7 @@ class BayesNet(object):
                     for k in range(self.dim['K']):
                         Ypred = s.outer(Z[gg,k], W[m][:,k])
                         Ypred[mask[gg,:]] = 0.
-                        Res = s.nansum((Y[m][gg,:] - Ypred)**2.)
+                        Res = s.sum((Y[m][gg,:] - Ypred)**2.)
                         r2[g][m,k] = 1. - Res/SS
         return r2
 

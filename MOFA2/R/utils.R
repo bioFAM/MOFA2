@@ -47,12 +47,12 @@
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
       
-      cutoff <- 2 * 1.96
+      cutoff <- 2.5 * 1.96
       tmp <- abs(Z - mean(Z)) / sd(Z)
 
       outliers <- names(which(tmp>cutoff & abs(Z)>0.5))
       
-      if (length(outliers)>0) {
+      if (length(outliers)>0 & length(outliers)<5) {
         object@expectations$Z[[g]][,k][outliers] <- NA
       }
       
