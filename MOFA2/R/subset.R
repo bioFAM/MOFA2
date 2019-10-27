@@ -124,8 +124,10 @@ subset_views <- function(object, views) {
   object@data_options$views <- views
   
   # Subset variance explained
-  object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[,views])
-  object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_total, function(x) x[views])
+  if ((methods::.hasSlot(object, "cache")) && ("variance_explained" %in% names(object@cache))) {
+    object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[,views,drop=FALSE])
+    object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_total, function(x) x[views])
+  }
   
   return(object)
 }
@@ -174,7 +176,9 @@ subset_factors <- function(object, factors) {
   }
   
   # Subset per-factor variance explained estimates
-  object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[factors,])
+  if ((methods::.hasSlot(object, "cache")) && ("variance_explained" %in% names(object@cache))) {
+    object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[factors,,drop=FALSE])
+  }
   
   
   # Update dimensionality
