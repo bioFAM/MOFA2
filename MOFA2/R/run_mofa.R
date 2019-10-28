@@ -61,10 +61,10 @@ run_mofa <- function(object, outfile = NA) {
   mofa_entrypoint$set_model_options(
     factors     = object@model_options$num_factors,
     likelihoods = unname(object@model_options$likelihood),
-    spikeslab_z = object@model_options$spikeslab_factors, 
-    spikeslab_w = object@model_options$spikeslab_weights, 
-    ard_z       = object@model_options$ard_factors,
-    ard_w       = object@model_options$ard_weights 
+    spikeslab_factors = object@model_options$spikeslab_factors, 
+    spikeslab_weights = object@model_options$spikeslab_weights, 
+    ard_factors       = object@model_options$ard_factors,
+    ard_weights       = object@model_options$ard_weights 
   )
   
   # Set training options  
