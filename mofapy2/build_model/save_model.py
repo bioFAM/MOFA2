@@ -307,6 +307,7 @@ class saveModel():
         # Store total variance explained for each view and group (using all factors)
         subgrp = grp.create_group("r2_total")
         r2 = self.model.calculate_variance_explained(total=True)
+        import pdb; pdb.set_trace()
         for g in range(len(r2)):
             subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
                                compression_opts=self.compression_level)

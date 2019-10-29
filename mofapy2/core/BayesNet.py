@@ -265,8 +265,8 @@ class BayesNet(object):
                 print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
 
                 # Variance explained
-                r2 = [x.mean() for x in self.calculate_variance_explained(total=True)]
-                r2 = [0 if x<0 else x for x in r2]
+                r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)
+                r2[r2<0] = 0.
                 print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
 
                 # Sparsity levels of the weights
@@ -491,8 +491,8 @@ class StochasticBayesNet(BayesNet):
                 print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
 
                 # Variance explained
-                r2 = [x.mean() for x in self.calculate_variance_explained(total=True)]
-                r2 = [0 if x<0 else x for x in r2]
+                r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)
+                r2[r2<0] = 0.
                 print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
 
                 # Sparsity levels of the weights
