@@ -22,7 +22,7 @@
 
 load_model <- function(file, sort_factors = TRUE, 
                        on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
-                       remove_outliers = TRUE, verbose = FALSE) {
+                       remove_outliers = FALSE, verbose = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
