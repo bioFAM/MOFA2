@@ -209,6 +209,7 @@ load_model <- function(file, sort_factors = TRUE,
   # Load training statistics
   tryCatch( {
     object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
+    object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
   }, error = function(x) { print("Training stats not found, not loading it...") })
 
   #######################################

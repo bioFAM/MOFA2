@@ -5,10 +5,11 @@ import pandas as pd
 import numpy.ma as ma
 import os
 import h5py
-
 from mofapy2.core.nodes import *
 from mofapy2.core.nodes import *
 
+# To keep same order of views and groups in the hdf5 file
+# h5py.get_config().track_order = True
 
 class saveModel():
     def __init__(self, model, outfile, data, intercepts, samples_groups, train_opts, model_opts, features_names, views_names, samples_names, groups_names, compression_level=9):
@@ -43,9 +44,6 @@ class saveModel():
         self.samples_names = samples_names
         self.features_names = features_names
         self.groups_names = groups_names
-
-        # To keep same order of views and groups in the hdf5 file
-        # h5py.get_config().track_order = True
 
     def saveData(self):
         """ Method to save the training data"""
@@ -247,8 +245,6 @@ class saveModel():
         pass
 
     def saveModelOptions(self):
-        # TO-DO: 
-        # (1) RENAME SL_Z and SL_W to SPARsity_z AND SPARSITY_w
 
         # Subset model options
         opts = dict((k, self.model_opts[k]) for k in ["likelihoods", "spikeslab_factors", "spikeslab_weights"])
@@ -295,21 +291,25 @@ class saveModel():
 
     def saveVarianceExplained(self):
 
+        # Sort values by alphabetical order of views
+        order = np.argsort(self.views_names)
+        # b = [ i[0] for i in sorted(enumerate(self.views_names), key=lambda x:x[1]) ]
+        # import pdb; pdb.set_trace()
+
         # Store variance explained per factor in each view and group
         grp = self.hdf5.create_group("variance_explained")
 
         subgrp = grp.create_group("r2_per_factor")
         r2 = self.model.calculate_variance_explained()
         for g in range(len(r2)):
-            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
                                compression_opts=self.compression_level)
 
         # Store total variance explained for each view and group (using all factors)
         subgrp = grp.create_group("r2_total")
         r2 = self.model.calculate_variance_explained(total=True)
-        import pdb; pdb.set_trace()
         for g in range(len(r2)):
-            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
                                compression_opts=self.compression_level)
 
     def saveTrainingStats(self):
