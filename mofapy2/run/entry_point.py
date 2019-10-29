@@ -425,12 +425,7 @@ class entry_point(object):
 
         # Training schedule
         if schedule is None:
-
-            # Stochastic inference requires Z to be updated first
-            if self.train_opts['stochastic']:
-                schedule = ['Y', 'Z', 'W', 'Tau']
-            else:
-                schedule = ['Y', 'W', 'Z', 'Tau']
+            schedule = ['Y', 'W', 'Z', 'Tau']
 
             # Insert ThetaW after W if Spike and Slab prior on W
             if self.model_opts['spikeslab_weights']:
@@ -478,8 +473,13 @@ class entry_point(object):
         assert 0 < batch_size <= 1, 'Batch size must range from 0 to 1'
         assert start_stochastic >= 1, 'start_stochastic must be >= 1'
 
+
+        # Edit schedule: Z should come first (after Y) in the training schedule
+        self.train_opts['schedule'].pop( self.train_opts['schedule'].index("Z") )
+        self.train_opts['schedule'].insert(1,"Z")
+
         self.train_opts['stochastic'] = True
-        self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick only works in non-stochastic mode
+        self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick speed up only works in non-stochastic mode
         self.train_opts['learning_rate'] = learning_rate
         self.train_opts['forgetting_rate'] = forgetting_rate
         self.train_opts['start_stochastic'] = start_stochastic

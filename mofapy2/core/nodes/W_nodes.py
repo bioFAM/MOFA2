@@ -168,6 +168,7 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         coeff = float(N) / float(Y.shape[0])
 
         # Compute parameter updates
+        # import pdb; pdb.set_trace()
         self._updateParameters(Y, Z, tau, mask, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro)
     
     def _updateParameters(self, Y, Z, tau, mask, Alpha, Qmean_S1, Qvar_S1, Qvar_S0, Qtheta, SW, theta_lnE, theta_lnEInv, coeff, ro):
@@ -180,7 +181,6 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         tau_gpu = gpu_utils.array(tau)
         Z_gpu = gpu_utils.array(Z["E"])
         ZZ_gpu = gpu_utils.array(Z["E2"])
-
         # precompute terms
         # tauY_gpu = gpu_utils.array(tau*Y).T
         tauY_gpu = (tau_gpu*gpu_utils.array(Y)).T

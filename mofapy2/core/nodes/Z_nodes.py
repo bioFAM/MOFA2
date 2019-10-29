@@ -70,6 +70,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Qvar = Qvar[ix,:]
 
         # Compute updates
+        # print(ix)
+        # import pdb; pdb.set_trace()
         par_up = self._updateParameters(Y, W, tau, Mu, Alpha, Qmean, Qvar, mask)
 
         # Update parameters

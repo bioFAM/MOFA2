@@ -120,7 +120,7 @@ class BayesNet(object):
             r2 = [ s.zeros([self.dim['M'], self.dim['K']])  for g in range(self.dim['G'])]
 
         for m in range(self.dim['M']):
-            mask = self.nodes["Y"].getNodes()[m].getMask()
+            mask = self.nodes["Y"].getNodes()[m].getMask(full=True)
             for g in range(self.dim['G']):
                 gg = groups==g
                 SS = s.square(Y[m][gg,:]).sum()
@@ -262,14 +262,18 @@ class BayesNet(object):
             # Print other statistics
             if self.options['verbose']:
                 # Memory usage
-                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
-                # Variance explained (NEEDS TO BE FIXED)
-                # r2 = self.calculate_variance_explained(total=True)
-                # print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+
+                # Variance explained
+                r2 = [x.mean() for x in self.calculate_variance_explained(total=True)]
+                r2 = [0 if x<0 else x for x in r2]
+                print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+
                 # Sparsity levels of the weights
-                # W = self.nodes["W"].getExpectation()
-                # foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
-                # print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                W = self.nodes["W"].getExpectation()
+                foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
+                print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+
                 # Sparsity levels of the factors
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
@@ -484,14 +488,18 @@ class StochasticBayesNet(BayesNet):
             print("Step size (rho): %.3f" % ro )
             if self.options['verbose']:
                 # Memory usage
-                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+
                 # Variance explained
-                r2 = self.calculate_total_variance_explained()
+                r2 = [x.mean() for x in self.calculate_variance_explained(total=True)]
+                r2 = [0 if x<0 else x for x in r2]
                 print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+
                 # Sparsity levels of the weights
-                # W = self.nodes["W"].getExpectation()
-                # foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
-                # print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                W = self.nodes["W"].getExpectation()
+                foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
+                print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                
                 # Sparsity levels of the factors
                 # Z = self.nodes["Z"].getExpectation()
                 # bar = s.mean(s.absolute(Z)<1e-3)
