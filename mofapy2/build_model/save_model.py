@@ -293,8 +293,7 @@ class saveModel():
 
         # Sort values by alphabetical order of views
         order = np.argsort(self.views_names)
-        # b = [ i[0] for i in sorted(enumerate(self.views_names), key=lambda x:x[1]) ]
-        # import pdb; pdb.set_trace()
+        # order = [ i[0] for i in sorted(enumerate(self.views_names), key=lambda x:x[1]) ]
 
         # Store variance explained per factor in each view and group
         grp = self.hdf5.create_group("variance_explained")
