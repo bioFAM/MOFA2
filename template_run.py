@@ -1,4 +1,4 @@
-from biofam.run.entry_point import entry_point
+from mofa2py.run.entry_point import entry_point
 import pandas as pd
 
 ###############
@@ -56,7 +56,7 @@ ent.set_data_matrix(data)
 # - spikeslab_weights
 # - ard_factors
 # - ard_weights
-ent.set_model_options(factors=5, likelihoods=lik, spikeslab_z=False, spikeslab_w=True, ard_z=True, ard_w=True)
+ent.set_model_options(factors=5, likelihoods=lik, spikeslab_factors=False, spikeslab_weights=True, ard_factors=True, ard_weights=True)
 
 # Set training options
 # - iter
