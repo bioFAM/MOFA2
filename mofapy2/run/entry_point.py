@@ -50,9 +50,9 @@ class entry_point(object):
             if isinstance(data, dict):
                 data = list(data.values())
             else:
-                print("Error: Data not recognised"); sys.stdout.flush(); exit()
+                print("Error: Data not recognised"); sys.stdout.flush(); sys.exit()
         if len(data)==0:
-            print("Error: Data is empty"); sys.stdout.flush(); exit()
+            print("Error: Data is empty"); sys.stdout.flush(); sys.exit()
 
         # Convert input data to numpy array float64 format
         for m in range(len(data)):
@@ -63,7 +63,7 @@ class entry_point(object):
                     if isinstance(data[m][p], pd.DataFrame):
                         data[m][p] = data[m][p].values
                     else:
-                        print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
+                        print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); sys.exit()
                 data[m][p] = data[m][p].astype(np.float64)
 
         # Save dimensionalities
@@ -228,9 +228,9 @@ class entry_point(object):
         n_groups = 1  # no grouping by default
         if groups_label is not None:
             if not isinstance(groups_label, str):
-                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); sys.exit()
             if groups_label not in adata.obs.columns:
-                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); sys.exit()
             n_groups = adata.obs[groups_label].unique().shape[0]
 
         # Save dimensionalities
@@ -300,9 +300,9 @@ class entry_point(object):
         n_groups = 1  # no grouping by default
         if groups_label is not None:
             if not isinstance(groups_label, str):
-                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); sys.exit()
             if groups_label not in loom.ca.keys():
-                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); sys.exit()
             n_groups = pd.unique(loom.ca[groups_label]).shape[0]
 
         # Save dimensionalities
