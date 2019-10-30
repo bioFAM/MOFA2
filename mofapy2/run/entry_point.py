@@ -259,7 +259,7 @@ class entry_point(object):
             # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
             self.data_opts['samples_names'] = adata.obs.reset_index(drop=False).rename(columns={adata.obs.index.name:'index'}).groupby(groups_label)["index"].apply(list).tolist()
             # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
-            self.data_opts['samples_groups'] = adata.obs[groups_label].values
+            self.data_opts['samples_groups'] = adata.obs[groups_label].apply(str).values
 
 
         # If everything successful, print verbose message
