@@ -255,7 +255,7 @@ class entry_point(object):
             # wouldn't match samples_names if the samples are not ordered according to their group beforehand.
 
             # List of names of groups, i.e. [group1, group2, ...]
-            self.data_opts['groups_names'] = adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values
+            self.data_opts['groups_names'] = [str(g) for g in adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values]
             # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
             self.data_opts['samples_names'] = adata.obs.reset_index(drop=False).rename(columns={adata.obs.index.name:'index'}).groupby(groups_label)["index"].apply(list).tolist()
             # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
