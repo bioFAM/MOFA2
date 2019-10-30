@@ -22,7 +22,7 @@
 
 load_model <- function(file, sort_factors = TRUE, 
                        on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
-                       remove_outliers = TRUE, verbose = FALSE) {
+                       remove_outliers = FALSE, verbose = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -208,6 +208,7 @@ load_model <- function(file, sort_factors = TRUE,
 
   # Load training statistics
   tryCatch( {
+    object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
     object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
   }, error = function(x) { print("Training stats not found, not loading it...") })
 

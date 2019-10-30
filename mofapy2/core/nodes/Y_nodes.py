@@ -43,12 +43,15 @@ class Y_Node(Constant_Variational_Node):
         self.value[mask] = 0.
         return mask
 
-    def getMask(self):
+    def getMask(self, full=False):
         """ Get method for the mask """
-        if self.mini_batch is None:
+        if full:
             return self.mask
         else:
-            return self.mini_mask
+            if self.mini_batch is None:
+                return self.mask
+            else:
+                return self.mini_mask
             
     def define_mini_batch(self, ix):
         """ Method to define a mini-batch (only for stochastic inference) """
