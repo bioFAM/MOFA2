@@ -66,7 +66,9 @@ class PseudoY(Unobserved_Variational_Node):
     def updateParameters(self, ix=None, ro=None):
         pass
 
-    def getMask(self):
+    def getMask(self, full=True):
+        # Currently always full as stochastic inference not implemented for Gaussian nodes
+        #TODO: change when implementing SVI for non-Gaussian
         return self.mask
 
     def precompute(self, options=None):
