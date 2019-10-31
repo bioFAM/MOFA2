@@ -50,9 +50,9 @@ class entry_point(object):
             if isinstance(data, dict):
                 data = list(data.values())
             else:
-                print("Error: Data not recognised"); sys.stdout.flush(); exit()
+                print("Error: Data not recognised"); sys.stdout.flush(); sys.exit()
         if len(data)==0:
-            print("Error: Data is empty"); sys.stdout.flush(); exit()
+            print("Error: Data is empty"); sys.stdout.flush(); sys.exit()
 
         # Convert input data to numpy array float64 format
         for m in range(len(data)):
@@ -63,7 +63,7 @@ class entry_point(object):
                     if isinstance(data[m][p], pd.DataFrame):
                         data[m][p] = data[m][p].values
                     else:
-                        print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); exit()
+                        print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); sys.exit()
                 data[m][p] = data[m][p].astype(np.float64)
 
         # Save dimensionalities
@@ -228,9 +228,9 @@ class entry_point(object):
         n_groups = 1  # no grouping by default
         if groups_label is not None:
             if not isinstance(groups_label, str):
-                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); sys.exit()
             if groups_label not in adata.obs.columns:
-                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); sys.exit()
             n_groups = adata.obs[groups_label].unique().shape[0]
 
         # Save dimensionalities
@@ -255,11 +255,11 @@ class entry_point(object):
             # wouldn't match samples_names if the samples are not ordered according to their group beforehand.
 
             # List of names of groups, i.e. [group1, group2, ...]
-            self.data_opts['groups_names'] = adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values
+            self.data_opts['groups_names'] = [str(g) for g in adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values]
             # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
             self.data_opts['samples_names'] = adata.obs.reset_index(drop=False).rename(columns={adata.obs.index.name:'index'}).groupby(groups_label)["index"].apply(list).tolist()
             # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
-            self.data_opts['samples_groups'] = adata.obs[groups_label].values
+            self.data_opts['samples_groups'] = adata.obs[groups_label].apply(str).values
 
 
         # If everything successful, print verbose message
@@ -300,9 +300,9 @@ class entry_point(object):
         n_groups = 1  # no grouping by default
         if groups_label is not None:
             if not isinstance(groups_label, str):
-                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); exit()
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); sys.exit()
             if groups_label not in loom.ca.keys():
-                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); exit()
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); sys.exit()
             n_groups = pd.unique(loom.ca[groups_label]).shape[0]
 
         # Save dimensionalities
