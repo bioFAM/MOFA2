@@ -1,12 +1,11 @@
 # Multi-Omics Factor Analysis v2 (MOFA+)
 
-MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in a completely unsupervised fashion.  
+MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
 Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple ‘omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional data representation in terms of (hidden) factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
 
-The first version of MOFA was largely aimed at bulk studies with relatively small sample size. When applied to large single-cell -omics data sets, the model suffers from severe drawbacks, including limited scalability and insufficient sparsity assumptions. In addition, the assumption of independent samples limits the application of the model for the simultaneous analysis across different experiments (or conditions). For this reason we developed MOFA v2 (MOFA+), which includes the following improvements:
-* Fast Stochastic variational inference framework amenable to GPU computations
-* Additional sparsity priors in the latent space that ensure the recovery of sparse sources of variation
-* Breaking the assumption of independent samples, which allows structured inference across multiple groups (at the same time as multiple views). This enables the model to integrate different data sets that are anchored by a common data modality.
+In MOFA v2 (MOFA+) we added the following improvements:
+* Fast Stochastic variational inference framework amenable to GPU computations: enables inference with very large data sets
+* Multi-group functionality: intuitively, this breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.).
 
 
 For more details you can read our papers: 
