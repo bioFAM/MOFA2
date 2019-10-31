@@ -212,6 +212,7 @@ subset_samples <- function(object, samples) {
   if (length(groups)<length(groups(object))) object <- subset_groups(object, groups)
   
   # Subset data and expectations
+  groups <- groups(model)
   tmp <- lapply(groups, function(g) samples(object)[[g]][samples(object)[[g]] %in% samples])
   names(tmp) <- groups
   
