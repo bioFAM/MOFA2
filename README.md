@@ -1,18 +1,18 @@
 # Multi-Omics Factor Analysis v2 (MOFA+)
 
 MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
-Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple ‘omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional data representation in terms of (hidden) factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
+Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple -omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional data representation in terms of (hidden) factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
 
 In MOFA v2 (MOFA+) we added the following improvements:
-* *Multi-group functionality*: intuitively, this breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.).
-* *Fast inference* using a stochastic variational framework: this can be powered by GPUs: enabling inference with very large data sets.
+* **Multi-group functionality**: intuitively, this breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.).
+* **Fast inference** using a stochastic variational framework: this can be powered by GPUs: enabling inference with very large data sets.
 
 For more details you can read our papers: 
 - MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
 - MOFA v2: XXX
 
 <p align="center"> 
-<img src="images/figure1_mofa2.png" style="width: 50%; height: 50%"/>​
+<img src="images/figure1a_mofa2.png" style="width: 50%; height: 50%"/>​
 </p>
 
 
@@ -113,7 +113,7 @@ In practice, this enables the user to detect which sources of variation are driv
 
 #### Visualisation of samples in the factor space
 
-#### Visualisation of feature loadings
+#### Visualisation of feature weights
 XXX
 
 #### Feature set enrichment analysis
@@ -134,15 +134,15 @@ Please refer to the vignettes for details on the different analysis.
 We currently provide the following vignettes:
 
 * **Data processing and creation of MOFA object**: bazzz
-* **Integration of heterogeneous scRNA-seq data**: foo.
-* **Integration of heterogeneous DNA methylation data**: bar.
+* **Analysis of a multi-group scRNA-seq data set**: foo.
+* **Analysis of single-cell DNA methylation data**: bar.
 * **Integration of single-cell multi-modal data:**: baz.
-* **Transfer learning and imputation:**: baz.
-* **Model selection and robustness with simulated data**: bazz
+* **Robustness analysis and model selection**: bazz
 
 
+## Frequently asked questions
 
-## Frequently asked questions on the transition from MOFA v1 to MOFA v2
+### Frequently asked questions on the transition from MOFA v1 to MOFA v2
 
 **(Q) How does the multi-group inference work in MOFA v2?**  
 A group is simply defined as a predefined set of samples. There is total flexibility on how to define them, but they usually correspond to different conditions, cohorts, time points, etc. see our paper for details.
@@ -153,10 +153,10 @@ Technically, the multi-group inference is achieved by incorporating sparsity pri
 Yes, if you don't have multi-group structure in your data then just define a single group. This is equivalent to MOFA v1 (but significantly faster). However, due to some improvements in the parameter initialisation and the priors, you will not obtain identical results to your previous MOFA v1 models.
 
 **(Q) Does MOFA v2 inherit previous features from MOFA v1?**  
-Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the loadings. The novel model features are additional sparsity priors in the factors and the improved inference scheme.
+Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights. The novel model features are additional sparsity priors in the factors and the improved inference scheme.
 
 
-## Frequently asked questions on the data processing
+### Frequently asked questions on the data processing
 
 **(Q) How do I normalise the data?**  
 Proper normalisation of the data is critical for the model to work. First, one needs to remove library size effects. For count-based data such as RNA-seq or ATAC-seq we recommend size factor normalisation + variance stabilisation. For microarray DNA methylation data, make sure that samples have no differences in the average intensity. If this is not done correctly, the model will learn a very strong Factor 1 that will capture this variability, and more subtle sources of variation will be harder to identify.  
@@ -185,7 +185,7 @@ XXXX
 Yes! and there is no hidden imputation step, it simply ignores them. Matrix factorisation models are known to be very robust to the presence of missing values!
 
 
-## Frequently asked questions on the software
+### Frequently asked questions on the software
 
 **(Q) I get one of the following errors when running MOFA:**  
 ```
@@ -214,7 +214,7 @@ You probably tried to install them using `install.packages()`. These packages sh
 You can use Python to train the model, see [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_run.py). However, we currently do not provide downstream analysis functions in Python. We strongly recommend that you use our MOFA2 R package for this.
 
 
-## Frequently asked questions on the model options
+### Frequently asked questions on the model options
 
 **(Q) How many factors should I learn?**  
 Similar to other latent variable models, this is a hard question to answer. It depends on the data set and the aim of the analysis. If you want to get an overview on the major sources of variability then use a small number of factors (K<=10). If you want to capture small sources of variability, for example to do imputation or eQTL mapping, then go for a large number of factors (K>25).
@@ -245,10 +245,10 @@ No, as occurs in most complex Bayesian models, they are not guaranteed to always
 In practice, however, we observed that the solutions are highly consistent, particularly for the top factors. However, we recommend doing a robustness analysis. This is done by training multiple model instances and check the correlation of the factors across the different solutions See the function `compare_models()`.
 
 
-## Frequently asked questions on the downstream analysis
+### Frequently asked questions on the downstream analysis
 
 **(Q) How do I interpret the weights?**
-The loadings provide a score for each feature on each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
+The weights provide a score for each feature on each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
 
 **(Q) How do I interpret the factors?**
 The MOFA Factors capture global sources of variability in the data. Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.
