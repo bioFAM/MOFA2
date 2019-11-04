@@ -426,9 +426,10 @@ plot_weights <- function(object, view = 1, factors = "all", nfeatures = 10,
 #' Importantly, the weights of the features within a view have relative values and they should not be interpreted in an absolute scale.
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2
+#' @importFrom dplyr group_by top_n desc
 #' @return Returns a \code{ggplot2} object
 #' @export
-plot_top_weights <- function(object, view = 1, factors = c(1,2),
+plot_top_weights <- function(object, view = 1, factors = c(1, 2),
                              nfeatures = 10, abs = TRUE, scale = TRUE, sign = "all") {
   
   # Sanity checks
@@ -456,15 +457,13 @@ plot_top_weights <- function(object, view = 1, factors = c(1,2),
   # Select subset of only positive or negative loadings
   if (sign=="positive") { W <- W[W$value>0,] } else if (sign=="negative") { W <- W[W$value<0,] }
 
-   # Absolute value
+  # Absolute value
   if (abs) W$value <- abs(W$value)
-
   
   # Extract relevant features
   W <- W[with(W, order(-abs(value))), ]
-  if (nfeatures>0) features <- head(W$feature, nfeatures)
-  # if (!is.null(manual_features)) features <- W$feature[W$feature %in% manual_features] # Extract manual hits
-  W <- W[W$feature %in% features,]
+  if (nfeatures > 0)
+    W <- as.data.frame(top_n(group_by(W, factor), n = nfeatures, wt = desc(value)))
   
   # Sort according to loadings
   W <- W[with(W, order(-value, decreasing = TRUE)), ]
