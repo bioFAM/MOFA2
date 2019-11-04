@@ -488,11 +488,8 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_model_options(self, factors, likelihoods, spikeslab_factors=False, spikeslab_weights=False, ard_factors=False, ard_weights=False):
+    def set_model_options(self, factors, likelihoods, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
         """ Set model options """
-
-        # TODO: SANITY CHECKS AND:
-        # - learnTheta should be replaced by learn_sparsity
 
         self.model_opts = {}
 
