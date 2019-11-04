@@ -247,10 +247,10 @@ In practice, however, we observed that the solutions are highly consistent, part
 
 ### Frequently asked questions on the downstream analysis
 
-**(Q) How do I interpret the weights?**
+**(Q) How do I interpret the weights?**  
 The weights provide a score for each feature on each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
 
-**(Q) How do I interpret the factors?**
+**(Q) How do I interpret the factors?**  
 The MOFA Factors capture global sources of variability in the data. Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.
 
 **(Q) How can I do Gene Set Enrichment Analysis?**  
