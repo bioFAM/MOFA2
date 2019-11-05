@@ -1,0 +1,174 @@
+---
+title: "getting_started_pbmc"
+description: |
+  Tutorial describing how to create and train a MOFA+ model starting from different file types such as AnnData .h5ad file or a Seurat object.
+  In otder to be familiar to Seurat users, for the data preprocessing we follow Seurat's guided clustering tutorial.
+author:
+  - name: Danila Bredikhin
+    url: https://gtca.github.io/
+    affiliation: EMBL
+    affiliation_url: https://www.embl.de/research/units/genome_biology/stegle/members/
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(Seurat)
+library(MOFA2)
+library(Matrix)
+```
+
+# Prepare the data
+
+## Seurat
+
+We follow [Seurat's guided clustering tutorial](https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html) for PBMC 3k data preprocessing, which might be already familiar for Seurat users.
+
+```{r setup_seurat_object}
+# Download and untar PBMC dataset (7.3 Mb)
+#system("wget -P data/pbmc3k/ 'https://s3-us-west-2.amazonaws.com/10x.files/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz'")
+#system("tar -C data/pbmc3k/ -zxvf 'data/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz'")
+
+# Will create a 55.6 Mb object
+pbmc.data <- Read10X(data.dir = "../data/pbmc3k/filtered_gene_bc_matrices/hg19/")
+
+# Will create a 28.5 Mb object
+pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 10, min.features = 200)
+pbmc
+```
+
+Firstly, we go through the pre-processing steps from the aforementioned tutorial.
+
+```{r standard_preprocessing}
+# QC
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+
+# Normalising the data
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+
+# Feature selection
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+
+# Scaling the data
+pbmc <- ScaleData(pbmc)
+
+# Dimensionalisty reduction: PCA and UMAP
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+```
+
+We can also define clusters of cells based on their gene expression profiles:
+
+```{r define_cell_clusters}
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+```
+
+Check how the data looks like on a UMAP plot:
+
+```{r data_overview_umap}
+DimPlot(pbmc, reduction = "umap")
+```
+
+
+
+# Train the model
+
+Having the Seurat object in place, we then provide it to the `create_mofa()` function that will create a MOFA+ model using the desired slots of the Seurat object.
+
+```{r create_model}
+factor_model <- create_mofa(pbmc,
+                            # Groups can be provided at this step
+                            # as a respective metadata column:
+                            # groups = pbmc@meta.data$data_batch,
+                            
+                            # Features to use for the model can be supplied via `features` argument:
+                            features = VariableFeatures(pbmc),
+                            slot = "data")
+factor_model
+```
+
+In order to have a control over the model parameters and training procedure, we have to provide the fill the respective model slots. Below, we run `prepare_mofa()` that would use all the default options, and then manually adjust a few paramters.
+
+```{r prepare_model_for_training}
+# Use all the default options to prepare the model for training
+factor_model <- prepare_mofa(factor_model)
+
+# Set the number of factors to learn to 5 
+# for the sake of getting the result faster
+factor_model@model_options$num_factors <- 5
+# Note that you would typically use more factors in the model
+
+# You can turn the verbose output during training on 
+# if you want to monitor the training procedure
+# factor_model@training_options$verbose <- TRUE
+# factor_model@training_options$quite <- FALSE
+
+# Set convergense mode to "fast",
+# which means we could be able to finish training earlier
+# disregarding small improvements in convergence
+# that we might gain in medium or slow modes
+factor_model@training_options$convergence_mode <- "fast"
+factor_model@training_options$maxiter <- 100
+```
+
+Run the training. For that, the data is passed to the core of MOFA+ written in Python:
+
+```{r run_trainng}
+factor_model <- run_mofa(factor_model)
+```
+
+Calling the factor model object will give an overview of the model:
+
+```{r print_factor_model}
+factor_model
+```
+
+
+## Other formats
+
+The model constructor function `create_mofa()` accepts the data in a multitude of formats including a Seurat object (demonstrated above) and a list of matrices (`matrix`, `dgCMatrix`, or `dgTMatrix`) in R as well as AnnData or loom objects in Python. The information on the latter formats can be found in the respective notebooks, and here's how to use a list of matrices to crate the model:
+
+```{r create_model_from_matrices}
+pbmc_counts <- readMM("../data/pbmc3k/filtered_gene_bc_matrices/hg19/matrix.mtx")
+# Do the basic preprocessing with base R
+pbmc_counts <- pbmc_counts / colSums(pbmc_counts) * 1e4  # genes are in rows
+# Get top expressed genes
+pbmc_counts <- pbmc_counts[rowSums(pbmc_counts) > 1e3, colSums(pbmc_counts) < 3*1e4]
+pbmc_counts <- as(log(pbmc_counts+1), "dgTMatrix")
+  
+fm_mtx <- create_mofa(list("rna" = pbmc_counts))
+fm_mtx
+```
+
+
+# Explore the  model
+
+A good place to start exploring the trained model is to see how much variance each factor explains in every group:
+
+```{r plot_variance_explained}
+plot_variance_explained(factor_model, x = "group")
+```
+
+We could also add seurat clusters information and see how factor values are distributed for every group of cells:
+
+```{r}
+sample_order <- match(samples_metadata(factor_model)$sample, rownames(pbmc@meta.data))
+samples_metadata(factor_model)[,"seurat_clusters"] <- pbmc@meta.data[sample_order,"seurat_clusters"]
+plot_factor(factor_model, factors = 1:4, add_dots = FALSE, add_violin = TRUE, 
+            group_by = 'seurat_clusters', color_by = 'seurat_clusters')
+```
+
+
+A factor is defined by a set of weights (loadings) on features (genes in this case), and that's what can be used to interpret factors:
+
+```{r}
+plot_weights(factor_model, factors = 1:4)
+```
+
+See further vignettes for model investigation and factors interpretation.
