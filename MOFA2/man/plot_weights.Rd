@@ -4,7 +4,7 @@
 \alias{plot_weights}
 \title{Plot distribution of feature weights (loadings)}
 \usage{
-plot_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
+plot_weights(object, view = 1, factors = "all", nfeatures = 10,
   color_by = NULL, shape_by = NULL, abs = FALSE, manual = NULL,
   color_manual = NULL, scale = TRUE, dot_size = 1, text_size = 5,
   legend = TRUE, return_data = FALSE)

@@ -4,8 +4,8 @@
 \alias{plot_data_scatter}
 \title{Scatterplots of feature values against latent factors}
 \usage{
-plot_data_scatter(object, view, factor, groups = "all", features = 10,
-  sign = "all", color_by = NULL, color_name = "",
+plot_data_scatter(object, factor, view = 1, groups = "all",
+  features = 10, sign = "all", color_by = NULL, color_name = "",
   color_legend = TRUE, shape_by = NULL, shape_name = "",
   shape_legend = TRUE, dot_size = 1, text_size = 5, add_lm = TRUE,
   imputed = FALSE)
@@ -13,9 +13,9 @@ plot_data_scatter(object, view, factor, groups = "all", features = 10,
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{view}{string with the view name, or an integer with the index of the view.}
-
 \item{factor}{string with the factor name, or an integer with the index of the factor.}
+
+\item{view}{string with the view name, or an integer with the index of the view. Default is the first view.}
 
 \item{groups}{groups to plot. Default is "all".}
 

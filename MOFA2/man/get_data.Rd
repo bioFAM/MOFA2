@@ -5,7 +5,7 @@
 \title{Get data}
 \usage{
 get_data(object, views = "all", groups = "all", features = "all",
-  as.data.frame = FALSE, add_intercept = TRUE)
+  as.data.frame = FALSE, add_intercept = TRUE, na.rm = TRUE)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -19,6 +19,8 @@ Default is "all" If this is used, the argument views is ignored.}
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a list of matrices.}
 
 \item{add_intercept}{logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.}
+
+\item{na.rm}{remove NAs from the data.frame (only if as.data.frame is TRUE).}
 }
 \description{
 Fetch the input data
