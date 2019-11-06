@@ -110,15 +110,15 @@ In the MOFA2 R package we provide a wide range of downstream analysis to visuali
 </p>
 
 #### Variance decomposition
-MOFA disentangles the heterogeneity of a high-dimensional multi-omics data set in terms of a small number of latent factors. In addition, MOFA quantififes the fraction of variance explained ($R^2) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).  
-This effectively enables the user to detect which sources of variation are driving each data modality and how does this influence the different groups. 
+MOFA reduces the dimensionality of a multi-omics data set in terms of a small number of latent factors, and it quantifies the fraction of variance explained ($R^2$) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).
 
 #### Visualisation of samples in the factor space
-The MOFA factors provide a compressed representation of the data that captures its global sources of variability. Visualisation of factors can reveal discrete clusters and continuous trajectories.  
-Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.
+Visualisation of factors can reveal discrete clusters as well as continuous trajectories. Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero can represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.  
+For example, consider a factor that captures the variability associated with cell cycle. We could expect cells in Mitosis to be at one side of the factor axis (irrespective of the sign, only the relative positioning being of importance), whereas cells in G1 phase are expected to be at the other end of the factor axis. Cells with intermediate phenotype, or with no clear phenotype (i.e. no cell cycle genes profiled), are expected to be located around zero (because of the zero-mean prior distribution).
 
 #### Visualisation of feature weights
-The weights provide a score for how strong each feature relates to each factor, hence allowing a biological interpretation of the factors. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
+The weights provide a score for how strong each feature relates to each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.  
+Following the cell cycle example from above, genes that are upregulated in the M phase are expected to have large positive loadings, whereas genes that are downregulated in the M phase (or, equivalently, upregulated in the G1 phase) are expected to have negative loadings.
 
 #### Non-linear dimensionality reduction
 Interpretability at the factor level is achieved at the expense of limited information content per factor (due to the linearity assumption). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
@@ -127,8 +127,7 @@ Interpretability at the factor level is achieved at the expense of limited infor
 Factors can be used to impute missing values. This is quite useful for visualisation in data sets with large amounts of NAs.
 
 #### Clustering
-Clustering can be performed in the latent space to reveal sample subgroups. In fact, doing clustering in the (denoised) latent space is generally much more robust than in the high-dimensional space.
-
+Doing clustering in the (denoised) latent space tends to be much more robust than in the high-dimensional space.
 	
 
 ## Tutorials/Vignettes
@@ -252,6 +251,8 @@ In practice, however, we observed that the solutions are highly consistent, part
 First, you need to create your binary gene set matrix where rows are feature sets and columns are features (genes). We have manually processed some of Reactome and MSigDB gene sets for mouse and human. Contact us if you would like to use the data.  
 Then, you will have to choose a local statistic per feature (the loading, by default), a global statistic per pathway (average loading, by default), and a statistical test. The most trustworthy one is a permutation test with a long number of iterations, but this is slow and a fast parametric tests is also available. However, note that it tends to inflate the p-values due to the correlation structure between related genes (see for example [Gatti2010](https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-11-574)).
 
-## Contact
-The package is maintained by Ricard Argelaguet (ricard@ebi.ac.uk) and Danila Bredikhin (danila.bredikhin@embl.de). Please, reach us for problems, comments or suggestions. You can also contact us via a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
+## Slack group
+We have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
 
+## Contact
+Ricard Argelaguet (ricard@ebi.ac.uk) and Danila Bredikhin (danila.bredikhin@embl.de)
