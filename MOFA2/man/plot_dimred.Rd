@@ -4,10 +4,10 @@
 \alias{plot_dimred}
 \title{Plot dimensionality reduction based on MOFA factors}
 \usage{
-plot_dimred(object, method = c("umap", "tsne"), groups = "all",
+plot_dimred(object, method = c("UMAP", "TSNE"), groups = "all",
   show_missing = TRUE, color_by = NULL, shape_by = NULL,
-  color_name = NULL, shape_name = NULL, dot_size = 1.5, alpha = 1,
-  legend = TRUE, return_data = FALSE)
+  color_name = NULL, shape_name = NULL, dot_size = 1.5,
+  alpha_missing = 1, legend = TRUE, return_data = FALSE, ...)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
@@ -34,11 +34,11 @@ plot_dimred(object, method = c("umap", "tsne"), groups = "all",
 
 \item{dot_size}{numeric indicating dot size.}
 
-\item{alpha}{numeric indicating dot transparency.}
-
 \item{legend}{logical indicating whether to add legend.}
 
 \item{return_data}{logical indicating whether to return the long data frame to plot instead of plotting}
+
+\item{alpha}{numeric indicating dot transparency.}
 }
 \value{
 Returns a \code{ggplot2} object or a long data.frame (if return_data is TRUE)

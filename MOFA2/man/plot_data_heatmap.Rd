@@ -4,15 +4,16 @@
 \alias{plot_data_heatmap}
 \title{Plot heatmap of relevant features}
 \usage{
-plot_data_heatmap(object, view, factor, groups = "all", features = 50,
-  transpose = FALSE, imputed = FALSE, denoise = FALSE, ...)
+plot_data_heatmap(object, factor, view = 1, groups = "all",
+  features = 50, transpose = FALSE, imputed = FALSE,
+  denoise = FALSE, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{view}{a string with the view name, or an integer with the index of the view.}
-
 \item{factor}{a string with the factor name, or an integer with the index of the factor.}
+
+\item{view}{a string with the view name, or an integer with the index of the view. Default is the first view.}
 
 \item{groups}{groups to plot. Default is "all".}
 

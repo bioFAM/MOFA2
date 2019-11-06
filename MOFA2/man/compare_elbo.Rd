@@ -4,7 +4,7 @@
 \alias{compare_elbo}
 \title{Compare different trained \code{\link{MOFA}} objects in terms of the final value of the ELBO statistics and number of inferred factors}
 \usage{
-compare_elbo(models)
+compare_elbo(models, log = FALSE, return_data = FALSE)
 }
 \arguments{
 \item{models}{a list containing \code{\link{MOFA}} objects.}

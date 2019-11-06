@@ -4,20 +4,20 @@
 \alias{plot_weights_heatmap}
 \title{Plot heatmap of the weights}
 \usage{
-plot_weights_heatmap(object, view, features = "all", factors = "all",
-  threshold = 0, ...)
+plot_weights_heatmap(object, view = 1, features = "all",
+  factors = "all", threshold = 0, ...)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
 \item{view}{character vector with the view name(s), or numeric vector with the index of the view(s) to use. 
-Default is 'all'}
+Default is the first view.}
 
 \item{features}{character vector with the feature name(s), or numeric vector with the index of the feature(s) to use. 
-Default is 'all'}
+Default is 'all'.}
 
 \item{factors}{character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
-Default is 'all'}
+Default is 'all'.}
 
 \item{threshold}{threshold on absolute weight values, so that loadings with a magnitude below this threshold (in all factors) are removed}
 
