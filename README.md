@@ -103,31 +103,32 @@ Saving model in /Users/ricard/data/mofa2/hdf5/model.hdf5...
 
 ### Step 3: Downstream analysis
 
+In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. Please refer to the vignettes for details on the different analysis.  
+
 <p align="center"> 
 <img src="images/figure1b_mofa2.png" style="width: 50%; height: 50%"/>​
 </p>
 
 #### Variance decomposition
-MOFA disentangles the heterogeneity of a high-dimensional multi-omics data set in terms of a small number of latent factors. In addition, MOFA quantififes the fraction of variance explained ($R^2) for each of the factors in the different omics. If using multiple groups of data, then the model quantifies how much variance each factor explains in each combination of view and group (see figure above).  
-In practice, this enables the user to detect which sources of variation are driving each data modality and how does this influence the different groups. 
+MOFA disentangles the heterogeneity of a high-dimensional multi-omics data set in terms of a small number of latent factors. In addition, MOFA quantififes the fraction of variance explained ($R^2) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).  
+This effectively enables the user to detect which sources of variation are driving each data modality and how does this influence the different groups. 
 
 #### Visualisation of samples in the factor space
+The MOFA factors provide a compressed representation of the data that captures its global sources of variability. Visualisation of factors can reveal discrete clusters and continuous trajectories.  
+Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.
 
 #### Visualisation of feature weights
-XXX
-
-#### Feature set enrichment analysis
-XXX
+The weights provide a score for how strong each feature relates to each factor, hence allowing a biological interpretation of the factors. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
 
 #### Non-linear dimensionality reduction
-XXX
+Interpretability at the factor level is achieved at the expense of limited information content per factor (due to the linearity assumption). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
 
 #### Imputation
-XXX
+Factors can be used to impute missing values. This is quite useful for visualisation in data sets with large amounts of NAs.
 
 #### Clustering
+Clustering can be performed in the latent space to reveal sample subgroups. In fact, doing clustering in the (denoised) latent space is generally much more robust than in the high-dimensional space.
 
-Please refer to the vignettes for details on the different analysis.  
 	
 
 ## Tutorials/Vignettes
@@ -223,7 +224,7 @@ Similar to other latent variable models, this is a hard question to answer. It d
 Yes, but the user needs to specify a minimum value of % variance explained. Then, MOFA will actively remove factors (during training) that explain less than the specified amount of variance.
 If you have no idea on what to expect, it is better to start with a fixed number of factors and set the % variance threshold to 0.
 
-**(Q) Can I put known covariates in the model?**  
+**(Q) Can I include known covariates in the model?**  
 We extensively tested this functionality and it was not yielding good results. The reason is that covariates are usually discrete labels that do not reflect the underlying molecular biology. For example, if you introduce age as a covariate, but the actual age is different from the “molecular age”, the model will simply learn a new factor that corresponds to this “latent” molecular age, and it will drop the covariate from the model.  
 We recommend that you learn the factors in a completely unsupervised manner and then relate them to the biological covariates (see vignettes). If your covariate of interest is an important driver of variability, do not worry, MOFA will find it! 
 
@@ -246,12 +247,6 @@ In practice, however, we observed that the solutions are highly consistent, part
 
 
 ### Frequently asked questions on the downstream analysis
-
-**(Q) How do I interpret the weights?**  
-The weights provide a score for each feature on each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
-
-**(Q) How do I interpret the factors?**  
-The MOFA Factors capture global sources of variability in the data. Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.
 
 **(Q) How can I do Gene Set Enrichment Analysis?**  
 First, you need to create your binary gene set matrix where rows are feature sets and columns are features (genes). We have manually processed some of Reactome and MSigDB gene sets for mouse and human. Contact us if you would like to use the data.  

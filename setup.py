@@ -6,9 +6,9 @@ def setup_package():
   install_requires = ['pandas', 'scipy', 'numpy', 'sklearn', 'argparse', 'h5py']
   metadata = dict(
       name = 'mofapy2',
-      version = '0.1',
+      version = '0.2',
       description = 'Multi-Omics Factor Analysis v2, a statistical framework for the integration of multi-group and multi-omics data',
-      url = 'http://github.com/PMBio/biofam',
+      url = 'http://github.com/bioFAM/MOFA2',
       author = 'Ricard Argelaguet',
       author_email = 'ricard.argelaguet@gmail.com',
       license = 'LGPL-3.0',
