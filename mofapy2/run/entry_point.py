@@ -686,6 +686,8 @@ class entry_point(object):
 
 def mofa(adata, groups_label: bool = None, use_raw: bool = False,
          likelihood: str = "gaussian", n_factors: int = 10,
+         center_features_per_group: bool = True, 
+         scale_views: bool = False, scale_groups: bool = False,
          ard_weights: bool = True, ard_factors: bool = False,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
@@ -700,26 +702,29 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
     adata: an AnnotationData object
     groups_label (optional): a column name in adata.obs for grouping the samples
     use_raw (optional): use raw slot of AnnData as input values
-    likelihood: likelihood to use, default is gaussian
-    n_factors: number of factors to train the model with
-    ard_weights: use view-wise sparsity
-    ard_factors: use group-wise sparsity
-    spikeslab_weights: use feature-wise sparsity (e.g. gene-wise)
-    spikeslab_factors: use sample-wise sparsity (e.g. cell-wise)
-    n_iterations: upper limit on the number of iterations
-    convergence_mode: fast, medium, or slow convergence mode
-    seed: random seed
-    outfile: path to HDF5 file to store the model
-    verbose: print verbose information during traing
-    quiet: silence messages during training procedure
-    copy: return a copy of AnnData instead of writing to the provided object
+    likelihood (optional): likelihood to use, default is gaussian
+    n_factors (optional): number of factors to train the model with
+    center_features_per_group (optional): center features per group
+    scale_views (optional): scale views to unit variance
+    scale_groups (optional): scale groups to unit variance
+    ard_weights (optional): use view-wise sparsity
+    ard_factors (optional): use group-wise sparsity
+    spikeslab_weights (optional): use feature-wise sparsity (e.g. gene-wise)
+    spikeslab_factors (optional): use sample-wise sparsity (e.g. cell-wise)
+    n_iterations (optional): upper limit on the number of iterations
+    convergence_mode (optional): fast, medium, or slow convergence mode
+    seed (optional): random seed
+    outfile (optional): path to HDF5 file to store the model
+    verbose (optional): print verbose information during traing
+    quiet (optional): silence messages during training procedure
+    copy (optional): return a copy of AnnData instead of writing to the provided object
     """
 
     ent = entry_point()
 
     lik = [likelihood]
 
-    ent.set_data_options(lik, center_features_per_group=True, scale_views=False)
+    ent.set_data_options(lik, center_features_per_group=center_features_per_group, scale_views=scale_views, scale_groups=scale_groups)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
     ent.set_model_options(ard_factors=ard_factors, spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, ard_weights=ard_factors, factors=n_factors, likelihoods=lik)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
