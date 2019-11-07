@@ -187,6 +187,7 @@ If we want to operate on a Seurat object further on, we can add respective facto
 ```{r add_metadata_and_plot}
 factor_values <- do.call(rbind, get_factors(factor_model, factors = 1:4))
 sample_order <- match(rownames(pbmc@meta.data), rownames(factor_values))
+pbmc@meta.data <- cbind(pbmc@meta.data, factor_values[sample_order,])
 
 FeaturePlot(pbmc, reduction = "umap", features = paste0("Factor", 1:4))
 ```
