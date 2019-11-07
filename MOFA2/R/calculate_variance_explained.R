@@ -165,8 +165,18 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
   
-  if (!is.null(min_r2)) r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
-  if (!is.null(max_r2)) r2_mk_df$value[r2_mk_df$value>max_r2] <- max_r2
+  # Set R2 limits
+  if (!is.null(min_r2)) {
+    r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
+  }
+  min_r2 = 0
+  
+  if (!is.null(max_r2)) {
+    r2_mk_df$value[r2_mk_df$value>max_r2] <- max_r2
+    max_r2 = max_r2
+  } else {
+    max_r2 = max(r2_mk_df$value)
+  }
   
   # Grid plot with the variance explained per factor and view/group
   p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
@@ -174,7 +184,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
     guides(fill=guide_colorbar("R2")) +
     labs(x="", y="", title="") +
-    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(0, max(r2_mk_df$value))) +
+    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2,max_r2)) +
     guides(fill=guide_colorbar("R2")) +
     theme(
       axis.title.x = element_blank(),
@@ -367,6 +377,8 @@ plot_variance_explained_per_feature <- function(object, view, features,
   
   if (!is.null(min_r2)) r2_df$value[r2_df$value<min_r2] <- 0.00001
   if (!is.null(max_r2)) r2_df$value[r2_df$value>max_r2] <- max_r2
+  min_r2 = 0
+  max_r2 = max(r2_df$value)
 
   if (!is.null(group_features_by)) {
     features_indices <- match(r2_df$feature, features_metadata(object)$feature)
@@ -392,7 +404,7 @@ plot_variance_explained_per_feature <- function(object, view, features,
     ggtitle(paste0("Variance explained by ", length(factors), " factor", ifelse(length(factors) > 1, "s", ""), 
                    " (", paste0(factors, collapse = ", "), ")")) +
     # scale_fill_gradientn(colors = c("gray97", "darkred"), guide = "colorbar", limits = c(0, max(r2_df$value))) +
-    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(0, max(r2_df$value))) +
+    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2, max_r2)) +
     guides(fill = guide_colorbar("R2")) +
     theme(
       axis.title.x = element_blank(),

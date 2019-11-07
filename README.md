@@ -40,7 +40,7 @@ py_install("mofapy2", envname = "r-reticulate", method="auto")
 MOFA2 R package can be installed using R:
 
 ```r
-devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data"))
+devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data"))
 ```
 
 --------------
