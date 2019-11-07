@@ -114,7 +114,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   # }
   
   # Regress out covariates
-  object <- .regress_covariates(object, regress_covariates)
+  if !is.null(regress_covariates)
+    object <- .regress_covariates(object, regress_covariates)
 
   # Transform sparse matrices into dense ones
   # See https://github.com/rstudio/reticulate/issues/72
