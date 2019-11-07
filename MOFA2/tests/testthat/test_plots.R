@@ -52,5 +52,5 @@ test_that("plot factor values", {
 })
 
 test_that("plot factors correlation", {
-	expect_silent({plot_factor_cor(test_mofa2); dev.off()})
+	expect_error({plot_factor_cor(test_mofa2); dev.off()}, NA)
 })
