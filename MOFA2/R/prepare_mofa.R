@@ -283,7 +283,7 @@ get_default_model_options <- function(object) {
   
   # Prepare data.frame with covariates
   if (!is(covariates,"list"))
-    stop("Covariates has to be a list of vectors (for one covariate) or a list of data.frames (for multiple covariates")
+    stop("Covariates has to be a list of vectors (for one covariate) or a list of data.frames (for multiple covariates)")
   for (m in names(covariates)) {
     for (g in names(covariates[[m]])) {
       if (!is(covariates[[m]][[g]],"data.frame"))
