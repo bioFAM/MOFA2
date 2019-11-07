@@ -23,7 +23,7 @@
 #' simple_matrix <- t(readRDS("data/simple_matrix.rds"))
 #' prepare_mofa(create_mofa(list("view1" = simple_matrix)))
 prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL,
-                         regress_covariates = NULL ) {
+                         regress_covariates = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -114,7 +114,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   # }
   
   # Regress out covariates
-  object <- .regress_covariates(object, covariates)
+  object <- .regress_covariates(object, regress_covariates)
 
   # Transform sparse matrices into dense ones
   # See https://github.com/rstudio/reticulate/issues/72
