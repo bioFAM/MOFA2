@@ -280,7 +280,10 @@ class entry_point(object):
         else:
             for g in self.data_opts['groups_names']:
                 samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
-                self.intercepts[0] = [np.nanmean(x, axis=0) for x in [adata.X[np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
+                self.intercepts[0] = adata.X[samples_idx,:].mean(axis=0)
+            if callable(getattr(adata.X, "todense", None)):
+                self.data = process_data([np.array(adata.X.todense())], self.data_opts, self.data_opts['samples_groups'])
+            else:
                 self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_loom(self, loom, groups_label=None, layer=None):
@@ -743,6 +746,6 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
         if copy:
             return adata
         else:
-            print("Saved MOFA embeddings in adata.obsm.X_mofa slot and their loadings in adata.varm.LFs.")
+            print("Saved MOFA embeddings in adata.obsm['X_mofa'] slot and their loadings in adata.varm['LFs'].")
     else:
         print("Can not add embeddings and loadings to AnnData object since h5py is not installed.")
