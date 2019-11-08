@@ -2,7 +2,7 @@
 title: "Seurat and MOFA+ interoperability"
 description: |
   Tutorial describing how to create and train a MOFA+ model starting from a Seurat object or a list of matrices.
-  In otder to be familiar to Seurat users, for the data preprocessing we follow Seurat's guided clustering tutorial.
+  In order to be familiar to Seurat users, for the data preprocessing we follow Seurat's guided clustering tutorial.
 author:
   - name: Danila Bredikhin
     url: https://gtca.github.io/
