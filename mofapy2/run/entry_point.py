@@ -286,7 +286,7 @@ class entry_point(object):
             else:
                 self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_loom(self, loom, groups_label=None, layer=None):
+    def set_data_from_loom(self, loom, groups_label=None, layer=None, cell_id="CellID"):
         """ Method to input the data in Loom format
 
         PARAMETERS
@@ -294,6 +294,7 @@ class entry_point(object):
         loom: connection to loom file (loompy.loompy.LoomConnection)
         groups_label (optional): a key in loom.ca for grouping the samples
         layer (optional): a layer to be used instead of the main matrix
+        cell_id (optional): the name of the cell ID attribute (default is CellID)
         """
 
         # Sanity checks
@@ -322,15 +323,15 @@ class entry_point(object):
         # Define groups and samples names
         if groups_label is None:
             self.data_opts['groups_names'] = ["group1"]
-            self.data_opts['samples_names'] = [loom.ca.CellID]
+            self.data_opts['samples_names'] = [loom.ca[cell_id]]
             self.data_opts['samples_groups'] = ["group1"] * N
         else:
-            loom_metadata = pd.DataFrame(loom.ca["CellID", groups_label])
-            loom_metadata.columns = ["CellID", groups_label]
+            loom_metadata = pd.DataFrame(loom.ca[cell_id, groups_label])
+            loom_metadata.columns = [cell_id, groups_label]
             # List of names of groups, i.e. [group1, group2, ...]
             self.data_opts['groups_names'] = loom_metadata.groupby(groups_label)[groups_label].apply(list).index.values
             # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
-            self.data_opts['samples_names'] = loom_metadata.groupby(groups_label)["CellID"].apply(list).tolist()
+            self.data_opts['samples_names'] = loom_metadata.groupby(groups_label)[cell_id].apply(list).tolist()
             # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
             self.data_opts['samples_groups'] = loom_metadata[groups_label].values
 
