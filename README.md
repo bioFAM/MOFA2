@@ -2,7 +2,7 @@
 
 
 
-**I am currently finishing the getting started vignettes. They will be ready in a couple of days, sorry**
+## I am currently finishing the getting started vignettes. They will be ready in a couple of days, sorry
 
 
 
