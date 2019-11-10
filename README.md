@@ -9,7 +9,7 @@ In MOFA v2 (MOFA+) we added the following improvements:
 
 For more details you can read our papers: 
 - MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
-- MOFA v2: XXX
+- MOFA v2: https://www.biorxiv.org/content/10.1101/837104v1
 
 <p align="center"> 
 <img src="images/figure1a_mofa2.png" style="width: 50%; height: 50%"/>​
@@ -133,8 +133,8 @@ Doing clustering in the (denoised) latent space tends to be much more robust tha
 ## Tutorials/Vignettes
 We currently provide the following vignettes:
 
-* **Data processing and creation of MOFA object**: bazzz
-* **Analysis of a multi-group scRNA-seq data set**: foo.
+* **Getting started**: in preparation...
+* [**Analysis of a multi-group scRNA-seq data set**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.Rmd): 
 * **Analysis of single-cell DNA methylation data**: bar.
 * **Integration of single-cell multi-modal data:**: baz.
 * **Robustness analysis and model selection**: bazz
