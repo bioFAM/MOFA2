@@ -12,6 +12,8 @@ Rproj*
 # Pycharm
 .idea
 
+*.html
+
 # Distribution / packaging
 .Python
 env/
@@ -32,3 +34,4 @@ var/
 *.egg
 .Rproj.user
 *.Rcheck
+*.ipynb_checkpoints
