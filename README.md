@@ -40,7 +40,7 @@ py_install("mofapy2", envname = "r-reticulate", method="auto")
 MOFA2 R package can be installed using R:
 
 ```r
-devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data"))
+devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data --no-build-vignettes"))
 ```
 
 --------------
@@ -134,11 +134,12 @@ Doing clustering in the (denoised) latent space tends to be much more robust tha
 We currently provide the following vignettes:
 
 * **Getting started**: in preparation...
-* [**Analysis of a multi-group scRNA-seq data set**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.Rmd): 
-* **Analysis of single-cell DNA methylation data**: bar.
-* **Integration of single-cell multi-modal data:**: baz.
-* **Robustness analysis and model selection**: bazz
+* [**Analysis of a multi-group scRNA-seq data set**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.Rmd): Figure 2 of the paper.
+* [**Analysis of single-cell DNA methylation data**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.Rmd): Figure 3 of the paper
+* **Integration of single-cell multi-modal data:**: in preparation...
+* **Robustness analysis and model selection**: in preparation...
 
+The data and the pre-trained models can be downloaded [here](ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation)
 
 ## Frequently asked questions
 
@@ -164,9 +165,6 @@ Proper normalisation of the data is critical for the model to work. First, one n
 **(Q) Should I do any filtering to the input data?**  
 It is strongly recommended that you filter highly variable features (HVGs) per assay.
 Importantly, when doing multi-group inference, you have to regress out the group effect before selectinc HVGs. Otherwise you will enrich for features that show differences in the mean between groups.
-
-**(Q) Should I remove batch effects?**  
-Yes. We have implemented a function called `regress_covariates` that allows the user to regress out a covariate using linear models. See the documentation and the CLL vignette for examples.
 
 **(Q) How many samples do I need?**  
 Factor Analysis models are only useful with large sample sizes, let's say more than 15. With few samples you will detect very few relevant factors 
