@@ -1,10 +1,6 @@
 # Multi-Omics Factor Analysis v2 (MOFA+)
 
-
-
 ## I am currently finishing the getting started vignettes. They will be ready in a couple of days, sorry
-
-
 
 MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
 Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple -omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional data representation in terms of (hidden) factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
@@ -14,8 +10,8 @@ In MOFA v2 (MOFA+) we added the following improvements:
 * **Fast inference** using a stochastic variational framework: this can be powered by GPUs: enabling inference with very large data sets.
 
 For more details you can read our papers: 
-- MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
-- MOFA v2: https://www.biorxiv.org/content/10.1101/837104v1
+- MOFA (v1): http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
+- MOFA+: https://www.biorxiv.org/content/10.1101/837104v1
 
 <p align="center"> 
 <img src="images/figure1a_mofa2.png" style="width: 50%; height: 50%"/>​
@@ -34,13 +30,6 @@ Python dependencies can be installed using pip (from the Unix terminal)
 pip install mofapy2
 ```
 
-<!-- Alternatively, they can be installed from R itself using the reticulate package:
-
-```r
-library(reticulate)
-py_install("mofapy2", envname = "r-reticulate", method="auto")
-``` -->
-
 #### R package
 
 MOFA2 R package can be installed using R:
@@ -51,7 +40,7 @@ devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data 
 
 --------------
 
-<!-- ### Using Docker image
+### Using Docker image
 
 You can build an image with `mofa2py` python library and `MOFA2` R package using the provided Dockerfile:
 
@@ -68,76 +57,9 @@ docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
 #                    use `-v` to map a folder on your machine to a container directory
 
 The command above will launch R with MOFA2 and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
-``` -->
-
-## Usage
-
-### Step 1: Prepare the data
-
-- Data processing
-- Filtering
-- Regressing out technical variation
-
-
-If you work with single-cell data, MOFA+ comes with interfaces to build and train a model directly from objects commonly used for scRNA-seq data analysis, namely [AnnData](https://github.com/theislab/anndata) ([scanpy](https://github.com/theislab/scanpy)) in Python and [Seurat](https://github.com/satijalab/seurat) in R.
-
-See the vignette XXXX and the documentation for details
-
-
-### Step 2: Fitting the model
-
-First you need to create the MOFA object with your input data, and subsequently train the model.
-If everything is successful, you should observe an output analogous to the following:
 ```
-
-######################################
-## Training the model with seed 1 ##
-######################################
-
-Iteration 1: time=0.03, ELBO=-52650.68, deltaELBO=837116.802 (94.082647669%), Factors=10
-Iteration 2: time=0.01, ELBO=-50602.01, deltaELBO=2048.664 (0.230247081%), Factors=10
-(...)
-Iteration 8: time=0.02, ELBO=-50138.34, deltaELBO=25.072 (0.002817771%), Factors=10
-Iteration 9: time=0.04, ELBO=-50114.43, deltaELBO=23.907 (0.002686924%), Factors=10
-
-#######################
-## Training finished ##
-#######################
-
-Saving model in /Users/ricard/data/mofa2/hdf5/model.hdf5...
-```
-
-### Step 3: Downstream analysis
-
-In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. Please refer to the vignettes for details on the different analysis.  
-
-<p align="center"> 
-<img src="images/figure1b_mofa2.png" style="width: 50%; height: 50%"/>​
-</p>
-
-#### Variance decomposition
-MOFA reduces the dimensionality of a multi-omics data set in terms of a small number of latent factors, and it quantifies the fraction of variance explained ($R^2$) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).
-
-#### Visualisation of samples in the factor space
-Visualisation of factors can reveal discrete clusters as well as continuous trajectories. Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero can represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.  
-For example, consider a factor that captures the variability associated with cell cycle. We could expect cells in Mitosis to be at one side of the factor axis (irrespective of the sign, only the relative positioning being of importance), whereas cells in G1 phase are expected to be at the other end of the factor axis. Cells with intermediate phenotype, or with no clear phenotype (i.e. no cell cycle genes profiled), are expected to be located around zero (because of the zero-mean prior distribution).
-
-#### Visualisation of feature weights
-The weights provide a score for how strong each feature relates to each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.  
-Following the cell cycle example from above, genes that are upregulated in the M phase are expected to have large positive loadings, whereas genes that are downregulated in the M phase (or, equivalently, upregulated in the G1 phase) are expected to have negative loadings.
-
-#### Non-linear dimensionality reduction
-Interpretability at the factor level is achieved at the expense of limited information content per factor (due to the linearity assumption). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
-
-#### Imputation
-Factors can be used to impute missing values. This is quite useful for visualisation in data sets with large amounts of NAs.
-
-#### Clustering
-Doing clustering in the (denoised) latent space tends to be much more robust than in the high-dimensional space.
-	
 
 ## Tutorials/Vignettes
-We currently provide the following vignettes:
 
 * **Getting started**: in preparation...
 * [**Analysis of a multi-group scRNA-seq data set**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.Rmd): Figure 2 of the paper.
@@ -145,21 +67,24 @@ We currently provide the following vignettes:
 * **Integration of single-cell multi-modal data:**: in preparation...
 * **Robustness analysis and model selection**: in preparation...
 
-The data and the pre-trained models can be downloaded [here](ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation)
+The data and the pre-trained models can be downloaded [here](ftp://ftp.ebi.ac.uk/pub/databases/mofa)
 
 ## Frequently asked questions
 
-### Frequently asked questions on the transition from MOFA v1 to MOFA v2
+### Frequently asked questions on the transition from MOFA v1 to MOFA+
 
-**(Q) How does the multi-group inference work in MOFA v2?**  
+**(Q) Can MOFA+ be applied to bulk data?**  
+MOFA+ remains 100% applicable to bulk data. 
+
+**(Q) How does the multi-group inference work in MOFA+?**  
 A group is simply defined as a predefined set of samples. There is total flexibility on how to define them, but they usually correspond to different conditions, cohorts, time points, etc. see our paper for details.
 Very importantly, the groups are treates as batches of data, and the model is not focused on capturing differential changes between batches, but rather it is exploiting the coordinated variability between and within batches. Hence, prior to fitting the model the group effect is regressed out and features are centered to zero. This ensures that the model only looks at the variance, and not at the means.\\
 Technically, the multi-group inference is achieved by incorporating sparsity priors in the factors (see the supplementary methods of the paper).
 
-**(Q) can I run MOFA v1 using MOFA v2?**  
+**(Q) can I run MOFA v1 using MOFA+?**  
 Yes, if you don't have multi-group structure in your data then just define a single group. This is equivalent to MOFA v1 (but significantly faster). However, due to some improvements in the parameter initialisation and the priors, you will not obtain identical results to your previous MOFA v1 models.
 
-**(Q) Does MOFA v2 inherit previous features from MOFA v1?**  
+**(Q) Does MOFA+ inherit previous features from MOFA v1?**  
 Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights. The novel model features are additional sparsity priors in the factors and the improved inference scheme.
 
 

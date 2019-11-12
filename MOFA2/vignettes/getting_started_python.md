@@ -1,6 +1,12 @@
+---
+title: "MOFA+: training a model in Python"
+author: "Ricard Argelaguet"
+date: "`r Sys.Date()`"
+---
+
 This notebook contains a detailed tutorial on how to train MOFA using Python. If you arrived here, that means that you followed the Python path. Good job, but make sure to respect those that prefer R. They are human beings.  
 
-A concise template script can be found [here](XXX)
+A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.py)
 
 ## 1) Load libraries
 
@@ -161,6 +167,27 @@ ent.run()
 outfile = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
 ent.save(outfile)
 ```
+
+If everything is successful, you should observe an output analogous to the following:
+```
+
+######################################
+## Training the model with seed 1 ##
+######################################
+
+Iteration 1: time=0.03, ELBO=-52650.68, deltaELBO=837116.802 (94.082647669%), Factors=10
+
+(...)
+
+Iteration 9: time=0.04, ELBO=-50114.43, deltaELBO=23.907 (0.002686924%), Factors=10
+
+#######################
+## Training finished ##
+#######################
+
+Saving model in /Users/ricard/data/mofa2/hdf5/model.hdf5...
+```
+
 
 ## Downstream analysis
 

@@ -1,0 +1,27 @@
+### Step 3: Downstream analysis
+
+In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. Please refer to the vignettes for details on the different analysis.  
+
+<p align="center"> 
+<img src="images/figure1b_mofa2.png" style="width: 50%; height: 50%"/>​
+</p>
+
+#### Variance decomposition
+MOFA reduces the dimensionality of a multi-omics data set in terms of a small number of latent factors, and it quantifies the fraction of variance explained ($R^2$) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).
+
+#### Visualisation of samples in the factor space
+Visualisation of factors can reveal discrete clusters as well as continuous trajectories. Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero can represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.  
+For example, consider a factor that captures the variability associated with cell cycle. We could expect cells in Mitosis to be at one side of the factor axis (irrespective of the sign, only the relative positioning being of importance), whereas cells in G1 phase are expected to be at the other end of the factor axis. Cells with intermediate phenotype, or with no clear phenotype (i.e. no cell cycle genes profiled), are expected to be located around zero (because of the zero-mean prior distribution).
+
+#### Visualisation of feature weights
+The weights provide a score for how strong each feature relates to each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.  
+Following the cell cycle example from above, genes that are upregulated in the M phase are expected to have large positive loadings, whereas genes that are downregulated in the M phase (or, equivalently, upregulated in the G1 phase) are expected to have negative loadings.
+
+#### Non-linear dimensionality reduction
+Interpretability at the factor level is achieved at the expense of limited information content per factor (due to the linearity assumption). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
+
+#### Imputation
+Factors can be used to impute missing values. This is quite useful for visualisation in data sets with large amounts of NAs.
+
+#### Clustering
+Doing clustering in the (denoised) latent space tends to be much more robust than in the high-dimensional space.

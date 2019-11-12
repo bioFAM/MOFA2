@@ -4,6 +4,8 @@ author: "Ricard Argelaguet"
 date: "`r Sys.Date()`"
 ---
 
+ADD RETICULATE
+
 ## 1) Load libraries
 ```{r}
 library(data.table)
@@ -174,6 +176,25 @@ outfile = "/Users/ricard/test.hdf5"
 MOFAobject.trained <- run_mofa(MOFAobject, outfile)
 ```
 
+If everything is successful, you should observe an output analogous to the following:
+```
+
+######################################
+## Training the model with seed 1 ##
+######################################
+
+Iteration 1: time=0.03, ELBO=-52650.68, deltaELBO=837116.802 (94.082647669%), Factors=10
+
+(...)
+
+Iteration 9: time=0.04, ELBO=-50114.43, deltaELBO=23.907 (0.002686924%), Factors=10
+
+#######################
+## Training finished ##
+#######################
+
+Saving model in /Users/ricard/data/mofa2/hdf5/model.hdf5...
+```
 
 # Downstream analysis
 
