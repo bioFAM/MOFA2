@@ -18,7 +18,7 @@ For more details you can read our papers:
 </p>
 
 
-## Installation
+## Manual installation
 
 The core of MOFA is implemented in Python. However, the whole procedure can be run with R and we provide the downstream analysis functions only in R.
 
@@ -40,9 +40,9 @@ devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data 
 
 --------------
 
-### Using Docker image
+<!-- ### Installation using Docker image
 
-You can build an image with `mofa2py` python library and `MOFA2` R package using the provided Dockerfile:
+You can build an image using the provided Dockerfile:
 
 ```
 docker build -t mofa2 .
@@ -57,7 +57,7 @@ docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
 #                    use `-v` to map a folder on your machine to a container directory
 
 The command above will launch R with MOFA2 and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
-```
+``` -->
 
 ## Tutorials/Vignettes
 
