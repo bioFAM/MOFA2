@@ -69,9 +69,16 @@ The command above will launch R with MOFA2 and its dependencies installed while 
 
 The data and the pre-trained models can be downloaded [here](ftp://ftp.ebi.ac.uk/pub/databases/mofa)
 
-## Frequently asked questions
+## Slack group
+We have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
 
-### Frequently asked questions on the transition from MOFA v1 to MOFA+
+## Contact
+Ricard Argelaguet (ricard@ebi.ac.uk) and Danila Bredikhin (danila.bredikhin@embl.de)
+
+
+## Frequently asked questions (FAQ)
+
+### FAQ on the transition from MOFA v1 to MOFA+
 
 **(Q) Can MOFA+ be applied to bulk data?**  
 MOFA+ remains 100% applicable to bulk data. 
@@ -88,7 +95,7 @@ Yes, if you don't have multi-group structure in your data then just define a sin
 Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights. The novel model features are additional sparsity priors in the factors and the improved inference scheme.
 
 
-### Frequently asked questions on the data processing
+### FAQ on the data processing
 
 **(Q) How do I normalise the data?**  
 Proper normalisation of the data is critical for the model to work. First, one needs to remove library size effects. For count-based data such as RNA-seq or ATAC-seq we recommend size factor normalisation + variance stabilisation. For microarray DNA methylation data, make sure that samples have no differences in the average intensity. If this is not done correctly, the model will learn a very strong Factor 1 that will capture this variability, and more subtle sources of variation will be harder to identify.  
@@ -114,18 +121,18 @@ XXXX
 Yes! and there is no hidden imputation step, it simply ignores them. Matrix factorisation models are known to be very robust to the presence of missing values!
 
 
-### Frequently asked questions on the software
+### FAQ on the software
 
 **(Q) I get one of the following errors when running MOFA:**  
 ```
 AttributeError: 'module' object has no attribute 'core.entry_point
 
 Error in py_module_import(module, convert = convert) :
- ModuleNotFoundError: No module named 'mofapy'
+ ModuleNotFoundError: No module named 'mofapy2'
 ```
 First thing: restart R and try again. If the error still holds, this means that either:  
 (1) you did not install the mofa Python package (see instructions above).
-(2) you have multiple python installations and R is not detecting the correct one where mofa is installed. You need to find out the right Python interpreter, which usually will be the one you get when running `which python` in the terminal. You can test if the mofa packaged is installed by running INSIDE python: `import mofapy`.  
+(2) you have multiple python installations and R is not detecting the correct one where mofa is installed. You need to find out the right Python interpreter, which usually will be the one you get when running `which python` in the terminal. You can test if the mofa packaged is installed by running INSIDE python: `import mofapy2`.  
 Once everything is figured out, specify the following at the beginning of your R script:
 ```
 library(reticulate)
@@ -143,7 +150,7 @@ You probably tried to install them using `install.packages()`. These packages sh
 You can use Python to train the model, see [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_run.py). However, we currently do not provide downstream analysis functions in Python. We strongly recommend that you use our MOFA2 R package for this.
 
 
-### Frequently asked questions on the model options
+### FAQ on the model options
 
 **(Q) How many factors should I learn?**  
 Similar to other latent variable models, this is a hard question to answer. It depends on the data set and the aim of the analysis. If you want to get an overview on the major sources of variability then use a small number of factors (K<=10). If you want to capture small sources of variability, for example to do imputation or eQTL mapping, then go for a large number of factors (K>25).
@@ -174,14 +181,8 @@ No, as occurs in most complex Bayesian models, they are not guaranteed to always
 In practice, however, we observed that the solutions are highly consistent, particularly for the top factors. However, we recommend doing a robustness analysis. This is done by training multiple model instances and check the correlation of the factors across the different solutions See the function `compare_models()`.
 
 
-### Frequently asked questions on the downstream analysis
+### FAQ on the downstream analysis
 
 **(Q) How can I do Gene Set Enrichment Analysis?**  
 First, you need to create your binary gene set matrix where rows are feature sets and columns are features (genes). We have manually processed some of Reactome and MSigDB gene sets for mouse and human. Contact us if you would like to use the data.  
 Then, you will have to choose a local statistic per feature (the loading, by default), a global statistic per pathway (average loading, by default), and a statistical test. The most trustworthy one is a permutation test with a long number of iterations, but this is slow and a fast parametric tests is also available. However, note that it tends to inflate the p-values due to the correlation structure between related genes (see for example [Gatti2010](https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-11-574)).
-
-## Slack group
-We have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
-
-## Contact
-Ricard Argelaguet (ricard@ebi.ac.uk) and Danila Bredikhin (danila.bredikhin@embl.de)
