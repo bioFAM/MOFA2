@@ -173,7 +173,6 @@ Importantly, the use of non-gaussian likelihoods require further approximations 
 **(4.6) The model does not converge smoothly, and it oscillates between positive and negative deltaELBO values**  
 First, check that you are using the right likelihood model (see above). Second, make sure that you have no features or samples that are full of missing values. Third, check that you have no features with zero (or very little) variance. If the problem does not disappear, please contact us via mail or the Slack group.
 
-
 **(4.7) Does MOFA always converge to the same solutions?**  
 No, as occurs in most complex Bayesian models, they are not guaranteed to always converge to the same solution.
 In practice, however, we observed that the solutions are highly consistent, particularly for the top factors. However, we recommend doing a robustness analysis. This is done by training multiple model instances and check the correlation of the factors across the different solutions See the function `compare_models()`.
