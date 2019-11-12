@@ -1,0 +1,180 @@
+---
+title: "MOFA+: training a model in R"
+author: "Ricard Argelaguet"
+date: "`r Sys.Date()`"
+---
+
+## 1) Load libraries
+```{r}
+library(data.table)
+library(purrr)
+library(MOFA2)
+```
+
+This notebook contains a detailed tutorial on how to train MOFA using R. A concise template script can be found [here](XXX)
+
+## 2) Load data
+
+To create a MOFA+ object you need to specify four dimensions: samples (cells), features, view(s) and group(s). MOFA objects can be created from a wide range of input formats, This depends on whether you follow the R path or the Python path:
+
+Simulate data
+```{r }
+N = 100
+D1 = 250
+D2 = 500
+
+# view1 and view2 are matrices with dimensions (N,D1) and (N,D2) where
+# N are the samples, D1 and D2 are the number of features in view 1 and 2, respectively
+view1 = matrix(rnorm(N*D1),nrow=D1, ncol=N)
+view2 = matrix(rnorm(N*D2),nrow=D2, ncol=N)
+
+# Define feature (rows) and sample (columns) names
+colnames(view1) <- colnames(view2) <- paste0("sample_",1:N)
+rownames(view1) <- paste0("feature",1:D1,"_view",1)
+rownames(view2) <- paste0("feature",1:D2,"_view",2)
+```
+
+### 2.1) List of matrices
+This is the format inherited from MOFA v1. A list of matrices, where each entry corresponds to one view. Samples are stored in columns and features in rows
+
+```{r }
+# groups is a character or factor vector that indicates the group ID for each sample
+groups = c(rep("A",N/2), rep("B",N/2))
+
+# create MOFA object with two views, no groups (MOFA v1)
+MOFAobject <- create_mofa(list("view1" = view1), groups=groups)
+
+# create MOFA object with one view, two groups
+MOFAobject <- create_mofa(list("view1" = view1, "view2" = view2))
+
+# create MOFA object with two views, two groups
+MOFAobject <- create_mofa(list("view1" = view1, "view2" = view2), groups=groups)
+
+print(MOFAobject)
+```
+ 
+
+### 2.2) Long data.frame
+A long data.frame with columns ["sample","group","feature","view","value"].  
+This is personally my favourite format, as it summarises all omics/groups in a single data structure. Also, there is no need to add rows that correspond to missing data.
+
+Create long data.frame format from the matrices
+```{r }
+dt.group <- data.table(sample = paste0("sample_",1:N), group = groups)
+
+# data.frame for view 1
+dt1 <- view1 %>% reshape2::melt() %>% as.data.table %>%
+    setnames(c("feature","sample","value")) %>%
+    .[,view:="view1"] %>%
+    merge(dt.group)
+
+dt2 <- view2 %>% reshape2::melt() %>% as.data.table %>%
+    setnames(c("feature","sample","value")) %>%
+    .[,view:="view2"] %>%
+    merge(dt.group)
+
+dt <- rbind(dt1,dt2)
+```
+
+```{r}
+head(dt)
+```
+
+```{r }
+MOFAobject <- create_mofa(dt)
+print(MOFAobject)
+```
+
+### 2.3) Seurat
+Seurat is a popular tool for the analysis of single-cell omics. 
+
+Create a Seurat object with the data
+
+```{r }
+# MOFAobject <- create_mofa(seurat,
+#   groups = seurat@meta.data$group,       # Groups can be extracted from the metadata
+#   features = VariableFeatures(seurat),   # select features from the seurat object
+#   slot = "data")                         # select slot from each assay
+# print(MOFAobject)
+```
+
+### 2.4) Visualise the structure of the data 
+```{r }
+plot_data_overview(MOFAobject)
+```
+
+### 3) Define data options
+
+- **likelihoods**: likelihood per view (options are "gaussian", "poisson", "bernoulli")
+- **scale_groups**: if groups have different ranges/variances, it is good practice to scale each group to unit variance. Default is False
+- **scale_views**: if views have different ranges/variances, it is good practice to scale each view to unit variance. Default is False
+```{r }
+data_opts <- get_default_data_options(MOFAobject)
+
+data_opts
+```
+
+## 3) Define model options
+
+- **num_factors**: number of factors
+- **likelihods**: same as in data_opts
+- **spikeslab_factors**: use spike-slab sparsity prior in the factors? default is FALSE.
+- **spikeslab_weights**: use spike-slab sparsity prior in the weights? default is TRUE.
+- **ard_factors**: use ARD prior in the factors? Default is TRUE if using multiple groups.
+- **ard_weights**: use ARD prior in the weights? Default is TRUE. 
+
+Only change the default model options if you are familiar with the underlying mathematical model!
+
+```{r }
+model_opts <- get_default_model_options(MOFAobject)
+head(model_opts)
+```
+
+## 3) Define train options
+- **maxiter**: number of iterations. Default is 1000.
+- **convergence_mode**: "fast", "medium", "slow". For exploration, the fast mode is good enough.
+- **startELBO**: initial iteration to compute the ELBO (the objective function used to assess convergence)
+- **freqELBO**: frequency of computations of the ELBO (the objective function used to assess convergence)
+<!-- - **dropR2**: minimum variance explained criteria to drop factors while training. Default is  -->
+- **gpu_mode**: use GPU mode? (needs cupy installed and a functional GPU, see https://cupy.chainer.org/)
+- **stochastic**: use stochastic inference?
+- **verbose**: verbose mode?
+- **seed**: random seed
+
+```{r }
+train_opts <- get_default_training_options(MOFAobject)
+head(train_opts)
+```
+
+# 5) (Optional)  stochastic inference options
+
+If the number of samples is very large (at the order of >1e4), you may want to try the stochastic inference scheme. If combined with GPUs, it makes inference significantly faster. However, it requires some additional hyperparameters that in some data sets may need to be optimised (vignette in preparation)_
+- **batch_size**: numeric value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
+- **learning_rate**: learning rate (we recommend values from 0.5 to 0.75)
+- **forgetting_rate**: forgetting rate (we recommend values from 0.25 to 0.75)
+
+```{r}
+stochastic_opts <- get_default_stochastic_options(MOFAobject)
+head(stochastic_opts)
+```
+
+
+## 6) Build and train the MOFA object 
+
+```{r }
+MOFAobject <- prepare_mofa(
+  object = MOFAobject,
+  data_options = data_opts,
+  model_options = model_opts,
+  training_options = train_opts
+  # stochastic_options = stochastic_opts # optional
+)
+
+outfile = "/Users/ricard/test.hdf5"
+MOFAobject.trained <- run_mofa(MOFAobject, outfile)
+```
+
+
+# Downstream analysis
+
+This finishes the tutorial on how to train a MOFA object from R. To continue with the downstream analysis, follow [this tutorial](XXX)

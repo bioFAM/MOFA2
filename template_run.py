@@ -1,4 +1,4 @@
-from mofa2py.run.entry_point import entry_point
+from mofapy2.run.entry_point import entry_point
 import pandas as pd
 
 ###############
@@ -12,23 +12,23 @@ import pandas as pd
 #           Importantly, all views for a given group G must have the same samples in the rows.
 #           If there is any sample that is missing a particular view, the column needs to be filled with NAs
 
+# datadir = "/Users/ricard/data/mofaplus/test"
+# views = ["0","1"]
+# groups = ["0","1"]
+# data = [None]*len(views)
+# for m in range(len(views)):
+#     data[m] = [None]*len(groups)
+#     for g in range(len(groups)):
+#         datafile = "%s/%s_%s.txt.gz" % (datadir, views[m], groups[g])
+#         data[m][g] = pd.read_csv(datafile, header=None, sep=' ')
+
 # Option 2: a data.frame with columns ["sample","feature","view","group","value"]
 #           In this case there is no need to have missing values in the data.frame,
 #           they will be automatically filled in when creating the corresponding matrices
+data = pd.read_csv("/Users/ricard/data/mofaplus/test/data.txt.gz", sep="\t")
 
-datadir = "/Users/ricard/data/mofaplus/test"
-
-views = ["0","1"]
-groups = ["0","1"]
-data = [None]*len(views)
-for m in range(len(views)):
-    data[m] = [None]*len(groups)
-    for g in range(len(groups)):
-        datafile = "%s/test_%s_%s.txt" % (datadir, views[m], groups[g])
-        data[m][g] = pd.read_csv(datafile, header=None, sep=' ')
-
-# Define likelihoods
-lik = ["gaussian"]*len(data)
+# Define likelihoods per view
+lik = ["gaussian","gaussian"]
 
 ###########################
 ## Initialise MOFA model ##
@@ -43,9 +43,11 @@ ent = entry_point()
 # - scale_views: if views have different ranges/variances, it is good practice to scale each view to unit variance
 ent.set_data_options(likelihoods=lik, scale_groups=False, scale_views=False)
 
-# Set data 
-ent.set_data_matrix(data) # (option 1, nested list of matrices)
-# ent.set_data_df(data)   # (option 2, data.frame)
+# Set data (option 1, nested list of matrices) 
+# ent.set_data_matrix(data)
+
+# Set data (option 2, data.frame)
+ent.set_data_df(data)
 
 # Set model options
 # - factors: number of factors
@@ -80,12 +82,6 @@ ent.build()
 
 # Run the model
 ent.run()
-
-###########################
-## (Optional) Imputation ##
-###########################
-
-ent.impute()
 
 ####################
 ## Save the model ##
