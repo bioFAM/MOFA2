@@ -78,52 +78,49 @@ Ricard Argelaguet (ricard@ebi.ac.uk) and Danila Bredikhin (danila.bredikhin@embl
 
 ## Frequently asked questions (FAQ)
 
-### FAQ on the transition from MOFA v1 to MOFA+
+### (1) FAQ on the transition from MOFA v1 to MOFA+
 
-**(Q) Can MOFA+ be applied to bulk data?**  
+**(1.1) Can MOFA+ be applied to bulk data?**  
 MOFA+ remains 100% applicable to bulk data. 
 
-**(Q) How does the multi-group inference work in MOFA+?**  
+**(1.2) How does the multi-group inference work in MOFA+?**  
 A group is simply defined as a predefined set of samples. There is total flexibility on how to define them, but they usually correspond to different conditions, cohorts, time points, etc. see our paper for details.
 Very importantly, the groups are treates as batches of data, and the model is not focused on capturing differential changes between batches, but rather it is exploiting the coordinated variability between and within batches. Hence, prior to fitting the model the group effect is regressed out and features are centered to zero. This ensures that the model only looks at the variance, and not at the means.\\
 Technically, the multi-group inference is achieved by incorporating sparsity priors in the factors (see the supplementary methods of the paper).
 
-**(Q) can I run MOFA v1 using MOFA+?**  
+**(1.3) can I run MOFA v1 using MOFA+?**  
 Yes, if you don't have multi-group structure in your data then just define a single group. This is equivalent to MOFA v1 (but significantly faster). However, due to some improvements in the parameter initialisation and the priors, you will not obtain identical results to your previous MOFA v1 models.
 
-**(Q) Does MOFA+ inherit previous features from MOFA v1?**  
+**(1.4) Does MOFA+ inherit previous features from MOFA v1?**  
 Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights. The novel model features are additional sparsity priors in the factors and the improved inference scheme.
 
 
-### FAQ on the data processing
+### (2) FAQ on the data processing
 
-**(Q) How do I normalise the data?**  
+**(2.1) How do I normalise the data?**  
 Proper normalisation of the data is critical for the model to work. First, one needs to remove library size effects. For count-based data such as RNA-seq or ATAC-seq we recommend size factor normalisation + variance stabilisation. For microarray DNA methylation data, make sure that samples have no differences in the average intensity. If this is not done correctly, the model will learn a very strong Factor 1 that will capture this variability, and more subtle sources of variation will be harder to identify.  
 
-**(Q) Should I do any filtering to the input data?**  
+**(2.2) Should I do any filtering to the input data?**  
 It is strongly recommended that you filter highly variable features (HVGs) per assay.
 Importantly, when doing multi-group inference, you have to regress out the group effect before selectinc HVGs. Otherwise you will enrich for features that show differences in the mean between groups.
 
-**(Q) How many samples do I need?**  
+**(2.3) How many samples do I need?**  
 Factor Analysis models are only useful with large sample sizes, let's say more than 15. With few samples you will detect very few relevant factors 
 
-**(Q) Should I remove undesired sources of variability (i.e. batch effects) before fitting the model?**  
+**(2.4) Should I remove undesired sources of variability (i.e. batch effects) before fitting the model?**  
 Yes, if you have clear technical factors, we strongly encourage to regress it out a priori using a simple linear model. The reason for this is that the model will "focus" on the huge variability driven by the technical factors, and smaller sources of variability could be missed.
 You can regress out known covaraites using the function `regressCovariates`. See the corresponding documentation and the CLL vignette for details.
 
-**(Q) My data sets have different dimensionalities, does this matter?**  
+**(2.5) My data sets have different dimensionalities, does this matter?**  
 Yes, this is important. Bigger data modalities will tend to be overrepresent in the MOFA model. It is good practice to filter features (based for example on variance, as lowly variable features provide little information) in order to have the different dimensionalities within the same order of magnitudes. If this is unavoidable, take into account that the model has the risk of missing (small) sources of variation unique to the small data set.
 
-**(Q) What input formats are allowed?**  
-XXXX
-
-**(Q) Does MOFA handle missing values?**  
+**(2.6) Does MOFA handle missing values?**  
 Yes! and there is no hidden imputation step, it simply ignores them. Matrix factorisation models are known to be very robust to the presence of missing values!
 
 
-### FAQ on the software
+### (3) FAQ on the software
 
-**(Q) I get one of the following errors when running MOFA:**  
+**(3.1) I get one of the following errors when running MOFA:**  
 ```
 AttributeError: 'module' object has no attribute 'core.entry_point
 
@@ -140,49 +137,50 @@ use_python("YOUR_PYTHON_PATH", required=TRUE)
 ```
 You can also use `use_conda` instead of `use_python` if you work with conda environments. Read more about the [reticulate](https://rstudio.github.io/reticulate/) package and [how it integrates Python and R](https://rstudio.github.io/reticulate/articles/versions.html)
 
-**(Q) I get the following error when installing the R package:**  
+**(3.2) I get the following error when installing the R package:**  
 ```
 ERROR: dependencies 'XXX', 'YYY' are not available for package 'MOFA2'
 ```
 You probably tried to install them using `install.packages()`. These packages should be installed from Bioconductor.
 
-**(Q) I hate R, can I do MOFA only with Python?**  
-You can use Python to train the model, see [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_run.py). However, we currently do not provide downstream analysis functions in Python. We strongly recommend that you use our MOFA2 R package for this.
+**(3.3) I hate R, can I do MOFA only with Python?**  
+XXX
+<!-- You can use Python to train the model, see [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_run.py). However, we currently do not provide downstream analysis functions in Python. We strongly recommend that you use our MOFA2 R package for this. -->
 
 
-### FAQ on the model options
+### (4) FAQ on the model options
 
-**(Q) How many factors should I learn?**  
+**(4.1) How many factors should I learn?**  
 Similar to other latent variable models, this is a hard question to answer. It depends on the data set and the aim of the analysis. If you want to get an overview on the major sources of variability then use a small number of factors (K<=10). If you want to capture small sources of variability, for example to do imputation or eQTL mapping, then go for a large number of factors (K>25).
 
-**(Q) Can MOFA automatically learn the number of factors?**  
+**(4.2) Can MOFA automatically learn the number of factors?**  
 Yes, but the user needs to specify a minimum value of % variance explained. Then, MOFA will actively remove factors (during training) that explain less than the specified amount of variance.
 If you have no idea on what to expect, it is better to start with a fixed number of factors and set the % variance threshold to 0.
 
-**(Q) Can I include known covariates in the model?**  
+**(4.3) Can I include known covariates in the model?**  
 We extensively tested this functionality and it was not yielding good results. The reason is that covariates are usually discrete labels that do not reflect the underlying molecular biology. For example, if you introduce age as a covariate, but the actual age is different from the “molecular age”, the model will simply learn a new factor that corresponds to this “latent” molecular age, and it will drop the covariate from the model.  
 We recommend that you learn the factors in a completely unsupervised manner and then relate them to the biological covariates (see vignettes). If your covariate of interest is an important driver of variability, do not worry, MOFA will find it! 
 
-**(Q) The weights have different values between runs. Is this expected?**  
+**(4.4) The weights have different values between runs. Is this expected?**  
 This is normal and it happens because of two reasons. The first one is that the model does not always converge to the same exact solution (see below in the FAQ), although different model instances should be pretty similar. The second reason is that factor analysis models are rotation invariant. This means that you can rotate your factors and your weights and still find the same solution. This implies that the signs of the weight or the factors can NOT be compared across trials, only within a trial.
 
-**(Q) What data modalities can MOFA cope with?**  
+**(4.5) What data modalities can MOFA cope with?**  
 * Continuous data: modelled using a gaussian likelihood
 * Binary data: modelled using a bernoulli likelihood
 * Count data: using a poisson likelihood.
 Importantly, the use of non-gaussian likelihoods require further approximations and are not as accurate as the gaussian likelihood. Hence, if your data can be safely transformed to match the gaussian likelihood assumptions, this is ALWAYS recommended. For example RNA-seq data is expected to be normalised and modelled with a gaussian distribution, do not input the counts directly.
 
-**(Q) The model does not converge smoothly, and it oscillates between positive and negative deltaELBO values**  
+**(4.6) The model does not converge smoothly, and it oscillates between positive and negative deltaELBO values**  
 First, check that you are using the right likelihood model (see above). Second, make sure that you have no features or samples that are full of missing values. Third, check that you have no features with zero (or very little) variance. If the problem does not disappear, please contact us via mail or the Slack group.
 
 
-**(Q) Does MOFA always converge to the same solutions?**  
+**(4.7) Does MOFA always converge to the same solutions?**  
 No, as occurs in most complex Bayesian models, they are not guaranteed to always converge to the same solution.
 In practice, however, we observed that the solutions are highly consistent, particularly for the top factors. However, we recommend doing a robustness analysis. This is done by training multiple model instances and check the correlation of the factors across the different solutions See the function `compare_models()`.
 
 
-### FAQ on the downstream analysis
+### (5) FAQ on the downstream analysis
 
-**(Q) How can I do Gene Set Enrichment Analysis?**  
+**(5.1) How can I do Gene Set Enrichment Analysis?**  
 First, you need to create your binary gene set matrix where rows are feature sets and columns are features (genes). We have manually processed some of Reactome and MSigDB gene sets for mouse and human. Contact us if you would like to use the data.  
 Then, you will have to choose a local statistic per feature (the loading, by default), a global statistic per pathway (average loading, by default), and a statistical test. The most trustworthy one is a permutation test with a long number of iterations, but this is slow and a fast parametric tests is also available. However, note that it tends to inflate the p-values due to the correlation structure between related genes (see for example [Gatti2010](https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-11-574)).
