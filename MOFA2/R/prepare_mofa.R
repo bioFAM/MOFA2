@@ -182,7 +182,9 @@ get_default_training_options <- function(object) {
 #' @details The data options are the following: \cr
 #' \itemize{
 #'  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
-#'  As long as the scale differences between the data sets is not too high, this is not required. Default is FALSE.}
+#'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
+#'  \item{\strong{scale_views}:}{ logical indicating whether to scale groups to have the same unit variance. 
+#'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
 #' }
 #' @return Returns a list with the default data options.
 #' @importFrom utils modifyList
@@ -191,7 +193,6 @@ get_default_data_options <- function(object) {
   
   # Define default data options
   data_options <- list(
-    center_features_per_group = TRUE,    # (logical) Center features per group
     scale_views = FALSE,                 # (logical) Scale views to unit variance
     scale_groups = FALSE                 # (logical) Scale groups to unit variance
   )

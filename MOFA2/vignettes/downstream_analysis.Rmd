@@ -1,27 +1,291 @@
-### Step 3: Downstream analysis
+---
+title: "MOFA+: downstream analysis (in R)"
+author: "Ricard Argelaguet"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{downstream}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
 
 In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. Please refer to the vignettes for details on the different analysis.  
 
-<p align="center"> 
-<img src="images/figure1b_mofa2.png" style="width: 50%; height: 50%"/>​
-</p>
+<!-- <p align="center">  -->
+<!-- <img src="images/figure1b_mofa2.png" style="width: 50%; height: 50%"/> -->
+<!-- </p> -->
 
-#### Variance decomposition
-MOFA reduces the dimensionality of a multi-omics data set in terms of a small number of latent factors, and it quantifies the fraction of variance explained ($R^2$) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).
+## Load libraries
+```{r}
+library(MOFA2)
+library(ggplot2)
+```
+
+## Load trained model
+
+Options:
+- sort_factors: logical indicating whether factors should be sorted by variance explained (default is TRUE)
+- on_disk: logical indicating whether to work from memory or from disk. This should be set to TRUE when the training data is so big that cannot fit into memory. On-disk operations are performed using the HDF5Array and DelayedArray framework.
+
+```{r }
+model <- load_model("/Users/ricard/data/mofaplus/test/model.hdf5")
+```
+
+## Overview of data
+The function `plot_data_overview` can be used to obtain an overview of the input data. 
+It shows how many views (rows) and how many groups (columns) exist, what are their corresponding dimensionalities and how many missing information they have (grey bars). 
+```{r}
+plot_data_overview(model)
+```
+
+## Add metadata to the model
+
+We have implemented the option to add sample metadata information to the MOFA object. This makes it easier to color the subsequent plots.  
+The metadata is stored as dataframe in `model@metadata`, and it requires at least two columns: `sample` and `group`. The number of rows must match the total number of samples in the model (`sum(model@dimensions$N)`)
+
+```{r }
+# fake some metadata
+sample_metadata <- model@samples_metadata
+sample_metadata$condition <- sample(c("A","B"), size = nrow(sample_metadata), replace=T)
+sample_metadata$age <- sample(1:100, size = nrow(sample_metadata), replace=T)
+
+samples_metadata(model) <- sample_metadata
+head(model@samples_metadata)
+```
+
+## Variance decomposition
+
+MOFA reduces the dimensionality of a multi-omics data set in terms of a small number of latent factors, and it quantifies the fraction of variance explained ($R^2$) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).  
+
+The variance explained estimates are expensive to compute and are stored in the hdf5 file. In R, they are loaded in `model@cache$`:
+```{r }
+# Total variance explained per view and group
+head(model@cache$variance_explained$r2_total)
+
+# Variance explained for every factor in per view and group
+head(model@cache$variance_explained$r2_per_factor)
+```
+
+Variance explained estimates can be plotted using `plot_variance_explained(model, ...)`. Options:  
+- factors: character vector with a factor name(s), or numeric vector with the index(es) of the factor(s). Default is "all".
+- x: character specifying the dimension for the x-axis ("view", "factor", or "group").
+- y: character specifying the dimension for the y-axis ("view", "factor", or "group").
+- split_by: character specifying the dimension to be faceted ("view", "factor", or "group").
+- plot_total: logical value to indicate if to plot the total variance explained (for the variable in the x-axis)
+
+```{r }
+plot_variance_explained(model, x="group", y="factor")
+```
+
+```{r}
+p <- plot_variance_explained(model, x="view", y="group")
+p + theme(axis.text.x = element_text(color="black", angle=40, vjust=1, hjust=1))
+```
+
+```{r}
+p <- plot_variance_explained(model, x="group", y="factor", plot_total = T)
+p[[2]]
+```
 
 #### Visualisation of samples in the factor space
-Visualisation of factors can reveal discrete clusters as well as continuous trajectories. Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero can represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.  
-For example, consider a factor that captures the variability associated with cell cycle. We could expect cells in Mitosis to be at one side of the factor axis (irrespective of the sign, only the relative positioning being of importance), whereas cells in G1 phase are expected to be at the other end of the factor axis. Cells with intermediate phenotype, or with no clear phenotype (i.e. no cell cycle genes profiled), are expected to be located around zero (because of the zero-mean prior distribution).
+Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero can represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.  
+
+Factors can be plotted using `plot_factor` (beeswarm plots) or `plot_factors` (scatter plots)
+```{r }
+plot_factor(model, 
+  factor = 1:3,
+  color_by = "age",
+  shape_by = "condition"
+)
+```
+
+Adding more options
+```{r}
+p <- plot_factor(model, 
+  factor = 1,
+  color_by = "condition",
+  dot_size = 0.2,      # change dot size
+  dodge = T,           # dodge points with different colors
+  legend = F,          # remove legend
+  add_violin = T,      # add violin plots,
+  violin_alpha = 0.25  # transparency of violin plots
+)
+
+# The output of plot_factor is a ggplot2 object that we can edit
+p <- p + 
+  scale_color_manual(values=c("A"="black", "B"="red")) +
+  scale_fill_manual(values=c("A"="black", "B"="red"))
+
+print(p)
+```
+
+scatter plots
+```{r }
+plot_factors(model, 
+  factors = 1:3,
+  color_by = "condition"
+)
+```
+
 
 #### Visualisation of feature weights
-The weights provide a score for how strong each feature relates to each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa.  
-Following the cell cycle example from above, genes that are upregulated in the M phase are expected to have large positive loadings, whereas genes that are downregulated in the M phase (or, equivalently, upregulated in the G1 phase) are expected to have negative loadings.
+The weights provide a score for how strong each feature relates to each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa. 
+
+Weights can be plotted using `plot_weights` (beeswarm plots) or `plot_top_weights` (scatter plots)
+
+```{r }
+plot_weights(model,
+  view = "view0",
+  factor = 1,
+  nfeatures = 10,     # Number of features to highlight
+  scale = T           # Scale loadings from -1 to 1
+)
+```
+
+<!-- ```{r } -->
+<!-- plot_top_weights(model,  -->
+<!--   view = "view0",  -->
+<!--   factor = 1,  -->
+<!--   nfeatures = 10, -->
+<!--   scale = T,  -->
+<!--   abs = T         # absolute value -->
+<!-- ) -->
+<!-- ``` -->
+
+#### Visualisation of patterns in the data
+
+Instead of looking at an "abstract" weight, it is useful to observe the coordinated heterogeneity of the informative features in the original data. This can be done using the `plot_data_heatmap` and `plot_data_scatter` function.   
+
+Heatmap of observations
+```{r}
+plot_data_heatmap(model,
+  view = "view1",         # view of interest
+  factor = 1,             # factor of interest
+  features = 20,          # number of features to plot (they are selected by loading)
+  
+  # extra arguments that are passed to the `pheatmap` function. Read documentation for details
+  cluster_rows = TRUE, cluster_cols = FALSE,
+  show_rownames = TRUE, show_colnames = FALSE
+)
+```
+
+Scatter plots of observations vs factor values
+```{r}
+plot_data_scatter(model,
+  view = "view1",         # view of interest
+  factor = 1,             # factor of interest
+  features = 5,           # number of features to plot (they are selected by loading)
+  add_lm = TRUE,          # add linear regression
+  color_by = "condition"
+)
+```
 
 #### Non-linear dimensionality reduction
 Interpretability at the factor level is achieved at the expense of limited information content per factor (due to the linearity assumption). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
 
-#### Imputation
-Factors can be used to impute missing values. This is quite useful for visualisation in data sets with large amounts of NAs.
+Run UMAP and t-SNE
+```{r }
+set.seed(42)
+model <- run_umap(model)
+model <- run_tsne(model)
+```
 
-#### Clustering
-Doing clustering in the (denoised) latent space tends to be much more robust than in the high-dimensional space.
+Plot non-linear dimensionality reduction
+```{r }
+plot_dimred(model,
+  method = "TSNE",
+  color_by = "condition",
+  legend = F
+)
+```
+
+
+<!-- #### Clustering -->
+<!-- Doing clustering in the (denoised) latent space tends to be much more robust than in the high-dimensional space. -->
+<!-- ```{r} -->
+<!-- # cluster_samples(model) -->
+<!-- ``` -->
+
+
+### Rename functionalities
+
+The user can rename the dimensions of the model
+```{r}
+views(model)
+views(model) <- c("Transcriptomics", "Methylation", "Proteomics")
+views(model)
+```
+
+```{r}
+groups(model)
+groups(model) <- c("Condition_A", "Condition_B", "Condition_C")
+groups(model)
+```
+
+### User-defined plots
+
+The user can extract the feature weights, the data and the factors to generate their own plots.  
+
+Extract factors
+```{r}
+# factors is a list of matrices, one matrix per group with dimensions (nsamples, nfactors)
+factors <- get_factors(model,
+  groups = "all",
+  factors = "all"
+)
+
+lapply(factors,dim)
+```
+
+
+Extract weights
+```{r}
+# weights is a list of matrices, one matrix per view with dimensions (nfeatures, nfactors)
+weights <- get_weights(model,
+  views = "all",
+  factors = "all"
+)
+
+lapply(weights,dim)
+```
+
+Extract data
+```{r}
+# data is a nested list of matrices, one matrix per view and group with dimensions (nfeatures, nsamples)
+data <- get_data(model)
+
+lapply(data, function(x) lapply(x, dim))[[1]]
+```
+
+For convenience, the user can extract the data in long data.frame format to plug into ggplot:  
+```{r}
+# factors is a list of matrices, one matrix per group with dimensions (nsamples, nfactors)
+factors <- get_factors(model, as.data.frame = T)
+weights <- get_weights(model, as.data.frame = T)
+data <- get_data(model, as.data.frame = T)
+```
+
+```{r}
+head(factors)
+```
+
+```{r}
+head(weights)
+```
+
+```{r}
+head(data)
+```
+
+<!-- ### Subset data -->
+<!-- ```{r } -->
+<!-- # Fetch variance explained quantifications form the cache -->
+<!-- r2 <- model@cache$variance_explained$r2_per_factor -->
+<!-- # Identify inactive factors -->
+<!-- tmp <- sapply(r2, function(x) x[,"RNA"]>0.01) -->
+<!-- factors <- which(apply(tmp,1,sum) >= 1) -->
+<!-- # Subset factors -->
+<!-- # model <- subset_factors(model, factors) -->
+<!-- ``` -->

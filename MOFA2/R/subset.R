@@ -38,8 +38,8 @@ subset_groups <- function(object, groups) {
   }
   
   # Subset intercepts
-  if (length(objectintercepts[[1]])>0) {
-    object@objectintercepts <- sapply(object@objectintercepts, function(x) x[groups], simplify = FALSE, USE.NAMES = TRUE) 
+  if (length(object@intercepts[[1]])>0) {
+    object@intercepts <- sapply(object@intercepts, function(x) x[groups], simplify = FALSE, USE.NAMES = TRUE) 
   }
   
   # Update dimensionality

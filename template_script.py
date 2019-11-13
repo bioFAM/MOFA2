@@ -1,5 +1,12 @@
+
+######################################################
+## Template script to train a MOFA+ model in Python ##
+######################################################
+
 from mofapy2.run.entry_point import entry_point
 import pandas as pd
+import io
+import requests # to download the online data
 
 ###############
 ## Load data ##
@@ -25,10 +32,9 @@ import pandas as pd
 # Option 2: a data.frame with columns ["sample","feature","view","group","value"]
 #           In this case there is no need to have missing values in the data.frame,
 #           they will be automatically filled in when creating the corresponding matrices
-data = pd.read_csv("/Users/ricard/data/mofaplus/test/data.txt.gz", sep="\t")
 
-# Define likelihoods per view
-lik = ["gaussian","gaussian"]
+file = "ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/getting_started/data.txt.gz" # Simulated data
+data = pd.read_csv(file, sep="\t")
 
 ###########################
 ## Initialise MOFA model ##
@@ -41,7 +47,7 @@ ent = entry_point()
 # - likelihoods: likelihood per view (options are "gaussian","poisson","bernoulli")
 # - scale_groups: if groups have different ranges/variances, it is good practice to scale each group to unit variance
 # - scale_views: if views have different ranges/variances, it is good practice to scale each view to unit variance
-ent.set_data_options(likelihoods=lik, scale_groups=False, scale_views=False)
+ent.set_data_options(likelihoods=["gaussian","gaussian"], scale_groups=False, scale_views=False)
 
 # Set data (option 1, nested list of matrices) 
 # ent.set_data_matrix(data)
@@ -55,7 +61,7 @@ ent.set_data_df(data)
 # - spikeslab_weights: use spike-slab sparsity prior in the weights? (recommended TRUE)
 # - ard_factors: use ARD prior in the factors? (set to TRUE if using multiple groups)
 # - ard_weights: use ARD prior in the weights? (always TRUE)
-ent.set_model_options(factors=5, likelihoods=lik, spikeslab_weights=True, ard_factors=True, ard_weights=True)
+ent.set_model_options(factors=5, likelihoods=["gaussian","gaussian"], spikeslab_weights=True, ard_factors=True, ard_weights=True)
 
 # Set training options
 # - iter: number of iterations
@@ -66,7 +72,7 @@ ent.set_model_options(factors=5, likelihoods=lik, spikeslab_weights=True, ard_fa
 # - gpu_mode: use GPU mode? (needs cupy installed and a functional GPU, see https://cupy.chainer.org/)
 # - verbose: verbose mode?
 # - seed: random seed
-ent.set_train_options(iter=10, convergence_mode="fast", startELBO=1, elbofreq=1, dropR2=None, gpu_mode=True, verbose=False, seed=1)
+ent.set_train_options(iter=1000, convergence_mode="medium", startELBO=1, elbofreq=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
 
 # (Optional) Set stochastic inference options
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)

@@ -6,7 +6,7 @@
 .DS_Store
 
 # Rstudio projects
-Rproj*
+*Rproj*
 
 
 # Pycharm
