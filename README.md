@@ -62,11 +62,11 @@ The command above will launch R with MOFA2 and its dependencies installed while 
 ## Tutorials/Vignettes
 
 * [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started.md): 
-* [**Tutorial: training a model in R**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.Rmd): 
-<!-- * * [**Tutorial: training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.Rmd):  -->
-* [**Downstream analysis (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/downstream_analysis.Rmd): 
-* [**Analysis of a multi-group scRNA-seq data set**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.Rmd): Figure 2 of the paper.
-* [**Analysis of single-cell DNA methylation data**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.Rmd): Figure 3 of the paper
+* [**Tutorial: training a model in R**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.html): 
+<!-- * * [**Tutorial: training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.html):  -->
+* [**Downstream analysis (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/downstream_analysis.html): 
+* [**Analysis of a multi-group scRNA-seq data set**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the paper.
+* [**Analysis of single-cell DNA methylation data**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper
 * **Integration of single-cell multi-modal data:**: in preparation...
 * **Robustness analysis and model selection**: in preparation...
 

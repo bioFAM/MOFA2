@@ -40,7 +40,7 @@ Recommended, it is easier and faster. See [Training the model in Python](XXX)
 
 
 ## 2.2) Training the model in R
-R requires the package `reticulate` to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see [Training the model in R](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.Rmd)
+R requires the package `reticulate` to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see [Training the model in R](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.html)
 
 
 # 3) Downstream analysis
