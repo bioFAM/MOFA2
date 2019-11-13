@@ -43,10 +43,10 @@ This is the format inherited from MOFA v1. A list of matrices, where each entry 
 # groups is a character or factor vector that indicates the group ID for each sample
 groups = c(rep("A",N/2), rep("B",N/2))
 
-# create MOFA object with two views, no groups (MOFA v1)
+# create MOFA object with one view, two groups
 MOFAobject <- create_mofa(list("view1" = view1), groups=groups)
 
-# create MOFA object with one view, two groups
+# create MOFA object with two views, no groups (MOFA v1)
 MOFAobject <- create_mofa(list("view1" = view1, "view2" = view2))
 
 # create MOFA object with two views, two groups
