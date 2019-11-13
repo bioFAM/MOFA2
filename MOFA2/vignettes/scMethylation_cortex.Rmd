@@ -1,6 +1,9 @@
 ---
 title: "MOFA+: integration of heterogeneous single-cell DNA methylation data sets"
-author: "Ricard Argelaguet"
+author:
+  name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:
@@ -28,7 +31,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
 
 # Load dependencies
 
-```{r}
+```{r, message=FALSE}
 library(data.table)
 library(purrr)
 library(ggplot2)
@@ -75,7 +78,7 @@ This format is convenient because it can store all molecular layers and groups i
 
 Missing values do not need to be explicitly added. They will be automatically filled when converting from the long format to the wide matrix-like format
 ```{r}
-head(met_dt)
+head(met.dt)
 ```
 
 ```{r}
@@ -91,7 +94,7 @@ The data was preprocessed in the following way:
 The preprocessing scripts can be found [here](TO-FILL)
 # Create MOFA object
 
-This takes a minute...
+This takes a minute to convert the data.frame into a set of matrices
 ```{r}
 MOFAobject <- create_mofa(met.dt)
 ```

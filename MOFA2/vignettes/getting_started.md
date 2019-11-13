@@ -7,7 +7,7 @@ In our new model design (MOFA+) we generalise this strategy to also enable **the
 See for example the following figure:
 
 <p align="center"> 
-<img src="../../images/fig1_getting_started_vignette.png" style="width: 100%; height: 100%"/>​
+<img src="../../images/figure1b_mofa2.png" style="width: 100%; height: 100%"/>​
 </p>
 
 In this example, the input data consists of three views and three groups. The model has detected 4 latent factors. Factor 1 drives a lot of signal in view 2 and view 3, but no variance in view 1. However, this variation is only captured in group A and B, not in group C. Hence, whatever Factor 1 is (let's say cell cycle variation), MOFA indicates that all samples in group 3 do not manifest such variation.

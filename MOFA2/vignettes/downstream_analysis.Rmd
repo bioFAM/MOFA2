@@ -1,7 +1,9 @@
 ---
 title: "MOFA+: downstream analysis (in R)"
-author: "Ricard Argelaguet"
-affiliation: European Bioinformatics Institute, Cambridge, UK
+author:
+  name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:

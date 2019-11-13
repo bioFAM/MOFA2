@@ -1,6 +1,9 @@
 ---
 title: "MOFA+: integration of a heterogeneous time-course single-cell RNA-seq dataset."
-author: "Ricard Argelaguet"
+author:
+  name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:

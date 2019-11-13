@@ -1,4 +1,4 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="author" content="&quot;Ricard Argelaguet&quot;"><style>body {
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body {
   max-width: 980px;
   border: 1px solid #ddd;
   outline: 1300px solid #fff;
@@ -1055,12 +1055,12 @@ body .markdown-body
 .codehilite .vi{color:teal}
 .codehilite .il{color:#009999}
 .codehilite .gc{color:#999;background-color:#EAF2F5}
-</style><title>"MOFA+: getting started"</title></head><body><article class="markdown-body"><h1 id="description">Description<a class="headerlink" href="#description" title="Permanent link"></a></h1>
+</style><title>getting_started</title></head><body><article class="markdown-body"><h1 id="description">Description<a class="headerlink" href="#description" title="Permanent link"></a></h1>
 <p>MOFA is a (Bayesian) factor analysis model that provides <strong>a general framework for the unsupervised integration of multi-omic data sets</strong>. Briefly, MOFA aims at disentangling the sources of variation in a multi-omics data set, and detect the ones which are shared between assays from the ones that are driven by a single assay. It provides a principled approach to decompose the modes of variation in complex and structured data sets.   </p>
 <p>In our new model design (MOFA+) we generalise this strategy to also enable <strong>the integration of multiple groups of data</strong>, where groups are typically different cohorts, time points, experiments, etc. When using the multi-group functionality, the model will quantify the variance explained by each latent factor in each group.  </p>
 <p>See for example the following figure:</p>
 <p align="center"> 
-<img src="/Users/ricard/MOFA2/images/fig1_getting_started_vignette.png" style="width: 100%; height: 100%"/>​
+<img src="/Users/ricard/MOFA2/images/figure1b_mofa2.png" style="width: 100%; height: 100%"/>​
 </p>
 
 <p>In this example, the input data consists of three views and three groups. The model has detected 4 latent factors. Factor 1 drives a lot of signal in view 2 and view 3, but no variance in view 1. However, this variation is only captured in group A and B, not in group C. Hence, whatever Factor 1 is (let&rsquo;s say cell cycle variation), MOFA indicates that all samples in group 3 do not manifest such variation.</p>
@@ -1081,6 +1081,6 @@ To continue with the getting started tutorial, you need to choose the python pat
 <h2 id="21-training-the-model-in-python">2.1) Training the model in Python<a class="headerlink" href="#21-training-the-model-in-python" title="Permanent link"></a></h2>
 <p>Recommended, it is easier and faster. See <a href="/Users/ricard/MOFA2/MOFA2/vignettes/XXX">Training the model in Python</a></p>
 <h2 id="22-training-the-model-in-r">2.2) Training the model in R<a class="headerlink" href="#22-training-the-model-in-r" title="Permanent link"></a></h2>
-<p>R requires the package <code>reticulate</code> to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see <a href="/Users/ricard/MOFA2/MOFA2/vignettes/XXX">Training the model in R</a></p>
+<p>R requires the package <code>reticulate</code> to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see <a href="https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.html">Training the model in R</a></p>
 <h1 id="3-downstream-analysis">3) Downstream analysis<a class="headerlink" href="#3-downstream-analysis" title="Permanent link"></a></h1>
 <p>After the model is trained, we only provide downstream analysis functionalities in R (for now). This is demonstrated in <a href="/Users/ricard/MOFA2/MOFA2/vignettes/XXX">this vignette</a>.</p></article></body></html>
