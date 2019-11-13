@@ -47,17 +47,17 @@ train_opts <- get_default_training_options(MOFAobject)
 # Run multiple fitting rounds MOFA object 
 Once the MOFAobject is set up we can use `run_mofa` to train the model.  
 As depending on the random initilization the results might differ, we recommend to use `run_mofa` multiple times (e.g. ten times, here we use a smaller number for illustration as the model training can take some time) with different random seeds. This allows you to assess the robustness of the inferred factors across different random initilizations and select a model for downstream analysis. As a next step we will show how to compare the different fits and select the best model for downstream analyses.
-```{r }
+```{r, message=FALSE}
 n_inits <- 3
 MOFAlist <- lapply(seq_len(n_inits), function(it) {
   
+  # change the seed
   train_opts$seed <- 2019 + it
   
-  MOFAobject <- prepare_mofa(
-  MOFAobject, 
-  data_options = data_opts,
-  model_options = model_opts,
-  training_options = train_opts
+  MOFAobject <- prepare_mofa(MOFAobject, 
+    data_options = data_opts,
+    model_options = model_opts,
+    training_options = train_opts
 )
   
   run_mofa(MOFAobject)

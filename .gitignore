@@ -12,7 +12,8 @@
 # Pycharm
 .idea
 
-*.html
+# HTML
+# *.html
 
 # Distribution / packaging
 .Python

@@ -1,8 +1,3 @@
----
-title: "MOFA+: getting started"
-author: "Ricard Argelaguet"
----
-
 # Description
 
 MOFA is a (Bayesian) factor analysis model that provides **a general framework for the unsupervised integration of multi-omic data sets**. Briefly, MOFA aims at disentangling the sources of variation in a multi-omics data set, and detect the ones which are shared between assays from the ones that are driven by a single assay. It provides a principled approach to decompose the modes of variation in complex and structured data sets.   
@@ -45,7 +40,7 @@ Recommended, it is easier and faster. See [Training the model in Python](XXX)
 
 
 ## 2.2) Training the model in R
-R requires the package `reticulate` to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see [Training the model in R](XXX)
+R requires the package `reticulate` to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see [Training the model in R](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.Rmd)
 
 
 # 3) Downstream analysis

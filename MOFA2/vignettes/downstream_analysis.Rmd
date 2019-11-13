@@ -16,14 +16,14 @@ vignette: >
 
 In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. Please refer to the vignettes for details on the different analysis.  
 
-<!-- <p align="center">  -->
-<!-- <img src="../../images/figure1b_mofa2.png" style="width: 70%; height: 70%"/> -->
-<!-- </p> -->
+<p align="center">
+<img src="../../images/figure1b_mofa2.png" style="width: 100%; height: 100%"/>
+</p>
 
 # Load libraries
-```{r}
-suppressPackageStartupMessages(library(ggplot2))
-suppressPackageStartupMessages(library(MOFA2))
+```{r, message=FALSE}
+library(ggplot2)
+library(MOFA2)
 ```
 
 # Load trained model
@@ -133,8 +133,8 @@ print(p)
 
 ## Visualisation of combinations of factors
 
-scatter plots
-```{r }
+Scatter plots
+```{r, message=FALSE}
 plot_factors(model, 
   factors = 1:3,
   color_by = "condition"
@@ -142,7 +142,7 @@ plot_factors(model,
 ```
 
 
-#### Visualisation of feature weights
+## Visualisation of feature weights
 The weights provide a score for how strong each feature relates to each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa. 
 
 Weights can be plotted using `plot_weights` (beeswarm plots) or `plot_top_weights` (scatter plots)
