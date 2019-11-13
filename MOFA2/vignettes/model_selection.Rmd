@@ -11,11 +11,18 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Simulate an example data set
-To illustrate the MOFA workflow we simulate a small example data set with 3 different views. `make_example_data` generates an untrained MOFAobject containing the simulated data. If you work on your own data use `create_mofa` to create the untrained MOFA object (see our vignettes on scRNA (gastrulation) or scMethylation (cortex)). 
+# Introduction
+Model selection is an important step in probabilistic modelling. As happens in most Bayesian models, the optimisation procedure of MOFA is not guaranteed to find a consistent optimal solution at every trial, and factors can vary between different model instances. Hence, it is important to asess the consistency of factors we trained models under different random parameter initialisations (different seeds).  
+
+Having said that, we observe MOFA to be very robust over trials. In practice, a single model is totally fine for an exploratory analysis.
+
+# Load libraries
 ```{r, message=FALSE}
 library(MOFA2)
 ```
+
+# Simulate an example data set
+To illustrate the MOFA workflow we simulate a small example data set with 3 different views. `make_example_data` generates an untrained MOFAobject containing the simulated data. If you work on your own data use `create_mofa` to create the untrained MOFA object (see our vignettes on scRNA (gastrulation) or scMethylation (cortex)).  
 By default the function `make_example_data` produces a small data set containing 3 views with 100 features each and 2 groups with 50 samples each. These parameters can be varied using the arguments `n_views`, `n_features`, `n_groups` and `n_samples`.
 ```{r}
 set.seed(1234)
@@ -25,18 +32,21 @@ MOFAobject
 ```
 
 # Define the data, model and training options 
-Details on the various options can be found in the getting_started vignette. Here, we will simply use the default options, changing only the number of factors, and do not make use of the stochastic inference scheme due to the small size of the simulated data set. Default option can be obtained using the functions `get_default_data_options`, `get_default_model_options` and `get_default_training_options`.
+Details on the various options can be found in the [getting_started vignette](XXX). Here, we will simply use the default options, changing only the number of factors:
 
 ```{r }
 data_opts <- get_default_data_options(MOFAobject)
+
 model_opts <- get_default_model_options(MOFAobject)
 model_opts$num_factors <- 5
+
 train_opts <- get_default_training_options(MOFAobject)
 ```
 
 
 # Run multiple fitting rounds MOFA object 
-Once the MOFAobject is set up we can use `run_mofa` to train the model. As depending on the random initilization the results might differ, we recommend to use `run_mofa` multiple times (e.g. ten times, here we use a smaller number for illustration as the model training can take some time) with different random seeds. This allows you to assess the robustness of the inferred factors across different random initilizations and select a model for downstream analysis. As a next step we will show how to compare the different fits and select the best model for downstream analyses.
+Once the MOFAobject is set up we can use `run_mofa` to train the model.  
+As depending on the random initilization the results might differ, we recommend to use `run_mofa` multiple times (e.g. ten times, here we use a smaller number for illustration as the model training can take some time) with different random seeds. This allows you to assess the robustness of the inferred factors across different random initilizations and select a model for downstream analysis. As a next step we will show how to compare the different fits and select the best model for downstream analyses.
 ```{r }
 n_inits <- 3
 MOFAlist <- lapply(seq_len(n_inits), function(it) {
@@ -73,13 +83,6 @@ MOFAobject <- select_model(MOFAlist)
 MOFAobject
 ```
 
-# Downstream analyses
-On the trained MOFAobject we can now start looking into the inferred factors, its weights etc. Here the data was generated using five factors, whose activity patterns we can recover using `plotVarianceExplained`.
-```{r}
-plot_variance_explained(MOFAobject)
-```
-
-For details on downstream analyses please have a look at the vignettes `scRNA_gastrulation`, `scMethylation_cortex` and `downstream_analysis`.
 
 # SessionInfo
 ```{r}
