@@ -40,7 +40,7 @@ devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data 
 
 --------------
 
-<!-- ### Installation using Docker image
+### Installation using Docker image
 
 You can build an image using the provided Dockerfile:
 
@@ -57,18 +57,18 @@ docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
 #                    use `-v` to map a folder on your machine to a container directory
 
 The command above will launch R with MOFA2 and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
-``` -->
+```
 
 ## Tutorials/Vignettes
 
-* [**Getting started**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started.html): general overview and description of the method.
+* [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started.md): general overview and description of the method.
 * [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html)
-* * [**Training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.html)
+* * [**Training a model in Python (jupyter notebook)**](XXX)
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
 * [**Analysis of a multi-group scRNA-seq data set**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the paper.
 * [**Analysis of single-cell DNA methylation data**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper
 * **Integration of single-cell multi-modal data:**: Figure 4 of the paper, in preparation...
-* [**Robustness analysis and model selection**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/model_selection.html)
+* [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html)
 
 The data and the pre-trained models can be downloaded [here](ftp://ftp.ebi.ac.uk/pub/databases/mofa)
 
