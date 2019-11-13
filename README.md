@@ -63,8 +63,8 @@ The command above will launch R with MOFA2 and its dependencies installed while 
 * [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html)
 * [**Training a model in Python (jupyter notebook)**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
-* [**Analysis of a multi-group scRNA-seq data set (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the paper.
-* [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper
+* [**Analysis of a multi-group scRNA-seq data set (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the paper, in preparation...
+* [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation...
 * **Integration of single-cell multi-modal data (in R):**: Figure 4 of the paper, in preparation...
 * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html)
 
