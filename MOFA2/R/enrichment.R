@@ -11,7 +11,7 @@
 #' Must be a binary membership matrix (rows are feature sets and columns are features).
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors for which to perform the enrichment.
 #' @param local.statistic the feature statistic used to quantify the association between each feature and each factor. Must be one of the following: loading (default), cor, z.
-#' @param global.statistic the feature set statisic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".
+#' @param global.statistic the set statisic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".
 #' @param statistical.test the statistical test used to compute the significance of the feature set statistics under a competitive null hypothesis.
 #' Must be one of the following: "parametric" (default), "cor.adj.parametric", "permutation".
 #' @param transformation optional transformation to apply to the feature-level statistics. Must be one of the following "none" or "abs.value" (default).
@@ -20,10 +20,18 @@
 #' @param cores number of cores to run the permutation analysis in parallel. Only relevant if statistical.test is set to "permutation". Default is 1
 #' @param p.adj.method Method to adjust p-values factor-wise for multiple testing. Can be any method in p.adjust.methods(). Default uses Benjamini-Hochberg procedure.
 #' @param alpha FDR threshold to generate lists of significant pathways. Default is 0.1
-#' @details TO-DO
-#' @return a list with three components: 
-#' pval and pval.adj contain matrices with p-values and adjusted p-values, repectively. 
-#' sigPathways contains a list with significant pathwayd at FDR alpha per factor.
+#' @details 
+#'  The aim of this function is to relate each factor to pre-defined biological pathways by performing a gene set enrichment analysis on the feature weights. \cr
+#'  This function is particularly useful when a factor is difficult to characterise based only on the genes with the highest weight. \cr
+#'  We provide a few pre-built gene set matrices in the MOFAdata package. See \code{https://github.com/bioFAM/MOFAdata} for details. \cr
+#'  The function we implemented is based on the \code{\link[PCGSE]{pcgse}} function with some modifications. 
+#'  Please read this paper https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4543476 for details on the math.
+#' @return a list with five elements: 
+#' \item{\strong{pval}:}{ matrices with nominal p-values. }
+#' \item{\strong{pval.adj}:}{ matrices with FDR-adjusted p-values. }
+#' \item{\strong{feature.statistics}:}{ matrices with the local (feature-wise) statistics.  }
+#' \item{\strong{global.statistics}:}{ matrices with the global (gene set-wise) statistics.  }
+#' \item{\strong{sigPathways}}{ list with significant pathways per factor. }
 #' @import foreach doParallel
 #' @importFrom stats p.adjust var p.adjust.methods
 #' @export
