@@ -1,4 +1,3 @@
-
 ########################################
 ## Functions to visualise the weights ##
 ########################################
@@ -434,6 +433,7 @@ plot_top_weights <- function(object, view = 1, factors = c(1, 2),
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (nfeatures <= 0) stop("'nfeatures' has to be greater than 0")
   
   if (is.numeric(view)) view <- views(object)[view]
   stopifnot(view %in% views(object))
@@ -462,20 +462,16 @@ plot_top_weights <- function(object, view = 1, factors = c(1, 2),
   
   # Extract relevant features
   W <- W[with(W, order(-abs(value))), ]
-  if (nfeatures > 0)
-    W <- as.data.frame(top_n(group_by(W, factor), n = nfeatures, wt = desc(value)))
+
+  # Sort according to loadings for each factor
+  W <- as.data.frame(top_n(group_by(W, factor), n = nfeatures, wt = value))
   
-  # Sort according to loadings
-  W <- W[with(W, order(-value, decreasing = TRUE)), ]
-
-
   # Make features names unique
   W$feature_id <- W$feature
   if ((length(unique(W$view)) > 1) && (nfeatures > 0) && (any(duplicated(W[W$factor == factors[1],]$feature_id)))) {
     message("Duplicated feature names across views, we will add the view name as a prefix")
     W$feature_id <- paste(W$view, W$feature, sep="_")
   }
-  
 
   # In order to re-order features across multiple factors, 
   # make them unique for different factors
