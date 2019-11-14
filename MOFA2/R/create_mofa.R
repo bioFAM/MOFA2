@@ -82,11 +82,11 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # Quality controls
   df <- as.data.frame(df)
-  if !("group" %in% colnames(df)) {
+  if (!"group" %in% colnames(df)) {
     message('no "group" column found in the data.frame. We will assume a single group for all samples (as in MOFA v1)')
     df$group <- "single_group"
   }
-  if !("view" %in% colnames(df)) {
+  if (!"view" %in% colnames(df)) {
     message('no "view" column found in the data.frame. We will assume a single view for all features')
     df$view <- "single_view"
   }
