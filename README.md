@@ -53,9 +53,11 @@ docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
 #                   ^
 #                   |
 #                    use `-v` to map a folder on your machine to a container directory
+```
 
 The command above will launch R with MOFA2 and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
-```
+
+You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/gtca/mofa2).
 
 ## Tutorials/Vignettes
 
