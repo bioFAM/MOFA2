@@ -13,6 +13,7 @@
 #' This should be set to TRUE when the training data is so big that cannot fit into memory. \cr
 #' On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.
 #' @param load_data logical indicating whether to load the training data (default is TRUE, it can be memory expensive)
+#' @param load_imputed_data logical indicating whether to load the imputed data (default is FALSE)
 #' @param remove_outliers logical indicating whether to mask outlier values.
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
@@ -236,7 +237,8 @@ load_model <- function(file, sort_factors = TRUE,
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])        # number of factors
   
   # Assign sample and feature names (slow for large matrices)
-  
+  if (isTRUE(verbose)) message("Assigning names to the different dimensions...")
+
   # Create default features names if they are null
   if (is.null(feature_names)) {
     print("Features names not found, generating default: feature1_view1, ..., featureD_viewM")
@@ -305,6 +307,7 @@ load_model <- function(file, sort_factors = TRUE,
 
   # Mask outliers
   if (remove_outliers) {
+    if (isTRUE(verbose)) message("Removing outliers...")
     object <- .detect_outliers(object)
   }
 
@@ -312,6 +315,7 @@ load_model <- function(file, sort_factors = TRUE,
   ## Quality controls ##
   ######################
 
+  if (isTRUE(verbose)) message("Doing quality control...")
   object <- quality_control(object, verbose = verbose)
 
   return(object)

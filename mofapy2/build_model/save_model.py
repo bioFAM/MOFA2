@@ -247,14 +247,19 @@ class saveModel():
     def saveModelOptions(self):
 
         # Subset model options
-        opts = dict((k, self.model_opts[k]) for k in ["likelihoods", "spikeslab_factors", "spikeslab_weights"])
+        options_to_save = ["likelihoods", "spikeslab_factors", "spikeslab_weights", "ard_factors", "ard_weights"]
+        opts = dict((k, np.asarray(self.model_opts[k]).astype('S')) for k in options_to_save)
+
+        # Sort values by alphabetical order of views
+        order = np.argsort(self.views_names)
+        opts["likelihoods"] = opts["likelihoods"][order]
 
         # Create HDF5 group
         grp = self.hdf5.create_group('model_options')
 
         # Create HDF5 data sets
         for k, v in opts.items():
-            grp.create_dataset(k, data=np.asarray(v).astype('S'))
+            grp.create_dataset(k, data=v)
         grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
     def saveTrainOptions(self):
