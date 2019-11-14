@@ -366,7 +366,8 @@ plot_variance_explained_per_feature <- function(object, view, features,
     names(r2_gd) <- groups
 
     # Convert matrix to long data frame for ggplot2
-    r2_gd_df <- melt(as.matrix(data.frame(lapply(r2_gd, unlist))))
+    tmp <- as.matrix(data.frame(lapply(r2_gd, unlist))); colnames(tmp) <- groups
+    r2_gd_df <- melt(tmp)
     colnames(r2_gd_df) <- c("feature", "group", "value")
 
     r2_gd_df$group <- factor(r2_gd_df$group, levels = unique(r2_gd_df$group))
@@ -401,8 +402,8 @@ plot_variance_explained_per_feature <- function(object, view, features,
     geom_tile(aes(fill = value), color = "black") +
     guides(fill = guide_colorbar("R2")) +
     labs(x = "", y = "", title = "") +
-    ggtitle(paste0("Variance explained by ", length(factors), " factor", ifelse(length(factors) > 1, "s", ""), 
-                   " (", paste0(factors, collapse = ", "), ")")) +
+    # ggtitle(paste0("Variance explained by ", length(factors), " factor", ifelse(length(factors) > 1, "s", ""), 
+    #                " (", paste0(factors, collapse = ", "), ")")) +
     # scale_fill_gradientn(colors = c("gray97", "darkred"), guide = "colorbar", limits = c(0, max(r2_df$value))) +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2, max_r2)) +
     guides(fill = guide_colorbar("R2")) +

@@ -153,8 +153,7 @@ plot_data_overview(MOFAobject)
 - **scale_views**: if views have different ranges/variances, it is good practice to scale each view to unit variance. Default is `FALSE`
 ```{r }
 data_opts <- get_default_data_options(MOFAobject)
-
-data_opts
+head(data_opts)
 ```
 
 ## Define model options
