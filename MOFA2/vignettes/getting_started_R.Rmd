@@ -22,14 +22,28 @@ library(purrr)
 library(MOFA2)
 ```
 
-This notebook contains a detailed tutorial on how to train MOFA using R. A concise template script can be found [here](XXX)
+This vignette contains a detailed tutorial on how to train MOFA using R. A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R)
 
-<!-- ## 1) Set up `reticulate`
+# Setting up `reticulate`
+
+To connect with the Python core, `MOFA2` uses the `reticulate` package. Most of the times this is straightforward, but it may require some configuration if you have multiple conda environments and versions of Python installed.
+
 ```
 library(reticulate)
-use_python("YOUR_PYTHON_PATH", required=TRUE)
+
+# Option 1: Using a specific python binary
+use_python("/home/user/python", required = TRUE)
+
+# Option 2: Using a conda enviroment called "r-reticulate"
+use_condaenv("r-reticulate", required = TRUE)
+
+# If successful, you should be able to run the following two lines without error:
+mofa <- import("mofapy2")
+mofa_entrypoint <- mofa$run.entry_point$entry_point()
 ```
-You can also use `use_conda` instead of `use_python` if you work with conda environments. Read more about the [reticulate](https://rstudio.github.io/reticulate/) package and [how it integrates Python and R](https://rstudio.github.io/reticulate/articles/versions.html) -->
+If you have problems, please read the [FAQ](https://github.com/bioFAM/MOFA). If the problem persists, contact us.  
+Read more about the [reticulate](https://rstudio.github.io/reticulate/) package and [how it integrates Python and R](https://rstudio.github.io/reticulate/articles/versions.html).
+
 
 # Load data
 
@@ -199,7 +213,9 @@ MOFAobject <- prepare_mofa(
   training_options = train_opts
   # stochastic_options = stochastic_opts # optional
 )
+```
 
+```{r, eval=FALSE}
 outfile = "/Users/ricard/test.hdf5"
 MOFAobject.trained <- run_mofa(MOFAobject, outfile)
 ```
