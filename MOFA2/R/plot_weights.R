@@ -465,6 +465,7 @@ plot_top_weights <- function(object, view = 1, factors = c(1, 2),
 
   # Sort according to loadings for each factor
   W <- as.data.frame(top_n(group_by(W, factor), n = nfeatures, wt = value))
+  #
   
   # Make features names unique
   W$feature_id <- W$feature
@@ -475,12 +476,11 @@ plot_top_weights <- function(object, view = 1, factors = c(1, 2),
 
   # In order to re-order features across multiple factors, 
   # make them unique for different factors
-  W$feature_id <- paste(W$feature_id, W$factor, sep="_")
-  W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
+  W$feature_id <- factor(W$feature_id, levels = rev(unique(W$feature_id)))
   
-  p <- ggplot(W, aes_string(x="feature", y="value")) +
+  p <- ggplot(W, aes_string(x="feature_id", y="value")) +
     geom_point(size=2) +
-    geom_segment(aes_string(xend="feature"), size=0.75, yend=0) +
+    geom_segment(aes_string(xend="feature_id"), size=0.75, yend=0) +
     scale_colour_gradient(low="grey", high="black") +
     coord_flip() +
 
