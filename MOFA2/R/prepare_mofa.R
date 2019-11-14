@@ -66,6 +66,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   }
   
   # Get stochastic options
+  if (!is.null(stochastic_options)) object@training_options$stochastic <- TRUE
   if (object@training_options$stochastic) {
     if (sum(object@dimensions$N) < 1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000)")
       
@@ -73,7 +74,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
       message("No stochastic options specified, using default...")
       object@stochastic_options <- get_default_stochastic_options(object)
     } else {
-        message("Checking stochastic inference options...")
+      object@training_options$stochastic <- TRUE
+      message("Checking stochastic inference options...")
       if(!is(stochastic_options,"list") || !setequal(names(stochastic_options), names(get_default_stochastic_options(object)) ))
         stop("stochastic_options are incorrectly specified, please read the documentation in get_default_stochastic_options")
       
