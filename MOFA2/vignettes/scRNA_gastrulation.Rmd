@@ -23,16 +23,14 @@ Despite differences in developmental time, embryos are expected to contain simil
 
 The data set we use here is a simplified subset version of the original data set, which can be visualised and downloaded from [here](https://marionilab.cruk.cam.ac.uk/MouseGastrulation2018/).
 
-# Define global settings
-
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
 ```
 
 # Load libraries
 
-Load dependencies. Make sure that MOFA is imported last, to avoid collisions with functions from other packages
-```{r}
+Load dependencies. Make sure that `MOFA2` is imported last, to avoid collisions with functions from other packages
+```{r, echo=FALSE}
 library(Seurat)
 library(ggplot2)
 library(MOFA2)
@@ -54,7 +52,6 @@ colors <- c(
 The RNA expression data has been processed using Seurat. It has already been normalised and subset to the top 5,000 most variable genes (after regressing out the group effect).
 
 ```{r}
-# data("gastrulation10x")
 # load("/Users/ricard/data/mofa2_vignettes/gastrulation10x_seurat.RData")
 load(url("ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/scrna_gastrulation/gastrulation10x_seurat.RData"))
 ```
@@ -73,7 +70,7 @@ MOFAobject <- create_mofa(seurat, groups = "stage_sample")
 
 ## Plot data overview
 ```{r}
-plot_data_overview(MOFAobject, colors = c("rna"="darkgreen"))
+plot_data_overview(MOFAobject)
 ```
 
 ## Define MOFA options
@@ -100,32 +97,38 @@ MOFAobject <- prepare_mofa(
   object = MOFAobject,
   data_options = data_opts,
   model_options = model_opts,
-  training_options = train_opts,
-  stochastic_options = stochastic_opts
+  training_options = train_opts
 )
 ```
 
 
 # Train the MOFA model
-This step can take quite some time (~1h without GPU), so we provide a pre-trained model in the next chunk of code.  
+This step can take quite some time (~2h with standard CPU inference), so we provide a pre-trained model in the next chunk of code.  
 
-If you want to train from scratch, keep in mind that the results will not be 100% reproducible with the pre-trained model.
+Note: if you train the model from scratch, the results will not be 100% reproducible with the pre-trained model (but hopefully similar enough!).
 
 ```{r, eval=FALSE}
 outfile = paste0(getwd(),"/model.hdf5")
 MOFAmodel <- run_mofa(MOFAobject, outfile = outfile)
 ```
 
-# Load pre-computed model
+## Load pre-computed model
 
 MOFA models are saved in hdf5 format and can be loaded into R with the function `load_model`. In this case, however, we provide the trained model as an `RData` file
 ```{r}
 # MOFAmodel <- load_model(outfile)
 
+# load("/Users/ricard/data/mofa2_vignettes/gastrulation10x_mofa.RData")
 load(url("ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/scrna_gastrulation/gastrulation10x_mofa.RData"))
 ```
 
-## Inspect cell metadata:  
+# Inspect MOFA object
+The MOFAobject consists of multiple slots where relevant data and information is stored. For descriptions, you can read the documentation by `?MOFA`
+```{r}
+slotNames(MOFAmodel)
+```
+
+## Cell metadata:  
 
 * *stage*: developmental stage
 * *lineage*: cell type annotation
@@ -134,24 +137,12 @@ load(url("ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/scrna_gastr
 head(MOFAmodel@samples_metadata)
 ```
 
-
 ## Overview of training data
 The function `plot_data_overview` can be used to obtain an overview of the input data. 
 It shows how many views (rows) and how many groups (columns) exist, what are their corresponding dimensionalities and how many missing information they have (grey bars).  
 In this case we have one view (RNA expression, a total of 5,000 genes) and 6 groups that correspond to different embryos at different stages of development, for a total of 16,152 cells.
 ```{r}
 plot_data_overview(MOFAmodel, colors = c("RNA"="darkgreen"))
-```
-
-## Rename groups
-We can rename group names to make them more intuitive
-```{r}
-groups(MOFAmodel)
-```
-
-```{r}
-groups(MOFAmodel) <- c("E6.5 (1)", "E6.5 (2)", "E7.0 (1)", "E7.0 (2)", "E7.25 (1)", "E7.25 (2)")
-table(MOFAmodel@samples_metadata$group)
 ```
 
 # Plot variance explained
@@ -182,10 +173,10 @@ p[[2]]
 
 ## Plot variance explained for individual features
 
-We can also inspect the variance explained by the MOFA factors for individual features
+We can also inspect the variance explained by the MOFA factors for individual features. This is useful to disentangle how much of the variation of a gene is "noise" (high variance but low $R^2$) versus coordinated variance (high $R^2$)
 
 ```{r}
-features <- c("Rbp4","Ttr","Spink1","Mesp1")
+features <- c("Rbp4","Ttr","Spink1","Mesp1","E130311K13Rik","Hey1")
 ```
 
 Variance explained by all factors across all groups
@@ -198,40 +189,6 @@ plot_variance_explained_per_feature(
   features = features
 )
 ```
-
-Variance explained by Factor 1 across all groups
-```{r}
-plot_variance_explained_per_feature(
-  MOFAmodel, 
-  factors = 1,
-  groups = "all",
-  view = "RNA",
-  features = features
-)
-```
-
-
-<!-- # Subset factors -->
-<!-- (Optional) Let's remove factors that explain less than 1% of variance in all groups.  -->
-<!-- (Note: if you run this it will change some of the downstream results) -->
-<!-- ```{r, eval=FALSE} -->
-<!-- # Fetch variance explained quantifications form the cache -->
-<!-- r2 <- MOFAmodel@cache$variance_explained$r2_per_factor -->
-<!-- # Identify inactive factors -->
-<!-- tmp <- sapply(r2, function(x) x[,"RNA"]>0.01) -->
-<!-- factors <- which(apply(tmp,1,sum) >= 1) -->
-<!-- # Subset factors -->
-<!-- # MOFAmodel <- subset_factors(MOFAmodel, factors) -->
-<!-- # Rename factors -->
-<!-- factors(MOFAmodel) <- paste("Factor",1:get_dimensions(MOFAmodel)[["K"]], sep=" ") -->
-<!-- ``` -->
-
-<!-- As a sanity check, one should verify that the factors are (fairly) uncorrelated. Otherwise it suggests that the model has not converged or that perhaps you are using too many factors. -->
-<!-- ```{r} -->
-<!-- cor <- plot_factor_cor(MOFAmodel) -->
-<!-- cor[1:3,1:3] -->
-<!-- ``` -->
-
 
 # Characterise Factor 1
 
@@ -277,6 +234,13 @@ plot_factor(MOFAmodel,
 ) + scale_color_manual(values=colors)
 ```
 
+Combinations of factors can be plotted with `plot_factors`:
+```{r}
+plot_factors(MOFAmodel, 
+  factors = c(1,4),
+  color_by = "lineage"
+) + scale_color_manual(values=colors)
+```
 
 ## Visualisation of weights
 
@@ -316,6 +280,8 @@ plot_top_weights(MOFAmodel,
   abs = T
 )
 ```
+
+## Visualisation of factors coloured by gene expression
 
 We expect negative weights For Factor 1 to be marker genes of ExE Endoderm. If we plot Factor 1 colouring cells by gene expresion of the top genes:
 ```{r}
@@ -366,32 +332,30 @@ print(p)
 ```
 
 
-# Scatter plots
-Combinations of factors can be plotted with `plot_factors`:
-```{r}
-plot_factors(MOFAmodel, 
-  factors = c(1,4),
-  color_by = "lineage"
-) + scale_color_manual(values=colors)
-```
-
-
 # Non-linear dimensionality reduction from the MOFA factors
 
 The latent space inferred by MOFA can be employed as input to other single-cell algorithms that learn non-linear manifolds such as UMAP or t-SNE. This can be very useful to identify cellular populations and reconstruct complex pseudotime trajectories.  
 
-Run t-SNE:
-NOTE: Does not work because the model was trained with an older MOFA+ version
+Run t-SNE (takes ~2min):
 ```{r}
-# set.seed(42)
-# MOFAmodel <- run_tsne(MOFAmodel)
+set.seed(42)
+MOFAmodel <- run_tsne(MOFAmodel)
 ```
 
-<!-- In this data set, we see that the combination of MOFA factors have enough information to discriminate all cell types: -->
+In this data set, we see that the combination of MOFA factors have enough information to discriminate all cell types. 
 
 ```{r }
-# plot_dimred(model,
-#   method = "TSNE",
-#   color_by = "lineage"
-# ) + scale_color_manual(values=colors)
+plot_dimred(MOFAmodel,
+  method = "TSNE",
+  color_by = "lineage"
+) + scale_color_manual(values=colors)
 ```
+
+This is not surprising and yields a similar result as running PCA (after batch correction). Let's move to more exciting applications in the next vignettes!
+
+# sessionInfo
+
+```{r}
+sessionInfo()
+```
+

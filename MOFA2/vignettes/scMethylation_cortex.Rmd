@@ -16,7 +16,7 @@ vignette: >
 
 # Description
 
-This vignette demonstrates how to explore a data set using a multi-group and multi-view setting from a seemingly unimodal data set. 
+This vignette demonstrates how MOFA+ can be used to investigate variation in epigenetic signatures between populations of neurons. This application illustrates how a multi-group and multi-view structure can be defined from seemingly uni-modal data, which can then be used to test specific biological hypotheses.  
 We consider the analysis of 3,377 cells isolated from young adult mouse frontal cortex, where DNA methylation was profiled using single-cell bisulfite sequencing [(Luo et al. 2017)]([https://science.sciencemag.org/content/357/6351/600).
 
 In mammalian genomes, DNA methylation predominantly occurs at CpG dinucleotides (mCG). non-CpG methylation (mCH) has been historically dismissed as methodological artifact of incomplete bisulfite conversion, until recent works have confirmed their existence in restricted cell types. Yet, evidence for a potential functional role remains controversial. We will use MOFA+ to dissect the cellular heterogeneity associated with mCH and mCG contexts. 
@@ -36,7 +36,7 @@ library(data.table)
 library(purrr)
 library(ggplot2)
 library(RColorBrewer)
-library(umap)
+# library(umap)
 library(ggpubr)
 library(MOFA2)
 ```
