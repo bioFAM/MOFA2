@@ -1,0 +1,206 @@
+---
+title: "Applying MOFA+ to the CLL multi-omics data"
+author: "Britta Velten"
+output:
+  BiocStyle::html_document:
+    toc: true
+package: MOFA2
+vignette: >
+  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to the CLL multi-omics data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+This vignette show how to use MOFA+ on the bulk multi-omics data set that was used in thr original publication of MOFA and the vignette of the MOFA package.
+The data consisted of four omics including methylation, RNAseq, genomic and drug response data. In the first application of MOFA we considered all 200 patients as a single group. Here, we will separately consider samples from male and female patients and apply multi-group inference using MOFA+.
+
+# Load libraries
+```{r, message=FALSE}
+library(MOFA2)
+library(MOFAdata)
+```
+
+# Prepare a MOFA+ object
+```{r}
+utils::data("CLL_data")
+utils::data("CLL_covariates")
+MOFAobject <- create_mofa(CLL_data, groups = CLL_covariates$Gender)
+MOFAobject
+```
+
+
+## Define MOFA options
+Data options: let's use default
+```{r}
+data_opts <- get_default_data_options(MOFAobject)
+```
+
+Model options: let's use 5 factors
+```{r}
+model_opts <- get_default_model_options(MOFAobject)
+model_opts$num_factors <- 5
+```
+
+Training options
+```{r}
+train_opts <- get_default_training_options(MOFAobject)
+train_opts$convergence_mode <- "fast"
+train_opts$seed <- 123
+```
+
+## Prepare the MOFA object
+```{r}
+MOFAobject <- prepare_mofa(
+  object = MOFAobject,
+  data_options = data_opts,
+  model_options = model_opts,
+  training_options = train_opts
+)
+```
+
+
+# Train the MOFA model
+This step takes around 1 min.
+
+```{r, eval=TRUE}
+outfile = paste0(getwd(),"/CLLmodel.hdf5")
+MOFAmodel <- run_mofa(MOFAobject, outfile = outfile)
+```
+## Load pre-computed model
+
+MOFA models are saved in hdf5 format and can be loaded into R with the function `load_model`.
+```{r}
+MOFAmodel <- load_model(outfile)
+```
+
+
+# Inspect MOFA object
+The MOFAobject consists of multiple slots where relevant data and information is stored. For descriptions, you can read the documentation by `?MOFA`
+```{r}
+slotNames(MOFAmodel)
+```
+
+## Sample metadata:  
+
+Here additional meta-data can be stored for all samples. In this object we have sample names and group-label (sex).
+```{r}
+head(MOFAmodel@samples_metadata)
+```
+
+## Overview of training data
+The function `plot_data_overview` can be used to obtain an overview of the input data. 
+It shows how many views (rows) and how many groups (columns) exist, what are their corresponding dimensionalities and how many missing information they have (grey bars).  
+In this case we have four views and two groups that correspond to M-CLL and U-CLL samples.
+```{r}
+plot_data_overview(MOFAmodel)
+```
+
+# Plot variance explained
+
+Quantifying the variance explained per factor across groups and views is probably the most important plot that MOFA+ generates. It summarises the (latent) signal from a complex heterogeneous data set in a single figure. 
+
+## Plot variance explained per factor across groups
+Here, we do not see large difference in the variance explained by the different groups. Like in the first MOFA application the first factor is shared across all omics both for male and female sampels
+```{r}
+plot_variance_explained(MOFAmodel, x="group", y="factor")
+```
+
+
+
+## Plot total variance explained per group
+We can also plot the total variance explained per group (with all factors) by adding the argument `plot_total = TRUE`. Here, the 5 factors capture between 20% and 30% of variance in each group.
+```{r}
+p <- plot_variance_explained(MOFAmodel, x="group", y="factor", plot_total = T)
+
+p[[2]]
+```
+
+## Plot variance explained for individual features
+
+We can also inspect the variance explained by the MOFA factors for individual features. 
+
+```{r}
+features2plot <- MOFA2::features(MOFAmodel)$Drugs[grep("D_002|D_001", features(MOFAmodel)$Drugs)]
+```
+
+Variance explained by all factors across all groups
+```{r}
+plot_variance_explained_per_feature(
+  MOFAmodel, 
+  factors = 1,
+  groups = "all",
+  view = "Drugs",
+  features = features2plot
+)
+```
+
+# Characterise Factor 1
+
+## Visualisation of factor values
+
+Each factor ordinates samples along a one-dimensional axis that is centered at zero. Samples with different signs indicate opposite phenotypes, with higher absolute value indicating a stronger phenotype. 
+Here we plot all Factor values and we color samples by IGHV status, which like in the original MOFA publicaiton is captured by Factor 1.
+
+```{r}
+plot_factor(MOFAmodel, 
+  factor = 1:2,
+  color_by = "IGHV"
+) 
+```
+
+Here are other ways of representing the same plot (here only factor 1):
+```{r}
+p <- plot_factor(MOFAmodel, 
+  factor = 1,
+  color_by = "group",
+  dot_size = 0.2,      # change dot size
+  dodge = T,           # dodge points with different colors
+  legend = F,          # remove legend
+  add_violin = T,      # add violin plots,
+  violin_alpha = 0.25  # transparency of violin plots
+)
+
+p
+```
+
+
+Combinations of factors can be plotted with `plot_factors`:
+```{r}
+plot_factors(MOFAmodel, 
+  factors = c(1,2),
+  color_by = "group"
+)
+
+plot_factors(MOFAmodel, 
+  factors = c(1,2),
+  color_by = "IGHV"
+)
+```
+
+## Visualisation of weights
+
+The weights provide a score for each feature on each factor. Features with no association with the factor are expected to have values close to zero, whereas features with strong association with the factor are expected to have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature is more active in the cells with positive factor values, and viceversa. \\
+Let's plot the distribution of weights for Factor 1. IGHV in the genomics views has highest weight on this factor.
+```{r, warnings=FALSE, message=FALSE}
+plot_weights(MOFAmodel,
+  view = "Drugs",
+  factor = 1,
+  nfeatures = 10,     # Top number of features to highlight
+  scale = T           # Scale weights from -1 to 1
+)
+
+plot_weights(MOFAmodel,
+  view = "Mutations",
+  factor = 1,
+  nfeatures = 10,     # Top number of features to highlight
+  scale = T           # Scale weights from -1 to 1
+)
+```
+
+
+
+# SessionInfo
+```{r}
+sessionInfo()
+```
