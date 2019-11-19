@@ -190,7 +190,7 @@ plot_variance_explained_per_feature(
 )
 ```
 
-# Characterise Factor 1
+# Characterisation of Factor 1
 
 ## Visualisation of factor values
 
@@ -244,7 +244,7 @@ plot_factors(MOFAmodel,
 
 ## Visualisation of weights
 
-The weights provide a score for each gene on each factor. Genes with no association with the factor are expected to have values close to zero, whereas genes with strong association with the factor are expected to have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature is more active in the cells with positive factor values, and viceversa. \\
+The weights provide a score for each gene on each factor. Genes with no association with the factor are expected to have values close to zero, whereas genes with strong association with the factor are expected to have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature is more active in the cells with positive factor values, and viceversa. \\
 Following the cell cycle example from above, we expect genes that are upregulated in the M phase to have large positive weights, whereas genes that are downregulated in the M phase (or, equivalently, upregulated in the G1 phase) are expected to have large negative weights.\\
 
 Let's plot the distribution of weights for Factor 1.
