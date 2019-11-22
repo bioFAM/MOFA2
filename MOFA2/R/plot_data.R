@@ -382,7 +382,7 @@ plot_ascii_data <- function(object, nonzero = FALSE) {
     content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))
   }
   content_pct <- lapply(seq_len(length(content_pct)), function(m) {
-    paste0(as.character(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100), sep = "%")
+    paste0(as.character(round(100 - content_pct[[m]] / object@dimensions$N / object@dimensions$D[m] * 100)), sep = "%")
   })
 
   for (m in seq_len(length(views(object)))) {
