@@ -4,12 +4,10 @@
 \alias{plot_ascii_data}
 \title{Visualize the structure of the data in the terminal}
 \usage{
-plot_ascii_data(object, header = FALSE, nonzero = FALSE)
+plot_ascii_data(object, nonzero = FALSE)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object}
-
-\item{header}{a logical value specifying whether to show the MOFA header.}
 
 \item{nonzero}{a logical value specifying whether to calculate the fraction of non-zero values (non-NA values by default)}
 }

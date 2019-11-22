@@ -349,11 +349,10 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
 #' @name plot_ascii_data
 #' @description A Fancy printing method
 #' @param object a \code{\link{MOFA}} object
-#' @param header a logical value specifying whether to show the MOFA header.
 #' @param nonzero a logical value specifying whether to calculate the fraction of non-zero values (non-NA values by default)
 #' @details This function is helpful to get an overview of the structure of the data as a text output
 #' @export
-plot_ascii_data <- function(object, header = FALSE, nonzero = FALSE) {
+plot_ascii_data <- function(object, nonzero = FALSE) {
   stopifnot(is(object, "MOFA"))
 
   if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
@@ -371,14 +370,6 @@ plot_ascii_data <- function(object, header = FALSE, nonzero = FALSE) {
   hat    <- paste0(" ", .rep_string(w, "_"), " ")
   walls  <- paste0("|", .rep_string(w, " "), "|")
   ground <- paste0("|", .rep_string(w, "_"), "|")
-
-  if (header) {
-    cat("
-         \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   \U2588\U2588︎\U2588︎\U2588︎\U2588︎
-mofa     \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎  =  \U2588︎\U2588︎ x \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎
-         \U2588︎\U2588︎\U2588︎\U2588︎\U2588︎     \U2588︎\U2588︎   
-    ")
-  }
 
   groups_line    <- .pad_left(lpad + s, .cpaste(groups(object), w+2, collapse = igr_sp))
   nsamples_line  <- .pad_left(lpad + s, .cpaste(get_dimensions(object)$N, w+2, collapse = igr_sp))
