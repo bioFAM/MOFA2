@@ -139,7 +139,7 @@ class initModel(object):
 
                 if impute == True:
                     if np.any(np.isnan(Ytmp)):
-                        imp = SimpleImputer(missing_values=0., strategy="mean")
+                        imp = SimpleImputer(missing_values=np.NaN, strategy="mean")
                         imp.fit(Ytmp)
                         Ytmp = imp.transform(Ytmp)
 
@@ -395,7 +395,7 @@ class initModel(object):
 
             # Poisson noise model for count data
             if self.lik[m] == "poisson":
-                tmp = 0.25 + 0.17*s.amax(self.data[m],axis=0)
+                tmp = 0.25 + 0.17*s.nanmax(self.data[m],axis=0)
                 tmp = s.repeat(tmp[None,:], self.N, axis=0)
                 tau_list[m] = Tau_Seeger(dim=(self.N, self.D[m]), value=tmp)
 

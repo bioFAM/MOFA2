@@ -49,6 +49,11 @@ class entry_point(object):
         if not isinstance(data, list):
             if isinstance(data, dict):
                 data = list(data.values())
+            # if providing a single matrix, treat it as G=1 and M=1
+            elif isinstance(data, pd.DataFrame):
+                data = [[data.values]]
+            elif isinstance(data, np.ndarray):
+                data = [[data]]
             else:
                 print("Error: Data not recognised"); sys.stdout.flush(); sys.exit()
         if len(data)==0:
@@ -505,9 +510,13 @@ class entry_point(object):
 
         # Define whether to use group and factor-wise ARD prior for Z
         self.model_opts['ard_factors'] = ard_factors
+        if ((self.dimensionalities["G"]>1) & (self.model_opts['ard_factors']==False)): 
+            print("Error: ard_factors has to be set to True if using multiple groups"); exit()
 
         # Define whether to use view and factor-wise ARD prior for W
         self.model_opts['ard_weights'] = ard_weights
+        if ((self.dimensionalities["M"]>1) & (self.model_opts['ard_weights']==False)): 
+            print("Error: ard_weights has to be set to True if using multiple views"); exit()
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
