@@ -163,8 +163,6 @@ create_mofa <- function(data, groups = NULL, ...) {
 #' @param slot assay slot to be used such as scale.data or data
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @return Returns an untrained \code{\link{MOFA}} object
-#' @import Seurat
-#' @export
 #' @keywords internal
 .create_mofa_from_seurat <- function(seurat, groups, assays = "RNA", slot = "data", features = NULL) {
   if (is(groups, 'character') && (length(groups) == 1)) {
@@ -233,7 +231,6 @@ create_mofa <- function(data, groups = NULL, ...) {
 }
 
 # (Hidden) function to split data in Seurat object into a list of matrices
-#' @import Seurat
 .split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "data", features = NULL) {
   # If no feature selection is provided, all features are used
   if (is.null(features))
