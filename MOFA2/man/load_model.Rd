@@ -19,6 +19,8 @@ On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\li
 
 \item{load_data}{logical indicating whether to load the training data (default is TRUE, it can be memory expensive)}
 
+\item{load_imputed_data}{logical indicating whether to load the imputed data (default is FALSE)}
+
 \item{remove_outliers}{logical indicating whether to mask outlier values.}
 }
 \value{

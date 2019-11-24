@@ -1,6 +1,6 @@
 
 ############################################
-## Functions to load a trained MOFA ##
+## Functions to load a trained MOFA model ##
 ############################################
 
 #' @title Load a trained MOFA

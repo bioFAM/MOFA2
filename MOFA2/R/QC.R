@@ -94,6 +94,16 @@ quality_control <- function(object, verbose = FALSE) {
     if (verbose == TRUE) message("Checking expectations...")
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
+    
+    # Check for intercept factors
+    
+    # Check for correlated factors
+    Z <- do.call("rbind",get_factors(object))
+    tmp <- cor(Z); diag(tmp) <- NA
+    if (max(tmp,na.rm=T)) {
+      message("The model contains highly correlated factors, see `plot_factor_cor(model)`.\n",
+      "We recommend that you train the model with less factors and/or you let it train for a longer time.")
+    }
   }
   
   return(object)  

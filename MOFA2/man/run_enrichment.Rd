@@ -45,8 +45,8 @@ Must be one of the following: "parametric" (default), "cor.adj.parametric", "per
 a list with five elements: 
 \item{\strong{pval}:}{ matrices with nominal p-values. }
 \item{\strong{pval.adj}:}{ matrices with FDR-adjusted p-values. }
-\item{\strong{feature.statistics}:}{ matrices with the the local (feature-wise) statistics.  }
-\item{\strong{global.statistics}:}{ matrices with the the global (gene set-wise) statistics.  }
+\item{\strong{feature.statistics}:}{ matrices with the local (feature-wise) statistics.  }
+\item{\strong{global.statistics}:}{ matrices with the global (gene set-wise) statistics.  }
 \item{\strong{sigPathways}}{ list with significant pathways per factor. }
 }
 \description{
