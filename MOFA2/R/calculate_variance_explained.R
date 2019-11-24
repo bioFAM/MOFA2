@@ -376,10 +376,16 @@ plot_variance_explained_per_feature <- function(object, view, features,
 
   }
   
-  if (!is.null(min_r2)) r2_df$value[r2_df$value<min_r2] <- 0.00001
-  if (!is.null(max_r2)) r2_df$value[r2_df$value>max_r2] <- max_r2
-  min_r2 = 0
-  max_r2 = max(r2_df$value)
+  if (!is.null(min_r2)) {
+    r2_df$value[r2_df$value<min_r2] <- 0.00001
+  }
+  min_r2 <- 0
+
+  if (!is.null(max_r2)) {
+    r2_df$value[r2_df$value>max_r2] <- max_r2
+  } else {
+    max_r2 <- max(r2_df$value)
+  }
 
   if (!is.null(group_features_by)) {
     features_indices <- match(r2_df$feature, features_metadata(object)$feature)
