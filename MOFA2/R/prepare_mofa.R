@@ -351,7 +351,7 @@ get_default_stochastic_options <- function(object) {
   stochastic_options <- list(
     batch_size = 0.5,       # Batch size (as a fraction)
     learning_rate = 0.75,   # Starting learning rate
-    forgetting_rate = 0.1   # Forgetting rate
+    forgetting_rate = 0.1,   # Forgetting rate
     start_stochastic = 10    # First iteration to start stochastic inference
   )
   

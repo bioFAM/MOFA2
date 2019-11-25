@@ -24,5 +24,7 @@ The training options are the following: \cr
  Default is 0.75 
  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
  Default is 1.0
+ \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
+ Default is 10
  }
 }
