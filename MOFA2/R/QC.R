@@ -99,8 +99,11 @@ quality_control <- function(object, verbose = FALSE) {
     
     # Check for correlated factors
     Z <- do.call("rbind",get_factors(object))
+    
+    op <- options(warn = (-1)) # suppress warnings
     tmp <- cor(Z); diag(tmp) <- NA
-    if (max(tmp,na.rm=T)) {
+    options(op) # activate warnings again
+    if (max(tmp,na.rm=T)>0.5) {
       message("The model contains highly correlated factors, see `plot_factor_cor(model)`.\n",
       "We recommend that you train the model with less factors and/or you let it train for a longer time.")
     }

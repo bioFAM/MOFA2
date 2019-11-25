@@ -144,6 +144,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
 #'  \item{\strong{drop_factor_threshold}:}{ (not functional yet) numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
 #'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast".}
+#'  \item{\strong{drop_factor_threshold}:}{ minimum variance explained threshold to drop inactive factors. Default is -1 (no dropping of factors)}
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
 #'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO}
 #'  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO}
@@ -160,7 +161,7 @@ get_default_training_options <- function(object) {
   training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
     convergence_mode = 'fast',   # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
-    # drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
+    drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity
     startELBO = 1,                 # First iteration to compute the ELBO
     freqELBO = 5,                  # Frequency of ELBO calculation

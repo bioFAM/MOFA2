@@ -44,8 +44,6 @@ run_mofa <- function(object, outfile = NA) {
   
   # Set data options
   mofa_entrypoint$set_data_options(
-    likelihoods = unname(object@model_options$likelihoods),
-    center_features_per_group = object@data_options$center_features_per_group,
     scale_views = object@data_options$scale_views,
     scale_groups = object@data_options$scale_groups
   )
@@ -53,6 +51,7 @@ run_mofa <- function(object, outfile = NA) {
   # Set the data
   mofa_entrypoint$set_data_matrix(
     data = r_to_py( unname(lapply(object@data, function(x) unname( lapply(x, function(y) r_to_py(t(y)) ))) ) ),
+    likelihoods = unname(object@model_options$likelihoods),
     views_names = r_to_py(as.list(object@data_options$views)),
     groups_names = r_to_py(as.list(object@data_options$groups)),
     samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
@@ -62,7 +61,6 @@ run_mofa <- function(object, outfile = NA) {
   # Set model options 
   mofa_entrypoint$set_model_options(
     factors     = object@model_options$num_factors,
-    likelihoods = unname(object@model_options$likelihood),
     spikeslab_factors = object@model_options$spikeslab_factors, 
     spikeslab_weights = object@model_options$spikeslab_weights, 
     ard_factors       = object@model_options$ard_factors,
@@ -73,7 +71,7 @@ run_mofa <- function(object, outfile = NA) {
   mofa_entrypoint$set_train_options(
     iter             = object@training_options$maxiter,
     convergence_mode = object@training_options$convergence_mode,
-    # dropR2           = object@training_options$drop_factor_threshold,
+    dropR2           = object@training_options$drop_factor_threshold,
     startELBO        = object@training_options$startELBO,
     elbofreq         = object@training_options$freqELBO,
     seed             = object@training_options$seed, 

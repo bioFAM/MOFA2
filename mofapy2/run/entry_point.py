@@ -9,6 +9,7 @@ from mofapy2.core.BayesNet import *
 from mofapy2.core import gpu_utils
 from mofapy2.build_model.build_model import *
 from mofapy2.build_model.save_model import *
+from mofapy2.build_model.utils import guess_likelihoods
 from mofapy2.build_model.train_model import train_model
 
 class entry_point(object):
@@ -36,7 +37,7 @@ class entry_point(object):
         print(banner)
         sys.stdout.flush()
 
-    def set_data_matrix(self, data, views_names=None, groups_names=None, samples_names=None, features_names=None):
+    def set_data_matrix(self, data, likelihoods=None, views_names=None, groups_names=None, samples_names=None, features_names=None):
         """ Method to input the data in a wide matrix
 
         PARAMETERS
@@ -44,6 +45,10 @@ class entry_point(object):
         data: a nested list, first dimension for views, second dimension for groups.
               The dimensions of each matrix must be (samples,features)
         """
+
+        if not hasattr(self, 'data_opts'): 
+            print("Data options not defined before setting the data, using default values...")
+            self.set_data_options()
 
         # Sanity check
         if not isinstance(data, list):
@@ -83,6 +88,7 @@ class entry_point(object):
             print("- view1, view2, ..., viewM")
             self.data_opts['views_names'] = [ "view" + str(m) for m in range(M) ]
         else:
+            assert len(views_names)==self.dimensionalities["M"], "Length of views names is not the same as the number of views"
             self.data_opts['views_names']  = views_names
 
         # Define features names
@@ -91,6 +97,7 @@ class entry_point(object):
             print("- feature1_view1, featureD_viewM\n")
             self.data_opts['features_names'] = [ ["feature%d_view%d" % (d,m) for d in range(D[m])] for m in range(M) ]
         else:
+            assert len(features_names)==self.dimensionalities["M"], "Length of views names is not the same as the number of views"
             self.data_opts['features_names'] = features_names
 
 
@@ -139,10 +146,19 @@ class entry_point(object):
                 data[m] = np.array(data[m])
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
 
-        # Process the data (center, scaling, etc.)
-        self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
+        # Define likelihoods
+        if likelihoods is None:
+            likelihoods = guess_likelihoods(data)
+        elif isinstance(likelihoods, str):
+            likelihoods = [likelihoods]
+        assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli', 'poisson'"
+        self.likelihoods = likelihoods
 
-    def set_data_df(self, data):
+        # Process the data (center, scaling, etc.)
+        self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
+
+    def set_data_df(self, data, likelihoods=None):
         """Method to input the data in a long data.frame format
 
         PARAMETERS
@@ -153,7 +169,10 @@ class entry_point(object):
         """
 
         # Sanity checks
-        assert hasattr(self, 'data_opts'), "Data options not defined"
+        if not hasattr(self, 'data_opts'): 
+            print("Data options not defined before setting the data, using default values...")
+            self.set_data_options()
+
         assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
         assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
         assert 'group' in data.columns, "'data' has to contain the column 'group'"
@@ -213,6 +232,15 @@ class entry_point(object):
         for m in range(M):
             self.intercepts[m] = [np.nanmean(x,axis=0) for x in np.split(data_matrix[m], np.cumsum(tmp)[:-1], axis=0)]
 
+        # Define likelihoods
+        if likelihoods is None:
+            likelihoods = guess_likelihoods(data)
+        elif isinstance(likelihoods, str):
+            likelihoods = [likelihoods]
+        assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli', 'poisson'"
+        self.likelihoods = likelihoods
+
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
 
@@ -227,7 +255,9 @@ class entry_point(object):
         """
 
         # Sanity checks
-        assert hasattr(self, 'data_opts'), "Data options not defined"
+        if not hasattr(self, 'data_opts'): 
+            print("Data options not defined before setting the data, using default values...")
+            self.set_data_options()
 
         # Check groups_label is defined properly
         n_groups = 1  # no grouping by default
@@ -303,7 +333,9 @@ class entry_point(object):
         """
 
         # Sanity checks
-        assert hasattr(self, 'data_opts'), "Data options not defined"
+        if not hasattr(self, 'data_opts'): 
+            print("Data options not defined before setting the data, using default values...")
+            self.set_data_options()
 
         # Check groups_label is defined properly
         n_groups = 1  # no grouping by default
@@ -482,6 +514,9 @@ class entry_point(object):
         assert 0 < batch_size <= 1, 'Batch size must range from 0 to 1'
         assert start_stochastic >= 1, 'start_stochastic must be >= 1'
 
+        if self.train_opts['drop']["min_r2"] > 0:
+            print("Dropping factors is disabled with stochastic inference...")
+            self.train_opts['drop']["min_r2"]= None
 
         # Edit schedule: Z should come first (after Y) in the training schedule
         self.train_opts['schedule'].pop( self.train_opts['schedule'].index("Z") )
@@ -494,10 +529,9 @@ class entry_point(object):
         self.train_opts['start_stochastic'] = start_stochastic
         self.train_opts['batch_size'] = batch_size
 
-
         self.train_opts['drop']["min_r2"] = None
 
-    def set_model_options(self, factors, likelihoods, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
+    def set_model_options(self, factors, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
         """ Set model options """
 
         self.model_opts = {}
@@ -522,28 +556,16 @@ class entry_point(object):
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
 
         # Define likelihoods
-        self.model_opts['likelihoods'] = likelihoods
-        if isinstance(self.model_opts['likelihoods'], str):
-            self.model_opts['likelihoods'] = [self.model_opts['likelihoods']]
-        assert len(self.model_opts['likelihoods'])==self.dimensionalities["M"], "Please specify one likelihood for each view"
-        assert set(self.model_opts['likelihoods']).issubset(set(["gaussian","bernoulli","poisson",'zero_inflated'])), "Available likelihoods are 'gaussian','bernoulli', 'poisson', 'zero_inflated'"
+        self.model_opts['likelihoods'] = self.likelihoods
 
-    def set_data_options(self, likelihoods, center_features_per_group=True, scale_views=False, scale_groups=False, mask=None, mask_zeros=False):
+        print("Likelihoods:")
+        for m in range(self.dimensionalities["M"]):
+          print("- View %d (%s): %s" % (m,self.data_opts["views_names"][m],self.likelihoods[m]) )
+
+    def set_data_options(self, scale_views=False, scale_groups=False):
         """ Set data processing options """
 
-        # TODO: more verbose messages
-        # TODO Sanity checks
         self.data_opts = {}
-
-        # Define likelihoods
-        if type(likelihoods) is not list:
-          likelihoods = [likelihoods]
-        assert set(likelihoods).issubset(set(["gaussian", "bernoulli", "poisson", "zero_inflated"]))
-        self.data_opts["likelihoods"] = likelihoods
-        M = len(likelihoods)
-
-        # Center features
-        self.data_opts['center_features_per_group'] = center_features_per_group
 
         # Scale views to unit variance
         self.data_opts['scale_views'] = scale_views
@@ -552,16 +574,6 @@ class entry_point(object):
         # Scale groups to unit variance
         self.data_opts['scale_groups'] = scale_groups
         if (scale_groups): print("Scaling groups to unit variance...\n")
-
-        # Do we want to mask zeros in the data (provide list if depends on view)
-        self.data_opts['mask_zeros'] = mask_zeros
-
-        # Mask values
-        if mask is not None:
-            assert len(mask)==M, "Length of 'mask' argument must be equal to the number of views"
-            self.data_opts['mask'] = mask
-        else:
-            self.data_opts['mask'] = [0]*M
 
     def build(self):
         """ Build the model """
@@ -699,7 +711,6 @@ class entry_point(object):
 
 def mofa(adata, groups_label: bool = None, use_raw: bool = False,
          likelihood: str = "gaussian", n_factors: int = 10,
-         center_features_per_group: bool = True, 
          scale_views: bool = False, scale_groups: bool = False,
          ard_weights: bool = True, ard_factors: bool = False,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
@@ -717,7 +728,6 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
     use_raw (optional): use raw slot of AnnData as input values
     likelihood (optional): likelihood to use, default is gaussian
     n_factors (optional): number of factors to train the model with
-    center_features_per_group (optional): center features per group
     scale_views (optional): scale views to unit variance
     scale_groups (optional): scale groups to unit variance
     ard_weights (optional): use view-wise sparsity
@@ -737,7 +747,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
 
     lik = [likelihood]
 
-    ent.set_data_options(lik, center_features_per_group=center_features_per_group, scale_views=scale_views, scale_groups=scale_groups)
+    ent.set_data_options(lik, scale_views=scale_views, scale_groups=scale_groups)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
     ent.set_model_options(ard_factors=ard_factors, spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, ard_weights=ard_factors, factors=n_factors, likelihoods=lik)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)

@@ -111,12 +111,12 @@ def loadData(data_opts, verbose=True):
 
     return (Y, samples_groups)
 
-def process_data(data, data_opts, samples_groups):
+def process_data(data, likelihoods, data_opts, samples_groups):
 
     parsed_data = data
 
-    if type(data_opts['mask_zeros']) == bool:
-        data_opts['mask_zeros'] = [data_opts['mask_zeros']] * len(data)
+    # if type(data_opts['mask_zeros']) == bool:
+    #     data_opts['mask_zeros'] = [data_opts['mask_zeros']] * len(data)
 
     for m in range(len(data)):
 
@@ -144,20 +144,23 @@ def process_data(data, data_opts, samples_groups):
 
 
         # Centering and scaling is only appropriate for gaussian data
-        if data_opts["likelihoods"][m] in ["gaussian"]:
+        if likelihoods[m] in ["gaussian"]:
 
             # mask zeros if zero inflated likelihood
-            # if data_opts["likelihoods"][m] == "zero_inflated":
+            # if likelihoods[m] == "zero_inflated":
             #     zeros_mask = parsed_data[m]==0
             #     parsed_data[m][zeros_mask] = np.nan
 
-            # Center features
-            if data_opts['center_features_per_group']:
-                for g in data_opts['groups_names']:
-                    filt = [gp==g for gp in samples_groups]
-                    parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
-            else:
-                parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
+            # Center features per group
+            # if data_opts['center_features_per_group']:
+            #     for g in data_opts['groups_names']:
+            #         filt = [gp==g for gp in samples_groups]
+            #         parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
+            # else:
+            #     parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
+            for g in data_opts['groups_names']:
+                filt = [gp==g for gp in samples_groups]
+                parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
 
             # Scale views to unit variance
             if data_opts['scale_views']:
@@ -170,7 +173,7 @@ def process_data(data, data_opts, samples_groups):
                     parsed_data[m][filt,:] /= np.nanstd(parsed_data[m][filt,:])
 
             # reset zeros if zero infalted likelihood
-            # if data_opts["likelihoods"][m] == "zero_inflated":
+            # if likelihoods[m] == "zero_inflated":
             #     parsed_data[m][zeros_mask] = 0.
 
     return parsed_data
@@ -184,3 +187,22 @@ def loadDataGroups(data_opts):
     sample_labels = np.genfromtxt(data_opts['samples_groups_file'], dtype='str')
     return sample_labels
 
+
+def guess_likelihoods(data):
+    """
+    Method to infer likelihoods from the data
+    NOTE: THIS FUNCTION CURRENTLY DOES NOT WORK IF ONE OF THE GROUPS IS FULL OF NA
+    """
+    M = len(data)
+
+    likelihoods = ["gaussian" for m in range(M)]
+    for m in range(M):
+        mask = ~np.isnan(data[m][0])
+        if np.isin(data[m][0][mask],[0,1]).all():
+            likelihoods[m] = "bernoulli"
+        if np.all( (data[m][0][mask]%1)==0):
+            likelihoods[m] = "poisson"  
+
+    print("Likelihoods not provided. Guessed internally...")
+
+    return likelihoods
