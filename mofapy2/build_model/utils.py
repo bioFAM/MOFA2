@@ -113,30 +113,23 @@ def loadData(data_opts, verbose=True):
 
 def process_data(data, likelihoods, data_opts, samples_groups):
 
-    parsed_data = data
-
     # if type(data_opts['mask_zeros']) == bool:
     #     data_opts['mask_zeros'] = [data_opts['mask_zeros']] * len(data)
 
     for m in range(len(data)):
 
-        # Convert data to numpy array float64 format
-        if isinstance(parsed_data[m], pd.DataFrame):
-            parsed_data[m] = parsed_data[m].values
-        # parsed_data[m].astype(np.float64)
-
 
         # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
-        parsed_data[m][parsed_data[m] == -2147483648] = np.nan
+        data[m][data[m] == -2147483648] = np.nan
 
         # Removing features with no variance
-        var = parsed_data[m].std(axis=0)
+        var = data[m].std(axis=0)
         if np.any(var==0.):
             print("Warning: %d features(s) in view %d have zero variance, consider removing them before training the model..." % ((var==0.).sum(), m))
             sys.stdout.flush()
 
         # Check that there are no features full of missing values
-        tmp = np.isnan(parsed_data[m]).mean(axis=0)
+        tmp = np.isnan(data[m]).mean(axis=0)
         if np.any(tmp==1.):
             print("Error: %d features(s) in view %d are full of missing values, please remove them before training the model..." % ((tmp==0.).sum(), m))
             sys.stdout.flush()
@@ -148,35 +141,35 @@ def process_data(data, likelihoods, data_opts, samples_groups):
 
             # mask zeros if zero inflated likelihood
             # if likelihoods[m] == "zero_inflated":
-            #     zeros_mask = parsed_data[m]==0
-            #     parsed_data[m][zeros_mask] = np.nan
+            #     zeros_mask = data[m]==0
+            #     data[m][zeros_mask] = np.nan
 
             # Center features per group
             # if data_opts['center_features_per_group']:
             #     for g in data_opts['groups_names']:
             #         filt = [gp==g for gp in samples_groups]
-            #         parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
+            #         data[m][filt,:] -= np.nanmean(data[m][filt,:],axis=0)
             # else:
-            #     parsed_data[m] -= np.nanmean(parsed_data[m],axis=0)
+            #     data[m] -= np.nanmean(data[m],axis=0)
             for g in data_opts['groups_names']:
                 filt = [gp==g for gp in samples_groups]
-                parsed_data[m][filt,:] -= np.nanmean(parsed_data[m][filt,:],axis=0)
+                data[m][filt,:] -= np.nanmean(data[m][filt,:],axis=0)
 
             # Scale views to unit variance
             if data_opts['scale_views']:
-                parsed_data[m] /= np.nanstd(parsed_data[m])
+                data[m] /= np.nanstd(data[m])
 
             # Scale groups to unit variance
             if data_opts['scale_groups']:
                 for g in data_opts['groups_names']:
                     filt = [gp==g for gp in samples_groups]
-                    parsed_data[m][filt,:] /= np.nanstd(parsed_data[m][filt,:])
+                    data[m][filt,:] /= np.nanstd(data[m][filt,:])
 
             # reset zeros if zero infalted likelihood
             # if likelihoods[m] == "zero_inflated":
-            #     parsed_data[m][zeros_mask] = 0.
+            #     data[m][zeros_mask] = 0.
 
-    return parsed_data
+    return data
 
 def loadDataGroups(data_opts):
     """
@@ -203,6 +196,6 @@ def guess_likelihoods(data):
         if np.all( (data[m][0][mask]%1)==0):
             likelihoods[m] = "poisson"  
 
-    print("Likelihoods not provided. Guessed internally...")
+    print("Likelihoods not provided. Guessed internally...\n")
 
     return likelihoods

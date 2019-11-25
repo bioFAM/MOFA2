@@ -164,7 +164,7 @@ get_default_training_options <- function(object) {
     drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity
     startELBO = 1,                 # First iteration to compute the ELBO
-    freqELBO = 5,                  # Frequency of ELBO calculation
+    freqELBO = 1,                  # Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
     seed = 0                       # (numeric) random seed
@@ -339,6 +339,8 @@ get_default_model_options <- function(object) {
 #'  Default is 0.75 
 #'  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
 #'  Default is 1.0
+#'  \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
+#'  Default is 10
 #'  }
 #' @return Returns a list with default options
 #' @importFrom utils modifyList
@@ -350,6 +352,7 @@ get_default_stochastic_options <- function(object) {
     batch_size = 0.5,       # Batch size (as a fraction)
     learning_rate = 0.75,   # Starting learning rate
     forgetting_rate = 0.1   # Forgetting rate
+    start_stochastic = 10    # First iteration to start stochastic inference
   )
   
   # if stochastic_options already exist, replace the default values but keep the additional ones

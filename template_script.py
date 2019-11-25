@@ -44,10 +44,9 @@ data = pd.read_csv(file, sep="\t")
 ent = entry_point()
 
 # Set data options
-# - likelihoods: likelihood per view (options are "gaussian","poisson","bernoulli")
-# - scale_groups: if groups have different ranges/variances, it is good practice to scale each group to unit variance
-# - scale_views: if views have different ranges/variances, it is good practice to scale each view to unit variance
-ent.set_data_options(likelihoods=["gaussian","gaussian"], scale_groups=False, scale_views=False)
+# - scale_groups: if groups have significantly different ranges/variances, it is good practice to scale each group to unit variance
+# - scale_views: if views have significantly different ranges/variances, it is good practice to scale each view to unit variance
+ent.set_data_options(scale_groups=False, scale_views=False)
 
 # Set data (option 1, nested list of matrices) 
 # ent.set_data_matrix(data)
@@ -56,28 +55,41 @@ ent.set_data_options(likelihoods=["gaussian","gaussian"], scale_groups=False, sc
 ent.set_data_df(data)
 
 # Set model options
-# - factors: number of factors
-# - likelihods: likelihoods per view (options are "gaussian","poisson","bernoulli")
+# - factors: number of factors. Default is K=10
+# - likelihods: likelihoods per view (options are "gaussian","poisson","bernoulli"). 
+# 		Default is None, and they are infered automatically
 # - spikeslab_weights: use spike-slab sparsity prior in the weights? (recommended TRUE)
-# - ard_factors: use ARD prior in the factors? (set to TRUE if using multiple groups)
-# - ard_weights: use ARD prior in the weights? (always TRUE)
-ent.set_model_options(factors=5, likelihoods=["gaussian","gaussian"], spikeslab_weights=True, ard_factors=True, ard_weights=True)
+# - ard_factors: use ARD prior in the factors? (TRUE if using multiple groups)
+# - ard_weights: use ARD prior in the weights? (TRUE if using multiple views)
+
+# Simple
+ent.set_model_options()
+
+# Complex
+# ent.set_model_options(factors=5, likelihoods=["gaussian","gaussian"], spikeslab_weights=True, ard_factors=True, ard_weights=True)
 
 # Set training options
 # - iter: number of iterations
-# - convergence_mode: "fast", "medium", "slow". For exploration, the fast mode is good enough.
+# - convergence_mode: "fast", "medium", "slow". 
+#		For exploration, the fast mode is good enough.
 # - startELBO: initial iteration to compute the ELBO (the objective function used to assess convergence)
 # - freqELBO: frequency of computations of the ELBO (the objective function used to assess convergence)
-# - dropR2: minimum variance explained criteria to drop factors while training
-# - gpu_mode: use GPU mode? (needs cupy installed and a functional GPU, see https://cupy.chainer.org/)
+# - dropR2: minimum variance explained criteria to drop factors while training.
+# 		Default is None, inactive factors are not dropped during training
+# - gpu_mode: use GPU mode? 
+#		if TRUE, this needs cupy installed and a functional GPU, see https://cupy.chainer.org/
 # - verbose: verbose mode?
 # - seed: random seed
-ent.set_train_options(iter=1000, convergence_mode="medium", startELBO=1, freqELBO=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
+ent.set_train_options(iter=10, convergence_mode="fast", startELBO=1, freqELBO=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
+
 
 # (Optional) Set stochastic inference options
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)
-# - forgetting_rate: forgetting rate (we recommend values from 0.1 to 0.5)
+# - forgetting_rate: forgetting rate (we recommend values from 0.25 to 0.5)
+# - start_stochastic: first iteration to apply stochastic inference (recommended > 5)
+# ent.set_stochastic_options(batch_size=0.5, learning_rate=0.75, forgetting_rate=0.5, start_stochastic=10)
+
 
 ####################################
 ## Build and train the MOFA model ##
@@ -88,6 +100,13 @@ ent.build()
 
 # Run the model
 ent.run()
+
+##################################################################
+## (Optional) do dimensionality reduction from the MOFA factors ##
+##################################################################
+
+# ent.umap()
+# ent.tsne()
 
 ####################
 ## Save the model ##

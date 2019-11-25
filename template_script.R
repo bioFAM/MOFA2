@@ -49,13 +49,11 @@ plot_data_overview(MOFAobject)
 # Data options
 # - scale_views: if views have different ranges/variances, it is good practice to scale each view to unit variance (default FALSE)
 # - scale_groups: if groups have different ranges/variances, it is good practice to scale each group to unit variance
-# - views: view names
-# - groups: group names
 data_opts <- get_default_data_options(MOFAobject)
 
 # model options
-# - likelihoods: likelihood per view (options are "gaussian","poisson","bernoulli")
-# - num_factors: number of factors
+# - likelihoods: likelihood per view (options are "gaussian","poisson","bernoulli"). By default, they are guessed internally
+# - num_factors: number of factors. By default K=10
 # - spikeslab_weights: use spike-slab sparsity prior in the weights? (default TRUE)
 # - spikeslab_factors: use spike-slab sparsity prior in the factors? (default FALSE)
 # - ard_factors: use ARD prior in the factors? (default TRUE if using multiple groups)
@@ -68,10 +66,9 @@ model_opts$num_factors <- 5
 # - convergence_mode: "fast", "medium", "slow". For exploration, the fast mode is good enough.
 # - startELBO: initial iteration to compute the ELBO (the objective function used to assess convergence)
 # - freqELBO: frequency of computations of the ELBO (the objective function used to assess convergence)
-# - dropR2: minimum variance explained criteria to drop factors while training
+# - drop_factor_threshold: minimum variance explained criteria to drop factors while training. Default is -1 (no dropping of factors)
 # - gpu_mode: use GPU mode? (needs cupy installed and a functional GPU, see https://cupy.chainer.org/)
 # - verbose: verbose mode?
-# stochastic: use stochastic inference?
 # - seed: random seed
 train_opts <- get_default_training_options(MOFAobject)
 train_opts$convergence_mode <- "medium"
@@ -82,6 +79,7 @@ train_opts$seed <- 42
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)
 # - forgetting_rate: forgetting rate (we recommend values from 0.1 to 0.5)
+# - start_stochastic: first iteration to apply stochastic inference (recommended > 5)
 
 # stochastic_opts <- get_default_stochastic_options(MOFAobject)
 

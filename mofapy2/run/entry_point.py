@@ -226,6 +226,10 @@ class entry_point(object):
                     print("No data found for group='%s' and view='%s'..." % (g, m))
         print("\n")
 
+        # Convert from pandas dataframe to numpy array
+        for m in range(M):
+            if isinstance(data_matrix[m], pd.DataFrame): data_matrix[m] = data_matrix[m].values
+
         # Store intercepts
         self.intercepts = [None for m in range(M)]
         tmp = [ len(x) for x in self.data_opts['samples_names'] ]
@@ -234,7 +238,7 @@ class entry_point(object):
 
         # Define likelihoods
         if likelihoods is None:
-            likelihoods = guess_likelihoods(data)
+            likelihoods = guess_likelihoods(data_matrix)
         elif isinstance(likelihoods, str):
             likelihoods = [likelihoods]
         assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
@@ -242,7 +246,7 @@ class entry_point(object):
         self.likelihoods = likelihoods
 
         # Process the data (i.e center, scale, etc.)
-        self.data = process_data(data_matrix, self.data_opts, self.data_opts['samples_groups'])
+        self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_anndata(self, adata, groups_label=None, use_raw=False):
         """ Method to input the data in AnnData format
@@ -514,9 +518,9 @@ class entry_point(object):
         assert 0 < batch_size <= 1, 'Batch size must range from 0 to 1'
         assert start_stochastic >= 1, 'start_stochastic must be >= 1'
 
-        if self.train_opts['drop']["min_r2"] > 0:
-            print("Dropping factors is disabled with stochastic inference...")
-            self.train_opts['drop']["min_r2"]= None
+        if self.train_opts['drop']["min_r2"] is not None:
+            print("Dropping factors is currently disabled with stochastic inference...")
+            self.train_opts['drop']["min_r2"] = None
 
         # Edit schedule: Z should come first (after Y) in the training schedule
         self.train_opts['schedule'].pop( self.train_opts['schedule'].index("Z") )
@@ -531,7 +535,7 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_model_options(self, factors, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
+    def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
         """ Set model options """
 
         self.model_opts = {}
@@ -543,14 +547,14 @@ class entry_point(object):
         self.model_opts['spikeslab_weights'] = spikeslab_weights
 
         # Define whether to use group and factor-wise ARD prior for Z
+        if ((self.dimensionalities["G"]>1) & (ard_factors==False)): 
+            print("WARNING: 'ard_factors' should be set to True if using multiple groups\n")
         self.model_opts['ard_factors'] = ard_factors
-        if ((self.dimensionalities["G"]>1) & (self.model_opts['ard_factors']==False)): 
-            print("Error: ard_factors has to be set to True if using multiple groups"); exit()
 
         # Define whether to use view and factor-wise ARD prior for W
+        if ((self.dimensionalities["M"]>1) & (ard_weights==False)): 
+            print("WARNING: 'ard_weights' should be set to True\n")
         self.model_opts['ard_weights'] = ard_weights
-        if ((self.dimensionalities["M"]>1) & (self.model_opts['ard_weights']==False)): 
-            print("Error: ard_weights has to be set to True if using multiple views"); exit()
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)

@@ -433,7 +433,7 @@ class StochasticBayesNet(BayesNet):
                 ix, epoch = self.sample_mini_batch_no_replace(i-(self.options["start_stochastic"]-1))
                 ro = self.step_size2(epoch)
             else:
-                ro = 1.
+                ro = self.options["learning_rate"]
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
@@ -485,7 +485,9 @@ class StochasticBayesNet(BayesNet):
                 print("Iteration %d: time=%.2f, Factors=%d" % (i,time()-t,self.dim["K"]))
 
             # Print other statistics
-            print("Step size (rho): %.3f" % ro )
+            if i>=(self.options["start_stochastic"]):
+                print("Step size (rho): %.3f" % ro )
+
             if self.options['verbose']:
                 # Memory usage
                 print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
