@@ -225,7 +225,7 @@ class BayesNet(object):
             t_updates = time() - t_updates
 
             # Calculate Evidence Lower Bound
-            if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['elbofreq']==0):
+            if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
                 t_elbo = time()
                 elbo.iloc[i] = self.calculateELBO()
                 t_elbo = time() - t_elbo
@@ -234,7 +234,7 @@ class BayesNet(object):
                 if i==self.options["start_elbo"]: 
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[0]["total"]
                 else:
-                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
+                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['freqELBO']]["total"]
 
                 # Print ELBO monitoring
                 if not self.options['quiet']:
@@ -451,7 +451,7 @@ class StochasticBayesNet(BayesNet):
             t_updates = time() - t_updates
 
             # Calculate Evidence Lower Bound
-            if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['elbofreq']==0):
+            if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
                 t_elbo = time()
                 elbo.iloc[i] = self.calculateELBO()
                 t_elbo = time() - t_elbo
@@ -460,7 +460,7 @@ class StochasticBayesNet(BayesNet):
                 if i==self.options["start_elbo"]: 
                     delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[0]["total"]
                 else:
-                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['elbofreq']]["total"]
+                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['freqELBO']]["total"]
 
                 # Print ELBO monitoring
                 print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))

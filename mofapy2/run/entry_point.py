@@ -391,7 +391,7 @@ class entry_point(object):
             self.data = process_data([loom[:,:].T], self.data_opts, self.data_opts['samples_groups'])
 
     def set_train_options(self,
-        iter=1000, startELBO=1, elbofreq=1, startSparsity=100, tolerance=None, convergence_mode="medium",
+        iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False,
         ):
@@ -406,8 +406,8 @@ class entry_point(object):
         self.train_opts['maxiter'] = int(iter)
 
         # Lower bound computation frequency
-        if elbofreq is None or elbofreq==0: elbofreq=iter+1
-        self.train_opts['elbofreq'] = int(elbofreq)
+        if freqELBO is None or freqELBO==0: freqELBO=iter+1
+        self.train_opts['freqELBO'] = int(freqELBO)
         if startELBO==0: startELBO=1
         if startELBO==None: startELBO=iter+1
         self.train_opts['start_elbo'] = int(startELBO)

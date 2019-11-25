@@ -67,12 +67,12 @@ ent.set_model_options(factors=5, likelihoods=["gaussian","gaussian"], spikeslab_
 # - iter: number of iterations
 # - convergence_mode: "fast", "medium", "slow". For exploration, the fast mode is good enough.
 # - startELBO: initial iteration to compute the ELBO (the objective function used to assess convergence)
-# - elbofreq: frequency of computations of the ELBO (the objective function used to assess convergence)
+# - freqELBO: frequency of computations of the ELBO (the objective function used to assess convergence)
 # - dropR2: minimum variance explained criteria to drop factors while training
 # - gpu_mode: use GPU mode? (needs cupy installed and a functional GPU, see https://cupy.chainer.org/)
 # - verbose: verbose mode?
 # - seed: random seed
-ent.set_train_options(iter=1000, convergence_mode="medium", startELBO=1, elbofreq=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
+ent.set_train_options(iter=1000, convergence_mode="medium", startELBO=1, freqELBO=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
 
 # (Optional) Set stochastic inference options
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)

@@ -270,7 +270,7 @@ class saveModel():
         # For more information see: https://github.com/h5py/h5py/pull/1032 or https://github.com/h5py/h5py/issues/289
 
         # Subset training options
-        opts = dict((k, self.train_opts[k]) for k in ["maxiter", "elbofreq", "start_elbo", "gpu_mode", "stochastic", "seed"])
+        opts = dict((k, self.train_opts[k]) for k in ["maxiter", "freqELBO", "start_elbo", "gpu_mode", "stochastic", "seed"])
 
         # Replace dictionaries (not supported in hdf5) by lists 
         # opts = self.train_opts
