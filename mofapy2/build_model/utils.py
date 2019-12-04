@@ -184,16 +184,16 @@ def loadDataGroups(data_opts):
 def guess_likelihoods(data):
     """
     Method to infer likelihoods from the data
-    NOTE: THIS FUNCTION CURRENTLY DOES NOT WORK IF ONE OF THE GROUPS IS FULL OF NA
+    (Note groups are already concatenated when calling this function)
     """
     M = len(data)
 
     likelihoods = ["gaussian" for m in range(M)]
     for m in range(M):
-        mask = ~np.isnan(data[m][0])
-        if np.isin(data[m][0][mask],[0,1]).all():
+        mask = ~np.isnan(data[m])
+        if np.isin(data[m][mask],[0,1]).all():
             likelihoods[m] = "bernoulli"
-        if np.all( (data[m][0][mask]%1)==0):
+        if np.all( (data[m][mask]%1)==0):
             likelihoods[m] = "poisson"  
 
     print("Likelihoods not provided. Guessed internally...\n")
