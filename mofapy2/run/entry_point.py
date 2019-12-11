@@ -810,6 +810,9 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
         if copy:
             return adata
         else:
-            print("Saved MOFA embeddings in adata.obsm['X_mofa'] slot and their loadings in adata.varm['LFs'].")
+            if features_subset is None:
+                print("Saved MOFA embeddings in adata.obsm['X_mofa'] slot and their loadings in adata.varm['LFs'].")
+            else:
+                print("Saved MOFA embeddings in adata.obsm['X_mofa'] slot.")
     else:
         print("Can not add embeddings and loadings to AnnData object since h5py is not installed.")
