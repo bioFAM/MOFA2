@@ -748,7 +748,7 @@ class entry_point(object):
 def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subset: Optional[str] = None,
          likelihood: Optional[Union[str, List[str]]] = None, n_factors: int = 10,
          scale_views: bool = False, scale_groups: bool = False,
-         ard_weights: bool = True, ard_factors: bool = False,
+         ard_weights: bool = True, ard_factors: bool = True,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
