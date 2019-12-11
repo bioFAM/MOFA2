@@ -4,6 +4,7 @@ import scipy as s
 import sys
 from time import sleep
 from time import time
+from typing import List, Optional, Union
 
 from mofapy2.core.BayesNet import *
 from mofapy2.core import gpu_utils
@@ -248,7 +249,7 @@ class entry_point(object):
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False):
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, likelihoods=None, features_subset=None):
         """ Method to input the data in AnnData format
 
         PARAMETERS
@@ -256,6 +257,8 @@ class entry_point(object):
         adata: an AnnotationData object
         groups_label (optional): a column name in adata.obs for grouping the samples
         use_raw (optional): use raw slot of AnnData as input values
+        likelihoods (optional): likelihoods to use (guessed from the data if not provided)
+        features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
         """
 
         # Sanity checks
@@ -272,11 +275,28 @@ class entry_point(object):
                 print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); sys.exit()
             n_groups = adata.obs[groups_label].unique().shape[0]
 
+
+        # Get the respective data slot
+        if use_raw:
+            adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
+            data = [adata_raw_dense]
+            # Subset features if required
+            if features_subset is not None:
+                data[0] = data[0][:,adata.raw.var[features_subset].values]
+        else:
+            if callable(getattr(adata.X, "todense", None)):
+                data = [np.array(adata.X.todense())]
+            else:
+                data = [adata.X]
+            # Subset features if required
+            if features_subset is not None:
+                data[0] = data[0][:,adata.var[features_subset].values]
+
         # Save dimensionalities
         M = self.dimensionalities["M"] = 1
         G = self.dimensionalities["G"] = n_groups
         N = self.dimensionalities["N"] = adata.shape[0]
-        D = self.dimensionalities["D"] = [adata.shape[1]]
+        D = self.dimensionalities["D"] = [data[0].shape[1]]  # Feature may have been filtered
         n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby(groups_label).size().values
 
         # Define views names and features names
@@ -311,19 +331,20 @@ class entry_point(object):
         # Store intercepts
         self.intercepts = [None]
 
+        # Define likelihoods
+        if likelihoods is None:
+            likelihoods = guess_likelihoods(data)
+        elif isinstance(likelihoods, str):
+            likelihoods = [likelihoods]
+        assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli', 'poisson'"
+        self.likelihoods = likelihoods
+
         # Process the data (center, scaling, etc.)
-        if use_raw:
-                adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
-                self.intercepts[0] = [np.nanmean(x, axis=0) for x in [adata_raw_dense[np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
-                self.data = process_data([adata_raw_dense], self.data_opts, self.data_opts['samples_groups'])
-        else:
-            for g in self.data_opts['groups_names']:
-                samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
-                self.intercepts[0] = adata.X[samples_idx,:].mean(axis=0)
-            if callable(getattr(adata.X, "todense", None)):
-                self.data = process_data([np.array(adata.X.todense())], self.data_opts, self.data_opts['samples_groups'])
-            else:
-                self.data = process_data([adata.X], self.data_opts, self.data_opts['samples_groups'])
+        for g in self.data_opts['groups_names']:
+            samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
+            self.intercepts[0] = np.nanmean(data[0][samples_idx,:], axis=0)
+        self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_loom(self, loom, groups_label=None, layer=None, cell_id="CellID"):
         """ Method to input the data in Loom format
@@ -386,13 +407,24 @@ class entry_point(object):
         self.intercepts = [None]
         tmp = [ len(x) for x in self.data_opts['samples_names'] ]
 
-        # Process the data (center, scaling, etc.)
+        # Get the respective data slot
         if layer is not None:
-            self.intercepts[0] = [np.nanmean(x, axis=1) for x in [loom.layers[layer][:,np.where(np.array(self.data_opts['samples_groups']) == g)[0]] for g in self.data_opts['groups_names']]]
-            self.data = process_data([loom.layers[layer][:,:].T], self.data_opts, self.data_opts['samples_groups'])
+            data = [loom.layers[layer][:,:].T]
         else:
-            self.intercepts[0] = [np.nanmean(x, axis=1) for x in [loom[:,np.where(np.array(self.data_opts['samples_groups']) == g)[0]] for g in self.data_opts['groups_names']]]
-            self.data = process_data([loom[:,:].T], self.data_opts, self.data_opts['samples_groups'])
+            data = [loom[:,:].T]
+
+        # Define likelihoods
+        if likelihoods is None:
+            likelihoods = guess_likelihoods(data)
+        elif isinstance(likelihoods, str):
+            likelihoods = [likelihoods]
+        assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli', 'poisson'"
+        self.likelihoods = likelihoods
+
+        # Process the data (center, scaling, etc.)
+        self.intercepts[0] = [np.nanmean(x, axis=0) for x in [data[0][np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
+        self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_train_options(self,
         iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
@@ -713,8 +745,8 @@ class entry_point(object):
 
 
 
-def mofa(adata, groups_label: bool = None, use_raw: bool = False,
-         likelihood: str = "gaussian", n_factors: int = 10,
+def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subset: Optional[str] = None,
+         likelihood: Optional[Union[str, List[str]]] = None, n_factors: int = 10,
          scale_views: bool = False, scale_groups: bool = False,
          ard_weights: bool = True, ard_factors: bool = False,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
@@ -730,7 +762,8 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
     adata: an AnnotationData object
     groups_label (optional): a column name in adata.obs for grouping the samples
     use_raw (optional): use raw slot of AnnData as input values
-    likelihood (optional): likelihood to use, default is gaussian
+    features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
+    likelihood (optional): likelihood to use, default is guessed from the data
     n_factors (optional): number of factors to train the model with
     scale_views (optional): scale views to unit variance
     scale_groups (optional): scale groups to unit variance
@@ -749,11 +782,11 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False,
 
     ent = entry_point()
 
-    lik = [likelihood]
+    lik = [likelihood] if likelihood is not None else None
 
-    ent.set_data_options(lik, scale_views=scale_views, scale_groups=scale_groups)
-    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw)
-    ent.set_model_options(ard_factors=ard_factors, spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, ard_weights=ard_factors, factors=n_factors, likelihoods=lik)
+    ent.set_data_options(scale_views=scale_views, scale_groups=scale_groups)
+    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, likelihoods=lik, features_subset=features_subset)
+    ent.set_model_options(ard_factors=ard_factors, spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, ard_weights=ard_factors, factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
