@@ -804,7 +804,9 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
         if copy:
             adata = adata.copy()
         adata.obsm['X_mofa'] = np.concatenate([v[:,:] for k, v in f['expectations']['Z'].items()], axis=1).T
-        adata.varm['LFs'] = np.concatenate([v[:,:] for k, v in f['expectations']['W'].items()], axis=1).T
+        if features_subset is None:
+            # Loadings can be saved only if all the features were used in training
+            adata.varm['LFs'] = np.concatenate([v[:,:] for k, v in f['expectations']['W'].items()], axis=1).T
         if copy:
             return adata
         else:
