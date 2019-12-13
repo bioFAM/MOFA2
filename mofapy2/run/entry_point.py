@@ -426,9 +426,9 @@ class entry_point(object):
             # if installed import to check that everything goes well
             try:
                 import cupy as cp
-                print("GPU mode is activated\n")
+                print("\nGPU mode is activated\n")
             except ImportError:
-                print("GPU mode is activated, but GPU not found... switching to CPU mode")
+                print("\nGPU mode is activated, but GPU not found... switching to CPU mode")
                 print('For GPU mode, you need:')
                 print('1 - Make sure that you are running MOFA+ on a machine with an NVIDIA GPU')
                 print('2 - Install CUPY following instructions on https://docs-cupy.chainer.org/en/stable/install.html\n')
