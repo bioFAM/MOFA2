@@ -193,8 +193,9 @@ def guess_likelihoods(data):
         mask = ~np.isnan(data[m])
         if np.isin(data[m][mask],[0,1]).all():
             likelihoods[m] = "bernoulli"
-        if np.all( (data[m][mask]%1)==0):
-            likelihoods[m] = "poisson"  
+        else:
+            if np.all( (data[m][mask]%1)==0):
+                likelihoods[m] = "poisson"  
 
     print("Likelihoods not provided. Guessed internally...\n")
 

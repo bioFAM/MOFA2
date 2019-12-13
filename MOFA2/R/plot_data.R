@@ -47,12 +47,11 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   Z <- Z[!is.na(Z)]
   
   # Get imputed data
-  if (imputed) {
-    data <- get_imputed_data(object, view, groups)[[1]]
+  if (denoise) {
+    data <- predict(object, views=view, groups=groups, factors="all")[[1]]
   } else {
-    if (denoise) {
-      data <- predict(object, views=view, groups=groups, factors="all")[[1]]
-      # TO-DO: ADD INTERCEPTS
+    if (imputed) {
+      data <- get_imputed_data(object, view, groups)[[1]]
     } else {
       data <- get_data(object, views=view, groups=groups)[[1]]
     }

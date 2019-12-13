@@ -668,7 +668,7 @@ class entry_point(object):
     def impute(self, uncertainty=True):
         """impute missing values with or without uncertainty estimates"""
 
-        # detect outliers
+        # detect and mask outliers that could skew the results
         self.mask_outliers()
 
         # get the necessary expectations
@@ -677,6 +677,13 @@ class entry_point(object):
 
         # Predict the mean
         pred_mean = [Z.dot(w.T)for w in W]
+
+        # for non-gaussian likelihoods, convert from pseudodata space to observation space
+        for m in range(len(pred_mean)):
+            if self.model_opts["likelihoods"][m]=="bernoulli":
+                pred_mean[m] = np.round(np.exp(pred_mean[m])/(1+np.exp(pred_mean[m])))
+            elif self.model_opts["likelihoods"][m]=="poisson":
+                pred_mean[m] = np.round(np.log(1.+np.exp(pred_mean[m])))
 
         # Predict the variance
         if uncertainty:
