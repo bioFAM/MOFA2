@@ -36,7 +36,7 @@ The core of the model is implemented in Python (`mofapy2` package), but the firs
 To continue with the getting started tutorial, you need to choose the python path or the R path.
 
 ## 2.1) Training the model in Python
-Recommended, it is easier and faster. See [Training the model in Python](XXX)
+Recommended, it is easier and faster. See [Training the model in Python](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
 
 
 ## 2.2) Training the model in R
