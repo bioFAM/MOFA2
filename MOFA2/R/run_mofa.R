@@ -11,7 +11,8 @@
 #' \code{reticulate::use_python}. \cr
 #' This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
 #' @param object an untrained \code{\link{MOFA}} object
-#' @param outfile output file for the model (.hdf5 format). If NULL, a temporary file is created.
+#' @param outfile output file for the model (.hdf5 format). If NA, a temporary file is created.
+#' @param save_expectations vector with capitalized node names. If NA, only W and Z are saved by default.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @export
@@ -20,7 +21,7 @@
 #' fm <- prepare_mofa(create_mofa(list("view1" = simple_matrix)))
 #' fm@model_options$num_factors <- 2; fm@training_options$maxiter <- 100
 #' fm <- run_mofa(fm, outfile = "data/simple_model.hdf5")
-run_mofa <- function(object, outfile = NA) {
+run_mofa <- function(object, outfile = NA, save_expectations = NA) {
   
   # Sanity checks
   if (!is(object, "MOFA")) 
@@ -95,7 +96,7 @@ run_mofa <- function(object, outfile = NA) {
   mofa_entrypoint$run()
   
   # Save the model output as an hdf5 file
-  mofa_entrypoint$save(outfile)
+  mofa_entrypoint$save(outfile, expectations = save_expectations)
   
   # Load the trained model
   object <- load_model(outfile)
