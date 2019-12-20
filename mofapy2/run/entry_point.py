@@ -703,7 +703,7 @@ class entry_point(object):
 
         self.imputed = True # change flag
 
-    def save(self, outfile):
+    def save(self, outfile, expectations=None):
         """ Save the model in an hdf5 file """
 
         # Sanity checks
@@ -732,11 +732,11 @@ class entry_point(object):
           compression_level = 9
         )
 
-        # If all likelihoods are gaussian there is no need to save the expectations of Y, just saving the data is enough
-        if all([i=="gaussian" for i in self.model_opts["likelihoods"]]):
-            tmp.saveExpectations(nodes=["W","Z"])
-        else:
-            tmp.saveExpectations(nodes=["W","Z"])
+        if expectations is None:
+            # Default is to save only W and Z nodes
+            expectations = ["W", "Z"]
+        
+        tmp.saveExpectations(nodes=expectations)
 
         if self.train_opts["save_parameters"]:
             tmp.saveParameters(nodes=["W","Z"])
@@ -759,6 +759,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
+         expectations: Optional[List[str]] = None,
          verbose: bool = False, quiet: bool = True, copy: bool = False):
     """
     Helper function to init and build the model in a single call
@@ -782,6 +783,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
     convergence_mode (optional): fast, medium, or slow convergence mode
     seed (optional): random seed
     outfile (optional): path to HDF5 file to store the model
+    expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default)
     verbose (optional): print verbose information during traing
     quiet (optional): silence messages during training procedure
     copy (optional): return a copy of AnnData instead of writing to the provided object
@@ -798,7 +800,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
 
     ent.build()
     ent.run()
-    ent.save(outfile)
+    ent.save(outfile, expectations=expectations)
 
     try:
         import h5py
