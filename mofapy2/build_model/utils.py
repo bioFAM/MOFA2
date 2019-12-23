@@ -132,6 +132,7 @@ def process_data(data, likelihoods, data_opts, samples_groups):
         tmp = np.isnan(data[m]).mean(axis=0)
         if np.any(tmp==1.):
             print("Warning: %d features(s) in view %d are full of missing values, please consider removing them before training the model..." % ((tmp==0.).sum(), m))
+            sys.stdout.flush()
 
 
         # Centering and scaling is only appropriate for gaussian data
