@@ -48,7 +48,7 @@ class entry_point(object):
         """
 
         if not hasattr(self, 'data_opts'): 
-            print("Data options not defined before setting the data, using default values...")
+            print("Data options not defined before setting the data, using default values...\n")
             self.set_data_options()
 
         # Sanity check
@@ -86,7 +86,7 @@ class entry_point(object):
         # Define views names
         if views_names is None:
             print("View names not provided, using default naming convention:")
-            print("- view1, view2, ..., viewM")
+            print("- view1, view2, ..., viewM\n")
             self.data_opts['views_names'] = [ "view" + str(m) for m in range(M) ]
         else:
             assert len(views_names)==self.dimensionalities["M"], "Length of views names is not the same as the number of views"
@@ -105,7 +105,7 @@ class entry_point(object):
         # Define groups names
         if groups_names is None:
             print("Groups names not provided, using default naming convention:")
-            print("- group1, group2, ..., groupG")
+            print("- group1, group2, ..., groupG\n")
             self.data_opts['groups_names'] = [ "group" + str(g) for g in range(G) ]
         else:
             self.data_opts['groups_names'] = groups_names
@@ -131,7 +131,7 @@ class entry_point(object):
         # If everything successful, print verbose message
         for m in range(M):
             for g in range(G):
-                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
+                print("Successfully loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
         print("\n")
 
         # Store intercepts
@@ -429,7 +429,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False,
+        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
         ):
         """ Set training options """
 
@@ -538,9 +538,6 @@ class entry_point(object):
         # Use TauTrick to speed up ELBO computation?
         self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
 
-        # Save variational parameters?
-        self.train_opts['save_parameters'] = save_parameters
-
     def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
         # Sanity checks
@@ -579,13 +576,15 @@ class entry_point(object):
         self.model_opts['spikeslab_weights'] = spikeslab_weights
 
         # Define whether to use group and factor-wise ARD prior for Z
-        if ((self.dimensionalities["G"]>1) & (ard_factors==False)): 
-            print("WARNING: 'ard_factors' should be set to True if using multiple groups\n")
+        # if ((self.dimensionalities["G"]>1) & (ard_factors==False)): 
+        #     print("WARNING: 'ard_factors' should be set to True in model_options if using multiple groups\n")
+        if self.dimensionalities["G"]>1: ard_factors = True
         self.model_opts['ard_factors'] = ard_factors
 
         # Define whether to use view and factor-wise ARD prior for W
-        if ((self.dimensionalities["M"]>1) & (ard_weights==False)): 
-            print("WARNING: 'ard_weights' should be set to True\n")
+        # if ((self.dimensionalities["M"]>1) & (ard_weights==False)): 
+        #     print("WARNING: 'ard_weights' should be set to True in model_options if using multiple views\n")
+        if self.dimensionalities["M"]>1: ard_weights = True
         self.model_opts['ard_weights'] = ard_weights
 
         # Define initial number of latent factors
@@ -593,6 +592,12 @@ class entry_point(object):
 
         # Define likelihoods
         self.model_opts['likelihoods'] = self.likelihoods
+
+        print("Model options:")
+        print("- Automatic Relevance Determination prior on the factors: %s" % str(ard_factors))
+        print("- Automatic Relevance Determination prior on the weights: %s" % str(ard_weights))
+        print("- Spike-and-slab prior on the factors: %s" % str(spikeslab_factors))
+        print("- Spike-and-slab prior on the weightts: %s" % str(spikeslab_factors))
 
         print("Likelihoods:")
         for m in range(self.dimensionalities["M"]):
@@ -703,7 +708,7 @@ class entry_point(object):
 
         self.imputed = True # change flag
 
-    def save(self, outfile):
+    def save(self, outfile, save_data = True, save_parameters = False):
         """ Save the model in an hdf5 file """
 
         # Sanity checks
@@ -732,21 +737,35 @@ class entry_point(object):
           compression_level = 9
         )
 
+        # Save expectations
         # If all likelihoods are gaussian there is no need to save the expectations of Y, just saving the data is enough
+        # TO-DO: THERE IS STH WRONG WITH THIS, CHECK WITH NON-GAUSS LIK
         if all([i=="gaussian" for i in self.model_opts["likelihoods"]]):
             tmp.saveExpectations(nodes=["W","Z"])
         else:
             tmp.saveExpectations(nodes=["W","Z"])
 
-        if self.train_opts["save_parameters"]:
+        # Save parameters
+        if save_parameters:
             tmp.saveParameters(nodes=["W","Z"])
 
+        # Save model options
         tmp.saveModelOptions()
-        tmp.saveTrainOptions()
-        tmp.saveTrainingStats()
-        tmp.saveVarianceExplained()
-        tmp.saveData()
 
+        # Save training options
+        tmp.saveTrainOptions()
+
+        # Save training statistics
+        tmp.saveTrainingStats()
+
+        # Save variance explained values
+        tmp.saveVarianceExplained()
+
+        # Save data
+        if save_data: 
+            tmp.saveData()
+
+        # Save imputed data
         if self.imputed:
             tmp.saveImputedData(self.imputed_data["mean"], self.imputed_data["variance"])
 

@@ -197,6 +197,4 @@ def guess_likelihoods(data):
             if np.all( (data[m][mask]%1)==0):
                 likelihoods[m] = "poisson"  
 
-    print("Likelihoods not provided. Guessed internally...\n")
-
     return likelihoods
