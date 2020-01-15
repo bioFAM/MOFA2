@@ -48,78 +48,11 @@ def gaussianise(Y_m, axis=0):
 
     return Y_norm
 
-def loadData(data_opts, verbose=True):
-    """ Method to load the data
-
-    PARAMETERS
-    ----------
-    data_opts: dic
-    verbose: boolean
-    """
-
-    print ("\n")
-    print ("#"*18)
-    print ("## Loading data ##")
-    print ("#"*18)
-    print ("\n")
-
-    uniq_views_names = np.unique(data_opts['views_names'])
-    M = len(uniq_views_names)
-    P = None if not ("groups_names" in  data_opts) else len(set(data_opts["groups_names"]))
-
-    Y =  [None] * M
-    samples_groups = None
-
-
-    if P is None or P == 1:
-        assert len(data_opts['input_files']) == len(uniq_views_names) == len(data_opts["views_names"]), "View names should be unique if there are no groups"
-        for m, vname in enumerate(uniq_views_names):
-            # Read files as views
-            file = data_opts['input_files'][m]
-            Y[m] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
-            group_name = data_opts["groups_names"][0] if "groups_names" in data_opts else 'group_0'
-            samples_groups = list([group_name for e in range(Y[m].shape[0])])
-            print("Loaded %s with dim (%d, %d)..." % (file, Y[m].shape[0], Y[m].shape[1]))
-    else:  # there are multiple groups
-        for m, vname in enumerate(uniq_views_names):
-            uniq_groups_names = np.unique(data_opts["groups_names"])
-            group_y = [None] * len(uniq_groups_names)
-            indices = np.where(np.array(data_opts["views_names"]) == vname)[0]
-            groups_names = [data_opts["groups_names"][e] for e in indices]
-            assert len(groups_names) == len(uniq_groups_names), "Group names for one view should be unique"
-            samples_groups = list()
-            for j, i in enumerate(indices):
-                file = data_opts["input_files"][i]
-                group = data_opts["groups_names"][i]
-                group_y[j] = pd.read_csv(file, delimiter=data_opts["delimiter"], header=data_opts["colnames"], index_col=data_opts["rownames"]).astype(pd.np.float32)
-                samples_groups.extend([group for e in range(group_y[j].shape[0])])
-                print("Loaded %s with dim (%d, %d)..." % (file, group_y[j].shape[0], group_y[j].shape[1]))
-            Y[m] = pd.concat(group_y)
-
-
-    # Deprecated for 2d models
-    # Check that the dimensions match
-    # if len(set([Y[m].shape[0] for m in range(M)])) != 1:
-    #     if len(set([Y[m].shape[1] for m in range(M)])) == 1:
-    #         print("\nWarning: Columns seem to be the shared axis, transposing the data...")
-    #         for m in range(M): Y[m] = Y[m].T
-    #     else:
-    #         print("\nError: Dimensionalities do not match, aborting. Data should be mapped to one dimension. Please make sure that data files have either rows or columns shared.")
-    #         exit()
-
-    # Y = process_data(Y, data_opts, samples_groups)
-
-    return (Y, samples_groups)
-
 def process_data(data, likelihoods, data_opts, samples_groups):
-
-    # if type(data_opts['mask_zeros']) == bool:
-    #     data_opts['mask_zeros'] = [data_opts['mask_zeros']] * len(data)
 
     for m in range(len(data)):
 
-
-        # For some wierd reason, when using R and reticulate, missing values are stored as -2147483648
+        # For some wierd reason, when using reticulate from R, missing values are stored as -2147483648
         data[m][data[m] == -2147483648] = np.nan
 
         # Removing features with no variance
@@ -139,18 +72,7 @@ def process_data(data, likelihoods, data_opts, samples_groups):
         # Centering and scaling is only appropriate for gaussian data
         if likelihoods[m] in ["gaussian"]:
 
-            # mask zeros if zero inflated likelihood
-            # if likelihoods[m] == "zero_inflated":
-            #     zeros_mask = data[m]==0
-            #     data[m][zeros_mask] = np.nan
-
             # Center features per group
-            # if data_opts['center_features_per_group']:
-            #     for g in data_opts['groups_names']:
-            #         filt = [gp==g for gp in samples_groups]
-            #         data[m][filt,:] -= np.nanmean(data[m][filt,:],axis=0)
-            # else:
-            #     data[m] -= np.nanmean(data[m],axis=0)
             for g in data_opts['groups_names']:
                 filt = [gp==g for gp in samples_groups]
                 data[m][filt,:] -= np.nanmean(data[m][filt,:],axis=0)
@@ -165,21 +87,7 @@ def process_data(data, likelihoods, data_opts, samples_groups):
                     filt = [gp==g for gp in samples_groups]
                     data[m][filt,:] /= np.nanstd(data[m][filt,:])
 
-            # reset zeros if zero infalted likelihood
-            # if likelihoods[m] == "zero_inflated":
-            #     data[m][zeros_mask] = 0.
-
     return data
-
-def loadDataGroups(data_opts):
-    """
-    method to load the labels of the samples when there are groups of samples
-    """
-    if data_opts['samples_groups_file'] is None:
-        return None
-    sample_labels = np.genfromtxt(data_opts['samples_groups_file'], dtype='str')
-    return sample_labels
-
 
 def guess_likelihoods(data):
     """

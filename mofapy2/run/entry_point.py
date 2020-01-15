@@ -5,6 +5,7 @@ import sys
 from time import sleep
 from time import time
 from typing import List, Optional, Union
+from itertools import chain
 
 from mofapy2.core.BayesNet import *
 from mofapy2.core import gpu_utils
@@ -118,6 +119,14 @@ class entry_point(object):
         else:
             self.data_opts['samples_names']  = samples_names
 
+        # Check for duplicated entries
+        assert len(groups_names) == len(set(groups_names)), "Duplicated groups names"
+        assert len(views_names) == len(set(views_names)), "Duplicated views names"
+        tmp = list(chain(*self.data_opts['samples_names']))
+        assert len(tmp) == len(set(tmp)), "Duplicated entries found in samples_names"
+        tmp = list(chain(*self.data_opts['features_names']))
+        assert len(tmp) == len(set(tmp)), "Duplicated entries found in features_names"
+
         # Set samples groups (list with dimensionality N where each row is the corresponding group name)
         # self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
 
@@ -180,6 +189,9 @@ class entry_point(object):
         assert 'feature' in data.columns, "'data' has to contain the column 'feature'"
         assert 'view' in data.columns, "'data' has to contain the column 'view'"
         assert 'value' in data.columns, "'data' has to contain the column 'value'"
+
+        # Check for duplicated entries
+        assert data.duplicated(subset=["group","view","feature","sample"]).sum() == 0, "Duplicated entries found in the data"
 
         # Define feature group names and sample group names
         self.data_opts['views_names'] = data["view"].unique().tolist()
