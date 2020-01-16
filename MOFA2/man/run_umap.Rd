@@ -24,3 +24,15 @@ Run UMAP on the MOFA factors
 \details{
 use set.seed before the function call to get reproducible results.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Run UMAP
+\dontrun{ model <- run_umap(model) }
+
+# Change hyperparameters passed to umap
+\dontrun{ model <- run_umap(model, min_dist = 0.01, n_neighbors = 10) }
+
+}

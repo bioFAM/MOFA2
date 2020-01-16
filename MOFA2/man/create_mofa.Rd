@@ -15,10 +15,10 @@ create_mofa(data, groups = NULL, ...)
 \itemize{
   \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
   The "group" column indicates the condition or the experiment (a label for the samples). 
-  The view indicates the assay or the -omic (a label for the features).}
+  The view indicates the data modality (a label for the features).}
   \item{\strong{Seurat object}:}{}
   \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
-  Samples are stored in columns and features in rows. 
+  Samples are stored in columns and features in rows. This option requires the use of the \code{groups} argument.
   Missing values must be filled in prior to creating the MOFA object (see the example)}
   }}
 
@@ -27,7 +27,7 @@ create_mofa(data, groups = NULL, ...)
 \item{If data is a data.frame this argument is not used}.
 \item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
 \item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
-Default is NULL (no groups)
+Default is \code{NULL} (on groups)
 }}
 
 \item{seurat}{Seurat object}
@@ -51,7 +51,11 @@ Method to create a \code{\link{MOFA}} object
 Method to create a \code{\link{MOFA}} object
 }
 \examples{
-simple_matrix <- t(readRDS("data/simple_matrix.rds"))
-create_mofa(list("view1" = simple_matrix))
+# Using an existing simulated data with two groups and two views
+file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+
+# Load data (in data.frame format)
+data <- read.table(file, header=TRUE) 
+MOFAmodel <- create_mofa(data)
 }
 \keyword{internal}

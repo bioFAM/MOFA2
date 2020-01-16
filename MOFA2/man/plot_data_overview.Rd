@@ -10,6 +10,8 @@ plot_data_overview(object, colors = NULL, show_dimensions = TRUE)
 \item{object}{a \code{\link{MOFA}} object.}
 
 \item{colors}{a vector specifying the colors per view (see example for details).}
+
+\item{show_dimensions}{logical indicating whether to plot the dimensions of the data (default is TRUE).}
 }
 \description{
 Function to do a tile plot showing the missing value structure of the input data

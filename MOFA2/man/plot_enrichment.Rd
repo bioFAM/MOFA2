@@ -8,7 +8,7 @@ plot_enrichment(enrichment.results, factor, alpha = 0.1,
   max.pathways = 25, adjust = TRUE, text_size = 1, dot_size = 5)
 }
 \arguments{
-\item{enrichment.results}{output of \link{runEnrichmentAnalysis} function}
+\item{enrichment.results}{output of \link{run_enrichment} function}
 
 \item{factor}{a string with the factor name or an integer with the factor index}
 
@@ -18,7 +18,7 @@ plot_enrichment(enrichment.results, factor, alpha = 0.1,
 
 \item{adjust}{use adjusted p-values?}
 
-\item{object}{\code{\link{MOFAmodel}} object on which run_enrichment was performed}
+\item{object}{\code{\link{MOFA}} object on which run_enrichment was performed}
 }
 \value{
 a \code{ggplot2} object

@@ -178,6 +178,9 @@ class entry_point(object):
             the order is irrelevant
         """
 
+        # TO-DO: 
+        # - CHECK FOR DUPLICATED GROUPS NAMES, VIEWS, NAMES, SAMPLES NAMES, FEATURES NAMES
+        
         # Sanity checks
         if not hasattr(self, 'data_opts'): 
             print("Data options not defined before setting the data, using default values...")
@@ -272,6 +275,11 @@ class entry_point(object):
         likelihoods (optional): likelihoods to use (guessed from the data if not provided)
         features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
         """
+
+        # TO-DO: 
+        # - CHECK FOR DUPLICATED NAMES.
+        # - IF NAMES NOT PROVIDED, USE DEFAULTS
+        # - 
 
         # Sanity checks
         if not hasattr(self, 'data_opts'): 
@@ -368,6 +376,11 @@ class entry_point(object):
         layer (optional): a layer to be used instead of the main matrix
         cell_id (optional): the name of the cell ID attribute (default is CellID)
         """
+
+        # TO-DO: 
+        # - CHECK FOR DUPLICATED NAMES.
+        # - IF NAMES NOT PROVIDED, USE DEFAULTS
+        # - 
 
         # Sanity checks
         if not hasattr(self, 'data_opts'): 

@@ -4,12 +4,12 @@
 \alias{select_model}
 \title{Select a model from a list of trained \code{\link{MOFA}} objects based on the best ELBO value}
 \usage{
-select_model(models, plotit = FALSE)
+select_model(models, plot = FALSE)
 }
 \arguments{
 \item{models}{a list containing \code{\link{MOFA}} objects.}
 
-\item{plotit}{boolean indicating whether to show a plot of the ELBO for each model instance}
+\item{plot}{boolean indicating whether to show a plot of the ELBO for each model instance}
 }
 \description{
 Different objects of \code{\link{MOFA}} are compared in terms of the final value of the ELBO statistics

@@ -22,6 +22,8 @@ On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\li
 \item{load_imputed_data}{logical indicating whether to load the imputed data (default is FALSE)}
 
 \item{remove_outliers}{logical indicating whether to mask outlier values.}
+
+\item{verbose}{logical indicating whether to print verbose output (default is FALSE)}
 }
 \value{
 a \code{\link{MOFA}} model

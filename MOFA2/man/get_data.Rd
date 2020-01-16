@@ -29,4 +29,22 @@ Fetch the input data
 By default this function returns a list where each element is a data matrix with dimensionality (D,N) 
 where D is the number of features and N is the number of samples. \cr
 Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
+Missing values are not included in the the long data.frame format by default. To include them use the argument \code{na.rm=FALSE}.
+}
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Fetch data
+data <- get_data(model)
+
+# Fetch a specific view
+data <- get_data(model, views = "view_0")
+
+# Fetch data in data.frame format instead of matrix format
+data <- get_data(model, as.data.frame = TRUE)
+
+# Fetch centered data (do not add the feature intercepts)
+data <- get_data(model, as.data.frame = FALSE)
 }

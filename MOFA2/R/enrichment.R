@@ -191,8 +191,8 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
 #' @title Plot output of gene set Enrichment Analysis
 #' @name plot_enrichment
 #' @description Method to plot the results of the gene set Enrichment Analyisis
-#' @param object \code{\link{MOFAmodel}} object on which run_enrichment was performed
-#' @param enrichment.results output of \link{runEnrichmentAnalysis} function
+#' @param object \code{\link{MOFA}} object on which run_enrichment was performed
+#' @param enrichment.results output of \link{run_enrichment} function
 #' @param factor a string with the factor name or an integer with the factor index
 #' @param alpha p.value threshold to filter out gene sets
 #' @param max.pathways maximum number of enriched pathways to display
@@ -260,7 +260,7 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
 #' @name plot_enrichment_heatmap
 #' @description This method generates a heatmap with the adjusted p.values that
 #'  result from the the feature set enrichment analysis. Rows are feature sets and columns are factors.
-#' @param enrichment.results output of \link{runEnrichmentAnalysis} function
+#' @param enrichment.results output of \link{run_enrichment} function
 #' @param alpha FDR threshold to filter out unsignificant feature sets which are
 #'  not represented in the heatmap. Default is 0.05.
 #' @param log_scale boolean indicating whether to plot the log of the p.values.
@@ -296,10 +296,10 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.05, log_scale 
 #' Each row corresponds to a significant pathway, sorted by statistical significance, and each dot corresponds to a gene. \cr
 #' For each pathway, we display the top genes of the pathway sorted by the corresponding feature statistic (by default, the absolute value of the loading)
 #' The top genes with the highest statistic (max.genes argument) are displayed and labeled in black. The remaining genes are colored in grey.
-#' @param object \code{\link{MOFAmodel}} object on which FSEA was performed
+#' @param object \code{\link{MOFA}} object on which FSEA was performed
 #' @param factor string with factor name or numeric with factor index
-#' @param enrichment.results output of \link{runEnrichmentAnalysis} function
-#' @param feature.sets data structure that holds feature set membership information, as used in the \link{runEnrichmentAnalysis} function.
+#' @param enrichment.results output of \link{run_enrichment} function
+#' @param feature.sets data structure that holds feature set membership information, as used in the \link{run_enrichment} function.
 #' @param alpha p.value threshold to filter out feature sets
 #' @param max.pathways maximum number of enriched pathways to display
 #' @param max.genes maximum number of genes to display, per pathway
@@ -318,7 +318,7 @@ plotEnrichmentDetailed <- function(object, factor, feature.sets, enrichment.resu
   stopifnot(length(factor)==1) 
   if(is.numeric(factor)) factor <- factorNames(object)[factor]
   if(!factor %in% colnames(enrichment.results$pval)) 
-    stop(paste0("No feature set enrichment calculated for factor ", factor, ".\n Use runEnrichmentAnalysis first."))
+    stop(paste0("No feature set enrichment calculated for factor ", factor, ".\n Use run_enrichment first."))
   
   # Fetch and prepare data  
   

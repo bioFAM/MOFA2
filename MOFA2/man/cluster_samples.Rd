@@ -29,3 +29,11 @@ Importantly, this type of clustering is not weighted and does not take into acco
 In some cases, due to model technicalities, samples can have missing values in the latent factor space. 
 In such a case, these samples are currently ignored in the clustering procedure.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Cluster samples in the factor space using factors 1 to 3 and K=2 clusters 
+clusters <- cluster_samples(model, k=2, factors=1:3)
+}

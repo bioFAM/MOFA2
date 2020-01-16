@@ -26,3 +26,17 @@ Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted 
 \description{
 Extract the latent factors from the model.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Fetch factors in matrix format (a list, one matrix per group)
+factors <- get_factors(model)
+
+# Concatenate groups
+factors <- do.call("rbind",factors)
+
+# Fetch factors in data.frame format instead of matrix format
+factors <- get_factors(model, as.data.frame = TRUE)
+}

@@ -22,7 +22,7 @@ make_example_data(n_views = 3, n_features = 100, n_samples = 50,
 or a character vector of length n_views}
 }
 \value{
-Returns an untrained \code{\link{MOFAmodel}} containing simulated data as training data.
+Returns an untrained \code{\link{MOFA}} object containing simulated data as training data.
 }
 \description{
 Function to simulate an example multi-view multi-group data set according to the generative model of MOFA2.

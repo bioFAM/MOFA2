@@ -23,3 +23,23 @@ a list with matrices with the amount of variation explained per factor and view.
 This function takes a trained MOFA model as input and calculates the proportion of variance explained 
 (i.e. the coefficient of determinations (R^2)) by the MOFA factors across the different views.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Calculate variance explained (R2)
+r2 <- calculate_variance_explained(model)
+
+# Plot variance explained values (view as x-axis, and factor as y-axis)
+plot_variance_explained(model, x="view", y="factor")
+
+# Plot variance explained values (view as x-axis, and group as y-axis)
+plot_variance_explained(model, x="view", y="group")
+
+# Plot variance explained values for factors 1 to 3
+plot_variance_explained(model, x="view", y="group", factors=1:3)
+
+# Scale R2 values
+plot_variance_explained(model, max_r2 = 0.25)
+}

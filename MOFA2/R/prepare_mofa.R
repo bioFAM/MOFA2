@@ -19,9 +19,6 @@
 #' @param regress_covariates list of length corresponding to the number of views containing covariates as a list per group of cells or in a data frame
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @export
-#' @examples
-#' simple_matrix <- t(readRDS("data/simple_matrix.rds"))
-#' prepare_mofa(create_mofa(list("view1" = simple_matrix)))
 prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL,
                          regress_covariates = NULL) {
   

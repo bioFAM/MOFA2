@@ -2,7 +2,7 @@
 % Please edit documentation in R/compare_models.R
 \name{compare_factors}
 \alias{compare_factors}
-\title{Plot the robustness of the latent factors across diferent trials}
+\title{Plot the correlation of factors between different models}
 \usage{
 compare_factors(models, ...)
 }
@@ -20,4 +20,13 @@ Different \code{\link{MOFA}} objects are compared in terms of correlation betwee
 \details{
 If assessing model robustness across trials, the output should look like a block diagonal matrix, 
 suggesting that all factors are robustly detected in all model instances.
+}
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model1 <- load_model(file)
+model2 <- load_model(file)
+
+# Compare factors between models
+compare_factors(list(model1,model2))
 }

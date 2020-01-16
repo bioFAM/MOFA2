@@ -22,6 +22,8 @@ impute(object, views = "all", groups = "all", factors = "all",
 \item \strong{link}: {gives the linear predictions.}
 \item \strong{inRange}: {rounds the fitted values from "terms" for integer-valued distributions to the next integer (default).}
 }}
+
+\item{add_intercept}{add feature intercepts to the imputation (default is TRUE).}
 }
 \value{
 This method fills the \code{imputed_data} slot by replacing the missing values in the input data with the model predictions.
@@ -36,4 +38,15 @@ For more details read the supplementary methods of the manuscript. \cr
 Note that with \code{\link{impute}} you can only generate the point estimates (the means of the posterior distributions). 
 If you want to add uncertainity estimates (the variance) you need to set \code{impute=TRUE} in the training options.
 See \code{\link{get_default_training_options}}.
+}
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Impute missing values in all data modalities
+imputed_data <- impute(model, views = "all")
+
+# Impute missing values in all data modalities using factors 1:3
+imputed_data <- impute(model, views = "all", factors = 1:3)
 }

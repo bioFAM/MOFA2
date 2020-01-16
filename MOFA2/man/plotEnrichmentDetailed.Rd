@@ -9,13 +9,13 @@ plotEnrichmentDetailed(object, factor, feature.sets, enrichment.results,
   text_size = 3)
 }
 \arguments{
-\item{object}{\code{\link{MOFAmodel}} object on which FSEA was performed}
+\item{object}{\code{\link{MOFA}} object on which FSEA was performed}
 
 \item{factor}{string with factor name or numeric with factor index}
 
-\item{feature.sets}{data structure that holds feature set membership information, as used in the \link{runEnrichmentAnalysis} function.}
+\item{feature.sets}{data structure that holds feature set membership information, as used in the \link{run_enrichment} function.}
 
-\item{enrichment.results}{output of \link{runEnrichmentAnalysis} function}
+\item{enrichment.results}{output of \link{run_enrichment} function}
 
 \item{adjust}{use adjusted p-values?}
 

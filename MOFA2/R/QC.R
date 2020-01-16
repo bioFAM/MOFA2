@@ -35,6 +35,7 @@ quality_control <- function(object, verbose = FALSE) {
   stopifnot(!duplicated(unlist(samples(object))))
   
   # Check dimensionalities in the input data
+  if (verbose == TRUE) message("Checking dimensions...")
   N <- object@dimensions$N
   D <- object@dimensions$D
   for (i in views(object)) {
@@ -56,15 +57,6 @@ quality_control <- function(object, verbose = FALSE) {
     }
   }
     
-  # Check that the likelihoods match the data distribution
-  # if (verbose == TRUE) message("Checking likelihooods...")
-  # predicted_lik <- .inferLikelihoods(object)
-  # for (view in viewNames(object)) {
-  #   lk <- object@ModelOptions$likelihood[view]
-  #   if (lk != predicted_lik[view])
-  #     message(sprintf("Warning, view %s should follow a %s distribution rather than %s ", view, predicted_lik[view], lk))
-  # }
-  
   # Sanity checks that are exclusive for an untrained model  
   if (object@status == "untrained") {
     
@@ -89,6 +81,7 @@ quality_control <- function(object, verbose = FALSE) {
     
   # Sanity checks that are exclusive for a trained model  
   } else if (object@status == "trained") {
+    
     # Check expectations
     stopifnot(all(c("W", "Z") %in% names(object@expectations)))
     if (verbose == TRUE) message("Checking expectations...")
@@ -96,17 +89,27 @@ quality_control <- function(object, verbose = FALSE) {
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
     
     # Check for intercept factors
-    
+    if (verbose == TRUE) message("Checking for intercept factors...")
+    if (!is.null(object@data)) {
+      factors <- do.call("rbind",get_factors(object))
+      r <- sapply(object@data, function(x) abs(cor(colMeans(do.call("cbind",x),na.rm=T),factors, use="pairwise.complete.obs")))
+      intercept_factors <- which(rowSums(r>0.75)>0)
+      if (length(intercept_factors)) {
+          warning(sprintf("Factor(s) %s are strongly correlated with the total number of expressed features for at least one of your omics. Such factors appear when there are global differences between your samples, sometimes because of poor normalisation in the preprocessing steps. We recommend that you either try a better normalisation method or you remove the factors using `subset_factors`.\n",paste(intercept_factors,collapse=" ")))
+      }
+    }
+  
     # Check for correlated factors
+    if (verbose == TRUE) message("Checking for highly correlated factors...")
     Z <- do.call("rbind",get_factors(object))
-    
-    op <- options(warn = (-1)) # suppress warnings
+    op <- options(warn=-1) # suppress warnings
     tmp <- cor(Z); diag(tmp) <- NA
     options(op) # activate warnings again
     if (max(tmp,na.rm=T)>0.5) {
-      message("The model contains highly correlated factors, see `plot_factor_cor(model)`.\n",
-      "We recommend that you train the model with less factors and/or you let it train for a longer time.")
+      warning("The model contains highly correlated factors, see `plot_factor_cor(MOFAobject)`.\n",
+      "We recommend that you train the model with less factors and that you let it train for a longer time.\n")
     }
+
   }
   
   return(object)  

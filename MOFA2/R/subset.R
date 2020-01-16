@@ -139,6 +139,13 @@ subset_views <- function(object, views) {
 #' @param object a \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors.
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Subset factors 1 to 3
+#' model <- subset_factors(model, factors = 1:3)
 subset_factors <- function(object, factors) {
   
   # Sanity checks
@@ -171,7 +178,7 @@ subset_factors <- function(object, factors) {
   
   # Remove total variance explained estimates  
   if (length(factors) < object@dimensions[["K"]]) {
-    warning("After subsetting the factors the total variance explained estimates are not valid anymore, removing them...")
+    # warning("After subsetting the factors the total variance explained estimates are not valid anymore, removing them...")
     object@cache[["variance_explained"]]$r2_total <- NULL
   }
   
@@ -199,6 +206,12 @@ subset_factors <- function(object, factors) {
 #' @param object a \code{\link{MOFA}} object.
 #' @param samples character vector with the sample names or numeric vector with the sample indices.
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # (TO-DO) Remove a specific sample from the model (an outlier)
 subset_samples <- function(object, samples) {
   
   # Sanity checks
@@ -212,7 +225,7 @@ subset_samples <- function(object, samples) {
   if (length(groups)<length(groups(object))) object <- subset_groups(object, groups)
   
   # Subset data and expectations
-  groups <- groups(model)
+  groups <- groups(object)
   tmp <- lapply(groups, function(g) samples(object)[[g]][samples(object)[[g]] %in% samples])
   names(tmp) <- groups
   

@@ -16,6 +16,7 @@
 #' \item \strong{link}: {gives the linear predictions.}
 #' \item \strong{inRange}: {rounds the fitted values from "terms" for integer-valued distributions to the next integer (default).}
 #' }
+#' @param add_intercept add feature intercepts to the imputation (default is TRUE).
 #' @details MOFA generates a denoised and condensed low-dimensional representation of the data that captures the main sources of heterogeneity of the data.
 #' This representation can be used to reconstruct the data, simply using the equation \code{Y = WX}. 
 #' For more details read the supplementary methods of the manuscript. \cr
@@ -24,6 +25,16 @@
 #' See \code{\link{get_default_training_options}}.
 #' @return This method fills the \code{imputed_data} slot by replacing the missing values in the input data with the model predictions.
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Impute missing values in all data modalities
+#' imputed_data <- impute(model, views = "all")
+#' 
+#' # Impute missing values in all data modalities using factors 1:3
+#' imputed_data <- impute(model, views = "all", factors = 1:3)
 impute <- function(object, views = "all", groups = "all", factors = "all", 
                    type = c("inRange", "response", "link"), add_intercept = TRUE) {
 

@@ -137,10 +137,18 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
                    if (nrow(value) != sum(sapply(object@data[[1]], ncol)))
                      stop("sample names do not match the dimensionality of the data (columns)")
                    if (!("sample" %in% colnames(value)))
-                     stop("Metadata has to contain the column sample")
+                     stop("Metadata has to contain the column 'sample'")
                    if (!("group" %in% colnames(value)))
-                     stop("Metadata has to contain the column group")
+                     stop("Metadata has to contain the column 'group'")
+                   if (any(sort(value$sample) != sort(unname(unlist(samples(object)))) ))
+                     stop("Samples names in the model (see `samples(MOFAobject)`) and in the metadata do not match")
+                   if (sort(unique(value$group)) != sort(groups(object)))
+                     stop("Groups names in the model (see `groups(MOFAobject)`) and in the metadata do not match")
                    
+                   # Make sure that the order of samples metadata match the order of samples
+                   samples <- unname(unlist(samples(object)))
+                   value <- value[match(samples, value$sample),]
+
                    object@samples_metadata <- as.data.frame(value)
                    
                    object

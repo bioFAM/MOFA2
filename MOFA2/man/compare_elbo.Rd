@@ -8,8 +8,21 @@ compare_elbo(models, log = FALSE, return_data = FALSE)
 }
 \arguments{
 \item{models}{a list containing \code{\link{MOFA}} objects.}
+
+\item{log}{logical indicating whether to plot the log of the ELBO.}
+
+\item{return_data}{logical indicating whether to return a data.frame with the ELBO values per model}
 }
 \description{
 Different objects of \code{\link{MOFA}} are compared in terms of the final value of the ELBO statistics.
 For model selection the model with the highest ELBO value is selected.
+}
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model1 <- load_model(file)
+model2 <- load_model(file)
+
+# Compare ELBO between models
+\dontrun{compare_elbo(list(model1,model2))}
 }

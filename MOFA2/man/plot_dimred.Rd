@@ -34,11 +34,11 @@ plot_dimred(object, method = c("UMAP", "TSNE"), groups = "all",
 
 \item{dot_size}{numeric indicating dot size.}
 
+\item{alpha_missing}{numeric indicating dot transparency of missing data.}
+
 \item{legend}{logical indicating whether to add legend.}
 
 \item{return_data}{logical indicating whether to return the long data frame to plot instead of plotting}
-
-\item{alpha}{numeric indicating dot transparency.}
 }
 \value{
 Returns a \code{ggplot2} object or a long data.frame (if return_data is TRUE)
@@ -47,5 +47,24 @@ Returns a \code{ggplot2} object or a long data.frame (if return_data is TRUE)
 Plot dimensionality reduction based on MOFA factors
 }
 \details{
-TO-FINISH...
+This function plots dimensionality reduction projections that are stored in the \code{dim_red} slot.
+Typically this contains UMAP or t-SNE projections computed using \code{\link{run_tsne}} or \code{\link{run_umap}}, respectively.
+}
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Run UMAP
+model <- run_umap(model)
+
+# Plot UMAP
+plot_dimred(model, method = "UMAP")
+
+# Plot UMAP, colour by Factor 1 values
+plot_dimred(model, method = "UMAP", color_by = "Factor1")
+
+# Plot UMAP, colour by the values of a specific feature
+plot_dimred(model, method = "UMAP", color_by = "feature_0_view_0")
+
 }

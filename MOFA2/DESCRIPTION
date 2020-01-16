@@ -3,10 +3,10 @@ Type: Package
 Title: Multi-Omics Factor Analysis v2
 Version: 0.99.1
 Maintainer: Ricard Argelaguet <ricard@ebi.ac.uk>
-Author: Ricard Argelaguet, Damien Arnol, Oliver Stegle
+Author: Ricard Argelaguet, Damien Arnol, Danila Bredikhin
 Date: 2018-04-01
 License: GPL (>= 2)
-Description: A collection of tools for running and analysing models trained with the MOFA framework.
+Description: A collection of tools for running and analysing models trained with the MOFA v2 framework.
 Encoding: UTF-8
 Depends: R (>= 3.5)
 Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, corrplot, ggplot2, ggbeeswarm, methods, scales, GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, Rtsne, uwot, DelayedArray, doParallel, foreach, ggpubr
@@ -16,4 +16,4 @@ VignetteBuilder: knitr
 LazyData: true
 NeedsCompilation: yes
 RoxygenNote: 6.1.1
-SystemRequirements: Python (>=2.7), numpy, pandas, h5py, scipy, argparse, sklearn, mofa
+SystemRequirements: Python (>=3), numpy, pandas, h5py, scipy, argparse, sklearn, mofapy2

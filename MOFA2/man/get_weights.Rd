@@ -27,3 +27,17 @@ Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted 
 \description{
 Extract the weights from the model.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Fetch weights in matrix format (a list, one matrix per view)
+weights <- get_weights(model)
+
+# Fetch weights for factor 1-2 and view 1
+weights <- get_weights(model, views = 1, factors = c(1,2))
+
+# Fetch weights in data.frame format
+weights <- get_weights(model, as.data.frame = TRUE)
+}

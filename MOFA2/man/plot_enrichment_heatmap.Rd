@@ -8,7 +8,7 @@ plot_enrichment_heatmap(enrichment.results, alpha = 0.05,
   log_scale = TRUE, ...)
 }
 \arguments{
-\item{enrichment.results}{output of \link{runEnrichmentAnalysis} function}
+\item{enrichment.results}{output of \link{run_enrichment} function}
 
 \item{alpha}{FDR threshold to filter out unsignificant feature sets which are
 not represented in the heatmap. Default is 0.05.}

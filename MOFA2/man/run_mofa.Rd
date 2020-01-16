@@ -4,12 +4,12 @@
 \alias{run_mofa}
 \title{Train a MOFA model}
 \usage{
-run_mofa(object, outfile = NA)
+run_mofa(object, outfile = NULL)
 }
 \arguments{
 \item{object}{an untrained \code{\link{MOFA}} object}
 
-\item{outfile}{output file for the model (.hdf5 format). If NULL, a temporary file is created.}
+\item{outfile}{output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.}
 }
 \value{
 a trained \code{\link{MOFA}} object
@@ -18,15 +18,7 @@ a trained \code{\link{MOFA}} object
 Function to train an untrained \code{\link{MOFA}} object.
 }
 \details{
-In this step the R package is calling the \code{mofapy2} Python package, where the the training is performed. \cr
+In this step the R package is calling the \code{mofapy2} Python package, where the model the training is performed. \cr
 The interface with Python is done with the \code{\link{reticulate}} package. 
-If you have several versions of Python installed and Rstudio is not detecting the correct one, you can change it using
-\code{reticulate::use_python}. \cr
-This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
-}
-\examples{
-simple_matrix <- t(readRDS("data/simple_matrix.rds"))
-fm <- prepare_mofa(create_mofa(list("view1" = simple_matrix)))
-fm@model_options$num_factors <- 2; fm@training_options$maxiter <- 100
-fm <- run_mofa(fm, outfile = "data/simple_model.hdf5")
+If you have several versions of Python installed and R is not detecting the correct one, you can change it using \code{reticulate::use_python}.
 }

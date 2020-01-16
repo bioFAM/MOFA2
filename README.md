@@ -8,7 +8,7 @@ In MOFA v2 (MOFA+) we added the following improvements:
 * **Fast inference** using a stochastic variational framework: this can be powered by GPUs: enabling inference with very large data sets.
 
 For more details you can read our papers: 
-- MOFA (v1): http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
+- MOFA: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
 - MOFA+: https://www.biorxiv.org/content/10.1101/837104v1
 
 <p align="center"> 
@@ -75,30 +75,28 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 
 The data and the pre-trained models can be downloaded [here](ftp://ftp.ebi.ac.uk/pub/databases/mofa)
 
-## Slack group
-We have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
 
 ## Contact
-Ricard Argelaguet (ricard@ebi.ac.uk) and Danila Bredikhin (danila.bredikhin@embl.de)
+E-mail: Ricard Argelaguet (ricard@ebi.ac.uk)
+Slack: we have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
 
 
 ## Frequently asked questions (FAQ)
 
-### (1) FAQ on the transition from MOFA v1 to MOFA+
+### (1) FAQ on the transition from MOFA to MOFA+
 
 **(1.1) Can MOFA+ be applied to bulk data?**  
 MOFA+ remains 100% applicable to bulk data. 
 
 **(1.2) How does the multi-group inference work in MOFA+?**  
-A group is simply defined as a predefined set of samples. There is total flexibility on how to define them, but they usually correspond to different conditions, cohorts, time points, etc. see our paper for details.
-Very importantly, the groups are treates as batches of data, and the model is not focused on capturing differential changes between batches, but rather it is exploiting the coordinated variability between and within batches. Hence, prior to fitting the model the group effect is regressed out and features are centered to zero. This ensures that the model only looks at the variance, and not at the means.\\
-Technically, the multi-group inference is achieved by incorporating sparsity priors in the factors (see the supplementary methods of the paper).
+Groups must be defined a priori, they are not learnt by the model. There is  flexibility on how to define them, they usually correspond to different conditions, cohorts, time points, etc.  
+Importantly, the model is not focused on capturing differential changes *between* groups. The aim is to find out which sources of variability are shared between the different groups and which ones are unique to a single group. To achieve this, the group effect is regressed out from the data before fitting the model.
 
-**(1.3) can I run MOFA v1 using MOFA+?**  
-Yes, if you don't have multi-group structure in your data then just define a single group. This is equivalent to MOFA v1 (but significantly faster). However, due to some improvements in the parameter initialisation and the priors, you will not obtain identical results to your previous MOFA v1 models.
+**(1.3) Do I need to have multiple groups to use MOFA+?**  
+No. Unless provided, MOFA+ assumes that you do not have multi-group structure in your data. In this case the model simplifies to MOFA v1 (but significantly faster).
 
 **(1.4) Does MOFA+ inherit previous features from MOFA v1?**  
-Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights. The novel model features are additional sparsity priors in the factors and the improved inference scheme.
+Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights.
 
 
 ### (2) FAQ on the data processing
@@ -107,21 +105,20 @@ Yes, pretty much everything: handling of missing data, non-gaussian likelihoods 
 Proper normalisation of the data is critical for the model to work. First, one needs to remove library size effects. For count-based data such as RNA-seq or ATAC-seq we recommend size factor normalisation + variance stabilisation. For microarray DNA methylation data, make sure that samples have no differences in the average intensity. If this is not done correctly, the model will learn a very strong Factor 1 that will capture this variability, and more subtle sources of variation will be harder to identify.  
 
 **(2.2) Should I do any filtering to the input data?**  
-It is strongly recommended that you filter highly variable features (HVGs) per assay.
-Importantly, when doing multi-group inference, you have to regress out the group effect before selectinc HVGs. Otherwise you will enrich for features that show differences in the mean between groups.
+It is strongly recommended that you filter highly variable features (HVGs) per assay. When doing multi-group inference, you have to regress out the group effect before selecting HVGs.
 
 **(2.3) How many samples do I need?**  
-Factor Analysis models are only useful with large sample sizes, let's say more than 15. With few samples you will detect very few relevant factors 
+Factor Analysis models are only useful with large sample sizes (let's say more than ~15).
 
 **(2.4) Should I remove undesired sources of variability (i.e. batch effects) before fitting the model?**  
-Yes, if you have clear technical factors, we strongly encourage to regress it out a priori using a simple linear model. The reason for this is that the model will "focus" on the huge variability driven by the technical factors, and smaller sources of variability could be missed.
+Yes. If you have clear technical factors, we strongly encourage to regress it out a priori using a simple linear model. The reason for this is that the model will "focus" on the huge variability driven by the technical factors, and smaller sources of variability could be missed.
 You can regress out known covaraites using the function `regressCovariates`. See the corresponding documentation and the CLL vignette for details.
 
 **(2.5) My data sets have different dimensionalities, does this matter?**  
-Yes, this is important. Bigger data modalities will tend to be overrepresent in the MOFA model. It is good practice to filter features (based for example on variance, as lowly variable features provide little information) in order to have the different dimensionalities within the same order of magnitudes. If this is unavoidable, take into account that the model has the risk of missing (small) sources of variation unique to the small data set.
+Yes. Bigger data modalities will tend to be overrepresented in the factors. It is good practice to filter features (based for example on variance) in order to have the different dimensionalities within the same order of magnitudes. If this is unavoidable, take into account that the model has the risk of missing (small) sources of variation unique to the small data set.
 
 **(2.6) Does MOFA handle missing values?**  
-Yes! and there is no hidden imputation step, it simply ignores them. Matrix factorisation models are known to be very robust to the presence of missing values!
+Yes. It simply ignores them from the likelihood, there is no hidden imputation step. Matrix factorisation models are known to be very robust to the presence of missing values!
 
 
 ### (3) FAQ on the software
@@ -133,15 +130,12 @@ AttributeError: 'module' object has no attribute 'core.entry_point
 Error in py_module_import(module, convert = convert) :
  ModuleNotFoundError: No module named 'mofapy2'
 ```
-First thing: restart R and try again. If the error still holds, this means that either:  
-(1) you did not install the mofa Python package (see instructions above).
-(2) you have multiple python installations and R is not detecting the correct one where mofa is installed. You need to find out the right Python interpreter, which usually will be the one you get when running `which python` in the terminal. You can test if the mofa packaged is installed by running INSIDE python: `import mofapy2`.  
-Once everything is figured out, specify the following at the beginning of your R script:
+First thing: restart R and try again. If the error still holds, this means that either you did not install the mofapy2 Python package (see instructions above), or you have multiple Python installations and R is not detecting the correct one where mofapy2 is installed. You need to find out the right Python interpreter (which usually will be the one you get when running `which python` in the terminal) and specify the following at the beginning of your R script:
 ```
 library(reticulate)
 use_python("YOUR_PYTHON_PATH", required=TRUE)
 ```
-You can also use `use_conda` instead of `use_python` if you work with conda environments. Read more about the [reticulate](https://rstudio.github.io/reticulate/) package and [how it integrates Python and R](https://rstudio.github.io/reticulate/articles/versions.html)
+You can also use `use_conda` instead of `use_python` if you work with conda environments. For details read more about the [reticulate](https://rstudio.github.io/reticulate/) package.
 
 **(3.2) I get the following error when installing the R package:**  
 ```

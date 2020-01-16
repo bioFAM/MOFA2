@@ -19,7 +19,13 @@
 #' @return output from \code{\link{kmeans}} function
 #' @importFrom stats kmeans
 #' @export 
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
 #' 
+#' # Cluster samples in the factor space using factors 1 to 3 and K=2 clusters 
+#' clusters <- cluster_samples(model, k=2, factors=1:3)
 cluster_samples <- function(object, k, factors = "all", ...) {
   
   # Sanity checks

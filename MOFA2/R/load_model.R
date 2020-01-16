@@ -15,6 +15,7 @@
 #' @param load_data logical indicating whether to load the training data (default is TRUE, it can be memory expensive)
 #' @param load_imputed_data logical indicating whether to load the imputed data (default is FALSE)
 #' @param remove_outliers logical indicating whether to mask outlier values.
+#' @param verbose logical indicating whether to print verbose output (default is FALSE)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed

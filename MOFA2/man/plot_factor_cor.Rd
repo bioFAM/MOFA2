@@ -27,7 +27,3 @@ particularly with large number factors. \cr
 Generally, correlated factors are redundant and should be avoided, as they make interpretation harder. Therefore, 
 if you have too many correlated factors we suggest you try reducing the number of factors.
 }
-\examples{
-fm <- load_model("data/simple_model.hdf5")
-plot_factor_cor(fm)
-}

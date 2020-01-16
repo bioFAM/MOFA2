@@ -5,22 +5,15 @@
 #' @title Train a MOFA model
 #' @name run_mofa
 #' @description Function to train an untrained \code{\link{MOFA}} object.
-#' @details In this step the R package is calling the \code{mofapy2} Python package, where the the training is performed. \cr
+#' @details In this step the R package is calling the \code{mofapy2} Python package, where the model the training is performed. \cr
 #' The interface with Python is done with the \code{\link{reticulate}} package. 
-#' If you have several versions of Python installed and Rstudio is not detecting the correct one, you can change it using
-#' \code{reticulate::use_python}. \cr
-#' This module is in beta testing so please, read our FAQ for troubleshooting and report any problems.
+#' If you have several versions of Python installed and R is not detecting the correct one, you can change it using \code{reticulate::use_python}.
 #' @param object an untrained \code{\link{MOFA}} object
-#' @param outfile output file for the model (.hdf5 format). If NULL, a temporary file is created.
+#' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @export
-#' @examples
-#' simple_matrix <- t(readRDS("data/simple_matrix.rds"))
-#' fm <- prepare_mofa(create_mofa(list("view1" = simple_matrix)))
-#' fm@model_options$num_factors <- 2; fm@training_options$maxiter <- 100
-#' fm <- run_mofa(fm, outfile = "data/simple_model.hdf5")
-run_mofa <- function(object, outfile = NA) {
+run_mofa <- function(object, outfile = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) 
@@ -29,7 +22,7 @@ run_mofa <- function(object, outfile = NA) {
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
 
   # If not outfile is provided, store a file in the /temp folder with the respective timestamp
-  if (is.na(outfile)) {
+  if (is.null(outfile)) {
     outfile <- file.path("/tmp", paste0("mofa_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
     warning(paste0("No output filename provided. Using ", outfile, " to store the trained model.\n\n"))
   }

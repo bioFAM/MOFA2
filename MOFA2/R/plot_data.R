@@ -262,6 +262,7 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
 #' @description Function to do a tile plot showing the missing value structure of the input data
 #' @param object a \code{\link{MOFA}} object.
 #' @param colors a vector specifying the colors per view (see example for details).
+#' @param show_dimensions logical indicating whether to plot the dimensions of the data (default is TRUE).
 #' @details This function is helpful to get an overview of the structure of the data. 
 #' It shows the model dimensionalities (number of samples, groups, views and features) 
 #' and it indicates which measurements are missing.

@@ -1,10 +1,10 @@
 
 ################################################
-## Functions to compare different MOFAs ##
+## Functions to compare different MOFA models ##
 ################################################
 
 
-#' @title Plot the robustness of the latent factors across diferent trials
+#' @title Plot the correlation of factors between different models
 #' @name compare_factors
 #' @description Different \code{\link{MOFA}} objects are compared in terms of correlation between their factors.
 #' @param models a list with \code{\link{MOFA}} objects.
@@ -16,6 +16,14 @@
 #' @importFrom pheatmap pheatmap
 #' @importFrom grDevices colorRampPalette
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model1 <- load_model(file)
+#' model2 <- load_model(file)
+#' 
+#' # Compare factors between models
+#' compare_factors(list(model1,model2))
 compare_factors <- function(models, ...) {
   
   # Sanity checks
@@ -58,7 +66,17 @@ compare_factors <- function(models, ...) {
 #' @description Different objects of \code{\link{MOFA}} are compared in terms of the final value of the ELBO statistics.
 #' For model selection the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{MOFA}} objects.
+#' @param log logical indicating whether to plot the log of the ELBO.
+#' @param return_data logical indicating whether to return a data.frame with the ELBO values per model
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model1 <- load_model(file)
+#' model2 <- load_model(file)
+#' 
+#' # Compare ELBO between models
+#' \dontrun{compare_elbo(list(model1,model2))}
 compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
   
   # Sanity checks
@@ -114,9 +132,9 @@ compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
 #' @description Different objects of \code{\link{MOFA}} are compared in terms of the final value of the ELBO statistics
 #' and the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{MOFA}} objects.
-#' @param plotit boolean indicating whether to show a plot of the ELBO for each model instance
+#' @param plot boolean indicating whether to show a plot of the ELBO for each model instance
 #' @export
-select_model <- function(models, plotit = FALSE) {
+select_model <- function(models, plot = FALSE) {
   # Sanity checks
   if(!is.list(models))
     stop("'models' has to be a list")
@@ -124,6 +142,6 @@ select_model <- function(models, plotit = FALSE) {
     stop("Each element of the the list 'models' has to be an instance of MOFA")
 
   elbo_vals <- sapply(models, get_elbo)
-  if(plotit) compare_elbo(models)
+  if(plot) compare_elbo(models)
   models[[which.max(elbo_vals)]]
 }

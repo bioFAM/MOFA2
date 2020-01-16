@@ -9,6 +9,25 @@
 #' @return a list with matrices with the amount of variation explained per factor and view.
 #' @import DelayedArray
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Calculate variance explained (R2)
+#' r2 <- calculate_variance_explained(model)
+#' 
+#' # Plot variance explained values (view as x-axis, and factor as y-axis)
+#' plot_variance_explained(model, x="view", y="factor")
+#' 
+#' # Plot variance explained values (view as x-axis, and group as y-axis)
+#' plot_variance_explained(model, x="view", y="group")
+#' 
+#' # Plot variance explained values for factors 1 to 3
+#' plot_variance_explained(model, x="view", y="group", factors=1:3)
+#' 
+#' # Scale R2 values
+#' plot_variance_explained(model, max_r2 = 0.25)
 calculate_variance_explained <- function(object, views = "all", groups = "all", factors = "all") {
 
   # Sanity checks
@@ -115,6 +134,25 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Calculate variance explained (R2)
+#' r2 <- calculate_variance_explained(model)
+#' 
+#' # Plot variance explained values (view as x-axis, and factor as y-axis)
+#' plot_variance_explained(model, x="view", y="factor")
+#' 
+#' # Plot variance explained values (view as x-axis, and group as y-axis)
+#' plot_variance_explained(model, x="view", y="group")
+#' 
+#' # Plot variance explained values for factors 1 to 3
+#' plot_variance_explained(model, x="view", y="group", factors=1:3)
+#' 
+#' # Scale R2 values
+#' plot_variance_explained(model, max_r2=0.25)
 plot_variance_explained <- function(object, x = "view", y = "factor", split_by = NA, plot_total = FALSE, 
                                     factors = "all", min_r2 = 0, max_r2 = NULL, legend = TRUE, use_cache = TRUE, ...) {
   
@@ -426,7 +464,6 @@ plot_variance_explained_per_feature <- function(object, view, features,
       plot.title = element_text(size = 18)
     )
 
-
   if (!is.null(group_features_by) && isTRUE(split_by_factor)) {
     p <- p + facet_grid(feature_group ~ factor, scales = "free_y")
   } else if (isTRUE(split_by_factor)) {
@@ -434,7 +471,6 @@ plot_variance_explained_per_feature <- function(object, view, features,
   } else if (!is.null(group_features_by)) {
     p <- p + facet_wrap(~feature_group, ncol = 1, scales = "free")
   }
-  
 
   if (!legend)
     p <- p + theme(legend.position = "none")

@@ -14,3 +14,11 @@ subset_factors(object, factors)
 \description{
 Method to subset (or sort) factors
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Subset factors 1 to 3
+model <- subset_factors(model, factors = 1:3)
+}

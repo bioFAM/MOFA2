@@ -13,6 +13,17 @@
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the t-SNE output
 #' @importFrom Rtsne Rtsne
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Run t-SNE
+#' \dontrun{ model <- run_tsne(model) }
+#' 
+#' # Change hyperparameters passed to Rtsne
+#' \dontrun{ model <- run_tsne(model, perplexity = 15) }
+#' 
 run_tsne <- function(object, factors = "all", groups = "all", ...) {
   
   # Sanity checks
@@ -50,6 +61,17 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
 #' @importFrom uwot umap
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Run UMAP
+#' \dontrun{ model <- run_umap(model) }
+#' 
+#' # Change hyperparameters passed to umap
+#' \dontrun{ model <- run_umap(model, min_dist = 0.01, n_neighbors = 10) }
+#' 
 run_umap <- function(object, factors = "all", groups = "all", ...) {
   
   # Sanity checks
@@ -94,10 +116,11 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
 #' @param dot_size numeric indicating dot size.
-#' @param alpha numeric indicating dot transparency.
+#' @param alpha_missing numeric indicating dot transparency of missing data.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting
-#' @details TO-FINISH...
+#' @details This function plots dimensionality reduction projections that are stored in the \code{dim_red} slot.
+#' Typically this contains UMAP or t-SNE projections computed using \code{\link{run_tsne}} or \code{\link{run_umap}}, respectively.
 #' @return Returns a \code{ggplot2} object or a long data.frame (if return_data is TRUE)
 #' @import ggplot2
 #' @importFrom dplyr filter
@@ -105,6 +128,23 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @importFrom tidyr spread gather
 #' @importFrom magrittr %>% set_colnames
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Run UMAP
+#' model <- run_umap(model)
+#' 
+#' # Plot UMAP
+#' plot_dimred(model, method = "UMAP")
+#' 
+#' # Plot UMAP, colour by Factor 1 values
+#' plot_dimred(model, method = "UMAP", color_by = "Factor1")
+#' 
+#' # Plot UMAP, colour by the values of a specific feature
+#' plot_dimred(model, method = "UMAP", color_by = "feature_0_view_0")
+#' 
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
                         color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                         dot_size = 1.5, alpha_missing = 1, legend = TRUE, return_data = FALSE, ...) {

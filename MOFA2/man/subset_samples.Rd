@@ -14,3 +14,10 @@ subset_samples(object, samples)
 \description{
 Method to subset (or sort) samples
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# (TO-DO) Remove a specific sample from the model (an outlier)
+}

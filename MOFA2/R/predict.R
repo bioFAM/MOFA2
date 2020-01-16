@@ -17,11 +17,19 @@
 #' "response" gives the response vector, the mean for Gaussian and Poisson, and probabilities for Bernoulli,
 #' "link" gives the linear predictions,
 #' "inRange" rounds the fitted values integer-valued distributions to the next integer (default).
+#' @param add_intercept add feature intercepts to the prediction (default is TRUE).
 #' @details MOFA generates a denoised and condensed low-dimensional representation of the data that captures the main sources of heterogeneity of the data.
 #' This representation can be used to reconstruct a denoised representation of the data, simply using the equation \code{Y = WX}. 
 #' For more mathematical details read the supplementary methods of the manuscript.
 #' @return Returns a list with the data reconstructed by the model predictions.
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Predict observations for all data modalities
+#' predictions <- predict(model)
 predict <- function(object, views = "all", groups = "all", factors = "all",
                     type = c("inRange", "response", "link"), add_intercept = TRUE) {
 

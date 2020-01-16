@@ -35,3 +35,23 @@ plot_variance_explained(object, x = "view", y = "factor",
 plots the variance explained by the MOFA factors across different views and groups, as specified by the user.
 Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots that this function generates.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Calculate variance explained (R2)
+r2 <- calculate_variance_explained(model)
+
+# Plot variance explained values (view as x-axis, and factor as y-axis)
+plot_variance_explained(model, x="view", y="factor")
+
+# Plot variance explained values (view as x-axis, and group as y-axis)
+plot_variance_explained(model, x="view", y="group")
+
+# Plot variance explained values for factors 1 to 3
+plot_variance_explained(model, x="view", y="group", factors=1:3)
+
+# Scale R2 values
+plot_variance_explained(model, max_r2=0.25)
+}
