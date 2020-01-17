@@ -65,7 +65,6 @@ create_mofa <- function(data, groups = NULL, ...) {
     group = unlist(lapply(names(foo), function(x) rep(x, length(foo[[x]])) )),
     stringsAsFactors = FALSE
   )
-  # samples_metadata(object) <- tmp
   object@samples_metadata <- tmp
 
   # Create features metadata
@@ -74,7 +73,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )
-  features_metadata(object) <- tmp
+  object@features_metadata <- tmp
   
   return(object)
 }
@@ -87,11 +86,11 @@ create_mofa <- function(data, groups = NULL, ...) {
   # Quality controls
   df <- as.data.frame(df)
   if (!"group" %in% colnames(df)) {
-    message('no "group" column found in the data.frame. We will assume a single group for all samples (as in MOFA v1)')
+    message('No "group" column found in the data.frame, w will assume a common group for all samples (as in MOFA v1)')
     df$group <- "single_group"
   }
   if (!"view" %in% colnames(df)) {
-    message('no "view" column found in the data.frame. We will assume a single view for all features')
+    message('No "view" column found in the data.frame. We will assume a common view for all features')
     df$view <- "single_view"
   }
   stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))

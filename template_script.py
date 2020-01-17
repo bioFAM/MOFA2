@@ -107,7 +107,7 @@ ent.set_model_options(factors=5, spikeslab_weights=True, ard_factors=True, ard_w
 ent.set_train_options()
 
 # Advanced (using personalised values)
-ent.set_train_options(iter=1000, convergence_mode="fast", startELBO=1, freqELBO=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
+ent.set_train_options(iter=100, convergence_mode="fast", startELBO=1, freqELBO=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
 
 
 ## (6, optional) Set stochastic inference options##
@@ -146,4 +146,48 @@ ent.run()
 ####################
 
 outfile = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
-ent.save(outfile)
+
+# - save_data: logical indicating whether to save the training data in the hdf5 file.
+# this is useful for some downstream analysis in R, but it can take a lot of disk.
+ent.save(outfile, save_data=True)
+
+######################################################
+## (Optional Extract metrics from the trained model ##
+######################################################
+
+# NOTE: downstream analysis is done efficiently with the MOFA2 R package
+
+# Extract factors (per group)
+factors = ent.model.nodes["Z"].getExpectation()
+
+# Extract weights (per view)
+weights = ent.model.nodes["W"].getExpectation()
+
+# Extract variance explained
+r2 = ent.model.calculate_variance_explained()
+
+
+##################################################
+## (Optional Extract metrics from the hdf5 file ##
+##################################################
+
+# NOTE: downstream analysis is done efficiently with the MOFA2 R package
+
+import h5py
+
+f = h5py.File(outfile, 'r')
+
+# See the groups that are stored in the hdf5 file
+f.keys()
+
+# Extract factors (per group)
+f["expectations"]["Z"]["group_0"].value
+f["expectations"]["Z"]["group_1"].value
+
+# Extract weights (per view)
+f["expectations"]["W"]["view_0"].value
+f["expectations"]["W"]["view_1"].value
+
+# Extract variance explained estimates
+f["variance_explained"]["r2_per_factor"]
+f["variance_explained"]["r2_total"]
