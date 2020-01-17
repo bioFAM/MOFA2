@@ -120,10 +120,12 @@ class entry_point(object):
             self.data_opts['samples_names']  = samples_names
 
         # Check for duplicated entries
-        assert len(groups_names) == len(set(groups_names)), "Duplicated groups names"
-        assert len(views_names) == len(set(views_names)), "Duplicated views names"
+        assert len(self.data_opts['groups_names']) == len(set(self.data_opts['groups_names'])), "Duplicated groups names"
+        assert len(self.data_opts['views_names']) == len(set(self.data_opts['views_names'])), "Duplicated views names"
+
         tmp = list(chain(*self.data_opts['samples_names']))
         assert len(tmp) == len(set(tmp)), "Duplicated entries found in samples_names"
+        
         tmp = list(chain(*self.data_opts['features_names']))
         assert len(tmp) == len(set(tmp)), "Duplicated entries found in features_names"
 
