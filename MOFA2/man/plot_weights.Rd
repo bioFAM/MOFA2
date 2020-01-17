@@ -57,3 +57,21 @@ An important step to annotate factors is to visualise the corresponding feature 
 This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
 In contrast, the function \code{\link{plot_top_weights}} displays only the top features with highest loading.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Plot distribution of weights for Factor 1 and View 1
+plot_weights(model, view = 1, factor = 1)
+
+# Plot distribution of weights for Factors 1 to 3 and View 1
+plot_weights(model, view = 1, factor = 1:3)
+
+# Take the absolute value and highlight the top 10 features
+plot_weights(model, view = 1, factor = 1, nfeatures = 10, abs = TRUE)
+
+# Change size of dots and text
+plot_weights(model, view = 1, factor = 1, text_size = 5, dot_size = 1)
+
+}

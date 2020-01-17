@@ -24,3 +24,22 @@ The data options are the following: \cr
  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
 }
 }
+\examples{
+# Using an existing simulated data with two groups and two views
+file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+
+# Load data (in data.frame format)
+data <- read.table(file, header=TRUE) 
+
+# Create MOFA object
+MOFAmodel <- create_mofa(data)
+
+# Load default data options
+data_opts <- get_default_data_options(MOFAmodel)
+
+# Edit some of the data options
+data_opts$scale_views <- TRUE
+
+# Prepare the MOFA object
+MOFAmodel <- prepare_mofa(MOFAmodel, data_options = data_opts)
+}

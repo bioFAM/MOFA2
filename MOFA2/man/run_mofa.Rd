@@ -22,3 +22,19 @@ In this step the R package is calling the \code{mofapy2} Python package, where t
 The interface with Python is done with the \code{\link{reticulate}} package. 
 If you have several versions of Python installed and R is not detecting the correct one, you can change it using \code{reticulate::use_python}.
 }
+\examples{
+# Using an existing simulated data with two groups and two views
+file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+
+# Load data (in data.frame format)
+data <- read.table(file, header=TRUE) 
+
+# Create MOFA object
+MOFAmodel <- create_mofa(data)
+
+# Prepare the MOFA object with default options
+MOFAmodel <- prepare_mofa(MOFAmodel)
+
+# Run the MOFA model
+\dontrun{ MOFAmodel <- run_mofa(MOFAmodel, outfile = "~/model.hdf5") }
+}

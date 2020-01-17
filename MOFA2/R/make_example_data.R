@@ -1,5 +1,5 @@
 
-#' @title make an example multi-view data set for illustration of MOFA2
+#' @title Simulate a data set using the generative model of MOFA
 #' @name make_example_data
 #' @description Function to simulate an example multi-view multi-group data set according to the generative model of MOFA2.
 #' @param n_views number of views
@@ -7,16 +7,14 @@
 #' @param n_samples number of samples in each group
 #' @param n_groups number of groups
 #' @param n_factors number of factors
-#' @param likelihood likelihood for each view, one of "gaussian", "bernoulli", "poisson",
+#' @param likelihood likelihood for each view, one of "gaussian" (default), "bernoulli", "poisson",
 #'  or a character vector of length n_views
 #' @return Returns an untrained \code{\link{MOFA}} object containing simulated data as training data.
 #' @importFrom stats rnorm rbinom rpois
 #' @export
 #' @examples
-#' 
-#' # Generate a data set
+#' # Generate a simulated data set
 #' MOFAexample <- make_example_data()
-
 
 make_example_data <- function(n_views = 3, n_features = 100, n_samples = 50, n_groups = 2,
                               n_factors = 5, likelihood = "gaussian") {

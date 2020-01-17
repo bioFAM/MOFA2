@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_example_data.R
 \name{make_example_data}
 \alias{make_example_data}
-\title{make an example multi-view data set for illustration of MOFA2}
+\title{Simulate a data set using the generative model of MOFA}
 \usage{
 make_example_data(n_views = 3, n_features = 100, n_samples = 50,
   n_groups = 2, n_factors = 5, likelihood = "gaussian")
@@ -18,7 +18,7 @@ make_example_data(n_views = 3, n_features = 100, n_samples = 50,
 
 \item{n_factors}{number of factors}
 
-\item{likelihood}{likelihood for each view, one of "gaussian", "bernoulli", "poisson",
+\item{likelihood}{likelihood for each view, one of "gaussian" (default), "bernoulli", "poisson",
 or a character vector of length n_views}
 }
 \value{
@@ -28,7 +28,6 @@ Returns an untrained \code{\link{MOFA}} object containing simulated data as trai
 Function to simulate an example multi-view multi-group data set according to the generative model of MOFA2.
 }
 \examples{
-
-# Generate a data set
+# Generate a simulated data set
 MOFAexample <- make_example_data()
 }

@@ -28,3 +28,23 @@ The model options are the following: \cr
  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
  }
 }
+\examples{
+# Using an existing simulated data with two groups and two views
+file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+
+# Load data (in data.frame format)
+data <- read.table(file, header=TRUE) 
+
+# Create MOFA object
+MOFAmodel <- create_mofa(data)
+
+# Load default model options
+model_opts <- get_default_model_options(MOFAmodel)
+
+# Edit some of the model options
+model_opts$num_factors <- 10
+model_opts$spikeslab_weights <- FALSE
+
+# Prepare the MOFA object
+MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
+}

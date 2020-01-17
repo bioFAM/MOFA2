@@ -32,3 +32,21 @@ Returns an untrained \code{\link{MOFA}} with specified options filled in the cor
 Function to prepare a \code{\link{MOFA}} object for training. 
 It requires defining data, model and training options.
 }
+\examples{
+# Using an existing simulated data with two groups and two views
+file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+
+# Load data (in data.frame format)
+data <- read.table(file, header=TRUE) 
+
+# Create MOFA object
+MOFAmodel <- create_mofa(data)
+
+# Prepare MOFA object using default options
+MOFAmodel <- prepare_mofa(MOFAmodel)
+
+# Prepare MOFA object changing some of the default model options values
+model_opts <- get_default_model_options(MOFAmodel)
+model_opts$num_factors <- 10
+MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
+}

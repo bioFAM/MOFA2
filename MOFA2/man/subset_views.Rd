@@ -15,3 +15,11 @@ or logical vector with the views to be kept as TRUE.}
 \description{
 Method to subset (or sort) views
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Subset the first view
+model <- subset_views(model, views = 1)
+}

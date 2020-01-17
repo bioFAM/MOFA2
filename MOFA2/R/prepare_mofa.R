@@ -19,6 +19,23 @@
 #' @param regress_covariates list of length corresponding to the number of views containing covariates as a list per group of cells or in a data frame
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @export
+#' @examples
+#' # Using an existing simulated data with two groups and two views
+#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' 
+#' # Load data (in data.frame format)
+#' data <- read.table(file, header=TRUE) 
+#' 
+#' # Create MOFA object
+#' MOFAmodel <- create_mofa(data)
+#' 
+#' # Prepare MOFA object using default options
+#' MOFAmodel <- prepare_mofa(MOFAmodel)
+#' 
+#' # Prepare MOFA object changing some of the default model options values
+#' model_opts <- get_default_model_options(MOFAmodel)
+#' model_opts$num_factors <- 10
+#' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
 prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL,
                          regress_covariates = NULL) {
   
@@ -152,6 +169,26 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
 #' @return Returns a list with default training options
 #' @importFrom utils modifyList
 #' @export
+#' @examples
+#' # Using an existing simulated data with two groups and two views
+#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' 
+#' # Load data (in data.frame format)
+#' data <- read.table(file, header=TRUE) 
+#' 
+#' # Create MOFA object
+#' MOFAmodel <- create_mofa(data)
+#' 
+#' # Load default training options
+#' train_opts <- get_default_training_options(MOFAmodel)
+#' 
+#' # Edit some of the training options
+#' train_opts$convergence_mode <- "medium"
+#' train_opts$startELBO <- 100
+#' train_opts$seed <- 42
+#' 
+#' # Prepare the MOFA object
+#' MOFAmodel <- prepare_mofa(MOFAmodel, training_options = train_opts)
 get_default_training_options <- function(object) {
   
   # Get default train options
@@ -189,6 +226,24 @@ get_default_training_options <- function(object) {
 #' @return Returns a list with the default data options.
 #' @importFrom utils modifyList
 #' @export
+#' @examples
+#' # Using an existing simulated data with two groups and two views
+#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' 
+#' # Load data (in data.frame format)
+#' data <- read.table(file, header=TRUE) 
+#' 
+#' # Create MOFA object
+#' MOFAmodel <- create_mofa(data)
+#' 
+#' # Load default data options
+#' data_opts <- get_default_data_options(MOFAmodel)
+#' 
+#' # Edit some of the data options
+#' data_opts$scale_views <- TRUE
+#' 
+#' # Prepare the MOFA object
+#' MOFAmodel <- prepare_mofa(MOFAmodel, data_options = data_opts)
 get_default_data_options <- function(object) {
   
   # Define default data options
@@ -222,6 +277,25 @@ get_default_data_options <- function(object) {
 #' @return Returns a list with the default model options.
 #' @importFrom utils modifyList
 #' @export
+#' @examples
+#' # Using an existing simulated data with two groups and two views
+#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' 
+#' # Load data (in data.frame format)
+#' data <- read.table(file, header=TRUE) 
+#' 
+#' # Create MOFA object
+#' MOFAmodel <- create_mofa(data)
+#' 
+#' # Load default model options
+#' model_opts <- get_default_model_options(MOFAmodel)
+#' 
+#' # Edit some of the model options
+#' model_opts$num_factors <- 10
+#' model_opts$spikeslab_weights <- FALSE
+#' 
+#' # Prepare the MOFA object
+#' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
 get_default_model_options <- function(object) {
   
   # Sanity checks
@@ -324,6 +398,7 @@ get_default_model_options <- function(object) {
   return(object)
 }
 
+
 #' @title Get default stochastic options
 #' @name get_default_stochastic_options
 #' @description Function to obtain the default options for stochastic variational inference.
@@ -342,13 +417,33 @@ get_default_model_options <- function(object) {
 #' @return Returns a list with default options
 #' @importFrom utils modifyList
 #' @export
+#' @examples
+#' # Using an existing simulated data with two groups and two views
+#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' 
+#' # Load data (in data.frame format)
+#' data <- read.table(file, header=TRUE) 
+#' 
+#' # Create MOFA object
+#' MOFAmodel <- create_mofa(data)
+#' 
+#' # Load default stochastic options
+#' stochastic_opts <- get_default_stochastic_options(MOFAmodel)
+#' 
+#' # Edit some of the stochastic options
+#' stochastic_opts$batch_size <- 0.25
+#' stochastic_opts$learning_rate <- 0.50
+#' stochastic_opts$start_stochastic <- 5
+#' 
+#' # Prepare the MOFA object
+#' MOFAmodel <- prepare_mofa(MOFAmodel, stochastic_options = stochastic_opts)
 get_default_stochastic_options <- function(object) {
   
   # Get default stochastic options
   stochastic_options <- list(
     batch_size = 0.5,       # Batch size (as a fraction)
-    learning_rate = 0.75,   # Starting learning rate
-    forgetting_rate = 0.1,   # Forgetting rate
+    learning_rate = 0.5,   # Starting learning rate
+    forgetting_rate = 0.25,   # Forgetting rate
     start_stochastic = 10    # First iteration to start stochastic inference
   )
   

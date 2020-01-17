@@ -56,6 +56,23 @@
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom dplyr summarise group_by
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Plot Factors 1 and 2 and colour by "group"
+#' plot_factor(model, factors = c(1,2), color_by="group")
+#' 
+#' # Plot Factor 3 and colour by the value of a specific feature
+#' plot_factor(model, factors = 3, color_by="feature_981_view_1")
+#' 
+#' # Add violin plots
+#' plot_factor(model, factors = c(1,2), color_by="group", add_violin = TRUE)
+#' 
+#' # Scale factor values from -1 to 1
+#' plot_factor(model, factors = c(1,2), scale = TRUE)
+#' 
 plot_factor <- function(object, factors = 1, groups = "all",
                         group_by = "group", color_by = "group", shape_by = NULL, 
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
@@ -246,6 +263,20 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @importFrom magrittr %>% set_colnames
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Scatterplot of factors 1 and 2
+#' plot_factors(model, factors = c(1,2))
+#' 
+#' # Shape dots by a column in the metadata
+#' plot_factors(model, factors = c(1,2), shape_by="group")
+#' 
+#' # Scale factor values from -1 to 1
+#' plot_factors(model, factors = c(1,2), scale = TRUE)
+#' 
 plot_factors <- function(object, factors = c(1, 2), groups = "all",
                          show_missing = TRUE, scale = FALSE,
                          color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
@@ -436,6 +467,14 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 #' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
 #' @importFrom corrplot corrplot
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Plot correlation between all factors
+#' plot_factor_cor(model)
+#' 
 plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Sanity checks

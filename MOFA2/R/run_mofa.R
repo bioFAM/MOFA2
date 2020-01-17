@@ -13,6 +13,21 @@
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @export
+#' @examples
+#' # Using an existing simulated data with two groups and two views
+#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' 
+#' # Load data (in data.frame format)
+#' data <- read.table(file, header=TRUE) 
+#' 
+#' # Create MOFA object
+#' MOFAmodel <- create_mofa(data)
+#' 
+#' # Prepare the MOFA object with default options
+#' MOFAmodel <- prepare_mofa(MOFAmodel)
+#' 
+#' # Run the MOFA model
+#' \dontrun{ MOFAmodel <- run_mofa(MOFAmodel, outfile = "~/model.hdf5") }
 run_mofa <- function(object, outfile = NULL) {
   
   # Sanity checks

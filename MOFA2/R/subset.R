@@ -10,6 +10,13 @@
 #' @param groups character vector with the groups names, numeric vector with the groups indices
 #' or logical vector with the groups to be kept as TRUE.
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Subset the first group
+#' model <- subset_groups(model, groups = 1)
 subset_groups <- function(object, groups) {
   
   # Sanity checks
@@ -79,6 +86,13 @@ subset_groups <- function(object, groups) {
 #' @param views character vector with the views names, numeric vector with the views indices,
 #' or logical vector with the views to be kept as TRUE.
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Subset the first view
+#' model <- subset_views(model, views = 1)
 subset_views <- function(object, views) {
   
   # Sanity checks

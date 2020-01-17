@@ -28,3 +28,24 @@ The training options are the following: \cr
  Default is 10
  }
 }
+\examples{
+# Using an existing simulated data with two groups and two views
+file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+
+# Load data (in data.frame format)
+data <- read.table(file, header=TRUE) 
+
+# Create MOFA object
+MOFAmodel <- create_mofa(data)
+
+# Load default stochastic options
+stochastic_opts <- get_default_stochastic_options(MOFAmodel)
+
+# Edit some of the stochastic options
+stochastic_opts$batch_size <- 0.25
+stochastic_opts$learning_rate <- 0.50
+stochastic_opts$start_stochastic <- 5
+
+# Prepare the MOFA object
+MOFAmodel <- prepare_mofa(MOFAmodel, stochastic_options = stochastic_opts)
+}

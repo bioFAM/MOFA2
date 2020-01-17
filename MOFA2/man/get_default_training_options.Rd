@@ -32,3 +32,24 @@ The training options are the following: \cr
  \item{\strong{seed}:}{ numeric indicating the seed for reproducibility (default is 0, random seed).}
 }
 }
+\examples{
+# Using an existing simulated data with two groups and two views
+file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+
+# Load data (in data.frame format)
+data <- read.table(file, header=TRUE) 
+
+# Create MOFA object
+MOFAmodel <- create_mofa(data)
+
+# Load default training options
+train_opts <- get_default_training_options(MOFAmodel)
+
+# Edit some of the training options
+train_opts$convergence_mode <- "medium"
+train_opts$startELBO <- 100
+train_opts$seed <- 42
+
+# Prepare the MOFA object
+MOFAmodel <- prepare_mofa(MOFAmodel, training_options = train_opts)
+}

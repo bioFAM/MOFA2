@@ -27,3 +27,12 @@ particularly with large number factors. \cr
 Generally, correlated factors are redundant and should be avoided, as they make interpretation harder. Therefore, 
 if you have too many correlated factors we suggest you try reducing the number of factors.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Plot correlation between all factors
+plot_factor_cor(model)
+
+}

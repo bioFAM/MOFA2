@@ -119,6 +119,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @param alpha_missing numeric indicating dot transparency of missing data.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting
+#' @param ... extra arguments passed to \code{\link{run_umap}} or \code{\link{run_tsne}}.
 #' @details This function plots dimensionality reduction projections that are stored in the \code{dim_red} slot.
 #' Typically this contains UMAP or t-SNE projections computed using \code{\link{run_tsne}} or \code{\link{run_umap}}, respectively.
 #' @return Returns a \code{ggplot2} object or a long data.frame (if return_data is TRUE)

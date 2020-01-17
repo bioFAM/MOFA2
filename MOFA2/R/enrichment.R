@@ -191,12 +191,13 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
 #' @title Plot output of gene set Enrichment Analysis
 #' @name plot_enrichment
 #' @description Method to plot the results of the gene set Enrichment Analyisis
-#' @param object \code{\link{MOFA}} object on which run_enrichment was performed
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param factor a string with the factor name or an integer with the factor index
 #' @param alpha p.value threshold to filter out gene sets
 #' @param max.pathways maximum number of enriched pathways to display
 #' @param adjust use adjusted p-values?
+#' @param text_size text size
+#' @param dot_size dot size
 #' @details it requires \code{\link{run_enrichment}} to be run beforehand.
 #' @return a \code{ggplot2} object
 #' @import ggplot2

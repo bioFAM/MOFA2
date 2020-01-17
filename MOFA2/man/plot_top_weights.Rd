@@ -35,3 +35,15 @@ This function displays the top features with highest loading whereas the functio
 Importantly, the weights of the features within a view have relative values and they should not be interpreted in an absolute scale.
 Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Plot top weights for Factors 1 and 2 and View 1
+plot_top_weights(model, view = 1, factor = c(1,2))
+
+# Do not take absolute value
+plot_weights(model, abs = FALSE)
+
+}

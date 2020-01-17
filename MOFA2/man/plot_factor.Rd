@@ -82,3 +82,21 @@ One of the main steps for the annotation of factors is to visualise and color th
 This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Plot Factors 1 and 2 and colour by "group"
+plot_factor(model, factors = c(1,2), color_by="group")
+
+# Plot Factor 3 and colour by the value of a specific feature
+plot_factor(model, factors = 3, color_by="feature_981_view_1")
+
+# Add violin plots
+plot_factor(model, factors = c(1,2), color_by="group", add_violin = TRUE)
+
+# Scale factor values from -1 to 1
+plot_factor(model, factors = c(1,2), scale = TRUE)
+
+}

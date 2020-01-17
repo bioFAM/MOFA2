@@ -1,10 +1,16 @@
 #' @title Quality control
 #' @name quality_control
-#' @description Function to do quality control on a \code{\link{MOFA}} object. \cr
+#' @description Function to do quality control on a \code{\link{MOFA}} object.
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param verbose logical indicating whether to generate a verbose output.
 #' @export
-#'
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Do quality control
+#' model <- quality_control(model, verbose = TRUE)
 quality_control <- function(object, verbose = FALSE) {
   
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")

@@ -54,3 +54,18 @@ This method generates a single scatterplot for the combination of two latent fac
 TO-FINISH...
 \code{\link{plot_factors}} for doing Beeswarm plots for factors.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+
+# Scatterplot of factors 1 and 2
+plot_factors(model, factors = c(1,2))
+
+# Shape dots by a column in the metadata
+plot_factors(model, factors = c(1,2), shape_by="group")
+
+# Scale factor values from -1 to 1
+plot_factors(model, factors = c(1,2), scale = TRUE)
+
+}
