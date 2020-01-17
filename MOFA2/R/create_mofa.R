@@ -62,11 +62,11 @@ create_mofa <- function(data, groups = NULL, ...) {
   foo <- lapply(object@data[[1]], colnames)
   tmp <- data.frame(
     sample = unname(unlist(foo)),
-    # group = unlist(lapply(seq_len(object@dimensions$G), function(x) rep(groups(object)[[x]], object@dimensions$N[[x]]) )),
     group = unlist(lapply(names(foo), function(x) rep(x, length(foo[[x]])) )),
     stringsAsFactors = FALSE
   )
-  samples_metadata(object) <- tmp
+  # samples_metadata(object) <- tmp
+  object@samples_metadata <- tmp
 
   # Create features metadata
   tmp <- data.frame(

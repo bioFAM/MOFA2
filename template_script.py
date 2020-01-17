@@ -12,12 +12,11 @@ import requests # to download the online data
 ## Load data ##
 ###############
 
-# Multiple formats are allowed for the input data:
+# Two formats are allowed for the input data:
 
 # Option 1: a nested list of matrices, where the first index refers to the view and the second index refers to the group.
 #           samples are stored in the rows and features are stored in the columns.
-#           Importantly, all views for a given group G must have the same samples in the rows.
-#           If there is any sample that is missing a particular view, the column needs to be filled with NAs
+# 			Missing values must be filled with NAs, including samples missing an entire view
 
 # datadir = "/Users/ricard/data/mofaplus/test"
 # views = ["0","1"]
@@ -33,28 +32,51 @@ import requests # to download the online data
 #           In this case there is no need to have missing values in the data.frame,
 #           they will be automatically filled in when creating the corresponding matrices
 
-file = "ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/getting_started/data.txt.gz" # Simulated data
+file = "ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/getting_started/data.txt.gz"
 data = pd.read_csv(file, sep="\t")
 
 ###########################
 ## Initialise MOFA model ##
 ###########################
 
-# initialise the entry point
+
+## (1) initialise the entry point ##
 ent = entry_point()
 
-# Set data options
-# - scale_groups: if groups have significantly different ranges/variances, it is good practice to scale each group to unit variance
-# - scale_views: if views have significantly different ranges/variances, it is good practice to scale each view to unit variance
-ent.set_data_options(scale_groups=False, scale_views=False)
 
-# Set data (option 1, nested list of matrices) 
-# ent.set_data_matrix(data)
+## (2) Set data options ##
+# - scale_groups: if groups have significantly different ranges, it is good practice to scale each group to unit variance
+# - scale_views: if views have significantly different ranges, it is good practice to scale each view to unit variance
+ent.set_data_options(
+	scale_groups = False, 
+	scale_views = False
+)
 
-# Set data (option 2, data.frame)
+
+## (3, option 1) Set data using the nested list of matrices format ##
+views_names = ["view1","view2"]
+groups_names = ["groupA","groupB"]
+
+# samples_names nested list with length NGROUPS. Each entry g is a list with the sample names for the g-th group
+# - if not provided, MOFA will fill it with default samples names
+# samples_names = (...)
+
+# features_names nested list with length NVIEWS. Each entry m is a list with the features names for the m-th view
+# - if not provided, MOFA will fill it with default features names
+# features_names = (...)
+
+# ent.set_data_matrix(data, 
+# 	views_names = views_names, 
+# 	groups_names = groups_names, 
+# 	samples_names = samples_names,   
+# 	features_names = features_names
+# )
+
+# (3, option 2) Set data using a long data frame
 ent.set_data_df(data)
 
-# Set model options
+
+## (4) Set model options ##
 # - factors: number of factors. Default is K=10
 # - likelihods: likelihoods per view (options are "gaussian","poisson","bernoulli"). 
 # 		Default is None, and they are infered automatically
@@ -62,13 +84,14 @@ ent.set_data_df(data)
 # - ard_factors: use ARD prior in the factors? (TRUE if using multiple groups)
 # - ard_weights: use ARD prior in the weights? (TRUE if using multiple views)
 
-# Simple
+# Simple (using default values)
 ent.set_model_options()
 
-# Complex
-# ent.set_model_options(factors=5, likelihoods=["gaussian","gaussian"], spikeslab_weights=True, ard_factors=True, ard_weights=True)
+# Advanced (using personalised values)
+ent.set_model_options(factors=5, spikeslab_weights=True, ard_factors=True, ard_weights=True)
 
-# Set training options
+
+## (5) Set training options ##
 # - iter: number of iterations
 # - convergence_mode: "fast", "medium", "slow". 
 #		For exploration, the fast mode is good enough.
@@ -76,18 +99,28 @@ ent.set_model_options()
 # - freqELBO: frequency of computations of the ELBO (the objective function used to assess convergence)
 # - dropR2: minimum variance explained criteria to drop factors while training.
 # 		Default is None, inactive factors are not dropped during training
-# - gpu_mode: use GPU mode? 
-#		if TRUE, this needs cupy installed and a functional GPU, see https://cupy.chainer.org/
+# - gpu_mode: use GPU mode? this needs cupy installed and a functional GPU, see https://cupy.chainer.org/
 # - verbose: verbose mode?
 # - seed: random seed
-ent.set_train_options(iter=10, convergence_mode="fast", startELBO=1, freqELBO=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
+
+# Simple (using default values)
+ent.set_train_options()
+
+# Advanced (using personalised values)
+ent.set_train_options(iter=1000, convergence_mode="fast", startELBO=1, freqELBO=1, dropR2=None, gpu_mode=False, verbose=False, seed=42)
 
 
-# (Optional) Set stochastic inference options
+## (6, optional) Set stochastic inference options##
+# This is only recommended with very large sample size (>1e4)
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)
 # - forgetting_rate: forgetting rate (we recommend values from 0.25 to 0.5)
 # - start_stochastic: first iteration to apply stochastic inference (recommended > 5)
+
+# Simple (using default values)
+# ent.set_stochastic_options()
+
+# Advanced (using personalised values)
 # ent.set_stochastic_options(batch_size=0.5, learning_rate=0.75, forgetting_rate=0.5, start_stochastic=10)
 
 
@@ -112,5 +145,5 @@ ent.run()
 ## Save the model ##
 ####################
 
-outfile="/Users/ricard/data/mofaplus/hdf5/test.hdf5"
+outfile = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
 ent.save(outfile)
