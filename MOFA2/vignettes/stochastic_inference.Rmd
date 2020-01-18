@@ -1,0 +1,117 @@
+---
+title: "MOFA+: stochastic inference"
+author:
+  name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
+date: "`r Sys.Date()`"
+
+output:
+  BiocStyle::html_document:
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{MOFA2: Doing stochastic inference with R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<!-- Define latex commands -->
+
+\newcommand{\bfw}{{\bf w}}
+\newcommand{\bfx}{{\bf x}}
+\newcommand{\bfy}{{\bf y}}
+\newcommand{\bfz}{{\bf z}}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\bfX}{{\bf X}}
+\newcommand{\bfY}{{\bf Y}}
+\newcommand{\bfZ}{{\bf Z}}
+
+\newcommand{\theta}{\mathcal{L}}
+\newcommand{\Lagr}{\mathcal{L}}
+\newcommand{\KL}{{\rm KL}}
+
+The size of biological datasets is rapidly increasing, particularly in the field of single cell sequencing, with some studies reporting more than a milion cells.
+In the original MOFA model, inference was performed using variational Bayes. While this
+framework is typically faster than sampling-based Monte Carlo approaches, it becomes prohibitively slow with very large datasets, hence motivating the development of a more efficient inference schemes. For this purpose, we derived a stochastic version of the  variational inference algorithm.  
+
+# Theory 
+
+## What is variational Bayes inference?
+
+In the Bayesian probabilistic framework, the parameters $\theta$ are treated as random unobserved variables and we aim to obtain probability distributions for them. To do so, prior beliefs are introduced into the model by specifying a prior probability distribution $p(\theta)$. Then, using Bayes' theorem \cite{Bayes1763}, the prior hypothesis is updated based on the observed data $\bfY$ by means of the likelihood $p(\bfY|\theta)$ function, which yields a posterior distribution over the parameters:
+$$
+	p(\theta|\bfY) = \frac{p(\bfY|\theta) p(\theta)}{p(\bfY)}
+$$
+where $p(\bfY)$ is a constant term called the marginal likelihood, or model evidence.  
+
+The central task in Bayesian inference is the direct evaluation of the posterior distributions. In sufficiently complex models, closed-form solutions are not available and one has to resort to approximation schemes. Arguably the most commonly used approach by Bayesian purists is Markov Chain Monte Carlo (MCMC) sampling, which has the appealing property of generating exact results at the asymptotic limit of infinite computational resources. However, in practice, sampling approaches are computationally demanding and suffer from limited scalability to large data sets.
+
+Variational inference is a deterministic approach that is based on analytical approximations to the posterior distribution, which often lead to biased results. Yet, given the appropriate settings, these approaches yield remarkably accurate results and can scale to large data sets.
+
+In variational inference the true (but intractable) posterior distribution $p(\bfX|\bfY)$ is approximated by a simpler (variational) distribution $q(\bfX|\theta)$ where $\theta$ are the corresponding parameters. The parameters, which we will omit from the notation, need to be tuned to obtain the closest approximation to the true posterior.\\
+The distance between the true distribution and the variational distribution is calculated using the KL divergence:
+$$
+\KL(q(\bfX)||p(\bfX|\bfY)) = - \int_z q(\bfX) \log \frac{p(\bfX|\bfY)}{q(\bfX)}
+$$
+Note that the KL divergence is not a proper distance metric, as it is not symmetric. In fact, using the reverse KL divergence $\KL(q(\bfX)||p(\bfX|\bfY))$ defines a different inference framework called expectation propagation \cite{Minka2001}.
+
+If we allow any possible choice of $q(\bfX)$, then the minimum of this function occurs when $q(\bfX)$ equals the true posterior distribution $p(\bfX|\bfY)$. Nevertheless, since the true posterior is intractable to compute, this does not lead to any simplification of the problem. Instead, it is necessary to consider a restricted family of distributions $q(\bfX)$ that are tractable to compute and subsequently seek the member of this family for which the KL divergence is minimised.
+
+Doing some calculus it can be shown that the KL divergence $\KL(q(\bfX)||p(\bfX|\bfY))$ is the difference between the log of the marginal probability of the observations $\log(\bfY)$ and a term $\Lagr(\bfX)$ that is typically called the Evidence Lower Bound (ELBO):
+$$
+	\KL(q(\bfX)||p(\bfX|\bfY)) = \log(\bfX) - \Lagr(\bfX)
+$$
+Hence, minimising the KL divergence is equivalent to maximising $\Lagr(\bfX)$ \Cref{fig:ELBO}:
+\begin{align} \label{eq_elbo1} \begin{split}
+	\Lagr(\bfX) &= \int q(\bfX) \Big( \log \frac{p(\bfX|\bfY)}{q(\bfX)} + \log p(\bfY) \Big) d\bfX \\
+	%&= \int \Big( q(\bfX) \log \frac{p(\bfX|\bfY)}{q(\bfX)} + q(\bfX)\log p(\bfY) \Big) d\bfX\\
+	%&= \E_q [\log p(\bfX|\bfY)] - \E_q [\log q(\bfX)] + \E_q [\log p(\bfY)] \\
+	&= \E_q [\log p(\bfX,\bfY)] - \E_q [\log q(\bfX)]
+\end{split} \end{align}
+The first term is the expectation of the log joint probability distribution with respect to the variational distribution. The second term is the entropy of the variational distribution.
+Importantly, given a simple parametric form of $q(\bfX)$, each of the terms in \Cref{eq_elbo1} can be computed in closed form.\\
+
+In conclusion, variational learning involves minimising the KL divergence between $q(\bfX)$ and $p(\bfX|\bfY)$ by instead maximising $\Lagr(\bfX)$ with respect to the distribution $q(\bfX)$. The following image summarises the general picture of variational learning (TO-DO):
+
+![](http://ftp.ebi.ac.uk/pub/databases/mofa/stochastic_vignette/figures/elbo.png)
+<!-- <img src="http://ftp.ebi.ac.uk/pub/databases/mofa/stochastic_vignette/figures/elbo.png" alt="drawing" width="200"/> -->
+
+The next step is how to define $q(\bfX)$, but we will stop the introduction to variational inference here. If the reader is interested we suggest the following resources: XXX
+
+## How does stochastic variational inference (SVI) works?
+
+In this section we will provide the intuition behind SVI. For a detailed mathematical derivation we refer the reader to the appendix of the MOFA+ paper.  
+
+The aim of VI is to maximise the ELBO of the model. This leads to an iterative algorithm that can be reformulated as a gradient ascent problem.  
+Just as a reminder, gradient ascent is a common first-order optimization algorithm for finding the maximum of a function. It works iteratively by taking steps proportional to the gradient of the function evaluated at each iteration. Formally, for a differentiable function $F(x)$, the iterative scheme of gradient ascent is:
+$$
+	\bfx^{(t+1)} = \bfx^{(t)} + \rho^{(t)} \nabla F(\bfx^{(t)})
+$$
+At each iteration, the gradient $\nabla F$ is re-evaluated and a step is performed towards its direction. The step size is controlled by $\rho^{(t)}$, a parameter called the learning rate, which is typically adjusted at each iteration.
+
+Gradient ascent is appealing because of its simplicity, but it becomes prohibitively slow with large datasets, mainly because of the computational cost (both in terms of time and memory) associated with the iterative calculation of gradients.  
+A fast approximation of the gradient $\hat{\nabla} F$ can be calculated using a random subset of the data (a batch, here is where the stochasticity is introduced). Formally, as in standard gradient ascent, the iterative training schedule proceeds by taking steps of size $\rho$ in the direction of the approximate gradient $\hat{\nabla}F$:
+$$
+	\bfx^{(t+1)} = \bfx^{(t)} + \rho^{(t)} \hat{\nabla} F(\bfx^{(t)})
+$$
+
+There is a lot more technicalities missing, but this is sufficient to get the intuition behind the SVI algorithm.
+
+### Hyperparameters
+
+Stochastic variational inference algorithm has three hyperparameters:
+
+\item **Batch size**: controls the fraction of samples that are used to compute the gradients at each iteration. A trade-off exists where high batch sizes lead to a more precise estimate of the gradient, but are more computationally expensive to calculate.
+
+\item **Learning rate**: controls the step size in the direction of the gradient, with high learning rates leading to higher step sizes. To ensure proper convergence, the learning rate has to be decayed during training by a pre-defined function.
+
+\item **Forgetting rate**: controls the decay of the learning rate, with large values leading to faster decays.
+
+The function that we use to decay the learning rate is:
+$$
+	\rho^{(t)} = \frac{\rho^0}{(1 + \kappa t)^{3/4}}
+$$
+where $\rho^{(t)}$ is the learning rate at iteration $t$, $\rho^{(0)}$ is the starting learning rate, and $\kappa$ is the forgetting rate which controls the rate of decay. The following figure shows the effect of varying the two hyperparameters.
+
+![](http://ftp.ebi.ac.uk/pub/databases/mofa/stochastic_vignette/figures/decay_function.png)

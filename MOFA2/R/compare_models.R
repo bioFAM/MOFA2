@@ -99,10 +99,11 @@ compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
   
   
   # take the log
-  # if (isTRUE(log)) {
-  #   message("Plotting the log of the negative of the ELBO (the higher the better)")
-  #   df$ELBO <- log2(-df$ELBO)
-  # }
+  if (isTRUE(log)) {
+    message("Plotting the log2 of the negative of the ELBO (the higher the better)")
+    df$ELBO <- log2(-df$ELBO)
+  }
+  
   if (all(df$ELBO<0)) {
     df$ELBO <- abs(df$ELBO)
     message("Plotting the absolute value of the ELBO for every model (the smaller the better)")
@@ -117,10 +118,6 @@ compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
     geom_bar(stat="identity", color="black", fill="grey70") +
     labs(x="", y="Evidence Lower Bound (ELBO)") +
     theme_classic()
-  
-  gg <- gg + theme(
-    axis.text.x=element_text(angle=60, vjust=1, hjust=1)
-  )
   
   return(gg)
 }

@@ -162,7 +162,7 @@ ent.run()
 outfile = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
 
 # - save_data: logical indicating whether to save the training data in the hdf5 file.
-# this is useful for some downstream analysis in R, but it can take a lot of disk.
+# this is useful for some downstream analysis in R, but it can take a lot of disk space.
 ent.save(outfile, save_data=True)
 
 ######################################################

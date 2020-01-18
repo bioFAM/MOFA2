@@ -80,9 +80,13 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   }
   
   # Get stochastic options
-  if (!is.null(stochastic_options)) object@training_options$stochastic <- TRUE
+  if (is.null(stochastic_options)) {
+    object@stochastic_options <- list()
+  } else {
+    object@training_options$stochastic <- TRUE
+  }
+  
   if (object@training_options$stochastic) {
-    if (sum(object@dimensions$N) < 1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000)")
       
     if (is.null(stochastic_options)) {
       message("No stochastic options specified, using default...")
@@ -101,6 +105,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
         stop("The learning rate has to be a value between 0 and 1")
       if (stochastic_options$forgetting_rate<=0 || stochastic_options$forgetting_rate>1)
         stop("The forgetting rate has to be a value between 0 and 1")
+  
+      if (sum(object@dimensions$N) < 1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000))\n")
       
       object@stochastic_options <- stochastic_options
     }
@@ -201,7 +207,7 @@ get_default_training_options <- function(object) {
     freqELBO = 1,                  # Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
-    seed = 0                       # (numeric) random seed
+    seed = 42                      # (numeric) random seed
   )
   
   # if training_options already exist, replace the default values but keep the additional ones
@@ -408,11 +414,11 @@ get_default_model_options <- function(object) {
 #'  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
 #'  Default is 0.5 (half of the data set).
 #'  \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
-#'  Default is 0.75 
+#'  Default is 0.5 
 #'  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
-#'  Default is 1.0
+#'  Default is 0.5
 #'  \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
-#'  Default is 10
+#'  Default is 5
 #'  }
 #' @return Returns a list with default options
 #' @importFrom utils modifyList
@@ -441,10 +447,10 @@ get_default_stochastic_options <- function(object) {
   
   # Get default stochastic options
   stochastic_options <- list(
-    batch_size = 0.5,       # Batch size (as a fraction)
-    learning_rate = 0.5,   # Starting learning rate
-    forgetting_rate = 0.25,   # Forgetting rate
-    start_stochastic = 10    # First iteration to start stochastic inference
+    batch_size = 0.5,        # Batch size (as a fraction)
+    learning_rate = 0.5,     # Starting learning rate
+    forgetting_rate = 0.5,   # Forgetting rate
+    start_stochastic = 1     # First iteration to start stochastic inference
   )
   
   # if stochastic_options already exist, replace the default values but keep the additional ones

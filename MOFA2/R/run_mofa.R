@@ -9,6 +9,8 @@
 #' The interface with Python is done with the \code{\link{reticulate}} package. 
 #' If you have several versions of Python installed and R is not detecting the correct one, you can change it using \code{reticulate::use_python}.
 #' @param object an untrained \code{\link{MOFA}} object
+#' @param save_data logical indicating whether to save the training data in the hdf5 file. 
+#'  This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.
 #' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
@@ -28,7 +30,7 @@
 #' 
 #' # Run the MOFA model
 #' \dontrun{ MOFAmodel <- run_mofa(MOFAmodel, outfile = "~/model.hdf5") }
-run_mofa <- function(object, outfile = NULL) {
+run_mofa <- function(object, outfile = NULL, save_data = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) 
@@ -92,7 +94,8 @@ run_mofa <- function(object, outfile = NULL) {
     mofa_entrypoint$set_stochastic_options(
       learning_rate    = object@stochastic_options$learning_rate,
       forgetting_rate  = object@stochastic_options$forgetting_rate,
-      batch_size       = object@stochastic_options$batch_size
+      batch_size       = object@stochastic_options$batch_size,
+      start_stochastic = object@stochastic_options$start_stochastic
     )
   }
   
@@ -103,7 +106,7 @@ run_mofa <- function(object, outfile = NULL) {
   mofa_entrypoint$run()
   
   # Save the model output as an hdf5 file
-  mofa_entrypoint$save(outfile)
+  mofa_entrypoint$save(outfile, save_data=save_data)
   
   # Load the trained model
   object <- load_model(outfile)

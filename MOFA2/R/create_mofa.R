@@ -86,11 +86,11 @@ create_mofa <- function(data, groups = NULL, ...) {
   # Quality controls
   df <- as.data.frame(df)
   if (!"group" %in% colnames(df)) {
-    message('No "group" column found in the data.frame, w will assume a common group for all samples (as in MOFA v1)')
+    message('No "group" column found in the data.frame, we will assume a common group for all samples')
     df$group <- "single_group"
   }
   if (!"view" %in% colnames(df)) {
-    message('No "view" column found in the data.frame. We will assume a common view for all features')
+    message('No "view" column found in the data.frame, we will assume a common view for all features')
     df$view <- "single_view"
   }
   stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))

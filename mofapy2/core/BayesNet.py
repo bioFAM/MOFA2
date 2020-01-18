@@ -12,7 +12,7 @@ import pandas as pd
 import sys
 import numpy.ma as ma
 import math
-import resource
+# import resource
 
 from mofapy2.core.nodes.variational_nodes import Variational_Node
 from mofapy2.core import gpu_utils
@@ -262,7 +262,7 @@ class BayesNet(object):
             # Print other statistics
             if self.options['verbose']:
                 # Memory usage
-                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
 
                 # Variance explained
                 r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)

@@ -91,5 +91,6 @@ MOFAobject <- prepare_mofa(MOFAobject,
 
 # (Optional) set up reticulate connection with Python
 reticulate::use_python("/Users/ricard/anaconda3/envs/base_new/bin/python", required = T)
+
 outfile <- paste0(getwd(),"/model.hdf5")
 MOFAmodel <- run_mofa(MOFAobject, outfile)
