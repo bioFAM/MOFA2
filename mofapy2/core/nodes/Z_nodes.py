@@ -28,6 +28,11 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         super(Z_Node, self).removeFactors(idx, axis)
         # self.dim[1] -= len(idx)
 
+    def define_mini_batch(self, ix):
+        """ Method to define minibatch for the expectation """
+        QExp = self.Q.getExpectations()
+        self.mini_batch = {'E': QExp["E"][ix,:], 'E2': QExp["E2"][ix,:]}
+
     def get_mini_batch(self):
         """ Method to fetch minibatch """
         if self.mini_batch is None:

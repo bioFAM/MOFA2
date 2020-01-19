@@ -397,6 +397,7 @@ class StochasticBayesNet(BayesNet):
     
     def define_mini_batch(self, ix):
         # Define mini-batch for each node
+        self.nodes['Z'].define_mini_batch(ix) # TO-DELETE
         self.nodes['Y'].define_mini_batch(ix)
         self.nodes['Tau'].define_mini_batch(ix)
         if 'AlphaZ' in self.nodes:
@@ -428,10 +429,6 @@ class StochasticBayesNet(BayesNet):
         for i in range(1,self.options['maxiter']):
             t = time();
 
-            if i==self.options["start_stochastic"]:
-                self.options['schedule'].pop( self.options['schedule'].index("Z") )
-                self.options['schedule'].insert(1,"Z")
-
             # Sample mini-batch and define step size for stochastic inference
             if i>=self.options["start_stochastic"]:
                 ix, epoch = self.sample_mini_batch_no_replace(i-(self.options["start_stochastic"]-1))
@@ -440,6 +437,11 @@ class StochasticBayesNet(BayesNet):
                 # ro = self.options["learning_rate"]
                 ro = 1.
 
+
+            # Doesn't really make a big difference...
+            if i==self.options["start_stochastic"]:
+                self.options['schedule'].pop( self.options['schedule'].index("Z") )
+                self.options['schedule'].insert(1,"Z")
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
