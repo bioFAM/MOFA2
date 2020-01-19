@@ -432,7 +432,6 @@ class StochasticBayesNet(BayesNet):
                 self.options['schedule'].pop( self.options['schedule'].index("Z") )
                 self.options['schedule'].insert(1,"Z")
 
-            print(self.options["schedule"])
             # Sample mini-batch and define step size for stochastic inference
             if i>=self.options["start_stochastic"]:
                 ix, epoch = self.sample_mini_batch_no_replace(i-(self.options["start_stochastic"]-1))
