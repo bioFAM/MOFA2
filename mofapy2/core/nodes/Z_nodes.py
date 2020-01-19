@@ -48,7 +48,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Y = self.markov_blanket["Y"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
         mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
-
         if "MuZ" in self.markov_blanket:
             Mu =  self.markov_blanket['MuZ'].get_mini_batch()
         else:
@@ -70,8 +69,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             Qvar = Qvar[ix,:]
 
         # Compute updates
-        # print(ix)
-        # import pdb; pdb.set_trace()
         par_up = self._updateParameters(Y, W, tau, Mu, Alpha, Qmean, Qvar, mask)
 
         # Update parameters
@@ -98,7 +95,6 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         # Masking
         for m in range(M):
             tau[m][mask[m]] = 0.
-
 
         # Precompute terms to speed up GPU computation
         foo = gpu_utils.array(s.zeros((N,K)))

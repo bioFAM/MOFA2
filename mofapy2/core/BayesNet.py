@@ -428,16 +428,22 @@ class StochasticBayesNet(BayesNet):
         for i in range(1,self.options['maxiter']):
             t = time();
 
+            if i==self.options["start_stochastic"]:
+                self.options['schedule'].pop( self.options['schedule'].index("Z") )
+                self.options['schedule'].insert(1,"Z")
+
+            print(self.options["schedule"])
             # Sample mini-batch and define step size for stochastic inference
-            if i>=(self.options["start_stochastic"]):
+            if i>=self.options["start_stochastic"]:
                 ix, epoch = self.sample_mini_batch_no_replace(i-(self.options["start_stochastic"]-1))
                 ro = self.step_size2(epoch)
             else:
-                ro = self.options["learning_rate"]
+                # ro = self.options["learning_rate"]
+                ro = 1.
+
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
-                # if any(self.options['drop'].values()):
                 if self.options['drop']["min_r2"] is not None:
                     self.removeInactiveFactors(**self.options['drop'])
                 number_factors[i] = self.dim["K"]

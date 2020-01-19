@@ -579,8 +579,9 @@ class entry_point(object):
             self.train_opts['drop']["min_r2"] = None
 
         # Edit schedule: Z should come first (after Y) in the training schedule
-        self.train_opts['schedule'].pop( self.train_opts['schedule'].index("Z") )
-        self.train_opts['schedule'].insert(1,"Z")
+        # (THIS IS DONE IN THE BAYESNET CLASS)
+        # self.train_opts['schedule'].pop( self.train_opts['schedule'].index("Z") )
+        # self.train_opts['schedule'].insert(1,"Z")
 
         self.train_opts['stochastic'] = True
         self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick speed up only works in non-stochastic mode
