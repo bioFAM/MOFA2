@@ -570,7 +570,7 @@ class entry_point(object):
         # Sanity checks
         assert hasattr(self, 'train_opts'), "Train options not defined"
         assert 0 < learning_rate <= 1, 'Learning rate must range from 0 and 1'
-        assert 0 < forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
+        # assert 0 < forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
         assert 0 < batch_size <= 1, 'Batch size must range from 0 to 1'
         assert start_stochastic >= 1, 'start_stochastic must be >= 1'
 
