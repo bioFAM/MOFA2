@@ -764,6 +764,9 @@ class entry_point(object):
           compression_level = 9
         )
 
+        # save sample and feature names
+        tmp.saveNames()
+
         # Save expectations
         # If all likelihoods are gaussian there is no need to save the expectations of Y, just saving the data is enough
         # TO-DO: THERE IS STH WRONG WITH THIS, CHECK WITH NON-GAUSS LIK

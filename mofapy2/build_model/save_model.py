@@ -45,29 +45,29 @@ class saveModel():
         self.features_names = features_names
         self.groups_names = groups_names
 
+
+    def saveNames(self):
+        """ Method to save sample and feature names"""
+        
+        # Create HDF5 groups
+        features_grp = self.hdf5.create_group("features")
+        samples_grp  = self.hdf5.create_group("samples")
+
+        # Save samples names
+        for g in range(len(self.groups_names)):
+            samples_grp.create_dataset(self.groups_names[g], data=np.array(self.samples_names[g], dtype='S50'))
+
+        # Save feature names
+        for m in range(len(self.data)):
+            features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
+
     def saveData(self):
         """ Method to save the training data"""
         
         # Create HDF5 groups
         data_grp = self.hdf5.create_group("data")
         intercept_grp = self.hdf5.create_group("intercepts")
-        features_grp = self.hdf5.create_group("features")
-        samples_grp  = self.hdf5.create_group("samples")
 
-        # Save samples names
-        for g in range(len(self.groups_names)):
-            # samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
-            # samples_names = [s for s in [self.samples_names[e] for e in samples_idx]]
-            # samples_grp.create_dataset(self.groups_names[g], data=[str(s).encode('utf8') for s in [self.samples_names[g] for e in samples_idx]])
-            samples_grp.create_dataset(self.groups_names[g], data=np.array(self.samples_names[g], dtype='S50'))
-
-        # Save feature names
-        for m in range(len(self.data)):
-            # features_grp.create_dataset(self.views_names[m], data=[str(x).encode('utf8') for x in self.features_names[m]])
-            features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
-
-
-        # Save data
         for m in range(len(self.data)):
             data_subgrp = data_grp.create_group(self.views_names[m])
             intercept_subgrp = intercept_grp.create_group(self.views_names[m])

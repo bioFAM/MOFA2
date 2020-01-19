@@ -13,7 +13,9 @@
 #' model <- quality_control(model, verbose = TRUE)
 quality_control <- function(object, verbose = FALSE) {
   
+  # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  
   
   # Check views names
   if (verbose == TRUE) message("Checking views names...")
@@ -54,12 +56,14 @@ quality_control <- function(object, verbose = FALSE) {
   }
   
   # Check that there are no features with complete missing values (across all views)
-  if (verbose == TRUE) message("Checking there are no features with complete missing values...")
-  for (i in views(object)) {
-    if (!(is(object@data[[i]][[1]], "dgCMatrix") || is(object@data[[i]][[1]], "dgTMatrix"))) {
-      tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = T))
-      if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))
-        warning("You have features which do not contain a single observation in any group, consider removing them...")
+  if (isTRUE(object@data_options[["loaded"]])) {
+    if (verbose == TRUE) message("Checking there are no features with complete missing values...")
+    for (i in views(object)) {
+      if (!(is(object@data[[i]][[1]], "dgCMatrix") || is(object@data[[i]][[1]], "dgTMatrix"))) {
+        tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = T))
+        if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))
+          warning("You have features which do not contain a single observation in any group, consider removing them...")
+      }
     }
   }
     
@@ -95,13 +99,15 @@ quality_control <- function(object, verbose = FALSE) {
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
     
     # Check for intercept factors
-    if (verbose == TRUE) message("Checking for intercept factors...")
-    if (!is.null(object@data)) {
-      factors <- do.call("rbind",get_factors(object))
-      r <- sapply(object@data, function(x) abs(cor(colMeans(do.call("cbind",x),na.rm=T),factors, use="pairwise.complete.obs")))
-      intercept_factors <- which(rowSums(r>0.75)>0)
-      if (length(intercept_factors)) {
-          warning(sprintf("Factor(s) %s are strongly correlated with the total number of expressed features for at least one of your omics. Such factors appear when there are global differences between your samples, sometimes because of poor normalisation in the preprocessing steps. We recommend that you either try a better normalisation method or you remove the factors using `subset_factors`.\n",paste(intercept_factors,collapse=" ")))
+    if (isTRUE(object@data_options[["loaded"]])) { 
+      if (verbose == TRUE) message("Checking for intercept factors...")
+      if (!is.null(object@data)) {
+        factors <- do.call("rbind",get_factors(object))
+        r <- sapply(object@data, function(x) abs(cor(colMeans(do.call("cbind",x),na.rm=T),factors, use="pairwise.complete.obs")))
+        intercept_factors <- which(rowSums(r>0.75)>0)
+        if (length(intercept_factors)) {
+            warning(sprintf("Factor(s) %s are strongly correlated with the total number of expressed features for at least one of your omics. Such factors appear when there are global differences between your samples, sometimes because of poor normalisation in the preprocessing steps. We recommend that you either try a better normalisation method or you remove the factors using `subset_factors`.\n",paste(intercept_factors,collapse=" ")))
+        }
       }
     }
   

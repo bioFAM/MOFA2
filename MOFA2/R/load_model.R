@@ -49,10 +49,12 @@ load_model <- function(file, sort_factors = TRUE,
   group_names <- names(sample_names)
 
   # Load training data (as nested list of matrices)
-  if (isTRUE(verbose)) message("Loading data...")
-  data <- list()
-  intercepts <- list()
-  if (load_data) {
+  data <- list(); intercepts <- list()
+  if (isTRUE(load_data) & ("data"%in%h5ls.out$name) ) {
+    
+    object@data_options[["loaded"]] <- TRUE
+    if (isTRUE(verbose)) message("Loading data...")
+    
     for (m in view_names) {
       data[[m]] <- list()
       intercepts[[m]] <- list()
@@ -72,6 +74,9 @@ load_model <- function(file, sort_factors = TRUE,
     
   # Create empty training data (as nested list of empty matrices, with the correct dimensions)
   } else {
+    
+    object@data_options[["loaded"]] <- FALSE
+    
     for (m in view_names) {
       data[[m]] <- list()
       for (g in group_names) {
@@ -100,8 +105,10 @@ load_model <- function(file, sort_factors = TRUE,
   #######################
   
   imputed_data <- list()
-  if (load_imputed_data) {
+  if (isTRUE(load_imputed_data)) {
+    
     if (isTRUE(verbose)) message("Loading imputed data...")
+    
     for (m in view_names) {
       imputed_data[[m]] <- list()
       for (g in group_names) {
