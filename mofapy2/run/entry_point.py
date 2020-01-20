@@ -771,6 +771,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
          ard_weights: bool = True, ard_factors: bool = True,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
+         gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, save_parameters: bool = False,
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
          expectations: Optional[List[str]] = None,
          verbose: bool = False, quiet: bool = True, copy: bool = False):
@@ -795,6 +796,9 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     spikeslab_factors (optional): use sample-wise sparsity (e.g. cell-wise)
     n_iterations (optional): upper limit on the number of iterations
     convergence_mode (optional): fast, medium, or slow convergence mode
+    gpu_mode (optional): if to use GPU mode
+    Y_ELBO_TauTrick (optional): if to use ELBO Tau trick to speed up computations
+    save_parameters (optional): if to save training parameters
     seed (optional): random seed
     outfile (optional): path to HDF5 file to store the model
     expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default)
@@ -813,7 +817,9 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_factors, 
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
-    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
+    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 
+                          gpu_mode=gpu_mode, Y_ELBO_TauTrick=Y_ELBO_TauTrick, save_parameters=save_parameters,
+                          seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
     ent.run()
