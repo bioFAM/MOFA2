@@ -249,7 +249,7 @@ class entry_point(object):
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, likelihoods=None, features_subset=None):
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None):
         """ Method to input the data in AnnData format
 
         PARAMETERS
@@ -257,6 +257,7 @@ class entry_point(object):
         adata: an AnnotationData object
         groups_label (optional): a column name in adata.obs for grouping the samples
         use_raw (optional): use raw slot of AnnData as input values
+        use_layer (optional): use a specific layer of AnnData as input values (supersedes use_raw option)
         likelihoods (optional): likelihoods to use (guessed from the data if not provided)
         features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
         """
@@ -277,7 +278,18 @@ class entry_point(object):
 
 
         # Get the respective data slot
-        if use_raw:
+        if use_layer:
+            if use_layer in adata.layers.keys():
+                if callable(getattr(adata.layers[use_layer], "todense", None)):
+                    data = [np.array(adata.layers[use_layer].todense())]    
+                else:
+                    data = [adata.layers[use_layer]]
+                # Subset features if required
+                if features_subset is not None:
+                    data[0] = data[0][:,adata.var[features_subset].values]
+            else:
+                print("Error: Layer {} does not exist".format(use_layer)); sys.stdout.flush(); sys.exit()
+        elif use_raw:
             adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
             data = [adata_raw_dense]
             # Subset features if required
@@ -752,7 +764,8 @@ class entry_point(object):
 
 
 
-def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subset: Optional[str] = None,
+def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: bool = None, 
+         features_subset: Optional[str] = None,
          likelihood: Optional[Union[str, List[str]]] = None, n_factors: int = 10,
          scale_views: bool = False, scale_groups: bool = False,
          ard_weights: bool = True, ard_factors: bool = True,
@@ -770,6 +783,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
     adata: an AnnotationData object
     groups_label (optional): a column name in adata.obs for grouping the samples
     use_raw (optional): use raw slot of AnnData as input values
+    use_layer (optional): use a specific layer of AnnData as input values (supersedes use_raw option)
     features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
     likelihood (optional): likelihood to use, default is guessed from the data
     n_factors (optional): number of factors to train the model with
@@ -794,8 +808,11 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
     lik = [likelihood] if likelihood is not None else None
 
     ent.set_data_options(scale_views=scale_views, scale_groups=scale_groups)
-    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, likelihoods=lik, features_subset=features_subset)
-    ent.set_model_options(ard_factors=ard_factors, spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, ard_weights=ard_factors, factors=n_factors)
+    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer, 
+                              likelihoods=lik, features_subset=features_subset)
+    ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_factors, 
+                          spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
+                          factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
