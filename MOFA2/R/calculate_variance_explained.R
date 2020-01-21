@@ -34,7 +34,9 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (any(object@model_options$likelihoods!="gaussian"))
     stop("Not possible to recompute the variance explained estimates when using non-gaussian likelihoods.")
-
+  if (any(object@model_options$likelihoods!="gaussian"))
+  if (isFALSE(object@data_options$loaded)) stop("Data is not loaded, cannot compute variance explained.")
+  
   # Define factors, views and groups
   views  <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)

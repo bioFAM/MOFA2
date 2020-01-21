@@ -182,6 +182,17 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         super(SZ_Node, self).removeFactors(idx, axis)
         # self.dim[1] -= len(idx)
 
+    def define_mini_batch(self, ix):
+        """ Method to define minibatch for the expectation """
+        QExp = self.Q.getExpectations()
+        self.mini_batch = {
+        'E': QExp["E"][ix,:], 
+        'E2': QExp["E2"][ix,:],
+        'EB': QExp["EB"][ix,:],
+        'EN': QExp["EN"][ix,:],
+        'ENN': QExp["ENN"][ix,:]
+        }
+
     def get_mini_batch(self):
         if self.mini_batch is None:
             return self.getExpectations()

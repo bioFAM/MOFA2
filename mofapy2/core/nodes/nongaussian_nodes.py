@@ -195,20 +195,19 @@ class Poisson_PseudoY(PseudoY_Seeger):
 
     def updateExpectations(self):
         # Update the pseudodata
-        tau = self.markov_blanket["Tau"].getValue() # to-do: not expand
-        # self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"]))/tau[None,:]
+        tau = self.markov_blanket["Tau"].getValue()
         self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"])) / tau
         self.E[self.mask] = 0.
 
     def calculateELBO(self):
-        """ Compute Lower Bound """
+        """ Compute Evidence Lower Bound """
 
         Wtmp = self.markov_blanket["W"].getExpectations()
         Ztmp = self.markov_blanket["Z"].getExpectations()
         W, WW = Wtmp["E"], Wtmp["E2"]
         Z, ZZ = Ztmp["E"], Ztmp["E2"]
         zeta = self.params["zeta"]
-        tau = self.markov_blanket["Tau"].getValue() # to-do: not expand
+        tau = self.markov_blanket["Tau"].getValue()
         mask = self.getMask()
 
         # Precompute terms
@@ -217,12 +216,16 @@ class Poisson_PseudoY(PseudoY_Seeger):
 
         # term1 = 0.5*tau*(ZW - zeta)**2
         term1 = 0.5*tau*(ZZWW - 2*ZW*zeta + s.square(zeta))
-        term2 = (ZW - zeta)*(sigmoid(zeta)*(1-self.obs/self.ratefn(zeta)))
+        term2 = (ZW - zeta)*(sigmoid(zeta)*(1.-self.obs/self.ratefn(zeta)))
         term3 = self.ratefn(zeta) - self.obs*s.log(self.ratefn(zeta))
 
         elbo = -(term1 + term2 + term3)
         elbo[mask] = 0.
 
+        # I AM NOT SURE WHY NAs are generated...
+        np.isnan(elbo).sum()
+        elbo[np.isnan(elbo)] = 0.
+        
         return elbo.sum()
 
 class Bernoulli_PseudoY(PseudoY_Seeger):

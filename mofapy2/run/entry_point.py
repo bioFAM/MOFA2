@@ -625,7 +625,7 @@ class entry_point(object):
         print("- Automatic Relevance Determination prior on the factors: %s" % str(ard_factors))
         print("- Automatic Relevance Determination prior on the weights: %s" % str(ard_weights))
         print("- Spike-and-slab prior on the factors: %s" % str(spikeslab_factors))
-        print("- Spike-and-slab prior on the weights: %s" % str(spikeslab_factors))
+        print("- Spike-and-slab prior on the weights: %s \n" % str(spikeslab_factors))
 
         print("Likelihoods:")
         for m in range(self.dimensionalities["M"]):
