@@ -24,19 +24,33 @@ class entry_point(object):
     def print_banner(self):
         """ Method to print the mofapy2 banner """
 
-        banner = r"""
+        # banner = r"""
 
-           |￣￣￣￣￣￣￣|
-           |             |
-           |    MOFA+    |
-           |             |
-           | ＿＿＿＿＿＿_|
-           (\__/) ||
-           (•ㅅ•)  ||
-           / 　 づ
+        #    |￣￣￣￣￣￣￣|
+        #    |             |
+        #    |    MOFA+    |
+        #    |             |
+        #    | ＿＿＿＿＿＿_|
+        #    (\__/) ||
+        #    (•ㅅ•)  ||
+        #    / 　 づ
+        # """
+        
+        banner = """
+        ###########################################################
+        ###                 __  __  ___  _____ _                ### 
+        ###                |  \/  |/ _ \|  ___/ \               ### 
+        ###                | |\/| | | | | |_ / _ \              ### 
+        ###                | |  | | |_| |  _/ ___ \             ### 
+        ###                |_|  |_|\___/|_|/_/   \_\            ### 
+        ###                                                     ###
+        ########################################################### 
+       \n 
         """
 
         print(banner)
+
+        # print(banner)
         sys.stdout.flush()
 
     def set_data_matrix(self, data, likelihoods=None, views_names=None, groups_names=None, samples_names=None, features_names=None):
