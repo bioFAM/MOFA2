@@ -497,7 +497,7 @@ class StochasticBayesNet(BayesNet):
 
             if self.options['verbose']:
                 # Memory usage
-                print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
 
                 # Variance explained
                 r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)
