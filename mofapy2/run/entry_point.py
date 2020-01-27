@@ -25,14 +25,15 @@ class entry_point(object):
         """ Method to print the mofapy2 banner """
         
         banner = """
-        ###########################################################
-        ###                 __  __  ___  _____ _                ### 
-        ###                |  \/  |/ _ \|  ___/ \               ### 
-        ###                | |\/| | | | | |_ / _ \              ### 
-        ###                | |  | | |_| |  _/ ___ \             ### 
-        ###                |_|  |_|\___/|_|/_/   \_\            ### 
-        ###                                                     ###
-        ########################################################### 
+        #########################################################
+        ###           __  __  ____  ______                    ### 
+        ###          |  \/  |/ __ \|  ____/\    _             ### 
+        ###          | \  / | |  | | |__ /  \ _| |_           ### 
+        ###          | |\/| | |  | |  __/ /\ \_   _|          ###
+        ###          | |  | | |__| | | / ____ \|_|            ###
+        ###          |_|  |_|\____/|_|/_/    \_\              ###
+        ###                                                   ### 
+        ######################################################### 
        \n 
         """
 
@@ -830,7 +831,8 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
          ard_weights: bool = True, ard_factors: bool = True,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
-         gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, save_parameters: bool = False,
+         gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, 
+         save_parameters: bool = False, save_data: bool = True,
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
          expectations: Optional[List[str]] = None,
          verbose: bool = False, quiet: bool = True, copy: bool = False):
@@ -858,6 +860,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     gpu_mode (optional): if to use GPU mode
     Y_ELBO_TauTrick (optional): if to use ELBO Tau trick to speed up computations
     save_parameters (optional): if to save training parameters
+    save_parameters (optional): if to save training data
     seed (optional): random seed
     outfile (optional): path to HDF5 file to store the model
     expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default)
@@ -877,12 +880,12 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 
-                          gpu_mode=gpu_mode, Y_ELBO_TauTrick=Y_ELBO_TauTrick, save_parameters=save_parameters,
+                          gpu_mode=gpu_mode, Y_ELBO_TauTrick=Y_ELBO_TauTrick,
                           seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
     ent.run()
-    ent.save(outfile, expectations=expectations)
+    ent.save(outfile, save_data=save_data, save_parameters=save_parameters, expectations=expectations)
 
     try:
         import h5py
