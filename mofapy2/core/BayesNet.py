@@ -439,9 +439,9 @@ class StochasticBayesNet(BayesNet):
 
 
             # Doesn't really make a big difference...
-            if i==self.options["start_stochastic"]:
-                self.options['schedule'].pop( self.options['schedule'].index("Z") )
-                self.options['schedule'].insert(1,"Z")
+            # if i==self.options["start_stochastic"]:
+            #     self.options['schedule'].pop( self.options['schedule'].index("Z") )
+            #     self.options['schedule'].insert(1,"Z")
 
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:

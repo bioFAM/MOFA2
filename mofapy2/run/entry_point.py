@@ -23,18 +23,6 @@ class entry_point(object):
 
     def print_banner(self):
         """ Method to print the mofapy2 banner """
-
-        # banner = r"""
-
-        #    |￣￣￣￣￣￣￣|
-        #    |             |
-        #    |    MOFA+    |
-        #    |             |
-        #    | ＿＿＿＿＿＿_|
-        #    (\__/) ||
-        #    (•ㅅ•)  ||
-        #    / 　 づ
-        # """
         
         banner = """
         ###########################################################
