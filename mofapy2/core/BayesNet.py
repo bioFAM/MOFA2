@@ -238,7 +238,7 @@ class BayesNet(object):
 
                 # Print ELBO monitoring
                 if not self.options['quiet']:
-                    print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.9f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
+                    print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.8f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
                     if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
 
                 # Print ELBO decomposed by node and variance explained
