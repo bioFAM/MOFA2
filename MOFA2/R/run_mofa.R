@@ -12,6 +12,7 @@
 #' @param save_data logical indicating whether to save the training data in the hdf5 file. 
 #'  This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.
 #' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
+#' @param save_expectations vector with capitalized node names. If NA, only W and Z are saved by default.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @export
@@ -30,7 +31,7 @@
 #' 
 #' # Run the MOFA model
 #' \dontrun{ MOFAmodel <- run_mofa(MOFAmodel, outfile = "~/model.hdf5") }
-run_mofa <- function(object, outfile = NULL, save_data = TRUE) {
+run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) 
@@ -106,7 +107,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE) {
   mofa_entrypoint$run()
   
   # Save the model output as an hdf5 file
-  mofa_entrypoint$save(outfile, save_data=save_data)
+  mofa_entrypoint$save(outfile, save_data = save_data, expectations = save_expectations)
   
   # Load the trained model
   object <- load_model(outfile)

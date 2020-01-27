@@ -268,7 +268,7 @@ class entry_point(object):
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, likelihoods=None, features_subset=None):
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None):
         """ Method to input the data in AnnData format
 
         PARAMETERS
@@ -276,6 +276,7 @@ class entry_point(object):
         adata: an AnnotationData object
         groups_label (optional): a column name in adata.obs for grouping the samples
         use_raw (optional): use raw slot of AnnData as input values
+        use_layer (optional): use a specific layer of AnnData as input values (supersedes use_raw option)
         likelihoods (optional): likelihoods to use (guessed from the data if not provided)
         features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
         """
@@ -301,7 +302,18 @@ class entry_point(object):
 
 
         # Get the respective data slot
-        if use_raw:
+        if use_layer:
+            if use_layer in adata.layers.keys():
+                if callable(getattr(adata.layers[use_layer], "todense", None)):
+                    data = [np.array(adata.layers[use_layer].todense())]    
+                else:
+                    data = [adata.layers[use_layer]]
+                # Subset features if required
+                if features_subset is not None:
+                    data[0] = data[0][:,adata.var[features_subset].values]
+            else:
+                print("Error: Layer {} does not exist".format(use_layer)); sys.stdout.flush(); sys.exit()
+        elif use_raw:
             adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
             data = [adata_raw_dense]
             # Subset features if required
@@ -738,7 +750,7 @@ class entry_point(object):
 
         self.imputed = True # change flag
 
-    def save(self, outfile, save_data = True, save_parameters = False):
+    def save(self, outfile, save_data = True, save_parameters = False, expectations=None):
         """ Save the model in an hdf5 file """
 
         # Sanity checks
@@ -767,16 +779,23 @@ class entry_point(object):
           compression_level = 9
         )
 
-        # save sample and feature names
+        # Save sample and feature names
         tmp.saveNames()
 
         # Save expectations
+
         # If all likelihoods are gaussian there is no need to save the expectations of Y, just saving the data is enough
         # TO-DO: THERE IS STH WRONG WITH THIS, CHECK WITH NON-GAUSS LIK
-        if all([i=="gaussian" for i in self.model_opts["likelihoods"]]):
-            tmp.saveExpectations(nodes=["W","Z"])
-        else:
-            tmp.saveExpectations(nodes=["W","Z"])
+        # if all([i=="gaussian" for i in self.model_opts["likelihoods"]]):
+        #     tmp.saveExpectations(nodes=["W","Z"])
+        # else:
+        #     tmp.saveExpectations(nodes=["W","Z"])
+
+        if expectations is None:
+            # Default is to save only W and Z nodes
+            expectations = ["W", "Z"]
+        
+        tmp.saveExpectations(nodes=expectations)
 
         # Save parameters
         if save_parameters:
@@ -804,13 +823,16 @@ class entry_point(object):
 
 
 
-def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subset: Optional[str] = None,
+def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: bool = None, 
+         features_subset: Optional[str] = None,
          likelihood: Optional[Union[str, List[str]]] = None, n_factors: int = 10,
          scale_views: bool = False, scale_groups: bool = False,
          ard_weights: bool = True, ard_factors: bool = True,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
+         gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, save_parameters: bool = False,
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
+         expectations: Optional[List[str]] = None,
          verbose: bool = False, quiet: bool = True, copy: bool = False):
     """
     Helper function to init and build the model in a single call
@@ -821,6 +843,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
     adata: an AnnotationData object
     groups_label (optional): a column name in adata.obs for grouping the samples
     use_raw (optional): use raw slot of AnnData as input values
+    use_layer (optional): use a specific layer of AnnData as input values (supersedes use_raw option)
     features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
     likelihood (optional): likelihood to use, default is guessed from the data
     n_factors (optional): number of factors to train the model with
@@ -832,8 +855,12 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
     spikeslab_factors (optional): use sample-wise sparsity (e.g. cell-wise)
     n_iterations (optional): upper limit on the number of iterations
     convergence_mode (optional): fast, medium, or slow convergence mode
+    gpu_mode (optional): if to use GPU mode
+    Y_ELBO_TauTrick (optional): if to use ELBO Tau trick to speed up computations
+    save_parameters (optional): if to save training parameters
     seed (optional): random seed
     outfile (optional): path to HDF5 file to store the model
+    expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default)
     verbose (optional): print verbose information during traing
     quiet (optional): silence messages during training procedure
     copy (optional): return a copy of AnnData instead of writing to the provided object
@@ -844,13 +871,18 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, features_subse
     lik = [likelihood] if likelihood is not None else None
 
     ent.set_data_options(scale_views=scale_views, scale_groups=scale_groups)
-    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, likelihoods=lik, features_subset=features_subset)
-    ent.set_model_options(ard_factors=ard_factors, spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, ard_weights=ard_factors, factors=n_factors)
-    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, seed=seed, verbose=verbose, quiet=quiet)
+    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer, 
+                              likelihoods=lik, features_subset=features_subset)
+    ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_factors, 
+                          spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
+                          factors=n_factors)
+    ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 
+                          gpu_mode=gpu_mode, Y_ELBO_TauTrick=Y_ELBO_TauTrick, save_parameters=save_parameters,
+                          seed=seed, verbose=verbose, quiet=quiet)
 
     ent.build()
     ent.run()
-    ent.save(outfile)
+    ent.save(outfile, expectations=expectations)
 
     try:
         import h5py
