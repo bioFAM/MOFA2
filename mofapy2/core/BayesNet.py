@@ -261,36 +261,7 @@ class BayesNet(object):
 
             # Print other statistics
             if self.options['verbose']:
-                # Memory usage
-                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
-
-                # Variance explained
-                r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)
-                r2[r2<0] = 0.
-                print("- Variance explained:  " + "   ".join([ "View %s: %.2f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
-
-                # Sparsity levels of the weights
-                W = self.nodes["W"].getExpectation()
-                foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
-                print("- Fraction of zero weights:  " + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
-
-                # Correlation between factors
-                Z = self.nodes["Z"].getExpectation()
-                Z += s.random.normal(s.zeros(Z.shape),1e-10)
-                r = s.absolute(corr(Z.T,Z.T)); s.fill_diagonal(r,0)
-                print("- Maximum correlation between factors: %.2f" % (s.nanmax(r)))
-
-                # Factor norm
-                bar = s.mean(s.square(Z),axis=0)
-                print("- Factor norms:  " + " ".join([ "%.2f" % bar[k] for k in range(Z.shape[1])]))
-
-                # Tau
-                tau = self.nodes["Tau"].getExpectation()
-                print("- Tau per view (average):  " + "   ".join([ "View %s: %.2f" % (m,tau[m].mean()) for m in range(self.dim["M"])]))
-
-                print("\n")
-
-    
+                self.print_verbose_message()
 
             iter_time[i] = time()-t
             
@@ -300,6 +271,38 @@ class BayesNet(object):
         # Finish by collecting the training statistics
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         self.trained = True
+
+    def print_verbose_message(self):
+        """Method to print training statistics if Verbose is TRUE"""
+
+        # Memory usage (does not work in Windows)
+        # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
+
+        # Variance explained
+        r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)
+        r2[r2<0] = 0.
+        print("- Variance explained:  " + "   ".join([ "View %s: %.2f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+
+        # Sparsity levels of the weights
+        W = self.nodes["W"].getExpectation()
+        foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
+        print("- Fraction of zero weights:  " + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+
+        # Correlation between factors
+        Z = self.nodes["Z"].getExpectation()
+        Z += s.random.normal(s.zeros(Z.shape),1e-10)
+        r = s.absolute(corr(Z.T,Z.T)); s.fill_diagonal(r,0)
+        print("- Maximum correlation between factors: %.2f" % (s.nanmax(r)))
+
+        # Factor norm
+        bar = s.mean(s.square(Z),axis=0)
+        print("- Factor norms:  " + " ".join([ "%.2f" % bar[k] for k in range(Z.shape[1])]))
+
+        # Tau
+        tau = self.nodes["Tau"].getExpectation()
+        print("- Tau per view (average):  " + "   ".join([ "View %s: %.2f" % (m,tau[m].mean()) for m in range(self.dim["M"])]))
+
+        print("\n")
 
     def assess_convergence(self, delta_elbo, first_elbo, convergence_token):
         converged = False
@@ -393,7 +396,7 @@ class StochasticBayesNet(BayesNet):
         batch_ix = i % n_batches
         epoch = int(i / n_batches)
         if batch_ix == 0:
-            print("## Epoch %s ##" % str(epoch+1))
+            print("\n## Epoch %s ##" % str(epoch+1))
             print("-------------------------------------------------------------------------------------------")
             self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
 
@@ -487,8 +490,8 @@ class StochasticBayesNet(BayesNet):
 
                 # Print ELBO decomposed by node and variance explained
                 if self.options['verbose']:
-                    print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
-                    print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
+                    print("- ELBO decomposition:  " + "".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
+                    print('- Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
 
                 # Assess convergence
                 if i>self.options["start_elbo"] and not self.options['forceiter']:
@@ -505,27 +508,11 @@ class StochasticBayesNet(BayesNet):
 
             # Print other statistics
             if i>=(self.options["start_stochastic"]):
-                print("Step size (rho): %.3f" % ro )
+                print("- Step size: %.3f" % ro )
 
             if self.options['verbose']:
-                # Memory usage
-                # print('Peak memory usage: %.2f MB' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / infer_platform() ))
-
-                # Variance explained
-                r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)
-                r2[r2<0] = 0.
-                print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
-
-                # Sparsity levels of the weights
-                W = self.nodes["W"].getExpectation()
-                foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
-                print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
-                
-                # Sparsity levels of the factors
-                # Z = self.nodes["Z"].getExpectation()
-                # bar = s.mean(s.absolute(Z)<1e-3)
-                # print("Fraction of zero samples: %.0f%%" % (100*bar))
-            print("")
+                self.print_verbose_message()
+            # print("")
 
             iter_time[i] = time()-t
             
