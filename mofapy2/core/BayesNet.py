@@ -243,8 +243,8 @@ class BayesNet(object):
 
                 # Print ELBO decomposed by node and variance explained
                 if self.options['verbose']:
-                    print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
-                    print('Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
+                    print("- ELBO decomposition:  " + "".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
+                    print('- Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
 
                 # Assess convergence
                 if i>self.options["start_elbo"] and not self.options['forceiter']:
@@ -267,18 +267,31 @@ class BayesNet(object):
                 # Variance explained
                 r2 = s.asarray(self.calculate_variance_explained(total=True)).mean(axis=0)
                 r2[r2<0] = 0.
-                print("Variance explained:\t" + "   ".join([ "View %s: %.3f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
+                print("- Variance explained:  " + "   ".join([ "View %s: %.2f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
 
-                # Sparsity levels of the weights
+                # Sparsity levels of the weights (TO-DO: USE S INSTEAD OF W)
                 W = self.nodes["W"].getExpectation()
                 foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
-                print("Fraction of zero weights:\t" + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
+                print("- Fraction of zero weights:  " + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
 
-                # Sparsity levels of the factors
-                # Z = self.nodes["Z"].getExpectation()
-                # bar = s.mean(s.absolute(Z)<1e-3)
-                # print("Fraction of zero samples: %.0f%%" % (100*bar))
+                # Correlation between factors
+                Z = self.nodes["Z"].getExpectation()
+                r = s.absolute(corr(Z.T,Z.T))
+                s.fill_diagonal(r,0)
+                print("- Maximum correlation between factors: %.2f" % (r.max()))
+
+                # Factor norm
+                Z = self.nodes["Z"].getExpectation()
+                bar = s.mean(s.square(Z),axis=0)
+                print("- Factor norms:  " + " ".join([ "%.2f" % bar[k] for k in range(Z.shape[1])]))
+
+                # Tau
+                tau = self.nodes["Tau"].getExpectation()
+                print("- Tau per view (average):  " + "   ".join([ "View %s: %.2f" % (m,tau[m].mean()) for m in range(self.dim["M"])]))
+
                 print("\n")
+
+    
 
             iter_time[i] = time()-t
             
