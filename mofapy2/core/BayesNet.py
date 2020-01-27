@@ -376,7 +376,7 @@ class StochasticBayesNet(BayesNet):
         return self.options['learning_rate'] / ((1 + self.options['forgetting_rate'] * i)**(3./4.))
 
     def sample_mini_batch(self):
-        # TODO if multiple group, sample indices in each group evenly ? prob yes
+        """ Method to define mini batches"""
         S = int( self.options['batch_size'] * self.dim['N'] )
         ix = s.random.choice(range(self.dim['N']), size=S, replace=False)
         self.define_mini_batch(ix)
@@ -384,9 +384,6 @@ class StochasticBayesNet(BayesNet):
 
     def sample_mini_batch_no_replace(self, i):
         """ Method to define mini batches"""
-
-        # TODO :
-        # - if multiple group, sample indices in each group evenly ? prob yes
 
         i -= 1 # This is because we start at iteration 1 in the main loop
 
@@ -398,13 +395,14 @@ class StochasticBayesNet(BayesNet):
         if batch_ix == 0:
             print("\n## Epoch %s ##" % str(epoch+1))
             print("-------------------------------------------------------------------------------------------")
-            self.shuffled_ix = s.random.choice(range(self.dim['N']), size= self.dim['N'], replace=False)
+            self.shuffled_ix = s.random.choice(range(self.dim['N']), size=self.dim['N'], replace=False)
 
         min = int(S * batch_ix)
         max = int(S * (batch_ix + 1))
-        if max > self.dim['N']:
-            max = self.dim['N']
 
+        if max>self.dim['N']: print("Error in stochastic"); exit()
+
+        # Define mini batch
         ix = self.shuffled_ix[min:max]
         self.define_mini_batch(ix)
 
@@ -412,7 +410,7 @@ class StochasticBayesNet(BayesNet):
     
     def define_mini_batch(self, ix):
         # Define mini-batch for each node
-        self.nodes['Z'].define_mini_batch(ix) # TO-DELETE
+        self.nodes['Z'].define_mini_batch(ix)
         self.nodes['Y'].define_mini_batch(ix)
         self.nodes['Tau'].define_mini_batch(ix)
         if 'AlphaZ' in self.nodes:
@@ -449,9 +447,7 @@ class StochasticBayesNet(BayesNet):
                 ix, epoch = self.sample_mini_batch_no_replace(i-(self.options["start_stochastic"]-1))
                 ro = self.step_size2(epoch)
             else:
-                # ro = self.options["learning_rate"]
                 ro = 1.
-
 
             # Doesn't really make a big difference...
             # if i==self.options["start_stochastic"]:

@@ -52,27 +52,15 @@ class W_Node(UnivariateGaussian_Unobserved_Variational_Node):
         Q = self.Q.getParameters()
         Qmean, Qvar = Q['mean'], Q['var']
 
-        #-----------------------------------------------------------------------
-        # Masking
-        #-----------------------------------------------------------------------
-        
-
-        #-----------------------------------------------------------------------
         # compute stochastic "anti-bias" coefficient
-        #-----------------------------------------------------------------------
         N = self.markov_blanket["Y"].dim[0]
         coeff = float(N) / float(Y.shape[0])
 
-        #-----------------------------------------------------------------------
         # make sure ro is not None
-        #-----------------------------------------------------------------------
         if ro is None:
             ro = 1.
 
-        #-----------------------------------------------------------------------
         # compute the update
-        #-----------------------------------------------------------------------
-
         self._updateParameters(Y, Z, tau, Mu, Alpha, Qmean, Qvar, coeff, ro)
 
     def _updateParameters(self, Y, Z, tau, Mu, Alpha, Qmean, Qvar, coeff, ro):
