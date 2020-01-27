@@ -269,19 +269,18 @@ class BayesNet(object):
                 r2[r2<0] = 0.
                 print("- Variance explained:  " + "   ".join([ "View %s: %.2f%%" % (m,100*r2[m]) for m in range(self.dim["M"])]))
 
-                # Sparsity levels of the weights (TO-DO: USE S INSTEAD OF W)
+                # Sparsity levels of the weights
                 W = self.nodes["W"].getExpectation()
                 foo = [s.mean(s.absolute(W[m])<1e-3) for m in range(self.dim["M"])]
                 print("- Fraction of zero weights:  " + "   ".join([ "View %s: %.0f%%" % (m,100*foo[m]) for m in range(self.dim["M"])]))
 
                 # Correlation between factors
                 Z = self.nodes["Z"].getExpectation()
-                r = s.absolute(corr(Z.T,Z.T))
-                s.fill_diagonal(r,0)
-                print("- Maximum correlation between factors: %.2f" % (r.max()))
+                Z += s.random.normal(s.zeros(Z.shape),1e-10)
+                r = s.absolute(corr(Z.T,Z.T)); s.fill_diagonal(r,0)
+                print("- Maximum correlation between factors: %.2f" % (s.nanmax(r)))
 
                 # Factor norm
-                Z = self.nodes["Z"].getExpectation()
                 bar = s.mean(s.square(Z),axis=0)
                 print("- Factor norms:  " + " ".join([ "%.2f" % bar[k] for k in range(Z.shape[1])]))
 
