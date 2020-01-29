@@ -511,6 +511,7 @@ class entry_point(object):
         self.train_opts['gpu_mode'] = gpu_mode
 
         # Minimum Variance explained threshold to drop inactive factors
+        if dropR2 is False: dropR2 = None
         if dropR2 is not None:
             dropR2 = float(dropR2)
             if dropR2 < 0: dropR2 = None

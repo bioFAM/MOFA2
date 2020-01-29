@@ -323,7 +323,7 @@ class BayesNet(object):
 
         if 100*abs(delta_elbo/first_elbo) < convergence_threshold: 
             convergence_token += 1
-            if convergence_token==5: converged = True
+            if convergence_token==3: converged = True
         else:
             convergence_token = 1
 
