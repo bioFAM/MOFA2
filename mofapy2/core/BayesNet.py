@@ -187,8 +187,7 @@ class BayesNet(object):
             print("".join([ "%s=%.2f  " % (k,v) for k,v in elbo.drop("total").iteritems() ]) + "\nTotal: %.2f\n" % elbo["total"])
         else:
             if not self.options['quiet']:
-                print('ELBO before training: %.2f' % elbo["total"])
-        print("\n")
+                print('ELBO before training: %.2f \n' % elbo["total"])
 
         return elbo
 

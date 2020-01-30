@@ -58,13 +58,13 @@ def process_data(data, likelihoods, data_opts, samples_groups):
         # Removing features with no variance
         var = data[m].std(axis=0)
         if np.any(var==0.):
-            print("Warning: %d features(s) in view %d have zero variance, consider removing them before training the model..." % ((var==0.).sum(), m))
+            print("Warning: %d features(s) in view %d have zero variance, consider removing them before training the model...\n" % ((var==0.).sum(), m))
             sys.stdout.flush()
 
         # Check that there are no features full of missing values
         tmp = np.isnan(data[m]).mean(axis=0)
         if np.any(tmp==1.):
-            print("Warning: %d features(s) in view %d are full of missing values, please consider removing them before training the model..." % ((tmp==0.).sum(), m))
+            print("Warning: %d features(s) in view %d are full of missing values, please consider removing them before training the model...\n" % ((tmp==0.).sum(), m))
             sys.stdout.flush()
 
 
