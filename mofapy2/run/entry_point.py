@@ -52,7 +52,7 @@ class entry_point(object):
         """
 
         if not hasattr(self, 'data_opts'): 
-            print("Data options not defined before setting the data, using default values...\n")
+            print("Data options not defined, using default values...\n")
             self.set_data_options()
 
         # Sanity check

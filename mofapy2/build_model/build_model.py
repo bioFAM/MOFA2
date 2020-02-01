@@ -41,7 +41,7 @@ class buildBiofam(buildModel):
         buildModel.__init__(self, data, data_opts, model_opts, dimensionalities, seed)
 
         # create an instance of initModel
-        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed=self.seed)
+        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed=seed)
 
         # Build all nodes
         self.build_nodes()

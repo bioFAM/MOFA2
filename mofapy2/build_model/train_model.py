@@ -24,7 +24,6 @@ def train_model(model):
     print ("## Training the model with seed %d ##" % (model.options['seed']))
     print ("#"*38)
     print ("\n")
-
     model.iterate()
 
     print("\n")

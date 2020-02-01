@@ -35,7 +35,7 @@ class BayesNet(object):
 
         self.dim = dim
         self.nodes = nodes
-        self.options = None  # TODO rename to train_options everywhere
+        self.options = None
 
         # Training and simulations flag
         self.trained = False
