@@ -18,7 +18,9 @@ plot_enrichment(enrichment.results, factor, alpha = 0.1,
 
 \item{adjust}{use adjusted p-values?}
 
-\item{object}{\code{\link{MOFA}} object on which run_enrichment was performed}
+\item{text_size}{text size}
+
+\item{dot_size}{dot size}
 }
 \value{
 a \code{ggplot2} object

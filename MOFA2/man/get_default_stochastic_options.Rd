@@ -21,11 +21,11 @@ The training options are the following: \cr
  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
  Default is 0.5 (half of the data set).
  \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
- Default is 0.75 
+ Default is 0.5 
  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
- Default is 1.0
+ Default is 0.5
  \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
- Default is 10
+ Default is 5
  }
 }
 \examples{

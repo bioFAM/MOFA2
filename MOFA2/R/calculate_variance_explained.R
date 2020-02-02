@@ -7,7 +7,6 @@
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @return a list with matrices with the amount of variation explained per factor and view.
-#' @import DelayedArray
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
