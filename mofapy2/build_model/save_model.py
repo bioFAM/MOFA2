@@ -48,16 +48,22 @@ class saveModel():
 
     def saveNames(self):
         """ Method to save sample and feature names"""
-        
-        # Create HDF5 groups
-        features_grp = self.hdf5.create_group("features")
-        samples_grp  = self.hdf5.create_group("samples")
+
+        # Save group names
+        groups_grp = self.hdf5.create_group("groups")
+        groups_grp.create_dataset("groups", data=np.array(self.groups_names, dtype='S50'))        
+
+        # Save views names
+        views_grp = self.hdf5.create_group("views")
+        views_grp.create_dataset("views", data=np.array(self.views_names, dtype='S50'))
 
         # Save samples names
+        samples_grp = self.hdf5.create_group("samples")
         for g in range(len(self.groups_names)):
             samples_grp.create_dataset(self.groups_names[g], data=np.array(self.samples_names[g], dtype='S50'))
 
         # Save feature names
+        features_grp = self.hdf5.create_group("features")
         for m in range(len(self.data)):
             features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
 
@@ -251,8 +257,8 @@ class saveModel():
         opts = dict((k, np.asarray(self.model_opts[k]).astype('S')) for k in options_to_save)
 
         # Sort values by alphabetical order of views
-        order = np.argsort(self.views_names)
-        opts["likelihoods"] = opts["likelihoods"][order]
+        # order = np.argsort(self.views_names)
+        # opts["likelihoods"] = opts["likelihoods"][order]
 
         # Create HDF5 group
         grp = self.hdf5.create_group('model_options')
@@ -297,23 +303,25 @@ class saveModel():
     def saveVarianceExplained(self):
 
         # Sort values by alphabetical order of views
-        order = np.argsort(self.views_names)
-        # order = [ i[0] for i in sorted(enumerate(self.views_names), key=lambda x:x[1]) ]
+        # order = np.argsort(self.views_names)
+        # # order = [ i[0] for i in sorted(enumerate(self.views_names), key=lambda x:x[1]) ]
 
         # Store variance explained per factor in each view and group
         grp = self.hdf5.create_group("variance_explained")
 
         subgrp = grp.create_group("r2_per_factor")
         r2 = self.model.calculate_variance_explained()
-        for g in range(len(r2)):
-            subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
+        for g in range(len(self.groups_names)):
+            # subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
                                compression_opts=self.compression_level)
 
         # Store total variance explained for each view and group (using all factors)
         subgrp = grp.create_group("r2_total")
         r2 = self.model.calculate_variance_explained(total=True)
-        for g in range(len(r2)):
-            subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
+        for g in range(len(self.groups_names)):
+            # subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
                                compression_opts=self.compression_level)
 
     def saveTrainingStats(self):

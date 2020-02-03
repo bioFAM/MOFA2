@@ -202,8 +202,8 @@ class entry_point(object):
         assert data.duplicated(subset=["group","view","feature","sample"]).sum() == 0, "Duplicated entries found in the data"
 
         # Define feature group names and sample group names
-        self.data_opts['views_names'] = data["view"].unique().tolist()
-        self.data_opts['groups_names'] = data["group"].unique().tolist()
+        self.data_opts['views_names'] = np.sort(data["view"].unique()).tolist()
+        self.data_opts['groups_names'] = np.sort(data["group"].unique()).tolist()
         self.data_opts['features_names'] = data.groupby(["view"])["feature"].unique()[self.data_opts['views_names']].tolist()
         self.data_opts['samples_names'] = data.groupby(["group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
 

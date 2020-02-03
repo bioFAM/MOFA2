@@ -43,15 +43,16 @@ load_model <- function(file, sort_factors = TRUE,
     message("load_data = FALSE is currently disabled, setting it to TRUE")
     load_data = TRUE
   }
+  
   ########################
   ## Load training data ##
   ########################
 
-  # Load identity of features and samples
-  feature_names <- h5read(file, "features")
-  sample_names  <- h5read(file, "samples")
-  view_names <- names(feature_names)
-  group_names <- names(sample_names)
+  # Load names
+  view_names <- as.character( h5read(file, "views")[[1]] )
+  group_names <- as.character( h5read(file, "groups")[[1]] )
+  feature_names <- h5read(file, "features")[view_names]
+  sample_names  <- h5read(file, "samples")[group_names]
 
   # Load training data (as nested list of matrices)
   data <- list(); intercepts <- list()
@@ -143,24 +144,23 @@ load_model <- function(file, sort_factors = TRUE,
   if (isTRUE(verbose)) message(paste0("Loading expectations for ", length(node_names), " nodes..."))
 
   if ("AlphaW" %in% node_names)
-    expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")
+    expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")[view_names]
   if ("AlphaZ" %in% node_names)
-    expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")
+    expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")[group_names]
   if ("Z" %in% node_names)
-    expectations[["Z"]] <- h5read(file, "expectations/Z")
+    expectations[["Z"]] <- h5read(file, "expectations/Z")[group_names]
   if ("W" %in% node_names)
-    expectations[["W"]] <- h5read(file, "expectations/W")
+    expectations[["W"]] <- h5read(file, "expectations/W")[view_names]
   if ("ThetaW" %in% node_names)
-    expectations[["ThetaW"]] <- h5read(file, "expectations/ThetaW")
+    expectations[["ThetaW"]] <- h5read(file, "expectations/ThetaW")[view_names]
   if ("ThetaZ" %in% node_names)
-    expectations[["ThetaZ"]] <- h5read(file, "expectations/ThetaZ")
-  if ("Tau" %in% node_names)
-    expectations[["Tau"]] <- h5read(file, "expectations/Tau")
-  
-  tmp <- as.list(h5read(file, 'model_options', read.attributes = TRUE))[["likelihoods"]]
-  names(tmp) <- names(data)
+    expectations[["ThetaZ"]] <- h5read(file, "expectations/ThetaZ")[group_names]
+  # if ("Tau" %in% node_names)
+  #   expectations[["Tau"]] <- h5read(file, "expectations/Tau")
   
   # Load expectations of Y
+  # tmp <- as.list(h5read(file, 'model_options', read.attributes = TRUE))[["likelihoods"]]
+  # names(tmp) <- view_names
   # expectations[["Y"]] <- list()
   # for (m in view_names) {
   #   expectations[["Y"]][[m]] <- list()
@@ -194,18 +194,13 @@ load_model <- function(file, sort_factors = TRUE,
   }, error = function(x) { print("Model options not found, not loading it...") })
 
   # Convert True/False strings to logical values
-  for (opt in names(object@model_options)) {
-    if (object@model_options[opt] == "False" | object@model_options[opt] == "True") {
-      object@model_options[opt] <- as.logical(object@model_options[opt])
+  for (i in names(object@model_options)) {
+    if (object@model_options[i] == "False" | object@model_options[i] == "True") {
+      object@model_options[i] <- as.logical(object@model_options[i])
     } else {
-      object@model_options[opt] <- object@model_options[opt]
+      object@model_options[i] <- object@model_options[i]
     }
   }
-
-  # Add views names to likelihood vector
-  # if (is.null(names(object@model_options$likelihoods))) {
-  #   names(object@model_options$likelihoods) <- views(object)
-  # }
 
   ##########################################
   ## Load training options and statistics ##
@@ -230,14 +225,14 @@ load_model <- function(file, sort_factors = TRUE,
   ## Load variance explained estimates ##
   #######################################
   
-  # THE ORDER OF THE VIEWS SEEMS TO BE WRONG
-  # if ("variance_explained"%in%h5ls.out$name) {
-  #   r2_list <- list(
-  #     r2_total = h5read(file, "variance_explained/r2_total"),
-  #     r2_per_factor = h5read(file, "variance_explained/r2_per_factor")
-  #   )
-  #   object@cache[["variance_explained"]] <- r2_list
-  # }
+  # TO-FIX: THE ORDER OF THE VIEWS SEEMS TO BE WRONG
+  if ("variance_explained"%in%h5ls.out$name) {
+    r2_list <- list(
+      r2_total = h5read(file, "variance_explained/r2_total"),
+      r2_per_factor = h5read(file, "variance_explained/r2_per_factor")
+    )
+    object@cache[["variance_explained"]] <- r2_list
+  }
   
   ##############################
   ## Specify dimensionalities ##
