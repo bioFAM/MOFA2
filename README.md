@@ -144,8 +144,20 @@ ERROR: dependencies 'XXX', 'YYY' are not available for package 'MOFA2'
 You probably tried to install them using `install.packages()`. These packages should be installed from Bioconductor.
 
 **(3.3) I hate R, can I do MOFA only with Python?**  
-XXX
-<!-- You can use Python to train the model, see [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_run.py). However, we currently do not provide downstream analysis functions in Python. We strongly recommend that you use our MOFA2 R package for this. -->
+You can use Python to train the model, see [this notebook](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb) and [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_script.py). However, we currently do not provide downstream analysis functions in Python (it is in our to-do list). For now we strongly recommend that you use our MOFA2 R package for this.
+
+**(3.4) Can I speed up the training procedure using CPU parallel processing?**  
+MOFA uses (numpy)[https://numpy.org/] for the mathematical operations. This library can be massively optimised by linking it to OpenBLAS or the Intel MKL libraries, which take advantage of multiple cores and multithreading. 
+
+You can check which libraries you have linked to numpy using 
+```
+python -c "import numpy; print(numpy.show_config())"
+```
+Note that if you are using anaconda, numpy is automatically linked to MKL (see https://docs.anaconda.com/mkl-optimizations/).  
+The next step is to define the environmental variables. For MKL you need to set `MKL_NUM_THREADS=N` where N is the number of cores.
+
+**(3.5) How can I use GPUs to (massively) speed up training?**
+The Python core of MOFA () can take advantage of NVIDIA GPUs to massively speed up training. For this you have to install and configure the [CuPy package](https://cupy.chainer.org), which is an open-source matrix library accelerated with NVIDIA CUDA. 
 
 
 ### (4) FAQ on the model options
