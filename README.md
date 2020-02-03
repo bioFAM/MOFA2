@@ -147,7 +147,7 @@ You probably tried to install them using `install.packages()`. These packages sh
 You can use Python to train the model, see [this notebook](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb) and [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_script.py). However, we currently do not provide downstream analysis functions in Python (it is in our to-do list). For now we strongly recommend that you use our MOFA2 R package for this.
 
 **(3.4) Can I speed up the training procedure using CPU parallel processing?**  
-MOFA uses (numpy)[https://numpy.org/] for the mathematical operations. This library can be massively optimised by linking it to OpenBLAS or the Intel MKL libraries, which take advantage of multiple cores and multithreading. 
+MOFA uses [numpy](https://numpy.org/) for the mathematical operations. This library can be massively optimised by linking it to OpenBLAS or the Intel MKL libraries, which take advantage of multiple cores and multithreading. 
 
 You can check which libraries you have linked to numpy using 
 ```
