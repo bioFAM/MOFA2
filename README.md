@@ -183,3 +183,7 @@ In practice, however, we observed that the solutions are highly consistent, part
 **(5.1) How can I do Gene Set Enrichment Analysis?**  
 First, you need to create your binary gene set matrix where rows are feature sets and columns are features (genes). We have manually processed some of Reactome and MSigDB gene sets for mouse and human. Contact us if you would like to use the data.  
 Then, you will have to choose a local statistic per feature (the loading, by default), a global statistic per pathway (average loading, by default), and a statistical test. The most trustworthy one is a permutation test with a long number of iterations, but this is slow and a fast parametric tests is also available. However, note that it tends to inflate the p-values due to the correlation structure between related genes (see for example [Gatti2010](https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-11-574)).
+
+**(5.2) Does MOFA show horshoe effects?**
+One of our reviewers asked whether MOFA can display horseshoes or arch-shaped effects (see [this link](https://www.huber.embl.de/users/whuber/pubhorseshoe.html)).  
+These patterns occure in linear dimensionality reduction methods, including MOFA, when a specific type of non-linear pattern dominates the data. Although this is not frequent, users of MOFA need to be aware of such artifacts and not naively interpret the results.
