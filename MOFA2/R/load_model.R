@@ -37,7 +37,12 @@ load_model <- function(file, sort_factors = TRUE,
   
   # Get groups and data set names from the hdf5 file object
   h5ls.out <- h5ls(file, datasetinfo = FALSE)
-
+  
+  # Sanity checks
+  if (isFALSE(load_data)) {
+    message("load_data = FALSE is currently disabled, setting it to TRUE")
+    load_data = TRUE
+  }
   ########################
   ## Load training data ##
   ########################
@@ -225,13 +230,14 @@ load_model <- function(file, sort_factors = TRUE,
   ## Load variance explained estimates ##
   #######################################
   
-  if ("variance_explained"%in%h5ls.out$name) {
-    r2_list <- list(
-      r2_total = h5read(file, "variance_explained/r2_total"),
-      r2_per_factor = h5read(file, "variance_explained/r2_per_factor")
-    )
-    object@cache[["variance_explained"]] <- r2_list
-  }
+  # THE ORDER OF THE VIEWS SEEMS TO BE WRONG
+  # if ("variance_explained"%in%h5ls.out$name) {
+  #   r2_list <- list(
+  #     r2_total = h5read(file, "variance_explained/r2_total"),
+  #     r2_per_factor = h5read(file, "variance_explained/r2_per_factor")
+  #   )
+  #   object@cache[["variance_explained"]] <- r2_list
+  # }
   
   ##############################
   ## Specify dimensionalities ##

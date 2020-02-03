@@ -296,7 +296,6 @@ setMethod("views<-", signature(object="MOFA", value="character"),
             if (length(object@model_options$likelihoods)>0)
               names(object@model_options$likelihoods) <- value
           
-            
             # Set view names in features_metadata 
             if (!is.null(object@features_metadata) && (length(object@features_metadata) != 0)) {
               # object@features_metadata$view <- as.character(object@features_metadata$view)
@@ -311,6 +310,8 @@ setMethod("views<-", signature(object="MOFA", value="character"),
             if (!is.null(object@cache$variance_explained)) {
               for (i in names(object@cache$variance_explained$r2_total)) {
                 names(object@cache$variance_explained$r2_total[[i]]) <- value
+              }
+              for (i in names(object@cache$variance_explained$r2_per_factor)) {
                 colnames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
               }
             }

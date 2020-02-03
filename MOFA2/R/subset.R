@@ -134,7 +134,6 @@ subset_views <- function(object, views) {
   object@dimensions[["D"]] <- object@dimensions[["D"]][views]
   
   # Update view names
-  # views(object) <- views # don't need to run this
   object@data_options$views <- views
   
   # Subset variance explained

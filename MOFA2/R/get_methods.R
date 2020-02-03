@@ -64,7 +64,7 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
 
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
-  if (as.data.frame) {
+  if (isTRUE(as.data.frame)) {
     Z <- Z[Z$factor%in%factors & Z$group%in%groups,]
   } else {
     Z <- lapply(Z[groups], function(z) z[,factors, drop=FALSE])
@@ -114,7 +114,7 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   
   # Fetch weights
   weights <- get_expectations(object, "W", as.data.frame)
-  if (as.data.frame) {
+  if (isTRUE(as.data.frame)) {
     weights <- weights[weights$view %in% views & weights$factor %in% factors, ]
   } else {
     weights <- lapply(views, function(m) weights[[m]][,factors,drop=FALSE])
@@ -204,7 +204,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
     } }, error = function(e) { NULL })
 
   # Convert to long data frame
-  if (as.data.frame) {
+  if (isTRUE(as.data.frame)) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
         tmp <- reshape2::melt(data[[m]][[p]], na.rm=na.rm)
@@ -293,7 +293,7 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   #   } }, error = function(e) { NULL })
   
   # Convert to long data frame
-  if (as.data.frame) {
+  if (isTRUE(as.data.frame)) {
     
     mean <- lapply(views, function(m) { 
       lapply(groups, function(g) { 
@@ -375,7 +375,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   }
   
   # Convert to long data frame
-  if (as.data.frame) {
+  if (isTRUE(as.data.frame)) {
     
     # Z node
     if (variable=="Z") {
@@ -420,3 +420,71 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   return(exp)
 }
 
+
+#' @title Get variance explained values
+#' @name get_variance_explained
+#' @description Extract the latent factors from the model.
+#' @param object a trained \code{\link{MOFA}} object.
+#' @param factors character vector with the factor name(s), or numeric vector with the factor index(es).
+#' Default is "all".
+#' @param groups character vector with the group name(s), or numeric vector with the group index(es).
+#' Default is "all".
+#' @param groups character vector with the view name(s), or numeric vector with the view index(es).
+#' Default is "all".
+#' @param as.data.frame logical indicating whether to return a long data frame instead of a matrix.
+#' Default is \code{FALSE}.
+#' @export
+#' 
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Fetch variance explained values (in matrix format)
+#' r2 <- get_variance_explained(model)
+#' 
+#' # Fetch variance explained values (in data.frame format)
+#' r2 <- get_variance_explained(model, as.data.frame = TRUE)
+#'
+get_variance_explained <- function(object, groups = "all", views = "all", factors = "all", 
+                                   as.data.frame = FALSE) {
+  
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  
+  # Get factors and groups
+  groups <- .check_and_get_groups(object, groups)
+  views <- .check_and_get_views(object, views)
+  factors <- .check_and_get_factors(object, factors)
+  
+  # Fetch R2
+  if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
+    r2_list <- object@cache$variance_explained
+  } else {
+    r2_list <- calculate_variance_explained(object, factors = factors, views = views, groups = groups, ...)
+  }
+  
+  # Convert to data.frame format
+  if (isTRUE(as.data.frame)) {
+    
+    # total R2
+    r2_total <- reshape2::melt( do.call("rbind",r2_list[["r2_total"]]) )
+    colnames(r2_total) <- c("group", "view", "value")
+                   
+    # R2 per factor
+    r2_per_factor <- lapply(names(r2_list[["r2_per_factor"]]), function(g) {
+      x <- reshape2::melt( r2_list[["r2_per_factor"]][[g]] )
+      colnames(x) <- c("factor", "view", "value")
+      x$group <- g
+      return(x)
+    })
+    r2_per_factor <- do.call("rbind",r2_per_factor)[,c("group","view","factor","value")]
+    r2 <- list(r2_per_factor, r2_total)
+    
+  } else {
+    r2 <- r2_list
+  }
+  
+  return(r2)
+
+}
