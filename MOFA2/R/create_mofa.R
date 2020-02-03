@@ -168,6 +168,12 @@ create_mofa <- function(data, groups = NULL, ...) {
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @keywords internal
 .create_mofa_from_seurat <- function(seurat, groups, assays = "RNA", slot = "data", features = NULL) {
+  # Check is Seurat is installed
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
+  }
+
+  # Define groups of cells
   if (is(groups, 'character') && (length(groups) == 1)) {
     if (!(groups %in% colnames(seurat@meta.data)))
       stop(paste0(groups, " is not found in the Seurat@meta.data.\n",

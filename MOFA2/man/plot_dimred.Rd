@@ -39,6 +39,8 @@ plot_dimred(object, method = c("UMAP", "TSNE"), groups = "all",
 \item{legend}{logical indicating whether to add legend.}
 
 \item{return_data}{logical indicating whether to return the long data frame to plot instead of plotting}
+
+\item{...}{extra arguments passed to \code{\link{run_umap}} or \code{\link{run_tsne}}.}
 }
 \value{
 Returns a \code{ggplot2} object or a long data.frame (if return_data is TRUE)
