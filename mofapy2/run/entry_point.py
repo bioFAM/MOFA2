@@ -752,7 +752,7 @@ class entry_point(object):
 
         self.imputed = True # change flag
 
-    def save(self, outfile, save_data = True, save_parameters = False, save_expectations=None):
+    def save(self, outfile, save_data=True, save_parameters=False, expectations=None):
         """ Save the model in an hdf5 file """
 
         # Sanity checks
@@ -793,7 +793,7 @@ class entry_point(object):
         # else:
         #     tmp.saveExpectations(nodes=["W","Z"])
 
-        if save_expectations is None:
+        if expectations is None:
             # Default is to save only W and Z nodes
             expectations = ["W", "Z"]
         
