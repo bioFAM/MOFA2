@@ -49,10 +49,18 @@ load_model <- function(file, sort_factors = TRUE,
   ########################
 
   # Load names
-  view_names <- as.character( h5read(file, "views")[[1]] )
-  group_names <- as.character( h5read(file, "groups")[[1]] )
-  feature_names <- h5read(file, "features")[view_names]
-  sample_names  <- h5read(file, "samples")[group_names]
+  if ("views" %in% h5ls.out$name) {
+    view_names <- as.character( h5read(file, "views")[[1]] )
+    group_names <- as.character( h5read(file, "groups")[[1]] )
+    feature_names <- h5read(file, "features")[view_names]
+    sample_names  <- h5read(file, "samples")[group_names] 
+  } else {  # for old models
+    feature_names <- h5read(file, "features")
+    sample_names  <- h5read(file, "samples")
+    view_names <- names(feature_names)
+    group_names <- names(sample_names)
+    h5ls.out <- h5ls.out[grep("variance_explained", h5ls.out$name, invert = T),]
+  }
 
   # Load training data (as nested list of matrices)
   data <- list(); intercepts <- list()
@@ -225,8 +233,7 @@ load_model <- function(file, sort_factors = TRUE,
   ## Load variance explained estimates ##
   #######################################
   
-  # TO-FIX: THE ORDER OF THE VIEWS SEEMS TO BE WRONG
-  if ("variance_explained"%in%h5ls.out$name) {
+  if ("variance_explained" %in% h5ls.out$name) {
     r2_list <- list(
       r2_total = h5read(file, "variance_explained/r2_total"),
       r2_per_factor = h5read(file, "variance_explained/r2_per_factor")
