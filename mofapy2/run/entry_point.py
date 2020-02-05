@@ -471,7 +471,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True,
+        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, weight_views = False
         ):
         """ Set training options """
 
@@ -581,6 +581,9 @@ class entry_point(object):
         # Use TauTrick to speed up ELBO computation?
         self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
 
+        # Weight the views to avoid imbalance problems?
+        self.train_opts['weight_views'] = weight_views
+
     def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
         # Sanity checks
@@ -669,7 +672,7 @@ class entry_point(object):
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
 
         # Build the nodes
-        tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities, self.train_opts['seed'])
+        tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities, self.train_opts['seed'],  self.train_opts['weight_views'])
 
         # Create BayesNet class
         if self.train_opts['stochastic']:

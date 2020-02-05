@@ -129,9 +129,9 @@ class Multiview_Variational_Node(Multiview_Node, Variational_Node):
     def updateParameters(self, ix=None, ro=1.):
         """Method to update parameters using current estimates of the expectations"""
         for m in self.activeM: self.nodes[m].updateParameters(ix, ro)
-    def calculateELBO(self):
+    def calculateELBO(self, weights):
         """Method to calculate variational evidence lower bound"""
-        lb = [ self.nodes[m].calculateELBO() for m in self.activeM ]
+        lb = [ self.nodes[m].calculateELBO() * weights[m] for m in self.activeM ] 
         return sum(lb)
 
 class Multiview_Constant_Node(Multiview_Node):
@@ -154,12 +154,12 @@ class Multiview_Mixed_Node(Multiview_Constant_Node, Multiview_Variational_Node):
         """Method to update values of the nodes"""
         for m in self.activeM: self.nodes[m].update(ix, ro)
 
-    def calculateELBO(self):
+    def calculateELBO(self, weights):
         """Method to calculate variational evidence lower bound
         The lower bound of a multiview node is the sum of the lower bound of its corresponding single view variational nodes
         """
         lb = 0
         for m in self.activeM:
             if isinstance(self.nodes[m],Variational_Node):
-                lb += self.nodes[m].calculateELBO()
+                lb += self.nodes[m].calculateELBO() * weights[m]
         return lb

@@ -12,12 +12,13 @@ from mofapy2.build_model.init_model import initModel
 from mofapy2.build_model.utils import *
 
 class buildModel(object):
-    def __init__(self, data, data_opts, model_opts, dimensionalities, seed):
+    def __init__(self, data, data_opts, model_opts, dimensionalities, seed, weight_views):
         self.data = data
         self.data_opts = data_opts
         self.model_opts = model_opts
         self.dim = dimensionalities
         self.seed = seed
+        self.weight_views = weight_views
 
     def createMarkovBlankets(self):
         """ Define the markov blankets """
@@ -37,8 +38,8 @@ class buildModel(object):
 
 
 class buildBiofam(buildModel):
-    def  __init__(self, data, data_opts, model_opts, dimensionalities, seed):
-        buildModel.__init__(self, data, data_opts, model_opts, dimensionalities, seed)
+    def  __init__(self, data, data_opts, model_opts, dimensionalities, seed, weight_views):
+        buildModel.__init__(self, data, data_opts, model_opts, dimensionalities, seed, weight_views)
 
         # create an instance of initModel
         self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed=seed)
@@ -83,11 +84,11 @@ class buildBiofam(buildModel):
         if self.model_opts['spikeslab_factors']:
             # self.init_model.initSZ(qmean_T1=0)
             # self.init_model.initSZ(qmean_T1="random")
-            self.init_model.initSZ(qmean_T1="pca", Y=self.data, impute=True)
+            self.init_model.initSZ(qmean_T1="pca", Y=self.data, impute=True, weight_views = self.weight_views)
         else:
             # self.init_model.initZ(qmean=0)
             # self.init_model.initZ(qmean="random")
-            self.init_model.initZ(qmean="pca", Y=self.data, impute=True)
+            self.init_model.initZ(qmean="pca", Y=self.data, impute=True, weight_views = self.weight_views)
 
     def build_W(self):
         """ Build node W for the weights """

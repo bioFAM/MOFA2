@@ -13,8 +13,9 @@ import sys
 import numpy.ma as ma
 import math
 # import resource
-
+import numpy as np
 from mofapy2.core.nodes.variational_nodes import Variational_Node
+from mofapy2.core.nodes.multiview_nodes import Multiview_Variational_Node
 from mofapy2.core import gpu_utils
 from .utils import corr, nans, infer_platform
 
@@ -354,10 +355,23 @@ class BayesNet(object):
 
     def calculateELBO(self, *nodes):
         """Method to calculate the Evidence Lower Bound of the model"""
+
+        if self.options['weight_views']:
+            total_w = np.asarray(self.dim['D']).sum()
+            weights = [(total_w-self.dim['D'][m])/total_w * self.dim['M'] for m in range(self.dim['M'])]
+            # sum_weights = np.asarray(weights).sum()
+            sum_weights = 1
+        else:
+            weights = [1] * self.dim['M']
+            sum_weights = 1
+
         if len(nodes) == 0: nodes = self.getVariationalNodes().keys()
         elbo = pd.Series(s.zeros(len(nodes)+1), index=list(nodes)+["total"])
         for node in nodes:
-            elbo[node] = float(self.nodes[node].calculateELBO())
+            if isinstance(self.nodes[node], Multiview_Variational_Node):
+                elbo[node] = float(self.nodes[node].calculateELBO(weights = weights))
+            else:
+                elbo[node] = sum_weights * float(self.nodes[node].calculateELBO())
             elbo["total"] += elbo[node]
         return elbo
 

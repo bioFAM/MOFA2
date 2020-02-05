@@ -37,7 +37,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views = False):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -110,11 +110,11 @@ class initModel(object):
             dim=(self.N, self.K),
             pmean=pmean, pvar=pvar,
             qmean=qmean, qvar=qvar,
-            qE=qE, qE2=qE2
+            qE=qE, qE2=qE2, weight_views = weight_views
         )
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
-        qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None, Y=None, impute=False):
+        qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None, Y=None, impute=False, weight_views = False):
         """Method to initialise sparse factors with a spike and slab prior
 
         PARAMETERS
@@ -170,7 +170,8 @@ class initModel(object):
             qmean_T0=qmean_T0, qvar_T0=qvar_T0,
             qmean_T1=qmean_T1, qvar_T1=qvar_T1,
 
-            qET=qET, qEZ_T0=qEZ_T0, qEZ_T1=qEZ_T1
+            qET=qET, qEZ_T0=qEZ_T0, qEZ_T1=qEZ_T1,
+            weight_views = weight_views
         )
 
     def initW(self, pmean=0., pvar=1., qmean='random', qvar=1., qE=None, qE2=None, Y=None):
@@ -187,6 +188,7 @@ class initModel(object):
         """
 
         W_list = [None] * self.M
+
         for m in range(self.M):
 
             ## Initialise prior distribution (P) ##
@@ -249,6 +251,7 @@ class initModel(object):
         """
 
         W_list = [None]*self.M
+
         for m in range(self.M):
 
             ## Initialise prior distribution (P)
@@ -300,7 +303,7 @@ class initModel(object):
                 qmean_S0=qmean_S0, qvar_S0=qvar_S0,
                 qmean_S1=qmean_S1_tmp, qvar_S1=qvar_S1,
 
-                qES=qES, qEW_S0=qEW_S0, qEW_S1=qEW_S1,
+                qES=qES, qEW_S0=qEW_S0, qEW_S1=qEW_S1
             )
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
@@ -361,6 +364,7 @@ class initModel(object):
         """
 
         alpha_list = [None]*self.M
+
         for m in range(self.M):
             alpha_list[m] = AlphaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
