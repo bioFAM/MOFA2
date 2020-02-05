@@ -475,11 +475,12 @@ get_variance_explained <- function(object, groups = "all", views = "all", factor
     r2_per_factor <- lapply(names(r2_list[["r2_per_factor"]]), function(g) {
       x <- reshape2::melt( r2_list[["r2_per_factor"]][[g]] )
       colnames(x) <- c("factor", "view", "value")
+      x$factor <- as.factor(x$factor)
       x$group <- g
       return(x)
     })
     r2_per_factor <- do.call("rbind",r2_per_factor)[,c("group","view","factor","value")]
-    r2 <- list(r2_per_factor, r2_total)
+    r2 <- list("r2_per_factor"=r2_per_factor, "r2_total"=r2_total)
     
   } else {
     r2 <- r2_list

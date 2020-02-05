@@ -755,7 +755,7 @@ class entry_point(object):
 
         self.imputed = True # change flag
 
-    def save(self, outfile, save_data = True, save_parameters = False, expectations=None):
+    def save(self, outfile, save_data=True, save_parameters=False, expectations=None):
         """ Save the model in an hdf5 file """
 
         # Sanity checks
