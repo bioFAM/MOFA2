@@ -37,7 +37,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views = False):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views=False):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -82,6 +82,7 @@ class initModel(object):
 
                 # PCA initialisation
                 elif qmean == "pca":
+                    # whiten=True scales the principal components to match the prior N(0,1)
                     pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
                     Ytmp = s.concatenate(Y, axis=1)
 
@@ -93,6 +94,10 @@ class initModel(object):
 
                     pca.fit(Ytmp)
                     qmean = pca.transform(Ytmp)
+                    
+
+                # scale factor values from -1 to 1 (per factor)
+                qmean = 2.*(qmean - np.min(qmean,axis=0))/np.ptp(qmean,axis=0)-1
 
             elif isinstance(qmean, s.ndarray):
                 assert qmean.shape == (self.N, self.K), "Wrong shape for the expectation of the Q distribution of Z"
