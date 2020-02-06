@@ -75,7 +75,6 @@ Importantly, given a simple parametric form of $q(\bfX)$, each of the terms in \
 In conclusion, variational learning involves minimising the KL divergence between $q(\bfX)$ and $p(\bfX|\bfY)$ by instead maximising $\Lagr(\bfX)$ with respect to the distribution $q(\bfX)$. The following image summarises the general picture of variational learning (TO-DO):
 
 ![](http://ftp.ebi.ac.uk/pub/databases/mofa/stochastic_vignette/figures/elbo.png)
-<!-- <img src="http://ftp.ebi.ac.uk/pub/databases/mofa/stochastic_vignette/figures/elbo.png" alt="drawing" width="200"/> -->
 
 The next step is how to define $q(\bfX)$, but we will stop the introduction to variational inference here. If the reader is interested we suggest the following resources: XXX
 

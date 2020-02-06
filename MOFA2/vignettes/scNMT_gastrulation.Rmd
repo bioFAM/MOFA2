@@ -61,8 +61,8 @@ MOFA models are saved in hdf5 format and can be loaded into R with the function 
 ```{r}
 # MOFAmodel <- load_model("(...)/model.hdf5")
 
-load("/Users/ricard/data/mofa2_vignettes/gastrulation_scnmt_mofa.RData")
-# load(url("ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/scnmt_gastrulation/gastrulation_scnmt_mofa.RData"))
+# load("/Users/ricard/data/mofa2_vignettes/gastrulation_scnmt_mofa.RData")
+load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scnmt_gastrulation/gastrulation_scnmt_mofa.RData"))
 ```
 
 Explore the cell metadata:  
