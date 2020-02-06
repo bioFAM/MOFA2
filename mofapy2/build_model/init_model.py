@@ -95,7 +95,6 @@ class initModel(object):
                     pca.fit(Ytmp)
                     qmean = pca.transform(Ytmp)
                     
-
                 # scale factor values from -1 to 1 (per factor)
                 qmean = 2.*(qmean - np.min(qmean,axis=0))/np.ptp(qmean,axis=0)-1
 
