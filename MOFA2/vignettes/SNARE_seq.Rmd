@@ -222,13 +222,13 @@ RNA looks great, but what is going on with the ATAC data?
 
 Let's plot a histogram of the data. 
 ```{r}
-hist(mofa@data$ATAC[[1]], xlim = c(0,1), breaks=100)
+hist(mofa@data$ATAC[[1]])
 ```
 
 Wow, this is massively sparse. Only 0.5% of values are different than zero. No wonder why the model is uncapable of explaining more variance.  
 
 ```{r}
-mean(mofa@data$ATAC[[1]]>1)
+mean(mofa@data$ATAC[[1]]>0)
 ```
 
 Yet, based on the variance explained estimates it seems that a bit of signal is indeed recovered. Let's explore it. First, we plot the variance explained values for the top 25 ATAC peaks from every factor.
