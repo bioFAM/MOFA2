@@ -15,6 +15,7 @@
 # HTML
 # *.html
 
+
 # Distribution / packaging
 .Python
 env/
@@ -36,3 +37,6 @@ var/
 .Rproj.user
 *.Rcheck
 *.ipynb_checkpoints
+
+*_cache/
+*_files/
