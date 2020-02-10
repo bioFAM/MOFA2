@@ -38,26 +38,29 @@ library(MOFA2)
 
 ## (Optional) Set up reticulate connection
 ```{r}
-reticulate::use_python("/Users/ricard/anaconda3/envs/base_new/bin/python", required = T)
+# reticulate::use_python("/Users/ricard/anaconda3/envs/base_new/bin/python", required = T)
 ```
 
 # Load data
 
 Load RNA modality as Seurat object
 ```{r}
-seurat_rna <- readRDS("/Users/ricard/data/Chen2019/CellLineMixture/rna/seurat.rds")
+seurat_rna <- readRDS(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/snare_seq/seurat_rna.rds"))
+# seurat_rna <- readRDS("/Users/ricard/data/Chen2019/CellLineMixture/rna/seurat.rds")
 dim(seurat_rna)
 ```
 
 Load ATAC modality as Seurat object
 ```{r }
-seurat_atac <- readRDS("/Users/ricard/data/Chen2019/CellLineMixture/atac/seurat.rds")
+# seurat_atac <- readRDS("/Users/ricard/data/Chen2019/CellLineMixture/atac/seurat.rds")
+seurat_atac <- readRDS(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/snare_seq/seurat_atac.rds"))
 dim(seurat_atac)
 ```
 
 Load metadata
 ```{r}
-metadata <- fread("/Users/ricard/data/Chen2019/CellLineMixture/cell_metadata.txt")
+# metadata <- fread("/Users/ricard/data/Chen2019/CellLineMixture/cell_metadata.txt")
+metadata <- fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/snare_seq/cell_metadata.txt", header=T)
 ```
 
 Let's make sure that we subset cells that match in both assays:
@@ -130,15 +133,14 @@ mofa <- run_mofa(mofa)
 
 ## Downstream analysis
 
-<!-- Add metadata to the model -->
+### Add cell metadata to the model
 ```{r, echo=FALSE}
-tmp <- metadata %>% copy %>%
-  .[,atac_cluster:=NULL] %>% .[,group:="group1"] %>%
-  setnames("cell","sample") %>%
-  .[sample%in%unlist(samples(mofa))] %>%
-  setkey(sample) %>% .[unlist(samples(mofa))]
+metadata_to_mofa <- metadata %>%
+  .[,group:="group1"] %>%   # add "group" column
+  setnames("cell","sample") %>%   # add "sample" column
+  setkey(sample) %>% .[unlist(samples(mofa))]   # sort data frame to match order of samples
 
-samples_metadata(mofa) <- tmp
+samples_metadata(mofa) <- metadata_to_mofa
 ```
 
 ### Variance decomposition
@@ -180,19 +182,11 @@ plot_weights(mofa,
 )
 ```
 
-Plot features with largest (absolute) weight per factor
-```{r message=FALSE}
-plot_top_weights(mofa,
-  view = "RNA", 
-  factors = 1, 
-  nfeatures = 15, 
-  abs = TRUE
-)
-```
 
 ### Plot data
 
 Before denoising (plotting the actual input data)
+
 ```{r }
 plot_data_heatmap(mofa, 
   view = "RNA", 
@@ -200,6 +194,7 @@ plot_data_heatmap(mofa,
   features = 20,
   show_rownames = T, show_colnames = F, 
   cluster_rows = T, cluster_cols = F,
+  annotation_samples = "cell_line"
 )
 ```
 
@@ -211,6 +206,7 @@ plot_data_heatmap(mofa,
   features = 20,
   show_rownames = T, show_colnames = F, 
   cluster_rows = T, cluster_cols = F,
+  annotation_samples = "cell_line",
   denoise = TRUE
 )
 ```
@@ -225,11 +221,10 @@ Let's plot a histogram of the data.
 hist(mofa@data$ATAC[[1]])
 ```
 
-Wow, this is massively sparse. Only 0.5% of values are different than zero. No wonder why the model is uncapable of explaining more variance.  
-
 ```{r}
 mean(mofa@data$ATAC[[1]]>0)
 ```
+Wow, this is massively sparse. Only 0.5% of values are different than zero. No wonder why the model is uncapable of explaining more variance.  
 
 Yet, based on the variance explained estimates it seems that a bit of signal is indeed recovered. Let's explore it. First, we plot the variance explained values for the top 25 ATAC peaks from every factor.
 ```{r}
@@ -255,7 +250,6 @@ to.plot <- merge(
 
 For the features with the largest weight (per factor) the model is capturing a bit of signal, but it is indeed very small. At most only 5% of the variance is explained:
 ```{r}
-
 ggplot(to.plot, aes(x=feature, y=value*100)) +
   geom_bar(stat="identity") +
   facet_wrap(~factor, scales="free_x") +
@@ -267,14 +261,15 @@ ggplot(to.plot, aes(x=feature, y=value*100)) +
   )
 ```
 
-Let's visualise the actual data (figure below). 
+As we did before with the RNA, let's visualise the actual data (figure below). 
 ```{r}
 plot_data_heatmap(mofa, 
   view = "ATAC", 
   factor = 1, 
   features = 20,
   show_rownames = T, show_colnames = F, 
-  cluster_rows = T, cluster_cols = F
+  cluster_rows = T, cluster_cols = F,
+  annotation_samples = "cell_line"
 )
 ```
 
@@ -286,6 +281,7 @@ plot_data_heatmap(mofa,
   features = 20,
   show_rownames = T, show_colnames = F, 
   cluster_rows = T, cluster_cols = F,
+  annotation_samples = "cell_line",
   denoise = TRUE
 )
 ```
@@ -385,15 +381,9 @@ mofa <- run_mofa(mofa)
 
 ## Downstream analysis
 
-<!-- Add metadata to the model -->
+### Add cell metadata to MOFA
 ```{r, echo=FALSE}
-tmp <- metadata %>% copy %>%
-  .[,atac_cluster:=NULL] %>% .[,group:="group1"] %>%
-  setnames("cell","sample") %>%
-  .[sample%in%unlist(samples(mofa))] %>%
-  setkey(sample) %>% .[unlist(samples(mofa))]
-
-samples_metadata(mofa) <- tmp
+samples_metadata(mofa) <- metadata_to_mofa
 ```
 
 ### Variance decomposition
@@ -408,7 +398,7 @@ Plot total variance explained per view
 plot_variance_explained(mofa, plot_total = TRUE)[[2]]
 ```
 
-This looks much better now! a lot of variance is explained by the ATAC topics, even more than for RNA expression. The reason is that the topics provide a compressed representation of the ATAC-seq data based on the Latent Dirichlet Allocation model. 
+This looks much better now! a lot of variance is explained by the ATAC topics. The reason is that the topics provide a compressed and denoised representation of the ATAC-seq data based on the Latent Dirichlet Allocation model. 
 
 ### Plot factors
 
@@ -465,7 +455,7 @@ cisTopic returns two distributions that represent: (1) the topic contributions p
 
 To analyze the regions, the first step is always to derive a score that evaluates how likely is for a region to belong to a topic. This is done using `getRegionsScores()`. These scores can be rescaled into the range [0,1], which will be useful for the susbsequent binarization step:
 ```{r}
-cisTopicObject <- getRegionsScores(cisTopicObject, method = "Z-score", scaled = TRUE)
+cisTopicObject <- getRegionsScores(cisTopicObject, method = "NormTop", scaled = TRUE)
 cisTopicObject <- binarizecisTopics(cisTopicObject, plot = FALSE)
 ```
 
@@ -524,6 +514,10 @@ signaturesHeatmap(
 # Conclusion
 
 The count ATAC-seq matrix is too sparse to be used as input to MOFA. We recommend applying some pre-processing options to enrich the signal. A simple solution could be to aggregate peaks and summarise them. The second option, which we demonstrated here, is to use a signal extraction method such as cis-Topics, and then take their output as input to MOFA.
+
+# Acknowledgments 
+I want to thank Carmen Bravo for feedback on how to best use CisTopic, and Song Chen for sharing the scripts to analyse SNARE-seq data.  
+Having said this, one should not request scripts to reproduce results by e-mail in 2020, we should all document our code and release it upon publication.
 
 # sessionInfo
 

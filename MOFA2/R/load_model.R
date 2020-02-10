@@ -19,7 +19,7 @@
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
-#' @importFrom DelayedArray DelayedArray
+# #' @importFrom DelayedArray DelayedArray
 #' @export
 
 load_model <- function(file, sort_factors = TRUE, 
@@ -75,7 +75,7 @@ load_model <- function(file, sort_factors = TRUE,
       for (g in group_names) {
         if (on_disk) {
           # as DelayedArrays
-          data[[m]][[g]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, g) ) )
+          data[[m]][[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("data/%s/%s", m, g) ) )
         } else {
           # as matrices
           data[[m]][[g]] <- h5read(file, sprintf("data/%s/%s", m, g) )
@@ -129,7 +129,7 @@ load_model <- function(file, sort_factors = TRUE,
         imputed_data[[m]][[g]] <- list()
         if (on_disk) {
           # as DelayedArrays
-          # imputed_data[[m]][[g]] <- DelayedArray( HDF5ArraySeed(file, name = sprintf("imputed_data/%s/%s", m, g) ) )
+          # imputed_data[[m]][[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("imputed_data/%s/%s", m, g) ) )
         } else {
           # as matrices
           imputed_data[[m]][[g]][["mean"]] <- h5read(file, sprintf("imputed_data/%s/%s/mean", m, g) )

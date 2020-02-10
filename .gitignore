@@ -40,3 +40,5 @@ var/
 
 *_cache/
 *_files/
+
+*.tar.gz

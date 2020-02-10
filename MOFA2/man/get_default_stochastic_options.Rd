@@ -21,11 +21,11 @@ The training options are the following: \cr
  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
  Default is 0.5 (half of the data set).
  \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
- Default is 0.5 
+ Default is 1.0
  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
  Default is 0.5
  \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
- Default is 5
+ Default is 1
  }
 }
 \examples{
@@ -42,10 +42,10 @@ MOFAmodel <- create_mofa(data)
 stochastic_opts <- get_default_stochastic_options(MOFAmodel)
 
 # Edit some of the stochastic options
+stochastic_opts$learning_rate <- 0.75
 stochastic_opts$batch_size <- 0.25
-stochastic_opts$learning_rate <- 0.50
-stochastic_opts$start_stochastic <- 5
 
 # Prepare the MOFA object
 MOFAmodel <- prepare_mofa(MOFAmodel, stochastic_options = stochastic_opts)
+
 }

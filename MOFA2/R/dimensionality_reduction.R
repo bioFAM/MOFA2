@@ -11,7 +11,7 @@
 #' @param ... arguments passed to \code{\link{Rtsne}}
 #' @details use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the t-SNE output
-#' @importFrom Rtsne Rtsne
+# #' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -39,7 +39,7 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
   Z[is.na(Z)] <- 0
   
   # Run t-SNE
-  tsne_embedding <- Rtsne(Z, check_duplicates = FALSE, pca = FALSE, ...)
+  tsne_embedding <- Rtsne::Rtsne(Z, check_duplicates = FALSE, pca = FALSE, ...)
 
   # Add sample names and enumerate latent dimensions (e.g. TSNE1 and TSNE2)
   object@dim_red$TSNE <- data.frame(rownames(Z), tsne_embedding$Y)
@@ -59,7 +59,7 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @param ... arguments passed to \code{\link{umap}}
 #' @details use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
-#' @importFrom uwot umap
+# #' @importFrom uwot umap
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -87,7 +87,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
   Z[is.na(Z)] <- 0
   
   # Run UMAP
-  umap_embedding <- umap(Z, ...)
+  umap_embedding <- uwot::umap(Z, ...)
 
   # Add sample names and enumerate latent dimensions (e.g. UMAP1 and UMAP2)
   object@dim_red$UMAP <- data.frame(rownames(Z), umap_embedding)
