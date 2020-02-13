@@ -292,7 +292,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.05, log_scale 
 
 
 #' @title Plot detailed output of the Feature Set Enrichment Analysis
-#' @name plotEnrichmentDetailed
+#' @name plot_enrichment_detailed
 #' @description Method to plot a detailed output of the Feature Set Enrichment Analyisis (FSEA). \cr
 #' Each row corresponds to a significant pathway, sorted by statistical significance, and each dot corresponds to a gene. \cr
 #' For each pathway, we display the top genes of the pathway sorted by the corresponding feature statistic (by default, the absolute value of the loading)
@@ -312,12 +312,12 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.05, log_scale 
 #' @importFrom dplyr top_n
 #' @importFrom ggrepel geom_text_repel
 #' @export
-plotEnrichmentDetailed <- function(object, factor, feature.sets, enrichment.results, 
+plot_enrichment_detailed <- function(object, factor, feature.sets, enrichment.results, 
                                    adjust = TRUE, alpha = 0.1, max.genes = 5, max.pathways = 10, text_size = 3) {
   
   # Sanity checks
   stopifnot(length(factor)==1) 
-  if(is.numeric(factor)) factor <- factorNames(object)[factor]
+  if(is.numeric(factor)) factor <- factors(object)[factor]
   if(!factor %in% colnames(enrichment.results$pval)) 
     stop(paste0("No feature set enrichment calculated for factor ", factor, ".\n Use run_enrichment first."))
   
@@ -350,7 +350,7 @@ plotEnrichmentDetailed <- function(object, factor, feature.sets, enrichment.resu
   baz <- baz[baz$pvalue<=alpha,,drop=FALSE]
   if(nrow(baz)==0) {
     stop("No siginificant pathways at the specified alpha threshold. \n
-         For an overview use plotEnrichmentHeatmap() or plotEnrichmentBars().")
+         For an overview use plot_enrichment_heatmap().")
   }
   if (nrow(baz) > max.pathways)
     baz <- head(baz[order(baz$pvalue),],n=max.pathways)

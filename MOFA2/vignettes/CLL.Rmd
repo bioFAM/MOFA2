@@ -197,7 +197,25 @@ plot_weights(MOFAmodel,
   scale = T           # Scale weights from -1 to 1
 )
 ```
+## Enrichment analysis
+In addition we can use enrichment analysis to look for siginificant associaitons of factors to genesets. Here, we use the Reactome genesets for illustrations, which is contained in the `MOFAdata` package.
+```{r}
+# load geneset annotations 
+utils::data(reactomeGS)
 
+# run enrichment analysis
+res <- run_enrichment(MOFAmodel, feature.sets = reactomeGS, "mRNA")
+
+# show overivew of significant pathways per factor
+plot_enrichment_heatmap(res)
+
+# show enriched gene sets on a given factor
+plot_enrichment(res, factor = 3)
+
+# show top genes within the pathways
+plot_enrichment_detailed(MOFAmodel, factor = 3, enrichment.results = res,
+                         feature.sets = reactomeGS, max.pathways = 3)
+```
 
 
 # SessionInfo
