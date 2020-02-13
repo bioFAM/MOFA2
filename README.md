@@ -67,8 +67,9 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
 * [**Analysis of a multi-group scRNA-seq data set (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the paper.
 * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation...
-* [**Integration of single-cell multi-modal data (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the paper.
-* **Using fast stochastic variational inference**: in preparation...
+* [**Integration of single-cell multi-modal data (scNMT-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the paper.
+* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
+* [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
 * **Analysis of CITE-seq data**: in preparation...
 * **Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**: in preparation...
 * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html)
@@ -156,8 +157,8 @@ python -c "import numpy; print(numpy.show_config())"
 Note that if you are using anaconda, numpy is automatically linked to MKL (see https://docs.anaconda.com/mkl-optimizations/).  
 The next step is to define the environmental variables. For MKL you need to set `MKL_NUM_THREADS=N` where N is the number of cores.
 
-**(3.5) How can I use GPUs to (massively) speed up training?**
-The Python core of MOFA () can take advantage of NVIDIA GPUs to massively speed up training. For this you have to install and configure the [CuPy package](https://cupy.chainer.org), which is an open-source matrix library accelerated with NVIDIA CUDA. 
+**(3.5) How can I use GPUs to (massively) speed up training?**  
+The Python core of MOFA can take advantage of NVIDIA GPUs to massively speed up training. For this you have to install and configure the [CuPy package](https://cupy.chainer.org), which is an open-source matrix library accelerated with NVIDIA CUDA. 
 
 
 ### (4) FAQ on the model options

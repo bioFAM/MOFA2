@@ -94,13 +94,13 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
     } else {
       object@training_options$stochastic <- TRUE
       message("Checking stochastic inference options...")
-      if(!is(stochastic_options,"list") || !setequal(names(stochastic_options), names(get_default_stochastic_options(object)) ))
+      if (!is(stochastic_options,"list") || !setequal(names(stochastic_options), names(get_default_stochastic_options(object)) ))
         stop("stochastic_options are incorrectly specified, please read the documentation in get_default_stochastic_options")
       
-      if (!stochastic_options %in% c(0.05,0.10,0.15,0.20,0.25,0.50))
-        stop("Batch size has to be one of the following values: 0.05, 0.10, 0.15, 0.20, 0.25, 0.50")
+      if (!stochastic_options$batch_size %in% c(0.05,0.10,0.15,0.20,0.25,0.50))
+        stop("Batch size has to be one of the following numeric values: 0.05, 0.10, 0.15, 0.20, 0.25, 0.50")
       if (stochastic_options$batch_size==1)
-        warning("A batch size equal to 1 is equivalent to non-stochastic inference. Please set object@train_options$stochastic <- FALSE")
+        warning("A batch size equal to 1 is equivalent to non-stochastic inference.")
       if (stochastic_options$learning_rate<=0 || stochastic_options$learning_rate>1)
         stop("The learning rate has to be a value between 0 and 1")
       if (stochastic_options$forgetting_rate<=0 || stochastic_options$forgetting_rate>1)
@@ -200,7 +200,7 @@ get_default_training_options <- function(object) {
   # Get default train options
   training_options <- list(
     maxiter = 5000,                # (numeric) Maximum number of iterations
-    convergence_mode = 'fast',   # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
+    convergence_mode = 'medium',   # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
     drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity
     startELBO = 1,                 # First iteration to compute the ELBO
@@ -414,11 +414,11 @@ get_default_model_options <- function(object) {
 #'  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
 #'  Default is 0.5 (half of the data set).
 #'  \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
-#'  Default is 0.5 
+#'  Default is 1.0
 #'  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
 #'  Default is 0.5
 #'  \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
-#'  Default is 5
+#'  Default is 1
 #'  }
 #' @return Returns a list with default options
 #' @importFrom utils modifyList
@@ -437,18 +437,18 @@ get_default_model_options <- function(object) {
 #' stochastic_opts <- get_default_stochastic_options(MOFAmodel)
 #' 
 #' # Edit some of the stochastic options
+#' stochastic_opts$learning_rate <- 0.75
 #' stochastic_opts$batch_size <- 0.25
-#' stochastic_opts$learning_rate <- 0.50
-#' stochastic_opts$start_stochastic <- 5
 #' 
 #' # Prepare the MOFA object
 #' MOFAmodel <- prepare_mofa(MOFAmodel, stochastic_options = stochastic_opts)
+#' 
 get_default_stochastic_options <- function(object) {
   
   # Get default stochastic options
   stochastic_options <- list(
     batch_size = 0.5,        # Batch size (as a fraction)
-    learning_rate = 0.5,     # Starting learning rate
+    learning_rate = 1.0,     # Starting learning rate
     forgetting_rate = 0.5,   # Forgetting rate
     start_stochastic = 1     # First iteration to start stochastic inference
   )

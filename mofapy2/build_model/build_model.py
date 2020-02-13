@@ -93,12 +93,12 @@ class buildBiofam(buildModel):
     def build_W(self):
         """ Build node W for the weights """
         if self.model_opts['spikeslab_weights']:
-            # self.init_model.initSW(qmean_S1=0)
-            self.init_model.initSW(qmean_S1="random", Y=self.data)
+            self.init_model.initSW(qmean_S1=0)
+            # self.init_model.initSW(qmean_S1="random", Y=self.data)
             # self.init_model.initSW(qmean_S1="pca", Y=self.data)
         else:
-            # self.init_model.initW(qmean=0)
-            self.init_model.initW(qmean="random", Y=self.data)
+            self.init_model.initW(qmean=0)
+            # self.init_model.initW(qmean="random", Y=self.data)
             # self.init_model.initW(qmean="pca", Y=self.data)
 
     def build_Tau(self):

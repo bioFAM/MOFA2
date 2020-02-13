@@ -32,7 +32,7 @@
 #' \item{\strong{feature.statistics}:}{ matrices with the local (feature-wise) statistics.  }
 #' \item{\strong{global.statistics}:}{ matrices with the global (gene set-wise) statistics.  }
 #' \item{\strong{sigPathways}}{ list with significant pathways per factor. }
-#' @import foreach doParallel
+# #' @import foreach doParallel
 #' @importFrom stats p.adjust var p.adjust.methods
 #' @export
 
@@ -98,7 +98,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if (statistical.test == "permutation") {
     doParallel::registerDoParallel(cores=cores)
     
-    null_dist_tmp <- foreach(rnd= seq_len(nperm)) %dopar% {
+    null_dist_tmp <- foreach::foreach(rnd= seq_len(nperm)) %dopar% {
       perm <- sample(ncol(data))
       # Permute rows of the weight matrix to obtain a null distribution
       W_null <- W[perm,]

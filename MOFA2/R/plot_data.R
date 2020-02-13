@@ -12,6 +12,10 @@
 #' @param groups groups to plot. Default is "all".
 #' @param features if an integer (default), the total number of features to plot based on the absolute value of the loadings.
 #' If a character vector, a set of manually defined features.
+#' @param annotation_samples annotation metadata for samples (columns). 
+#' Either a character vector specifying columns in the sample metadata, or a data.frame that will be passed to \code{\link[pheatmap]{pheatmap}} as \code{annotation_row}
+#' @param annotation_features annotation metadata for features (rows). 
+#' Either a character vector specifying columns in the feature metadata, or a data.frame that will be passed to \code{\link[pheatmap]{pheatmap}} as \code{annotation_col}
 #' @param transpose logical indicating whether to transpose the heatmap. 
 #' Default corresponds to features as rows and samples as columns.
 #' @param imputed logical indicating whether to plot the imputed data instead of the original data. Default is FALSE.
@@ -26,7 +30,8 @@
 #' @importFrom pheatmap pheatmap
 #' @importFrom utils tail
 #' @export
-plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features = 50, transpose = FALSE, imputed = FALSE, denoise = FALSE, ...) {
+plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features = 50, 
+    annotation_features = NULL, annotation_samples = NULL, transpose = FALSE, imputed = FALSE, denoise = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -92,12 +97,44 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   order_samples <- names(sort(Z, decreasing = TRUE))
   order_samples <- order_samples[order_samples %in% colnames(data)]
   data <- data[,order_samples]
+    
+  # Add sample annotations
+  if (!is.null(annotation_samples)) {
+    
+    # Predefined data.frame
+    if (is.data.frame(annotation_samples)) {
+      annotation_samples <- annotation_samples[colnames(data),]
+      
+    # Extract metadata from the sample metadata  
+    } else if (is.character(annotation_samples)) {
+      stopifnot(annotation_samples%in%colnames(object@samples_metadata))
+      tmp <- tibble::column_to_rownames(object@samples_metadata,"sample")[order_samples,,drop=F]
+      annotation_samples <- tmp[,annotation_samples, drop=F]
+      rownames(annotation_samples) <- rownames(tmp)
+    } else {
+      stop("Input format for 'annotation_samples' not recognised ")
+    }
+  }
+  
+  # Add feature annotations
+  if (!is.null(annotation_features)) {
+    stop("'annotation_features' is currently not implemented")
+  }
   
   # Transpose the data
-  if (transpose) data <- t(data)
+  if (transpose) {
+    annotation_samples <- annotation_features
+    annotation_features <- annotation_samples
+    data <- t(data)
+  }
 
   # Plot heatmap without annotations
-  pheatmap(data, ...)
+  pheatmap(data, 
+    annotation_row = annotation_features, 
+    annotation_col = annotation_samples, 
+    ...
+  )
+  
 }
 
 
@@ -139,7 +176,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
 #' @import ggplot2
-#' @importFrom ggpubr stat_cor
+# #' @importFrom ggpubr stat_cor
 #' @importFrom dplyr left_join
 #' @importFrom utils tail
 #' @export
@@ -231,7 +268,7 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   if (add_lm) {
     p <- p +
       stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
-      stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = quantile(df$value,na.rm=TRUE)[[4]], size = text_size, color = "black")
+      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = quantile(df$value,na.rm=TRUE)[[4]], size = text_size, color = "black")
   }
   
   # Add legend for color

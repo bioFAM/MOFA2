@@ -5,7 +5,8 @@
 \title{Plot heatmap of relevant features}
 \usage{
 plot_data_heatmap(object, factor, view = 1, groups = "all",
-  features = 50, transpose = FALSE, imputed = FALSE,
+  features = 50, annotation_features = NULL,
+  annotation_samples = NULL, transpose = FALSE, imputed = FALSE,
   denoise = FALSE, ...)
 }
 \arguments{
@@ -19,6 +20,12 @@ plot_data_heatmap(object, factor, view = 1, groups = "all",
 
 \item{features}{if an integer (default), the total number of features to plot based on the absolute value of the loadings.
 If a character vector, a set of manually defined features.}
+
+\item{annotation_features}{annotation metadata for features (rows). 
+Either a character vector specifying columns in the feature metadata, or a data.frame that will be passed to \code{\link[pheatmap]{pheatmap}} as \code{annotation_col}}
+
+\item{annotation_samples}{annotation metadata for samples (columns). 
+Either a character vector specifying columns in the sample metadata, or a data.frame that will be passed to \code{\link[pheatmap]{pheatmap}} as \code{annotation_row}}
 
 \item{transpose}{logical indicating whether to transpose the heatmap. 
 Default corresponds to features as rows and samples as columns.}

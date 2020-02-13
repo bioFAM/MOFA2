@@ -261,7 +261,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @importFrom stats complete.cases
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
-#' @importFrom ggbeeswarm geom_quasirandom
+# #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -465,7 +465,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 #' Generally, correlated factors are redundant and should be avoided, as they make interpretation harder. Therefore, 
 #' if you have too many correlated factors we suggest you try reducing the number of factors.
 #' @return Returns a symmetric matrix with the correlation coefficient between every pair of factors.
-#' @importFrom corrplot corrplot
+# #' @importFrom corrplot corrplot
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -485,7 +485,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Compute and plot correlation
   r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))
-  p <- corrplot(r, tl.col="black", ...)
+  p <- corrplot::corrplot(r, tl.col="black", ...)
   
   return(r)
 }
