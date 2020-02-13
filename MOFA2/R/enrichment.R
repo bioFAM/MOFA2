@@ -271,7 +271,7 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
 #' @import pheatmap
 #' @importFrom grDevices colorRampPalette
 #' @export
-plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.05, log_scale = TRUE, ...) {
+plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, log_scale = TRUE, ...) {
   
   # get p-values
   p.values <- enrichment.results$pval.adj
