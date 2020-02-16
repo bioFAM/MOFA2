@@ -217,14 +217,15 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     max_r2 = max(r2_mk_df$value)
   }
   
+  r2_mk_df$value <- r2_mk_df$value*100
+  
   # Grid plot with the variance explained per factor and view/group
   p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
     geom_tile(aes_string(fill="value"), color="black") +
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
-    guides(fill=guide_colorbar("R2")) +
-    labs(x="", y="", title="") +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2,max_r2)) +
-    guides(fill=guide_colorbar("R2")) +
+    guides(fill=guide_colorbar("R2 (%)")) +
+    labs(x="", y="", title="") +
     theme(
       axis.title.x = element_blank(),
       # axis.text.x = element_text(size=12, angle=30, hjust=0.5, vjust=1, color="black"),
@@ -243,6 +244,8 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
     
     # Add total variance explained bar plots
     if (plot_total) {
+      
+      r2_m_df$value <- r2_m_df$value*100
       
       r2_m_df <- melt(lapply(r2_list$r2_total, function(x) lapply(x, function(z) z)),
                       varnames=c("view", "group"), value.name="R2")

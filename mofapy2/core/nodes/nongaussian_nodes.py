@@ -199,6 +199,10 @@ class Poisson_PseudoY(PseudoY_Seeger):
         self.E = self.params["zeta"] - sigmoid(self.params["zeta"])*(1-self.obs/self.ratefn(self.params["zeta"])) / tau
         self.E[self.mask] = 0.
 
+        # regress out feature-wise mean from the pseudotime
+        # self.means = self.E.mean(axis=0).data
+        # self.E -= self.means
+
     def calculateELBO(self):
         """ Compute Evidence Lower Bound """
 
