@@ -72,9 +72,7 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
 * **Analysis of CITE-seq data**: in preparation...
 * **Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**: in preparation...
-* [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html)
-
-The data and the pre-trained models can be downloaded [here](ftp://ftp.ebi.ac.uk/pub/databases/mofa)
+<!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
 
 
 ## Contact
@@ -96,7 +94,10 @@ Importantly, the model is not focused on capturing differential changes *between
 **(1.3) Do I need to have multiple groups to use MOFA+?**  
 No. Unless provided, MOFA+ assumes that you do not have multi-group structure in your data. In this case the model simplifies to MOFA v1 (but significantly faster).
 
-**(1.4) Does MOFA+ inherit previous features from MOFA v1?**  
+**(1.4) How do I define groups?**
+The selection of groups is hypothesis-driven, and typically motivated by the experimental design. There is no "right" or "wrong" definition of groups, but some definitions will be more useful than others. A quick approach to assess the validity of groups is to inspect the resulting variance explained plot. If the groups are too granular, the model will not recover significant amounts of variation. If the groups are not "interesting", this can result in a lack of "structure" in the variance explained plot (i.e. all factors being shared across all groups).
+
+**(1.5) Does MOFA+ inherit previous features from MOFA v1?**  
 Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights.
 
 
@@ -109,11 +110,11 @@ Proper normalisation of the data is critical for the model to work. First, one n
 It is strongly recommended that you filter highly variable features (HVGs) per assay. When doing multi-group inference, you have to regress out the group effect before selecting HVGs.
 
 **(2.3) How many samples do I need?**  
-Factor Analysis models are only useful with large sample sizes (let's say more than ~15).
+Factor Analysis models are only useful with large sample sizes (let's say more than ~25).
 
 **(2.4) Should I remove undesired sources of variability (i.e. batch effects) before fitting the model?**  
 Yes. If you have clear technical factors, we strongly encourage to regress it out a priori using a simple linear model. The reason for this is that the model will "focus" on the huge variability driven by the technical factors, and smaller sources of variability could be missed.
-You can regress out known covaraites using the function `regressCovariates`. See the corresponding documentation and the CLL vignette for details.
+<!-- You can regress out known covaraites using the function `regressCovariates`. See the corresponding documentation and the CLL vignette for details. -->
 
 **(2.5) My data sets have different dimensionalities, does this matter?**  
 Yes. Bigger data modalities will tend to be overrepresented in the factors. It is good practice to filter features (based for example on variance) in order to have the different dimensionalities within the same order of magnitudes. If this is unavoidable, take into account that the model has the risk of missing (small) sources of variation unique to the small data set.
@@ -174,8 +175,8 @@ If you have no idea on what to expect, it is better to start with a fixed number
 We extensively tested this functionality and it was not yielding good results. The reason is that covariates are usually discrete labels that do not reflect the underlying molecular biology. For example, if you introduce age as a covariate, but the actual age is different from the “molecular age”, the model will simply learn a new factor that corresponds to this “latent” molecular age, and it will drop the covariate from the model.  
 We recommend that you learn the factors in a completely unsupervised manner and then relate them to the biological covariates (see vignettes). If your covariate of interest is an important driver of variability, do not worry, MOFA will find it! 
 
-**(4.4) The weights have different values between runs. Is this expected?**  
-This is normal and it happens because of two reasons. The first one is that the model does not always converge to the same exact solution (see below in the FAQ), although different model instances should be pretty similar. The second reason is that factor analysis models are rotation invariant. This means that you can rotate your factors and your weights and still find the same solution. This implies that the signs of the weight or the factors can NOT be compared across trials, only within a trial.
+**(4.4) The factors and weights have different values between runs. Is this expected?**  
+This is normal and it happens because factor analysis models are rotation invariant. This means that you can rotate your factors and your weights and still find the same solution. This implies that the signs of the weight or the factors can NOT be compared across trials, only within a trial.
 
 **(4.5) What data modalities can MOFA cope with?**  
 * Continuous data: modelled using a gaussian likelihood
@@ -184,11 +185,10 @@ This is normal and it happens because of two reasons. The first one is that the 
 Importantly, the use of non-gaussian likelihoods require further approximations and are not as accurate as the gaussian likelihood. Hence, if your data can be safely transformed to match the gaussian likelihood assumptions, this is ALWAYS recommended. For example RNA-seq data is expected to be normalised and modelled with a gaussian distribution, do not input the counts directly.
 
 **(4.6) The model does not converge smoothly, and it oscillates between positive and negative deltaELBO values**  
-First, check that you are using the right likelihood model (see above). Second, make sure that you have no features or samples that are full of missing values. Third, check that you have no features with zero (or very little) variance. If the problem does not disappear, please contact us via mail or the Slack group.
+First, check that you are using the right likelihood model (see above). Second, make sure that you have no features or samples that are full of missing values. Third, check that you have no features with zero (or very little) variance. If the problem does not disappear, please contact us.
 
-**(4.7) Does MOFA always converge to the same solutions?**  
-No, as occurs in most complex Bayesian models, they are not guaranteed to always converge to the same solution.
-In practice, however, we observed that the solutions are highly consistent, particularly for the top factors. However, we recommend doing a robustness analysis. This is done by training multiple model instances and check the correlation of the factors across the different solutions See the function `compare_models()`.
+**(4.7) Do I need to do model selection?**  
+As it occurs in most complex Bayesian models, the solution obtained depends on the parameter initialisation. In MOFA v1 we used random initialisation, which leads to (slightly) different solutions depending on the starting point. In MOFA v2 we initialise the factors using Principal Component Analysis on the concatenated data set, and the weights are initialised to zero. If using standard variational inference (not stochastic) this removes the randomness in the training algorithms, which guarantees a consistent solution.
 
 
 ### (5) FAQ on the downstream analysis
