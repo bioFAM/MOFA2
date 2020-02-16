@@ -123,7 +123,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
     object@model_options <- model_options
   }
   if (object@model_options$num_factors > 50) warning("The number of factors is very large, training will be slow...")
-  if (!object@model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
+  # if (!object@model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
   
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")

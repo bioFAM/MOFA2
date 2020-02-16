@@ -117,7 +117,9 @@ quality_control <- function(object, verbose = FALSE) {
     if (verbose == TRUE) message("Checking for highly correlated factors...")
     Z <- do.call("rbind",get_factors(object))
     op <- options(warn=-1) # suppress warnings
-    tmp <- cor(Z); diag(tmp) <- NA
+    
+    noise <- matrix(rnorm(n=length(Z), mean=0, sd=1e-10), nrow(Z), ncol(Z))
+    tmp <- cor(Z+noise); diag(tmp) <- NA
     options(op) # activate warnings again
     if (max(tmp,na.rm=T)>0.5) {
       warning("The model contains highly correlated factors, see `plot_factor_cor(MOFAobject)`.\n",
