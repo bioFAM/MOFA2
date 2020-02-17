@@ -603,7 +603,7 @@ class entry_point(object):
         # self.train_opts['schedule'].insert(1,"Z")
 
         self.train_opts['stochastic'] = True
-        self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick speed up only works in non-stochastic mode
+        # self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick speed up only works in non-stochastic mode
         self.train_opts['learning_rate'] = learning_rate
         self.train_opts['forgetting_rate'] = forgetting_rate
         self.train_opts['start_stochastic'] = start_stochastic
