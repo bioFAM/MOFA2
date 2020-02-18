@@ -679,6 +679,13 @@ class entry_point(object):
         assert hasattr(self, 'model_opts'), "Model options not defined"
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
 
+        if np.any(np.array(self.dimensionalities["D"])<15):
+            print("\nWarning: some view(s) have less than 15 features, MOFA won't be able to learn meaningful factors for these view(s)...\n")
+        
+        _, counts = np.unique(self.data_opts["samples_groups"], axis=0, return_counts=True)
+        if np.any(counts<15):
+            print("\nWarning: some group(s) have less than 15 samples, MOFA won't be able to learn meaningful factors for these group(s)...\n")
+
         # Build the nodes
         tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities, self.train_opts['seed'],  self.train_opts['weight_views'])
 
