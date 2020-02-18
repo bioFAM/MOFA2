@@ -4,7 +4,7 @@
 \alias{plot_enrichment_heatmap}
 \title{Heatmap of Feature Set Enrichment Analysis results}
 \usage{
-plot_enrichment_heatmap(enrichment.results, alpha = 0.05,
+plot_enrichment_heatmap(enrichment.results, alpha = 0.1,
   log_scale = TRUE, ...)
 }
 \arguments{

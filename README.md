@@ -89,15 +89,19 @@ MOFA+ remains 100% applicable to bulk data.
 
 **(1.2) How does the multi-group inference work in MOFA+?**  
 Groups must be defined a priori, they are not learnt by the model. There is  flexibility on how to define them, they usually correspond to different conditions, cohorts, time points, etc.  
-Importantly, the model is not focused on capturing differential changes *between* groups. The aim is to find out which sources of variability are shared between the different groups and which ones are unique to a single group. To achieve this, the group effect is regressed out from the data before fitting the model.
+Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group. To achieve this, the group effect is regressed out from the data before fitting the model.
 
 **(1.3) Do I need to have multiple groups to use MOFA+?**  
 No. Unless provided, MOFA+ assumes that you do not have multi-group structure in your data. In this case the model simplifies to MOFA v1 (but significantly faster).
 
-**(1.4) How do I define groups?**
-The selection of groups is hypothesis-driven, and typically motivated by the experimental design. There is no "right" or "wrong" definition of groups, but some definitions will be more useful than others. A quick approach to assess the validity of groups is to inspect the resulting variance explained plot. If the groups are too granular, the model will not recover significant amounts of variation. If the groups are not "interesting", this can result in a lack of "structure" in the variance explained plot (i.e. all factors being shared across all groups).
+**(1.4) How do I define groups?**  
+The selection of groups is hypothesis-driven, and typically motivated by the experimental design. There is no "right" or "wrong" definition of groups, but some definitions will be more useful than others. However, the user always needs to keep in mind that the aim of the multi-group framework is not to capture differential changes between the groups. The aim is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group. To achieve this, the group effect is regressed out from the data before fitting the model.
 
-**(1.5) Does MOFA+ inherit previous features from MOFA v1?**  
+**(1.5) How do I assess the quality/robustness of groups?**  
+A quick approach to assess the validity of groups is to inspect the resulting variance explained plot. If the groups are too granular, the model will not recover significant amounts of variation. If the groups are not "interesting", this can result in a lack of "structure" in the variance explained plot (i.e. all factors being shared across all groups). See the following [vignette](XXX) for more details.  
+More computationally intensive approaches can be used to assess the robustness of groups, including cross-validation and downsampling or bootstrapping samples within groups.
+
+**(1.6) Does MOFA+ inherit previous features from MOFA v1?**  
 Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights.
 
 

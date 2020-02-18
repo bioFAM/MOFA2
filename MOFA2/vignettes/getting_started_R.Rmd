@@ -83,17 +83,14 @@ MOFAobject <- create_mofa(list("view1" = view1), groups=groups)
 create MOFA object with two views, no groups (MOFA v1)
 ```{r, message=FALSE}
 MOFAobject <- create_mofa(list("view1" = view1, "view2" = view2))
+MOFAobject
 ```
 
 create MOFA object with two views, two groups
 ```{r, message=FALSE}
 MOFAobject <- create_mofa(list("view1" = view1, "view2" = view2), groups=groups)
+MOFAobject
 ```
-
-```{r}
-print(MOFAobject)
-```
- 
 
 ## Long data.frame
 A long data.frame with columns `sample`, `group`, `feature`, `view", `value`.  
