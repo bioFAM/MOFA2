@@ -52,7 +52,7 @@ class entry_point(object):
         """
 
         if not hasattr(self, 'data_opts'): 
-            print("Data options not defined, using default values...\n")
+            # print("Data options not defined, using default values...\n")
             self.set_data_options()
 
         # Sanity check
@@ -188,14 +188,21 @@ class entry_point(object):
         
         # Sanity checks
         if not hasattr(self, 'data_opts'): 
-            print("Data options not defined before setting the data, using default values...")
+            # print("Data options not defined before setting the data, using default values...")
             self.set_data_options()
 
         assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
+
+        if 'group' not in data.columns:
+            print('\nNo "group" column found in the data frame, we will assume a common group for all samples...')
+            data["group"] = "single_group"
+
+        if 'view' not in data.columns:
+            print('\nNo "view" column found in the data frame, we will assume a common view for all features...')
+            data["view"] = "single_view"
+
         assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
-        assert 'group' in data.columns, "'data' has to contain the column 'group'"
         assert 'feature' in data.columns, "'data' has to contain the column 'feature'"
-        assert 'view' in data.columns, "'data' has to contain the column 'view'"
         assert 'value' in data.columns, "'data' has to contain the column 'value'"
 
         # Check for duplicated entries
@@ -239,6 +246,7 @@ class entry_point(object):
         tmp_features = data[["feature","group","view"]].drop_duplicates().groupby(["group","view"])["feature"].nunique()
 
         # If everything successful, print verbose message
+        print("\n")
         for g in self.data_opts['groups_names']:
             for m in self.data_opts['views_names']:
                 try:
@@ -289,7 +297,7 @@ class entry_point(object):
 
         # Sanity checks
         if not hasattr(self, 'data_opts'): 
-            print("Data options not defined before setting the data, using default values...")
+            # print("Data options not defined before setting the data, using default values...")
             self.set_data_options()
 
         # Check groups_label is defined properly
@@ -401,7 +409,7 @@ class entry_point(object):
 
         # Sanity checks
         if not hasattr(self, 'data_opts'): 
-            print("Data options not defined before setting the data, using default values...")
+            # print("Data options not defined before setting the data, using default values...")
             self.set_data_options()
 
         # Check groups_label is defined properly
