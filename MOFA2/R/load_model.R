@@ -15,6 +15,7 @@
 #' @param load_data logical indicating whether to load the training data (default is TRUE, it can be memory expensive)
 #' @param load_imputed_data logical indicating whether to load the imputed data (default is FALSE)
 #' @param remove_outliers logical indicating whether to mask outlier values.
+#' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
 #' @param verbose logical indicating whether to print verbose output (default is FALSE)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
@@ -24,7 +25,7 @@
 
 load_model <- function(file, sort_factors = TRUE, 
                        on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
-                       remove_outliers = FALSE, verbose = FALSE) {
+                       remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -307,8 +308,15 @@ load_model <- function(file, sort_factors = TRUE,
     object@cache[["variance_explained"]] <- calculate_variance_explained(object)
   } 
   
+  # Remove inactive factors
+  if (isTRUE(remove_inactive_factors)) {
+    if (isTRUE(verbose)) message("Removing inactive factors...")
+    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE))
+    object <- subset_factors(object, which(r2>0.0001))
+  }
+  
   # Order factors in order of variance explained
-  if (sort_factors) {
+  if (isTRUE(sort_factors)) {
     
     # Sanity checks
     if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")

@@ -112,25 +112,6 @@ setGeneric("groups", function(object) { standardGeneric("groups") })
 #' @export
 setGeneric("groups<-", function(object, value) { standardGeneric("groups<-") })
 
-################
-## Input Data ##
-################
-
-#' @title Retrieve input data
-#' @name data
-#' @export
-setGeneric("data", function(object) { standardGeneric("data") })
-
-
-##################
-## Imputed Data ##
-##################
-
-#' @title imputed_data: set and retrieve imputed data
-#' @name imputed_data
-#' @export
-setGeneric("imputed_data", function(object) { standardGeneric("imputed_data") })
-
 ###################
 ## Train Options ##
 ###################
