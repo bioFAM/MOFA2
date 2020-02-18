@@ -41,8 +41,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (any(object@dimensions$N<25)) warning("It is not a hard requirement, but with less than ~25 samples (per group) it is hard to learn meaningful factors...")
-  if (any(object@dimensions$D<25)) warning("Some views have less than 25 features, they might be underrepresented...")
+  if (any(object@dimensions$N<15)) warning("It is not a hard requirement, but with less than ~15 samples (per group), MOFA won't be able to learn meaningful factors for this group...")
+  if (any(object@dimensions$D<15)) warning("Some views have less than 15 features, MOFA won't be able to learn meaningful factors for this view....")
   
   # Get data options
   message("Checking data options...")

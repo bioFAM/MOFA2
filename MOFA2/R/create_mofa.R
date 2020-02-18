@@ -75,6 +75,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   )
   object@features_metadata <- tmp
   
+  # print verbose messages
+  if (length(unique(object@samples_metadata$group))>1) {
+    cat("You have requested the multi-group inference framework.\nIt is an advanced option, if this is the first time that you are running MOFA, we suggest that you try first without specifying groups")
+  }
   return(object)
 }
 
