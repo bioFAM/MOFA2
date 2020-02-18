@@ -2,12 +2,14 @@
 
 ### Important notice: [MOFA v1](https://github.com/bioFAM/MOFA) is officially depreciated, please switch to [MOFA v2](https://github.com/bioFAM/MOFA2) even if you are not planning to use the novel functionalities.
 
+## What is MOFA?
 MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
 Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple -omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional data representation in terms of (hidden) factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
 
 In MOFA v2 (MOFA+) we added the following improvements:
-* **Multi-group functionality**: intuitively, this breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.).
-* **Fast inference** using a stochastic variational framework: this can be powered by GPUs: enabling inference with very large data sets.
+* **Multi-group functionality**: intuitively, this breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.). Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim of the multi-group framework is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group. To achieve this, the group effect is regressed out from the data before fitting the model.  
+
+* **Fast inference** using a stochastic variational framework: this can be powered by GPUs: enabling inference with very large data sets.  
 
 For more details you can read our papers: 
 - MOFA: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
