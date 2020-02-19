@@ -17,8 +17,8 @@
 #' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if plot=="r") or \code{\link[pheatmap]{pheatmap}} (if plot=="log_pval").
 #' @importFrom pheatmap pheatmap
 #' @export
-correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", abs = TRUE, plot = c("log_pval","r"), return_data = FALSE, 
-                                              transpose = FALSE, ...) {
+correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", abs = TRUE, plot = c("r","log_pval"), 
+                                              alpha = 0.05, return_data = FALSE, transpose = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -71,11 +71,14 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     corrplot::corrplot(stat, ...)
     
   } else if (plot=="log_pval") {
-    stat <- -log10(cor$p)
+    stat <- cor$p
+    stat[stat>alpha] <- 1.0
+    if (all(stat==1.0)) stop("All p-values are 1.0, cannot plot the histogram")
+    stat <- -log10(stat)
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
     col <- colorRampPalette(c("lightgrey", "red"))(n=100)
-    pheatmap::pheatmap(stat, color=col, ...)
+    pheatmap::pheatmap(stat, main="log10 adjusted p-values", color=col, ...)
     
   } else {
     stop("'plot' argument not recognised. Please read the documentation: ?correlate_factors_with_covariates")
