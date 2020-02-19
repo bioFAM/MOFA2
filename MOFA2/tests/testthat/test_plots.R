@@ -29,14 +29,14 @@ test_that("plot weights heatmap", {
 })
 
 test_that("plot weights", {
-	# FOr multiple factors
+	# For multiple factors
 	expect_silent(p <- plot_weights(test_mofa2, view = 1, factors = 1:2))
-	# FOr one factor
-	expect_silent(p <- plot_weights(test_mofa2, factor = 1))
+	# For one factor
+	expect_silent(p <- plot_weights(test_mofa2, factors = 1))
 })
 
 test_that("plot top weights", {
-	expect_silent(p <- plot_top_weights(test_mofa2, view = 1, factor = 1))
+	expect_silent(p <- plot_top_weights(test_mofa2, view = 1, factors = 1))
 })
 
 

@@ -223,18 +223,18 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
 #' model <- load_model(file)
 #' 
 #' # Plot distribution of weights for Factor 1 and View 1
-#' plot_weights(model, view = 1, factor = 1)
+#' plot_weights(model, view = 1, factors = 1)
 #' 
 #' # Plot distribution of weights for Factors 1 to 3 and View 1
-#' plot_weights(model, view = 1, factor = 1:3)
+#' plot_weights(model, view = 1, factors = 1:3)
 #' 
 #' # Take the absolute value and highlight the top 10 features
-#' plot_weights(model, view = 1, factor = 1, nfeatures = 10, abs = TRUE)
+#' plot_weights(model, view = 1, factors = 1, nfeatures = 10, abs = TRUE)
 #' 
 #' # Change size of dots and text
-#' plot_weights(model, view = 1, factor = 1, text_size = 5, dot_size = 1)
+#' plot_weights(model, view = 1, factors = 1, text_size = 5, dot_size = 1)
 #' 
-plot_weights <- function(object, view = 1, factors = "all", nfeatures = 10, 
+plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10, 
                          color_by = NULL, shape_by = NULL,
                          abs = FALSE, manual = NULL, color_manual = NULL, scale = TRUE, 
                          dot_size = 1, text_size = 5, legend = TRUE, return_data = FALSE) {
@@ -448,12 +448,12 @@ plot_weights <- function(object, view = 1, factors = "all", nfeatures = 10,
 #' model <- load_model(file)
 #' 
 #' # Plot top weights for Factors 1 and 2 and View 1
-#' plot_top_weights(model, view = 1, factor = c(1,2))
+#' plot_top_weights(model, view = 1, factors = c(1,2))
 #' 
 #' # Do not take absolute value
 #' plot_weights(model, abs = FALSE)
 #' 
-plot_top_weights <- function(object, view = 1, factors = c(1, 2),
+plot_top_weights <- function(object, view = 1, factors = 1,
                              nfeatures = 10, abs = TRUE, scale = TRUE, sign = "all") {
   
   # Sanity checks
