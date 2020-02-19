@@ -6,7 +6,8 @@
 \usage{
 load_model(file, sort_factors = TRUE, on_disk = FALSE,
   load_data = TRUE, load_imputed_data = FALSE,
-  remove_outliers = FALSE, verbose = FALSE)
+  remove_outliers = FALSE, remove_inactive_factors = TRUE,
+  verbose = FALSE)
 }
 \arguments{
 \item{file}{an hdf5 file saved by the mofa Python framework}
@@ -22,6 +23,8 @@ On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\li
 \item{load_imputed_data}{logical indicating whether to load the imputed data (default is FALSE)}
 
 \item{remove_outliers}{logical indicating whether to mask outlier values.}
+
+\item{remove_inactive_factors}{logical indicating whether to remove inactive factors from the model.}
 
 \item{verbose}{logical indicating whether to print verbose output (default is FALSE)}
 }

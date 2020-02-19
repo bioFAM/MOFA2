@@ -188,18 +188,15 @@ subset_factors <- function(object, factors) {
     }
   }
   
-  
-  # Remove total variance explained estimates  
-  if (length(factors) < object@dimensions[["K"]]) {
-    # warning("After subsetting the factors the total variance explained estimates are not valid anymore, removing them...")
-    object@cache[["variance_explained"]]$r2_total <- NULL
-  }
-  
   # Subset per-factor variance explained estimates
   if ((methods::.hasSlot(object, "cache")) && ("variance_explained" %in% names(object@cache))) {
     object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[factors,,drop=FALSE])
   }
   
+  # Relalculate total variance explained estimates  
+  if (length(factors) < object@dimensions[["K"]]) {
+    object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_per_factor, colSums)
+  }
   
   # Update dimensionality
   object@dimensions[["K"]] <- length(factors)
