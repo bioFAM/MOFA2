@@ -102,14 +102,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
         for m in range(M):
             tau[m][mask[m]] = 0.
 
-        if self.weight_views:
+        weights = [1] * M       
+        if self.weight_views and M > 1:
             total_w = np.asarray([Y[m].shape[1] for m in range(M)]).sum()
-            weights = [(total_w-Y[m].shape[1])/total_w * M for m in range(M)]
-            # sum_weights = np.asarray(weights).sum()
-            sum_weights  = 1
-        else:
-            weights = [1] * M
-            sum_weights = 1
+            weights = np.asarray([total_w / (M * Y[m].shape[1]) for m in range(M)])
+            weights = weights / weights.sum() * M
+            # weights = [(total_w-Y[m].shape[1])/total_w * M / (M-1) for m in range(M)]
 
         # Precompute terms to speed up GPU computation
         foo = gpu_utils.array(s.zeros((N,K)))
@@ -136,8 +134,8 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             bar += precomputed_bar[:,k]
             bar = gpu_utils.asnumpy(bar)
 
-            Qvar[:, k] = 1. / (sum_weights * Alpha[:, k] + foo[:,k])
-            Qmean[:, k] = Qvar[:, k] * (bar + sum_weights * Alpha[:, k] * Mu[:, k])
+            Qvar[:, k] = 1. / (Alpha[:, k] + foo[:,k])
+            Qmean[:, k] = Qvar[:, k] * (bar + Alpha[:, k] * Mu[:, k])
 
         # Save updated parameters of the Q distribution
         return {'Qmean': Qmean, 'Qvar':Qvar}
@@ -281,14 +279,13 @@ class SZ_Node(BernoulliGaussian_Unobserved_Variational_Node):
         M = len(Y)
         K = self.dim[1]
 
-        if self.weight_views:
+        weights = [1] * M       
+        if self.weight_views and M > 1:
             total_w = np.asarray([Y[m].shape[1] for m in range(M)]).sum()
-            weights = [(total_w-Y[m].shape[1])/total_w * M for m in range(M)]
-            # sum_weights = np.asarray(weights).sum()
-            sum_weights  = 1
-        else:
-            weights = [1] * M
-            sum_weights = 1
+            # weights = [(total_w-Y[m].shape[1])/total_w * M / (M-1) for m in range(M)]
+            weights = np.asarray([total_w / (M * Y[m].shape[1]) for m in range(M)])
+            weights = weights / weights.sum() * M
+
 
         # term4_tmp1 = [ gpu_utils.array(Alpha[:,k]) for k in range(self.dim[1]) ]
         # term4_tmp2 = [ gpu_utils.array(Alpha[:,k]) for k in range(self.dim[1]) ]
