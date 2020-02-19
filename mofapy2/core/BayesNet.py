@@ -356,14 +356,13 @@ class BayesNet(object):
     def calculateELBO(self, *nodes):
         """Method to calculate the Evidence Lower Bound of the model"""
 
-        if self.options['weight_views']:
+        weights = [1] * self.dim['M']        
+        if self.options['weight_views'] and self.dim['M'] > 1:
             total_w = np.asarray(self.dim['D']).sum()
-            weights = [(total_w-self.dim['D'][m])/total_w * self.dim['M'] for m in range(self.dim['M'])]
-            # sum_weights = np.asarray(weights).sum()
-            sum_weights = 1
-        else:
-            weights = [1] * self.dim['M']
-            sum_weights = 1
+            weights = np.asarray([total_w / (self.dim['M'] * self.dim['D'][m]) for m in range(self.dim['M'])])
+            weights = weights / weights.sum() * self.dim['M']
+            # weights = [(total_w-self.dim['D'][m])/total_w * self.dim['M'] / (self.dim['M'] - 1)  for m in range(self.dim['M'])]
+            
 
         if len(nodes) == 0: nodes = self.getVariationalNodes().keys()
         elbo = pd.Series(s.zeros(len(nodes)+1), index=list(nodes)+["total"])
@@ -371,7 +370,7 @@ class BayesNet(object):
             if isinstance(self.nodes[node], Multiview_Variational_Node):
                 elbo[node] = float(self.nodes[node].calculateELBO(weights = weights))
             else:
-                elbo[node] = sum_weights * float(self.nodes[node].calculateELBO())
+                elbo[node] = float(self.nodes[node].calculateELBO())
             elbo["total"] += elbo[node]
         return elbo
 
