@@ -249,6 +249,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
 #' @param dot_size numeric indicating dot size.
+#' @param stroke numeric indicating the stroke size (the black border around the dots).
 #' @param alpha numeric indicating dot transparency.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
@@ -280,7 +281,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 plot_factors <- function(object, factors = c(1, 2), groups = "all",
                          show_missing = TRUE, scale = FALSE,
                          color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                         dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE) {
+                         dot_size = 1.5, alpha = 1, legend = TRUE, stroke = NULL, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -337,9 +338,20 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   # Return data if requested instead of plotting
   if (return_data) return(df)
   
+  # Dot black border
+  if (is.null(stroke)) {
+    if (nrow(df)<100) {
+      stroke <- 0.5
+    } else {
+      stroke <- 0
+    }
+  }
+    
+  
   # Generate plot
   p <- ggplot(df, aes_string(x="x", y="y")) + 
-    geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
+    # geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
+    geom_point(aes_string(fill="color_by", shape="shape_by"), size=dot_size, alpha=alpha, colour="black", shape=21, stroke = stroke) +
     # ggrastr::geom_point_rast(aes_string(color = "color_by", shape = "shape_by")) +
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
