@@ -67,9 +67,10 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   
   if (plot=="r") {
     stat <- cor$r
+    if (isTRUE(abs)) stat <- abs(stat)
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
-    corrplot::corrplot(stat, tl.col = "black", ...)
+    corrplot::corrplot(stat, tl.col = "black", title="Pearson correlation coefficient", ...)
     
   } else if (plot=="log_pval") {
     stat <- cor$p
