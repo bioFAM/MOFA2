@@ -204,10 +204,12 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
   
+  # Transform variance explained from fraction to %
+  r2_mk_df$value <- 100*r2_mk_df$value
+  
   # Set R2 limits
-  if (!is.null(min_r2)) {
+  if (!is.null(min_r2))
     r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
-  }
   min_r2 = 0
   
   if (!is.null(max_r2)) {
@@ -216,6 +218,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   } else {
     max_r2 = max(r2_mk_df$value)
   }
+  
   
   # Grid plot with the variance explained per factor and view/group
   p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
@@ -254,6 +257,9 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
       # Barplots for total variance explained
       min_lim_bplt <- min(0, r2_m_df$R2)
       max_lim_bplt <- max(r2_m_df$R2)
+      
+      # Transform variance explained from fraction to %
+      r2_m_df$value <- 100*r2_m_df$value
       
       # Barplot with variance explained per view/group (across all factors)
       p2 <- ggplot(r2_m_df, aes_string(x=x, y="R2")) + 

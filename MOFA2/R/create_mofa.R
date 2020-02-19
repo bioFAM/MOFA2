@@ -207,8 +207,8 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", dim(seurat)[2])
   }
-  data_matrices <- lapply(assays, function(assay) 
-    .split_seurat_into_groups(seurat, groups = groups, assay = assay, slot = slot, features = features[[assay]]))
+  data_matrices <- lapply(assays, function(i) 
+    .split_seurat_into_groups(seurat, groups = groups, assay = i, slot = slot, features = features[[i]]))
   names(data_matrices) <- tolower(assays)
 
   object <- new("MOFA")
