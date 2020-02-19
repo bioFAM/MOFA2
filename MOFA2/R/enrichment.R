@@ -268,7 +268,7 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
 #' @param ... extra arguments to be passed to \link{pheatmap} function
 #' @details it requires \code{\link{run_enrichment}} to be run beforehand.
 #' @return produces a heatmap
-#' @import pheatmap
+#' @importFrom pheatmap pheatmap
 #' @importFrom grDevices colorRampPalette
 #' @export
 plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, log_scale = TRUE, ...) {
@@ -287,7 +287,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, log_scale =
   }
   
   # Generate heatmap
-  pheatmap::pheatmap(p.values, color = col, ...)
+  pheatmap(p.values, color = col, ...)
 }
 
 
