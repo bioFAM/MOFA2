@@ -15,9 +15,7 @@
 #' @param return_data logical indicating whether to return the correlation results instead of plotting
 #' @param transpose logical indicating whether to transpose the plot
 #' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if plot=="r") or \code{\link[pheatmap]{pheatmap}} (if plot=="log_pval").
-#' @importFrom psych corr.test
 #' @importFrom pheatmap pheatmap
-#' @importFrom corrplot corrplot
 #' @export
 correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", abs = TRUE, plot = c("log_pval","r"), return_data = FALSE, 
                                               transpose = FALSE, ...) {
@@ -61,7 +59,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   Z <- do.call(rbind, Z)
   
   # correlate
-  cor <- corr.test(Z, covariates, method = "pearson", adjust = "BH")
+  cor <- psych::corr.test(Z, covariates, method = "pearson", adjust = "BH")
   
   # plot  
   plot <- match.arg(plot)
@@ -70,14 +68,14 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     stat <- cor$r
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
-    corrplot(stat, ...)
+    corrplot::corrplot(stat, ...)
     
   } else if (plot=="log_pval") {
     stat <- -log10(cor$p)
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
     col <- colorRampPalette(c("lightgrey", "red"))(n=100)
-    pheatmap(stat, color=col, ...)
+    pheatmap::pheatmap(stat, color=col, ...)
     
   } else {
     stop("'plot' argument not recognised. Please read the documentation: ?correlate_factors_with_covariates")
