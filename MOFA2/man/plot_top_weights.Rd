@@ -4,7 +4,7 @@
 \alias{plot_top_weights}
 \title{Plot top weights}
 \usage{
-plot_top_weights(object, view = 1, factors = c(1, 2), nfeatures = 10,
+plot_top_weights(object, view = 1, factors = 1, nfeatures = 10,
   abs = TRUE, scale = TRUE, sign = "all")
 }
 \arguments{
@@ -41,7 +41,7 @@ file <- system.file("exdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Plot top weights for Factors 1 and 2 and View 1
-plot_top_weights(model, view = 1, factor = c(1,2))
+plot_top_weights(model, view = 1, factors = c(1,2))
 
 # Do not take absolute value
 plot_weights(model, abs = FALSE)
