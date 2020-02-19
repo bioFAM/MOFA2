@@ -16,6 +16,7 @@
 #' @param transpose logical indicating whether to transpose the plot
 #' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if plot=="r") or \code{\link[pheatmap]{pheatmap}} (if plot=="log_pval").
 #' @importFrom pheatmap pheatmap
+#' @importFrom corrplot corrplot
 #' @export
 correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", abs = TRUE, plot = c("r","log_pval"), 
                                               alpha = 0.05, return_data = FALSE, transpose = FALSE, ...) {
@@ -68,7 +69,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     stat <- cor$r
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
-    corrplot::corrplot(stat, ...)
+    corrplot::corrplot(stat, tl.col = "black", ...)
     
   } else if (plot=="log_pval") {
     stat <- cor$p

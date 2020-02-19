@@ -9,8 +9,8 @@ License: GPL (>= 2)
 Description: A collection of tools for running and analysing MOFA v2 models
 Encoding: UTF-8
 Depends: R (>= 3.5)
-Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, scales, GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils
-Suggests: knitr, testthat, DelayedArray, Seurat, ggpubr, doParallel, foreach, Rtsne, uwot, corrplot, psych
+Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, scales, GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot
+Suggests: knitr, testthat, DelayedArray, Seurat, ggpubr, doParallel, foreach, Rtsne, uwot, psych
 biocViews: DimensionReduction, Bayesian, Visualization
 VignetteBuilder: knitr
 LazyData: true
