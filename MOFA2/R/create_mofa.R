@@ -85,7 +85,7 @@ create_mofa <- function(data, groups = NULL, ...) {
 }
 
 # (Hidden) function to initialise a MOFA object using a MultiAssayExperiment
-#' @import MultiAssayExperiment
+# #' @import MultiAssayExperiment
 .create_mofa_from_mae <- function(data, groups = NULL) {
   
   # Re-arrange data for training in MOFA to matrices, fill in NAs
