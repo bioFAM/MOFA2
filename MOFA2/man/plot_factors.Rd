@@ -7,7 +7,8 @@
 plot_factors(object, factors = c(1, 2), groups = "all",
   show_missing = TRUE, scale = FALSE, color_by = NULL,
   shape_by = NULL, color_name = NULL, shape_name = NULL,
-  dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE)
+  dot_size = 1.5, alpha = 1, legend = TRUE, stroke = NULL,
+  return_data = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
@@ -39,6 +40,8 @@ plot_factors(object, factors = c(1, 2), groups = "all",
 \item{alpha}{numeric indicating dot transparency.}
 
 \item{legend}{logical indicating whether to add legend.}
+
+\item{stroke}{numeric indicating the stroke size (the black border around the dots).}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 }

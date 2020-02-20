@@ -5,8 +5,8 @@
 \title{Plot correlation of factors with external covariates}
 \usage{
 correlate_factors_with_covariates(object, covariates, factors = "all",
-  groups = "all", abs = TRUE, plot = c("log_pval", "r"),
-  return_data = FALSE, transpose = FALSE, ...)
+  groups = "all", abs = TRUE, plot = c("r", "log_pval"),
+  alpha = 0.05, return_data = FALSE, transpose = FALSE, ...)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

@@ -251,15 +251,15 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
                       varnames=c("view", "group"), value.name="R2")
       colnames(r2_m_df)[(ncol(r2_m_df)-1):ncol(r2_m_df)] <- c("view", "group")
       
-      r2_m_df$group <- factor(r2_m_df$group, levels = groups(object))
+      r2_m_df$group <- factor(r2_m_df$group, levels = MOFA2::groups(object))
       r2_m_df$view <- factor(r2_m_df$view, levels = views(object))
+      
+      # Transform variance explained from fraction to %
+      r2_m_df$R2 <- 100*r2_m_df$R2
       
       # Barplots for total variance explained
       min_lim_bplt <- min(0, r2_m_df$R2)
       max_lim_bplt <- max(r2_m_df$R2)
-      
-      # Transform variance explained from fraction to %
-      r2_m_df$value <- 100*r2_m_df$value
       
       # Barplot with variance explained per view/group (across all factors)
       p2 <- ggplot(r2_m_df, aes_string(x=x, y="R2")) + 

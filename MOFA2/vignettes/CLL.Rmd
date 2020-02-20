@@ -29,6 +29,21 @@ MOFAobject <- create_mofa(CLL_data, groups = CLL_covariates$Gender)
 MOFAobject
 ```
 
+## Alternative option: create MOFA+ object using MultiAssayExperiment
+Instead of a list of matrices as above, you can also provide a [MultiAssayExperiment](https://bioconductor.org/packages/release/bioc/html/MultiAssayExperiment.html) object and build the MOFA+ object based on this. Covariates stored in the `colData` slot of the MultiAssayExperiment can be used to specify groups.
+```{r, warning=FALSE, message=FALSE}
+library(MultiAssayExperiment)
+
+# Create MultiAssayExperiment object 
+mae_CLL <- MultiAssayExperiment(
+  experiments = CLL_data, 
+  colData = CLL_covariates
+)
+
+# Build the MOFA object
+MOFAobject <- create_mofa(mae_CLL, groups = "Gender")
+MOFAobject
+```
 
 ## Define MOFA options
 Data options: let's use default

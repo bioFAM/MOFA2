@@ -51,6 +51,8 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("Creating MOFA object from a list of matrices (features as rows, sample as columns)...\n")
     object <- .create_mofa_from_matrix(data, groups)
 
+  } else if(is(data, "MultiAssayExperiment")){
+    object <- .create_mofa_from_mae(data, groups)
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
@@ -82,6 +84,66 @@ create_mofa <- function(data, groups = NULL, ...) {
   return(object)
 }
 
+# (Hidden) function to initialise a MOFA object using a MultiAssayExperiment
+#' @import MultiAssayExperiment
+.create_mofa_from_mae <- function(data, groups = NULL) {
+  
+  # Re-arrange data for training in MOFA to matrices, fill in NAs
+  data_list <- lapply(names(data), function(m) {
+    
+    # Extract general sample names
+    primary <- unique(sampleMap(data)[,"primary"])
+    
+    # Extract view
+    subdata <- assays(data)[[m]]
+    
+    # Rename view-specific sample IDs with the general sample names
+    stopifnot(colnames(subdata)==sampleMap(data)[sampleMap(data)[,"assay"]==m,"colname"])
+    colnames(subdata) <- sampleMap(data)[sampleMap(data)[,"assay"]==m,"primary"]
+    
+    # Fill subdata with NAs
+    subdata_filled <- .subset_augment(subdata, primary)
+    return(subdata_filled)
+  })
+  
+  # Define groups
+  if (is(groups, 'character') && (length(groups) == 1)) {
+    if (!(groups %in% colnames(colData(data))))
+      stop(paste0(groups, " is not found in the colData of the MultiAssayExperiment.\n",
+                  "If you want to use groups information from MultiAssayExperiment,\n",
+                  "please ensure to provide a column name that exists. The columns of colData are:\n",
+                  paste0(colnames(colData(data)), collapse = ", ")))
+    groups <- colData(data)[,groups]
+  }
+  
+  # If no groups provided, treat all samples as coming from one group
+  if (is.null(groups)) {
+    message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
+    groups <- rep("group1",  length(unique(sampleMap(data)[,"primary"])))
+  }
+
+  # Initialise MOFA object
+  object <- new("MOFA")
+  object@status <- "untrained"
+  object@data <- .split_data_into_groups(data_list, groups)
+  
+  groups_nms <- unique(as.character(groups))
+  
+  # Set dimensionalities
+  object@dimensions[["M"]] <- length(data_list)
+  object@dimensions[["G"]] <- length(groups_nms)
+  object@dimensions[["D"]] <- sapply(data_list, nrow)
+  object@dimensions[["N"]] <- sapply(groups_nms, function(x) sum(groups == x))
+  object@dimensions[["K"]] <- 0
+  
+  # Set view names
+  views(object) <- names(data)
+  
+  # Set samples group names
+  MOFA2::groups(object) <- groups_nms
+  
+  return(object)
+}
 
 
 # (Hidden) function to initialise a MOFA object using a Dataframe
@@ -155,7 +217,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   views(object) <- levels(df$view)
   
   # Set group names
-  groups(object) <- levels(df$group)
+  MOFA2::groups(object) <- levels(df$group)
   
   return(object)
 }
@@ -223,7 +285,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@dimensions[["K"]] <- 0
 
   # Set views & groups names
-  groups(object) <- as.character(names(data_matrices[[1]]))
+  MOFA2::groups(object) <- as.character(names(data_matrices[[1]]))
   views(object)  <- tolower(assays)
 
   return(object)
@@ -351,7 +413,19 @@ create_mofa <- function(data, groups = NULL, ...) {
   views(object) <- views_names
   
   # Set samples group names
-  groups(object) <- groups_names
+  MOFA2::groups(object) <- groups_names
   
   return(object)
+}
+
+
+# (Hidden) function to fill NAs for missing samples
+.subset_augment<-function(mat, samp) {
+  samp <- unique(samp)
+  mat <- t(mat)
+  aug_mat<-matrix(NA, ncol=ncol(mat), nrow=length(samp))
+  aug_mat<-mat[match(samp,rownames(mat)),,drop=FALSE]
+  rownames(aug_mat)<-samp
+  colnames(aug_mat)<-colnames(mat)
+  return(t(aug_mat))
 }
