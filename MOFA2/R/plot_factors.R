@@ -514,10 +514,10 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     # Option 1: by default group
   } else if (group_by[1] == "group") {
     group_by = c()
-    for (group in names(samples(object))) {
-      group_by <- c(group_by,rep(group,length(samples(object)[[group]])))
+    for (group in names(samples_names(object))) {
+      group_by <- c(group_by,rep(group,length(samples_names(object)[[group]])))
     }
-    group_by = factor(group_by, levels=groups(object))
+    group_by = factor(group_by, levels=groups_names(object))
     
     # Option 2: by a metadata column in object@samples$metadata
   } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples_metadata(object)))) {
@@ -526,7 +526,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
     stopifnot(all(colnames(group_by) %in% c("sample","group")))
-    stopifnot(all(unique(group_by$sample) %in% unlist(samples(object))))
+    stopifnot(all(unique(group_by$sample) %in% unlist(samples_names(object))))
     
     # Option 4: group_by is a vector of length N
   } else if (length(group_by) > 1) {
@@ -540,7 +540,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Create data.frame with columns (sample,group)
   if (!is(group_by,"data.frame")) {
     df = data.frame(
-      sample = unlist(samples(object)),
+      sample = unlist(samples_names(object)),
       group_by = group_by,
       stringsAsFactors = FALSE
     )
@@ -563,7 +563,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     color_by <- samples_metadata(object)$group
     
   # Option 2: by a feature present in the training data    
-  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features(object)))) {
+  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
       data <- lapply(get_data(object), function(l) Reduce(cbind, l))
       features <- lapply(data, rownames)
       viewidx <- which(sapply(features, function(x) color_by %in% x))
@@ -580,7 +580,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Option 5: input is a data.frame with columns (sample, color)
   } else if (is(color_by, "data.frame")) {
     stopifnot(all(colnames(color_by) %in% c("sample", "color")))
-    stopifnot(all(unique(color_by$sample) %in% unlist(samples(object))))
+    stopifnot(all(unique(color_by$sample) %in% unlist(samples_names(object))))
     
   # Option 6: color_by is a vector of length N
   } else if (length(color_by) > 1) {
@@ -594,7 +594,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Create data.frame with columns (sample,color)
   if (!is(color_by,"data.frame")) {
     df = data.frame(
-      sample = unlist(samples(object)),
+      sample = unlist(samples_names(object)),
       color_by = color_by,
       stringsAsFactors = FALSE
     )
@@ -615,12 +615,12 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Option 1: by default group
   } else if (shape_by[1] == "group") {
     shape_by = c()
-    for (group in names(samples(object))){
-      shape_by <- c(shape_by,rep(group,length(samples(object)[[group]])))
+    for (group in names(samples_names(object))){
+      shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
     }
     
   # Option 2: by a feature present in the training data    
-  } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features(object)))) {
+  } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
     data <- lapply(get_data(object), function(l) Reduce(cbind, l))
     features <- lapply(data, rownames)
     viewidx <- which(sapply(features, function(x) shape_by %in% x))
@@ -629,7 +629,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Option 3: input is a data.frame with columns (sample,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("sample","color")))
-    stopifnot(all(unique(shape_by$sample) %in% unlist(samples(object))))
+    stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(object))))
 
   # Option 4: by a metadata column in object@samples$metadata
   } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
@@ -647,7 +647,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   # Create data.frame with columns (sample,shape)
   if (!is(shape_by,"data.frame")) {
     df = data.frame(
-      sample = unlist(samples(object)),
+      sample = unlist(samples_names(object)),
       shape_by = as.factor(shape_by),
       stringsAsFactors = FALSE
     )

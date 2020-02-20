@@ -7,7 +7,7 @@
 #   
 #   # Fetch data
 #   data <- getTrainData(object)
-#   factors <- getFactors(object)
+#   factors <- getfactors_names(object)
 #   
 #   # Correlate the factors with global means per sample
 #   r <- lapply(data, function(x) abs(cor(colSums(x,na.rm=T),factors, use="pairwise.complete.obs")))
@@ -28,9 +28,9 @@
   
   # Gaussian by default
   likelihood <- rep(x="gaussian", times=object@dimensions$M)
-  names(likelihood) <- views(object)
+  names(likelihood) <- views_names(object)
   
-  for (m in views(object)) {
+  for (m in views_names(object)) {
     # data <- get_data(object, views=m)[[1]][[1]]  # take only first group
     data <- object@data[[m]][[1]]
     
@@ -106,12 +106,12 @@ return(model)
   stopifnot(!any(duplicated(factors)))
   if (is.numeric(factors)) {
     stopifnot(all(factors <= object@dimensions$K))
-    factors(object)[factors] 
+    factors_names(object)[factors] 
   } else {
     if (paste0(factors, collapse = "") == "all") { 
-      factors(object)
+      factors_names(object)
     } else {
-      stopifnot(all(factors %in% factors(object)))
+      stopifnot(all(factors %in% factors_names(object)))
       factors
     }
   }
@@ -122,12 +122,12 @@ return(model)
   stopifnot(!any(duplicated(views)))
   if (is.numeric(views)) {
     stopifnot(all(views <= object@dimensions$M))
-    views(object)[views] 
+    views_names(object)[views] 
   } else {
     if (paste0(views, sep = "", collapse = "") == "all") { 
-      views(object)
+      views_names(object)
     } else {
-      stopifnot(all(views %in% views(object)))
+      stopifnot(all(views %in% views_names(object)))
       views
     }
   }
@@ -138,12 +138,12 @@ return(model)
   stopifnot(!any(duplicated(groups)))
   if (is.numeric(groups)) {
     stopifnot(all(groups <= object@dimensions$G))
-    groups(object)[groups] 
+    groups_names(object)[groups] 
   } else {
     if (paste0(groups, collapse = "") == "all") { 
-      groups(object)
+      groups_names(object)
     } else {
-      stopifnot(all(groups %in% groups(object)))
+      stopifnot(all(groups %in% groups_names(object)))
       groups
     }
   }
@@ -154,12 +154,12 @@ return(model)
   stopifnot(!any(duplicated(samples)))
   if (is.numeric(samples)) {
     stopifnot(all(samples <= sum(object@dimensions$N)))
-    unlist(samples(object))[samples] 
+    unlist(samples_names(object))[samples] 
   } else {
     if (paste0(samples, collapse = "") == "all") { 
-      unlist(samples(object))
+      unlist(samples_names(object))
     } else {
-      stopifnot(all(samples %in% unlist(samples(object))))
+      stopifnot(all(samples %in% unlist(samples_names(object))))
       samples
     }
   }
@@ -169,12 +169,12 @@ return(model)
   stopifnot(!any(duplicated(features)))
   if (is.numeric(features)) {
     stopifnot(all(features <= sum(object@dimensions$D[view])))
-    unname(unlist(features(object)[[view]])[features])
+    unname(unlist(features_names(object)[[view]])[features])
   } else {
     if (paste0(features, collapse = "") == "all") { 
-      unlist(features(object)[[view]])
+      unlist(features_names(object)[[view]])
     } else {
-      stopifnot(all(features %in% unlist(features(object)[[view]])))
+      stopifnot(all(features %in% unlist(features_names(object)[[view]])))
       features
     }
   }

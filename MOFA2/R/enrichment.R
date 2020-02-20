@@ -317,7 +317,7 @@ plot_enrichment_detailed <- function(object, factor, feature.sets, enrichment.re
   
   # Sanity checks
   stopifnot(length(factor)==1) 
-  if(is.numeric(factor)) factor <- factors(object)[factor]
+  if(is.numeric(factor)) factor <- factors_names(object)[factor]
   if(!factor %in% colnames(enrichment.results$pval)) 
     stop(paste0("No feature set enrichment calculated for factor ", factor, ".\n Use run_enrichment first."))
   

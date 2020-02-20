@@ -4,7 +4,7 @@
 \alias{get_factors}
 \title{Get fractors}
 \usage{
-get_factors(object, groups = "all", factors = "all",
+get_factors(object, groups = "all", factors = "all", scale = FALSE,
   as.data.frame = FALSE)
 }
 \arguments{
@@ -15,6 +15,8 @@ Default is "all".}
 
 \item{factors}{character vector with the factor name(s), or numeric vector with the factor index(es).
 Default is "all".}
+
+\item{scale}{logical indicating whether to scale factor values.}
 
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a matrix.
 Default is \code{FALSE}.}

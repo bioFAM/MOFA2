@@ -180,13 +180,13 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   # Get features
   if (is(features, "list")) {
     if (is.null(names(features))) stop("features has to be a *named* list of character vectors. Please see the documentation")
-    if (!(names(features)%in%views(object))) stop("Views not recognised")
-    if (!all(sapply(names(features), function(i) all(features[[i]] %in% features(object)[[i]]) ))) stop("features not recognised")
+    if (!(names(features)%in%views_names(object))) stop("Views not recognised")
+    if (!all(sapply(names(features), function(i) all(features[[i]] %in% features_names(object)[[i]]) ))) stop("features not recognised")
     if (any(sapply(features,length)<1)) stop("features not recognised, please read the documentation")
     views <- names(features)
   } else {
     if (paste0(features, collapse="") == "all") { 
-      features <- features(object)[views]
+      features <- features_names(object)[views]
     } else {
       stop("features not recognised, please read the documentation")
     }
@@ -264,12 +264,12 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   
   # Get features
   if (is(features, "list")) {
-    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features(object)[[views[i]]]))))
+    stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
     stopifnot(length(features)==length(views))
     if (is.null(names(features))) names(features) <- views
   } else {
     if (paste0(features, collapse="") == "all") { 
-      features <- features(object)[views]
+      features <- features_names(object)[views]
     } else {
       stop("features not recognised, please read the documentation")
     }
@@ -472,7 +472,7 @@ get_variance_explained <- function(object, groups = "all", views = "all", factor
   if (.hasSlot(object, "cache") && ("variance_explained" %in% names(object@cache))) {
     r2_list <- object@cache$variance_explained
   } else {
-    r2_list <- calculate_variance_explained(object, factors = factors, views = views, groups = groups, ...)
+    r2_list <- calculate_variance_explained(object, factors = factors, views = views, groups = groups)
   }
   
   # Convert to data.frame format

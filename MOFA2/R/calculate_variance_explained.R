@@ -186,19 +186,19 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 
   # Subset factors for plotting
   if ((length(factors) == 1) && (factors[1] == "all")) {
-    factors <- factors(object)
+    factors <- factors_names(object)
   } else {
     if (is.numeric(factors)) {
-      factors <- factors(object)[factors]
+      factors <- factors_names(object)[factors]
     } else { 
-      stopifnot(all(factors %in% factors(object)))
+      stopifnot(all(factors %in% factors_names(object)))
     }
     r2_mk_df <- r2_mk_df[r2_mk_df$factor %in% factors,]
   }
 
   r2_mk_df$factor <- factor(r2_mk_df$factor, levels = factors)
-  r2_mk_df$group <- factor(r2_mk_df$group, levels = groups(object))
-  r2_mk_df$view <- factor(r2_mk_df$view, levels = views(object))
+  r2_mk_df$group <- factor(r2_mk_df$group, levels = groups_names(object))
+  r2_mk_df$view <- factor(r2_mk_df$view, levels = views_names(object))
 
   # Detect whether to split by group or by view
   groups <- names(r2_list$r2_total)
@@ -251,8 +251,8 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
                       varnames=c("view", "group"), value.name="R2")
       colnames(r2_m_df)[(ncol(r2_m_df)-1):ncol(r2_m_df)] <- c("view", "group")
       
-      r2_m_df$group <- factor(r2_m_df$group, levels = MOFA2::groups(object))
-      r2_m_df$view <- factor(r2_m_df$view, levels = views(object))
+      r2_m_df$group <- factor(r2_m_df$group, levels = MOFA2::groups_names(object))
+      r2_m_df$view <- factor(r2_m_df$view, levels = views_names(object))
       
       # Transform variance explained from fraction to %
       r2_m_df$R2 <- 100*r2_m_df$R2
@@ -449,8 +449,8 @@ plot_variance_explained_per_feature <- function(object, view, features,
     return(r2_df)
   
   # Grid plot with the variance explained per feature in every group
-  p <- ggplot(r2_df, aes(x = group, y = feature)) + 
-    geom_tile(aes(fill = value), color = "black") +
+  p <- ggplot(r2_df, aes_string(x = "group", y = "feature")) + 
+    geom_tile(aes_string(fill = "value"), color = "black") +
     guides(fill = guide_colorbar("R2")) +
     labs(x = "", y = "", title = "") +
     # ggtitle(paste0("Variance explained by ", length(factors), " factor", ifelse(length(factors) > 1, "s", ""), 

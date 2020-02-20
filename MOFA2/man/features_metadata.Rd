@@ -4,6 +4,7 @@
 \name{features_metadata}
 \alias{features_metadata}
 \alias{features_metadata<-}
+\alias{features_metadata,MOFA-method}
 \alias{features_metadata<-,MOFA,data.frame-method}
 \title{features_metadata: set and retrieve feature metadata}
 \usage{
@@ -11,10 +12,17 @@ features_metadata(object, format = "default")
 
 features_metadata(object) <- value
 
+\S4method{features_metadata}{MOFA}(object)
+
 \S4method{features_metadata}{MOFA,data.frame}(object) <- value
 }
 \arguments{
+\item{object}{a \code{\link{MOFA}} object.}
+
 \item{value}{data frame with feature information, it at least must contain the columns \code{feature} and \code{view}}
+}
+\value{
+a data frame with sample metadata
 }
 \description{
 features_metadata: set and retrieve feature metadata

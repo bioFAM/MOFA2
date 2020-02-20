@@ -4,22 +4,22 @@
 ## Set and retrieve factors names ##
 ####################################
 
-#' @rdname factors
+#' @rdname factors_names
 #' @param object a \code{\link{MOFA}} object.
-#' @aliases factors,MOFA-method
+#' @aliases factors_names,MOFA-method
 #' @return character vector with the factor names
 #' @export
-setMethod("factors", signature(object="MOFA"), 
+setMethod("factors_names", signature(object="MOFA"), 
           function(object) {
             colnames(object@expectations$Z[[1]]) 
           }
 )
 
-#' @rdname factors
+#' @rdname factors_names
 #' @param value a character vector of factor names
 #' @import methods
 #' @export
-setReplaceMethod("factors", signature(object="MOFA", value="vector"), 
+setReplaceMethod("factors_names", signature(object="MOFA", value="vector"), 
                  function(object, value) {
                    if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
                      stop("Before assigning factor names you have to assign expectations")
@@ -46,12 +46,12 @@ setReplaceMethod("factors", signature(object="MOFA", value="vector"),
 ## Set and retrieve samples names ##
 ####################################
 
-#' @rdname samples
+#' @rdname samples_names
 #' @param object a \code{\link{MOFA}} object.
-#' @aliases samples,MOFA-method
+#' @aliases samples_names,MOFA-method
 #' @return list of character vectors with the sample names for each group
 #' @export
-setMethod("samples", signature(object="MOFA"), 
+setMethod("samples_names", signature(object="MOFA"), 
           function(object) {
             
             # When the model is not trained, the samples slot is not initialized yet
@@ -68,11 +68,11 @@ setMethod("samples", signature(object="MOFA"),
             return(samples_list)
           })
 
-#' @rdname samples
+#' @rdname samples_names
 #' @param value list of character vectors with the sample names for every group
 #' @import methods
 #' @export
-setReplaceMethod("samples", signature(object="MOFA", value="list"), 
+setReplaceMethod("samples_names", signature(object="MOFA", value="list"), 
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") || length(object@data) == 0 || length(object@data[[1]]) == 0)
                      stop("Before assigning sample names you have to assign the training data")
@@ -122,7 +122,7 @@ setMethod("samples_metadata", signature(object="MOFA"),
 
 #' @rdname samples_metadata
 #' @param value data frame with sample metadata, it must at least contain the columns \code{sample} and \code{group}.
-#' The order of the rows must match the order of \code{samples(object)}
+#' The order of the rows must match the order of \code{samples_names(object)}
 #' @import methods
 #' @export
 setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"), 
@@ -136,22 +136,22 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
                      stop("sample names do not match the dimensionality of the data (columns)")
                    if (!("sample" %in% colnames(value)))
                      stop("Metadata has to contain the column 'sample'")
-                   if (any(sort(value$sample) != sort(unname(unlist(samples(object)))) ))
+                   if (any(sort(value$sample) != sort(unname(unlist(samples_names(object)))) ))
                      stop("Samples names in the model (see `samples(MOFAobject)`) and in the metadata do not match")
-                   if (any(sort(unique(value$group)) != sort(groups(object))))
+                   if (any(sort(unique(value$group)) != sort(groups_names(object))))
                      stop("Groups names in the model (see `groups(MOFAobject)`) and in the metadata do not match")
                    
                    
                    if (!("group" %in% colnames(value))) {
                      if (length(unique(object@data_options$groups))==1) {
-                        value$group <- MOFA2::groups(object)
+                        value$group <- groups_names(object)
                      } else {
                         stop("Metadata has to contain the column 'group'")
                      }
                    }
                    
                    # Make sure that the order of samples metadata match the order of samples
-                   samples <- unname(unlist(samples(object)))
+                   samples <- unname(unlist(samples_names(object)))
                    value <- value[match(samples, value$sample),]
 
                    object@samples_metadata <- as.data.frame(value)
@@ -163,12 +163,12 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
 ## Set and retrieve features names ##
 #####################################
 
-#' @rdname features
+#' @rdname features_names
 #' @param object a \code{\link{MOFA}} object.
-#' @aliases features,MOFA-method
+#' @aliases features_names,MOFA-method
 #' @return list of character vectors with the feature names for each view
 #' @export
-setMethod("features", signature(object="MOFA"), 
+setMethod("features_names", signature(object="MOFA"), 
           function(object) {
             # When the model is not trained, the features slot is not initialized yet
             if (!("features_metadata" %in% slotNames(object)) || (length(object@features_metadata) == 0)) {
@@ -182,11 +182,11 @@ setMethod("features", signature(object="MOFA"),
             return(features_list)
           })
 
-#' @rdname features
+#' @rdname features_names
 #' @param value list of character vectors with the feature names for every view
 #' @import methods
 #' @export
-setReplaceMethod("features", signature(object="MOFA", value="list"),
+setReplaceMethod("features_names", signature(object="MOFA", value="list"),
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
                      stop("Before assigning feature names you have to assign the training data")
@@ -225,7 +225,7 @@ setReplaceMethod("features", signature(object="MOFA", value="list"),
 ## Set and retrieve feature metadata ##
 #######################################
 
-#' @rdname features
+#' @rdname features_metadata
 #' @param object a \code{\link{MOFA}} object.
 #' @return a data frame with sample metadata
 #' @export
@@ -265,22 +265,22 @@ setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame
 ## Set and retrieve views names ##
 ##################################
 
-#' @rdname views
+#' @rdname views_names
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each view
-#' @rdname views
+#' @rdname views_names
 #' @export
-setMethod("views", signature(object="MOFA"), 
+setMethod("views_names", signature(object="MOFA"), 
           function(object) {
             object@data_options$views
           })
 
 
-#' @rdname views
+#' @rdname views_names
 #' @param value character vector with the names for each view
 #' @import methods
 #' @export
-setMethod("views<-", signature(object="MOFA", value="character"), 
+setMethod("views_names<-", signature(object="MOFA", value="character"), 
           function(object, value) {
             # if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
             #   stop("Before assigning view names you have to assign the training data")
@@ -353,22 +353,22 @@ setMethod("views<-", signature(object="MOFA", value="character"),
 ## Set and retrieve groups names ##
 ###################################
 
-#' @rdname groups
+#' @rdname groups_names
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each sample group
-#' @rdname groups
+#' @rdname groups_names
 #' @export
-setMethod("groups", signature(object="MOFA"), 
+setMethod("groups_names", signature(object="MOFA"), 
           function(object) {
             object@data_options$groups
           })
 
 
-#' @rdname groups
+#' @rdname groups_names
 #' @param value character vector with the names for each group
 #' @import methods
 #' @export
-setMethod("groups<-", signature(object="MOFA", value="character"), 
+setMethod("groups_names<-", signature(object="MOFA", value="character"), 
           function(object, value) {
             # if (!methods::.hasSlot(object, "data") || length(object@data) == 0)
             #   stop("Before assigning group names you have to assign the training data")

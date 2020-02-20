@@ -4,8 +4,8 @@
 \alias{get_weights}
 \title{Get weights}
 \usage{
-get_weights(object, views = "all", factors = "all",
-  as.data.frame = FALSE)
+get_weights(object, views = "all", factors = "all", abs = FALSE,
+  scale = FALSE, as.data.frame = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
@@ -15,6 +15,10 @@ Default is "all".}
 
 \item{factors}{character vector with the factor name(s) or numeric vector with the factor index(es). \cr
 Default is "all".}
+
+\item{abs}{logical indicating whether to take the absolute value of the weights.}
+
+\item{scale}{logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if \code{abs=TRUE}).}
 
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a list of matrices. 
 Default is \code{FALSE}.}
@@ -35,7 +39,7 @@ model <- load_model(file)
 # Fetch weights in matrix format (a list, one matrix per view)
 weights <- get_weights(model)
 
-# Fetch weights for factor 1-2 and view 1
+# Fetch weights for factor 1 and 2 and view 1
 weights <- get_weights(model, views = 1, factors = c(1,2))
 
 # Fetch weights in data.frame format

@@ -179,7 +179,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   
   # Subset groups
   groups <- .check_and_get_groups(object, groups)
-  Z <- Z[Z$sample%in%unlist(samples(object)[groups]),]
+  Z <- Z[Z$sample%in%unlist(samples_names(object)[groups]),]
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)

@@ -72,7 +72,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   # Create features metadata
   tmp <- data.frame(
     feature = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
-    view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views(object)[[x]], object@dimensions$D[[x]]) )),
+    view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )
   object@features_metadata <- tmp
@@ -137,10 +137,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@dimensions[["K"]] <- 0
   
   # Set view names
-  views(object) <- names(data)
+  views_names(object) <- names(data)
   
   # Set samples group names
-  MOFA2::groups(object) <- groups_nms
+  groups_names(object) <- groups_nms
   
   return(object)
 }
@@ -214,10 +214,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@dimensions[["K"]] <- 0
   
   # Set view names
-  views(object) <- levels(df$view)
+  views_names(object) <- levels(df$view)
   
   # Set group names
-  MOFA2::groups(object) <- levels(df$group)
+  groups_names(object) <- levels(df$group)
   
   return(object)
 }
@@ -285,8 +285,8 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@dimensions[["K"]] <- 0
 
   # Set views & groups names
-  MOFA2::groups(object) <- as.character(names(data_matrices[[1]]))
-  views(object)  <- tolower(assays)
+  groups_names(object) <- as.character(names(data_matrices[[1]]))
+  views_names(object)  <- tolower(assays)
 
   return(object)
 }
@@ -410,10 +410,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   }
   
   # Set view names
-  views(object) <- views_names
+  views_names(object) <- views_names
   
   # Set samples group names
-  MOFA2::groups(object) <- groups_names
+  groups_names(object) <- groups_names
   
   return(object)
 }

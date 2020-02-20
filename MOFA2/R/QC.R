@@ -19,35 +19,35 @@ quality_control <- function(object, verbose = FALSE) {
   
   # Check views names
   if (verbose == TRUE) message("Checking views names...")
-  stopifnot(!is.null(views(object)))
-  stopifnot(!duplicated(views(object)))
-  if (any(grepl("/", views(object)))) {
+  stopifnot(!is.null(views_names(object)))
+  stopifnot(!duplicated(views_names(object)))
+  if (any(grepl("/", views_names(object)))) {
     stop("Some of the views names contain `/` symbol, which is not supported.
   This can be fixed e.g. with:
-    views(object) <- gsub(\"/\", \"-\", views(object))")
+    views_names(object) <- gsub(\"/\", \"-\", views_names(object))")
   }
   
   # Check groups names
   if (verbose == TRUE) message("Checking groups names...")
-  if (any(grepl("/", groups(object)))) {
+  if (any(grepl("/", groups_names(object)))) {
     stop("Some of the groups names contain `/` symbol, which is not supported.
   This can be fixed e.g. with:
-    groups(object) <- gsub(\"/\", \"-\", groups(object))")
+    groups_names(object) <- gsub(\"/\", \"-\", groups_names(object))")
   } 
-  stopifnot(!is.null(groups(object)))
-  stopifnot(!duplicated(groups(object)))
+  stopifnot(!is.null(groups_names(object)))
+  stopifnot(!duplicated(groups_names(object)))
   
   # Check samples names
   if (verbose == TRUE) message("Checking samples names...")
-  stopifnot(!is.null(samples(object)))
-  stopifnot(!duplicated(unlist(samples(object))))
+  stopifnot(!is.null(samples_names(object)))
+  stopifnot(!duplicated(unlist(samples_names(object))))
   
   # Check dimensionalities in the input data
   if (verbose == TRUE) message("Checking dimensions...")
   N <- object@dimensions$N
   D <- object@dimensions$D
-  for (i in views(object)) {
-    for (j in groups(object)) {
+  for (i in views_names(object)) {
+    for (j in groups_names(object)) {
       stopifnot(ncol(object@data[[i]][[j]]) == N[[j]])
       stopifnot(nrow(object@data[[i]][[j]]) == D[[i]])
       stopifnot(length(colnames(object@data[[i]][[j]])) == N[[j]])
@@ -58,7 +58,7 @@ quality_control <- function(object, verbose = FALSE) {
   # Check that there are no features with complete missing values (across all views)
   if (isTRUE(object@data_options[["loaded"]])) {
     if (verbose == TRUE) message("Checking there are no features with complete missing values...")
-    for (i in views(object)) {
+    for (i in views_names(object)) {
       if (!(is(object@data[[i]][[1]], "dgCMatrix") || is(object@data[[i]][[1]], "dgTMatrix"))) {
         tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = T))
         if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))

@@ -40,7 +40,7 @@ using the factor names, or as numeric with the index of the factors}
 
 \item{abs}{logical indicating whether to take the absolute value of the weights.}
 
-\item{scale}{logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE).}
+\item{scale}{logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if \code{abs=TRUE}).}
 
 \item{legend}{logical indicating whether to add a legend to the plot (default is TRUE).}
 }

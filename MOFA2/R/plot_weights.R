@@ -23,19 +23,19 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
-  if (is.numeric(view)) view <- views(object)[view]
-  stopifnot(all(view %in% views(object)))  
+  if (is.numeric(view)) view <- views_names(object)[view]
+  stopifnot(all(view %in% views_names(object)))  
   
   # Define factors
   factors <- .check_and_get_factors(object, factors)
   
   # Define features
   if (paste(features, collapse="") =="all") { 
-    features <- features(object)[[view]]
+    features <- features_names(object)[[view]]
   } else if (is.numeric(features)) {
-  	features <- features(object)[[view]][features]
+  	features <- features_names(object)[[view]][features]
   } else {
-    stopifnot(all(features %in% features(object)[[view]]))  
+    stopifnot(all(features %in% features_names(object)[[view]]))  
   }
 
   # Get relevant data
@@ -89,14 +89,14 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   stopifnot(length(factors)==2)
   
   # Get views  
-  if (is.numeric(view)) view <- views(object)[view]
-  stopifnot(all(view %in% views(object))) 
+  if (is.numeric(view)) view <- views_names(object)[view]
+  stopifnot(all(view %in% views_names(object))) 
 
   # Get factor
   if(is.numeric(factors)) {
-    factors <- factors(object)[factors]
+    factors <- factors_names(object)[factors]
   } else { 
-    stopifnot(all(factors %in% factors(object)))
+    stopifnot(all(factors %in% factors_names(object)))
   }
   
   # Collect relevant data  
@@ -104,7 +104,7 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   W <- get_weights(object, views=view, factors=factors, as.data.frame = FALSE)
   W <- as.data.frame(W); colnames(W) <- c("x","y")
   W$view <- view
-  W$feature <- features(object)[[view]]
+  W$feature <- features_names(object)[[view]]
   # W <- W[complete.cases(W),]
   
   # Set color and shape
@@ -460,8 +460,8 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (nfeatures <= 0) stop("'nfeatures' has to be greater than 0")
   
-  if (is.numeric(view)) view <- views(object)[view]
-  stopifnot(view %in% views(object))
+  if (is.numeric(view)) view <- views_names(object)[view]
+  stopifnot(view %in% views_names(object))
   
   # Get views
   view <- .check_and_get_views(object, view)
@@ -560,7 +560,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   # Option 2: input is a data.frame with columns (feature,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("feature","color")))
-    stopifnot(all(unique(shape_by$feature) %in% features(object)[[view]]))
+    stopifnot(all(unique(shape_by$feature) %in% features_names(object)[[view]]))
     
   # Option 3: by a feature_metadata column
   } else if ((length(shape_by)==1) && is.character(shape_by) & (shape_by %in% colnames(features_metadata(object)))) {
@@ -579,7 +579,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   # Create data.frame with columns (feature,shape)
   if (!is(shape_by,"data.frame")) {
     df = data.frame(
-      feature = features(object)[[view]],
+      feature = features_names(object)[[view]],
       shape_by = shape_by,
       view = view
     )
@@ -599,7 +599,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
     # Option 2: input is a data.frame with columns (feature,color)
   } else if (is(color_by,"data.frame")) {
     stopifnot(all(colnames(color_by) %in% c("feature","color")))
-    stopifnot(all(unique(color_by$feature) %in% features(object)[[view]]))
+    stopifnot(all(unique(color_by$feature) %in% features_names(object)[[view]]))
     
     # Option 3: by a feature_metadata column
   } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {
@@ -618,7 +618,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   # Create data.frame with columns (feature,color)
   if (!is(color_by,"data.frame")) {
     df = data.frame(
-      feature = features(object)[[view]],
+      feature = features_names(object)[[view]],
       color_by = color_by,
       view = view
     )

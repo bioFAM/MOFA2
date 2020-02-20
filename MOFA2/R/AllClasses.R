@@ -66,13 +66,13 @@ setMethod("show", "MOFA", function(object) {
   if (object@status == "trained") {
     nfactors <- object@dimensions[["K"]]
     cat(sprintf("Trained MOFA with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of factors: %d \n",
-                object@dimensions[["M"]], paste(views(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
-                object@dimensions[["G"]], paste(groups(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
+                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
+                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
                 nfactors))
   } else {
     cat(sprintf("Untrained MOFA model with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n",
-                object@dimensions[["M"]], paste(views(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
-                object@dimensions[["G"]], paste(groups(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
   }
   cat("\n")
 })
