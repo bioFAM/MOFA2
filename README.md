@@ -74,8 +74,8 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Integration of single-cell multi-modal data (scNMT-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the paper.
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
 * [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
+* [**Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html)
 * **Analysis of CITE-seq data**: in preparation...
-* **Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**: in preparation...
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
 
 
