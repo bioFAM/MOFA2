@@ -125,7 +125,7 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
     if (isTRUE(abs)) weights$value <- abs(weights$value)
     if (isTRUE(scale)) weights$value <- weights$value/max(abs(weights$value))
   } else {
-    weights <- lapply(weights, function(x) x[,factors,drop=FALSE])
+    weights <- lapply(weights[views], function(x) x[,factors,drop=FALSE])
     if (isTRUE(abs)) weights <- lapply(weights, abs)
     if (isTRUE(scale)) weights <- lapply(weights, function(x) x/max(abs(x)) )
     names(weights) <- views
