@@ -54,7 +54,7 @@ get_elbo <- function(object) {
 #' 
 #' # Fetch factors in data.frame format instead of matrix format
 #' factors <- get_factors(model, as.data.frame = TRUE)
-get_factors <- function(object, groups = "all", factors = "all", scale = TRUE, as.data.frame = FALSE) {
+get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -63,9 +63,6 @@ get_factors <- function(object, groups = "all", factors = "all", scale = TRUE, a
   groups <- .check_and_get_groups(object, groups)
   factors <- .check_and_get_factors(object, factors)
 
-  if (isTRUE(scale))
-    message("when scale=TRUE, factors will be scaled from -1 to 1. This should ONLY be used for visualisation")
-  
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
   if (isTRUE(as.data.frame)) {
@@ -111,7 +108,7 @@ get_factors <- function(object, groups = "all", factors = "all", scale = TRUE, a
 #' 
 #' # Fetch weights in data.frame format
 #' weights <- get_weights(model, as.data.frame = TRUE)
-get_weights <- function(object, views = "all", factors = "all", abs = FALSE, scale = TRUE, as.data.frame = FALSE) {
+get_weights <- function(object, views = "all", factors = "all", abs = FALSE, scale = FALSE, as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -122,11 +119,6 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
   
   # Fetch weights
   weights <- get_expectations(object, "W", as.data.frame)
-  
-  if (isTRUE(scale))
-    message("when scale=TRUE, weights will be scaled from -1 to 1. This should ONLY be used for visualisation")
-  if (isTRUE(abs))
-    message("when abs=TRUE, the absolute value of the weights will be taken. This should ONLY be used for visualisation")
   
   if (isTRUE(as.data.frame)) {
     weights <- weights[weights$view %in% views & weights$factor %in% factors, ]
