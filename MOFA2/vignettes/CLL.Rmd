@@ -1,12 +1,16 @@
 ---
 title: "Applying MOFA+ to the CLL multi-omics data"
-author: "Britta Velten"
+author: 
+  name: "Britta Velten"
+  affiliation: "German Cancer Research Center (DKFZ), Heidelberg, Germany"
+  email: "b.velten@dkfz-heidelberg.de"
+date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:
     toc: true
 package: MOFA2
 vignette: >
-  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to the CLL multi-omics data}
+  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to CLL multi-omics data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

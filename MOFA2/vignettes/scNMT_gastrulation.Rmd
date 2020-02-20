@@ -10,7 +10,7 @@ output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  %\VignetteIndexEntry{scRNA}
+  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to scNMT-seq data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

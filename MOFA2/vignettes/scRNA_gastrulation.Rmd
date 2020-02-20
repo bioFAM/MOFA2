@@ -9,7 +9,7 @@ output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  %\VignetteIndexEntry{scRNA}
+  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to time-course single-cell RNA-seq data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
