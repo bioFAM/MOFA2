@@ -74,7 +74,7 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
 #' @param show_missing logical indicating whether to include dots for which \code{shape_by} or \code{color_by} is missing
 #' @param dot_size numeric indicating dot size.
 #' @param abs logical indicating whether to take the absolute value of the weights.
-#' @param scale logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE).
+#' @param scale logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if \code{abs=TRUE}).
 #' @param legend logical indicating whether to add a legend to the plot (default is TRUE).
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 #' This method generates a single scatterplot for the combination of two latent factors.
@@ -126,13 +126,13 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
  
   # Calculate absolute value
-  if (abs) {
+  if (isTRUE(abs)) {
     df$x <- abs(df$x)
     df$y <- abs(df$y)
   }
   
-  # Scale values from 0 to 1
-  if (scale) {
+  # Scale values
+  if (isTRUE(scale)) {
     df$x <- df$x/max(abs(df$x))
     df$y <- df$y/max(abs(df$y))
   }

@@ -34,6 +34,7 @@ get_elbo <- function(object) {
 #' Default is "all".
 #' @param groups character vector with the group name(s), or numeric vector with the group index(es).
 #' Default is "all".
+#' @param scale logical indicating whether to scale factor values.
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a matrix.
 #' Default is \code{FALSE}.
 #' @return By default it returns the latent factor matrix of dimensionality (N,K), where N is number of samples and K is number of factors. \cr
@@ -53,7 +54,7 @@ get_elbo <- function(object) {
 #' 
 #' # Fetch factors in data.frame format instead of matrix format
 #' factors <- get_factors(model, as.data.frame = TRUE)
-get_factors <- function(object, groups = "all", factors = "all", as.data.frame = FALSE) {
+get_factors <- function(object, groups = "all", factors = "all", scale = TRUE, as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -62,12 +63,17 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
   groups <- .check_and_get_groups(object, groups)
   factors <- .check_and_get_factors(object, factors)
 
+  if (isTRUE(scale))
+    message("when scale=TRUE, factors will be scaled from -1 to 1. This should ONLY be used for visualisation")
+  
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
   if (isTRUE(as.data.frame)) {
     Z <- Z[Z$factor%in%factors & Z$group%in%groups,]
+    if (isTRUE(scale)) Z$value <- Z$value/max(abs(Z$value),na.rm=T)
   } else {
     Z <- lapply(Z[groups], function(z) z[,factors, drop=FALSE])
+    if (isTRUE(scale)) Z <- lapply(Z, function(x) x/max(abs(x)) )
     names(Z) <- groups
   }
 
@@ -83,6 +89,8 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
 #' Default is "all".
 #' @param factors character vector with the factor name(s) or numeric vector with the factor index(es). \cr
 #' Default is "all".
+#' @param abs logical indicating whether to take the absolute value of the weights.
+#' @param scale logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if \code{abs=TRUE}).
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices. 
 #' Default is \code{FALSE}.
 #' @return By default it returns a list where each element is a loading matrix with dimensionality (D,K), 
@@ -98,12 +106,12 @@ get_factors <- function(object, groups = "all", factors = "all", as.data.frame =
 #' # Fetch weights in matrix format (a list, one matrix per view)
 #' weights <- get_weights(model)
 #' 
-#' # Fetch weights for factor 1-2 and view 1
+#' # Fetch weights for factor 1 and 2 and view 1
 #' weights <- get_weights(model, views = 1, factors = c(1,2))
 #' 
 #' # Fetch weights in data.frame format
 #' weights <- get_weights(model, as.data.frame = TRUE)
-get_weights <- function(object, views = "all", factors = "all", as.data.frame = FALSE) {
+get_weights <- function(object, views = "all", factors = "all", abs = FALSE, scale = TRUE, as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -114,12 +122,23 @@ get_weights <- function(object, views = "all", factors = "all", as.data.frame = 
   
   # Fetch weights
   weights <- get_expectations(object, "W", as.data.frame)
+  
+  if (isTRUE(scale))
+    message("when scale=TRUE, weights will be scaled from -1 to 1. This should ONLY be used for visualisation")
+  if (isTRUE(abs))
+    message("when abs=TRUE, the absolute value of the weights will be taken. This should ONLY be used for visualisation")
+  
   if (isTRUE(as.data.frame)) {
     weights <- weights[weights$view %in% views & weights$factor %in% factors, ]
+    if (isTRUE(abs)) weights$value <- abs(weights$value)
+    if (isTRUE(scale)) weights$value <- weights$value/max(abs(weights$value))
   } else {
-    weights <- lapply(views, function(m) weights[[m]][,factors,drop=FALSE])
+    weights <- lapply(weights, function(x) x[,factors,drop=FALSE])
+    if (isTRUE(abs)) weights <- lapply(weights, abs)
+    if (isTRUE(scale)) weights <- lapply(weights, function(x) x/max(abs(x)) )
     names(weights) <- views
   }
+  
   return(weights)
 }
 

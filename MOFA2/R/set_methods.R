@@ -129,8 +129,6 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
                  function(object, value) {
                    if (!methods::.hasSlot(object, "data") || length(object@data) == 0 || length(object@data[[1]]) == 0)
                      stop("Before assigning samples metadata you have to assign the input data")
-                   # if (!methods::.hasSlot(object, "expectations") || length(object@expectations) == 0)
-                   #   stop("Before assigning samples metadata you have to assign the expectations")
                    if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
                      if (nrow(value) != sum(object@dimensions[["N"]]))
                        stop("Number of rows in samples metadata does not match the dimensionality of the model")
@@ -138,12 +136,19 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
                      stop("sample names do not match the dimensionality of the data (columns)")
                    if (!("sample" %in% colnames(value)))
                      stop("Metadata has to contain the column 'sample'")
-                   if (!("group" %in% colnames(value)))
-                     stop("Metadata has to contain the column 'group'")
                    if (any(sort(value$sample) != sort(unname(unlist(samples(object)))) ))
                      stop("Samples names in the model (see `samples(MOFAobject)`) and in the metadata do not match")
                    if (any(sort(unique(value$group)) != sort(groups(object))))
                      stop("Groups names in the model (see `groups(MOFAobject)`) and in the metadata do not match")
+                   
+                   
+                   if (!("group" %in% colnames(value))) {
+                     if (length(unique(object@data_options$groups))==1) {
+                        value$group <- MOFA2::groups(object)
+                     } else {
+                        stop("Metadata has to contain the column 'group'")
+                     }
+                   }
                    
                    # Make sure that the order of samples metadata match the order of samples
                    samples <- unname(unlist(samples(object)))

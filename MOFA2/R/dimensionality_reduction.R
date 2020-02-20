@@ -163,7 +163,8 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
     }
   }
 
-  method <- match.arg(method, names(object@dim_red))  # make sure the slot for the requested method exists
+  # make sure the slot for the requested method exists
+  method <- match.arg(method, names(object@dim_red))  
   
   # Remember color_name and shape_name if not provided
   if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))
@@ -204,6 +205,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   p <- ggplot(df, aes_string(x = "x", y = "y")) + 
     geom_point(aes_string(color = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size) +
     labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
+    scale_color_gradientn(colours = c('lightgrey', 'blue')) +
     theme_classic() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 

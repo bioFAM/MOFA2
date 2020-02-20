@@ -118,7 +118,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   if (is.factor(df$shape_by))
     df$shape_by <- forcats::fct_explicit_na(df$shape_by)
   
-  # Scale values from 0 to 1
+  # Scale values
   if (scale) {
     df$value <- df$value/max(abs(df$value))
   }
