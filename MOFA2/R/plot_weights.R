@@ -272,16 +272,16 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   ################
   
   # Scale values
-  if (scale & sum(W$value>0)>0) W$value <- W$value / max(abs(W$value))
+  if (isTRUE(scale) & sum(W$value>0)>0) W$value <- W$value / max(abs(W$value))
   
   # Take the absolute value
-  if (abs) W$value <- abs(W$value)
+  if (isTRUE(abs)) W$value <- abs(W$value)
     
   # Define groups for labelling
   W$labelling_group <- "0"
   
   # Define group of features to color according to the loading
-  if (nfeatures > 0) {
+  if (is.null(manual) & nfeatures>0) {
     for (f in factors) {
       features <- W[W$factor==f,] %>% group_by(view) %>% top_n(n=nfeatures, abs(value)) %>% .$feature
       W[(W$feature %in% features) & (W$factor==f), "labelling_group"] <- "1"
@@ -291,10 +291,17 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   # Define group of features to label manually
   if(!is.null(manual)) {
     if (is.null(color_manual)) {
-      color_manual <- hcl(h = seq(15, 375, length=length(manual)+1), l=65, c=100)[seq_len(length(manual))]
+      if (length(manual)>1) {
+        # color_manual <- hcl(h = seq(15, 375, length=length(manual)+1), l=65, c=100)[seq_len(length(manual))]
+        color_manual <- RColorBrewer::brewer.pal(n=length(manual)+1, "Dark2")
+      } else {
+        color_manual <- "black"
+      }
     } else {
       stopifnot(length(color_manual)==length(manual)) 
     }
+    
+    # Add labelling group (0 for non-labeled, >= 1 for labeled)
     for (m in seq_len(length(manual)))
       W$labelling_group[W$feature %in% manual[[m]]] <- as.character(m+1)
   }
@@ -306,8 +313,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
     W$feature_id <- paste(W$view, W$feature, sep="_")
   }
   
-  
-  # Convert plotting group
+  # labelling_indicator is TRUE for labeled, FALSE for non-labeled
   W$labelling_indicator <- as.factor(W$labelling_group != "0")
 
   # Set color and shape
@@ -320,18 +326,18 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   W <- merge(W, obj_color_by, by=c("feature", "view"))
   W <- merge(W, obj_shape_by, by=c("feature", "view"))
 
-  # If no feature metadata to colour by is provided,
-  # highlight the labelled features
-  if (is.null(color_by)) {
-    W$color_by <- factor(as.character(as.integer(as.logical(W$labelling_indicator))), levels = c("1", "0"))
-  }
+  # If no feature metadata to colour by is provided, highlight the labelled features
+  # TO-DO: FIX THIS LINE, IT IS WEIRD
+  # color_by is "1" for 
+  # if (is.null(color_by)) {
+  #   W$color_by <- factor(as.character(as.integer(as.logical(W$labelling_indicator))), levels = c("1", "0"))
+  # }
 
-  # Sort by loading
+  # Sort features by weight
   W <- by(W, list(W$factor), function(x) x[order(x$value),])
   W <- do.call(rbind, W)
 
-  # In order to re-order features across multiple factors, 
-  # make them unique for different factors
+  # In order to re-order features across multiple factors, make them unique for different factors
   W$feature_id <- paste(W$feature_id, W$factor, sep="_")
   W$feature_id <- factor(W$feature_id, levels = unique(W$feature_id))
 
@@ -341,11 +347,11 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   # Generate plot
   p <- ggplot(W, aes_string(x = "value", y = "feature_id", col = "labelling_group")) +
     scale_y_discrete(expand = c(0.03,0.03)) +
-    geom_point(aes_string(color = "color_by", shape = "shape_by", size="labelling_indicator")) + 
+    geom_point(aes_string(shape = "shape_by", size="labelling_indicator")) + 
     labs(x="Loading", y="Rank position", size=dot_size)
   
   # Add labels to the top features
-  if (nfeatures>0) {
+  if (nfeatures>0 | length(unique(W$labelling_group))>0) {
     p <- p + geom_text_repel(
       force = 10,
       data = W[W$labelling_group != "0",], aes_string(label = "feature", col = "labelling_group"),
@@ -354,8 +360,8 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   }
   
   # Configure axis 
-  if (scale) {
-    if (abs) {
+  if (isTRUE(scale)) {
+    if (isTRUE(abs)) {
       p <- p + 
         coord_cartesian(xlim=c(0,1)) +
         scale_x_continuous(breaks=c(0,1)) +
@@ -375,7 +381,8 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   if (!is.null(color_by)) { 
     p <- p + labs(color=color_name)
   } else {
-    p <- p + guides(color=FALSE) + scale_color_manual(values=c("black", "grey", color_manual))
+    foo <- c("grey","black",color_manual); names(foo) <- as.character(0:(length(foo)-1))
+    p <- p + guides(color=FALSE) + scale_color_manual(values=foo)
   }
   
   # Add legend for shape
@@ -397,7 +404,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
       plot.title = element_text(size=rel(1.3), hjust=0.5),
       axis.title = element_text(size=rel(1.3), color="black"),
       axis.text.x = element_text(size=rel(1.3), color="black"),
-      axis.text.y = element_blank(),  # loadings names are hidden by default
+      axis.text.y = element_blank(),
       axis.ticks.y = element_blank(),
       
       # facets
