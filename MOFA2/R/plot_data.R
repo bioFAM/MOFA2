@@ -20,6 +20,7 @@
 #' Default corresponds to features as rows and samples as columns.
 #' @param imputed logical indicating whether to plot the imputed data instead of the original data. Default is FALSE.
 #' @param denoise logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors. 
+#' @param max.value numeric indicating the maximum value to display in the heatmap (i.e. the matrix values will be capped at \code{max.value} ).
 #' See \code{\link{predict}}. Default is FALSE.
 #' @param ... further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}
 #' @details One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
@@ -31,7 +32,8 @@
 #' @importFrom utils tail
 #' @export
 plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features = 50, 
-    annotation_features = NULL, annotation_samples = NULL, transpose = FALSE, imputed = FALSE, denoise = FALSE, ...) {
+    annotation_features = NULL, annotation_samples = NULL, transpose = FALSE, 
+    imputed = FALSE, denoise = FALSE, max.value = NULL, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -132,6 +134,10 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     data <- t(data)
   }
 
+  if (!is.null(max.value)) {
+    data[data>=max.value] <- max.value
+  }
+  
   # Plot heatmap without annotations
   pheatmap(data, 
     annotation_row = annotation_features, 

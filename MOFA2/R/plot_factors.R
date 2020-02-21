@@ -44,6 +44,7 @@
 #' @param dodge logical indicating whether to dodge the dots (default is FALSE).
 #' @param color_name name for color legend (usually only used if color_by is not a character itself).
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
+#' @param stroke numeric indicating the stroke size (the black border around the dots).
 #' @param legend logical indicating whether to add a legend to the plot (default is TRUE).
 #' @param rasterize logical indicating whether to rasterize the plot (default is FALSE).
 #' @details One of the main steps for the annotation of factors is to visualise and color them using known covariates or phenotypic data. \cr
@@ -78,7 +79,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
                         add_dots = TRUE, dot_size = 1, dot_alpha = 1,
                         add_violin = FALSE, violin_alpha = 0.5, color_violin = TRUE,
                         show_missing = TRUE, scale = FALSE, dodge = FALSE,
-                        color_name = "", shape_name = "", 
+                        color_name = "", shape_name = "", stroke = NULL,
                         legend = TRUE, rasterize = FALSE) {
   
   # Sanity checks
@@ -136,18 +137,33 @@ plot_factor <- function(object, factors = 1, groups = "all",
 
   # Add dots
   if (add_dots) {
+    
+    # Dot black border
+    if (is.null(stroke))
+      if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
+    
     if (rasterize) {
       warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
       if (dodge) {
-        p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size, position="dodge", dodge.width=1 )
+        # p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size, position="dodge", dodge.width=1 )
+        p <- p + ggrastr::geom_quasirandom_rast(aes_string(fill = "color_by", shape = "shape_by"), 
+                  colour = "black", size = dot_size, position = "dodge", shape = 21, stroke = stroke,  alpha = dot_alpha,
+                  dodge.width = 1)
       } else {
-        p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size)
+        # p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size)
+        p <- p + ggrastr::geom_quasirandom_rast(aes_string(fill = "color_by", shape = "shape_by"), 
+                  colour = "black", size = dot_size, shape = 21, stroke = stroke,  alpha = dot_alpha)
       }
     } else {
       if (dodge) {
-        p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
+        # p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
+        p <- p + geom_jitter(aes_string(fill = "color_by", shape = "shape_by"), 
+                  colour = "black", size = dot_size, shape = 21, stroke = stroke, alpha = dot_alpha, 
+                  position = position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
-        p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha)
+        # p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha)
+        p <- p + geom_jitter(aes_string(fill = "color_by", shape = "shape_by"), 
+                             colour = "black", size = dot_size, shape = 21, stroke = stroke, alpha = dot_alpha)
       }
     }
   }
@@ -339,13 +355,8 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   if (return_data) return(df)
   
   # Dot black border
-  if (is.null(stroke)) {
-    if (nrow(df)<100) {
-      stroke <- 0.5
-    } else {
-      stroke <- 0
-    }
-  }
+  if (is.null(stroke))
+    if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
     
   
   # Generate plot
