@@ -4,9 +4,9 @@
 
 #' @title Plot heatmap of the weights
 #' @name plot_weights_heatmap
-#' @description Function to visualize the loadings for a given set of factors in a given view. \cr 
+#' @description Function to visualize the weights for a given set of factors in a given view. \cr 
 #' This is useful to visualize the overall pattern of the weights but not to individually characterise the factors. \cr
-#' To inspect the loadings of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plot_top_weights}}
+#' To inspect the weights of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plot_top_weights}}
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param view character vector with the view name(s), or numeric vector with the index of the view(s) to use. 
 #' Default is the first view.
@@ -14,7 +14,7 @@
 #' Default is 'all'.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
 #' Default is 'all'.
-#' @param threshold threshold on absolute weight values, so that loadings with a magnitude below this threshold (in all factors) are removed
+#' @param threshold threshold on absolute weight values, so that weights with a magnitude below this threshold (in all factors) are removed
 #' @param ... extra arguments passed to \code{\link[pheatmap]{pheatmap}}.
 #' @importFrom pheatmap pheatmap
 #' @export
@@ -41,7 +41,7 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
   # Get relevant data
   W <- get_weights(object, views=view, factors=factors)[[1]][features,]
   
-  # apply thresholding of loadings
+  # apply thresholding of weights
   W <- W[!apply(W,1,function(r) all(abs(r)<threshold)),]
   W <- W[,!apply(W,2,function(r) all(abs(r)<threshold))]
 
@@ -180,10 +180,10 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
 }
 
 
-#' @title Plot distribution of feature weights (loadings)
+#' @title Plot distribution of feature weights (weights)
 #' @name plot_weights
-#' @description An important step to annotate factors is to visualise the corresponding feature loadings. \cr
-#' This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
+#' @description An important step to annotate factors is to visualise the corresponding feature weights. \cr
+#' This function plots all weights for a given latent factor and view, labeling the top ones. \cr
 #' In contrast, the function \code{\link{plot_top_weights}} displays only the top features with highest loading.
 #' @param object a \code{\link{MOFA}} object.
 #' @param view a string with the view name, or an integer with the index of the view.
@@ -208,7 +208,7 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
 #' @param abs logical indicating whether to take the absolute value of the weights.
 #' @param manual A nested list of character vectors with features to be manually labelled (see the example for details).
 #' @param color_manual a character vector with colors, one for each element of 'manual'
-#' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).
+#' @param scale logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE).
 #' @param dot_size numeric indicating the dot size.
 #' @param text_size numeric indicating the text size.
 #' @param legend logical indicating whether to add legend.
@@ -252,10 +252,10 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   # Collect expectations  
   W <- get_weights(object, views = view, factors = factors, as.data.frame = TRUE)
   
-  # Remove factors with all-zero loadings
+  # Remove factors with all-zero weights
   # to.remove <- sapply(factors, function(i) sum(W[W$factor==i,"value"]==0)>nfeatures)
   # if (any(to.remove)) {
-  #   print(sprintf("Removing %s, loadings are all zero",paste0(names(which(to.remove)),collapse=" ")))
+  #   print(sprintf("Removing %s, weights are all zero",paste0(names(which(to.remove)),collapse=" ")))
   #   W <- W[!W$factor %in% names(which(to.remove)),]
   #   if (nrow(W)==0) stop("No factors to display...")
   # }
@@ -348,7 +348,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   p <- ggplot(W, aes_string(x = "value", y = "feature_id", col = "labelling_group")) +
     scale_y_discrete(expand = c(0.03,0.03)) +
     geom_point(aes_string(shape = "shape_by", size="labelling_indicator")) + 
-    labs(x="Loading", y="Rank position", size=dot_size)
+    labs(x="Weight", y="Rank", size=dot_size)
   
   # Add labels to the top features
   if (nfeatures>0 | length(unique(W$labelling_group))>0) {
@@ -440,9 +440,9 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
 #' Default is 10
 #' @param abs logical indicating whether to use the absolute value of the weights (Default is FALSE).
 #' @param sign can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.
-#' @param scale logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.
-#' @details An important step to annotate factors is to visualise the corresponding feature loadings. \cr
-#' This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all loadings for a given latent factor and view. \cr
+#' @param scale logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.
+#' @details An important step to annotate factors is to visualise the corresponding feature weights. \cr
+#' This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all weights for a given latent factor and view. \cr
 #' Importantly, the weights of the features within a view have relative values and they should not be interpreted in an absolute scale.
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2
@@ -486,7 +486,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   W <- W[W$value!=0,]
   W$sign <- ifelse(W$value>0, "+", "-")
 
-  # Select subset of only positive or negative loadings
+  # Select subset of only positive or negative weights
   if (sign=="positive") { W <- W[W$value>0,] } else if (sign=="negative") { W <- W[W$value<0,] }
 
   # Absolute value
@@ -495,7 +495,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   # Extract relevant features
   W <- W[with(W, order(-abs(value))), ]
 
-  # Sort according to loadings for each factor
+  # Sort according to weights for each factor
   W <- as.data.frame(top_n(group_by(W, factor), n = nfeatures, wt = value))
   #
   
