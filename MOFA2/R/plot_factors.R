@@ -76,7 +76,7 @@
 #' 
 plot_factor <- function(object, factors = 1, groups = "all",
                         group_by = "group", color_by = "group", shape_by = NULL, 
-                        add_dots = TRUE, dot_size = 1, dot_alpha = 1,
+                        add_dots = TRUE, dot_size = 2, dot_alpha = 1,
                         add_violin = FALSE, violin_alpha = 0.5, color_violin = TRUE,
                         show_missing = TRUE, scale = FALSE, dodge = FALSE,
                         color_name = "", shape_name = "", stroke = NULL,
@@ -112,6 +112,11 @@ plot_factor <- function(object, factors = 1, groups = "all",
     add_violin <- FALSE; dodge <- FALSE
   }
   
+  if (length(unique(df$shape_by))>5) {
+    warning("Maximum number of shapes is 5")
+    df$shape_by <- "1"
+  }
+  
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   if (is.factor(df$color_by))
@@ -120,13 +125,11 @@ plot_factor <- function(object, factors = 1, groups = "all",
     df$shape_by <- forcats::fct_explicit_na(df$shape_by)
   
   # Scale values
-  if (scale) {
-    df$value <- df$value/max(abs(df$value))
-  }
+  if (isTRUE(scale)) df$value <- df$value/max(abs(df$value))
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="group_by", y="value"))
-
+  p <- ggplot(df, aes_string(x="group_by", y="value", fill="color_by", shape="shape_by"))
+  
   if (length(factors) == 1) {
     p <- p + facet_wrap(~group, nrow=1, scales="free_x") +
       labs(x=group_by, y=as.character(factors))
@@ -136,74 +139,45 @@ plot_factor <- function(object, factors = 1, groups = "all",
   }
 
   # Add dots
-  if (add_dots) {
+  if (isTRUE(add_dots)) {
     
     # Dot black border
     if (is.null(stroke))
       if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
     
-    if (rasterize) {
+    if (isTRUE(rasterize)) {
       warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
-      if (dodge) {
-        # p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size, position="dodge", dodge.width=1 )
-        p <- p + ggrastr::geom_quasirandom_rast(aes_string(fill = "color_by", shape = "shape_by"), 
-                  colour = "black", size = dot_size, position = "dodge", shape = 21, stroke = stroke,  alpha = dot_alpha,
-                  dodge.width = 1)
+      if (isTRUE(dodge)) {
+        p <- p + ggrastr::geom_quasirandom_rast(size = dot_size, position = "dodge", stroke = stroke,  alpha = dot_alpha, dodge.width = 1)
       } else {
-        # p <- p + ggrastr::geom_quasirandom_rast(aes_string(color="color_by", shape="shape_by"), size=dot_size)
-        p <- p + ggrastr::geom_quasirandom_rast(aes_string(fill = "color_by", shape = "shape_by"), 
-                  colour = "black", size = dot_size, shape = 21, stroke = stroke,  alpha = dot_alpha)
+        p <- p + ggrastr::geom_quasirandom_rast(size = dot_size, stroke = stroke,  alpha = dot_alpha)
       }
     } else {
-      if (dodge) {
-        # p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha, position=position_jitterdodge(dodge.width=1, jitter.width=0.2))
-        p <- p + geom_jitter(aes_string(fill = "color_by", shape = "shape_by"), 
-                  colour = "black", size = dot_size, shape = 21, stroke = stroke, alpha = dot_alpha, 
+      if (isTRUE(dodge)) {
+        p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha, 
                   position = position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
-        # p <- p + geom_jitter(aes_string(color="color_by", shape="shape_by"), size = dot_size, alpha = dot_alpha)
-        p <- p + geom_jitter(aes_string(fill = "color_by", shape = "shape_by"), 
-                             colour = "black", size = dot_size, shape = 21, stroke = stroke, alpha = dot_alpha)
+        p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha)
       }
     }
   }
   
   # Add violin plot
-  if (add_violin) {
-    if (color_violin) {
+  if (isTRUE(add_violin)) {
+    if (isTRUE(color_violin)) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       if (min(tmp$n)==1) {
         warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be coloured")
         p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
       } else {
-        p <- p + geom_violin(aes_string(fill="color_by"), alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
+        p <- p + geom_violin(alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
       }
     } else {
       p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
     }
   }
   
-  # If 'color_by' is numeric, define the default gradient
-  if (is.numeric(df$color))
-    p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-  
-  # Add legend for color
-  if (length(unique(df$color_by))>1) { 
-    p <- p + labs(color=color_name)
-  } else { 
-    p <- p + guides(fill=FALSE, color=FALSE) + 
-      scale_color_manual(values="black") +
-      scale_fill_manual(values="gray60")
-  }
-  
-  # Add legend for shape
-  if (length(unique(df$shape))>1) { 
-    p <- p + labs(shape=shape_name)
-  } else { 
-    p <- p + guides(shape=FALSE) 
-  }
-
-  # Use unified theme across the plots
+  # Add theme
   p <- p +
     theme_classic() +
     theme(
@@ -228,19 +202,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   }
   
   # Add legend
-  if (legend) {
-    p <- p + theme(
-      legend.title = element_text(size=rel(1.1), hjust=0.5, color="black"),
-      legend.text = element_text(size=rel(1.1), hjust=0, color="black"),
-      legend.position = "right", 
-      legend.direction = "vertical",
-      legend.key = element_blank()
-    )
-  } else {
-    p <- p + theme(
-      legend.position = "none"
-    )
-  }
+  p <- .add_legend(p, df, legend, color_name, shape_name)
   
   return(p)
 }
@@ -357,13 +319,12 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   # Dot black border
   if (is.null(stroke))
     if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
-    
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="x", y="y")) + 
-    # geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
-    geom_point(aes_string(fill="color_by", shape="shape_by"), size=dot_size, alpha=alpha, colour="black", shape=21, stroke = stroke) +
-    # ggrastr::geom_point_rast(aes_string(color = "color_by", shape = "shape_by")) +
+  p <- ggplot(df, aes_string(x="x", y="y",  fill="color_by", shape="shape_by")) + 
+    # geom_point(size=dot_size, alpha=alpha) +
+    geom_point(size=dot_size, alpha=alpha, stroke = stroke) +
+    # ggrastr::geom_point_rast() +
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
     theme(
@@ -373,33 +334,8 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
       axis.ticks = element_line(color = "black", size = 0.5)
     )
   
-  # If color is numeric, define the default gradient
-  if (is.numeric(df$color))
-    p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-  
-  # Add legend for color
-  if (length(unique(df$color))>1) { 
-    p <- p + labs(color=color_name)
-  } else { 
-    p <- p + guides(color=FALSE) + scale_color_manual(values="black")
-  }
-  
-  # Add legend for shape
-  if (length(unique(df$shape))>1) { 
-    p <- p + labs(shape=shape_name)
-  } else { 
-    p <- p + guides(shape=FALSE) 
-  }
-  
-  if (legend) {
-    p <- p + theme(
-      legend.text = element_text(size=rel(1.2)),
-      legend.title = element_text(size=rel(1.2))
-    )
-  } else {
-      p <- p + theme(legend.position = "none")
-  }
-  
+  p <- .add_legend(p, df, legend, color_name, shape_name)
+
   return(p)
 }
 
@@ -532,7 +468,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
     
     # Option 2: by a metadata column in object@samples$metadata
   } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples_metadata(object)))) {
-      group_by <- samples_metadata(object)[,group_by]
+      group_by <- as.factor( samples_metadata(object)[,group_by] )
 
     # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
@@ -665,4 +601,49 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   }
 
   return(df)
+}
+
+
+
+.add_legend <- function(p, df, legend, color_name, shape_name) {
+  
+  # If color is numeric, define the default gradient
+  if (is.numeric(df$color))
+    p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
+  
+  # Add legend for color
+  if (length(unique(df$color_by))>1) { 
+    p <- p + 
+      labs(fill=color_name) +
+      guides(fill = guide_legend(override.aes = list(shape = 21)))
+  } else { 
+    p <- p + guides(fill=FALSE, color=FALSE) + 
+      scale_color_manual(values="black") +
+      scale_fill_manual(values="gray60")
+  }
+  
+  # Add legend for shape
+  if (length(unique(df$shape_by))>1) { 
+    p <- p + 
+      labs(shape=shape_name) +
+      scale_shape_manual(values=c(21,23,24,25)[1:length(unique(df$shape_by))]) +
+      guides(shape = guide_legend(override.aes = list(fill = "black")))
+  } else { 
+    p <- p + 
+      scale_shape_manual(values=c(21)) +
+      guides(shape=FALSE) 
+  }
+  
+  # Add legend theme
+  if (isTRUE(legend)) {
+    p <- p + theme(
+      legend.text = element_text(size=rel(1.2)),
+      legend.title = element_text(size=rel(1.2))
+    )
+  } else {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  return(p)
+  
 }
