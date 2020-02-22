@@ -205,7 +205,6 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   p <- ggplot(df, aes_string(x = "x", y = "y")) + 
     geom_point(aes_string(color = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size) +
     labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
-    scale_color_gradientn(colours = c('lightgrey', 'blue')) +
     theme_classic() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 
@@ -224,7 +223,8 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
     
   # If color is numeric, define the default gradient
   if (is.numeric(df$color))
-    p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
+    # p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
+    p <- p + scale_color_gradientn(colours = c('lightgrey', 'blue'))
   
   # Add legend for color
   if (length(unique(df$color))>1) { 

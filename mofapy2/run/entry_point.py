@@ -102,7 +102,7 @@ class entry_point(object):
             print("- feature1_view1, featureD_viewM\n")
             self.data_opts['features_names'] = [ ["feature%d_view%d" % (d,m) for d in range(D[m])] for m in range(M) ]
         else:
-            assert len(features_names)==self.dimensionalities["M"], "Length of views names is not the same as the number of views"
+            assert len(features_names)==self.dimensionalities["M"], "views_names must a nested list with length equivalent to the number of views"
             self.data_opts['features_names'] = features_names
 
 
@@ -112,6 +112,7 @@ class entry_point(object):
             print("- group1, group2, ..., groupG\n")
             self.data_opts['groups_names'] = [ "group" + str(g) for g in range(G) ]
         else:
+            assert len(groups_names)==self.dimensionalities["G"], "Length of groups names is not the same as the number of groups"
             self.data_opts['groups_names'] = groups_names
 
         # Define samples names
@@ -120,6 +121,7 @@ class entry_point(object):
             print("- sample1_group1, sample2_group1, sample1_group2, ..., sampleN_groupG\n")
             self.data_opts['samples_names'] = [ ["sample%d_group%d" % (n,g) for n in range(N[g])] for g in range(G) ]
         else:
+            assert len(samples_names)==self.dimensionalities["G"], "samples_names must a nested list with length equivalent to the number of groups"
             self.data_opts['samples_names']  = samples_names
 
         # Check for duplicated entries
@@ -127,10 +129,10 @@ class entry_point(object):
         assert len(self.data_opts['views_names']) == len(set(self.data_opts['views_names'])), "Duplicated views names"
 
         tmp = list(chain(*self.data_opts['samples_names']))
-        assert len(tmp) == len(set(tmp)), "Duplicated entries found in samples_names"
+        assert len(tmp) == len(set(tmp)), "Duplicated entries found in samples_names. Make sure that samples names are not duplicated across different groups"
         
         tmp = list(chain(*self.data_opts['features_names']))
-        assert len(tmp) == len(set(tmp)), "Duplicated entries found in features_names"
+        assert len(tmp) == len(set(tmp)), "Duplicated entries found in features_names. Make sure that feature names are not duplicated across different views"
 
         # Set samples groups (list with dimensionality N where each row is the corresponding group name)
         # self.data_opts['samples_groups'] = [list(samples_names_dict.keys())[i] for i in range(len(self.data_opts['groups_names'])) for n in range(len(list(samples_names_dict.values())[i]))]
