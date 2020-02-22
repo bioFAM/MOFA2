@@ -158,13 +158,24 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
     message(paste0(method, " embedding was not computed. Running run_", tolower(method), "()..."))
     if (method == "UMAP") {
       object <- run_umap(object, ...)
-    } else {  # method == "TSNE"
+    } else if (method == "UMAP") {
       object <- run_tsne(object, ...)
     }
   }
-
+  
   # make sure the slot for the requested method exists
   method <- match.arg(method, names(object@dim_red))  
+  
+  # Plotting multiple features
+  if (length(color_by)>1) {
+    .args <- as.list(match.call()[-1])
+    plist <- lapply(color_by, function(i) {
+      .args[["color_by"]] <- i
+      do.call(plot_dimred, .args)
+    })
+    p <- cowplot::plot_grid(plotlist=plist)
+    return(p)
+  }
   
   # Remember color_name and shape_name if not provided
   if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))
@@ -207,13 +218,21 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
     labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
     theme_classic() +
     theme(
-      axis.text = element_text(size = rel(0.9), color = "black"), 
-      axis.title = element_text(size = rel(1.2), color = "black"), 
+      # axis.text = element_text(size = rel(0.9), color = "black"), 
+      axis.text = element_blank(), 
+      # axis.title = element_text(size = rel(1.2), color = "black"), 
+      axis.title = element_blank(), 
       axis.line = element_line(color = "black", size = 0.5), 
-      axis.ticks = element_line(color = "black", size = 0.5)
+      axis.ticks = element_blank()
+      # axis.ticks = element_line(color = "black", size = 0.5)
     )
   
-  # Add legend for color
+  # If color is numeric, define the default gradient
+  if (is.numeric(df$color))
+    # p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
+    p <- p + scale_color_gradientn(colours = c('lightgrey', 'blue'))
+  
+  # Add legend for alpha
   if (length(unique(df$observed))>1) { 
     p <- p + scale_alpha_manual(values = c("TRUE"=1.0, "FALSE"=alpha_missing))
   } else { 
@@ -221,11 +240,6 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   }
   p <- p + guides(alpha=FALSE)
     
-  # If color is numeric, define the default gradient
-  if (is.numeric(df$color))
-    # p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-    p <- p + scale_color_gradientn(colours = c('lightgrey', 'blue'))
-  
   # Add legend for color
   if (length(unique(df$color))>1) { 
     p <- p + labs(color=color_name)
