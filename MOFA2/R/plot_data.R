@@ -117,6 +117,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
       tmp <- tmp[order_samples,,drop=F]
       annotation_samples <- tmp[,annotation_samples, drop=F]
       rownames(annotation_samples) <- rownames(tmp)
+      message("Converting annotation_samples columns to factors")
+      annotation_samples[, ] <- lapply(annotation_samples[,,drop=F], as.factor)
     } else {
       stop("Input format for 'annotation_samples' not recognised ")
     }
@@ -138,7 +140,6 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     data[data>=max.value] <- max.value
   }
   
-  # Plot heatmap without annotations
   pheatmap(data, 
     annotation_row = annotation_features, 
     annotation_col = annotation_samples, 

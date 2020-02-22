@@ -306,7 +306,8 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 #' @param object a \code{\link{MOFA}} object.
 #' @param view a view name or index.
 #' @param features a vector with indices or names for features from the respective view, 
-#' or number of top features to be fetched by their loadings across specified factors
+#' or number of top features to be fetched by their loadings across specified factors. 
+#' "all" to plot all features.
 #' @param split_by_factor logical indicating whether to split R2 per factor or plot R2 jointly
 #' @param group_features_by column name of features metadata to group features by
 #' @param groups a vector with indices or names for sample groups (default is all)
@@ -322,7 +323,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt
 #' @export
-plot_variance_explained_per_feature <- function(object, view, features,
+plot_variance_explained_per_feature <- function(object, view, features = 10,
                                                 split_by_factor = FALSE, group_features_by = NULL,
                                                 groups = "all", factors = "all",
                                                 min_r2 = 0, max_r2 = NULL, legend = TRUE,
@@ -340,6 +341,8 @@ plot_variance_explained_per_feature <- function(object, view, features,
   if (is.numeric(features) && (length(features) == 1)) {
     features <- as.integer(features)
     features <- .get_top_features_by_loading(object, view = view, factors = factors, nfeatures = features)
+  } else if (is.character(features)) {
+    if (features[1]=="all") features <- 1:object@dimensions$D[[view]]
   }
   features <- .check_and_get_features_from_view(object, view = view, features)
 
@@ -421,22 +424,24 @@ plot_variance_explained_per_feature <- function(object, view, features,
 
   }
   
+  # Calculate minimum R2 to display
   if (!is.null(min_r2)) {
     r2_df$value[r2_df$value<min_r2] <- 0.00001
   }
   min_r2 <- 0
 
+  # Calculate maximum R2 to display
   if (!is.null(max_r2)) {
     r2_df$value[r2_df$value>max_r2] <- max_r2
   } else {
     max_r2 <- max(r2_df$value)
   }
 
+  # Group features
   if (!is.null(group_features_by)) {
     features_indices <- match(r2_df$feature, features_metadata(object)$feature)
     features_grouped <- features_metadata(object)[,group_features_by,drop=FALSE][features_indices,,drop=FALSE]
-    # If features grouped using multiple variables,
-    # concatenate them
+    # If features grouped using multiple variables, concatenate them
     if (length(group_features_by) > 1) {
       features_grouped <- apply(features_grouped, 1, function(row) paste0(row, collapse="_"))
     } else {
@@ -453,22 +458,14 @@ plot_variance_explained_per_feature <- function(object, view, features,
     geom_tile(aes_string(fill = "value"), color = "black") +
     guides(fill = guide_colorbar("R2")) +
     labs(x = "", y = "", title = "") +
-    # ggtitle(paste0("Variance explained by ", length(factors), " factor", ifelse(length(factors) > 1, "s", ""), 
-    #                " (", paste0(factors, collapse = ", "), ")")) +
-    # scale_fill_gradientn(colors = c("gray97", "darkred"), guide = "colorbar", limits = c(0, max(r2_df$value))) +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2, max_r2)) +
     guides(fill = guide_colorbar("R2")) +
+    theme_classic() +
     theme(
-      axis.title.x = element_blank(),
-      axis.text.x = element_text(size = 12, angle = 90, hjust = 1, vjust = .5, color = "black"),
-      axis.text.y = element_text(size = 12, color = "black"),
-      axis.title.y = element_text(size = 14),
+      axis.text = element_text(size = 12),
       axis.line = element_blank(),
       axis.ticks =  element_blank(),
-      panel.background = element_blank(),
-      strip.background = element_blank(),
       strip.text = element_text(size = 12),
-      plot.title = element_text(size = 18)
     )
 
   if (!is.null(group_features_by) && isTRUE(split_by_factor)) {

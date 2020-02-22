@@ -18,7 +18,7 @@
 #' @importFrom pheatmap pheatmap
 #' @importFrom corrplot corrplot
 #' @export
-correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", abs = TRUE, plot = c("r","log_pval"), 
+correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", abs = FALSE, plot = c("r","log_pval"), 
                                               alpha = 0.05, return_data = FALSE, transpose = FALSE, ...) {
   
   # Sanity checks
