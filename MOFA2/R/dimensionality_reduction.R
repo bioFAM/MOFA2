@@ -116,6 +116,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
 #' @param dot_size numeric indicating dot size.
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
 #' @param alpha_missing numeric indicating dot transparency of missing data.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting
@@ -148,7 +149,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' 
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
                         color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                        dot_size = 1.5, alpha_missing = 1, legend = TRUE, return_data = FALSE, ...) {
+                        dot_size = 1.5, stroke = NULL, alpha_missing = 1, legend = TRUE, return_data = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -210,27 +211,22 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
   
   # Return data if requested instead of plotting
-  if (return_data) return(df)
+  if (isTRUE(return_data)) return(df)
+
+  # Set stroke
+  if (is.null(stroke)) if (length(unique(df$sample))<100) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "y")) + 
-    geom_point(aes_string(color = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size) +
+    geom_point(aes_string(fill = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size, stroke = stroke) +
     labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
     theme_classic() +
     theme(
-      # axis.text = element_text(size = rel(0.9), color = "black"), 
       axis.text = element_blank(), 
-      # axis.title = element_text(size = rel(1.2), color = "black"), 
       axis.title = element_blank(), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_blank()
-      # axis.ticks = element_line(color = "black", size = 0.5)
     )
-  
-  # If color is numeric, define the default gradient
-  if (is.numeric(df$color))
-    # p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-    p <- p + scale_color_gradientn(colours = c('lightgrey', 'blue'))
   
   # Add legend for alpha
   if (length(unique(df$observed))>1) { 
@@ -240,28 +236,8 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   }
   p <- p + guides(alpha=FALSE)
     
-  # Add legend for color
-  if (length(unique(df$color))>1) { 
-    p <- p + labs(color=color_name)
-  } else { 
-    p <- p + guides(color=FALSE) + scale_color_manual(values="black")
-  }
-  
-  # Add legend for shape
-  if (length(unique(df$shape))>1) { 
-    p <- p + labs(shape=shape_name)
-  } else { 
-    p <- p + guides(shape=FALSE) 
-  }
-  
-  if (legend) {
-    p <- p + theme(
-      legend.text = element_text(size=rel(1.2)),
-      legend.title = element_text(size=rel(1.2))
-    )
-  } else {
-    p <- p + theme(legend.position = "none")
-  }
+  # Add legend
+  p <- .add_legend(p, df, legend, color_name, shape_name)
   
   return(p)
 }

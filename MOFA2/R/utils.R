@@ -397,6 +397,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     p <- p + 
       guides(color=FALSE) +
       scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
+      # scale_fill_gradientn(colours = c('lightgrey', 'blue'))
   } else {
     if (length(unique(df$color_by))>1) {
       p <- p +

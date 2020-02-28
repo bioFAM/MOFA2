@@ -257,11 +257,11 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   df <- dplyr::left_join(df1, df2, by = "sample")
   
   # Set stroke
-  if (is.null(stroke)) if (length(unique(df$sample))<100) { stroke <- 0.5 } else { stroke <- 0 }
+  if (is.null(stroke)) if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value", fill = "color_by", shape = "shape_by")) + 
-    geom_point(colour="black", size=dot_size, stroke = stroke, alpha = alpha) +
+    geom_point(colour="black", size = dot_size, stroke = stroke, alpha = alpha) +
     # scale_shape_manual(values=c(19,1,2:18)[seq_len(length(unique(shape_by)))]) +
     labs(x="Factor values", y="") +
     facet_wrap(~feature, scales="free_y") +
