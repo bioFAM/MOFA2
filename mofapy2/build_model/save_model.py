@@ -313,7 +313,7 @@ class saveModel():
         r2 = self.model.calculate_variance_explained()
         for g in range(len(self.groups_names)):
             # subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
-            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=r2[g]*100, compression="gzip",
                                compression_opts=self.compression_level)
 
         # Store total variance explained for each view and group (using all factors)
@@ -321,7 +321,7 @@ class saveModel():
         r2 = self.model.calculate_variance_explained(total=True)
         for g in range(len(self.groups_names)):
             # subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
-            subgrp.create_dataset(self.groups_names[g], data=r2[g], compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=r2[g]*100, compression="gzip",
                                compression_opts=self.compression_level)
 
     def saveTrainingStats(self):

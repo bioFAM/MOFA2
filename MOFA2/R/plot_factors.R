@@ -322,9 +322,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   
   # Generate plot
   p <- ggplot(df, aes_string(x="x", y="y",  fill="color_by", shape="shape_by")) + 
-    # geom_point(size=dot_size, alpha=alpha) +
     geom_point(size=dot_size, alpha=alpha, stroke = stroke) +
-    # ggrastr::geom_point_rast() +
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
     theme(
@@ -402,9 +400,6 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     axis.ticks = element_blank(),
     axis.text = element_blank()
   )
-  
-  # if (!legend)
-  #   p <- p + theme(legend.position = "none")
   
   return(p)
 }

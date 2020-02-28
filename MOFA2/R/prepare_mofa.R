@@ -83,10 +83,12 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   if (is.null(stochastic_options)) {
     object@stochastic_options <- list()
   } else {
-    object@training_options$stochastic <- TRUE
+    stop("stochastic_options have been provided but training_opts$stochastic = FALSE. If you want to use stochastic inference you have to set training_opts$stochastic = TRUE")
+    # object@training_options$stochastic <- TRUE
   }
   
-  if (object@training_options$stochastic) {
+  if (isTRUE(object@training_options$stochastic)) {
+    message("Stochastic inference activated. Note that this is only recommended if you have a very large sample size (>1e4) and access to a GPU")
       
     if (is.null(stochastic_options)) {
       message("No stochastic options specified, using default...")
@@ -106,7 +108,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
       if (stochastic_options$forgetting_rate<=0 || stochastic_options$forgetting_rate>1)
         stop("The forgetting rate has to be a value between 0 and 1")
   
-      if (sum(object@dimensions$N) < 1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000))\n")
+      if (sum(object@dimensions$N)<1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000))\n")
       
       object@stochastic_options <- stochastic_options
     }

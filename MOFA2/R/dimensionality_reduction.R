@@ -158,7 +158,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
     message(paste0(method, " embedding was not computed. Running run_", tolower(method), "()..."))
     if (method == "UMAP") {
       object <- run_umap(object, ...)
-    } else if (method == "UMAP") {
+    } else if (method == "TSNE") {
       object <- run_tsne(object, ...)
     }
   }

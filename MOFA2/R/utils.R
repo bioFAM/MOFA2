@@ -247,8 +247,9 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     group_by = factor(group_by, levels=groups_names(object))
     
     # Option 2: by a metadata column in object@samples$metadata
-  } else if ((length(group_by) == 1) && is.character(group_by) & (group_by[1] %in% colnames(samples_metadata(object)))) {
-    group_by <- as.factor( samples_metadata(object)[,group_by] )
+  } else if ((length(group_by) == 1) && (is.character(group_by)|is.factor(group_by)) & (group_by[1] %in% colnames(samples_metadata(object)))) {
+    group_by <- samples_metadata(object)[,group_by]
+    if (is.character(group_by)) group_by <- as.factor( group_by )
     
     # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
@@ -297,10 +298,14 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     color_by <- data[[viewidx]][color_by,]
     
     # Option 3: by a metadata column in object@samples$metadata
-  } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
-    color_by <- samples_metadata(object)[,color_by]
+  # } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+  #   color_by <- samples_metadata(object)[,color_by]
     
-    # Option 4: by a factor value in x@expectations$Z
+  } else if ((length(color_by) == 1) && (is.character(color_by)|is.factor(color_by)) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+    color_by <- samples_metadata(object)[,color_by]
+    if (is.character(color_by)) color_by <- as.factor( color_by )
+    
+    # Option 4: by a factor value in object@expectations$Z
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% colnames(get_factors(object)[[1]]))) {
     color_by <- do.call(rbind, get_factors(object))[,color_by]
     
@@ -387,19 +392,22 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
 
 .add_legend <- function(p, df, legend, color_name, shape_name) {
   
-  # If color is numeric, define the default gradient
-  if (is.numeric(df$color))
-    p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
-  
   # Add legend for color
-  if (length(unique(df$color_by))>1) { 
+  if (is.numeric(df$color_by)) {
     p <- p + 
-      labs(fill=color_name) +
-      guides(fill = guide_legend(override.aes = list(shape = 21)))
-  } else { 
-    p <- p + guides(fill=FALSE, color=FALSE) + 
-      scale_color_manual(values="black") +
-      scale_fill_manual(values="gray60")
+      guides(color=FALSE) +
+      scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
+  } else {
+    if (length(unique(df$color_by))>1) {
+      p <- p +
+        labs(fill=color_name) +
+        guides(fill=guide_legend(override.aes = list(shape = 21)))
+    } else {
+      p <- p + guides(fill=FALSE, color=FALSE) +
+        scale_color_manual(values="black") +
+        scale_fill_manual(values="gray60")
+    }
+    
   }
   
   # Add legend for shape

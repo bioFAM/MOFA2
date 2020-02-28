@@ -40,10 +40,10 @@ load_model <- function(file, sort_factors = TRUE,
   h5ls.out <- h5ls(file, datasetinfo = FALSE)
   
   # Sanity checks
-  if (isFALSE(load_data)) {
-    message("load_data = FALSE is currently disabled, setting it to TRUE")
-    load_data = TRUE
-  }
+  # if (isFALSE(load_data)) {
+  #   message("load_data = FALSE is currently disabled, setting it to TRUE")
+  #   load_data = TRUE
+  # }
   
   ########################
   ## Load training data ##
@@ -310,9 +310,12 @@ load_model <- function(file, sort_factors = TRUE,
   
   # Remove inactive factors
   if (isTRUE(remove_inactive_factors)) {
-    if (isTRUE(verbose)) message("Removing inactive factors...")
     r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE))
-    object <- subset_factors(object, which(r2>0.0001))
+    var.threshold <- 0.0001
+    if (any(r2<var.threshold)) {
+      object <- subset_factors(object, which(r2>=var.threshold))
+      message(sprintf("%s factors were found to explain no variance and they were removed for downstream analysis. You can disable this option by setting load_model(..., remove_inactive_factors = F)",sum(r2<var.threshold)))
+    }
   }
   
   # Order factors in order of variance explained
@@ -341,6 +344,6 @@ load_model <- function(file, sort_factors = TRUE,
 
   if (isTRUE(verbose)) message("Doing quality control...")
   object <- quality_control(object, verbose = verbose)
-
+  
   return(object)
 }

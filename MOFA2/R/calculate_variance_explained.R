@@ -204,9 +204,6 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   groups <- names(r2_list$r2_total)
   views <- colnames(r2_list$r2_per_factor[[1]])
   
-  # Transform variance explained from fraction to %
-  r2_mk_df$value <- 100*r2_mk_df$value
-  
   # Set R2 limits
   if (!is.null(min_r2))
     r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
@@ -253,9 +250,6 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
       
       r2_m_df$group <- factor(r2_m_df$group, levels = MOFA2::groups_names(object))
       r2_m_df$view <- factor(r2_m_df$view, levels = views_names(object))
-      
-      # Transform variance explained from fraction to %
-      r2_m_df$R2 <- 100*r2_m_df$R2
       
       # Barplots for total variance explained
       min_lim_bplt <- min(0, r2_m_df$R2)
