@@ -162,17 +162,17 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
 #' @details The training options are the following: \cr
 #' \itemize{
 #'  \item{\strong{maxiter}:}{ numeric value indicating the maximum number of iterations. 
-#'  Default is 5000 (a lot). Convergence is assessed using the ELBO statistic.}
+#'  Default is 1000. Convergence is assessed using the ELBO statistic.}
 #'  \item{\strong{drop_factor_threshold}:}{ (not functional yet) numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
-#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast".}
+#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow" (deltaELBO = 5e-6), "medium" (detaELBO = 5e-5) or "fast" (deltaELBO = 5e-4).}
 #'  \item{\strong{drop_factor_threshold}:}{ minimum variance explained threshold to drop inactive factors. Default is -1 (no dropping of factors)}
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
-#'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO}
-#'  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO}
-#'  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets).}
+#'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
+#'  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
+#'  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets, default is \code{FALSE}).}
 #'  \item{\strong{gpu_mode}:}{ logical indicating whether to use GPUs (see details).}
-#'  \item{\strong{seed}:}{ numeric indicating the seed for reproducibility (default is 0, random seed).}
+#'  \item{\strong{seed}:}{ numeric indicating the seed for reproducibility (default is 42).}
 #' }
 #' @return Returns a list with default training options
 #' @importFrom utils modifyList
@@ -201,7 +201,7 @@ get_default_training_options <- function(object) {
   
   # Get default train options
   training_options <- list(
-    maxiter = 5000,                # (numeric) Maximum number of iterations
+    maxiter = 1000,                # (numeric) Maximum number of iterations
     convergence_mode = 'medium',   # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
     drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity
