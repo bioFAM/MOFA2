@@ -5,12 +5,12 @@
 
 #' @title Plot heatmap of relevant features
 #' @name plot_data_heatmap
-#' @description Function to plot a heatmap of the data for relevant features, typically the ones with high loadings.
+#' @description Function to plot a heatmap of the data for relevant features, typically the ones with high weights.
 #' @param object a \code{\link{MOFA}} object.
 #' @param factor a string with the factor name, or an integer with the index of the factor.
 #' @param view a string with the view name, or an integer with the index of the view. Default is the first view.
 #' @param groups groups to plot. Default is "all".
-#' @param features if an integer (default), the total number of features to plot based on the absolute value of the loadings.
+#' @param features if an integer (default), the total number of features to plot based on the absolute value of the weights.
 #' If a character vector, a set of manually defined features.
 #' @param annotation_samples annotation metadata for samples (columns). 
 #' Either a character vector specifying columns in the sample metadata, or a data.frame that will be passed to \code{\link[pheatmap]{pheatmap}} as \code{annotation_row}
@@ -23,7 +23,7 @@
 #' @param max.value numeric indicating the maximum value to display in the heatmap (i.e. the matrix values will be capped at \code{max.value} ).
 #' See \code{\link{predict}}. Default is FALSE.
 #' @param ... further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}
-#' @details One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
+#' @details One of the first steps for the annotation of a given factor is to visualise the corresponding weights, 
 #' using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}. \cr
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr
@@ -54,10 +54,10 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   Z <- Z[!is.na(Z)]
   
   # Get imputed data
-  if (denoise) {
+  if (isTRUE(denoise)) {
     data <- predict(object, views=view, groups=groups)[[1]]
   } else {
-    if (imputed) {
+    if (isTRUE(imputed)) {
       data <- get_imputed_data(object, view, groups)[[1]]
     } else {
       data <- get_data(object, views=view, groups=groups)[[1]]
@@ -77,23 +77,19 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   
   # Define features
   if (is(features, "numeric")) {
-    if (length(features) == 1) {
+    if (length(features)==1) {
       features <- rownames(W)[tail(order(abs(W)), n=features)]
     } else {
       features <- rownames(W)[order(-abs(W))[features]]
     }
-    stopifnot(all(features %in% features_names(object)[[view]]))  
+    # Sort features according to the weights
+    features <- names(W[features,])[order(W[features,])]
   } else if (is(features, "character")) {
     stopifnot(all(features %in% features_names(object)[[view]]))
   } else {
     stop("Features need to be either a numeric or character vector")
   }
   data <- data[features,]
-  
-  # By default, sort features according to the loadings
-  W.filt <- W[features,]
-  order_features <- names(W.filt)[order(W.filt)]
-  data <- data[order_features,]
   
   # By default, sort samples according to the factor values
   order_samples <- names(sort(Z, decreasing = TRUE))
@@ -130,7 +126,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   }
   
   # Transpose the data
-  if (transpose) {
+  if (isTRUE(transpose)) {
     annotation_samples <- annotation_features
     annotation_features <- annotation_samples
     data <- t(data)
@@ -140,6 +136,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     data[data>=max.value] <- max.value
   }
   
+  # Plot heatmap
   pheatmap(data, 
     annotation_row = annotation_features, 
     annotation_col = annotation_samples, 
@@ -183,7 +180,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @param color_legend logical indicating whether to add a legend for the color.
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
 #' @param shape_legend logical indicating whether to add a legend for the shape.
-#' @details One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
+#' @details One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
 #' @import ggplot2
