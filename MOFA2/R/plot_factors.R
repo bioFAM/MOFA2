@@ -226,9 +226,9 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' (3) a vector of the same length as the number of samples specifying discrete groups.
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
-#' @param dot_size numeric indicating dot size.
-#' @param stroke numeric indicating the stroke size (the black border around the dots).
-#' @param alpha numeric indicating dot transparency.
+#' @param dot_size numeric indicating dot size (default is 1.5).
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
+#' @param alpha numeric indicating dot transparency (default is 1).
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @details One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
@@ -308,17 +308,16 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
 
   # Scale values from 0 to 1
-  if (scale) {
+  if (isTRUE(scale)) {
     df$x <- df$x/max(abs(df$x))
     df$y <- df$y/max(abs(df$y))
   }
   
   # Return data if requested instead of plotting
-  if (return_data) return(df)
+  if (isTRUE(return_data)) return(df)
   
-  # Dot black border
-  if (is.null(stroke))
-    if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
+  # Set stroke
+  if (is.null(stroke)) if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
   p <- ggplot(df, aes_string(x="x", y="y",  fill="color_by", shape="shape_by")) + 

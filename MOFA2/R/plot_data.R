@@ -155,6 +155,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @param view string with the view name, or an integer with the index of the view. Default is the first view.
 #' @param groups groups to plot. Default is "all".
 #' @param features if an integer (default), the total number of features to plot. If a character vector, a set of manually-defined features.
+#' @param sign can be 'positive', 'negative' or 'all' (default) to show only positive, negative or all weights, respectively.
 #' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
 #' \itemize{
 #' \item (default) the string "group", it the dots with respect to their predefined groups.
@@ -171,15 +172,13 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
 #' \item a dataframe with two columns: "sample" and "shape"
 #' }
-#' @param sign can be 'positive', 'negative' or 'all' (default) to show only positive, negative or all weights, respectively.
-#' @param dot_size numeric indicating dot size.
-#' @param text_size numeric indicating text size.
+#' @param legend logical indicating whether to add a legend
+#' @param dot_size numeric indicating dot size (default is 1).
+#' @param text_size numeric indicating text size (default is 5).
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
+#' @param alpha numeric indicating dot transparency (default is 1).
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
 #' @param imputed logical indicating whether to include imputed measurements
-#' @param color_name name for color legend (usually only used if color_by is not a character itself).
-#' @param color_legend logical indicating whether to add a legend for the color.
-#' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
-#' @param shape_legend logical indicating whether to add a legend for the shape.
 #' @details One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
@@ -189,10 +188,9 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @importFrom utils tail
 #' @importFrom stats quantile
 #' @export
-plot_data_scatter <- function(object, factor, view = 1, groups = "all", features = 10, sign="all",
-                              color_by=NULL, color_name="", color_legend = TRUE,
-                              shape_by=NULL, shape_name="", shape_legend = TRUE,
-                              dot_size=1, text_size=5, add_lm = TRUE, imputed = FALSE) {
+plot_data_scatter <- function(object, factor, view = 1, groups = "all", features = 10, sign = "all",
+                              color_by = NULL, legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
+                              dot_size = 1, text_size = 5, add_lm = TRUE, imputed = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -208,7 +206,7 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   N <- get_dimensions(object)[["N"]]
   W <- get_weights(object)[[view]][,factor]
   
-  if (imputed) {
+  if (isTRUE(imputed)) {
     Y <- do.call(cbind, object@imputed_data[[view]][groups])
   } else {
     Y <- do.call(cbind, object@data[[view]][groups])
@@ -258,13 +256,13 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   df2 <- get_data(object, groups = groups, features = foo, as.data.frame = TRUE)
   df <- dplyr::left_join(df1, df2, by = "sample")
   
-  #remove values missing color or shape annotation
-  # if(!showMissing) df <- df[!(is.nan(df$shape_by) & !(is.nan(df$color_by))]
+  # Set stroke
+  if (is.null(stroke)) if (length(unique(df$sample))<100) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
-  p <- ggplot(df, aes_string(x = "x", y = "value", color = "color_by", shape = "shape_by")) + 
-    geom_point(size=dot_size) +
-    scale_shape_manual(values=c(19,1,2:18)[seq_len(length(unique(shape_by)))]) +
+  p <- ggplot(df, aes_string(x = "x", y = "value", fill = "color_by", shape = "shape_by")) + 
+    geom_point(colour="black", size=dot_size, stroke = stroke, alpha = alpha) +
+    # scale_shape_manual(values=c(19,1,2:18)[seq_len(length(unique(shape_by)))]) +
     labs(x="Factor values", y="") +
     facet_wrap(~feature, scales="free_y") +
     theme_classic() + theme(
@@ -274,29 +272,14 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
     )
 
   # Add linear regression line
-  if (add_lm) {
+  if (isTRUE(add_lm)) {
     p <- p +
-      stat_smooth(method="lm", color="grey", fill="grey", alpha=0.5) +
+      stat_smooth(method="lm", color="grey", fill="grey", alpha=0.75) +
       ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = quantile(df$value,na.rm=TRUE)[[4]], size = text_size, color = "black")
   }
   
-  # Add legend for color
-  if (length(unique(df$color_by))>1) {
-    if (color_legend) { 
-      p <- p + labs(color = color_name) 
-    } else { 
-      p <- p + guides(color = FALSE)
-    }
-  } else {
-    p <- p + guides(color = FALSE) + scale_colour_manual(values="black")
-  }
-  
-  # Add legend for shape
-  if (length(unique(df$shape))>1 & shape_legend) { 
-    p <- p + labs(shape = shape_name)
-  } else { 
-    p <- p + guides(shape = FALSE) 
-  }
+  # Add legend
+  p <- .add_legend(p, df, legend, color_name, shape_name)
   
   return(p)
 }
