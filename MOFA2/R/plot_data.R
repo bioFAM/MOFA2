@@ -260,8 +260,8 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   if (is.null(stroke)) if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
-  p <- ggplot(df, aes_string(x = "x", y = "value", fill = "color_by", shape = "shape_by")) + 
-    geom_point(colour="black", size = dot_size, stroke = stroke, alpha = alpha) +
+  p <- ggplot(df, aes_string(x = "x", y = "value")) + 
+    geom_point(aes_string(fill = "color_by", shape = "shape_by"), colour = "black", size = dot_size, stroke = stroke, alpha = alpha) +
     # scale_shape_manual(values=c(19,1,2:18)[seq_len(length(unique(shape_by)))]) +
     labs(x="Factor values", y="") +
     facet_wrap(~feature, scales="free_y") +
@@ -274,8 +274,9 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   # Add linear regression line
   if (isTRUE(add_lm)) {
     p <- p +
-      stat_smooth(method="lm", color="grey", fill="grey", alpha=0.75) +
-      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = quantile(df$value,na.rm=TRUE)[[4]], size = text_size, color = "black")
+      stat_smooth(method="lm", color="grey", fill="grey", alpha=0.4) +
+      # ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = quantile(df$value,na.rm=TRUE)[[4]], size = text_size, color = "black")
+      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", size = text_size, color = "black")
   }
   
   # Add legend
@@ -467,110 +468,4 @@ plot_ascii_data <- function(object, nonzero = FALSE) {
     }
   })
   paste(vals, collapse = collapse)
-}
-
-
-# (Hidden) function to define the color
-.set_colorby <- function(object, color_by) {
-  
-  # Option 0: no color
-  if (is.null(color_by)) {
-    color_by <- rep("1",sum(object@dimensions[["N"]]))
-    
-    # Option 1: by default group
-  } else if (color_by[1] == "group") {
-    color_by <- groups_names(object)$group
-    
-    # Option 2: by a feature present in the training data    
-  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
-    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
-    features <- lapply(data, rownames)
-    viewidx <- which(sapply(features, function(x) color_by %in% x))
-    color_by <- data[[viewidx]][color_by,]
-    
-    # Option 3: by a metadata column in object@samples$metadata
-  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% colnames(samples_metadata(object)))) {
-    color_by <- samples_metadata(object)[,color_by]
-
-    # Option 4: by a factor value in x@expectations$Z
-  } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% colnames(get_factors(object)[[1]]))) {
-    color_by <- do.call(rbind, get_factors(object))[,color_by]
-    
-    # Option 5: input is a data.frame with columns (sample, color)
-  } else if (is(color_by, "data.frame")) {
-    stopifnot(all(colnames(color_by) %in% c("sample", "color")))
-    stopifnot(all(unique(color_by$sample) %in% unlist(samples_names(object))))
-    
-    # Option 6: color_by is a vector of length N
-  } else if (length(color_by) > 1) {
-    stopifnot(length(color_by) == sum(get_dimensions(object)$N))
-    
-    # Option not recognised
-  } else {
-    stop("'color_by' was specified but it was not recognised, please read the documentation")
-  }
-  
-  # Create data.frame with columns (sample,color)
-  if (!is(color_by,"data.frame")) {
-    df = data.frame(
-      sample = unlist(samples_names(object)),
-      color_by = color_by,
-      stringsAsFactors = FALSE
-    )
-  }
-  if (length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
-  
-  return(df)
-}
-
-
-# (Hidden) function to define the shape
-.set_shapeby <- function(object, shape_by) {
-  
-  # Option 0: no color
-  if (is.null(shape_by)) {
-    shape_by <- rep("1",sum(object@dimensions[["N"]]))
-    
-    # Option 1: by default group
-  } else if (shape_by[1] == "group") {
-    shape_by = c()
-    for (group in names(samples_names(object))){
-      shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
-    }
-    
-    # Option 2: by a feature present in the training data    
-  } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
-    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
-    features <- lapply(data, rownames)
-    viewidx <- which(sapply(features, function(x) shape_by %in% x))
-    shape_by <- data[[viewidx]][shape_by,]
-    
-    # Option 3: input is a data.frame with columns (sample,color)
-  } else if (is(shape_by,"data.frame")) {
-    stopifnot(all(colnames(shape_by) %in% c("sample","color")))
-    stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(object))))
-    
-    # Option 4: by a metadata column in object@samples$metadata
-  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
-    shape_by <- samples_metadata(object)[,shape_by]
-    
-    # Option 5: shape_by is a vector of length N
-  } else if (length(shape_by) > 1) {
-    stopifnot(length(shape_by) == sum(object@dimensions[["N"]]))
-    
-    # Option not recognised
-  } else {
-    stop("'shape_by' was specified but it was not recognised, please read the documentation")
-  }
-  
-  # Create data.frame with columns (sample,shape)
-  if (!is(shape_by,"data.frame")) {
-    df = data.frame(
-      sample = unlist(samples_names(object)),
-      shape_by = as.factor(shape_by),
-      stringsAsFactors = FALSE
-    )
-  }
-  
-  return(df)
 }
