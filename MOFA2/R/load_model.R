@@ -310,7 +310,6 @@ load_model <- function(file, sort_factors = TRUE,
   
   # Remove inactive factors
   if (isTRUE(remove_inactive_factors)) {
-    browser()
     r2 <- rowSums(do.call('cbind', lapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE)))
     var.threshold <- 0.0001
     if (any(r2<var.threshold)) {
