@@ -178,9 +178,9 @@ subset_factors <- function(object, factors) {
       axis <- nodes_with_factors$axes[i]
       if (node %in% names(object@expectations)) {
         if (axis == 1) {
-          object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors,], simplify = FALSE, USE.NAMES = TRUE)
+          object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors,,drop=FALSE], simplify = FALSE, USE.NAMES = TRUE)
         } else if (axis == 2) {
-          object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[,factors], simplify = FALSE, USE.NAMES = TRUE)
+          object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[,factors,drop=FALSE], simplify = FALSE, USE.NAMES = TRUE)
         } else {
           object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors], simplify = FALSE, USE.NAMES = TRUE)
         }
