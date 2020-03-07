@@ -10,11 +10,11 @@
 #' }
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
-#' @param abs logical indicating whether to take the absolute value of the correlation coefficient (default is TRUE).
+#' @param abs logical indicating whether to take the absolute value of the correlation coefficient (default is \code{TRUE}).
 #' @param plot character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).
 #' @param return_data logical indicating whether to return the correlation results instead of plotting
 #' @param transpose logical indicating whether to transpose the plot
-#' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if plot=="r") or \code{\link[pheatmap]{pheatmap}} (if plot=="log_pval").
+#' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}).
 #' @importFrom pheatmap pheatmap
 #' @importFrom corrplot corrplot
 #' @export

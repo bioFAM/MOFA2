@@ -333,7 +333,7 @@ load_model <- function(file, sort_factors = TRUE,
   }
 
   # Mask outliers
-  if (remove_outliers) {
+  if (isTRUE(remove_outliers)) {
     if (isTRUE(verbose)) message("Removing outliers...")
     object <- .detect_outliers(object)
   }
