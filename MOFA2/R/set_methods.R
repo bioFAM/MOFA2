@@ -140,8 +140,8 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
                      stop("Samples names in the model (see `samples(MOFAobject)`) and in the metadata do not match")
                    if (any(sort(unique(value$group)) != sort(groups_names(object))))
                      stop("Groups names in the model (see `groups(MOFAobject)`) and in the metadata do not match")
-                   
-                   
+                   if (object@status=="untrained")
+                     stop("sample metadata has to be provided after training the MOFA model")
                    if (!("group" %in% colnames(value))) {
                      if (length(unique(object@data_options$groups))==1) {
                         value$group <- groups_names(object)
