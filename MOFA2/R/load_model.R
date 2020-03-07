@@ -310,7 +310,7 @@ load_model <- function(file, sort_factors = TRUE,
   
   # Remove inactive factors
   if (isTRUE(remove_inactive_factors)) {
-    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE))
+    r2 <- rowSums(do.call('cbind', lapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE)))
     var.threshold <- 0.0001
     if (any(r2<var.threshold)) {
       object <- subset_factors(object, which(r2>=var.threshold))
@@ -319,12 +319,12 @@ load_model <- function(file, sort_factors = TRUE,
   }
   
   # Order factors in order of variance explained
-  if (isTRUE(sort_factors)) {
+  if (isTRUE(sort_factors) && object@dimensions$K > 1) {
     
     # Sanity checks
     if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
   
-    # Calculate variance explained pe factor across all views    
+    # Calculate variance explained per factor across all views
     r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
     order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
     
