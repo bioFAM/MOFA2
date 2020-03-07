@@ -12,7 +12,9 @@ from mofapy2.core.nodes import *
 # h5py.get_config().track_order = True
 
 class saveModel():
-    def __init__(self, model, outfile, data, intercepts, samples_groups, train_opts, model_opts, features_names, views_names, samples_names, groups_names, compression_level=9):
+    def __init__(self, model, outfile, data, intercepts, samples_groups, 
+        train_opts, model_opts, features_names, views_names, samples_names, groups_names, 
+        sort_factors=True, compression_level=9):
 
         # Check that the model is trained
         assert model.trained, "Model is not trained"        
@@ -45,6 +47,18 @@ class saveModel():
         self.features_names = features_names
         self.groups_names = groups_names
 
+        # calculate variance explained 
+        self.r2 = self.model.calculate_variance_explained()
+
+        self.order_factors = self.sort_factors(sort_factors)
+
+    def sort_factors(self, sort_factors):
+        if sort_factors: 
+            order_factors = np.argsort( np.array(self.r2).sum(axis=(0,1)) )[::-1]
+            self.r2 = [x[:,order_factors] for x in self.r2]
+        else:
+            order_factors = self.r2[0].shape[1]
+        return order_factors
 
     def saveNames(self):
         """ Method to save sample and feature names"""
@@ -125,8 +139,9 @@ class saveModel():
         nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
 
         # Define nodes which special characteristics 
-        # (note that this is ugly and is not proper class-oriented programming)
+        # (note that this code is ugly and is not proper class-oriented programming)
         multigroup_nodes = ["Y","Tau","Z"]
+        # multiview_nodes = ["Y","Tau","Alpha","W"]
 
         # Create HDF5 group
         grp = self.hdf5.create_group("expectations")
@@ -161,24 +176,27 @@ class saveModel():
 
                     # Single-groups nodes (W)
                     else:
-                        node_subgrp.create_dataset(self.views_names[m], data=exp[m].T, compression="gzip", compression_opts=self.compression_level)
+                        foo = exp[m].T
+                        node_subgrp.create_dataset(self.views_names[m], data=foo[self.order_factors,:], compression="gzip", compression_opts=self.compression_level)
 
             # Single-view nodes
             else:
 
-                # Multi-group nodes
+                # Multi-group nodes (Z)
                 if n in multigroup_nodes:
                     for g in self.groups_names:
                         samp_indices = np.where(np.array(self.samples_groups) == g)[0]
-                        node_subgrp.create_dataset(g, data=exp[samp_indices,:].T, compression="gzip", compression_opts=self.compression_level)
+                        foo = exp[samp_indices,:].T
+                        node_subgrp.create_dataset(g, data=foo[self.order_factors,:], compression="gzip", compression_opts=self.compression_level)
 
-                # Single-group nodes
+                # Single-group nodes (???)
                 else:
                     node_subgrp.create_dataset("E", data=exp.T, compression="gzip", compression_opts=self.compression_level)
 
         pass
 
     def saveParameters(self, nodes="all"):
+        print("saveParameters() is currently depreciated, TO-DO: sort factors"); exit()
 
         # Get nodes from the model
         nodes_dic = self.model.getNodes()
@@ -310,18 +328,17 @@ class saveModel():
         grp = self.hdf5.create_group("variance_explained")
 
         subgrp = grp.create_group("r2_per_factor")
-        r2 = self.model.calculate_variance_explained()
         for g in range(len(self.groups_names)):
             # subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
-            subgrp.create_dataset(self.groups_names[g], data=r2[g]*100, compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=self.r2[g]*100, compression="gzip",
                                compression_opts=self.compression_level)
 
         # Store total variance explained for each view and group (using all factors)
         subgrp = grp.create_group("r2_total")
-        r2 = self.model.calculate_variance_explained(total=True)
+        r2_total = self.model.calculate_variance_explained(total=True)
         for g in range(len(self.groups_names)):
             # subgrp.create_dataset(self.groups_names[g], data=r2[g][order], compression="gzip",
-            subgrp.create_dataset(self.groups_names[g], data=r2[g]*100, compression="gzip",
+            subgrp.create_dataset(self.groups_names[g], data=r2_total[g]*100, compression="gzip",
                                compression_opts=self.compression_level)
 
     def saveTrainingStats(self):
