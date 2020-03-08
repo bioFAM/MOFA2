@@ -83,7 +83,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   if (is.null(stochastic_options)) {
     object@stochastic_options <- list()
   } else {
-    stop("stochastic_options have been provided but training_opts$stochastic = FALSE. If you want to use stochastic inference you have to set training_opts$stochastic = TRUE")
+    if (isFALSE(object@training_options[["stochastic"]]))
+      stop("stochastic_options have been provided but training_opts$stochastic is FALSE. If you want to use stochastic inference you have to set training_opts$stochastic = TRUE")
     # object@training_options$stochastic <- TRUE
   }
   
@@ -435,6 +436,10 @@ get_default_model_options <- function(object) {
 #' # Create MOFA object
 #' MOFAmodel <- create_mofa(data)
 #' 
+#' # activate stochastic inference in training options
+#' train_opts <- get_default_training_options(MOFAmodel)
+#' train_opts$stochastic <- TRUE
+#' 
 #' # Load default stochastic options
 #' stochastic_opts <- get_default_stochastic_options(MOFAmodel)
 #' 
@@ -443,7 +448,10 @@ get_default_model_options <- function(object) {
 #' stochastic_opts$batch_size <- 0.25
 #' 
 #' # Prepare the MOFA object
-#' MOFAmodel <- prepare_mofa(MOFAmodel, stochastic_options = stochastic_opts)
+#' MOFAmodel <- prepare_mofa(MOFAmodel, 
+#'   training_options = train_opts,
+#'   stochastic_options = stochastic_opts
+#' )
 #' 
 get_default_stochastic_options <- function(object) {
   

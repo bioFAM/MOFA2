@@ -24,6 +24,7 @@
 #' @import data.table
 #' @importFrom magrittr %>%
 #' @export
+#' @examples
 #' # Using an existing trained model on simulated data
 #' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
@@ -34,7 +35,7 @@
 #' plot_association_analysis(model, return_data = TRUE)
 #' 
 plot_association_analysis <- function(object, factors = "all", views = "all", 
-                                      fdr_threshold = 0.10, add_text = TRUE, legend = TRUE, return_data = FALSE, ) {
+                                      fdr_threshold = 0.10, add_text = TRUE, legend = TRUE, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -52,8 +53,8 @@ plot_association_analysis <- function(object, factors = "all", views = "all",
   # Do calculations
   to.plot <- merge(data.dt, factor.dt, by=c("sample","group"), allow.cartesian = TRUE) %>%
     .[, .(p = cor.test(value.x, value.y, method = "pearson")[["p.value"]]), by=c("feature","view","factor")] %>%
-    .[,padj_fdr := p.adjust(p, method="fdr"), by=c("view","factor")] %>%
-    .[,sig:=padj_fdr<=fdr_threshold] %>%
+    .[,"padj_fdr" := p.adjust(p, method="fdr"), by=c("view","factor")] %>%
+    .[,"sig":=padj_fdr<=fdr_threshold] %>%
     .[,round(mean(sig),2), by=c("view","factor")]
   
   if (isTRUE(return_data)) {

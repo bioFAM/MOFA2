@@ -7,7 +7,7 @@
 plot_data_heatmap(object, factor, view = 1, groups = "all",
   features = 50, annotation_features = NULL,
   annotation_samples = NULL, transpose = FALSE, imputed = FALSE,
-  denoise = FALSE, ...)
+  denoise = FALSE, max.value = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -18,7 +18,7 @@ plot_data_heatmap(object, factor, view = 1, groups = "all",
 
 \item{groups}{groups to plot. Default is "all".}
 
-\item{features}{if an integer (default), the total number of features to plot based on the absolute value of the loadings.
+\item{features}{if an integer (default), the total number of features to plot based on the absolute value of the weights.
 If a character vector, a set of manually defined features.}
 
 \item{annotation_features}{annotation metadata for features (rows). 
@@ -32,16 +32,18 @@ Default corresponds to features as rows and samples as columns.}
 
 \item{imputed}{logical indicating whether to plot the imputed data instead of the original data. Default is FALSE.}
 
-\item{denoise}{logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors. 
+\item{denoise}{logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors.}
+
+\item{max.value}{numeric indicating the maximum value to display in the heatmap (i.e. the matrix values will be capped at \code{max.value} ).
 See \code{\link{predict}}. Default is FALSE.}
 
 \item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}
 }
 \description{
-Function to plot a heatmap of the data for relevant features, typically the ones with high loadings.
+Function to plot a heatmap of the data for relevant features, typically the ones with high weights.
 }
 \details{
-One of the first steps for the annotation of a given factor is to visualise the corresponding loadings, 
+One of the first steps for the annotation of a given factor is to visualise the corresponding weights, 
 using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}. \cr
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr

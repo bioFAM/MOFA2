@@ -214,7 +214,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   if (isTRUE(return_data)) return(df)
 
   # Set stroke
-  if (is.null(stroke)) if (length(unique(df$sample))<100) { stroke <- 0.5 } else { stroke <- 0 }
+  if (is.null(stroke)) if (length(unique(df$sample))<1000) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "y")) + 

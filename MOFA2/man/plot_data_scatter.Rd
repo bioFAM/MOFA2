@@ -5,10 +5,9 @@
 \title{Scatterplots of feature values against latent factors}
 \usage{
 plot_data_scatter(object, factor, view = 1, groups = "all",
-  features = 10, sign = "all", color_by = NULL, color_name = "",
-  color_legend = TRUE, shape_by = NULL, shape_name = "",
-  shape_legend = TRUE, dot_size = 1, text_size = 5, add_lm = TRUE,
-  imputed = FALSE)
+  features = 10, sign = "all", color_by = NULL, legend = TRUE,
+  alpha = 1, shape_by = NULL, stroke = NULL, dot_size = 1,
+  text_size = 5, add_lm = TRUE, imputed = FALSE)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -32,9 +31,9 @@ plot_data_scatter(object, factor, view = 1, groups = "all",
 \item a dataframe with two columns: "sample" and "color"
 }}
 
-\item{color_name}{name for color legend (usually only used if color_by is not a character itself).}
+\item{legend}{logical indicating whether to add a legend}
 
-\item{color_legend}{logical indicating whether to add a legend for the color.}
+\item{alpha}{numeric indicating dot transparency (default is 1).}
 
 \item{shape_by}{specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
 \itemize{
@@ -45,13 +44,11 @@ plot_data_scatter(object, factor, view = 1, groups = "all",
 \item a dataframe with two columns: "sample" and "shape"
 }}
 
-\item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself).}
+\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
 
-\item{shape_legend}{logical indicating whether to add a legend for the shape.}
+\item{dot_size}{numeric indicating dot size (default is 1).}
 
-\item{dot_size}{numeric indicating dot size.}
-
-\item{text_size}{numeric indicating text size.}
+\item{text_size}{numeric indicating text size (default is 5).}
 
 \item{add_lm}{logical indicating whether to add a linear regression line for each plot}
 
@@ -61,7 +58,7 @@ plot_data_scatter(object, factor, view = 1, groups = "all",
 Function to do a scatterplot of features against factor values.
 }
 \details{
-One of the first steps for the annotation of factors is to visualise the loadings using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
+One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
 }

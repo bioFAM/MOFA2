@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_weights.R
 \name{plot_weights}
 \alias{plot_weights}
-\title{Plot distribution of feature weights (loadings)}
+\title{Plot distribution of feature weights (weights)}
 \usage{
 plot_weights(object, view = 1, factors = 1, nfeatures = 10,
   color_by = NULL, shape_by = NULL, abs = FALSE, manual = NULL,
@@ -42,7 +42,7 @@ plot_weights(object, view = 1, factors = 1, nfeatures = 10,
 
 \item{color_manual}{a character vector with colors, one for each element of 'manual'}
 
-\item{scale}{logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE).}
+\item{scale}{logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE).}
 
 \item{dot_size}{numeric indicating the dot size.}
 
@@ -53,8 +53,8 @@ plot_weights(object, view = 1, factors = 1, nfeatures = 10,
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 }
 \description{
-An important step to annotate factors is to visualise the corresponding feature loadings. \cr
-This function plots all loadings for a given latent factor and view, labeling the top ones. \cr
+An important step to annotate factors is to visualise the corresponding feature weights. \cr
+This function plots all weights for a given latent factor and view, labeling the top ones. \cr
 In contrast, the function \code{\link{plot_top_weights}} displays only the top features with highest loading.
 }
 \examples{

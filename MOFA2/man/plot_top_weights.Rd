@@ -19,7 +19,7 @@ Default is 10}
 
 \item{abs}{logical indicating whether to use the absolute value of the weights (Default is FALSE).}
 
-\item{scale}{logical indicating whether to scale all loadings from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.}
+\item{scale}{logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.}
 
 \item{sign}{can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.}
 }
@@ -30,8 +30,8 @@ Returns a \code{ggplot2} object
 Plot top weights for a given factor and view.
 }
 \details{
-An important step to annotate factors is to visualise the corresponding feature loadings. \cr
-This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all loadings for a given latent factor and view. \cr
+An important step to annotate factors is to visualise the corresponding feature weights. \cr
+This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all weights for a given latent factor and view. \cr
 Importantly, the weights of the features within a view have relative values and they should not be interpreted in an absolute scale.
 Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 }

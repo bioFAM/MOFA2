@@ -136,6 +136,9 @@ Load data in long data.frame format
 ```{r}
 file = "ftp://ftp.ebi.ac.uk/pub/databases/mofa/stochastic_vignette/data.txt.gz"
 data = fread(file)
+
+# Let's ignore groups
+data[,group:=NULL]
 ```
 
 ## Create MOFA object
@@ -162,16 +165,19 @@ Define train options
 ```{r}
 train_opts <- get_default_training_options(MOFAobject)
 
+# set stochastic to TRUE
+train_opts$stochastic <- TRUE
+
 # set to TRUE if you have access to GPUs (see FAQ below for configuration instructions)
-train_opts$gpu_mode < FALSE
+# train_opts$gpu_mode <- TRUE
 ```
 
 ## Fit model using stochastic variational inference
 
 There are three options for stochastic inference that the user can modify:  
-* **batch_size**: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50). We recommend setting `batch_size` to the largest value that can fit into the GPU memory.  
-* **learning_rate**: starting learning rate, we recommend values from 0.75 to 1.0  
-* **forgetting_rate**: forgetting rate (we recommend values from 0.25 to 0.5)  
+- **batch_size**: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50). We recommend setting `batch_size` to the largest value that can fit into the GPU memory.  
+- **learning_rate**: starting learning rate, we recommend values from 0.75 to 1.0  
+- **forgetting_rate**: forgetting rate (we recommend values from 0.25 to 0.5)  
 
 ```{r}
 stochastic_opts <- get_default_stochastic_options(MOFAobject)
@@ -179,7 +185,6 @@ stochastic_opts <- get_default_stochastic_options(MOFAobject)
 
 Prepare the MOFA object
 ```{r, message=FALSE}
-# We will use default data and training options (see ?prepare_mofa)
 MOFAobject <- prepare_mofa(MOFAobject,
   training_options = train_opts,
   model_options = model_opts,
@@ -277,7 +282,7 @@ The default values we provide tend to yield reasonable estimates, but the optima
 If you have questions please get in touch with me (ricard@ebi.ac.uk)
 
 ## Setting up the GPU
-The Python core of MOFA () can take advantage of NVIDIA GPUs to massively speed up training. For this you have to install and configure the [cupy](https://docs-cupy.chainer.org/en/stable/install.html) package, which is an open-source matrix library accelerated with NVIDIA CUDA.  Please, read their website for installation details.
+MOFA can take advantage of NVIDIA GPUs to massively speed up training. For this you have to install and configure the [cupy](https://docs-cupy.chainer.org/en/stable/install.html) package, which is an open-source matrix library accelerated with NVIDIA CUDA.  Please, read their website for installation details.
 
 
 # sessionInfo

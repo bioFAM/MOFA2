@@ -4,15 +4,18 @@
 
 ## What is MOFA?
 MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
-Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple -omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional data representation in terms of (hidden) factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
+Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple -omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional representation in terms of a few latent factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups.  
 
-In MOFA v2 (MOFA+) we added the following improvements:
-* **Multi-group functionality**: intuitively, this breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.). Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim of the multi-group framework is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group. To achieve this, the group effect is regressed out from the data before fitting the model.  
+In MOFA v2 (MOFA+) we added the following improvements:  
 
-* **Fast inference** using a stochastic variational framework: this can be powered by GPUs: enabling inference with very large data sets.  
+* **Multi-group functionality**: intuitively, this update breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.). Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim of the multi-group framework is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group.  
+
+* **GPU support**: the training procedure can now be massively accelerated using GPUs. For this you have to install and configure the [CuPy package](https://cupy.chainer.org).
+
+* **Stochastic inference for large data sets** using a stochastic variational framework. his can be powered by GPUs: enabling inference with very large data sets.  
 
 For more details you can read our papers: 
-- MOFA: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
+- MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
 - MOFA+: https://www.biorxiv.org/content/10.1101/837104v1
 
 <p align="center"> 
@@ -69,13 +72,14 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html)
 * [**Training a model in Python (jupyter notebook)**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
-* [**Analysis of a multi-group scRNA-seq data set (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the paper.
-* [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation...
-* [**Integration of single-cell multi-modal data (scNMT-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the paper.
+* [**Analysis of a multi-group scRNA-seq data set (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
+<!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
+* [**Integration of single-cell multi-modal data (scNMT-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
 * [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
-* [**Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html)
+* [**Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): Figure 2 and 3 of the MOFA v1 paper.
 * **Analysis of CITE-seq data**: in preparation...
+* **Analysis of microbiome data**: in preparation...
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
 
 
@@ -211,3 +215,4 @@ One of our reviewers asked whether MOFA can display horseshoes or arch-shaped ef
 Determining the most appropriate number of factors is an open question for factor analysis models. The optimal number of factors depends on the aim of the analysis, the dimensions of the assays, the complexity of the data, etc. If the aim is identifying the major sources of biological variation one typically considers the top factors (sorted by variance explained). In other tasks, such as imputation of missing values, even small sources of variation can be important and hence models should be trained with a large number of factors. In MOFA+ we have implemented Automatic Relevance Determination priors to prune unused factors during training . In practice, the user has to define the starting number of factors, and during model inference factors that do not explain any variation will be removed from the model. After the model is trained, the user can apply a second filtering by removing factors that explain less than a pre-specified value of variance (in each data modality).
 
 **(6.4) How can I assess the robustness of factors?** 
+A procedure that can be applied to evaluate the robustness of factors is to downsample the number of samples and/or the number of features and inspect if the factors are consistently found. However, keep in mind that there could be cases where the full data set is required to detect small yet important sources of variation. Hence, lack of robustness under downsampling does not necessarily imply that a factor is not biologically meaningful.

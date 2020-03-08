@@ -6,10 +6,10 @@
 \usage{
 plot_factor(object, factors = 1, groups = "all", group_by = "group",
   color_by = "group", shape_by = NULL, add_dots = TRUE,
-  dot_size = 1, dot_alpha = 1, add_violin = FALSE,
+  dot_size = 2, dot_alpha = 1, add_violin = FALSE,
   violin_alpha = 0.5, color_violin = TRUE, show_missing = TRUE,
   scale = FALSE, dodge = FALSE, color_name = "", shape_name = "",
-  legend = TRUE, rasterize = FALSE)
+  stroke = NULL, legend = TRUE, rasterize = FALSE)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
@@ -66,6 +66,8 @@ plot_factor(object, factors = 1, groups = "all", group_by = "group",
 \item{color_name}{name for color legend (usually only used if color_by is not a character itself).}
 
 \item{shape_name}{name for shape legend (usually only used if shape_by is not a character itself).}
+
+\item{stroke}{numeric indicating the stroke size (the black border around the dots).}
 
 \item{legend}{logical indicating whether to add a legend to the plot (default is TRUE).}
 

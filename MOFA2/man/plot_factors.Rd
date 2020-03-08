@@ -35,13 +35,13 @@ plot_factors(object, factors = c(1, 2), groups = "all",
 
 \item{shape_name}{name for shape legend.}
 
-\item{dot_size}{numeric indicating dot size.}
+\item{dot_size}{numeric indicating dot size (default is 1.5).}
 
-\item{alpha}{numeric indicating dot transparency.}
+\item{alpha}{numeric indicating dot transparency (default is 1).}
 
 \item{legend}{logical indicating whether to add legend.}
 
-\item{stroke}{numeric indicating the stroke size (the black border around the dots).}
+\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 }

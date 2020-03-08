@@ -16,7 +16,7 @@
 #' # Generate a simulated data set
 #' MOFAexample <- make_example_data()
 
-make_example_data <- function(n_views = 3, n_features = 100, n_samples = 50, n_groups = 2,
+make_example_data <- function(n_views = 3, n_features = 100, n_samples = 50, n_groups = 1,
                               n_factors = 5, likelihood = "gaussian") {
   
   # Sanity checks

@@ -38,6 +38,10 @@ data <- read.table(file, header=TRUE)
 # Create MOFA object
 MOFAmodel <- create_mofa(data)
 
+# activate stochastic inference in training options
+train_opts <- get_default_training_options(MOFAmodel)
+train_opts$stochastic <- TRUE
+
 # Load default stochastic options
 stochastic_opts <- get_default_stochastic_options(MOFAmodel)
 
@@ -46,6 +50,9 @@ stochastic_opts$learning_rate <- 0.75
 stochastic_opts$batch_size <- 0.25
 
 # Prepare the MOFA object
-MOFAmodel <- prepare_mofa(MOFAmodel, stochastic_options = stochastic_opts)
+MOFAmodel <- prepare_mofa(MOFAmodel, 
+  training_options = train_opts,
+  stochastic_options = stochastic_opts
+)
 
 }

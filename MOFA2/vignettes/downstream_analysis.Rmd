@@ -16,7 +16,7 @@ vignette: >
 
 # Introduction
 
-In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. Please refer to the vignettes for details on the different analysis.  
+In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. This vignette is made of simulated data and we do not highlight biologically relevant results.
 
 <p align="center">
 <img src="../../images/figure1b_mofa2.png" style="width: 100%; height: 100%"/>
@@ -30,13 +30,8 @@ library(MOFA2)
 
 # Load trained model
 
-Options:  
-
-* *sort_factors*: logical indicating whether factors should be sorted by variance explained (default is TRUE)
-* *on_disk*: logical indicating whether to work from memory or from disk. This should be set to TRUE when the training data is so big that cannot fit into memory. On-disk operations are performed using the HDF5Array and DelayedArray framework.  
-
 ```{r }
-model <- load_model("/Users/ricard/data/mofaplus/test/model.hdf5")
+model <- load_model("/Users/ricard/data/mofa2_simulations/test/hdf5/test.hdf5")
 ```
 
 ## Overview of data
@@ -48,18 +43,18 @@ plot_data_overview(model)
 
 # Add metadata to the model
 
-We have implemented the option to add sample metadata information to the MOFA object. This makes it easier to color the subsequent plots.  
-The metadata is stored as dataframe in `model@metadata`, and it requires at least two columns: `sample` and `group`. The number of rows must match the total number of samples in the model (`sum(model@dimensions$N)`).
+The metadata is stored as a data.frame object in `model@samples_metadata`, and it requires at least the column `sample`. The column `group` is required only if you are doing multi-group inference.  
+The number of rows must match the total number of samples in the model (`sum(model@dimensions$N)`).
 
-Let's create some metadata...
+Let's add some artifical metadata...
 ```{r }
-sample_metadata <- model@samples_metadata
-head(sample_metadata, n=3)
-```
+Nsamples = sum(model@dimensions$N)
 
-```{r }
-sample_metadata$condition <- sample(c("A","B"), size = nrow(sample_metadata), replace=T)
-sample_metadata$age <- sample(1:100, size = nrow(sample_metadata), replace=T)
+sample_metadata <- data.frame(
+  sample = samples_names(model)[[1]],
+  condition = sample(c("A","B"), size = Nsamples, replace = T),
+  age = sample(1:100, size = Nsamples)
+)
 
 samples_metadata(model) <- sample_metadata
 head(model@samples_metadata, n=3)
@@ -67,9 +62,8 @@ head(model@samples_metadata, n=3)
 
 # Variance decomposition
 
-MOFA reduces the dimensionality of a multi-omics data set in terms of a small number of latent factors, and it quantifies the fraction of variance explained ($R^2$) for each of the factors in the different omics. If using multiple groups of data, the model quantifies how much variance each factor explains in each combination of view and group (see figure above).  
-
-The variance explained estimates are expensive to compute and are stored in the hdf5 file. In R, they are loaded in `model@cache$`:
+The first step in the MOFA analysis is to quantify the amount of variance explained ($R^2$) by each factor in each data modality.  
+The variance explained estimates are stored in the hdf5 file and loaded in `model@cache[["variance_explained"]]`:
 ```{r }
 # Total variance explained per view and group
 head(model@cache$variance_explained$r2_total[[1]]) # group 1
@@ -86,25 +80,22 @@ Variance explained estimates can be plotted using `plot_variance_explained(model
 * *split_by*: character specifying the dimension to be faceted ("view", "factor", or "group").
 * *plot_total*: logical value to indicate if to plot the total variance explained (for the variable in the x-axis)
 
-```{r }
-plot_variance_explained(model, x="group", y="factor")
+```{r}
+plot_variance_explained(model, x="view", y="factor")
 ```
 
 ```{r}
-p <- plot_variance_explained(model, x="view", y="group")
-p + theme(axis.text.x = element_text(color="black", angle=40, vjust=1, hjust=1))
+plot_variance_explained(model, x="group", y="factor", plot_total = T)[[2]]
 ```
 
-```{r}
-p <- plot_variance_explained(model, x="group", y="factor", plot_total = T)
-p[[2]]
-```
 
-### Visualisation of samples in the factor space
-Mathematically, each factor orders cells along a one-dimensional axis centered at zero. Samples with different signs have opposite effects along the inferred axis of variation. Cells that remain centered at zero can represent either an intermediate phenotype or no phenotype at all associated with the factor under consideration.  
+### Visualisation of samples in the latent space
+
+Each MOFA factor captures a different dimension of heterogeneity in the data. Mathematically, each factor ordinates cells along a one-dimensional axis centered at zero. Samples with different signs manifest opposite phenotypes along the inferred axis of variation, with higher absolute value indicating a stronger effect. Note that the interpretation of factors is analogous to the interpretation of the principal components in PCA.
 
 ## Visualisation of single factors
-Factors can be plotted using `plot_factor` (beeswarm plots) or `plot_factors` (scatter plots)
+
+Factors can be plotted using `plot_factor` (for beeswarm plots of individual factors) or `plot_factors` (for scatter plots of factor combinations)
 ```{r }
 plot_factor(model, 
   factor = 1:3,
@@ -116,9 +107,9 @@ plot_factor(model,
 Adding more options
 ```{r}
 p <- plot_factor(model, 
-  factor = 1,
+  factors = c(1,2,3),
   color_by = "condition",
-  dot_size = 0.2,      # change dot size
+  dot_size = 3,        # change dot size
   dodge = T,           # dodge points with different colors
   legend = F,          # remove legend
   add_violin = T,      # add violin plots,
@@ -145,7 +136,8 @@ plot_factors(model,
 
 
 ## Visualisation of feature weights
-The weights provide a score for how strong each feature relates to each factor. Genes with no association with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature has higher levels in the cells with positive factor values, and vice versa. 
+
+The weights provide a score for how strong each feature relates to each factor. Features with no association with the factor have values close to zero, while features with strong association with the factor have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the cells with positive factor values, and vice versa. 
 
 Weights can be plotted using `plot_weights` (beeswarm plots) or `plot_top_weights` (scatter plots)
 
@@ -154,31 +146,31 @@ plot_weights(model,
   view = "view0",
   factor = 1,
   nfeatures = 10,     # Number of features to highlight
-  scale = T           # Scale loadings from -1 to 1
+  scale = T,          # Scale weights from -1 to 1
+  abs = F             # Take the absolute value?
 )
 ```
 
-<!-- ```{r } -->
-<!-- plot_top_weights(model,  -->
-<!--   view = "view0",  -->
-<!--   factor = 1,  -->
-<!--   nfeatures = 10, -->
-<!--   scale = T,  -->
-<!--   abs = T         # absolute value -->
-<!-- ) -->
-<!-- ``` -->
+```{r }
+plot_top_weights(model,
+  view = "view0",
+  factor = 1,
+  nfeatures = 10
+)
+```
 
-# Visualisation of patterns in the data
+# Visualisation of patterns in the input data
 
-Instead of looking at an "abstract" weight, it is useful to observe the coordinated heterogeneity of the informative features in the original data. This can be done using the `plot_data_heatmap` and `plot_data_scatter` function.   
+Instead of looking at weights, it is useful to observe the coordinated heterogeneity that MOFA captures in the original data. This can be done using the `plot_data_heatmap` and `plot_data_scatter` function.   
 
 ## Heatmaps
+
 Heatmap of observations. Top features are selected by its weight in the selected factor. By default, samples are ordered according to their corresponding factor value.
 ```{r}
 plot_data_heatmap(model,
   view = "view1",         # view of interest
   factor = 1,             # factor of interest
-  features = 20,          # number of features to plot (they are selected by loading)
+  features = 20,          # number of features to plot (they are selected by weight)
   
   # extra arguments that are passed to the `pheatmap` function
   cluster_rows = TRUE, cluster_cols = FALSE,
@@ -193,38 +185,30 @@ Scatter plots of observations vs factor values. It is useful to add a linear reg
 plot_data_scatter(model,
   view = "view1",         # view of interest
   factor = 1,             # factor of interest
-  features = 5,           # number of features to plot (they are selected by loading)
+  features = 5,           # number of features to plot (they are selected by weight)
   add_lm = TRUE,          # add linear regression
   color_by = "condition"
 )
 ```
 
 ## Non-linear dimensionality reduction
-Interpretability at the factor level is achieved at the expense of limited information content per factor (due to the linearity assumption). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
+
+The MOFA factors are linear (as in Principal Component analysis). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
 
 Run UMAP and t-SNE
 ```{r }
 set.seed(42)
-model <- run_umap(model)
+# model <- run_umap(model)
 model <- run_tsne(model)
 ```
 
 Plot non-linear dimensionality reduction
 ```{r }
 plot_dimred(model,
-  method = "TSNE",
-  color_by = "condition",
-  legend = F
+  method = "TSNE",  # method can be either "TSNE" or "UMAP"
+  color_by = "condition"
 )
 ```
-
-
-<!-- #### Clustering -->
-<!-- Doing clustering in the (denoised) latent space tends to be much more robust than in the high-dimensional space. -->
-<!-- ```{r} -->
-<!-- # cluster_samples(model) -->
-<!-- ``` -->
-
 
 # Other functionalities
 
@@ -232,13 +216,12 @@ plot_dimred(model,
 
 The user can rename the dimensions of the model
 ```{r}
-views(model) <- c("Transcriptomics", "Methylation", "Proteomics")
-groups(model) <- c("Condition_A", "Condition_B", "Condition_C")
+views_names(model) <- c("Transcriptomics", "Proteomics")
+factors_names(model) <- paste("Factor", 1:model@dimensions[["K"]], sep=" ")
 ```
 
 ```{r}
-views(model)
-groups(model)
+views_names(model)
 ```
 
 ## Extracting data for downstream analysis
@@ -247,51 +230,39 @@ The user can extract the feature weights, the data and the factors to generate t
 
 Extract factors
 ```{r}
-# factors is a list of matrices, one matrix per group with dimensions (nsamples, nfactors)
-factors <- get_factors(model,
-  groups = "all",
-  factors = "all"
-)
-
+# "factors" is a list of matrices, one matrix per group with dimensions (nsamples, nfactors)
+factors <- get_factors(model, factors = "all")
 lapply(factors,dim)
 ```
 
 Extract weights
 ```{r}
-# weights is a list of matrices, one matrix per view with dimensions (nfeatures, nfactors)
-weights <- get_weights(model,
-  views = "all",
-  factors = "all"
-)
-
+# "weights" is a list of matrices, one matrix per view with dimensions (nfeatures, nfactors)
+weights <- get_weights(model, views = "all", factors = "all")
 lapply(weights,dim)
 ```
 
 Extract data
 ```{r}
-# data is a nested list of matrices, one matrix per view and group with dimensions (nfeatures, nsamples)
+# "data" is a nested list of matrices, one matrix per view and group with dimensions (nfeatures, nsamples)
 data <- get_data(model)
-
 lapply(data, function(x) lapply(x, dim))[[1]]
 ```
 
-For convenience, the user can extract the data in long data.frame format to plug into ggplot:  
-```{r}
-# factors is a list of matrices, one matrix per group with dimensions (nsamples, nfactors)
-factors <- get_factors(model, as.data.frame = T)
-weights <- get_weights(model, as.data.frame = T)
-data <- get_data(model, as.data.frame = T)
-```
+For convenience, the user can extract the data in long data.frame format:
 
 ```{r}
+factors <- get_factors(model, as.data.frame = T)
 head(factors, n=3)
 ```
 
 ```{r}
+weights <- get_weights(model, as.data.frame = T)
 head(weights, n=3)
 ```
 
 ```{r}
+data <- get_data(model, as.data.frame = T)
 head(data, n=3)
 ```
 

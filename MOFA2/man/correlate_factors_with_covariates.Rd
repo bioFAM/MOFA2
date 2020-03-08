@@ -5,7 +5,7 @@
 \title{Plot correlation of factors with external covariates}
 \usage{
 correlate_factors_with_covariates(object, covariates, factors = "all",
-  groups = "all", abs = TRUE, plot = c("r", "log_pval"),
+  groups = "all", abs = FALSE, plot = c("r", "log_pval"),
   alpha = 0.05, return_data = FALSE, transpose = FALSE, ...)
 }
 \arguments{
@@ -21,7 +21,7 @@ correlate_factors_with_covariates(object, covariates, factors = "all",
 
 \item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
 
-\item{abs}{logical indicating whether to take the absolute value of the correlation coefficient (default is TRUE).}
+\item{abs}{logical indicating whether to take the absolute value of the correlation coefficient (default is \code{TRUE}).}
 
 \item{plot}{character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).}
 
@@ -29,7 +29,7 @@ correlate_factors_with_covariates(object, covariates, factors = "all",
 
 \item{transpose}{logical indicating whether to transpose the plot}
 
-\item{...}{extra arguments passed to \code{\link[corrplot]{corrplot}} (if plot=="r") or \code{\link[pheatmap]{pheatmap}} (if plot=="log_pval").}
+\item{...}{extra arguments passed to \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}).}
 }
 \description{
 Function to correlate factor values with external covariates.

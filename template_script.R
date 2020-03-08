@@ -1,6 +1,9 @@
 library(MOFA2)
 library(data.table)
 
+# (Optional) set up reticulate connection with Python
+# reticulate::use_python("/Users/ricard/anaconda3/envs/base_new/bin/python", required = T)
+
 ###############
 ## Load data ##
 ###############
@@ -19,7 +22,7 @@ library(data.table)
 # In this case there is no need to have missing values in the data.frame,
 # they will be automatically filled in when creating the corresponding matrices
 
-file = "ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/getting_started/data.txt.gz"
+file = "ftp://ftp.ebi.ac.uk/pub/databases/mofa/getting_started/data.txt.gz"
 data = fread(file)
 
 #######################
@@ -30,7 +33,6 @@ MOFAobject <- create_mofa(data)
 
 # Visualise data structure
 plot_data_overview(MOFAobject)
-
 
 ####################
 ## Define options ##
@@ -45,12 +47,8 @@ data_opts <- get_default_data_options(MOFAobject)
 # Model options
 # - likelihoods: likelihood per view (options are "gaussian","poisson","bernoulli"). By default, they are guessed internally
 # - num_factors: number of factors. By default K=10
-# - spikeslab_weights: use spike-slab sparsity prior in the weights? (default TRUE)
-# - spikeslab_factors: use spike-slab sparsity prior in the factors? (default FALSE)
-# - ard_factors: use ARD prior in the factors? (TRUE if using multiple groups)
-# - ard_weights: use ARD prior in the weights? (TRUE if using multiple views)
 model_opts <- get_default_model_options(MOFAobject)
-model_opts$num_factors <- 5
+model_opts$num_factors <- 10
 
 # Training options
 # - maxiter: number of iterations
@@ -66,12 +64,12 @@ train_opts$convergence_mode <- "medium"
 train_opts$seed <- 42
 
 # (Optional) Set stochastic inference options
-# Only recommended with very large data sets
+# Only recommended with very large data sets (N>1e5)
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)
 # - forgetting_rate: forgetting rate (we recommend values from 0.1 to 0.5)
 # - start_stochastic: first iteration to apply stochastic inference (recommended > 5)
-stochastic_opts <- get_default_stochastic_options(MOFAobject)
+# stochastic_opts <- get_default_stochastic_options(MOFAobject)
 
 #########################
 ## Prepare MOFA object ##
@@ -84,13 +82,9 @@ MOFAobject <- prepare_mofa(MOFAobject,
   # stochastic_options = stochastic_opts
 )
 
-
 #####################
 ## Train the model ##
 #####################
-
-# (Optional) set up reticulate connection with Python
-reticulate::use_python("/Users/ricard/anaconda3/envs/base_new/bin/python", required = T)
 
 outfile <- paste0(getwd(),"/model.hdf5")
 MOFAmodel <- run_mofa(MOFAobject, outfile)

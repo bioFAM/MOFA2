@@ -19,12 +19,12 @@ Default is 'all'.}
 \item{factors}{character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. 
 Default is 'all'.}
 
-\item{threshold}{threshold on absolute weight values, so that loadings with a magnitude below this threshold (in all factors) are removed}
+\item{threshold}{threshold on absolute weight values, so that weights with a magnitude below this threshold (in all factors) are removed}
 
 \item{...}{extra arguments passed to \code{\link[pheatmap]{pheatmap}}.}
 }
 \description{
-Function to visualize the loadings for a given set of factors in a given view. \cr 
+Function to visualize the weights for a given set of factors in a given view. \cr 
 This is useful to visualize the overall pattern of the weights but not to individually characterise the factors. \cr
-To inspect the loadings of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plot_top_weights}}
+To inspect the weights of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plot_top_weights}}
 }
