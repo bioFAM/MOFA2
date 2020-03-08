@@ -23,11 +23,11 @@ For more details you can read our papers:
 </p>
 
 
-## Manual installation
+## Installation
 
 The core of MOFA is implemented in Python. However, the whole procedure can be run with R and we provide the downstream analysis functions only in R.
 
-#### Python dependencies 
+### Python dependencies 
 
 Python dependencies can be installed using pip (from the Unix terminal)
 
@@ -35,7 +35,7 @@ Python dependencies can be installed using pip (from the Unix terminal)
 pip install mofapy2
 ```
 
-#### R package
+### R package
 
 MOFA2 R package can be installed using R:
 
@@ -82,10 +82,13 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * **Analysis of microbiome data**: in preparation...
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
 
+## Web server
+We provide a [Shiny-based web server](http://www.ebi.ac.uk/shiny/mofa/) to interactively explore MOFA models. Note that the web server only provides basic functionalities. For a comprehensive analysis please use the MOFA2 R package.
 
 ## Contact
 E-mail: Ricard Argelaguet (ricard@ebi.ac.uk)
 Slack: we have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
+
 
 
 ## Frequently asked questions (FAQ)
