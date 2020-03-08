@@ -16,7 +16,7 @@ vignette: >
 
 # Description
 
-This vignette demonstrates how MOFA+ can be used to integrate scRNA-seq and scATAC-seq data from the same cell.  
+This vignette demonstrates how MOFA can be used to integrate scRNA-seq and scATAC-seq data from the same cell.  
 There are very few protocols to date that enable this, one of them is [SNARE-seq](https://www.nature.com/articles/s41587-019-0290-0). As a demonstration we will use a simple data set of ~1000 cells where they mixed four cell lines together: BJ, GM12878, H1 and K562.  
 In this setting, MOFA+ should be able to detect the (coordinated) variability in the RNA expression and in chromatin accessibiliy that determines the four different cell types.
 
@@ -46,20 +46,17 @@ library(MOFA2)
 Load RNA modality as Seurat object
 ```{r}
 seurat_rna <- readRDS(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/snare_seq/seurat_rna.rds"))
-# seurat_rna <- readRDS("/Users/ricard/data/Chen2019/CellLineMixture/rna/seurat.rds")
 dim(seurat_rna)
 ```
 
 Load ATAC modality as Seurat object
 ```{r }
-# seurat_atac <- readRDS("/Users/ricard/data/Chen2019/CellLineMixture/atac/seurat.rds")
 seurat_atac <- readRDS(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/snare_seq/seurat_atac.rds"))
 dim(seurat_atac)
 ```
 
 Load metadata
 ```{r}
-# metadata <- fread("/Users/ricard/data/Chen2019/CellLineMixture/cell_metadata.txt")
 metadata <- fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/snare_seq/cell_metadata.txt", header=T)
 ```
 
@@ -134,9 +131,9 @@ mofa <- run_mofa(mofa)
 ## Downstream analysis
 
 ### Add cell metadata to the model
+
 ```{r, echo=FALSE}
 metadata_to_mofa <- metadata %>%
-  .[,group:="group1"] %>%   # add "group" column
   setnames("cell","sample") %>%   # add "sample" column
   setkey(sample) %>% .[unlist(samples(mofa))]   # sort data frame to match order of samples
 

@@ -69,7 +69,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   stopifnot(rownames(data) == rownames(Z))
   
   # Check that there is no empty factor
-  stopifnot( all(apply(Z,2,var, na.rm=TRUE)>0) )
+  # stopifnot( all(apply(Z,2,var, na.rm=TRUE)>0) )
   
   # Check if some features do not intersect between the feature sets and the observed data and remove them
   features <- intersect(colnames(data),colnames(feature.sets))
@@ -263,31 +263,38 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
 #'  result from the the feature set enrichment analysis. Rows are feature sets and columns are factors.
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param alpha FDR threshold to filter out unsignificant feature sets which are
-#'  not represented in the heatmap. Default is 0.05.
-#' @param log_scale boolean indicating whether to plot the log of the p.values.
-#' @param ... extra arguments to be passed to \link{pheatmap} function
-#' @details it requires \code{\link{run_enrichment}} to be run beforehand.
+#'  not represented in the heatmap. Default is 0.10.
+#' @param log_scale logical indicating whether to plot the -log of the p.values.
+#' @param ... extra arguments to be passed to the \link{pheatmap} function
 #' @return produces a heatmap
 #' @importFrom pheatmap pheatmap
 #' @importFrom grDevices colorRampPalette
 #' @export
-plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, log_scale = TRUE, ...) {
+plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50, log_scale = TRUE, ...) {
   
   # get p-values
   p.values <- enrichment.results$pval.adj
-  p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha)) == ncol(p.values),, drop=FALSE]
+  
+  # remove factors that are full of NAs
+  p.values <- p.values[,colMeans(is.na(p.values))<1]
+  
+  # remove factors that do not have any significant enrichment
+  # p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha,na.rm=T)) == ncol(p.values),, drop=FALSE]
+  
+  # cap p-values 
+  p.values[p.values<cap] <- cap
   
   # Apply Log transform
-  if (log_scale) {
-    p.values <- -log10(p.values)
+  if (isTRUE(log_scale)) {
+    p.values <- -log10(p.values+1e-50)
     alpha <- -log10(alpha)
-    col <- colorRampPalette(c("lightgrey", "red"))(n=10)
+    col <- colorRampPalette(c("lightgrey","red"))(n=100)
   } else {
-    col <- colorRampPalette(c("red", "lightgrey"))(n=10)
+    col <- colorRampPalette(c("red","lightgrey"))(n=100)
   }
   
   # Generate heatmap
-  pheatmap(p.values, color = col, ...)
+  pheatmap(p.values, color = col, show_rownames = F, ...)
 }
 
 

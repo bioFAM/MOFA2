@@ -85,7 +85,7 @@ data_opts <- get_default_data_options(MOFAobject)
 ```
 
 Model options: let's use default
-```{r}
+```{r message=FALSE}
 model_opts <- get_default_model_options(MOFAobject)
 ```
 
@@ -97,7 +97,7 @@ train_opts$seed <- 42
 ```
 
 ## Prepare the MOFA object
-```{r}
+```{r message=FALSE}
 MOFAobject <- prepare_mofa(
   object = MOFAobject,
   data_options = data_opts,
@@ -126,14 +126,25 @@ MOFA models are saved in hdf5 format and can be loaded into R with the function 
 load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_mofa.RData"))
 ```
 
-# Inspect MOFA object
+# Inspect the trained MOFA model
+
 The MOFAobject consists of multiple slots where relevant data and information is stored. For descriptions, you can read the documentation by `?MOFA`
 ```{r}
 slotNames(model)
 ```
 
-## Cell metadata:  
+`dimensions` contains the dimensions of the model (K for factors, M for views, G for groups, N for samples (per group), D for features (per view)):
+```{r}
+model@dimensions
+```
 
+`data` contains the centered (and optionally scaled) input data matrices. It is a nested list of matrices where the first index refers to the view, and the second index to the group. In this case we have one view (RNA) and six groups
+```{r}
+names(model@data)
+names(model@data[[1]])
+```
+
+`samples_metadata` contains the cell metadata that I have previously added to the MOFA object. Columns are:  
 - *stage*: developmental stage
 - *lineage*: cell type annotation
 - *group*: the grouping used for MOFA. In this case each embryo corresponds to a separate group
@@ -141,7 +152,9 @@ slotNames(model)
 head(model@samples_metadata)
 ```
 
+
 ## Overview of training data
+
 The function `plot_data_overview` can be used to obtain an overview of the input data. 
 It shows how many views (rows) and how many groups (columns) exist, what are their corresponding dimensionalities and how many missing information they have (grey bars).  
 In this case we have one view (RNA expression, a total of 5,000 genes) and 6 groups that correspond to different embryos at different stages of development, for a total of 16,152 cells.
@@ -177,18 +190,14 @@ p[[2]]
 
 ## Plot variance explained for individual features
 
-We can also inspect the variance explained by the MOFA factors for individual features. This is useful to disentangle how much of the variation of a gene is "noise" (high variance but low $R^2$) versus coordinated variance (high $R^2$)
-
-```{r}
-features <- c("Rbp4","Ttr","Spink1","Mesp1","E130311K13Rik","Hey1")
-```
+We can also inspect the variance explained by the MOFA factors for individual features. A high $R^2$ implies that the MOFA factors captures most of the variation for this feature, whereas small values means that the variation for this feature is not explained by the model (i.e. it is considered as noise):
 
 Variance explained by all factors across all groups
 ```{r}
+features <- c("Rbp4","Ttr","Spink1","Mesp1","E130311K13Rik","Hey1")
+
 plot_variance_explained_per_feature(
   model, 
-  factors = "all",
-  groups = "all",
   view = "RNA",
   features = features
 )
