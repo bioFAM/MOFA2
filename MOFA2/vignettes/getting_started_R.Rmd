@@ -90,7 +90,9 @@ Create the MOFA object:
 MOFAobject <- create_mofa(data)
 ```
 
-In case you are using the multi-group functionality, the groups can be specified using a vector with the group ID for each sample. For more details on how the multi-group inference works, see \code{https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality}. This is a rather advanced option that we disencourage if this is the first time that you are using MOFA.
+In case you are using the multi-group functionality, the groups can be specified using a vector with the group ID for each sample.  
+
+Please keep in mind that this is a rather advanced option that we disencourage for MOFA beginners. For more details on how the multi-group inference works, read the [FAQ section](https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality). 
 
 ```{r message=FALSE}
 N = ncol(data[[1]])

@@ -3,76 +3,7 @@
 ## Functions to visualise the input data ##
 ###########################################
 
-#' @title Association analysis between features and factors
-#' @name plot_association_analysis
-#' @description Function to plot the number of significant associations between features and factors.
-#' @details This plot uses frequentist statistics and goes against the Bayesian spirit of the model, but it is useful to get an estimate on how many features in each view are driving each factor. 
-#' Some factors are expected to be rather sparse, and capture heterogeneity that is specific to a small amount of features,
-#' whereas other factors are expected to capture broad pattenrs of heterogeneity across many features. \cr 
-#' The bar plots display, for each view, the fraction of features that are significantly associated to each factor. Hence,
-#' each element in the barplot ranges from 0 to 1.\cr
-#' p-values are corrected for multiple testing (per view and factor comparison) using Benjamini-Hochberg (\code{p.adjust(method="fdr"})).
-#' @param object a \code{\link{MOFA}} object.
-#' @param factors character vector with the factor names, or numeric vector with the index of the factors. 
-#' Default is "all".
-#' @param views character vector with the view names, or numeric vector with the index of the views. 
-#' Default is "all".
-#' @param legend logical indicating whether to add legend.
-#' @param add_text logical indicating whether to add the fraction of significant associations as text.
-#' @param fdr_threhsold FDR threshold for multiple testing correction.
-#' @param return_data logical indicating whether to return the association results instead of plotting them.
-#' @import data.table
-#' @importFrom magrittr %>%
-#' @export
-#' @examples
-#' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
-#' model <- load_model(file)
-#' 
-#' # Plot correlation between all factors
-#' plot_association_analysis(model)
-#' 
-#' plot_association_analysis(model, return_data = TRUE)
-#' 
-plot_association_analysis <- function(object, factors = "all", views = "all", 
-                                      fdr_threshold = 0.10, add_text = TRUE, legend = TRUE, return_data = FALSE) {
-  
-  # Sanity checks
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  
-  # Define views and factors
-  factors <- .check_and_get_factors(object, factors)
-  views <- .check_and_get_views(object, views)
 
-  # Get data
-  data.dt <- get_data(object, views = views, as.data.frame = TRUE) %>% as.data.table
-  
-  # Get factors
-  factor.dt <- get_factors(object, factors = factors, as.data.frame = TRUE) %>% as.data.table
-  
-  # Do calculations
-  to.plot <- merge(data.dt, factor.dt, by=c("sample","group"), allow.cartesian = TRUE) %>%
-    .[, .(p = cor.test(value.x, value.y, method = "pearson")[["p.value"]]), by=c("feature","view","factor")] %>%
-    .[,"padj_fdr" := p.adjust(p, method="fdr"), by=c("view","factor")] %>%
-    .[,"sig":=padj_fdr<=fdr_threshold] %>%
-    .[,round(mean(sig),2), by=c("view","factor")]
-  
-  if (isTRUE(return_data)) {
-    return(to.plot)
-  } else {
-    p <- ggpubr::ggbarplot(to.plot, x="factor", y="V1", fill = "view", color="black",
-              palette = "Set1", label = add_text, lab.col = "white", lab.pos = "in") +
-      labs(x="", y="Fraction of significant associations") +
-      theme(
-        axis.text.x = element_text(color="black", angle=35, hjust=1, size=rel(0.75)),
-        legend.title = element_blank()
-      )
-    if (isFALSE(legend)) {
-      p <- p + theme(legend.position = "none")
-    }
-    return(p)
-  }
-}
 
 #' @title Plot heatmap of relevant features
 #' @name plot_data_heatmap

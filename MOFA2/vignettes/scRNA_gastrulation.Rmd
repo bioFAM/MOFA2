@@ -27,13 +27,19 @@ The data set we use here is a simplified subset version of the original data set
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
 ```
 
+# How does the multi-group inference work?
+Intuitively, this update breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.).  
+Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim of the multi-group framework is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group.  
+
+This is a rather advanced option that we disencourage if this is the first time that you are using MOFA. For more questions, please read the [FAQ section](https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality). 
+
 # Load libraries
 
 Load dependencies. Make sure that `MOFA2` is imported last, to avoid collisions with functions from other packages
 ```{r, echo=FALSE}
-library(Seurat)
-library(ggplot2)
-library(MOFA2)
+suppressPackageStartupMessages(library(Seurat))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(MOFA2))
 ```
 
 Define cell type colors for the visualisations
@@ -117,7 +123,6 @@ MOFA models are saved in hdf5 format and can be loaded into R with the function 
 ```{r}
 # model <- load_model(outfile)
 
-# load("/Users/ricard/data/mofa2_vignettes/gastrulation10x_mofa.RData")
 load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_mofa.RData"))
 ```
 
@@ -129,9 +134,9 @@ slotNames(model)
 
 ## Cell metadata:  
 
-* *stage*: developmental stage
-* *lineage*: cell type annotation
-* *group*: the grouping used for MOFA, corresponding to stage + embryo 
+- *stage*: developmental stage
+- *lineage*: cell type annotation
+- *group*: the grouping used for MOFA. In this case each embryo corresponds to a separate group
 ```{r}
 head(model@samples_metadata)
 ```
