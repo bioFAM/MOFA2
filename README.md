@@ -40,7 +40,8 @@ pip install mofapy2
 MOFA2 R package can be installed using R:
 
 ```r
-devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data --no-build-vignettes"))
+remotes::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data --no-build-vignettes"))
+# or use the devtools::install_github() equivalent
 ```
 
 --------------
