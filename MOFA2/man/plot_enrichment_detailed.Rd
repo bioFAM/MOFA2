@@ -4,20 +4,15 @@
 \alias{plot_enrichment_detailed}
 \title{Plot detailed output of the Feature Set Enrichment Analysis}
 \usage{
-plot_enrichment_detailed(object, factor, feature.sets, enrichment.results,
-  adjust = TRUE, alpha = 0.1, max.genes = 5, max.pathways = 10,
-  text_size = 3)
+plot_enrichment_detailed(enrichment.results, factor, feature.sets,
+  alpha = 0.1, max.genes = 5, max.pathways = 10, text_size = 3)
 }
 \arguments{
-\item{object}{\code{\link{MOFA}} object on which FSEA was performed}
+\item{enrichment.results}{output of \link{run_enrichment} function}
 
 \item{factor}{string with factor name or numeric with factor index}
 
 \item{feature.sets}{data structure that holds feature set membership information, as used in the \link{run_enrichment} function.}
-
-\item{enrichment.results}{output of \link{run_enrichment} function}
-
-\item{adjust}{use adjusted p-values?}
 
 \item{alpha}{p.value threshold to filter out feature sets}
 
@@ -33,6 +28,6 @@ a \code{ggplot2} object
 \description{
 Method to plot a detailed output of the Feature Set Enrichment Analyisis (FSEA). \cr
 Each row corresponds to a significant pathway, sorted by statistical significance, and each dot corresponds to a gene. \cr
-For each pathway, we display the top genes of the pathway sorted by the corresponding feature statistic (by default, the absolute value of the loading)
+For each pathway, we display the top genes of the pathway sorted by the corresponding feature statistic (by default, the absolute value of the weight)
 The top genes with the highest statistic (max.genes argument) are displayed and labeled in black. The remaining genes are colored in grey.
 }

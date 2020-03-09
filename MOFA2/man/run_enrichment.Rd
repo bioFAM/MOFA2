@@ -5,10 +5,9 @@
 \title{Run feature set Enrichment Analysis}
 \usage{
 run_enrichment(object, view, feature.sets, factors = "all",
-  local.statistic = c("loading", "cor", "z"),
-  global.statistic = c("mean.diff", "rank.sum"),
+  set.statistic = c("mean.diff", "rank.sum"),
   statistical.test = c("parametric", "cor.adj.parametric",
-  "permutation"), transformation = c("abs.value", "none"),
+  "permutation"), sign = c("all", "positive", "negative"),
   min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH",
   alpha = 0.1)
 }
@@ -18,18 +17,16 @@ run_enrichment(object, view, feature.sets, factors = "all",
 \item{view}{a character with the view name, or a numeric vector with the index of the view to use.}
 
 \item{feature.sets}{data structure that holds feature set membership information. 
-Must be a binary membership matrix (rows are feature sets and columns are features).}
+Must be a binary membership matrix (rows are feature sets and columns are features). See details below for some pre-built gene set matrices.}
 
 \item{factors}{character vector with the factor names, or numeric vector with the index of the factors for which to perform the enrichment.}
 
-\item{local.statistic}{the feature statistic used to quantify the association between each feature and each factor. Must be one of the following: loading (default), cor, z.}
-
-\item{global.statistic}{the set statisic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".}
+\item{set.statistic}{the set statisic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".}
 
 \item{statistical.test}{the statistical test used to compute the significance of the feature set statistics under a competitive null hypothesis.
 Must be one of the following: "parametric" (default), "cor.adj.parametric", "permutation".}
 
-\item{transformation}{optional transformation to apply to the feature-level statistics. Must be one of the following "none" or "abs.value" (default).}
+\item{sign}{use only "positive" or "negative" weights. Default is "all".}
 
 \item{min.size}{Minimum size of a feature set (default is 10).}
 
@@ -46,7 +43,7 @@ a list with five elements:
 \item{\strong{pval}:}{ matrices with nominal p-values. }
 \item{\strong{pval.adj}:}{ matrices with FDR-adjusted p-values. }
 \item{\strong{feature.statistics}:}{ matrices with the local (feature-wise) statistics.  }
-\item{\strong{global.statistics}:}{ matrices with the global (gene set-wise) statistics.  }
+\item{\strong{set.statistics}:}{ matrices with the global (gene set-wise) statistics.  }
 \item{\strong{sigPathways}}{ list with significant pathways per factor. }
 }
 \description{

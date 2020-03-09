@@ -16,10 +16,9 @@ vignette: >
 
 # Description
 
-This vignette demonstrates how to do Gene Set Enrichment Analysis on the MOFa factors.
+This vignette demonstrates how to do Gene Set Enrichment Analysis on the MOFA factors.
 
-We consider a data set of scRNA-seq experiments where 16,152 cells were isolated from a total of 8 mouse embryos from developmental stages E6.5, E6.75, E7.0 and E7.25 (two embryos per stage), spanning post-implantation and early gastrulation.  
-The data set we use here is a simplified subset version of the original data set, which can be visualised and downloaded from [here](https://marionilab.cruk.cam.ac.uk/MouseGastrulation2018/).
+We consider a single-cell RNA-seq data set where 16,152 cells were isolated from a total of 8 mouse embryos from developmental stages E6.5, E6.75, E7.0 and E7.25 (two embryos per stage), spanning post-implantation and early gastrulation. The original data set can be visualised and downloaded from [here](https://marionilab.cruk.cam.ac.uk/MouseGastrulation2018/).
 
 The vignette where the MOFA model is trained on this data set can be found [here](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html)
 
@@ -29,30 +28,38 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
 
 # Why doing Gene Set Enrichment Analysis?
 
-Sometimes factors cannot be easily characterised by inspecting the genes with the largest weight in each factor. In this case, it is useful to combine information across genes and work instead with gene sets (i.e. biological pathways).  These are the steps:
+Sometimes factors cannot be easily characterised by simply inspecting the genes with the largest weight in each factor. Sometimes it is useful to combine information across genes and work instead with gene sets (i.e. biological pathways).  
 
-- **(1) Define your gene set matrix**: this can be specified as a binary matrix where rows are gene sets and columns are genes. A value of 1 indicates that gene `j` belongs to pathway `i`. A value of 0 indicates elsewise.
-- **(2) Select a (local) gene statistic**: the statistic used to quantify the association between each feature and each factor. Must be one of the following: \code{loading} (the actual weight), `cor` (correlation coefficient between features and factors), `z` (z-score).
-- **(3) Select a (global) gene set statistic**: the statisic used to quantify the scores at the pathway level. They are computed from the (local) gene statistics. Must be one of the following: `mean.diff` (difference in the mean of the gene statistic between foreground and background) or `rank.sum` (difference in the sum of ranks between foreground and background).
-- **(4) Select a statistical test**: the statistical test used to compute the significance of the gene set statistics under a competitive null hypothesis. Must be one of the following: `parametric` (a simple and very liberal parametric t-test), "cor.adj.parametric" (parametric t-test adjusted by the correlation between features, this is very conservative), `permutation` (unparametric, the null distribution is created by permuting the weights. This option is computationally expensive, but recommended).  
+These are the steps for doing Gene Set Enrichment Analysis (GSEA) with MOFA:  
+
+- **(1) Define your gene set matrix**: this can be specified as a binary matrix where rows are gene sets and columns are genes. A value of 1 indicates that gene `j` belongs to pathway `i`. A value of 0 indicates elsewise.  
+- **(2) Select a gene set statistic**: the statisic used to quantify the scores at the pathway level. Must be one of the following: `mean.diff` (difference in the mean weight between foreground and background) or `rank.sum` (difference in the sum of ranks between foreground and background).  
+- **(3) Select a statistical test**: the statistical test used to compute the significance of the gene set statistics under a competitive null hypothesis. Must be one of the following: `parametric` (a simple and very liberal parametric t-test), `cor.adj.parametric` (parametric t-test adjusted by the correlation between features), `permutation` (unparametric, the null distribution is created by permuting the weights. This option is computationally expensive, but it preserves the correlation structure between features in the data.).  
 
 For more details, we refer the reader to the following paper: [Principal component gene set enrichment (PCGSE)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4543476). The function we implemented is based on the \code{pcgse} function with some modifications.
 
+# Load libraries
+
+```{r}
+library(data.table)
+library(purrr)
+library(ggplot2)
+library(cowplot)
+library(MOFAdata)
+library(MOFA2)
+```
 
 # Where can I find gene set annotations?
 There are a large number of gene set annotations, and the right one to use will depend on your data set. Some generic and commonly used ones are [MSigDB](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp), [Reactome](https://reactome.org/) and [Gene Ontology](http://geneontology.org/).  
 
 We have manually processed some gene sets, which can be found in the [MOFAdata package](https://bioconductor.org/packages/release/data/experiment/html/MOFAdata.html):
 
-```{r}
-suppressPackageStartupMessages(library(MOFAdata))
-```
 
 Reactome (human):
 ```{r}
 data("reactomeGS")
-head(rownames(reactomeGS), n=2)
-head(colnames(reactomeGS), n=2)
+head(rownames(reactomeGS), n=3)
+head(colnames(reactomeGS), n=3)
 ```
 
 MSigDB 6.0 (human):
@@ -63,8 +70,8 @@ data("MSigDB_v6.0_C2_human")
 # C5: extracted from the Gene Ontology data.base
 data("MSigDB_v6.0_C5_human") 
 
-head(rownames(MSigDB_v6.0_C2_human), n=2)
-head(colnames(MSigDB_v6.0_C2_human), n=2)
+head(rownames(MSigDB_v6.0_C2_human), n=3)
+head(colnames(MSigDB_v6.0_C2_human), n=3)
 ```
 
 MSigDB 6.0 (mouse):
@@ -75,8 +82,8 @@ data("MSigDB_v6.0_C2_mouse")
 # C5: extracted from the Gene Ontology data.base
 data("MSigDB_v6.0_C5_mouse") 
 
-head(rownames(MSigDB_v6.0_C2_mouse), n=2)
-head(colnames(MSigDB_v6.0_C2_mouse), n=2)
+head(rownames(MSigDB_v6.0_C2_mouse), n=3)
+head(colnames(MSigDB_v6.0_C2_mouse), n=3)
 ```
 
 Give them a shot, but it is likely that you will have to create a tailored gene set for your application. Also, If you have an annotation that other people could benefit from, please let us know and we will upload it.
@@ -84,94 +91,143 @@ Give them a shot, but it is likely that you will have to create a tailored gene 
 # Load pre-computed model
 
 ```{r}
-suppressPackageStartupMessages(library(MOFA2))
+# load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_mofa.RData"))
+model <- readRDS("/Users/ricard/data/gastrulation10x_mofa/model.rds")
 
-load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_mofa.RData"))
-MOFAobject
+model
 ```
 
-For this example we will use the MSigDB_v6.0_C5_mouse gene set annotations. First, we need to match the gene names in the MOFA object to the gene names in the gene set annotation. We will have to capitalise the gene names in MOFA:
+For this example we will use the MSigDB_v6.0_C5_mouse gene set annotations, which are derived from the Gene Ontology data base.  
+First, we need to match the gene names in the MOFA object to the gene names in the gene set annotation. For this we just have to capitalise the gene names in MOFA:
 ```{r}
 features_names(model)[["RNA"]] <- toupper(features_names(model)[["RNA"]])
+head(features_names(model)[["RNA"]])
 ```
 
 # Run enrichment analysis
 
+An important consideration when running GSEA is that MOFA has positive and negative weights. The features with positive weights are "high" in the samples with positive factor values, whereas the features with negative weights are "high" in the samples with negative factor values.  
+Taking this into account, you may want to do GSEA specifically with the positive weights or with the negative weights. Merging them and taking the absolute value could dilute the signal. Hence, we recommend the user to do GSEA separately for (+) and (-) weights as well as jointly with all weights.
+
+As a demonstration, we will run GSEA with a simple parametric t-test only using features with **negative** weights. For simplicity we'll use Factors 1 to 3:
 ```{r}
-enrichment.out <- run_enrichment(model,
-  view = "RNA",
-  factors = "all",
-  local.statistic = "z",
-  global.statistic = "mean.diff",
+enrichment.parametric <- run_enrichment(model,
+  view = "RNA", factors = 1:3,
   feature.sets = MSigDB_v6.0_C5_mouse,
-  statistical.test = "parametric",        # liberal parametroc
-  # statistical.test = "cor.adj.parametric",  # conservative parametric
-  # statistical.test = "permutation",  # unparametric
-  alpha = 0.01
+  sign = "negative",
+  statistical.test = "parametric"
 )
 ```
 
 The enrichment analysis returns a list of 5 elements:  
-- **pval**:	the nominal p-values.
-- **pval.adj**:	the FDR-adjusted p-values.
-- **feature.statistics**: the local (feature-wise) statistics.
-- **global.statistics**: matrices with the global (gene set-wise) statistics.
-- **sigPathways**: list with significant pathways per factor
+
+- **feature.sets**:	the feature set matrix filtered by the genes that overlap with the MOFA model.  
+- **pval**:	the nominal p-values.  
+- **pval.adj**:	the FDR-adjusted p-values.  
+- **feature.statistics**: the feature statistics (i.e. the weights).  
+- **set.statistics**: matrices with the gene set statistics.  
+- **sigPathways**: list with significant pathways per factor at a specified FDR threshold  
+
 ```{r}
-names(enrichment.out)
+names(enrichment.parametric)
 ```
 
 Let's explore the output:
-
 ```{r}
-dim(enrichment.out$set.statistics)
-enrichment.out$set.statistics[1:5,1:3]
+enrichment.parametric$set.statistics[1:5,1]
 ```
 
 ```{r}
-dim(enrichment.out$pval.adj)
-enrichment.out$pval.adj[1:5,1:3]
-```
-
-```{r}
-View(enrichment.out$pval.adj)
+enrichment.parametric$pval.adj[1:5,1]
 ```
 
 # Plot results of enrichment analysis
 
-There are three main functions to plot the results of the gene set enrichment analysis:
+There are three main functions to plot the results of the gene set enrichment analysis:  
 
-- **plot_enrichment_heatmap**: plot a heatmap of gene sets (rows) versus factors (columns) where each entry correspons to the log p-value. This is useful to get an overview on which factors show statistically enriched pathways.
-- **plot_enrichment**: plot the top significant pathways for a specific factor
-- **plot_enrichment_detailed**: plot a detailed output, highlighting the genes that are contributing to the enrichment of each pathway.
+- **plot_enrichment_heatmap**: plot a heatmap of gene sets (rows) versus factors (columns) where each entry correspons to the log p-value. This is useful to get an overview on which factors show statistically enriched pathways.  
+- **plot_enrichment**: plot the top significant pathways for a specific factor.  
+- **plot_enrichment_detailed**: plot a detailed output, highlighting the genes that are contributing to the enrichment of each pathway.  
 
-Each row corresponds to a significant pathway, sorted by statistical significance, and each dot corresponds to a gene. 
-For each pathway, we display the top genes of the pathway sorted by the corresponding feature statistic (by default, the absolute value of the loading) The top genes with the highest statistic (max.genes argument) are displayed and labeled in black. The remaining genes are colored in grey.
-
-
+The heatmap shows that all three factors have some enriched pathways
 ```{r}
-plot_enrichment_heatmap(enrichment.out)
+plot_enrichment_heatmap(enrichment.parametric)
 ```
 
+The lineplot shows that Factor 1 is enriched for lipid metabolism
 ```{r}
-plot_enrichment(enrichment.out, factor = 3, max.pathways = 15)
+plot_enrichment(enrichment.parametric, 
+  factor = 1, 
+  max.pathways = 15
+)
+```
+
+This plot shows that all enriched pathways are driven by the same genes: Apolipoproteins such as APOE, APOA1 and APOM.
+```{r}
+plot_enrichment_detailed(enrichment.parametric, 
+  factor = 1, 
+  max.genes = 8, 
+  max.pathways = 5
+)
+```
+
+The results above suggest that Apolipoproteins are highly expressed in samples with negative factor values. Let's check so:
+```{r}
+genes <- list("APOA1","APOE")
+
+genes %>% map(~ plot_factors(model, 
+  factors = c(1,2), 
+  color_by = ., 
+  scale = T,
+  legend = F
+)) %>% cowplot::plot_grid(plotlist=., nrow=1)
 ```
 
 
+# Compare different statistical tests
 
-# Compare different feature.statistics
-
+Let's run the correlation-adjusted parametric test:
 ```{r}
-
+enrichment.parametric.adj <- run_enrichment(model,
+  view = "RNA", factors = 1:5,
+  feature.sets = MSigDB_v6.0_C5_mouse,
+  sign = "negative",
+  statistical.test = "cor.adj.parametric"
+)
 ```
 
-# Compare different set.statistics
+Compare the histogram of the p-values. Clearly the correlation-adjusted test results in more conservative estimates:
+```{r message=FALSE}
+dt <- rbind(
+  enrichment.parametric$pval[,1:3] %>% as.data.table %>% .[,c("test","pathway"):=list("parametric",1:.N)],
+  enrichment.parametric.adj$pval[,1:3] %>% as.data.table %>% .[,c("test","pathway"):=list("parametric.adj",1:.N)]
+) %>% melt(id.vars=c("test","pathway"), variable.name="factor")
 
-```{r}
-
+ggplot(dt, aes(x=value, fill=test)) +
+  facet_wrap(~factor, scales="free_y", nrow=1) +
+  geom_histogram() +
+  theme_bw() +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank()
+  )
 ```
 
+Yet, the resulting p-values are highlighy correlated between the two tests, as expected:
 
+```{r}
+dt2 <- dt %>% dcast(factor+pathway~test)
+
+ggplot(dt2, aes(x=parametric, y=parametric.adj)) +
+  geom_point(size=0.5) +
+  geom_abline(slope=1, intercept=0, color="orange") +
+  facet_wrap(~factor, scales="free_y", nrow=1) +
+  labs(x="Parametric p-value", y="Adjusted parametric p-value") +
+  theme_bw() +
+  theme(
+    legend.position = "top"
+  )
+```
 
 # sessionInfo
 

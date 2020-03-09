@@ -5,7 +5,7 @@
 \title{Plot output of gene set Enrichment Analysis}
 \usage{
 plot_enrichment(enrichment.results, factor, alpha = 0.1,
-  max.pathways = 25, adjust = TRUE, text_size = 1, dot_size = 5)
+  max.pathways = 25, text_size = 1, dot_size = 5)
 }
 \arguments{
 \item{enrichment.results}{output of \link{run_enrichment} function}
@@ -15,8 +15,6 @@ plot_enrichment(enrichment.results, factor, alpha = 0.1,
 \item{alpha}{p.value threshold to filter out gene sets}
 
 \item{max.pathways}{maximum number of enriched pathways to display}
-
-\item{adjust}{use adjusted p-values?}
 
 \item{text_size}{text size}
 

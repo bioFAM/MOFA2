@@ -78,6 +78,7 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
 * [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
 * [**Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): Figure 2 and 3 of the MOFA v1 paper.
+* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis.
 * **Analysis of CITE-seq data**: in preparation...
 * **Analysis of microbiome data**: in preparation...
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
@@ -87,8 +88,8 @@ We provide a [Shiny-based web server](http://www.ebi.ac.uk/shiny/mofa/) to inter
 You can also download the latest version from the corresponding [github repository](https://github.com/gtca/mofaplus-shiny/)
 
 ## Contact
-- e-mail: Ricard Argelaguet (ricard@ebi.ac.uk)
 - **Slack (recommended)**: we have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
+- e-mail: Ricard Argelaguet (ricard@ebi.ac.uk)
 
 
 
