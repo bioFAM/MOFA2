@@ -211,14 +211,13 @@ As it occurs in most complex Bayesian models, the solution obtained depends on t
 ### (6) FAQ on the downstream analysis
 
 **(6.1) How can I do Gene Set Enrichment Analysis?**  
-First, you need to create your binary gene set matrix where rows are feature sets and columns are features (genes). We have manually processed some of Reactome and MSigDB gene sets for mouse and human. Contact us if you would like to use the data.  
-Then, you will have to choose a local statistic per feature (the loading, by default), a global statistic per pathway (average loading, by default), and a statistical test. The most trustworthy one is a permutation test with a long number of iterations, but this is slow and a fast parametric tests is also available. However, note that it tends to inflate the p-values due to the correlation structure between related genes (see for example [Gatti2010](https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-11-574)).
+This is explained in the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html)
 
-**(6.2) Does MOFA show horshoe effects?**  
-One of our reviewers asked whether MOFA can display horseshoes or arch-shaped effects (see [this link](https://www.huber.embl.de/users/whuber/pub/horseshoe.html)). These patterns occure in linear dimensionality reduction methods, including MOFA, when a specific type of non-linear pattern dominates the data. Although this is not frequent, users of MOFA need to be aware of such artifacts and not naively interpret the results.
-
-**(6.3) How do I determine the number of factors?**  
+**(6.2) How do I determine the number of factors?**  
 Determining the most appropriate number of factors is an open question for factor analysis models. The optimal number of factors depends on the aim of the analysis, the dimensions of the assays, the complexity of the data, etc. If the aim is identifying the major sources of biological variation one typically considers the top factors (sorted by variance explained). In other tasks, such as imputation of missing values, even small sources of variation can be important and hence models should be trained with a large number of factors. In MOFA+ we have implemented Automatic Relevance Determination priors to prune unused factors during training . In practice, the user has to define the starting number of factors, and during model inference factors that do not explain any variation will be removed from the model. After the model is trained, the user can apply a second filtering by removing factors that explain less than a pre-specified value of variance (in each data modality).
 
-**(6.4) How can I assess the robustness of factors?** 
+**(6.3) How can I assess the robustness of factors?** 
 A procedure that can be applied to evaluate the robustness of factors is to downsample the number of samples and/or the number of features and inspect if the factors are consistently found. However, keep in mind that there could be cases where the full data set is required to detect small yet important sources of variation. Hence, lack of robustness under downsampling does not necessarily imply that a factor is not biologically meaningful.
+
+**(6.4) Does MOFA show horshoe effects?**  
+One of our reviewers asked whether MOFA can display horseshoes or arch-shaped effects (see [this link](https://www.huber.embl.de/users/whuber/pub/horseshoe.html)). These patterns occure in linear dimensionality reduction methods, including MOFA, when a specific type of non-linear pattern dominates the data. Although this is not frequent, users of MOFA need to be aware of such artifacts and not naively interpret the results.
