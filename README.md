@@ -1,3 +1,12 @@
+---
+title: "MOFA README"
+author: "Ricard Argelaguet"
+date: "`r Sys.Date()`"
+bibliography: bibliography.bib
+csl: biomed-central.csl
+link_citations: true
+---
+
 # Multi-Omics Factor Analysis v2 (MOFA+)
 
 ### Important notice: [MOFA v1](https://github.com/bioFAM/MOFA) is officially depreciated, please switch to [MOFA v2](https://github.com/bioFAM/MOFA2) even if you are not planning to use the novel functionalities.
@@ -15,8 +24,8 @@ In MOFA v2 (MOFA+) we added the following improvements:
 * **Stochastic inference for large data sets** using a stochastic variational framework. his can be powered by GPUs: enabling inference with very large data sets.  
 
 For more details you can read our papers: 
-- MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124
-- MOFA+: https://www.biorxiv.org/content/10.1101/837104v1
+- MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124  
+- MOFA+: https://www.biorxiv.org/content/10.1101/837104v1  
 
 <p align="center"> 
 <img src="images/figure1a_mofa2.png" style="width: 50%; height: 50%"/>​
@@ -74,7 +83,6 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Training a model in Python (jupyter notebook)**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
 * [**Analysis of a multi-group scRNA-seq data set (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
-<!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 * [**Integration of single-cell multi-modal data (scNMT-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
 * [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
@@ -83,6 +91,8 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * **Analysis of CITE-seq data**: in preparation...
 * **Analysis of microbiome data**: in preparation...
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
+
+<!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 
 ## Web server
 We provide a [Shiny-based web server](http://www.ebi.ac.uk/shiny/mofa/) to interactively explore MOFA models. Note that the web server only provides basic functionalities. For a comprehensive analysis please use the MOFA2 R package.  
@@ -221,3 +231,10 @@ A procedure that can be applied to evaluate the robustness of factors is to down
 
 **(6.4) Does MOFA show horshoe effects?**  
 One of our reviewers asked whether MOFA can display horseshoes or arch-shaped effects (see [this link](https://www.huber.embl.de/users/whuber/pub/horseshoe.html)). These patterns occure in linear dimensionality reduction methods, including MOFA, when a specific type of non-linear pattern dominates the data. Although this is not frequent, users of MOFA need to be aware of such artifacts and not naively interpret the results.
+
+## Citation
+Test [@Argelaguet2018]
+Test [@Argelaguet2019]
+
+<!-- [bib](references.bib) -->
+
