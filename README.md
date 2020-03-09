@@ -1,11 +1,3 @@
----
-title: "MOFA README"
-author: "Ricard Argelaguet"
-date: "`r Sys.Date()`"
-bibliography: bibliography.bib
-csl: biomed-central.csl
-link_citations: true
----
 
 # Multi-Omics Factor Analysis v2 (MOFA+)
 
@@ -233,8 +225,28 @@ A procedure that can be applied to evaluate the robustness of factors is to down
 One of our reviewers asked whether MOFA can display horseshoes or arch-shaped effects (see [this link](https://www.huber.embl.de/users/whuber/pub/horseshoe.html)). These patterns occure in linear dimensionality reduction methods, including MOFA, when a specific type of non-linear pattern dominates the data. Although this is not frequent, users of MOFA need to be aware of such artifacts and not naively interpret the results.
 
 ## Citation
-Test [@Argelaguet2018]
-Test [@Argelaguet2019]
 
-<!-- [bib](references.bib) -->
+    @article{Argelaguet2018,
+        author = {Argelaguet, R. and Velten, B. and Arnol, D. and Dietrich, S. and Zenz, T. and Marioni, J. C. and Buettner, F. and Huber, W. and Stegle, O.},
+        title = {Multi-Omics Factor Analysis-a framework for unsupervised integration of multi-omics data sets},
+        journal = {Mol Syst Biol},
+        volume = {14},
+        number = {6},
+        pages = {e8124},
+        ISSN = {1744-4292 (Electronic) 1744-4292 (Linking)},
+        DOI = {10.15252/msb.20178124},
+        url = {https://www.ncbi.nlm.nih.gov/pubmed/29925568},
+        year = {2018},
+        type = {Journal Article}
+    }
+
+    @article {Argelaguet2019,
+        author = {Argelaguet, Ricard and Arnol, Damien and Bredikhin, Danila and Deloro, Yonatan and Velten, Britta and Marioni, John C and Stegle, Oliver},
+        title = {MOFA+: a probabilistic framework for comprehensive integration of structured single-cell data},
+        year = {2019},
+        doi = {10.1101/837104},
+        publisher = {Cold Spring Harbor Laboratory},
+        URL = {https://www.biorxiv.org/content/early/2019/11/09/837104},
+        journal = {bioRxiv}
+    }
 
