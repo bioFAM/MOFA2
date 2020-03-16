@@ -31,7 +31,7 @@ library(MOFA2)
 # Load trained model
 
 ```{r }
-model <- load_model("/Users/ricard/data/mofa2_simulations/test/hdf5/test.hdf5")
+model <- load_model("test.hdf5")
 ```
 
 ## Overview of data
@@ -53,7 +53,7 @@ Nsamples = sum(model@dimensions$N)
 sample_metadata <- data.frame(
   sample = samples_names(model)[[1]],
   condition = sample(c("A","B"), size = Nsamples, replace = T),
-  age = sample(1:100, size = Nsamples)
+  age = sample(1:100, size = Nsamples, replace = T)
 )
 
 samples_metadata(model) <- sample_metadata
@@ -143,7 +143,7 @@ Weights can be plotted using `plot_weights` (beeswarm plots) or `plot_top_weight
 
 ```{r }
 plot_weights(model,
-  view = "view0",
+  view = "view_0",
   factor = 1,
   nfeatures = 10,     # Number of features to highlight
   scale = T,          # Scale weights from -1 to 1
@@ -153,7 +153,7 @@ plot_weights(model,
 
 ```{r }
 plot_top_weights(model,
-  view = "view0",
+  view = "view_0",
   factor = 1,
   nfeatures = 10
 )
@@ -168,7 +168,7 @@ Instead of looking at weights, it is useful to observe the coordinated heterogen
 Heatmap of observations. Top features are selected by its weight in the selected factor. By default, samples are ordered according to their corresponding factor value.
 ```{r}
 plot_data_heatmap(model,
-  view = "view1",         # view of interest
+  view = "view_1",         # view of interest
   factor = 1,             # factor of interest
   features = 20,          # number of features to plot (they are selected by weight)
   
@@ -183,7 +183,7 @@ plot_data_heatmap(model,
 Scatter plots of observations vs factor values. It is useful to add a linear regression estimate to visualise if the relationship between (top) features and factor values is linear.
 ```{r}
 plot_data_scatter(model,
-  view = "view1",         # view of interest
+  view = "view_1",         # view of interest
   factor = 1,             # factor of interest
   features = 5,           # number of features to plot (they are selected by weight)
   add_lm = TRUE,          # add linear regression
