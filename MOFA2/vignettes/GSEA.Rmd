@@ -33,7 +33,7 @@ Sometimes factors cannot be easily characterised by simply inspecting the genes 
 These are the steps for doing Gene Set Enrichment Analysis (GSEA) with MOFA:  
 
 - **(1) Define your gene set matrix**: this can be specified as a binary matrix where rows are gene sets and columns are genes. A value of 1 indicates that gene `j` belongs to pathway `i`. A value of 0 indicates elsewise.  
-- **(2) Select a gene set statistic**: the statisic used to quantify the scores at the pathway level. Must be one of the following: `mean.diff` (difference in the mean weight between foreground and background) or `rank.sum` (difference in the sum of ranks between foreground and background).  
+- **(2) Select a gene set statistic**: the statistic used to quantify the scores at the pathway level. Must be one of the following: `mean.diff` (difference in the mean weight between foreground and background) or `rank.sum` (difference in the sum of ranks between foreground and background).  
 - **(3) Select a statistical test**: the statistical test used to compute the significance of the gene set statistics under a competitive null hypothesis. Must be one of the following: `parametric` (a simple and very liberal parametric t-test), `cor.adj.parametric` (parametric t-test adjusted by the correlation between features), `permutation` (unparametric, the null distribution is created by permuting the weights. This option is computationally expensive, but it preserves the correlation structure between features in the data.).  
 
 For more details, we refer the reader to the following paper: [Principal component gene set enrichment (PCGSE)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4543476). The function we implemented is based on the \code{pcgse} function with some modifications.
@@ -91,8 +91,8 @@ Give them a shot, but it is likely that you will have to create a tailored gene 
 # Load pre-computed model
 
 ```{r}
-# load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_mofa.RData"))
-model <- readRDS("/Users/ricard/data/gastrulation10x_mofa/model.rds")
+ load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_mofa.RData"))
+#model <- readRDS("/Users/ricard/data/gastrulation10x_mofa/model.rds")
 
 model
 ```

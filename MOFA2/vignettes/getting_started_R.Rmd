@@ -183,7 +183,7 @@ MOFAobject <- prepare_mofa(
 
 Train the MOFA model
 ```{r eval=FALSE}
-outfile = "/Users/ricard/test.hdf5"
+outfile = paste0(getwd(),"/model.hdf5")
 MOFAobject.trained <- run_mofa(MOFAobject, outfile)
 ```
 

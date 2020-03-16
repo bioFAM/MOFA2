@@ -104,7 +104,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     # Predefined data.frame
     if (is.data.frame(annotation_samples)) {
       annotation_samples <- annotation_samples[colnames(data), , drop = FALSE]
-      
+
     # Extract metadata from the sample metadata  
     } else if (is.character(annotation_samples)) {
       stopifnot(annotation_samples%in%colnames(object@samples_metadata))
