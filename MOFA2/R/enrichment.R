@@ -82,7 +82,8 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Check if some features do not intersect between the feature sets and the observed data and remove them
   features <- intersect(colnames(data),colnames(feature.sets))
-  if(length(features) == 0 ) stop("Feature names in feature.sets do not match feature names in model.")
+  if(length(features)== 0) stop("Feature names in feature.sets do not match feature names in model.")
+  message(sprintf("Intersecting features names in the model and the gene set annotation results in a total of %d features.",length(features)))
   data <- data[,features]
   W <- W[features,]
   feature.sets <- feature.sets[,features]
