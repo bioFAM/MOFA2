@@ -90,7 +90,7 @@ view.colors <- c(
   "Enhancer methylation" = "#F37A71",
   "Promoter methylation" = "#F37A71"
 )
-view.colors = view.colors[views(MOFAmodel)]
+view.colors = view.colors[views_names(MOFAmodel)]
 
 plot_data_overview(MOFAmodel, colors = view.colors)
 ```
@@ -328,7 +328,7 @@ plot_weights(MOFAmodel,
 
 ## Visualisation of DNA methylation patterns
 
-Next step would be to zoom in into those enhancers and characterised them in detail:
+Next step would be to zoom in into those enhancers and characterise them in detail:
 
 ```{r}
 df <- MOFAmodel@samples_metadata[,c("sample","lineage")]
@@ -341,7 +341,7 @@ plot_data_heatmap(MOFAmodel,
   features = 15,
   # extra arguments passed to `pheatmap`
   show_colnames = F, show_rownames = F, 
-  annotation_col = df,  annotation_colors = list("lineage"=colors),
+  annotation_samples = df,  annotation_colors = list("lineage"=colors),
   cluster_cols = F 
 )
 ```

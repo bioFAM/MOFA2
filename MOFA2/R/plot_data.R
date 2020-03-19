@@ -107,8 +107,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
       if (any(!rownames(annotation_samples) %in% colnames(data))) {
         stop("There are rownames in annotation_samples that do not correspond to sample names in the model")
       }
-      annotation_samples <- annotation_samples[colnames(data),,drop=F]
-      
+      annotation_samples <- annotation_samples[colnames(data), , drop = FALSE]
     # Extract metadata from the sample metadata  
     } else if (is.character(annotation_samples)) {
       stopifnot(annotation_samples%in%colnames(object@samples_metadata))

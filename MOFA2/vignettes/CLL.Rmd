@@ -140,7 +140,7 @@ p[[2]]
 We can also inspect the variance explained by the MOFA factors for individual features. 
 
 ```{r}
-features2plot <- MOFA2::features(MOFAmodel)$Drugs[grep("D_002|D_001", features(MOFAmodel)$Drugs)]
+features2plot <- MOFA2::features_names(MOFAmodel)$Drugs[grep("D_002|D_001", features_names(MOFAmodel)$Drugs)]
 ```
 
 Variance explained by all factors across all groups
@@ -159,7 +159,7 @@ plot_variance_explained_per_feature(
 ## Visualisation of factor values
 
 Each factor ordinates samples along a one-dimensional axis that is centered at zero. Samples with different signs indicate opposite phenotypes, with higher absolute value indicating a stronger phenotype. 
-Here we plot all Factor values and we color samples by IGHV status, which like in the original MOFA publicaiton is captured by Factor 1.
+Here we plot all Factor values and we color samples by IGHV status, which like in the original MOFA publication is captured by Factor 1.
 
 ```{r}
 plot_factor(MOFAmodel, 
@@ -218,7 +218,7 @@ plot_weights(MOFAmodel,
 ```
 
 # Enrichment analysis
-In addition to exploring the weights for each factor, we can use enrichment analysis to look for siginificant associaitons of factors to genesets. Here, we use the Reactome genesets for illustrations, which is contained in the `MOFAdata` package.
+In addition to exploring the weights for each factor, we can use enrichment analysis to look for siginificant associations of factors to genesets. Here, we use the Reactome genesets for illustrations, which is contained in the `MOFAdata` package.
 ```{r}
 # load geneset annotations 
 utils::data(reactomeGS)
