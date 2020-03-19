@@ -392,7 +392,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     if (variable=="Z") {
       tmp <- reshape2::melt(exp, na.rm=T)
       colnames(tmp) <- c("sample", "factor", "value", "group")
-      
+      tmp$sample <- as.character(tmp$sample)
       factor.cols <- c("sample", "factor", "group")
       factor.cols[factor.cols] <- lapply(factor.cols[factor.cols], factor)
     }
