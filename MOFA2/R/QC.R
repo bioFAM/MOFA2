@@ -103,7 +103,7 @@ quality_control <- function(object, verbose = FALSE) {
       if (verbose == TRUE) message("Checking for intercept factors...")
       if (!is.null(object@data)) {
         factors <- do.call("rbind",get_factors(object))
-        r <- suppressWarnings( t(do.call('cbind', lapply(object@data, function(x) 
+        r <- suppressWarnings( t(do.call('rbind', lapply(object@data, function(x) 
           abs(cor(colMeans(do.call("cbind",x),na.rm=T),factors, use="pairwise.complete.obs"))
         ))) )
         intercept_factors <- which(rowSums(r>0.75)>0)
