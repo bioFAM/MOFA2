@@ -122,7 +122,7 @@ class entry_point(object):
             self.data_opts['samples_names'] = [ ["sample%d_group%d" % (n,g) for n in range(N[g])] for g in range(G) ]
         else:
             assert len(samples_names)==self.dimensionalities["G"], "samples_names must a nested list with length equivalent to the number of groups"
-            self.data_opts['samples_names']  = samples_names
+            self.data_opts['samples_names'] = samples_names
 
         # Check for duplicated entries
         assert len(self.data_opts['groups_names']) == len(set(self.data_opts['groups_names'])), "Duplicated groups names"
@@ -279,7 +279,7 @@ class entry_point(object):
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None):
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None, use_metadata=None):
         """ Method to input the data in AnnData format
 
         PARAMETERS
@@ -346,15 +346,19 @@ class entry_point(object):
         D = self.dimensionalities["D"] = [data[0].shape[1]]  # Feature may have been filtered
         n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby(groups_label).size().values
 
-        # Define views names and features names
+        # Define views names and features names and metadata
         self.data_opts['views_names'] = ["rna"]
         self.data_opts['features_names'] = [adata.var_names]
+        if use_metadata:
+            self.data_opts['features_metadata'] = [adata.var]
 
-        # Define groups and samples names
+        # Define groups and samples names and metadata
         if groups_label is None:
             self.data_opts['groups_names'] = ["group1"]
             self.data_opts['samples_names'] = [adata.obs.index.values.tolist()]
             self.data_opts['samples_groups'] = ["group1"] * N
+            if use_metadata:
+                self.data_opts['samples_metadata'] = [adata.obs]
         else:
             # While grouping the pandas.DataFrame, the group_label would be sorted.
             # Hence the naive implementation `adata.obs[groups_label].unique()` to get group names
@@ -364,8 +368,11 @@ class entry_point(object):
             self.data_opts['groups_names'] = [str(g) for g in adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values]
             # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
             self.data_opts['samples_names'] = adata.obs.reset_index(drop=False).rename(columns={adata.obs.index.name:'index'}).groupby(groups_label)["index"].apply(list).tolist()
-            # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
-            self.data_opts['samples_groups'] = adata.obs[groups_label].apply(str).values
+            # List of names of groups for samples ordered as they are in the original data, i.e. [group2, group1, group1, ...]
+            self.data_opts['samples_groups'] = adata.obs[groups_label].values.astype(str)
+            if use_metadata:
+                # List of metadata tables for each group of samples
+                self.data_opts['samples_metadata'] = [g for _, g in adata.obs.groupby(groups_label)]
 
 
         # If everything successful, print verbose message
@@ -376,7 +383,7 @@ class entry_point(object):
 
 
         # Store intercepts
-        self.intercepts = [None]
+        self.intercepts = []
 
         # Define likelihoods
         if likelihoods is None:
@@ -390,7 +397,7 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         for g in self.data_opts['groups_names']:
             samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
-            self.intercepts[0] = np.nanmean(data[0][samples_idx,:], axis=0)
+            self.intercepts.append(np.nanmean(data[0][samples_idx,:], axis=0))
         self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_loom(self, loom, groups_label=None, layer=None, cell_id="CellID"):
@@ -798,11 +805,16 @@ class entry_point(object):
           features_names = self.data_opts['features_names'],
           views_names = self.data_opts['views_names'],
           groups_names = self.data_opts['groups_names'],
+          samples_metadata = self.data_opts["samples_metadata"],
+          features_metadata = self.data_opts["features_metadata"],
           compression_level = 9
         )
 
         # Save sample and feature names
         tmp.saveNames()
+
+        # Save metadata
+        tmp.saveMetaData()
 
         # Save expectations
 
@@ -846,7 +858,7 @@ class entry_point(object):
 
 
 def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: bool = None, 
-         features_subset: Optional[str] = None,
+         features_subset: Optional[str] = None, use_metadata: bool = False,
          likelihood: Optional[Union[str, List[str]]] = None, n_factors: int = 10,
          scale_views: bool = False, scale_groups: bool = False,
          ard_weights: bool = True, ard_factors: bool = True,
@@ -868,6 +880,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     use_raw (optional): use raw slot of AnnData as input values
     use_layer (optional): use a specific layer of AnnData as input values (supersedes use_raw option)
     features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
+    use_metadata (optional): if to load metadata from the AnnData object (.obs and .var tables), False by default
     likelihood (optional): likelihood to use, default is guessed from the data
     n_factors (optional): number of factors to train the model with
     scale_views (optional): scale views to unit variance
@@ -895,8 +908,8 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     lik = [likelihood] if likelihood is not None else None
 
     ent.set_data_options(scale_views=scale_views, scale_groups=scale_groups)
-    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer, 
-                              likelihoods=lik, features_subset=features_subset)
+    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer,
+                              likelihoods=lik, features_subset=features_subset, use_metadata=use_metadata)
     ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_factors, 
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
