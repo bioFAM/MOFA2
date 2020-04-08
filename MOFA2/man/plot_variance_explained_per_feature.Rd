@@ -6,10 +6,20 @@
 
 Returns a tile plot with a group on the X axis and a feature along the Y axis}
 \usage{
-plot_variance_explained_per_feature(object, view, features = 10,
-  split_by_factor = FALSE, group_features_by = NULL, groups = "all",
-  factors = "all", min_r2 = 0, max_r2 = NULL, legend = TRUE,
-  return_data = FALSE, ...)
+plot_variance_explained_per_feature(
+  object,
+  view,
+  features = 10,
+  split_by_factor = FALSE,
+  group_features_by = NULL,
+  groups = "all",
+  factors = "all",
+  min_r2 = 0,
+  max_r2 = NULL,
+  legend = TRUE,
+  return_data = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}

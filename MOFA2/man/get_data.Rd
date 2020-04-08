@@ -4,8 +4,15 @@
 \alias{get_data}
 \title{Get data}
 \usage{
-get_data(object, views = "all", groups = "all", features = "all",
-  as.data.frame = FALSE, add_intercept = TRUE, na.rm = TRUE)
+get_data(
+  object,
+  views = "all",
+  groups = "all",
+  features = "all",
+  as.data.frame = FALSE,
+  add_intercept = TRUE,
+  na.rm = TRUE
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}

@@ -15,5 +15,5 @@ biocViews: DimensionReduction, Bayesian, Visualization
 VignetteBuilder: knitr
 LazyData: true
 NeedsCompilation: yes
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 SystemRequirements: Python (>=3), numpy, pandas, h5py, scipy, argparse, sklearn, mofapy2

@@ -4,10 +4,21 @@
 \alias{plot_data_heatmap}
 \title{Plot heatmap of relevant features}
 \usage{
-plot_data_heatmap(object, factor, view = 1, groups = "all",
-  features = 50, annotation_features = NULL,
-  annotation_samples = NULL, transpose = FALSE, imputed = FALSE,
-  denoise = FALSE, max.value = NULL, ...)
+plot_data_heatmap(
+  object,
+  factor,
+  view = 1,
+  groups = "all",
+  features = 50,
+  annotation_features = NULL,
+  annotation_samples = NULL,
+  transpose = FALSE,
+  imputed = FALSE,
+  denoise = FALSE,
+  max.value = NULL,
+  min.value = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -34,7 +45,9 @@ Default corresponds to features as rows and samples as columns.}
 
 \item{denoise}{logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors.}
 
-\item{max.value}{numeric indicating the maximum value to display in the heatmap (i.e. the matrix values will be capped at \code{max.value} ).
+\item{max.value}{numeric indicating the maximum value to display in the heatmap (i.e. the matrix values will be capped at \code{max.value} ).}
+
+\item{min.value}{numeric indicating the minimum value to display in the heatmap (i.e. the matrix values will be capped at \code{min.value} ).
 See \code{\link{predict}}. Default is FALSE.}
 
 \item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}

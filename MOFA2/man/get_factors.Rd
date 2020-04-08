@@ -4,8 +4,13 @@
 \alias{get_factors}
 \title{Get fractors}
 \usage{
-get_factors(object, groups = "all", factors = "all", scale = FALSE,
-  as.data.frame = FALSE)
+get_factors(
+  object,
+  groups = "all",
+  factors = "all",
+  scale = FALSE,
+  as.data.frame = FALSE
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

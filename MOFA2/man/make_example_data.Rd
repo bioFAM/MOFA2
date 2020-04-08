@@ -4,8 +4,14 @@
 \alias{make_example_data}
 \title{Simulate a data set using the generative model of MOFA}
 \usage{
-make_example_data(n_views = 3, n_features = 100, n_samples = 50,
-  n_groups = 1, n_factors = 5, likelihood = "gaussian")
+make_example_data(
+  n_views = 3,
+  n_features = 100,
+  n_samples = 50,
+  n_groups = 1,
+  n_factors = 5,
+  likelihood = "gaussian"
+)
 }
 \arguments{
 \item{n_views}{number of views}

@@ -4,8 +4,14 @@
 \alias{predict}
 \title{Do predictions using a fitted MOFA}
 \usage{
-predict(object, views = "all", groups = "all", factors = "all",
-  type = c("inRange", "response", "link"), add_intercept = TRUE)
+predict(
+  object,
+  views = "all",
+  groups = "all",
+  factors = "all",
+  type = c("inRange", "response", "link"),
+  add_intercept = TRUE
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}

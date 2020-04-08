@@ -128,7 +128,7 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
   }
   
   # Plot
-  if (length(factors_df$group)>1) {
+  if (length(unique(factors_df$group))>1) {
     p <- ggplot(to.plot, aes_string(x="group", y="level", fill="value")) +
       facet_wrap(~factor)
   } else {

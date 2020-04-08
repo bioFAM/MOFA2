@@ -4,12 +4,28 @@
 \alias{plot_factor}
 \title{Beeswarm plot of factor values}
 \usage{
-plot_factor(object, factors = 1, groups = "all", group_by = "group",
-  color_by = "group", shape_by = NULL, add_dots = TRUE,
-  dot_size = 2, dot_alpha = 1, add_violin = FALSE,
-  violin_alpha = 0.5, color_violin = TRUE, show_missing = TRUE,
-  scale = FALSE, dodge = FALSE, color_name = "", shape_name = "",
-  stroke = NULL, legend = TRUE, rasterize = FALSE)
+plot_factor(
+  object,
+  factors = 1,
+  groups = "all",
+  group_by = "group",
+  color_by = "group",
+  shape_by = NULL,
+  add_dots = TRUE,
+  dot_size = 2,
+  dot_alpha = 1,
+  add_violin = FALSE,
+  violin_alpha = 0.5,
+  color_violin = TRUE,
+  show_missing = TRUE,
+  scale = FALSE,
+  dodge = FALSE,
+  color_name = "",
+  shape_name = "",
+  stroke = NULL,
+  legend = TRUE,
+  rasterize = FALSE
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

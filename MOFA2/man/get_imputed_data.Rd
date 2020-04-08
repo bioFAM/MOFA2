@@ -4,9 +4,15 @@
 \alias{get_imputed_data}
 \title{Get imputed data}
 \usage{
-get_imputed_data(object, views = "all", groups = "all",
-  features = "all", as.data.frame = FALSE, add_intercept = TRUE,
-  only_mean = TRUE)
+get_imputed_data(
+  object,
+  views = "all",
+  groups = "all",
+  features = "all",
+  as.data.frame = FALSE,
+  add_intercept = TRUE,
+  only_mean = TRUE
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

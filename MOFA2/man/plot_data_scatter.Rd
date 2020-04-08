@@ -4,10 +4,23 @@
 \alias{plot_data_scatter}
 \title{Scatterplots of feature values against latent factors}
 \usage{
-plot_data_scatter(object, factor, view = 1, groups = "all",
-  features = 10, sign = "all", color_by = NULL, legend = TRUE,
-  alpha = 1, shape_by = NULL, stroke = NULL, dot_size = 1,
-  text_size = 5, add_lm = TRUE, imputed = FALSE)
+plot_data_scatter(
+  object,
+  factor,
+  view = 1,
+  groups = "all",
+  features = 10,
+  sign = "all",
+  color_by = NULL,
+  legend = TRUE,
+  alpha = 1,
+  shape_by = NULL,
+  stroke = NULL,
+  dot_size = 2.5,
+  text_size = 5,
+  add_lm = TRUE,
+  imputed = FALSE
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -46,7 +59,7 @@ plot_data_scatter(object, factor, view = 1, groups = "all",
 
 \item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
 
-\item{dot_size}{numeric indicating dot size (default is 1).}
+\item{dot_size}{numeric indicating dot size (default is 5).}
 
 \item{text_size}{numeric indicating text size (default is 5).}
 

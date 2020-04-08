@@ -4,8 +4,14 @@
 \alias{impute}
 \title{Impute missing values from a fitted MOFA}
 \usage{
-impute(object, views = "all", groups = "all", factors = "all",
-  type = c("inRange", "response", "link"), add_intercept = TRUE)
+impute(
+  object,
+  views = "all",
+  groups = "all",
+  factors = "all",
+  type = c("inRange", "response", "link"),
+  add_intercept = TRUE
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}

@@ -7,8 +7,13 @@
 \usage{
 create_mofa(data, groups = NULL, ...)
 
-.create_mofa_from_seurat(seurat, groups, assays = "RNA", slot = "data",
-  features = NULL)
+.create_mofa_from_seurat(
+  seurat,
+  groups,
+  assays = "RNA",
+  slot = "data",
+  features = NULL
+)
 }
 \arguments{
 \item{data}{Input data can be in several formats:
@@ -22,13 +27,7 @@ create_mofa(data, groups = NULL, ...)
   Missing values must be filled in prior to creating the MOFA object (see the example)}
   }}
 
-\item{groups}{information about the groups:
-\itemize{
-\item{If data is a data.frame this argument is not used}.
-\item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
-\item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
-Default is \code{NULL} (on groups)
-}}
+\item{groups}{a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample}
 
 \item{seurat}{Seurat object}
 
@@ -37,8 +36,6 @@ Default is \code{NULL} (on groups)
 \item{slot}{assay slot to be used such as scale.data or data}
 
 \item{features}{a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used}
-
-\item{groups}{a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object

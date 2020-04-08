@@ -4,9 +4,19 @@
 \alias{plot_variance_explained}
 \title{Plot variance explained by the model}
 \usage{
-plot_variance_explained(object, x = "view", y = "factor",
-  split_by = NA, plot_total = FALSE, factors = "all", min_r2 = 0,
-  max_r2 = NULL, legend = TRUE, use_cache = TRUE, ...)
+plot_variance_explained(
+  object,
+  x = "view",
+  y = "factor",
+  split_by = NA,
+  plot_total = FALSE,
+  factors = "all",
+  min_r2 = 0,
+  max_r2 = NULL,
+  legend = TRUE,
+  use_cache = TRUE,
+  ...
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object}

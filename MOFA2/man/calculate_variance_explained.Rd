@@ -4,8 +4,12 @@
 \alias{calculate_variance_explained}
 \title{Calculate variance explained by the model}
 \usage{
-calculate_variance_explained(object, views = "all", groups = "all",
-  factors = "all")
+calculate_variance_explained(
+  object,
+  views = "all",
+  groups = "all",
+  factors = "all"
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}

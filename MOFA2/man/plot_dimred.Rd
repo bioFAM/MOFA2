@@ -4,11 +4,22 @@
 \alias{plot_dimred}
 \title{Plot dimensionality reduction based on MOFA factors}
 \usage{
-plot_dimred(object, method = c("UMAP", "TSNE"), groups = "all",
-  show_missing = TRUE, color_by = NULL, shape_by = NULL,
-  color_name = NULL, shape_name = NULL, dot_size = 1.5,
-  stroke = NULL, alpha_missing = 1, legend = TRUE,
-  return_data = FALSE, ...)
+plot_dimred(
+  object,
+  method = c("UMAP", "TSNE"),
+  groups = "all",
+  show_missing = TRUE,
+  color_by = NULL,
+  shape_by = NULL,
+  color_name = NULL,
+  shape_name = NULL,
+  dot_size = 1.5,
+  stroke = NULL,
+  alpha_missing = 1,
+  legend = TRUE,
+  return_data = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

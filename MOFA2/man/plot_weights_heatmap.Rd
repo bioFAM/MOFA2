@@ -4,8 +4,14 @@
 \alias{plot_weights_heatmap}
 \title{Plot heatmap of the weights}
 \usage{
-plot_weights_heatmap(object, view = 1, features = "all",
-  factors = "all", threshold = 0, ...)
+plot_weights_heatmap(
+  object,
+  view = 1,
+  features = "all",
+  factors = "all",
+  threshold = 0,
+  ...
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
