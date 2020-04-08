@@ -88,3 +88,75 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   
 }
 
+
+
+#' @title Summarise factor values using external groups
+#' @name summarise_factors
+#' @description Function to summarise factor scores using a discrete grouping of samples.
+#' @param object a trained \code{\link{MOFA}} object.
+#' @param df a data.frame with the columns "sample" and "level", where level is a factor with discrete group assigments for each sample.
+#' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.
+#' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
+#' @param abs logical indicating whether to take the absolute value of the factors (default is \code{FALSE}).
+#' @param return_data logical indicating whether to return the fa instead of plotting
+#' @import ggplot2
+#' @importFrom dplyr group_by summarise mutate
+#' @importFrom magrittr %>%
+#' @export
+summarise_factors <- function(object, df, factors = "all", groups = "all", abs = FALSE, return_data = FALSE) {
+  
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  stopifnot(is.data.frame(df))
+  stopifnot((c("sample","level")%in%colnames(df)))
+  stopifnot(df$sample %in% unlist(samples_names(object)))
+  stopifnot(length(df$level)>1)
+  df$level <- as.factor(df$level)
+  
+  # Get factors
+  factors <- .check_and_get_factors(object, factors)
+  factors_df <- get_factors(object, factors = factors, groups = groups, as.data.frame=TRUE) %>% 
+    group_by(factor) %>% mutate(value=value/max(abs(value),na.rm=T)) # Scale factor values
+  
+  # Merge data.frames
+  to.plot <- merge(factors_df, df, by="sample") %>% 
+    group_by(level,factor,group) %>%
+    summarise(value=median(value,na.rm=T))
+  
+  if (isTRUE(abs)) {
+    to.plot$value <- abs(to.plot$value)
+  }
+  
+  # Plot
+  if (length(factors_df$group)>1) {
+    p <- ggplot(to.plot, aes_string(x="group", y="level", fill="value")) +
+      facet_wrap(~factor)
+  } else {
+    p <- ggplot(to.plot, aes_string(x="factor", y="level", fill="value"))
+  }
+  
+  p <- p +
+    geom_tile() +
+    theme_classic() +
+    labs(x="", y="", fill="Score") +
+    theme(
+      axis.text.x = element_text(color="black", angle=30, hjust=1),
+      axis.text.y = element_text(color="black")
+    )
+
+  if (isTRUE(abs)) {
+    p <- p + scale_fill_gradient2(low = "white", high = "red")
+  } else {
+    # center the color scheme at 0
+    p <- p + scale_fill_distiller(type = "div", limit = max(abs(to.plot$value),na.rm=T)*c(-1,1))
+  } 
+  
+  # Return data or plot
+  if (isTRUE(return_data)) {
+    return(to.plot)
+  } else {
+    return(p)
+  }
+}
+
+

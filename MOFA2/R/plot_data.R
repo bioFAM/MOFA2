@@ -23,6 +23,7 @@
 #' @param imputed logical indicating whether to plot the imputed data instead of the original data. Default is FALSE.
 #' @param denoise logical indicating whether to plot a denoised version of the data reconstructed using the MOFA factors. 
 #' @param max.value numeric indicating the maximum value to display in the heatmap (i.e. the matrix values will be capped at \code{max.value} ).
+#' @param min.value numeric indicating the minimum value to display in the heatmap (i.e. the matrix values will be capped at \code{min.value} ).
 #' See \code{\link{predict}}. Default is FALSE.
 #' @param ... further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}
 #' @details One of the first steps for the annotation of a given factor is to visualise the corresponding weights, 
@@ -35,7 +36,7 @@
 #' @export
 plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features = 50, 
     annotation_features = NULL, annotation_samples = NULL, transpose = FALSE, 
-    imputed = FALSE, denoise = FALSE, max.value = NULL, ...) {
+    imputed = FALSE, denoise = FALSE, max.value = NULL, min.value = NULL, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -136,10 +137,10 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     annotation_features <- annotation_samples
     data <- t(data)
   }
-
-  if (!is.null(max.value)) {
-    data[data>=max.value] <- max.value
-  }
+  
+  # Cap values
+  if (!is.null(max.value)) data[data>=max.value] <- max.value
+  if (!is.null(min.value)) data[data<=min.value] <- min.value
   
   # Plot heatmap
   pheatmap(data, 
@@ -178,7 +179,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' \item a dataframe with two columns: "sample" and "shape"
 #' }
 #' @param legend logical indicating whether to add a legend
-#' @param dot_size numeric indicating dot size (default is 1).
+#' @param dot_size numeric indicating dot size (default is 5).
 #' @param text_size numeric indicating text size (default is 5).
 #' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
 #' @param alpha numeric indicating dot transparency (default is 1).
@@ -195,7 +196,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @export
 plot_data_scatter <- function(object, factor, view = 1, groups = "all", features = 10, sign = "all",
                               color_by = NULL, legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
-                              dot_size = 1, text_size = 5, add_lm = TRUE, imputed = FALSE) {
+                              dot_size = 2.5, text_size = 5, add_lm = TRUE, imputed = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -261,16 +262,19 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   df2 <- get_data(object, groups = groups, features = foo, as.data.frame = TRUE)
   df <- dplyr::left_join(df1, df2, by = "sample")
   
+  # (Q) WHY??? Remove missing values 
+  df <- df[!is.na(df$value),]
+  
   # Set stroke
-  if (is.null(stroke)) if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
+  if (is.null(stroke)) if (length(unique(df$sample))<250) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value")) + 
     geom_point(aes_string(fill = "color_by", shape = "shape_by"), colour = "black", size = dot_size, stroke = stroke, alpha = alpha) +
-    # scale_shape_manual(values=c(19,1,2:18)[seq_len(length(unique(shape_by)))]) +
     labs(x="Factor values", y="") +
     facet_wrap(~feature, scales="free_y") +
-    theme_classic() + theme(
+    theme_classic() + 
+    theme(
       axis.text = element_text(size = rel(1), color = "black"), 
       axis.title = element_text(size = rel(1.0), color="black"), 
       legend.key = element_rect(fill = "white")
