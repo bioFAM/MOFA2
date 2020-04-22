@@ -58,6 +58,15 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     scale_views = object@data_options$scale_views,
     scale_groups = object@data_options$scale_groups
   )
+
+  # Set metadata
+  if (.hasSlot(object, "samples_metadata")) {
+    mofa_entrypoint$data_opts$samples_metadata <- r_to_py(lapply(object@data_options$groups, function(g) object@samples_metadata[object@samples_metadata$group == g,]))
+  }
+
+  if (.hasSlot(object, "features_metadata")) {
+    mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views, function(m) object@features_metadata[object@features_metadata$view == m,])))
+  }
   
   # Set the data
   mofa_entrypoint$set_data_matrix(
