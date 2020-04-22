@@ -229,7 +229,7 @@ get_default_training_options <- function(object) {
 #' \itemize{
 #'  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
-#'  \item{\strong{scale_views}:}{ logical indicating whether to scale groups to have the same unit variance. 
+#'  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
 #'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
 #' }
 #' @return Returns a list with the default data options.
