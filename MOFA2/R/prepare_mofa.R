@@ -166,7 +166,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
 #'  Default is 1000. Convergence is assessed using the ELBO statistic.}
 #'  \item{\strong{drop_factor_threshold}:}{ (not functional yet) numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
-#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow" (deltaELBO = 5e-6), "medium" (detaELBO = 5e-5) or "fast" (deltaELBO = 5e-4).}
+#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast", corresponding to 5e-7\%, 5e-6\% or 5e-5\% deltaELBO change w.r.t. to the ELBO at the first iteration. }
 #'  \item{\strong{drop_factor_threshold}:}{ minimum variance explained threshold to drop inactive factors. Default is -1 (no dropping of factors)}
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
 #'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
@@ -229,7 +229,7 @@ get_default_training_options <- function(object) {
 #' \itemize{
 #'  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
-#'  \item{\strong{scale_views}:}{ logical indicating whether to scale groups to have the same unit variance. 
+#'  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
 #'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
 #' }
 #' @return Returns a list with the default data options.
