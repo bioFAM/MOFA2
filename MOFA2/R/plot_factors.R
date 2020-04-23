@@ -180,6 +180,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   # Add theme
   p <- p +
     theme_classic() +
+    geom_hline(yintercept=0, linetype="dashed", size=0.2, alpha=0.5) +
     theme(
         panel.border = element_rect(color="black", size=0.1, fill=NA),
         strip.background = element_rect(colour = "black", size=0.25),
@@ -195,10 +196,12 @@ plot_factor <- function(object, factors = 1, groups = "all",
     )
   
   if (length(unique(df$factor))>1) {
-    p <- p + scale_y_continuous(breaks=NULL)
+    # p <- p + scale_y_continuous(breaks=NULL)
   } else {
     # Remove strip labels for groups, they are laballed along X axis
-    p <- p + theme(strip.text.x = element_blank())
+    if (isFALSE(dodge)) {
+      p <- p + theme(strip.text.x = element_blank())
+    }
   }
   
   # Add legend
@@ -300,7 +303,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   df$shape_by <- as.character(df$shape_by)
   
   # Remove missing values
-  if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
+  if(isFALSE(show_missing)) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   
   # spread over factors
   df <- spread(df, key="factor", value="value")

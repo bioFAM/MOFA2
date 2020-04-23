@@ -115,6 +115,7 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
   
   # Get factors
   factors <- .check_and_get_factors(object, factors)
+  groups <- .check_and_get_groups(object, groups)
   factors_df <- get_factors(object, factors = factors, groups = groups, as.data.frame=TRUE) %>% 
     group_by(factor) %>% mutate(value=value/max(abs(value),na.rm=T)) # Scale factor values
   
@@ -127,8 +128,10 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
     to.plot$value <- abs(to.plot$value)
   }
   
+  
   # Plot
   if (length(unique(factors_df$group))>1) {
+    to.plot$group <- factor(to.plot$group, levels=groups)
     p <- ggplot(to.plot, aes_string(x="group", y="level", fill="value")) +
       facet_wrap(~factor)
   } else {

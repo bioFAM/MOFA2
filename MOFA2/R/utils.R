@@ -396,13 +396,14 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   if (is.numeric(df$color_by)) {
     p <- p + 
       guides(color=FALSE) +
-      scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
+      scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10))  +
       # scale_fill_gradientn(colours = c('lightgrey', 'blue'))
+      labs(fill=color_name)
   } else {
     if (length(unique(df$color_by))>1) {
       p <- p +
-        labs(fill=color_name) +
-        guides(fill=guide_legend(override.aes = list(shape = 21)))
+        guides(fill=guide_legend(override.aes = list(shape = 21))) +
+        labs(fill=color_name)
     } else {
       p <- p + guides(fill=FALSE, color=FALSE) +
         scale_color_manual(values="black") +
@@ -414,9 +415,9 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   # Add legend for shape
   if (length(unique(df$shape_by))>1) { 
     p <- p + 
-      labs(shape=shape_name) +
       scale_shape_manual(values=c(21,23,24,25)[1:length(unique(df$shape_by))]) +
-      guides(shape = guide_legend(override.aes = list(fill = "black")))
+      guides(shape = guide_legend(override.aes = list(fill = "black"))) +
+      labs(shape=shape_name)
   } else { 
     p <- p + 
       scale_shape_manual(values=c(21)) +

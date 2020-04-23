@@ -221,7 +221,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
     geom_tile(aes_string(fill="value"), color="black") +
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
-    guides(fill=guide_colorbar("R2")) +
+    guides(fill=guide_colorbar("R2 (%)")) +
     labs(x="", y="", title="") +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2,max_r2)) +
     guides(fill=guide_colorbar("R2")) +
@@ -450,10 +450,9 @@ plot_variance_explained_per_feature <- function(object, view, features = 10,
   # Grid plot with the variance explained per feature in every group
   p <- ggplot(r2_df, aes_string(x = "group", y = "feature")) + 
     geom_tile(aes_string(fill = "value"), color = "black") +
-    guides(fill = guide_colorbar("R2")) +
+    guides(fill = guide_colorbar("R2 (%)")) +
     labs(x = "", y = "", title = "") +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2, max_r2)) +
-    guides(fill = guide_colorbar("R2")) +
     theme_classic() +
     theme(
       axis.text = element_text(size = 12),
