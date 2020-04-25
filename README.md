@@ -1,10 +1,8 @@
 
 # Multi-Omics Factor Analysis v2 (MOFA+)
 
-### Important notice: [MOFA v1](https://github.com/bioFAM/MOFA) is officially depreciated, please switch to [MOFA v2](https://github.com/bioFAM/MOFA2) even if you are not planning to use the novel functionalities.
-
-## Latest release
-[![DOI](https://zenodo.org/badge/105765144.svg)](https://zenodo.org/badge/latestdoi/105765144)
+<!-- ## Latest release
+[![DOI](https://zenodo.org/badge/105765144.svg)](https://zenodo.org/badge/latestdoi/105765144) -->
 
 ## What is MOFA?
 MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
@@ -73,20 +71,25 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 
 ## Tutorials/Vignettes
 
+### Learning the basics
+
 * [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started.md): general overview and description of the method.
 * [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html)
 * [**Training a model in Python (jupyter notebook)**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
-* [**Analysis of a multi-group scRNA-seq data set (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (scNMT-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
+* **Downstream analysis in python**: in preparation...
+
+### Case examples
+
+* [**Analysis of chronic lymphocytic leukaemia cohort for personalised medicine (authors' favourite)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): Figure 2 and 3 of the MOFA v1 paper.
+* [**Analysis of a multi-group scRNA-seq data set**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
-* [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
-* [**Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): Figure 2 and 3 of the MOFA v1 paper.
 * [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis.
 * **Analysis of CITE-seq data**: in preparation...
 * **Analysis of microbiome data**: in preparation...
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
-
+* [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
 <!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 
 ## Web server
@@ -96,7 +99,6 @@ You can also download the latest version from the corresponding [github reposito
 ## Contact
 - **Slack (recommended)**: we have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
 - e-mail: Ricard Argelaguet (ricard@ebi.ac.uk)
-
 
 
 ## Frequently asked questions (FAQ)
