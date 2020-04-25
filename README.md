@@ -81,7 +81,7 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 
 ### Case examples
 
-* [**Analysis of chronic lymphocytic leukaemia cohort for personalised medicine (authors' favourite)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): Figure 2 and 3 of the MOFA v1 paper.
+* [**[authors' favourite] Analysis of chronic lymphocytic leukaemia cohort for personalised medicine **](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): Figure 2 and 3 of the MOFA v1 paper.
 * [**Analysis of a multi-group scRNA-seq data set**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
