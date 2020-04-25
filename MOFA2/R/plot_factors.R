@@ -9,29 +9,26 @@
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
-#' @param group_by specifies groups used to separate the samples : one plot per group. This can be either: 
+#' @param group_by specifies grouping of samples:
 #' \itemize{
 #' \item (default) the string "group": in this case, the plot will color samples with respect to their predefined groups.
 #' \item a character giving the name of a feature that is present in the input data 
-#' \item a character giving the same of a column in the sample metadata slot
+#' \item a character giving the name of a column in the sample metadata slot
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
-#' \item a dataframe with two columns: "sample" and "color"
 #'}
-#' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
+#' @param color_by specifies color of samples. This can be either: 
 #' \itemize{
 #' \item (default) the string "group": in this case, the plot will color the dots with respect to their predefined groups.
 #' \item a character giving the name of a feature that is present in the input data 
-#' \item a character giving the same of a column in the sample metadata slot
+#' \item a character giving the name of a column in the sample metadata slot
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
-#' \item a dataframe with two columns: "sample" and "color"
 #' }
-#' @param shape_by specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
+#' @param shape_by specifies shape of samples. This can be either: 
 #' \itemize{
 #' \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
 #' \item a character giving the name of a feature that is present in the input data 
-#' \item a character giving the same of a column in the sample metadata slot
+#' \item a character giving the name of a column in the sample metadata slot
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
-#' \item a dataframe with two columns: "sample" and "shape"
 #' }
 #' @param add_dots logical indicating whether to add dots.
 #' @param dot_size numeric indicating dot size.
@@ -143,7 +140,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
     
     # Dot black border
     if (is.null(stroke))
-      if (nrow(df)<100) { stroke <- 0.5 } else { stroke <- 0 }
+      if (nrow(df)<1000) { stroke <- 0.5 } else { stroke <- 0 }
     
     if (isTRUE(rasterize)) {
       warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
@@ -221,11 +218,11 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @param scale logical indicating whether to scale factor values.
 #' @param color_by specifies groups or values used to color the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data.
-#' (2) a character giving the same of a column present in the sample metadata.
-#' (3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
+#' (2) a character giving the name of a column present in the sample metadata.
+#' (3) a vector of the name length as the number of samples specifying discrete groups or continuous numeric values.
 #' @param shape_by specifies groups or values used to shape the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data, 
-#' (2) a character giving the same of a column present in the sample metadata.
+#' (2) a character giving the name of a column present in the sample metadata.
 #' (3) a vector of the same length as the number of samples specifying discrete groups.
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
@@ -442,8 +439,6 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   
   # Compute and plot correlation
   r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))
-  p <- corrplot(r, tl.col = "black", ...)
-  
-  return(r)
+  corrplot(r, tl.col = "black", ...)
 }
 

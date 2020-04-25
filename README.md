@@ -205,8 +205,9 @@ This is normal and it happens because factor analysis models are rotation invari
 **(5.3) What data modalities can MOFA cope with?**  
 * Continuous data: modelled using a gaussian likelihood
 * Binary data: modelled using a bernoulli likelihood
-* Count data: using a poisson likelihood.
-Importantly, the use of non-gaussian likelihoods require further approximations and are not as accurate as the gaussian likelihood, and they are significantly slower to train. Hence, if your data can be safely transformed to match the gaussian likelihood assumptions, this is ALWAYS recommended. For example RNA-seq data is expected to be normalised and modelled with a gaussian distribution, do not input the counts directly.
+* Count data: using a poisson likelihood  
+
+Importantly, the use of non-gaussian likelihoods require statistical approximations and are not as accurate as the gaussian likelihood. If your data can be safely transformed to match the gaussian likelihood assumptions, this is ALWAYS recommended. For example RNA-seq data is expected to be normalised and modelled with a gaussian distribution, do not input the counts directly.
 
 **(5.4) Do I need to do model selection?**  
 As it occurs in most complex Bayesian models, the solution obtained depends on the parameter initialisation. In MOFA v1 we used random initialisation, which leads to (slightly) different solutions depending on the starting point. In MOFA v2 we initialise the factors using Principal Component Analysis on the concatenated data set, and the weights are initialised to zero. If using standard variational inference (not stochastic) this removes the randomness in the training algorithms, which guarantees a consistent solution.
