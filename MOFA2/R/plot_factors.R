@@ -289,7 +289,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   
   # Set color and shape
   color_by <- .set_colorby(object, color_by)
-  shape_by <- .set_shapeby(object, shape_by )
+  shape_by <- .set_shapeby(object, shape_by)
   
   # Remove samples with missing values
   Z <- Z[complete.cases(Z),]
@@ -320,7 +320,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   if (is.null(stroke)) if (nrow(df)<1000) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="x", y="y",  fill="color_by", shape="shape_by")) + 
+  p <- ggplot(df, aes_string(x="x", y="y", fill="color_by", shape="shape_by")) + 
     geom_point(size=dot_size, alpha=alpha, stroke = stroke) +
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
@@ -332,6 +332,15 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     )
   
   p <- .add_legend(p, df, legend, color_name, shape_name)
+
+  # Fix legend labels
+  if (!is.null(color_name)) {
+    p <- p + labs(fill = color_name)
+  }
+
+  if (!is.null(shape_name)) {
+    p <- p + labs(shape = shape_name)
+  }
 
   return(p)
 }
