@@ -511,9 +511,9 @@ plot_ascii_data <- function(object, nonzero = FALSE) {
 # Function to define the text size for the pearson correlation coefficient
 .select_pearson_text_size <- function(N) {
   if (N>=4) {
-    return(2)
-  } else if (N>=2 & N<4) {
     return(3)
+  } else if (N>=2 & N<4) {
+    return(4)
   } else if (N==1) {
     return(5)
   }
