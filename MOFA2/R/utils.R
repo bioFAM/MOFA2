@@ -395,15 +395,18 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   # Add legend for color
   if (is.numeric(df$color_by)) {
     p <- p + 
-      guides(color=FALSE) +
+      # guides(color=FALSE) +
       scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10))  +
       # scale_fill_gradientn(colours = c('lightgrey', 'blue'))
-      labs(fill=color_name)
+      labs(fill=color_name) +
+      theme(legend.text = element_text(size=rel(0.8)))
+      
   } else {
     if (length(unique(df$color_by))>1) {
       p <- p +
-        guides(fill=guide_legend(override.aes = list(shape = 21))) +
-        labs(fill=color_name)
+        guides(fill=guide_legend(override.aes = list(shape=21, size=3))) +
+        labs(fill=color_name) +
+        theme(legend.text = element_text(size=rel(1.1)))
     } else {
       p <- p + guides(fill=FALSE, color=FALSE) +
         scale_color_manual(values="black") +
@@ -426,14 +429,29 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   
   # Add legend theme
   if (isTRUE(legend)) {
-    p <- p + theme(
-      legend.text = element_text(size=rel(1.2)),
-      legend.title = element_text(size=rel(1.2))
-    )
+    
+    p <- p + 
+      guides(color=guide_legend(override.aes = list(fill="white"))) +
+      theme(
+        legend.title = element_text(size=rel(1.2)),
+        legend.key = element_rect(fill = "white", color="white")
+        # legend.background = element_rect(color = NA, fill=NA),
+        # legend.box.background = element_blank()
+      )
   } else {
     p <- p + theme(legend.position = "none")
   }
   
   return(p)
-  
+}
+
+# Function to define the stroke for each dot
+.select_stroke <- function(N) {
+  if (N<=1000) { 
+    stroke <- 0.5 
+  } else if (N>1000 & N<=10000) { 
+    stroke <- 0.2
+  } else { 
+    stroke <- 0.05
+  }
 }

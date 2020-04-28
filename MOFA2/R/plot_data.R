@@ -164,7 +164,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @param sign can be 'positive', 'negative' or 'all' (default) to show only positive, negative or all weights, respectively.
 #' @param color_by specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
 #' \itemize{
-#' \item (default) the string "group", it the dots with respect to their predefined groups.
+#' \item the string "group": dots are coloured with respect to their predefined groups.
 #' \item a character giving the name of a feature that is present in the input data 
 #' \item a character giving the same of a column in the sample metadata slot
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
@@ -172,7 +172,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' }
 #' @param shape_by specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
 #' \itemize{
-#' \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
+#' \item the string "group": dots are shaped with respect to their predefined groups.
 #' \item a character giving the name of a feature that is present in the input data 
 #' \item a character giving the same of a column in the sample metadata slot
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
@@ -184,6 +184,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
 #' @param alpha numeric indicating dot transparency (default is 1).
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
+#' @param lm_per_group logical indicating whether to add a linear regression line separately for each group
 #' @param imputed logical indicating whether to include imputed measurements
 #' @details One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
@@ -195,8 +196,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @importFrom stats quantile
 #' @export
 plot_data_scatter <- function(object, factor, view = 1, groups = "all", features = 10, sign = "all",
-                              color_by = NULL, legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
-                              dot_size = 2.5, text_size = 5, add_lm = TRUE, imputed = FALSE) {
+                              color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
+                              dot_size = 2.5, text_size = NULL, add_lm = TRUE, lm_per_group = TRUE, imputed = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -260,13 +261,24 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   # Create data frame 
   foo <- list(features); names(foo) <- view
   df2 <- get_data(object, groups = groups, features = foo, as.data.frame = TRUE)
+  df2$sample <- as.character(df2$sample)
   df <- dplyr::left_join(df1, df2, by = "sample")
   
-  # (Q) WHY??? Remove missing values 
+  # (Q) Remove samples with missing values in Factor values
   df <- df[!is.na(df$value),]
   
   # Set stroke
-  if (is.null(stroke)) if (length(unique(df$sample))<250) { stroke <- 0.5 } else { stroke <- 0 }
+  if (is.null(stroke)) {
+    stroke <- .select_stroke(N=length(unique(df$sample)))
+  }
+  
+  # Set Pearson text size
+  if (isTRUE(add_lm) & is.null(text_size)) {
+    text_size <- .select_pearson_text_size(N=length(unique(df$feature)))
+  }
+  
+  # Set axis text size
+  axis.text.size <- .select_axis.text.size(N=length(unique(df$feature)))
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "value")) + 
@@ -275,17 +287,22 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
     facet_wrap(~feature, scales="free_y") +
     theme_classic() + 
     theme(
-      axis.text = element_text(size = rel(1), color = "black"), 
-      axis.title = element_text(size = rel(1.0), color="black"), 
-      legend.key = element_rect(fill = "white")
+      axis.text = element_text(size = rel(axis.text.size), color = "black"), 
+      axis.title = element_text(size = rel(1.0), color="black")
     )
 
   # Add linear regression line
   if (isTRUE(add_lm)) {
-    p <- p +
-      stat_smooth(method="lm", color="grey", fill="grey", alpha=0.4) +
-      # ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", label.y = quantile(df$value,na.rm=TRUE)[[4]], size = text_size, color = "black")
-      ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", size = text_size, color = "black")
+    if (isTRUE(lm_per_group) & length(groups)>1) {
+      p <- p +
+        stat_smooth(formula=y~x, aes_string(color="group"), method="lm", fill="grey", alpha=0.4) +
+        ggpubr::stat_cor(aes_string(color="group", label = "..r.label.."), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
+        # guides(color = FALSE)
+    } else {
+      p <- p +
+        stat_smooth(formula=y~x, method="lm", color="grey", fill="grey", alpha=0.4) +
+        ggpubr::stat_cor(method = "pearson", label.sep="\n", output.type = "latex", size = text_size, color = "black")
+    }
   }
   
   # Add legend
@@ -477,4 +494,27 @@ plot_ascii_data <- function(object, nonzero = FALSE) {
     }
   })
   paste(vals, collapse = collapse)
+}
+
+
+# Function to define the axis text size for plot_data_scatter
+.select_axis.text.size <- function(N) {
+  if (N>=4) {
+    return(0.5)
+  } else if (N>=2 & N<4) {
+    return(0.6)
+  } else if (N==1) {
+    return(0.8)
+  }
+}
+
+# Function to define the text size for the pearson correlation coefficient
+.select_pearson_text_size <- function(N) {
+  if (N>=4) {
+    return(2)
+  } else if (N>=2 & N<4) {
+    return(3)
+  } else if (N==1) {
+    return(5)
+  }
 }
