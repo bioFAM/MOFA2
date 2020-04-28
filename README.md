@@ -78,14 +78,14 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Training a model in Python (jupyter notebook)**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
 * **Downstream analysis in python**: in preparation...
+* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis.
 
 ### Case examples
 
-* [**[authors' favourite] Analysis of chronic lymphocytic leukaemia cohort for personalised medicine **](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): Figure 2 and 3 of the MOFA v1 paper.
-* [**Analysis of a multi-group scRNA-seq data set**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq) (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
-* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis.
+* [**(authors' favourite) Analysis of chronic lymphocytic leukaemia cohort for personalised medicine **](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): a bulk multi-omics data set. Figure 2 and 3 of the MOFA v1 paper.
+* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): using the mouse gastrulation atlas. Figure 4 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
 * **Analysis of CITE-seq data**: in preparation...
 * **Analysis of microbiome data**: in preparation...
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->

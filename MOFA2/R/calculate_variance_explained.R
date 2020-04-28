@@ -455,6 +455,9 @@ plot_variance_explained_per_feature <- function(object, view, features = 10,
     return(r2_df)
   
   
+  r2_df$factor <- factor(r2_df$factor, levels = factors_names(object))
+  
+  
   # Grid plot with the variance explained per feature in every group
   p <- ggplot(r2_df, aes_string(x = "group", y = "feature")) + 
     geom_tile(aes_string(fill = "value"), color = "black") +

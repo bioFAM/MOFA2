@@ -18,14 +18,17 @@
 #' @importFrom pheatmap pheatmap
 #' @importFrom corrplot corrplot
 #' @export
-correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", abs = FALSE, plot = c("r","log_pval"), 
+correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", 
+                                              abs = FALSE, plot = c("r","log_pval"), 
                                               alpha = 0.05, return_data = FALSE, transpose = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (groups[1]!="all") stopifnot(groups%in%groups_names(object))
   
   # Get covariates
   metadata <- samples_metadata(object)
+  metadata <- metadata[metadata$group%in%groups,]
   if (is.character(covariates)) {
     stopifnot(all(covariates %in% colnames(metadata)))
     covariates <- metadata[,covariates,drop=F]
