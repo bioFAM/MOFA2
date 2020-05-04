@@ -42,15 +42,9 @@ Sample metadata are stored as a data.frame. Important columns are:
 - **treatedAfter**: (TRUE/FALSE)
 - **Died**: whether the patient died (TRUE/FALSE)
 
-Information on other columns can be obtained using`?patmeta`.
+The full meta data can be obtained from the Bioconductor package `BloodCancerMultiOmics2017` as `data("patmeta")`.
 ```{r}
-library(BloodCancerMultiOmics2017)
-data("patmeta")
-# extract metadata for patients with omics data
-CLL_metadata <- patmeta[colnames(CLL_data$Drugs),] 
-CLL_metadata <- rownames_to_column(CLL_metadata, "sample")
-CLL_metadata <- rename(CLL_metadata, age = Age4Main)
-head(CLL_metadata)
+CLL_metadata <- read.table("~/Downloads/sample_metadata.txt", header=T, sep="\t")
 ```
 
 Note that some patients lack the clinical information
@@ -663,21 +657,74 @@ head(data)
 
 With the `impute` function all missing values are imputed based on the MOFA model. The imputed data is then stored in the `imputed_data` slot of the MOFAobject and can be accessed via the `get_imputed_data` function.
 ```{r}
-MOFAobject <- impute(MOFAobject)
+# MOFAobject <- impute(MOFAobject)
 ```
 
 Before imputation
 ```{r}
-MOFAobject@data$mRNA[[1]][1:5,190:195]
+# MOFAobject@data$mRNA[[1]][1:5,190:195]
 ```
 
 After imputation
 ```{r}
-MOFAobject@imputed_data$mRNA[[1]][["mean"]][1:5,190:195]
+# MOFAobject@imputed_data$mRNA[[1]][["mean"]][1:5,190:195]
 ```
 
 
 # Building predictive models of clinical outcome (TO-DO)
+The factors inferred by MOFA can be related to clinical outcomes such as time to treatment or survival times. As this type of data is censored (not for all samples we have already observed the event) we will use Cox models for this purpose. In a Cox proportional hazards model we model the hazard of an event ocurring (e.g. death or treatment) as a function in covariates (here the factors). If a factor has a influence on the surivival time or time to treatment it will recevie a high absoulte coefficient in the Cox model:
+
+- If the coefficient is positive, samples with large factor values have an increased hazard (of death or treatment) compared to  with a low factor values
+- If the coefficient is negative, samples with low factor values have an increased hazard compared to  with a large factor values
+
+To fit these models we will use the `coxph` function in the `survival` package. The survival data is stored in a survival object that contains both the time a sample has been followed up and whether the event has occured (as 0,1).
+
+Let's take time to treatment as an example here. The `samples_metadata` contains the follow-up times per sample in years in column `T5` and the column `treatedAfter` indicated whether a treatment occured. Using the MOFA factors as covariates (in a matrix format) we can driectly relate them to the Surv object using `coxph`.
+
+```{r}
+library(survival)
+SurvObject <-Surv(MOFAobject@samples_metadata$T5, MOFAobject@samples_metadata$treatedAfter)
+Z <- get_factors(MOFAobject)[[1]]
+fit <- coxph(SurvObject  ~  Z) 
+fit
+```
+
+We can see that several factors have a significant association to time to treatment. For example, Factor 1 has a negative coefficient. Samples with low factor values (largely U-CLL) have an increased hazard compared to  with a large factor values (largely M-CLL).
+
+Let's plot the results.
+```{r}
+s <- summary(fit)
+df <- data.frame(factor = factor(rownames(s[["coefficients"]]),
+                                 levels = rev(rownames(s[["coefficients"]]))),
+                 p      = s[["coefficients"]][, "Pr(>|z|)"], 
+                 coef   = s[["coefficients"]][, "exp(coef)"], 
+                 lower  = s[["conf.int"]][, "lower .95"], 
+                 higher = s[["conf.int"]][, "upper .95"])
+
+ggplot(df, aes(x=factor, y=coef,ymin=lower,ymax=higher))+
+  geom_pointrange( col='#619CFF') + coord_flip() +
+  scale_x_discrete() + ylab("Hazard Ratio") + 
+  geom_hline(aes(yintercept=1), linetype="dotted")
+```
+
+For illustration purposes we can also split the samples based on the factor values into two groups using the maximally selected rank statistics from the `maxstat` R package and plot the Kaplan Meier plots per group.
+```{r}
+df <- data.frame(time=SurvObject[,1], event = SurvObject[,2], Z1 = Z[,1])
+cut <- survminer::surv_cutpoint(df, variables='Z1')
+df$FactorCluster <- df$Z1 > cut$cutpoint$cutpoint
+fit <- survfit(Surv(time, event) ~ FactorCluster, df)
+ggLF <- survminer::ggsurvplot(fit, data =df,
+                        conf.int = TRUE,
+                        pval = TRUE,
+                        fun = function(y) y * 100,
+                        legend = "top",
+                        legend.labs = c(paste("low LF 1"), paste("high LF 1")),
+                        xlab = "Time to treatment",
+                        ylab="Survival probability (%)",
+                        title= "Factor 1"
+                        )
+ggLF$plot
+```
 
 # SessionInfo
 ```{r}
