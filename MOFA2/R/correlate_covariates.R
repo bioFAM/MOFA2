@@ -24,7 +24,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  groups <- .check_and_get_groups(MOFAmodel,groups)
+  groups <- .check_and_get_groups(object,groups)
   
   # Get covariates
   metadata <- samples_metadata(object)

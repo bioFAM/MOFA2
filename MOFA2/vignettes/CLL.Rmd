@@ -122,8 +122,14 @@ MOFAobject <- prepare_mofa(MOFAobject,
 Train the model: this should take ~2min
 ```{r, message=FALSE}
 # NOTE: The software has evolved since the original publication and the results will not be 100% identical to the original publication
-MOFAmodel <- run_mofa(MOFAobject)
+MOFAobject <- run_mofa(MOFAobject, outfile="/Users/ricard/Downloads/MOFA2_CLL.hdf5")
 ```
+
+Load pre-computed model
+```{r}
+# MOFAobject <- load_model()
+```
+
 
 
 # Step 3: Analysis of the trained MOFA model
@@ -135,29 +141,29 @@ The MOFA object consists of multiple slots where relevant data and information i
 - *samples_metadata*: sample metadata information
 - *expectations*: expectations of the posterior distributions for the Weights and the Factors
 ```{r}
-slotNames(MOFAmodel)
+slotNames(MOFAobject)
 ```
 
 Data:
 ```{r}
-names(MOFAmodel@data)
-dim(MOFAmodel@data$Drugs$group1)
+names(MOFAobject@data)
+dim(MOFAobject@data$Drugs$group1)
 ```
 
 Factor and Weight values:
 ```{r}
-names(MOFAmodel@expectations)
+names(MOFAobject@expectations)
 
 # Dimensionality of the factor matrix: 200 samples, 15 factors
-dim(MOFAmodel@expectations$Z$group1)
+dim(MOFAobject@expectations$Z$group1)
 
 # Dimensionality of the mRNA Weight matrix: 5000 features, 15 factors
-dim(MOFAmodel@expectations$W$mRNA)
+dim(MOFAobject@expectations$W$mRNA)
 ```
 
 Sample metadata
 ```{r}
-head(MOFAmodel@samples_metadata)
+head(MOFAobject@samples_metadata)
 ```
 
 ## Add sample metadata to the model
@@ -165,17 +171,17 @@ head(MOFAmodel@samples_metadata)
 The sample metadata must be provided as a data.frame and it must contain a column `sample` with the sample IDs. Make sure that the samples in the metadata match the samples in the model
 ```{r}
 # Sanity check
-all(sort(CLL_metadata$sample)==sort(unlist(samples_names(MOFAmodel))))
+all(sort(CLL_metadata$sample)==sort(unlist(samples_names(MOFAobject))))
 
 # Add sample metadata to the model
-samples_metadata(MOFAmodel) <- CLL_metadata
+samples_metadata(MOFAobject) <- CLL_metadata
 ```
 
 ## Correlation between factors
 
 A good sanity check is to verify that the Factors are largely uncorrelated. In MOFA there are no orthogonality constraints such as in Principal Component Analysis, but if there is a lot of correlation between Factors this suggests a poor model fit. Reasons? Perhaps you used too many factors or perhaps the normalisation is not adequate.
 ```{r}
-plot_factor_cor(MOFAmodel)
+plot_factor_cor(MOFAobject)
 ```
 
 ## Plot variance decomposition
@@ -185,7 +191,7 @@ plot_factor_cor(MOFAmodel)
 *The most important insight that MOFA generates is the variance decomposition figure*. This plot shows the percentage of variance explained by each factor across each data modality (and group, if provided). This is probably the most important plot that MOFA generates, as it summarises the sources of variation from a complex heterogeneous data set in a single figure.  
 
 ```{r}
-plot_variance_explained(MOFAmodel, max_r2=10)
+plot_variance_explained(MOFAobject, max_r2=10)
 ```
 
 What insights from the data can we learn just from inspecting this plot?  
@@ -203,7 +209,7 @@ A reasonable question is whether the model is providing a good fit to the data. 
 
 In this data set, using only K=10 factors the model explains up to ~43% of the variation in the Drugs and mRNA data. This is quite remarkable for a linear model.
 ```{r}
-plot_variance_explained(MOFAmodel, plot_total = T)[[2]]
+plot_variance_explained(MOFAobject, plot_total = T)[[2]]
 ```
 
 <!-- ### Plot variance explained for individual features -->
@@ -212,13 +218,13 @@ plot_variance_explained(MOFAmodel, plot_total = T)[[2]]
 
 <!-- Let's select some drugs -->
 <!-- ```{r} -->
-<!-- drugs <- MOFA2::features_names(MOFAmodel)$Drugs -->
+<!-- drugs <- MOFA2::features_names(MOFAobject)$Drugs -->
 <!-- features2plot <- drugs[grep("D_002|D_001",drugs)] -->
 <!-- ``` -->
 
 <!-- Plot variance explained by each factor: you can see that for some drugs such as D_002, the sources of variation captured by Factor 1 and Factor 2 explain as much as 30% each of its response. -->
 <!-- ```{r} -->
-<!-- plot_variance_explained_per_feature(MOFAmodel,  -->
+<!-- plot_variance_explained_per_feature(MOFAobject,  -->
 <!--   features = features2plot, -->
 <!--   split_by_factor = TRUE, -->
 <!--   factors = 1:5, -->
@@ -239,7 +245,7 @@ There are a few systematic strategies to characterise the molecular etiology und
 Let's test the association between MOFA Factors and Gender, survival outcome (dead vs alive) and age:
 
 ```{r}
-correlate_factors_with_covariates(MOFAmodel, covariates = c("Gender","died","age"), plot="log_pval")
+correlate_factors_with_covariates(MOFAobject, covariates = c("Gender","died","age"), plot="log_pval")
 ```
 
 Most Factors don't have a clear association with any of the covariates. Only Factor 11 and Factor 14 have a small association with survival outcome. We will go back to associations with clinical information at the end of the vignette.
@@ -250,7 +256,7 @@ Most Factors don't have a clear association with any of the covariates. Only Fac
 Each factor captures a different source of variability in the data. Mathematically, each Factor is defined by a linear combination of the input features. As the data is centered prior to running MOFA, each Factor ordinates cells along a one-dimensional axis that is centered at zero. Samples with different signs manifest opposite phenotypes along the inferred axis of variation, with higher absolute value indicating a stronger effect. Note that the interpretation of MOFA factors is analogous to the interpretation of the principal components in PCA.
 
 ```{r}
-plot_factor(MOFAmodel, 
+plot_factor(MOFAobject, 
   factors = 1, 
   color_by = "Factor1"
 )
@@ -266,7 +272,7 @@ The weights provide a score for each feature on each factor. Features with no as
 By looking at the variance explained plot, we saw that Factor 1 captures variation in all data modalities. Out of all omics, the somatic mutation data is a good place to start, as somatic mutations are very sparse, easy to interpret and any change in the DNA is likely to have downstream consequences to all other molecular layers. Let's plot the weights:
 
 ```{r}
-plot_weights(MOFAmodel,
+plot_weights(MOFAobject,
  view = "Mutations",
  factor = 1,
  nfeatures = 5,     # Top number of features to highlight
@@ -278,7 +284,7 @@ Notice that most features lie at zero, indicating that most features have no ass
 
 An alternative visualistion to the full distribution of weights is to do a line plot that displays only the top features with the corresponding weight sign on the right:
 ```{r}
-plot_top_weights(MOFAmodel,
+plot_top_weights(MOFAobject,
  view = "Mutations",
  factor = 1,
  nfeatures = 10,     # Top number of features to highlight
@@ -289,7 +295,7 @@ plot_top_weights(MOFAmodel,
 IGHV has a positve weight. This means that samples with positive Factor 1 values have IGHV mutation whereas samples with negative Factor 1 values do not have the IGHV mutation. To confirm this, let's plot the Factor values and colour the IGHV mutation status.  
 Note that some samples are missing the IGHV status because of missing somatic mutation data... should we try to use the model to predict it?? We will play with this later.
 ```{r}
-plot_factor(MOFAmodel, 
+plot_factor(MOFAobject, 
   factors = 1, 
   color_by = "IGHV",
   add_violin = TRUE,
@@ -299,7 +305,7 @@ plot_factor(MOFAmodel,
 
 We can also plot Factor values coloured by other covariates, for example `Gender`. As shown above, this variable has no association with the Factor values:
 ```{r}
-plot_factor(MOFAmodel, 
+plot_factor(MOFAobject, 
   factors = 1, 
   color_by = "Gender",
   dodge = TRUE,
@@ -311,7 +317,7 @@ plot_factor(MOFAmodel,
 
 From the previous plots we can state that Factor 1 is associated to IGHV status. However, from the variance explained plot we know that this Factor drives variation across all data modalities. Let's visualise the mRNA expression changes that are associated with this Factor:
 ```{r}
-plot_weights(MOFAmodel, 
+plot_weights(MOFAobject, 
   view = "mRNA", 
   factor = 1, 
   nfeatures = 10,
@@ -323,7 +329,7 @@ plot_weights(MOFAmodel,
 
 In this case we have a large amount of genes that have large positive and negative weights. Genes with large positive values will be more expressed in the samples with IGHV mutation, whereas genes with large negative values will be more expressed in the samples without the IGHV mutation. Let's verify this. The function `plot_data_scatter`  generates a scatterplot of Factor 1 values (x-axis) versus expression values (y-axis) for the top 4 genes with largest positive weight. Samples are coloured by IGHV status:
 ```{r}
-plot_data_scatter(MOFAmodel, 
+plot_data_scatter(MOFAobject, 
   view = "mRNA",
   factor = 1,  
   features = 4,
@@ -334,7 +340,7 @@ plot_data_scatter(MOFAmodel,
 
 This function generates a scatterplot of Factor 1 values (x-axis) versus expression values (y-axis) for the top 4 genes with largest negative weight. Samples are coloured by IGHV status:
 ```{r}
-plot_data_scatter(MOFAmodel, 
+plot_data_scatter(MOFAobject, 
   view = "mRNA",
   factor = 1,  
   features = 4,
@@ -345,7 +351,7 @@ plot_data_scatter(MOFAmodel,
 
 An alternative visualisation is to use a heatmap
 ```{r}
-plot_data_heatmap(MOFAmodel, 
+plot_data_heatmap(MOFAobject, 
   view = "mRNA",
   factor = 1,  
   features = 25,
@@ -357,7 +363,7 @@ plot_data_heatmap(MOFAmodel,
 
 `plot_data_heatmap` has an interesting argument to "beautify" the heatmap: `denoise = TRUE`. Instead of plotting the (noisy) input data, we can plot the data reconstructed by the model, where noise has been removed:
 ```{r}
-plot_data_heatmap(MOFAmodel, 
+plot_data_heatmap(MOFAobject, 
   view = "mRNA",
   factor = 1,  
   features = 25,
@@ -374,7 +380,7 @@ plot_data_heatmap(MOFAmodel,
 
 Following a similar strategy as for Factor 1, we notice that Factor 2 is also active in the somatic mutation view. Thus, there must be a mutation that underlies this phenotype. Let's plot the corresponding weights:
 ```{r}
-plot_weights(MOFAmodel, 
+plot_weights(MOFAobject, 
   view = "Mutations", 
   factor = 2, 
   nfeatures = 10,
@@ -386,7 +392,7 @@ In this case we have two mutations that have large weight. One of them is the tr
 
 Let's verify this by plotting the Factor values grouping samples by the presence or absence of trisomy12:
 ```{r}
-plot_factor(MOFAmodel, 
+plot_factor(MOFAobject, 
   factors = 2, 
   color_by = "trisomy12",
   dodge = TRUE,
@@ -397,7 +403,7 @@ plot_factor(MOFAmodel,
 
 Again, we can also inspect the molecular signatures in the input data with the functions `plot_data_scatter` and `plot_data_heatmap`:
 ```{r}
-plot_data_scatter(MOFAmodel, 
+plot_data_scatter(MOFAobject, 
   view = "Drugs",
   factor = 2,  
   features = 4,
@@ -407,7 +413,7 @@ plot_data_scatter(MOFAmodel,
 ```
 
 ```{r}
-plot_data_heatmap(MOFAmodel, 
+plot_data_heatmap(MOFAobject, 
   view = "mRNA",
   factor = 2,  
   features = 25,
@@ -422,7 +428,7 @@ plot_data_heatmap(MOFAmodel,
 
 Now that we have characterised the etiology of the two main Factors, let's explore them together:
 ```{r}
-p <- plot_factors(MOFAmodel, 
+p <- plot_factors(MOFAobject, 
   factors = c(1,2), 
   color_by = "IGHV",
   shape_by = "trisomy12",
@@ -444,7 +450,7 @@ This plot is extremely important. It classifies the patients into four different
 The scatterplot of Factor 1 vs Factor 2 reveals that a few samples are missing the somatic mutation status. In this case, the doctors were not able to classify patients into their clinical subgroups. But we can now use MOFA to exploit the molecular profiles and attempt to impute the IGHV and trisomy12 status.
 
 ```{r}
-pred <- predict(MOFAmodel, 
+pred <- predict(MOFAobject, 
   views="Mutations", 
   factors=c(1,2)
   # type="response"
@@ -455,7 +461,7 @@ dim(pred)
 
 Check agreement between true labels and predicted labels
 ```{r}
-MOFAmodel@samples_metadata$IGHV == pred["IGHV",]
+MOFAobject@samples_metadata$IGHV == pred["IGHV",]
 ```
 
 
@@ -497,21 +503,21 @@ An important consideration when running GSEA is that MOFA contains positive and 
 
 ```{r message=FALSE}
 # GSEA on all weights, with default options
-# res.all <- run_enrichment(MOFAmodel, 
+# res.all <- run_enrichment(MOFAobject, 
 #   feature.sets = reactomeGS, 
 #   view = "mRNA",
 #   sign = "all"
 # )
 
 # GSEA on positive weights, with default options
-res.positive <- run_enrichment(MOFAmodel, 
+res.positive <- run_enrichment(MOFAobject, 
   feature.sets = reactomeGS, 
   view = "mRNA",
   sign = "positive"
 )
 
 # GSEA on negative weights, with default options
-res.negative <- run_enrichment(MOFAmodel, 
+res.negative <- run_enrichment(MOFAobject, 
   feature.sets = reactomeGS, 
   view = "mRNA",
   sign = "negative"
@@ -560,7 +566,7 @@ plot_enrichment_detailed(
 
 For customized exploration of weights and factors, you can directly fetch the variables from the model using 'get' functions: `get_weights`, `get_factors` and `get_data`:
 ```{r}
-weights <- get_weights(MOFAmodel, 
+weights <- get_weights(MOFAobject, 
   views = "all", 
   factors = "all", 
   as.data.frame = TRUE    # if TRUE, it outputs a long dataframe format. If FALSE, it outputs a wide matrix format
@@ -569,7 +575,7 @@ head(weights)
 ```
 
 ```{r}
-factors <- get_factors(MOFAmodel, 
+factors <- get_factors(MOFAobject, 
   factors = "all", 
   as.data.frame = TRUE    # if TRUE, it outputs a long dataframe format. If FALSE, it outputs a wide matrix format
 )
@@ -577,7 +583,7 @@ head(factors)
 ```
 
 ```{r}
-data <- get_data(MOFAmodel, 
+data <- get_data(MOFAobject, 
   views = "all", 
   as.data.frame = TRUE    # if TRUE, it outputs a long dataframe format. If FALSE, it outputs a wide matrix format
 )

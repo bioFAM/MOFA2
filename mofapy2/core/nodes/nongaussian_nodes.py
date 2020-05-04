@@ -258,8 +258,10 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
     def updateExpectations(self):
         # Update the pseudodata
         self.E = self.params["zeta"] - 4.*(sigmoid(self.params["zeta"]) - self.obs)
-        self.means = self.E.mean(axis=0).data
-        self.E -= self.means
+
+        # regress out feature-wise mean from the pseudotime
+        # self.means = self.E.mean(axis=0).data
+        # self.E -= self.means
 
     def calculateELBO(self):
         # Compute Lower Bound using the Bernoulli likelihood with observed data
@@ -347,8 +349,10 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
 
     def updateExpectations(self):
         self.E = (2.*self.obs - 1.)/(4.*lambdafn(self.params["zeta"]))
-        self.means = self.E.mean(axis=0).data
-        self.E -= self.means
+
+        # regress out feature-wise mean from the pseudotime
+        # self.means = self.E.mean(axis=0).data
+        # self.E -= self.means
 
     def updateParameters(self, ix=None, ro=None):
         Z = self.markov_blanket["Z"].getExpectations()
