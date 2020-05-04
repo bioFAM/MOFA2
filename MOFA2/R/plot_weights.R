@@ -466,7 +466,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (nfeatures <= 0) stop("'nfeatures' has to be greater than 0")
-  
+  if (sign=="all") { abs <- TRUE}
   if (is.numeric(view)) view <- views_names(object)[view]
   stopifnot(view %in% views_names(object))
   
