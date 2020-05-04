@@ -16,16 +16,15 @@
 #' @param load_imputed_data logical indicating whether to load the imputed data (default is FALSE)
 #' @param remove_outliers logical indicating whether to mask outlier values.
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
+# #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
 #' @param verbose logical indicating whether to print verbose output (default is FALSE)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
 # #' @importFrom DelayedArray DelayedArray
 #' @export
-
-load_model <- function(file, sort_factors = TRUE, 
-                       on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
-                       remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
+load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
+                       remove_outliers = FALSE, remove_intercept_factors = TRUE, remove_inactive_factors = TRUE, verbose = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -38,12 +37,6 @@ load_model <- function(file, sort_factors = TRUE,
   
   # Get groups and data set names from the hdf5 file object
   h5ls.out <- h5ls(file, datasetinfo = FALSE)
-  
-  # Sanity checks
-  # if (isFALSE(load_data)) {
-  #   message("load_data = FALSE is currently disabled, setting it to TRUE")
-  #   load_data = TRUE
-  # }
   
   ########################
   ## Load training data ##
@@ -318,7 +311,18 @@ load_model <- function(file, sort_factors = TRUE,
     }
   }
   
-  # [DONE IN THE PYTHON FRAMEWORK] Order factors in order of variance explained
+  # Remove inactive factors
+  # if (isTRUE(remove_intercept_factors) & any(object@model_options$likelihoods!="gaussian")) {
+  #   non_gaussian_views <- names(which(object@model_options$likelihoods!="gaussian"))
+  #   for (m in non_gaussian_views) {
+  #     W <- get_weights(object, views=m)[[1]]
+  #     intercept_factor <- which.max(abs(colMeans(W)))
+  #     object <- subset_factors(object, factors_names(object)[-intercept_factor])
+  #     message(sprintf("%s is determined to be an intercept Factor for the %s non-gaussian view and it has been removed from the model. To disable this behaviour set remove_intercept_factors=FALSE",names(intercept_factor),m))
+  #   }
+  # }
+  
+  # [Done in mofapy2] Sort factors by total variance explained
   # if (isTRUE(sort_factors) && object@dimensions$K > 1) {
   #   
   #   # Sanity checks

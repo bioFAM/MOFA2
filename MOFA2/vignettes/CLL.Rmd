@@ -127,7 +127,7 @@ MOFAobject <- run_mofa(MOFAobject, outfile="/Users/ricard/Downloads/MOFA2_CLL.hd
 
 Load pre-computed model
 ```{r}
-# MOFAobject <- load_model()
+MOFAobject <- load_model("/Users/ricard/Downloads/MOFA2_CLL.hdf5")
 ```
 
 
@@ -191,7 +191,7 @@ plot_factor_cor(MOFAobject)
 *The most important insight that MOFA generates is the variance decomposition figure*. This plot shows the percentage of variance explained by each factor across each data modality (and group, if provided). This is probably the most important plot that MOFA generates, as it summarises the sources of variation from a complex heterogeneous data set in a single figure.  
 
 ```{r}
-plot_variance_explained(MOFAobject, max_r2=10)
+plot_variance_explained(MOFAobject)
 ```
 
 What insights from the data can we learn just from inspecting this plot?  
@@ -257,7 +257,7 @@ Each factor captures a different source of variability in the data. Mathematical
 
 ```{r}
 plot_factor(MOFAobject, 
-  factors = 1, 
+  factors = 3, 
   color_by = "Factor1"
 )
 ```
@@ -274,9 +274,9 @@ By looking at the variance explained plot, we saw that Factor 1 captures variati
 ```{r}
 plot_weights(MOFAobject,
  view = "Mutations",
- factor = 1,
- nfeatures = 5,     # Top number of features to highlight
- scale = T           # Scale weights from -1 to 1
+ factor = 3,
+ nfeatures = 10,     # Top number of features to highlight
+ scale = F           # Scale weights from -1 to 1
 )
 ```
 
@@ -431,7 +431,7 @@ Now that we have characterised the etiology of the two main Factors, let's explo
 p <- plot_factors(MOFAobject, 
   factors = c(1,2), 
   color_by = "IGHV",
-  shape_by = "trisomy12",
+  shape_by = "trisomy19",
   dot_size = 2.5,
   show_missing = T
 )
