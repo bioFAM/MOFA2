@@ -206,6 +206,7 @@ What insights from the data can we learn just from inspecting this plot?
 ### Total variance explained per view
 
 A reasonable question is whether the model is providing a good fit to the data. For this we can plot the total variance explained (using all factors). The resulting values will depend on the nature of the data set, the number of samples, the number of Factors inferred, etc. Some general guidelines:  
+
 - Noisy data sets with strong non-linearities will result in small amounts of variance explained (<10%).
 - The higher the number of samples the smaller the total variance explained
 - The higher the number of factors, the higher the total variance explained. 
@@ -382,9 +383,9 @@ plot_data_heatmap(MOFAobject,
 )
 ```
 
-## Characterisation of Factor 2
+# Characterisation of Factor 2
 
-### Plot feature weights
+## Plot feature weights
 
 Following a similar strategy as for Factor 1, we notice that Factor 2 is also active in the somatic mutation view. Thus, there must be a mutation that underlies this phenotype. Let's plot the corresponding weights:
 ```{r}
@@ -398,6 +399,8 @@ plot_weights(MOFAobject,
 
 In this case we have two mutations that have large weight. One of them is the trisomy of chromosome 12, which is the [second most important clinical marker in CLL](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6058775/)!  
 
+## Plot Factor values
+
 Let's verify this by plotting the Factor values grouping samples by the presence or absence of trisomy12:
 ```{r}
 plot_factor(MOFAobject, 
@@ -408,6 +411,7 @@ plot_factor(MOFAobject,
 )
 ```
 
+## Plot input data
 
 Again, we can also inspect the molecular signatures in the input data with the functions `plot_data_scatter` and `plot_data_heatmap`:
 ```{r}
@@ -432,7 +436,7 @@ plot_data_heatmap(MOFAobject,
 )
 ```
 
-## Inspection of combinations of Factors
+# Inspection of combinations of Factors
 
 Now that we have characterised the etiology of the two main Factors, let's explore them together:
 ```{r}
@@ -453,7 +457,7 @@ print(p)
 
 This plot is extremely important. It classifies the patients into four different subgroups depending on their (multi-omic) molecular profile. As shown in the analysis above, both factors are associated with differences in the drug response assay they are are strongly linked to somatic mutations (IGHV and trisomy12) that are easy to profile in clinical practice. This is fantastic for the aim of personalised medicine. 
 
-### Prediction of clinical subgroups
+# Prediction of clinical subgroups
 
 The scatterplot of Factor 1 vs Factor 2 reveals that a few samples are missing the somatic mutation status. In this case, the doctors were not able to classify patients into their clinical subgroups. But we can now use MOFA to exploit the molecular profiles and attempt to impute the IGHV and trisomy12 status.
 
@@ -517,7 +521,7 @@ print(p)
 ```
 
 
-### Detection of outlier samples (TO-FINISH)
+# Detection of outlier samples (TO-FINISH)
 
 <!-- The plot above indicates that there are a few outlier samples that are interesting to explore. In particular, we have cases where the patient is predicted to be IGHV+ but its molecular profiles (i.e. its value in the latent representation) disagrees. Why? -->
 <!-- - XX -->
@@ -527,12 +531,12 @@ print(p)
 
 
 
-## Gene set enrichment analysis (GSEA)
+# Gene set enrichment analysis (GSEA)
 
 In addition to exploring the individual weights for each factor, we can use enrichment analysis to look for signiificant associations of factors to genesets. Here, we use the Reactome genesets for illustrations, which is contained in the `MOFAdata` package. For more details on how the GSEA works we encourage the users to read the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html)
 
 
-### Load Reactome gene set annotations.  
+## Load Reactome gene set annotations.  
 
 Gene set annotations are provided as a binary membership matrix. Genes are stored in the rows, pathways are stored in the columns. A value of 1 indicates that gene $j$ belongs to the pathway $i$.
 ```{r}
@@ -543,7 +547,7 @@ head(rownames(reactomeGS))
 ```
 
 
-### Run enrichment analysis
+## Run enrichment analysis
 
 These are the steps for doing [Gene Set Enrichment Analysis (GSEA) with MOFA](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html):  
 
@@ -615,7 +619,7 @@ plot_enrichment_detailed(
 
 
 
-## Customized analysis
+# Customized analysis
 
 For customized exploration of weights and factors, you can directly fetch the variables from the model using 'get' functions: `get_weights`, `get_factors` and `get_data`:
 ```{r}
