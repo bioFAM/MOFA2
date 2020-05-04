@@ -19,12 +19,12 @@
 #' @importFrom corrplot corrplot
 #' @export
 correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", 
-                                              abs = FALSE, plot = c("r","log_pval"), 
+                                              abs = FALSE, plot = c("log_pval","r"), 
                                               alpha = 0.05, return_data = FALSE, transpose = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (groups[1]!="all") stopifnot(groups%in%groups_names(object))
+  groups <- .check_and_get_groups(MOFAmodel,groups)
   
   # Get covariates
   metadata <- samples_metadata(object)
@@ -36,11 +36,11 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     samples <- metadata$sample
     if (is.null(rownames(covariates))) stop("The 'covariates' data.frame does not have samples names")
     stopifnot(all(rownames(covariates) %in% samples))
-    metadata <- metadata[match(rownames(covariates), metadata$sample),]
+    covariates <- metadata[match(rownames(covariates), metadata$sample),]
   } else {
     stop("covariates argument not recognised. Please read the documentation: ?correlate_factors_with_covariates")
   }
-    
+  
   # convert character columns to factors
   cols <- which(sapply(covariates,class)=="character")
   if (length(cols>=1)) {
@@ -62,7 +62,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   Z <- get_factors(object, factors = factors, groups = groups, as.data.frame=FALSE)
   Z <- do.call(rbind, Z)
   
-  # correlate
+  # correlation
   cor <- psych::corr.test(Z, covariates, method = "pearson", adjust = "BH")
   
   # plot  
@@ -83,7 +83,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
     col <- colorRampPalette(c("lightgrey", "red"))(n=100)
-    pheatmap::pheatmap(stat, main="log10 adjusted p-values", color=col, ...)
+    pheatmap::pheatmap(stat, main="log10 adjusted p-values", cluster_rows = FALSE, color=col, ...)
     
   } else {
     stop("'plot' argument not recognised. Please read the documentation: ?correlate_factors_with_covariates")

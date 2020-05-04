@@ -73,9 +73,9 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Remove features with no variance
   # if (statistical.test %in% c("cor.adj.parametric")) {
-  idx <- apply(data,2, function(x) var(x, na.rm = TRUE))==0
-  if (length(idx)>=1) {
-    warning(sprintf("%d fetures were removed because they had no variance in the data",sum(idx)))
+  idx <- apply(data,2, function(x) var(x,na.rm=T))==0
+  if (sum(idx)>=1) {
+    warning(sprintf("%d fetures were removed because they had no variance in the data.\n",sum(idx)))
     data <- data[,!idx]
     W <- W[!idx,]
   }
@@ -319,7 +319,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
   }
   
   # Generate heatmap
-  pheatmap(p.values, color = col, show_rownames = F, ...)
+  pheatmap(p.values, color = col, cluster_cols = F, show_rownames = F, ...)
 }
 
 
@@ -355,19 +355,19 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
   # Fetch and prepare data  
   
   # foo
-  foo <- melt(enrichment.results$feature.statistics[,factor], na.rm=T, value.name="feature.statistic")
+  foo <- reshape2::melt(enrichment.results$feature.statistics[,factor], na.rm=T, value.name="feature.statistic")
   foo$feature <- rownames(foo)
   
   # bar
   feature.sets <- enrichment.results$feature.sets
   feature.sets[feature.sets==0] <- NA
-  bar <- melt(feature.sets, na.rm=T)[,c(1,2)]
+  bar <- reshape2::melt(feature.sets, na.rm=T)[,c(1,2)]
   colnames(bar) <- c("pathway","feature")
   bar$pathway <- as.character(bar$pathway)
   bar$feature <- as.character(bar$feature)
   
   # baz
-  baz <- melt(enrichment.results$pval.adj[,factor], value.name="pvalue", na.rm=T)
+  baz <- reshape2::melt(enrichment.results$pval.adj[,factor], value.name="pvalue", na.rm=T)
   baz$pathway <- rownames(baz)
   
   # Filter out pathways by p-values
