@@ -41,7 +41,7 @@ Sample metadata are stored as a data.frame. Important columns are:
 - **treatedAfter**: (TRUE/FALSE)
 - **Died**: whether the patient died (TRUE/FALSE)
 ```{r}
-CLL_metadata <- fread("~/Downloads/sample_metadata.txt")
+CLL_metadata <- read.table("~/Downloads/sample_metadata.txt", header=T, sep="\t")
 head(CLL_metadata)
 ```
 
@@ -120,7 +120,7 @@ MOFAobject <- prepare_mofa(MOFAobject,
 
 
 Train the model: this should take ~2min
-```{r, eval=TRUE}
+```{r, message=FALSE}
 # NOTE: The software has evolved since the original publication and the results will not be 100% identical to the original publication
 MOFAmodel <- run_mofa(MOFAobject)
 ```
@@ -182,7 +182,7 @@ plot_factor_cor(MOFAmodel)
 
 ### Variance decomposition by Factor 
 
-The most important insight that MOFA generates is the variance decomposition figure. This plot shows the percentage of variance explained by each factor across each data modality (and group, if provided). This is probably the most important plot that MOFA generates, as it summarises the sources of variation from a complex heterogeneous data set in a single figure.  
+*The most important insight that MOFA generates is the variance decomposition figure*. This plot shows the percentage of variance explained by each factor across each data modality (and group, if provided). This is probably the most important plot that MOFA generates, as it summarises the sources of variation from a complex heterogeneous data set in a single figure.  
 
 ```{r}
 plot_variance_explained(MOFAmodel, max_r2=10)
@@ -263,7 +263,7 @@ The weights provide a score for each feature on each factor. Features with no as
 
 ### Plot feature weights for somatic mutations
 
-By looking at the variance explained plot, we can see that Factor 1 captures variation in all data modalities. Out of all omics, the somatic mutation data is a good place to start, as somatic mutations are very sparse, easy to interpret and any change in the DNA is likely to have downstream consequences to all other molecular layers. Let's plot the weights:
+By looking at the variance explained plot, we saw that Factor 1 captures variation in all data modalities. Out of all omics, the somatic mutation data is a good place to start, as somatic mutations are very sparse, easy to interpret and any change in the DNA is likely to have downstream consequences to all other molecular layers. Let's plot the weights:
 
 ```{r}
 plot_weights(MOFAmodel,
@@ -287,7 +287,7 @@ plot_top_weights(MOFAmodel,
 ```
 
 IGHV has a positve weight. This means that samples with positive Factor 1 values have IGHV mutation whereas samples with negative Factor 1 values do not have the IGHV mutation. To confirm this, let's plot the Factor values and colour the IGHV mutation status.  
-Note that some samples are missing the IGHV status because of missing somatic mutation data, but we could predict it! We will play with this later.
+Note that some samples are missing the IGHV status because of missing somatic mutation data... should we try to use the model to predict it?? We will play with this later.
 ```{r}
 plot_factor(MOFAmodel, 
   factors = 1, 
@@ -487,35 +487,67 @@ head(rownames(reactomeGS))
 
 ### Run enrichment analysis
 
-<!-- run_enrichment <- function(object, view, feature.sets, factors = "all", -->
-<!--                            set.statistic = c("mean.diff", "rank.sum"), -->
-<!--                            statistical.test = c("parametric", "cor.adj.parametric", "permutation"), sign = c("all","positive","negative"), -->
-<!--                            min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH", alpha = 0.1) { -->
+These are the steps for doing [Gene Set Enrichment Analysis (GSEA) with MOFA](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html):  
 
-```{r}
-res <- run_enrichment(MOFAmodel, 
+- **(1) Define your gene set matrix**: this can be specified as a binary matrix where rows are gene sets and columns are genes. A value of 1 indicates that gene `j` belongs to pathway `i`. A value of 0 indicates elsewise.  
+- **(2) Select a gene set statistic**: the statistic used to quantify the scores at the pathway level. Must be one of the following: `mean.diff` (difference in the average weight between foreground and background genes) or `rank.sum` (difference in the sum of ranks between foreground and background genes).  
+- **(3) Select a statistical test**: the statistical test used to compute the significance of the gene set statistics under a competitive null hypothesis. Must be one of the following: `parametric` (a simple and very liberal parametric t-test), `cor.adj.parametric` (parametric t-test adjusted by the correlation between features), `permutation` (unparametric, the null distribution is created by permuting the weights. This option is computationally expensive, but it preserves the correlation structure between features in the data.).  
+
+An important consideration when running GSEA is that MOFA contains positive and negative weights. There will be cases where the genes with negative weights all belong to a specific pathway but genes with positive weights belong to other pathways. If this is true, doing GSEA with all of them together could dilute the signal. Hence, we recommend the user to do GSEA separately for (+) and (-) weights, and possibly also jointly with all weights.  
+
+```{r message=FALSE}
+# GSEA on all weights, with default options
+# res.all <- run_enrichment(MOFAmodel, 
+#   feature.sets = reactomeGS, 
+#   view = "mRNA",
+#   sign = "all"
+# )
+
+# GSEA on positive weights, with default options
+res.positive <- run_enrichment(MOFAmodel, 
   feature.sets = reactomeGS, 
-  view = "mRNA"
+  view = "mRNA",
+  sign = "positive"
 )
+
+# GSEA on negative weights, with default options
+res.negative <- run_enrichment(MOFAmodel, 
+  feature.sets = reactomeGS, 
+  view = "mRNA",
+  sign = "negative"
+)
+```
+
+The enrichment analysis returns a list of 5 elements:  
+
+- **feature.sets**:	the feature set matrix filtered by the genes that overlap with the MOFA model.  
+- **pval**:	the nominal p-values.  
+- **pval.adj**:	the FDR-adjusted p-values.  
+- **feature.statistics**: the feature statistics (i.e. the weights).  
+- **set.statistics**: matrices with the gene set statistics.  
+- **sigPathways**: list with significant pathways per factor at a specified FDR threshold  
+```{r}
+names(res.positive)
 ```
 
 ### Plot enrichment analysis results
 
 Plot an overview of the number of significant pathways per factor.  
-It seems like Factor 3, 4 and 6 have a strong enrichment for some pathways, but most of the other Factors do not have clear gene set signatures
+It seems that most of the Factors do not have clear gene set signatures. A clear exception is Factor 3, which has a very strong enrichment for genes with positive weights.
 ```{r}
-plot_enrichment_heatmap(res)
+plot_enrichment_heatmap(res.positive)
+plot_enrichment_heatmap(res.negative)
 ```
 
 Let's plot the GSEA results for Factor 3. It seems that this Factor is capturing differences in the stress response of the blood cells.
 ```{r}
-plot_enrichment(res, factor = 3, max.pathways = 15)
+plot_enrichment(res.positive, factor = 3, max.pathways = 15)
 ```
 
-It is always advised to visualise which genes are driving the enrichment within each pathways. There are problematic cases where a single gene is driving the enrichment results in very small pathways.
+It is always advised to not rely only on the p-values and to visualise which genes are driving the enrichment within each pathways. There are problematic cases where a single gene is driving the enrichment results in very small pathways.
 ```{r}
-plot_enrichment_detailed(MOFAmodel, 
-  enrichment.results = res,
+plot_enrichment_detailed(
+  enrichment.results = res.positive,
   factor = 3, 
   feature.sets = reactomeGS, 
   max.pathways = 3
@@ -563,9 +595,8 @@ sessionInfo()
 
 With the `impute` function all missing values are imputed based on the MOFA model. The imputed data is then stored in the `ImputedData slot` of the MOFAobject and can be accessed via the `getImputedData` function.
 ```{r}
-MOFAobject <- impute(MOFAobject)
-
-imputedDrugs <- getImputedData(MOFAobject, view="Drugs")
+# MOFAobject <- impute(MOFAobject)
+# imputedDrugs <- getImputedData(MOFAobject, view="Drugs")
 ```
 
 
@@ -580,6 +611,6 @@ imputedDrugs <- getImputedData(MOFAobject, view="Drugs")
 sessionInfo()
 ```
 
-# Multi-group analysis
 
-In the first application of MOFA we considered all 200 patients as a single group. Here, we will separately consider samples from male and female patients and apply multi-group inference using MOFA+.
+<!-- # Multi-group analysis -->
+<!-- In the first application of MOFA we considered all 200 patients as a single group. Here, we will separately consider samples from male and female patients and apply multi-group inference using MOFA+. -->

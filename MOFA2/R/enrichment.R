@@ -255,9 +255,10 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
   if (nrow(tmp)>max.pathways) tmp <- head(tmp[order(tmp$pvalue),],n=max.pathways)
   
   # Convert pvalues to log scale
-  tmp$logp <- -log10(tmp$pvalue+1e-50)
+  # tmp$logp <- -log10(tmp$pvalue+1e-50)
+  tmp$logp <- -log10(tmp$pvalue+1e-100)
   
-  # Annotate significcant pathways
+  # Annotate significant pathways
   # tmp$sig <- factor(tmp$pvalue<alpha)
   
   #order according to significance
@@ -346,6 +347,7 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
                                      alpha = 0.1, max.genes = 5, max.pathways = 10, text_size = 3) {
   
   # Sanity checks
+  stopifnot(is.list(enrichment.results))
   stopifnot(length(factor)==1) 
   if (!is.numeric(factor)) {
     if(!factor %in% colnames(enrichment.results$pval)) 
