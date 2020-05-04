@@ -24,7 +24,7 @@
 # #' @importFrom DelayedArray DelayedArray
 #' @export
 load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
-                       remove_outliers = FALSE, remove_intercept_factors = TRUE, remove_inactive_factors = TRUE, verbose = FALSE) {
+                       remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -340,6 +340,15 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if (isTRUE(remove_outliers)) {
     if (isTRUE(verbose)) message("Removing outliers...")
     object <- .detect_outliers(object)
+  }
+  
+  # Mask intercepts for non-Gaussian data
+  if (any(object@model_options$likelihoods!="gaussian")) {
+    for (m in names(which(object@model_options$likelihoods!="gaussian"))) {
+      for (g in names(object@intercepts[[m]])) {
+        object@intercepts[[m]][[g]] <- NA
+      }
+    }
   }
 
   ######################

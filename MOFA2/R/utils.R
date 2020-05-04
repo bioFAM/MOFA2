@@ -118,19 +118,26 @@ return(model)
   
 }
 
-.check_and_get_views <- function(object, views) {
+.check_and_get_views <- function(object, views, non_gaussian=TRUE) {
   stopifnot(!any(duplicated(views)))
   if (is.numeric(views)) {
     stopifnot(all(views <= object@dimensions$M))
     views_names(object)[views] 
   } else {
     if (paste0(views, sep = "", collapse = "") == "all") { 
-      views_names(object)
+      views <- views_names(object)
     } else {
       stopifnot(all(views %in% views_names(object)))
-      views
     }
   }
+  
+  # Ignore non-gaussian views  
+  if (isFALSE(non_gaussian)) {
+    non_gaussian_views <- names(which(object@model_options$likelihoods!="gaussian"))
+    views <- views[!views%in%non_gaussian_views]
+  }
+  
+  return(views)
 }
 
 
