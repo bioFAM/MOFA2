@@ -2,13 +2,14 @@
 title: "Applying MOFA+ to the Chronic Lymphocytic Leukemia cohort"
 author: 
   name: "Britta Velten and Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "b.velten@dkfz-heidelberg.de"
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:
     toc: true
-package: MOFA2
 vignette: >
-  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to Chronic Lymphocytic Leukemia multi-omics cohort}
+  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to the Chronic Lymphocytic Leukemia cohort}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -23,6 +24,7 @@ Briefly, the data consists of four omics including DNA methylation, RNA-seq, som
 ```{r, message=FALSE}
 library(MOFA2)
 library(MOFAdata)
+library(data.table)
 library(ggplot2)
 library(tidyverse)
 ```
@@ -44,7 +46,7 @@ Sample metadata are stored as a data.frame. Important columns are:
 
 The full meta data can be obtained from the Bioconductor package `BloodCancerMultiOmics2017` as `data("patmeta")`.
 ```{r}
-CLL_metadata <- read.table("~/Downloads/sample_metadata.txt", header=T, sep="\t")
+CLL_metadata <- fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/cll_vignette/sample_metadata.txt")
 ```
 
 <!-- Note that some patients lack the clinical information -->
@@ -136,9 +138,10 @@ Train the model: this should take ~2min
 ```{r, message=FALSE, warning=FALSE}
 # NOTE: The software has evolved since the original publication and the results will not be 100% identical to the original publication, please use the pretrained model if you are running through the vignette for the fist time
 # MOFAobject <- run_mofa(MOFAobject, outfile="/Users/ricard/Downloads/MOFA2_CLL.hdf5")
+# saveRDS(MOFAobject,"MOFA2_CLL.hdf5")
 
 # Load precomputed model
-MOFAobject <- load_model("~/Downloads/MOFA2_CLL.hdf5")
+MOFAobject <- readRDS(url("http://ftp.ebi.ac.uk/pub/databases/mofa/cll_vignette/MOFA2_CLL.rds"))
 ```
 
 
