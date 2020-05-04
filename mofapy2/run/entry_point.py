@@ -893,7 +893,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     gpu_mode (optional): if to use GPU mode
     Y_ELBO_TauTrick (optional): if to use ELBO Tau trick to speed up computations
     save_parameters (optional): if to save training parameters
-    save_parameters (optional): if to save training data
+    save_data (optional): if to save training data
     save_metadata (optional): if to load metadata from the AnnData object (.obs and .var tables) and save it, False by default
     seed (optional): random seed
     outfile (optional): path to HDF5 file to store the model
