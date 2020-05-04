@@ -18,7 +18,7 @@ This vignette show how to use MOFA+ on the bulk multi-omics data set that was us
 
 Briefly, the data consists of four omics including DNA methylation, RNA-seq, somatic mutations and drug response data from blood for N=200 patients with Chronic Lymphocytic Leukemia (CLL). The data set is explained in detail [in this article](https://www.jci.org/articles/view/93801) and is publicly available [here](http://bioconductor.org/packages/release/data/experiment/html/BloodCancerMultiOmics2017.html)
   
-# Step 1: Load libraries and data
+# Load libraries and data
 
 ```{r, message=FALSE}
 library(MOFA2)
@@ -37,8 +37,8 @@ Sample metadata are stored as a data.frame. Important columns are:
 
 - **Gender**: m (male), f (female)
 - **Age**: age in years
-- **T5**: time (in years) which passed from taking the sample to the next treatment
-- **T6**: time (in years) which passed from taking the sample to patients' death
+- **TTT**: time (in years) which passed from taking the sample to the next treatment
+- **TTD**: time (in years) which passed from taking the sample to patients' death
 - **treatedAfter**: (TRUE/FALSE)
 - **Died**: whether the patient died (TRUE/FALSE)
 
@@ -47,12 +47,12 @@ The full meta data can be obtained from the Bioconductor package `BloodCancerMul
 CLL_metadata <- read.table("~/Downloads/sample_metadata.txt", header=T, sep="\t")
 ```
 
-Note that some patients lack the clinical information
-```{r}
-table(!is.na(CLL_metadata$died))
-```
+<!-- Note that some patients lack the clinical information -->
+<!-- ```{r} -->
+<!-- table(!is.na(CLL_metadata$died)) -->
+<!-- ``` -->
 
-# Step 2: create the MOFA obejct and train the model
+# Create the MOFA obejct and train the model
 
 Create the MOFA object
 ```{r message=FALSE}
@@ -142,15 +142,15 @@ MOFAobject <- load_model("~/Downloads/MOFA2_CLL.hdf5")
 ```
 
 
-# Step 3: Analysis of the trained MOFA model
+# Overview of the trained MOFA model
 
-## Overview
+## Slots
 
 The MOFA object consists of multiple slots where relevant data and information is stored. For descriptions, you can read the documentation using `?MOFA`. The most important slots are:  
 
-- *data*: input data user to train the model (features are centered at zero mean)
-- *samples_metadata*: sample metadata information
-- *expectations*: expectations of the posterior distributions for the Weights and the Factors
+- **data**: input data used to train the model (features are centered at zero mean)
+- **samples_metadata**: sample metadata information
+- **expectations**: expectations of the posterior distributions for the Weights and the Factors
 
 ```{r}
 slotNames(MOFAobject)
@@ -162,7 +162,7 @@ names(MOFAobject@data)
 dim(MOFAobject@data$Drugs$group1)
 ```
 
-Factor and Weight values (expectations of the posterior distributions:
+Factor and Weight values (expectations of the posterior distributions):
 ```{r}
 names(MOFAobject@expectations)
 
@@ -211,7 +211,7 @@ What insights from the data can we learn just from inspecting this plot?
 
 ### Total variance explained per view
 
-A reasonable question is whether the model is providing a good fit to the data. For this we can plot the total variance explained (using all factors). The resulting values will depend on the nature of the data set, the number of samples, the number of Factors inferred, etc. Some general guidelines:  
+A reasonable question is whether the model is providing a good fit to the data. For this we can plot the total variance explained (using all factors). The resulting values will depend on the nature of the data set, the number of samples, the number of factors, etc. Some general guidelines:  
 
 - Noisy data sets with strong non-linearities will result in small amounts of variance explained (<10%).
 - The higher the number of samples the smaller the total variance explained
@@ -417,7 +417,7 @@ plot_factor(MOFAobject,
 )
 ```
 
-## Plot input data
+## Plot molecular signatures in the input data
 
 Again, we can also inspect the molecular signatures in the input data with the functions `plot_data_scatter` and `plot_data_heatmap`:
 ```{r}
@@ -469,7 +469,9 @@ The scatterplot of Factor 1 vs Factor 3 reveals that a few samples are missing t
 
 ```{r}
 suppressPackageStartupMessages(library(randomForest))
+```
 
+```{r}
 # Prepare data
 df <- as.data.frame(get_factors(MOFAobject, factors=c(1,2))[[1]])
 
@@ -478,15 +480,19 @@ df$IGHV <- as.factor(MOFAobject@samples_metadata$IGHV)
 model.ighv <- randomForest(IGHV ~ ., data=df[!is.na(df$IGHV),], ntree=10)
 df$IGHV <- NULL
 
+# Do predictions
+MOFAobject@samples_metadata$IGHV.pred <- stats::predict(model.ighv, df)
+```
+
+```{r}
 # Train the model for Trisomy12
 df$trisomy12 <- as.factor(MOFAobject@samples_metadata$trisomy12)
 model.trisomy12 <- randomForest(trisomy12 ~ ., data=df[!is.na(df$trisomy12),], ntree=10)
 df$trisomy12 <- NULL
 
-# Do predictions
-MOFAobject@samples_metadata$IGHV.pred <- stats::predict(model.ighv, df)
 MOFAobject@samples_metadata$trisomy12.pred <- stats::predict(model.trisomy12, df)
 ```
+
 
 Plot predictions for IGHV
 ```{r}
@@ -507,32 +513,30 @@ p <- p +
 print(p)
 ```
 
-Plot predictions for Trisomy12
-```{r}
-MOFAobject@samples_metadata$trisomy12.pred_logical <- c("True","Predicted")[as.numeric(is.na(MOFAobject@samples_metadata$trisomy12))+1]
+<!-- Plot predictions for Trisomy12 -->
+<!-- ```{r} -->
+<!-- MOFAobject@samples_metadata$trisomy12.pred_logical <- c("True","Predicted")[as.numeric(is.na(MOFAobject@samples_metadata$trisomy12))+1] -->
 
-p <- plot_factors(MOFAobject, 
-  factors = c(1,3), 
-  color_by = "trisomy12.pred",
-  shape_by = "trisomy12.pred_logical",
-  dot_size = 2.5,
-  show_missing = T
-)
+<!-- p <- plot_factors(MOFAobject,  -->
+<!--   factors = c(1,3),  -->
+<!--   color_by = "trisomy12.pred", -->
+<!--   shape_by = "trisomy12.pred_logical", -->
+<!--   dot_size = 2.5, -->
+<!--   show_missing = T -->
+<!-- ) -->
 
-p <- p + 
-  geom_hline(yintercept=-1, linetype="dashed") +
-  geom_vline(xintercept=(-0.5), linetype="dashed")
+<!-- p <- p +  -->
+<!--   geom_hline(yintercept=-1, linetype="dashed") + -->
+<!--   geom_vline(xintercept=(-0.5), linetype="dashed") -->
 
-print(p)
-```
+<!-- print(p) -->
+<!-- ``` -->
 
 
-# Detection of outlier samples (TO-FINISH)
-
+<!-- # Detection of outlier samples (TO-FINISH) -->
 <!-- The plot above indicates that there are a few outlier samples that are interesting to explore. In particular, we have cases where the patient is predicted to be IGHV+ but its molecular profiles (i.e. its value in the latent representation) disagrees. Why? -->
 <!-- - XX -->
 <!-- - XX -->
-
 <!-- This analysis shows that for the majority of patients the molecular classification and the mutation-based classification agrees, but for a few cases they do not... -->
 
 
@@ -564,13 +568,6 @@ These are the steps for doing [Gene Set Enrichment Analysis (GSEA) with MOFA](ht
 An important consideration when running GSEA is that MOFA contains positive and negative weights. There will be cases where the genes with negative weights all belong to a specific pathway but genes with positive weights belong to other pathways. If this is true, doing GSEA with all of them together could dilute the signal. Hence, we recommend the user to do GSEA separately for (+) and (-) weights, and possibly also jointly with all weights.  
 
 ```{r message=FALSE}
-# GSEA on all weights, with default options
-# res.all <- run_enrichment(MOFAobject, 
-#   feature.sets = reactomeGS, 
-#   view = "mRNA",
-#   sign = "all"
-# )
-
 # GSEA on positive weights, with default options
 res.positive <- run_enrichment(MOFAobject, 
   feature.sets = reactomeGS, 
@@ -602,22 +599,22 @@ names(res.positive)
 ### Plot enrichment analysis results
 
 Plot an overview of the number of significant pathways per factor.  
-It seems that most of the Factors do not have clear gene set signatures. A clear exception is Factor 3, which has a very strong enrichment for genes with positive weights.
+It seems that most of the Factors do not have clear gene set signatures. A clear exception is Factor 5, which has a very strong enrichment for genes with positive weights.
 ```{r}
 plot_enrichment_heatmap(res.positive)
 plot_enrichment_heatmap(res.negative)
 ```
 
-Let's plot the GSEA results for Factor 3. It seems that this Factor is capturing differences in the stress response of the blood cells.
+Let's plot the GSEA results for Factor 5. It seems that this Factor is capturing differences in the stress response of the blood cells.
 ```{r}
-plot_enrichment(res.positive, factor = 3, max.pathways = 15)
+plot_enrichment(res.positive, factor = 5, max.pathways = 15)
 ```
 
 It is always advised to not rely only on the p-values and to visualise which genes are driving the enrichment within each pathways. There are problematic cases where a single gene is driving the enrichment results in very small pathways.
 ```{r}
 plot_enrichment_detailed(
   enrichment.results = res.positive,
-  factor = 3, 
+  factor = 5, 
   feature.sets = reactomeGS, 
   max.pathways = 3
 )
@@ -632,7 +629,7 @@ For customized exploration of weights and factors, you can directly fetch the va
 weights <- get_weights(MOFAobject, 
   views = "all", 
   factors = "all", 
-  as.data.frame = TRUE    # if TRUE, it outputs a long dataframe format. If FALSE, it outputs a wide matrix format
+  as.data.frame = TRUE 
 )
 head(weights)
 ```
@@ -640,7 +637,7 @@ head(weights)
 ```{r}
 factors <- get_factors(MOFAobject, 
   factors = "all", 
-  as.data.frame = TRUE    # if TRUE, it outputs a long dataframe format. If FALSE, it outputs a wide matrix format
+  as.data.frame = TRUE
 )
 head(factors)
 ```
@@ -648,7 +645,7 @@ head(factors)
 ```{r}
 data <- get_data(MOFAobject, 
   views = "all", 
-  as.data.frame = TRUE    # if TRUE, it outputs a long dataframe format. If FALSE, it outputs a wide matrix format
+  as.data.frame = TRUE
 )
 head(data)
 ```
@@ -657,82 +654,91 @@ head(data)
 
 With the `impute` function all missing values are imputed based on the MOFA model. The imputed data is then stored in the `imputed_data` slot of the MOFAobject and can be accessed via the `get_imputed_data` function.
 ```{r}
-# MOFAobject <- impute(MOFAobject)
+MOFAobject <- impute(MOFAobject)
 ```
 
 Before imputation
 ```{r}
-# MOFAobject@data$mRNA[[1]][1:5,190:195]
+MOFAobject@data$mRNA[[1]][1:5,190:195]
 ```
 
 After imputation
 ```{r}
-# MOFAobject@imputed_data$mRNA[[1]][["mean"]][1:5,190:195]
+MOFAobject@imputed_data$mRNA[[1]][["mean"]][1:5,190:195]
 ```
 
 
-# Building predictive models of clinical outcome (TO-DO)
-The factors inferred by MOFA can be related to clinical outcomes such as time to treatment or survival times. As this type of data is censored (not for all samples we have already observed the event) we will use Cox models for this purpose. In a Cox proportional hazards model we model the hazard of an event ocurring (e.g. death or treatment) as a function in covariates (here the factors). If a factor has a influence on the surivival time or time to treatment it will recevie a high absoulte coefficient in the Cox model:
+# Building predictive models of clinical outcome
 
-- If the coefficient is positive, samples with large factor values have an increased hazard (of death or treatment) compared to  with a low factor values
-- If the coefficient is negative, samples with low factor values have an increased hazard compared to  with a large factor values
+The factors inferred by MOFA can be related to clinical outcomes such as time to treatment or survival times. As this type of data is censored (not for all samples we have already observed the event) we will use [Cox models](http://www.bandolier.org.uk/painres/download/whatis/COX_MODEL.pdf) for this purpose. In a Cox proportional hazards model we model the hazard of an event ocurring (e.g. death or treatment) as a function of some covariates (here the factors). If a factor has a influence on the surivival time or time to treatment it will receive a high absoulte coefficient in the Cox model. In particular:
+
+- If the coefficient is positive, samples with large factor values have an increased hazard (of death or treatment) compared to samples with small factor values.
+- If the coefficient is negative, samples with small factor values have an increased hazard compared to samples with a large factor values.
 
 To fit these models we will use the `coxph` function in the `survival` package. The survival data is stored in a survival object that contains both the time a sample has been followed up and whether the event has occured (as 0,1).
 
-Let's take time to treatment as an example here. The `samples_metadata` contains the follow-up times per sample in years in column `T5` and the column `treatedAfter` indicated whether a treatment occured. Using the MOFA factors as covariates (in a matrix format) we can driectly relate them to the Surv object using `coxph`.
+Let's take time to treatment as an example here. The sample metadata contains the follow-up times per sample in years in the column `TTT`, and the column `treatedAfter` indicated whether a treatment occured.
+
+### Fit Cox models
 
 ```{r}
-library(survival)
-SurvObject <-Surv(MOFAobject@samples_metadata$T5, MOFAobject@samples_metadata$treatedAfter)
+suppressPackageStartupMessages(library(survival))
+suppressPackageStartupMessages(library(survminer))
+```
+
+```{r}
+SurvObject <- Surv(MOFAobject@samples_metadata$TTT, MOFAobject@samples_metadata$treatedAfter)
 Z <- get_factors(MOFAobject)[[1]]
-fit <- coxph(SurvObject  ~  Z) 
+fit <- coxph(SurvObject ~ Z) 
 fit
 ```
 
-We can see that several factors have a significant association to time to treatment. For example, Factor 1 has a negative coefficient. Samples with low factor values (largely U-CLL) have an increased hazard compared to  with a large factor values (largely M-CLL).
+We can see that several factors have a significant association to time to treatment. For example, Factor 1 has a negative coefficient. Samples with low factor values have an increased hazard compared to samples with a large factor values.
 
-Let's plot the results.
+### Plot Hazard ratios
+
 ```{r}
 s <- summary(fit)
-df <- data.frame(factor = factor(rownames(s[["coefficients"]]),
-                                 levels = rev(rownames(s[["coefficients"]]))),
-                 p      = s[["coefficients"]][, "Pr(>|z|)"], 
-                 coef   = s[["coefficients"]][, "exp(coef)"], 
-                 lower  = s[["conf.int"]][, "lower .95"], 
-                 higher = s[["conf.int"]][, "upper .95"])
+coef <- s[["coefficients"]]
 
-ggplot(df, aes(x=factor, y=coef,ymin=lower,ymax=higher))+
-  geom_pointrange( col='#619CFF') + coord_flip() +
-  scale_x_discrete() + ylab("Hazard Ratio") + 
-  geom_hline(aes(yintercept=1), linetype="dotted")
+df <- data.frame(
+  factor = factor(rownames(coef), levels = rev(rownames(coef))),
+  p      = coef[,"Pr(>|z|)"], 
+  coef   = coef[,"exp(coef)"], 
+  lower  = s[["conf.int"]][,"lower .95"], 
+  higher = s[["conf.int"]][,"upper .95"]
+)
+
+ggplot(df, aes(x=factor, y=coef, ymin=lower, ymax=higher)) +
+  geom_pointrange( col='#619CFF') + 
+  coord_flip() +
+  scale_x_discrete() + 
+  labs(y="Hazard Ratio", x="") + 
+  geom_hline(aes(yintercept=1), linetype="dotted") +
+  theme_bw()
 ```
+
+### Kaplan-Meier plots
 
 For illustration purposes we can also split the samples based on the factor values into two groups using the maximally selected rank statistics from the `maxstat` R package and plot the Kaplan Meier plots per group.
 ```{r}
-df <- data.frame(time=SurvObject[,1], event = SurvObject[,2], Z1 = Z[,1])
-cut <- survminer::surv_cutpoint(df, variables='Z1')
+df <- data.frame(
+  time = SurvObject[,1], 
+  event = SurvObject[,2], Z1 = Z[,1]
+)
+cut <- surv_cutpoint(df, variables='Z1')
 df$FactorCluster <- df$Z1 > cut$cutpoint$cutpoint
 fit <- survfit(Surv(time, event) ~ FactorCluster, df)
-ggLF <- survminer::ggsurvplot(fit, data =df,
-                        conf.int = TRUE,
-                        pval = TRUE,
-                        fun = function(y) y * 100,
-                        legend = "top",
-                        legend.labs = c(paste("low LF 1"), paste("high LF 1")),
-                        xlab = "Time to treatment",
-                        ylab="Survival probability (%)",
-                        title= "Factor 1"
-                        )
-ggLF$plot
+
+ggsurvplot(fit, data = df,
+  conf.int = TRUE, pval = TRUE,
+  fun = function(y) y * 100,
+  legend = "top", legend.labs = c(paste("low LF 1"), paste("high LF 1")),
+  xlab = "Time to treatment", ylab="Survival probability (%)", title= "Factor 1"
+)$plot
 ```
 
-# SessionInfo
-```{r}
-sessionInfo()
-```
-
-
-# Multi-group analysis (TO-DO)
+<!-- # Multi-group analysis (TO-DO) -->
 <!-- In the first application of MOFA we considered all 200 patients as a single group. Here, we will separately consider samples from male and female patients and apply multi-group inference using MOFA+. -->
 
 
