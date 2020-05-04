@@ -33,6 +33,7 @@ lapply(CLL_data,dim)
 ```
 
 Sample metadata are stored as a data.frame. Important columns are:  
+
 - **Gender**: m (male), f (female)
 - **Age**: age in years
 - **T5**
@@ -73,6 +74,7 @@ plot_data_overview(MOFAobject)
 ### Data options
 
 Important arguments:
+
 - **scale_groups**: scale groups to the same total variance? Default is `FALSE`
 - **scale_views**: scale views to the same total variance? Default is `FALSE`
 - **views**: views names
@@ -86,6 +88,7 @@ data_opts
 ### Model options
 
 Important arguments:
+
 - **num_factors**: number of factors
 - **likelihoods**: likelihood per view (options are "gaussian", "poisson", "bernoulli"). By default they are inferred automatically.
 - **spikeslab_factors**: use spike-slab sparsity prior in the factors? default is `FALSE`.
@@ -103,6 +106,7 @@ model_opts
 ### Training options
 
 Important arguments:
+
 - **maxiter**: number of iterations. Default is 1000.
 - **convergence_mode**: "fast", "medium" (default), "slow". For exploration, the fast mode is good enough.
 - **seed**: random seed
@@ -128,7 +132,7 @@ MOFAobject <- prepare_mofa(MOFAobject,
 
 
 Train the model: this should take ~2min
-```{r, message=FALSE}
+```{r, message=FALSE, warning=FALSE}
 # NOTE: The software has evolved since the original publication and the results will not be 100% identical to the original publication, please use the pretrained model if you are running through the vignette for the fist time
 # MOFAobject <- run_mofa(MOFAobject, outfile="/Users/ricard/Downloads/MOFA2_CLL.hdf5")
 
@@ -141,7 +145,8 @@ MOFAobject <- load_model("/Users/ricard/Downloads/MOFA2_CLL.hdf5")
 
 ## Overview
 
-The MOFA object consists of multiple slots where relevant data and information is stored. For descriptions, you can read the documentation using `?MOFA`. The most important slots are:
+The MOFA object consists of multiple slots where relevant data and information is stored. For descriptions, you can read the documentation using `?MOFA`. The most important slots are:  
+
 - *data*: input data user to train the model (features are centered at zero mean)
 - *samples_metadata*: sample metadata information
 - *expectations*: expectations of the posterior distributions for the Weights and the Factors
@@ -383,11 +388,11 @@ plot_data_heatmap(MOFAobject,
 )
 ```
 
-# Characterisation of Factor 2
+# Characterisation of Factor 3
 
 ## Plot feature weights
 
-Following a similar strategy as for Factor 1, we notice that Factor 2 is also active in the somatic mutation view. Thus, there must be a mutation that underlies this phenotype. Let's plot the corresponding weights:
+Following a similar strategy as for Factor 1, we notice that Factor 3 is also active in the somatic mutation view. Thus, there must be a mutation that underlies this phenotype. Let's plot the corresponding weights:
 ```{r}
 plot_weights(MOFAobject, 
   view = "Mutations", 
@@ -459,7 +464,7 @@ This plot is extremely important. It classifies the patients into four different
 
 # Prediction of clinical subgroups
 
-The scatterplot of Factor 1 vs Factor 2 reveals that a few samples are missing the somatic mutation status. In this case, the doctors were not able to classify patients into their clinical subgroups. But we can now use MOFA to exploit the molecular profiles and attempt to impute the IGHV and trisomy12 status.
+The scatterplot of Factor 1 vs Factor 3 reveals that a few samples are missing the somatic mutation status. In this case, the doctors were not able to classify patients into their clinical subgroups. But we can now use MOFA to exploit the molecular profiles and attempt to impute the IGHV and trisomy12 status.
 
 ```{r}
 suppressPackageStartupMessages(library(randomForest))
