@@ -24,6 +24,7 @@ Briefly, the data consists of four omics including DNA methylation, RNA-seq, som
 library(MOFA2)
 library(MOFAdata)
 library(ggplot2)
+library(tidyverse)
 ```
 
 Data is stored as a list of matrices. Features are stored in the rows and samples in the columns
@@ -36,13 +37,19 @@ Sample metadata are stored as a data.frame. Important columns are:
 
 - **Gender**: m (male), f (female)
 - **Age**: age in years
-- **T5**
-- **T6**
+- **T5**: time (in years) which passed from taking the sample to the next treatment
+- **T6**: time (in years) which passed from taking the sample to patients' death
 - **treatedAfter**: (TRUE/FALSE)
 - **Died**: whether the patient died (TRUE/FALSE)
 
+Information on other columns can be obtained using`?patmeta`.
 ```{r}
-CLL_metadata <- read.table("~/Downloads/sample_metadata.txt", header=T, sep="\t")
+library(BloodCancerMultiOmics2017)
+data("patmeta")
+# extract metadata for patients with omics data
+CLL_metadata <- patmeta[colnames(CLL_data$Drugs),] 
+CLL_metadata <- rownames_to_column(CLL_metadata, "sample")
+CLL_metadata <- rename(CLL_metadata, age = Age4Main)
 head(CLL_metadata)
 ```
 
@@ -137,7 +144,7 @@ Train the model: this should take ~2min
 # MOFAobject <- run_mofa(MOFAobject, outfile="/Users/ricard/Downloads/MOFA2_CLL.hdf5")
 
 # Load precomputed model
-MOFAobject <- load_model("/Users/ricard/Downloads/MOFA2_CLL.hdf5")
+MOFAobject <- load_model("~/Downloads/MOFA2_CLL.hdf5")
 ```
 
 
