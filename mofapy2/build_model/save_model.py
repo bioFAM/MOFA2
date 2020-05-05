@@ -189,7 +189,7 @@ class saveModel():
             assert set(nodes).issubset(["Z","W","Y","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW"]), "Unrecognised nodes"
         nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
 
-        # Define nodes which special characteristics 
+        # Define nodes with special characteristics 
         # (note that this code is ugly and is not proper class-oriented programming)
         multigroup_nodes = ["Y","Tau","Z"]
         # multiview_nodes = ["Y","Tau","Alpha","W"]
@@ -209,7 +209,7 @@ class saveModel():
             if isinstance(nodes_dic[n],Multiview_Node):
                 for m in range(nodes_dic[n].M):
 
-                    # Multi-groups nodes (Tau and Y)
+                    # Multi-groups nodes (Tau, Y, and Z)
                     if n in multigroup_nodes:
 
                         # Create subgroup for the view
@@ -228,7 +228,7 @@ class saveModel():
                     # Single-groups nodes (W)
                     else:
                         foo = exp[m].T
-                        node_subgrp.create_dataset(self.views_names[m], data=foo[self.order_factors,:], compression="gzip", compression_opts=self.compression_level)
+                        node_subgrp.create_dataset(self.views_names[m], data=foo[self.order_factors], compression="gzip", compression_opts=self.compression_level)
 
             # Single-view nodes
             else:
@@ -238,7 +238,7 @@ class saveModel():
                     for g in self.groups_names:
                         samp_indices = np.where(np.array(self.samples_groups) == g)[0]
                         foo = exp[samp_indices,:].T
-                        node_subgrp.create_dataset(g, data=foo[self.order_factors,:], compression="gzip", compression_opts=self.compression_level)
+                        node_subgrp.create_dataset(g, data=foo[self.order_factors], compression="gzip", compression_opts=self.compression_level)
 
                 # Single-group nodes (???)
                 else:
