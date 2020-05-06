@@ -52,7 +52,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     object <- .create_mofa_from_matrix(data, groups)
 
   } else if(is(data, "MultiAssayExperiment")){
-    object <- .create_mofa_from_mae(data, groups)
+    object <- .create_mofa_from_mae(data, groups, ...)
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
@@ -65,7 +65,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     group = unlist(lapply(names(foo), function(x) rep(x, length(foo[[x]])) )),
     stringsAsFactors = FALSE
   )
-  if (.hasSlot(object, "samples_metadata")) {
+  if (.hasSlot(object, "samples_metadata") && (length(object@samples_metadata) > 0)) {
     object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),])
   } else {
     object@samples_metadata <- tmp
@@ -77,7 +77,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )
-  if (.hasSlot(object, "features_metadata")) {
+  if (.hasSlot(object, "features_metadata") && (length(object@features_metadata) > 0)) {
     object@features_metadata <- cbind(tmp, object@features_metadata[match(tmp$feature, rownames(object@features_metadata)),])
   } else {
     object@features_metadata <- tmp
@@ -95,7 +95,7 @@ create_mofa <- function(data, groups = NULL, ...) {
 
 # (Hidden) function to initialise a MOFA object using a MultiAssayExperiment
 # #' @import MultiAssayExperiment
-.create_mofa_from_mae <- function(data, groups = NULL) {
+.create_mofa_from_mae <- function(data, groups = NULL, save_metadata = FALSE) {
   
   # Re-arrange data for training in MOFA to matrices, fill in NAs
   data_list <- lapply(names(data), function(m) {
@@ -150,6 +150,15 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # Set samples group names
   groups_names(object) <- groups_nms
+
+  # Set metadata
+  if (save_metadata) {
+    # Samples metadata
+    if (ncol(colData(data)) > 0) {
+      object@samples_metadata <- data.frame(colData(data))
+    }
+    # No features metadata is typically contained
+  }
   
   return(object)
 }
