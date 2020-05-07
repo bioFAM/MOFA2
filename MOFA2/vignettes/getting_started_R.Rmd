@@ -18,8 +18,8 @@ vignette: >
 # Load libraries
 
 ```{r message=FALSE}
-suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(MOFA2))
+library(data.table)
+library(MOFA2)
 ```
 
 This vignette contains a detailed tutorial on how to train a MOFA model using R. A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R)
