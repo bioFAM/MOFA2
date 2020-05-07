@@ -56,7 +56,7 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
-#' @param ... arguments passed to \code{\link{umap}}
+#' @param ... arguments passed to \code{\link{uwot::umap}}
 #' @details use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
 # #' @importFrom uwot umap
@@ -149,7 +149,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' 
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
                         color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                        dot_size = 1.5, stroke = NULL, alpha_missing = 1, legend = TRUE, return_data = FALSE, ...) {
+                        dot_size = 1.5, stroke = NULL, alpha_missing = 1, legend = TRUE, rasterize = FALSE, return_data = FALSE, ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -218,7 +218,6 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   
   # Generate plot
   p <- ggplot(df, aes_string(x = "x", y = "y")) + 
-    geom_point(aes_string(fill = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size, stroke = stroke) +
     labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
     theme_classic() +
     theme(
@@ -227,6 +226,15 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_blank()
     )
+  
+  # Add dots  
+  if (isTRUE(rasterize)) {
+    message("for rasterizing the plot we use ggrastr::geom_point_rast()")
+    p <- p + ggrastr::geom_point_rast(aes_string(fill = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size, stroke = stroke)
+  } else {
+    p <- p + geom_point(aes_string(fill = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size, stroke = stroke)
+    
+  }      
   
   # Add legend for alpha
   if (length(unique(df$observed))>1) { 

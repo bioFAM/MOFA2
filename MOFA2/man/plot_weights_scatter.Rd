@@ -4,9 +4,20 @@
 \alias{plot_weights_scatter}
 \title{Scatterplots of weights}
 \usage{
-plot_weights_scatter(object, factors, view = 1, color_by = NULL,
-  shape_by = NULL, dot_size = 1, name_color = "", name_shape = "",
-  show_missing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE)
+plot_weights_scatter(
+  object,
+  factors,
+  view = 1,
+  color_by = NULL,
+  shape_by = NULL,
+  dot_size = 1,
+  name_color = "",
+  name_shape = "",
+  show_missing = TRUE,
+  abs = FALSE,
+  scale = TRUE,
+  legend = TRUE
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

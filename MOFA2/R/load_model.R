@@ -8,7 +8,7 @@
 #' @description Method to load a trained MOFA \cr
 #' The training of mofa is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.
 #' @param file an hdf5 file saved by the mofa Python framework
-#' @param sort_factors logical indicating whether factors should be sorted by variance explained (default is TRUE)
+# #' @param sort_factors logical indicating whether factors should be sorted by variance explained (default is TRUE)
 #' @param on_disk logical indicating whether to work from memory (FALSE) or disk (TRUE). \cr
 #' This should be set to TRUE when the training data is so big that cannot fit into memory. \cr
 #' On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.
@@ -16,15 +16,14 @@
 #' @param load_imputed_data logical indicating whether to load the imputed data (default is FALSE)
 #' @param remove_outliers logical indicating whether to mask outlier values.
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
+# #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
 #' @param verbose logical indicating whether to print verbose output (default is FALSE)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
 # #' @importFrom DelayedArray DelayedArray
 #' @export
-
-load_model <- function(file, sort_factors = TRUE, 
-                       on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
+load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
                        remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
 
   # Create new MOFAodel object
@@ -38,12 +37,6 @@ load_model <- function(file, sort_factors = TRUE,
   
   # Get groups and data set names from the hdf5 file object
   h5ls.out <- h5ls(file, datasetinfo = FALSE)
-  
-  # Sanity checks
-  # if (isFALSE(load_data)) {
-  #   message("load_data = FALSE is currently disabled, setting it to TRUE")
-  #   load_data = TRUE
-  # }
   
   ########################
   ## Load training data ##
@@ -327,24 +320,44 @@ load_model <- function(file, sort_factors = TRUE,
     }
   }
   
-  # Order factors in order of variance explained
-  if (isTRUE(sort_factors) && object@dimensions$K > 1) {
-    
-    # Sanity checks
-    if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
+  # Remove inactive factors
+  # if (isTRUE(remove_intercept_factors) & any(object@model_options$likelihoods!="gaussian")) {
+  #   non_gaussian_views <- names(which(object@model_options$likelihoods!="gaussian"))
+  #   for (m in non_gaussian_views) {
+  #     W <- get_weights(object, views=m)[[1]]
+  #     intercept_factor <- which.max(abs(colMeans(W)))
+  #     object <- subset_factors(object, factors_names(object)[-intercept_factor])
+  #     message(sprintf("%s is determined to be an intercept Factor for the %s non-gaussian view and it has been removed from the model. To disable this behaviour set remove_intercept_factors=FALSE",names(intercept_factor),m))
+  #   }
+  # }
   
-    # Calculate variance explained per factor across all views
-    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
-    order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
-    
-    # re-order factors
-    object <- subset_factors(object, order_factors)
-  }
+  # [Done in mofapy2] Sort factors by total variance explained
+  # if (isTRUE(sort_factors) && object@dimensions$K > 1) {
+  #   
+  #   # Sanity checks
+  #   if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
+  # 
+  #   # Calculate variance explained per factor across all views
+  #   r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
+  #   order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
+  #   
+  #   # re-order factors
+  #   object <- subset_factors(object, order_factors)
+  # }
 
   # Mask outliers
   if (isTRUE(remove_outliers)) {
     if (isTRUE(verbose)) message("Removing outliers...")
     object <- .detect_outliers(object)
+  }
+  
+  # Mask intercepts for non-Gaussian data
+  if (any(object@model_options$likelihoods!="gaussian")) {
+    for (m in names(which(object@model_options$likelihoods!="gaussian"))) {
+      for (g in names(object@intercepts[[m]])) {
+        object@intercepts[[m]][[g]] <- NA
+      }
+    }
   }
 
   ######################

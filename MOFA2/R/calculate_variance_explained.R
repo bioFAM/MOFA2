@@ -67,7 +67,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
   # Calculate coefficient of determination per group and view
   r2_m <- tryCatch({
-    lapply(groups, function(g) lapply(views, function(m) {
+    lapply(groups, function(g) sapply(views, function(m) {
         # a <- sum((as.matrix(Y[[m]][[g]]) - DelayedArray::tcrossprod(Z[[g]], W[[m]]))**2, na.rm = TRUE)
         a <- sum((as.matrix(Y[[m]][[g]]) - tcrossprod(Z[[g]], W[[m]]))**2, na.rm = TRUE)
         b <- sum(Y[[m]][[g]]**2, na.rm = TRUE)
@@ -100,6 +100,10 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
   # Lower bound is 0
   r2_mk = lapply(r2_mk, function(x){x[x < 0] = 0; return(x)})
+  
+  # Transform from fraction to percentage
+  r2_mk = lapply(r2_mk, function(x) x*100)
+  r2_m = lapply(r2_m, function(x) x*100)
   
   # Store results
   r2_list <- list(r2_total = r2_m, r2_per_factor = r2_mk)
@@ -206,7 +210,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   
   # Set R2 limits
   if (!is.null(min_r2))
-    r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.00001
+    r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.001
   min_r2 = 0
   
   if (!is.null(max_r2)) {
@@ -221,7 +225,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
     geom_tile(aes_string(fill="value"), color="black") +
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
-    guides(fill=guide_colorbar("R2")) +
+    guides(fill=guide_colorbar("R2 (%)")) +
     labs(x="", y="", title="") +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2,max_r2)) +
     guides(fill=guide_colorbar("R2")) +
@@ -418,9 +422,12 @@ plot_variance_explained_per_feature <- function(object, view, features = 10,
 
   }
   
+  # Transform from fraction to percentage
+  r2_df$value <- 100*r2_df$value
+  
   # Calculate minimum R2 to display
   if (!is.null(min_r2)) {
-    r2_df$value[r2_df$value<min_r2] <- 0.00001
+    r2_df$value[r2_df$value<min_r2] <- 0.001
   }
   min_r2 <- 0
 
@@ -447,13 +454,16 @@ plot_variance_explained_per_feature <- function(object, view, features = 10,
   if (isTRUE(return_data))
     return(r2_df)
   
+  
+  r2_df$factor <- factor(r2_df$factor, levels = factors_names(object))
+  
+  
   # Grid plot with the variance explained per feature in every group
   p <- ggplot(r2_df, aes_string(x = "group", y = "feature")) + 
     geom_tile(aes_string(fill = "value"), color = "black") +
-    guides(fill = guide_colorbar("R2")) +
+    guides(fill = guide_colorbar("R2 (%)")) +
     labs(x = "", y = "", title = "") +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2, max_r2)) +
-    guides(fill = guide_colorbar("R2")) +
     theme_classic() +
     theme(
       axis.text = element_text(size = 12),

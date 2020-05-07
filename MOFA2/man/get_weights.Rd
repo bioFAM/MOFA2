@@ -4,8 +4,14 @@
 \alias{get_weights}
 \title{Get weights}
 \usage{
-get_weights(object, views = "all", factors = "all", abs = FALSE,
-  scale = FALSE, as.data.frame = FALSE)
+get_weights(
+  object,
+  views = "all",
+  factors = "all",
+  abs = FALSE,
+  scale = FALSE,
+  as.data.frame = FALSE
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

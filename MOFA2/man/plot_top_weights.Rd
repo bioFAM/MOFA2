@@ -4,8 +4,15 @@
 \alias{plot_top_weights}
 \title{Plot top weights}
 \usage{
-plot_top_weights(object, view = 1, factors = 1, nfeatures = 10,
-  abs = TRUE, scale = TRUE, sign = "all")
+plot_top_weights(
+  object,
+  view = 1,
+  factors = 1,
+  nfeatures = 10,
+  abs = TRUE,
+  scale = TRUE,
+  sign = "all"
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}

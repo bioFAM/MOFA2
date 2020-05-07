@@ -4,10 +4,22 @@
 \alias{plot_weights}
 \title{Plot distribution of feature weights (weights)}
 \usage{
-plot_weights(object, view = 1, factors = 1, nfeatures = 10,
-  color_by = NULL, shape_by = NULL, abs = FALSE, manual = NULL,
-  color_manual = NULL, scale = TRUE, dot_size = 1, text_size = 5,
-  legend = TRUE, return_data = FALSE)
+plot_weights(
+  object,
+  view = 1,
+  factors = 1,
+  nfeatures = 10,
+  color_by = NULL,
+  shape_by = NULL,
+  abs = FALSE,
+  manual = NULL,
+  color_manual = NULL,
+  scale = TRUE,
+  dot_size = 1,
+  text_size = 5,
+  legend = TRUE,
+  return_data = FALSE
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}

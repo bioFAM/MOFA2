@@ -4,8 +4,13 @@
 \alias{plot_enrichment_heatmap}
 \title{Heatmap of Feature Set Enrichment Analysis results}
 \usage{
-plot_enrichment_heatmap(enrichment.results, alpha = 0.1, cap = 1e-50,
-  log_scale = TRUE, ...)
+plot_enrichment_heatmap(
+  enrichment.results,
+  alpha = 0.1,
+  cap = 1e-50,
+  log_scale = TRUE,
+  ...
+)
 }
 \arguments{
 \item{enrichment.results}{output of \link{run_enrichment} function}

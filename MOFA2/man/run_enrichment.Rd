@@ -4,12 +4,20 @@
 \alias{run_enrichment}
 \title{Run feature set Enrichment Analysis}
 \usage{
-run_enrichment(object, view, feature.sets, factors = "all",
+run_enrichment(
+  object,
+  view,
+  feature.sets,
+  factors = "all",
   set.statistic = c("mean.diff", "rank.sum"),
-  statistical.test = c("parametric", "cor.adj.parametric",
-  "permutation"), sign = c("all", "positive", "negative"),
-  min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH",
-  alpha = 0.1)
+  statistical.test = c("parametric", "cor.adj.parametric", "permutation"),
+  sign = c("all", "positive", "negative"),
+  min.size = 10,
+  nperm = 1000,
+  cores = 1,
+  p.adj.method = "BH",
+  alpha = 0.1
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}

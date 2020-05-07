@@ -40,8 +40,8 @@ Recommended, it is easier and faster. See [Training the model in Python](https:/
 
 
 ## 2.2) Training the model in R
-R requires the package `reticulate` to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see [Training the model in R](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started_R.html)
+R requires the package `reticulate` to communicate with Python, and this is the source of most of the installation problems. If you still want to follow this path, see [Training the model in R](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html)
 
 
 # 3) Downstream analysis
-After the model is trained, we only provide downstream analysis functionalities in R (for now). This is demonstrated in [this vignette](XXX).
+After the model is trained, we only provide downstream analysis functionalities in R (for now). This is demonstrated in [this vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html).

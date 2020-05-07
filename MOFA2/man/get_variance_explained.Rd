@@ -4,13 +4,18 @@
 \alias{get_variance_explained}
 \title{Get variance explained values}
 \usage{
-get_variance_explained(object, groups = "all", views = "all",
-  factors = "all", as.data.frame = FALSE)
+get_variance_explained(
+  object,
+  groups = "all",
+  views = "all",
+  factors = "all",
+  as.data.frame = FALSE
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{groups}{character vector with the group name(s), or numeric vector with the group index(es).
+\item{groups}{character vector with the view name(s), or numeric vector with the view index(es).
 Default is "all".}
 
 \item{factors}{character vector with the factor name(s), or numeric vector with the factor index(es).
@@ -18,9 +23,6 @@ Default is "all".}
 
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a matrix.
 Default is \code{FALSE}.}
-
-\item{groups}{character vector with the view name(s), or numeric vector with the view index(es).
-Default is "all".}
 }
 \description{
 Extract the latent factors from the model.

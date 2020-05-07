@@ -13,10 +13,10 @@
 #' Default is "all".
 #' @param factors character vector with the factor name(s) or numeric vector with the factor index(es).
 #' Default is "all".
-#' @param type type of prediction returned, either:
-#' "response" gives the response vector, the mean for Gaussian and Poisson, and probabilities for Bernoulli,
-#' "link" gives the linear predictions,
-#' "inRange" rounds the fitted values integer-valued distributions to the next integer (default).
+# #' @param type type of prediction returned, either:
+# #' "response" gives the response vector, the mean for Gaussian and Poisson, and probabilities for Bernoulli,
+# #' "link" gives the linear predictions,
+# #' "inRange" rounds the fitted values integer-valued distributions to the next integer (default).
 #' @param add_intercept add feature intercepts to the prediction (default is TRUE).
 #' @details MOFA generates a denoised and condensed low-dimensional representation of the data that captures the main sources of heterogeneity of the data.
 #' This representation can be used to reconstruct a denoised representation of the data, simply using the equation \code{Y = WX}. 
@@ -30,16 +30,18 @@
 #' 
 #' # Predict observations for all data modalities
 #' predictions <- predict(model)
-predict <- function(object, views = "all", groups = "all", factors = "all",
-                    type = c("inRange", "response", "link"), add_intercept = TRUE) {
+predict <- function(object, views = "all", groups = "all", factors = "all", add_intercept = TRUE) {
 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-
+  
   # Get views
-  views <- .check_and_get_views(object, views)
+  views <- .check_and_get_views(object, views, non_gaussian=FALSE)
   groups <- .check_and_get_groups(object, groups)
 
+  # Sanity check
+  if (any(views %in% names(which(object@model_options$likelihoods!="gaussian")))) stop("predict does not work for non-gaussian modalities")
+  
   # Get factors
   if (paste0(factors, collapse="") == "all") {
     factors <- factors_names(object)
@@ -50,7 +52,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
   }
 
   # Get type of predictions wanted
-  type = match.arg(type)
+  # type = match.arg(type)
 
   # Collect weights
   W <- get_weights(object, views = views, factors = factors)
@@ -75,22 +77,20 @@ predict <- function(object, views = "all", groups = "all", factors = "all",
         } }, error = function(e) { NULL })
       
       # make predicitons based on underlying likelihood
-      lks <- object@model_options$likelihoods
-
-      if (type != "link") {
-        lk <- lks[m]
-
-        if (lk == "gaussian") {
-          pred <- pred
-        } else if (lk == "bernoulli") {
-          pred <- (exp(pred)/(1 + exp(pred)))
-          if (type == "inRange") pred <- round(pred)
-        } else if (lk == "poisson") {
-          pred <- log(1 + exp(pred))
-          if (type == "inRange") pred <- round(pred)
-        }
-      }
-      pred
+      # lks <- object@model_options$likelihoods
+      # if (type != "link") {
+      #   lk <- lks[m]
+      #   if (lk == "gaussian") {
+      #     pred <- pred
+      #   } else if (lk == "bernoulli") {
+      #     pred <- (exp(pred)/(1 + exp(pred)))
+      #     if (type == "inRange") pred <- round(pred)
+      #   } else if (lk == "poisson") {
+      #     pred <- log(1 + exp(pred))
+      #     if (type == "inRange") pred <- round(pred)
+      #   }
+      # }
+      return(pred)
     })
   })
 

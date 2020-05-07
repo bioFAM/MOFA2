@@ -444,6 +444,7 @@ class StochasticBayesNet(BayesNet):
         elbo.iloc[0] = self.precompute()
         number_factors[0] = self.dim['K']
         iter_time[0] = 0.
+        iter_count = 0
 
         # Print stochastic settings before training
         print("Using stochastic variational inference with the following parameters:")
@@ -451,7 +452,7 @@ class StochasticBayesNet(BayesNet):
             (100*self.options['batch_size'], self.options['forgetting_rate'], self.options['learning_rate'], self.options['start_stochastic']) )
         ix = None
 
-        for i in range(1,self.options['maxiter']):
+        for i in range(1, self.options['maxiter']):
             t = time();
 
             # Sample mini-batch and define step size for stochastic inference
@@ -508,7 +509,7 @@ class StochasticBayesNet(BayesNet):
                         number_factors = number_factors[:i]
                         elbo = elbo[:i]
                         iter_time = iter_time[:i]
-                        print ("\nConverged!\n"); break
+                        print("\nConverged!\n"); break
 
             # Do not calculate lower bound
             else:
@@ -523,9 +524,13 @@ class StochasticBayesNet(BayesNet):
             # print("")
 
             iter_time[i] = time()-t
+            iter_count += 1
             
             # Flush (we need this to print when running on the cluster)
             sys.stdout.flush()
+
+        if iter_count+1 == self.options['maxiter']:
+            print("\nMaximum number of iterations reached: {}\n".format(self.options['maxiter']))
 
         # Finish by collecting the training statistics
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }

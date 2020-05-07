@@ -16,7 +16,6 @@ quality_control <- function(object, verbose = FALSE) {
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
-  
   # Check views names
   if (verbose == TRUE) message("Checking views names...")
   stopifnot(!is.null(views_names(object)))
@@ -108,7 +107,7 @@ quality_control <- function(object, verbose = FALSE) {
         ))) )
         intercept_factors <- which(rowSums(r>0.75)>0)
         if (length(intercept_factors)) {
-            warning(sprintf("Factor(s) %s are strongly correlated with the total number of expressed features for at least one of your omics. Such factors appear when there are global differences between your samples, sometimes because of poor normalisation in the preprocessing steps. We recommend that you either try a better normalisation method or you remove the factors using `subset_factors`.\n",paste(intercept_factors,collapse=" ")))
+            warning(sprintf("Factor(s) %s are strongly correlated with the total number of expressed features for at least one of your omics. Such factors appear when there are differences in the total 'levels' between your samples, *sometimes* because of poor normalisation in the preprocessing steps.\n",paste(intercept_factors,collapse=", ")))
         }
       }
     }

@@ -4,8 +4,15 @@
 \alias{plot_enrichment_detailed}
 \title{Plot detailed output of the Feature Set Enrichment Analysis}
 \usage{
-plot_enrichment_detailed(enrichment.results, factor, feature.sets,
-  alpha = 0.1, max.genes = 5, max.pathways = 10, text_size = 3)
+plot_enrichment_detailed(
+  enrichment.results,
+  factor,
+  feature.sets,
+  alpha = 0.1,
+  max.genes = 5,
+  max.pathways = 10,
+  text_size = 3
+)
 }
 \arguments{
 \item{enrichment.results}{output of \link{run_enrichment} function}

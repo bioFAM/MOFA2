@@ -84,7 +84,7 @@ make_example_data <- function(n_views = 3, n_features = 100, n_samples = 50, n_g
       dd <- t(apply(term, 2, function(tt) rbinom(length(tt),1,tt)))
     }
     colnames(dd) <- paste0("sample_", seq_len(ncol(dd)))
-    rownames(dd) <- paste0("feature", seq_len(nrow(dd)))
+    rownames(dd) <- paste0("feature_", seq_len(nrow(dd)),"_view", vw)
     dd
   })
   names(data) <- paste0("view_", seq_len(n_views))

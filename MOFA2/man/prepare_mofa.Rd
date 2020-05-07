@@ -4,9 +4,14 @@
 \alias{prepare_mofa}
 \title{Prepare a MOFA for training}
 \usage{
-prepare_mofa(object, data_options = NULL, model_options = NULL,
-  training_options = NULL, stochastic_options = NULL,
-  regress_covariates = NULL)
+prepare_mofa(
+  object,
+  data_options = NULL,
+  model_options = NULL,
+  training_options = NULL,
+  stochastic_options = NULL,
+  regress_covariates = NULL
+)
 }
 \arguments{
 \item{object}{an untrained \code{\link{MOFA}}}
