@@ -26,7 +26,7 @@ get_elbo <- function(object) {
   return(max(object@training_stats$elbo, na.rm=TRUE))
 }
 
-#' @title Get fractors
+#' @title Get factors
 #' @name get_factors
 #' @description Extract the latent factors from the model.
 #' @param object a trained \code{\link{MOFA}} object.
