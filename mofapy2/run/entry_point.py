@@ -329,7 +329,7 @@ class entry_point(object):
             data = [adata_raw_dense]
             # Subset features if required
             if features_subset is not None:
-                data[0] = data[0][:,adata.raw.var[features_subset].values]
+                data[0] = data[0][:,adata.var[features_subset].values]
         else:
             if callable(getattr(adata.X, "todense", None)):
                 data = [np.array(adata.X.todense())]
@@ -348,9 +348,17 @@ class entry_point(object):
 
         # Define views names and features names and metadata
         self.data_opts['views_names'] = ["rna"]
-        self.data_opts['features_names'] = [adata.var_names]
+        
+        if features_subset is not None:
+            self.data_opts['features_names'] = [adata.var_names[adata.var[features_subset]]]
+        else:
+            self.data_opts['features_names'] = [adata.var_names]
+
         if save_metadata:
-            self.data_opts['features_metadata'] = [adata.var]
+            if features_subset is not None:
+                self.data_opts['features_metadata'] = [adata.var[adata.var[features_subset]]]
+            else:
+                self.data_opts['features_metadata'] = [adata.var]
 
         # Define groups and samples names and metadata
         if groups_label is None:
