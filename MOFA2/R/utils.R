@@ -122,7 +122,7 @@ return(model)
   stopifnot(!any(duplicated(views)))
   if (is.numeric(views)) {
     stopifnot(all(views <= object@dimensions$M))
-    views_names(object)[views] 
+    views <- views_names(object)[views]
   } else {
     if (paste0(views, sep = "", collapse = "") == "all") { 
       views <- views_names(object)
