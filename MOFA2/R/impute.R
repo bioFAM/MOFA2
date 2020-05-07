@@ -10,7 +10,6 @@
 #' @param views character vector with the view name(s), or numeric vector with view index(es).
 #' @param groups character vector with the group name(s), or numeric vector with group index(es).
 #' @param factors character vector with the factor names, or numeric vector with the factor index(es).
-#' @param type type of imputation.
 #' \itemize{
 #' \item \strong{response}:{gives mean for gaussian and poisson and probabilities for bernoulli.}
 #' \item \strong{link}: {gives the linear predictions.}
@@ -36,7 +35,7 @@
 #' # Impute missing values in all data modalities using factors 1:3
 #' imputed_data <- impute(model, views = "all", factors = 1:3)
 impute <- function(object, views = "all", groups = "all", factors = "all", 
-                   type = c("inRange", "response", "link"), add_intercept = TRUE) {
+                  add_intercept = TRUE) {
 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -46,11 +45,9 @@ impute <- function(object, views = "all", groups = "all", factors = "all",
   views  <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
 
-  # Select imputation type
-  type <- match.arg(type)
 
   # Do predictions
-  pred <- predict(object, views=views, factors=factors, type=type, add_intercept=add_intercept)
+  pred <- predict(object, views=views, factors=factors, add_intercept=add_intercept)
 
   # Replace NAs with predicted values
   imputed <- get_data(object, views=views, groups=groups, add_intercept = add_intercept)

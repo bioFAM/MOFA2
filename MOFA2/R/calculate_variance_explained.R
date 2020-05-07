@@ -67,7 +67,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
   # Calculate coefficient of determination per group and view
   r2_m <- tryCatch({
-    lapply(groups, function(g) lapply(views, function(m) {
+    lapply(groups, function(g) sapply(views, function(m) {
         # a <- sum((as.matrix(Y[[m]][[g]]) - DelayedArray::tcrossprod(Z[[g]], W[[m]]))**2, na.rm = TRUE)
         a <- sum((as.matrix(Y[[m]][[g]]) - tcrossprod(Z[[g]], W[[m]]))**2, na.rm = TRUE)
         b <- sum(Y[[m]][[g]]**2, na.rm = TRUE)

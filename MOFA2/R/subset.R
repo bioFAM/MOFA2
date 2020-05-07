@@ -129,6 +129,8 @@ subset_views <- function(object, views) {
     object@features_metadata <- object@features_metadata[object@features_metadata$view %in% views,]
   }
   
+  # Subset likelihoods
+  object@model_options$likelihoods <- object@model_options$likelihoods[views]
   # Update dimensionality
   object@dimensions[["M"]] <- length(views)
   object@dimensions[["D"]] <- object@dimensions[["D"]][views]
