@@ -297,20 +297,18 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   } else if (color_by[1] == "group") {
     color_by <- samples_metadata(object)$group
     
-    # Option 2: by a feature present in the training data    
+    # Option 2: by a metadata column in object@samples$metadata
+  } else if ((length(color_by) == 1) && (is.character(color_by)|is.factor(color_by)) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+    color_by <- samples_metadata(object)[,color_by]
+    if (is.character(color_by)) color_by <- as.factor( color_by )
+    
+    # Option 3: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
     data <- lapply(get_data(object), function(l) Reduce(cbind, l))
     features <- lapply(data, rownames)
     viewidx <- which(sapply(features, function(x) color_by %in% x))
     color_by <- data[[viewidx]][color_by,]
     
-    # Option 3: by a metadata column in object@samples$metadata
-  # } else if ((length(color_by) == 1) && is.character(color_by) & (color_by[1] %in% colnames(samples_metadata(object)))) {
-  #   color_by <- samples_metadata(object)[,color_by]
-    
-  } else if ((length(color_by) == 1) && (is.character(color_by)|is.factor(color_by)) & (color_by[1] %in% colnames(samples_metadata(object)))) {
-    color_by <- samples_metadata(object)[,color_by]
-    if (is.character(color_by)) color_by <- as.factor( color_by )
     
     # Option 4: by a factor value in object@expectations$Z
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% colnames(get_factors(object)[[1]]))) {
@@ -358,21 +356,22 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
       shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
     }
     
-    # Option 2: by a feature present in the training data    
+    # Option 2: by a metadata column in object@samples$metadata
+  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
+    shape_by <- samples_metadata(object)[,shape_by]
+    
+    
+    # Option 3: by a feature present in the training data    
   } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
     data <- lapply(get_data(object), function(l) Reduce(cbind, l))
     features <- lapply(data, rownames)
     viewidx <- which(sapply(features, function(x) shape_by %in% x))
     shape_by <- data[[viewidx]][shape_by,]
     
-    # Option 3: input is a data.frame with columns (sample,color)
+    # Option 4: input is a data.frame with columns (sample,color)
   } else if (is(shape_by,"data.frame")) {
     stopifnot(all(colnames(shape_by) %in% c("sample","color")))
     stopifnot(all(unique(shape_by$sample) %in% unlist(samples_names(object))))
-    
-    # Option 4: by a metadata column in object@samples$metadata
-  } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
-    shape_by <- samples_metadata(object)[,shape_by]
     
     # Option 5: shape_by is a vector of length N
   } else if (length(shape_by) > 1) {
