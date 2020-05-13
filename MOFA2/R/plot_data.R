@@ -105,10 +105,11 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     # Predefined data.frame
     if (is.data.frame(annotation_samples)) {
       message("'annotation_samples' provided as a data.frame, please make sure that the rownames match the sample names")
-      if (any(!rownames(annotation_samples) %in% colnames(data))) {
+      if (any(!colnames(data)%in%rownames(annotation_samples))) {
         stop("There are rownames in annotation_samples that do not correspond to sample names in the model")
       }
       annotation_samples <- annotation_samples[colnames(data), , drop = FALSE]
+      
     # Extract metadata from the sample metadata  
     } else if (is.character(annotation_samples)) {
       stopifnot(annotation_samples%in%colnames(object@samples_metadata))
@@ -119,12 +120,15 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
       tmp <- tmp[order_samples,,drop=F]
       annotation_samples <- tmp[,annotation_samples, drop=F]
       rownames(annotation_samples) <- rownames(tmp)
-      message("Converting annotation_samples columns to factors")
-      annotation_samples[, ] <- lapply(annotation_samples[,,drop=F], as.factor)
     } else {
       stop("Input format for 'annotation_samples' not recognised ")
     }
+    
+    # Convert character columns to factors
+    foo <- sapply(annotation_samples, function(x) is.logical(x)|is.character(x))
+    if (any(foo)) annotation_samples[,which(foo)] <- lapply(annotation_samples[,which(foo),drop=F], as.factor)
   }
+
   
   # Add feature annotations
   if (!is.null(annotation_features)) {
@@ -133,9 +137,15 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   
   # Transpose the data
   if (isTRUE(transpose)) {
-    annotation_samples <- annotation_features
-    annotation_features <- annotation_samples
     data <- t(data)
+    if (!is.null(annotation_samples)) {
+      annotation_features <- annotation_samples
+      annotation_samples <- NULL
+    }
+    if (!is.null(annotation_features)) {
+      annotation_samples <- annotation_features
+      annotation_features <- NULL
+    }
   }
   
   # Cap values
