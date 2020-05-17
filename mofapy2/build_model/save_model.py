@@ -191,7 +191,7 @@ class saveModel():
 
         # Define nodes with special characteristics 
         # (note that this code is ugly and is not proper class-oriented programming)
-        multigroup_nodes = ["Y","Tau","Z"]
+        multigroup_nodes = ["Y", "Tau", "Z", "AlphaZ", "ThetaZ"]
         # multiview_nodes = ["Y","Tau","Alpha","W"]
 
         # Create HDF5 group
@@ -206,7 +206,7 @@ class saveModel():
             exp = nodes_dic[n].getExpectation()
 
             # Multi-view nodes
-            if isinstance(nodes_dic[n],Multiview_Node):
+            if isinstance(nodes_dic[n], Multiview_Node):
                 for m in range(nodes_dic[n].M):
 
                     # Multi-groups nodes (Tau, Y, and Z)
