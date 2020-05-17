@@ -813,8 +813,8 @@ class entry_point(object):
           features_names = self.data_opts['features_names'],
           views_names = self.data_opts['views_names'],
           groups_names = self.data_opts['groups_names'],
-          samples_metadata = self.data_opts["samples_metadata"] if self.data_opts["samples_metadata"] else None,
-          features_metadata = self.data_opts["features_metadata"] if self.data_opts["features_metadata"] else None,
+          samples_metadata = self.data_opts["samples_metadata"] if "samples_metadata" in self.data_opts else None,
+          features_metadata = self.data_opts["features_metadata"] if "features_metadata" in self.data_opts else None,
           compression_level = 9
         )
 
@@ -873,7 +873,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
          gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, 
-         save_parameters: bool = False, save_data: bool = True, save_metadata: bool = False,
+         save_parameters: bool = False, save_data: bool = True, save_metadata: bool = True,
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
          expectations: Optional[List[str]] = None,
          verbose: bool = False, quiet: bool = True, copy: bool = False):
@@ -905,7 +905,8 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     save_metadata (optional): if to load metadata from the AnnData object (.obs and .var tables) and save it, False by default
     seed (optional): random seed
     outfile (optional): path to HDF5 file to store the model
-    expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default)
+    expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default);
+    possible expectations names include Y, W, Z, Tau, AlphaZ, AlphaW, ThetaW, ThetaZ
     verbose (optional): print verbose information during traing
     quiet (optional): silence messages during training procedure
     copy (optional): return a copy of AnnData instead of writing to the provided object
