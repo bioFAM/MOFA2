@@ -209,13 +209,11 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   views <- colnames(r2_list$r2_per_factor[[1]])
   
   # Set R2 limits
-  if (!is.null(min_r2))
-    r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.001
+  if (!is.null(min_r2)) r2_mk_df$value[r2_mk_df$value<min_r2] <- 0.001
   min_r2 = 0
   
   if (!is.null(max_r2)) {
     r2_mk_df$value[r2_mk_df$value>max_r2] <- max_r2
-    max_r2 = max_r2
   } else {
     max_r2 = max(r2_mk_df$value)
   }
@@ -225,28 +223,29 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
   p1 <- ggplot(r2_mk_df, aes_string(x=x, y=y)) + 
     geom_tile(aes_string(fill="value"), color="black") +
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
-    guides(fill=guide_colorbar("R2 (%)")) +
     labs(x="", y="", title="") +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2,max_r2)) +
-    guides(fill=guide_colorbar("R2")) +
+    guides(fill=guide_colorbar("Var. (%)")) +
     theme(
-      axis.title.x = element_blank(),
-      # axis.text.x = element_text(size=12, angle=30, hjust=0.5, vjust=1, color="black"),
-      axis.text.x = element_text(size=12, color="black"),
-      axis.text.y = element_text(size=12, color="black"),
-      axis.title.y = element_text(size=14),
+      # axis.title.x = element_blank(),
+      # axis.text.x = element_text(size=rel(1.0), angle=30, hjust=1, color="black"),
+      axis.text.x = element_text(size=rel(1.0), color="black"),
+      axis.text.y = element_text(size=rel(1.1), color="black"),
+      # axis.title.y = element_text(size=rel(1.0)),
       axis.line = element_blank(),
       axis.ticks =  element_blank(),
       panel.background = element_blank(),
       strip.background = element_blank(),
-      strip.text = element_text(size=12)
+      strip.text = element_text(size=rel(1.0))
     )
   
-    if (!legend)
-      p1 <- p1 + theme(legend.position = "none")
+    if (isFALSE(legend)) p1 <- p1 + theme(legend.position = "none")
     
+    # remove facet title
+    if (length(unique(r2_mk_df[,split_by]))==1) p1 <- p1 + theme(strip.text = element_blank())
+  
     # Add total variance explained bar plots
-    if (plot_total) {
+    if (isTRUE(plot_total)) {
       
       r2_m_df <- melt(lapply(r2_list$r2_total, function(x) lapply(x, function(z) z)),
                       varnames=c("view", "group"), value.name="R2")
@@ -262,24 +261,26 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
       # Barplot with variance explained per view/group (across all factors)
       p2 <- ggplot(r2_m_df, aes_string(x=x, y="R2")) + 
         # ggtitle(sprintf("%s\nTotal variance explained per %s", i, x)) +
-        geom_bar(stat="identity", fill="deepskyblue4", width=0.9) +
+        geom_bar(stat="identity", fill="deepskyblue4", color="black", width=0.9) +
         facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
-        xlab("") + ylab("Variance explained (R^2)") +
+        xlab("") + ylab("Variance explained (%)") +
         scale_y_continuous(limits=c(min_lim_bplt, max_lim_bplt), expand=c(0.005, 0.005)) +
         theme(
-          plot.title = element_text(size=17, hjust=0.5),
           axis.ticks.x = element_blank(),
-          axis.text.x = element_text(size=12, color="black"),
+          axis.text.x = element_text(size=rel(1.1), color="black"),
           axis.text.y = element_text(size=rel(1.0), color="black"),
-          axis.title.y = element_text(size=13, color="black"),
+          axis.title.y = element_text(size=rel(1.0), color="black"),
           axis.line = element_line(size=rel(1.0), color="black"),
           panel.background = element_blank(),
           strip.background = element_blank(),
-          strip.text = element_text(size=13)
+          strip.text = element_text(size=rel(1.0))
         )
       
-      plot_list <- list(p1,p2)
+      # remove facet title
+      if (length(unique(r2_m_df[,split_by]))==1) p2 <- p2 + theme(strip.text = element_blank())
       
+      # Bind plots      
+      plot_list <- list(p1,p2)
       # plot_list <- plot_grid(
       #   plotlist = list(p2, p1), 
       #   align = "v", 

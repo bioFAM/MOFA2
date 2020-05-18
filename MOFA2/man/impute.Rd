@@ -9,7 +9,6 @@ impute(
   views = "all",
   groups = "all",
   factors = "all",
-  type = c("inRange", "response", "link"),
   add_intercept = TRUE
 )
 }
@@ -20,9 +19,7 @@ impute(
 
 \item{groups}{character vector with the group name(s), or numeric vector with group index(es).}
 
-\item{factors}{character vector with the factor names, or numeric vector with the factor index(es).}
-
-\item{type}{type of imputation.
+\item{factors}{character vector with the factor names, or numeric vector with the factor index(es).
 \itemize{
 \item \strong{response}:{gives mean for gaussian and poisson and probabilities for bernoulli.}
 \item \strong{link}: {gives the linear predictions.}

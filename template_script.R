@@ -64,7 +64,7 @@ train_opts$convergence_mode <- "medium"
 train_opts$seed <- 42
 
 # (Optional) Set stochastic inference options
-# Only recommended with very large data sets (N>1e5)
+# Only recommended with very large sample size (>1e6) and when having access to GPUs
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)
 # - forgetting_rate: forgetting rate (we recommend values from 0.1 to 0.5)

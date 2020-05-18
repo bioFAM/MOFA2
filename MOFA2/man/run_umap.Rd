@@ -13,7 +13,7 @@ run_umap(object, factors = "all", groups = "all", ...)
 
 \item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
 
-\item{...}{arguments passed to \code{\link{umap}}}
+\item{...}{arguments passed to \code{\link{uwot::umap}}}
 }
 \value{
 Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output

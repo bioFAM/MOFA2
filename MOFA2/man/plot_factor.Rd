@@ -34,31 +34,28 @@ plot_factor(
 
 \item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
 
-\item{group_by}{specifies groups used to separate the samples : one plot per group. This can be either: 
+\item{group_by}{specifies grouping of samples:
 \itemize{
 \item (default) the string "group": in this case, the plot will color samples with respect to their predefined groups.
 \item a character giving the name of a feature that is present in the input data 
-\item a character giving the same of a column in the sample metadata slot
+\item a character giving the name of a column in the sample metadata slot
 \item a vector of the same length as the number of samples specifying the value for each sample. 
-\item a dataframe with two columns: "sample" and "color"
 }}
 
-\item{color_by}{specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
+\item{color_by}{specifies color of samples. This can be either: 
 \itemize{
 \item (default) the string "group": in this case, the plot will color the dots with respect to their predefined groups.
 \item a character giving the name of a feature that is present in the input data 
-\item a character giving the same of a column in the sample metadata slot
+\item a character giving the name of a column in the sample metadata slot
 \item a vector of the same length as the number of samples specifying the value for each sample. 
-\item a dataframe with two columns: "sample" and "color"
 }}
 
-\item{shape_by}{specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
+\item{shape_by}{specifies shape of samples. This can be either: 
 \itemize{
 \item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
 \item a character giving the name of a feature that is present in the input data 
-\item a character giving the same of a column in the sample metadata slot
+\item a character giving the name of a column in the sample metadata slot
 \item a vector of the same length as the number of samples specifying the value for each sample. 
-\item a dataframe with two columns: "sample" and "shape"
 }}
 
 \item{add_dots}{logical indicating whether to add dots.}

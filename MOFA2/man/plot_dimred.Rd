@@ -17,6 +17,7 @@ plot_dimred(
   stroke = NULL,
   alpha_missing = 1,
   legend = TRUE,
+  rasterize = FALSE,
   return_data = FALSE,
   ...
 )

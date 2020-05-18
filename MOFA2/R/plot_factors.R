@@ -130,9 +130,11 @@ plot_factor <- function(object, factors = 1, groups = "all",
   if (length(factors) == 1) {
     p <- p + facet_wrap(~group, nrow=1, scales="free_x") +
       labs(x=group_by, y=as.character(factors))
+    if (length(unique(df$group))==1) p <- p + theme(strip.text = element_blank()) # remove facet title
   } else {
     p <- p + facet_wrap(~factor, nrow=1, scales="free_x") +
       labs(x=group_by, y="Factor value")
+    if (length(unique(df$factor))==1) p <- p + theme(strip.text = element_blank()) # remove facet title
   }
 
   # Add dots
@@ -154,7 +156,8 @@ plot_factor <- function(object, factors = 1, groups = "all",
         p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha, 
                   position = position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
-        p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha)
+        p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha, 
+                             position = position_jitterdodge(jitter.width=0.75))
       }
     }
   }
@@ -183,13 +186,11 @@ plot_factor <- function(object, factors = 1, groups = "all",
         strip.background = element_rect(colour = "black", size=0.25),
         panel.spacing = unit(0,"lines"),
         # axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-        axis.text.x = element_text(),
-        axis.text.y = element_text(size=rel(1.0), color="black"),
+        axis.text = element_text(size=rel(0.75), color="black"),
         axis.title.x = element_blank(),
-        axis.title.y = element_text(size=rel(0.9), color="black"),
+        axis.title.y = element_text(size=rel(1.0), color="black"),
         axis.line = element_line(color="black", size=0.25),
-        axis.ticks = element_line(color = "black"),
-        axis.title = element_text(size=rel(1.2)),
+        axis.ticks = element_line(color = "black")
     )
   
   if (length(unique(df$factor))>1) {
@@ -199,6 +200,11 @@ plot_factor <- function(object, factors = 1, groups = "all",
     if (isFALSE(dodge)) {
       p <- p + theme(strip.text.x = element_blank())
     }
+  }
+  
+  # If group_by has a single value, remove text
+  if (length(unique(df$group_by))==1) {
+    p <- p + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
   }
   
   # Add legend
@@ -325,8 +331,8 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
     theme(
-      axis.text = element_text(size = rel(0.9), color = "black"), 
-      axis.title = element_text(size = rel(1.2), color = "black"), 
+      axis.text = element_text(size = rel(0.8), color = "black"), 
+      axis.title = element_text(size = rel(1.1), color = "black"), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5)
     )

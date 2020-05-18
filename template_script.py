@@ -125,7 +125,7 @@ ent.set_train_options(
 
 
 ## (6, optional) Set stochastic inference options##
-# This is only recommended with very large sample size (>1e4)
+# Only recommended with very large sample size (>1e6) and when having access to GPUs
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)
 # - forgetting_rate: forgetting rate (we recommend values from 0.25 to 0.5)

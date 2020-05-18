@@ -34,12 +34,12 @@ plot_factors(
 
 \item{color_by}{specifies groups or values used to color the samples. This can be either:
 (1) a character giving the name of a feature present in the training data.
-(2) a character giving the same of a column present in the sample metadata.
-(3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
+(2) a character giving the name of a column present in the sample metadata.
+(3) a vector of the name length as the number of samples specifying discrete groups or continuous numeric values.}
 
 \item{shape_by}{specifies groups or values used to shape the samples. This can be either:
 (1) a character giving the name of a feature present in the training data, 
-(2) a character giving the same of a column present in the sample metadata.
+(2) a character giving the name of a column present in the sample metadata.
 (3) a vector of the same length as the number of samples specifying discrete groups.}
 
 \item{color_name}{name for color legend.}

@@ -9,7 +9,6 @@ predict(
   views = "all",
   groups = "all",
   factors = "all",
-  type = c("inRange", "response", "link"),
   add_intercept = TRUE
 )
 }
@@ -24,11 +23,6 @@ Default is "all".}
 
 \item{factors}{character vector with the factor name(s) or numeric vector with the factor index(es).
 Default is "all".}
-
-\item{type}{type of prediction returned, either:
-"response" gives the response vector, the mean for Gaussian and Poisson, and probabilities for Bernoulli,
-"link" gives the linear predictions,
-"inRange" rounds the fitted values integer-valued distributions to the next integer (default).}
 
 \item{add_intercept}{add feature intercepts to the prediction (default is TRUE).}
 }

@@ -11,14 +11,15 @@ plot_data_scatter(
   groups = "all",
   features = 10,
   sign = "all",
-  color_by = NULL,
+  color_by = "group",
   legend = TRUE,
   alpha = 1,
   shape_by = NULL,
   stroke = NULL,
   dot_size = 2.5,
-  text_size = 5,
+  text_size = NULL,
   add_lm = TRUE,
+  lm_per_group = TRUE,
   imputed = FALSE
 )
 }
@@ -37,7 +38,7 @@ plot_data_scatter(
 
 \item{color_by}{specifies groups or values (either discrete or continuous) used to color the dots (samples). This can be either: 
 \itemize{
-\item (default) the string "group", it the dots with respect to their predefined groups.
+\item the string "group": dots are coloured with respect to their predefined groups.
 \item a character giving the name of a feature that is present in the input data 
 \item a character giving the same of a column in the sample metadata slot
 \item a vector of the same length as the number of samples specifying the value for each sample. 
@@ -50,7 +51,7 @@ plot_data_scatter(
 
 \item{shape_by}{specifies groups or values (only discrete) used to shape the dots (samples). This can be either: 
 \itemize{
-\item (default) the string "group": in this case, the plot will shape the dots with respect to their predefined groups.
+\item the string "group": dots are shaped with respect to their predefined groups.
 \item a character giving the name of a feature that is present in the input data 
 \item a character giving the same of a column in the sample metadata slot
 \item a vector of the same length as the number of samples specifying the value for each sample. 
@@ -64,6 +65,8 @@ plot_data_scatter(
 \item{text_size}{numeric indicating text size (default is 5).}
 
 \item{add_lm}{logical indicating whether to add a linear regression line for each plot}
+
+\item{lm_per_group}{logical indicating whether to add a linear regression line separately for each group}
 
 \item{imputed}{logical indicating whether to include imputed measurements}
 }

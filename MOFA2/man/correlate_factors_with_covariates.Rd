@@ -10,7 +10,7 @@ correlate_factors_with_covariates(
   factors = "all",
   groups = "all",
   abs = FALSE,
-  plot = c("r", "log_pval"),
+  plot = c("log_pval", "r"),
   alpha = 0.05,
   return_data = FALSE,
   transpose = FALSE,
