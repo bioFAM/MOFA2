@@ -3,7 +3,7 @@ FROM r-base:3.6.1
 WORKDIR /mofa2
 ADD . /mofa2
 
-RUN apt-get update && apt-get install -y python3 python3-setuptools python3-dev
+RUN apt-get update && apt-get install -y python3 python3-setuptools
 RUN python3 setup.py install
 
 # Install bioconductor dependencies
