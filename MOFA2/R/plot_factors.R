@@ -128,7 +128,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   p <- ggplot(df, aes_string(x="group_by", y="value", fill="color_by", shape="shape_by"))
   
   if (length(factors) == 1) {
-    p <- p + facet_wrap(~group, nrow=1, scales="free_x") +
+    p <- p + facet_wrap(~group_by, nrow=1, scales="free_x") +
       labs(x=group_by, y=as.character(factors))
     if (length(unique(df$group))==1) p <- p + theme(strip.text = element_blank()) # remove facet title
   } else {
@@ -156,8 +156,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
         p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha, 
                   position = position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
-        p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha, 
-                             position = position_jitterdodge(jitter.width=0.75))
+        p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha)
       }
     }
   }

@@ -306,7 +306,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
   if (isTRUE(add_lm)) {
     if (isTRUE(lm_per_group) & length(groups)>1) {
       p <- p +
-        stat_smooth(formula=y~x, aes_string(color="group"), method="lm", fill="grey", alpha=0.4) +
+        stat_smooth(formula=y~x, aes_string(color="group"), method="lm", alpha=0.4) +
         ggpubr::stat_cor(aes_string(color="group", label = "..r.label.."), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
         # guides(color = FALSE)
     } else {

@@ -1,5 +1,5 @@
 ---
-title: "MOFA+: integration of a heterogeneous time-course single-cell RNA-seq dataset."
+title: "MOFA+: integration of a time-course single-cell RNA-seq dataset"
 author:
   name: "Ricard Argelaguet"
   affiliation: "European Bioinformatics Institute, Cambridge, UK"
@@ -28,18 +28,29 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
 ```
 
 # How does the multi-group inference work?
-Intuitively, this update breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.).  
-Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim of the multi-group framework is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group.  
+Intuitively, this extension breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.).  
+Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim of the multi-group framework is to find out the sources of variability **within** each group and to charactersie which ones are shared between the different groups from those that are exclusive to a single group.  
 
 This is a rather advanced option that we disencourage if this is the first time that you are using MOFA. For more questions, please read the [FAQ section](https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality). 
 
-# Load libraries
+# Load libraries and data
 
-Load dependencies. Make sure that `MOFA2` is imported last, to avoid collisions with functions from other packages
-```{r, echo=FALSE}
-suppressPackageStartupMessages(library(Seurat))
-suppressPackageStartupMessages(library(ggplot2))
-suppressPackageStartupMessages(library(MOFA2))
+## Libraries
+
+Make sure that `MOFA2` is imported last, to avoid collisions with functions from other packages
+```{r message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(MOFA2)
+```
+
+## Data
+
+The RNA expression data has been processed using Seurat. It has already been normalised and subset to the top 5,000 most variable genes (after regressing out the group effect).
+
+```{r}
+load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_seurat.RData"))
+seurat
 ```
 
 Define cell type colors for the visualisations
@@ -51,14 +62,6 @@ colors <- c(
   "ExE endoderm" = "#548B54",
   "ExE ectoderm" = "black"
 )
-```
-
-# Load data
-
-The RNA expression data has been processed using Seurat. It has already been normalised and subset to the top 5,000 most variable genes (after regressing out the group effect).
-
-```{r}
-load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_seurat.RData"))
 ```
 
 # Create MOFA object
@@ -79,18 +82,14 @@ plot_data_overview(MOFAobject)
 ```
 
 ## Define MOFA options
-Data options: let's use default
 ```{r}
+# Default data options
 data_opts <- get_default_data_options(MOFAobject)
-```
 
-Model options: let's use default
-```{r message=FALSE}
+# Default model options
 model_opts <- get_default_model_options(MOFAobject)
-```
 
-Training options
-```{r}
+# Training options
 train_opts <- get_default_training_options(MOFAobject)
 train_opts$convergence_mode <- "fast"
 train_opts$seed <- 42
@@ -108,48 +107,54 @@ MOFAobject <- prepare_mofa(
 
 
 # Train the MOFA model
-This step can take quite some time (~2h with standard CPU inference), so we provide a pre-trained model in the next chunk of code.  
+This step can take quite some time (~1h with standard CPU inference), so we provide a pre-trained model in the next chunk of code.  
 
 Note: if you train the model from scratch, the results will not be 100% reproducible with the pre-trained model (but hopefully similar enough!).
 
 ```{r, eval=FALSE}
-outfile = paste0(getwd(),"/model.hdf5")
-model <- run_mofa(MOFAobject, outfile = outfile)
+MOFAobject <- run_mofa(MOFAobject)
 ```
 
 ## Load pre-computed model
 
 MOFA models are saved in hdf5 format and can be loaded into R with the function `load_model`. In this case, however, we provide the trained model as an `RData` file
 ```{r}
-# model <- load_model(outfile)
+# MOFAobject <- load_model(outfile)
 
 load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation10x_mofa.RData"))
 ```
 
-# Inspect the trained MOFA model
+```{r message=FALSE, echo=FALSE}
+MOFAobject <- model; rm(model)
+MOFAobject@samples_metadata <- as.data.frame(MOFAobject@samples_metadata)
+views_names(MOFAobject) <- c("RNA")
+```
+
+# Overview of the trained MOFA model
 
 The MOFAobject consists of multiple slots where relevant data and information is stored. For descriptions, you can read the documentation by `?MOFA`
 ```{r}
-slotNames(model)
+slotNames(MOFAobject)
 ```
 
 `dimensions` contains the dimensions of the model (K for factors, M for views, G for groups, N for samples (per group), D for features (per view)):
 ```{r}
-model@dimensions
+MOFAobject@dimensions
 ```
 
 `data` contains the centered (and optionally scaled) input data matrices. It is a nested list of matrices where the first index refers to the view, and the second index to the group. In this case we have one view (RNA) and six groups
 ```{r}
-names(model@data)
-names(model@data[[1]])
+names(MOFAobject@data)
+names(MOFAobject@data[[1]])
 ```
 
 `samples_metadata` contains the cell metadata that I have previously added to the MOFA object. Columns are:  
-- *stage*: developmental stage
-- *lineage*: cell type annotation
-- *group*: the grouping used for MOFA. In this case each embryo corresponds to a separate group
+
+- **stage**: developmental stage.
+- **lineage**: cell type annotation.
+- **group**: the grouping used for MOFA. In this case each embryo corresponds to a separate group.
 ```{r}
-head(model@samples_metadata)
+head(MOFAobject@samples_metadata)
 ```
 
 
@@ -159,7 +164,7 @@ The function `plot_data_overview` can be used to obtain an overview of the input
 It shows how many views (rows) and how many groups (columns) exist, what are their corresponding dimensionalities and how many missing information they have (grey bars).  
 In this case we have one view (RNA expression, a total of 5,000 genes) and 6 groups that correspond to different embryos at different stages of development, for a total of 16,152 cells.
 ```{r}
-plot_data_overview(model, colors = c("RNA"="darkgreen"))
+plot_data_overview(MOFAobject, colors = c("RNA"="darkgreen"))
 ```
 
 # Plot variance explained
@@ -168,36 +173,34 @@ Quantifying the variance explained per factor across groups and views is probabl
 
 ## Plot variance explained per factor across groups
 ```{r}
-plot_variance_explained(model, x="group", y="factor")
+plot_variance_explained(MOFAobject, x="group", y="factor")
 ```
 
 There is a lot of information contained in this plot. Factor 1 and Factor 2 explain a lot of variance across multiple groups. In contrast, Factor 4 increases its activity from E6.5 to E7.5, indicating that it captures a source of variation that emerges at E6.5.  
-
-To make the plot less dominated by the top 2 factors, one can scale the R2 values with the arguments `min_r2` and `max_r2`:
-```{r}
-plot_variance_explained(model, x="group", y="factor", max_r2 = 0.15)
-```
 
 We can also plot the total variance explained per group (with all factors) by adding the argument `plot_total = TRUE`. Notably, only 10 factors are sufficient to capture between 35% and 55% of the transcriptional variance per embryo
 
 ## Plot total variance explained per group
 
 ```{r}
-p <- plot_variance_explained(model, x="group", y="factor", plot_total = T)
-
-p[[2]]
+plot_variance_explained(
+  MOFAobject, 
+  x = "group", 
+  y = "factor", 
+  plot_total = T
+)[[2]]
 ```
 
 ## Plot variance explained for individual features
 
 We can also inspect the variance explained by the MOFA factors for individual features. A high $R^2$ implies that the MOFA factors captures most of the variation for this feature, whereas small values means that the variation for this feature is not explained by the model (i.e. it is considered as noise):
 
-Variance explained by all factors across all groups
+Variance explained by all factors, in each group:
 ```{r}
 features <- c("Rbp4","Ttr","Spink1","Mesp1","E130311K13Rik","Hey1")
 
 plot_variance_explained_per_feature(
-  model, 
+  MOFAobject, 
   view = "RNA",
   features = features
 )
@@ -212,57 +215,52 @@ Each factor ordinates cells along a one-dimensional axis that is centered at zer
 Let's plot Factor 1 values and we color cells by lineage assignment. Clearly, this factors captures the emergence of ExE endoderm.
 
 ```{r}
-plot_factor(model, 
+plot_factor(MOFAobject, 
   factor = 1,
-  color_by = "lineage"  # lineage is a column in model@samples.metadata
-) + scale_color_manual(values=colors)
+  color_by = "lineage"  # lineage is a column in MOFAobject@samples.metadata
+) + scale_fill_manual(values=colors)
 ```
 
 Here are other ways of representing the same plot:
 ```{r}
-p <- plot_factor(model, 
+p <- plot_factor(MOFAobject, 
   factor = 1,
   color_by = "lineage",
-  dot_size = 0.2,      # change dot size
   dodge = T,           # dodge points with different colors
   legend = F,          # remove legend
-  add_violin = T,      # add violin plots,
-  violin_alpha = 0.25  # transparency of violin plots
+  add_violin = T      # add violin plots
 )
 
 p <- p + 
-  scale_color_manual(values=colors) +
-  scale_fill_manual(values=colors)
-
+  scale_fill_manual(values=colors) +
 p
 ```
 
-One can also change the default groups by some manually defined grouping structure. For example a column in the sample metadata
+One can also change the default groups in the x-axis by some manually defined grouping structure. For example a column in the sample metadata
 ```{r}
-plot_factor(model, 
+plot_factor(MOFAobject, 
   factor = 1,
   color_by = "lineage",
-  group_by = "stage",         # cells are now grouped by stage, rather than stage+embryo,
+  group_by = "stage",
   legend = F
-) + scale_color_manual(values=colors)
+) + scale_fill_manual(values=colors)
 ```
 
 Combinations of factors can be plotted with `plot_factors`:
 ```{r}
-plot_factors(model, 
+plot_factors(MOFAobject, 
   factors = c(1,4),
   color_by = "lineage"
-) + scale_color_manual(values=colors)
+) + scale_fill_manual(values=colors)
 ```
 
 ## Visualisation of weights
 
-The weights provide a score for each gene on each factor. Genes with no association with the factor are expected to have values close to zero, whereas genes with strong association with the factor are expected to have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature is more active in the cells with positive factor values, and viceversa. \\
-Following the cell cycle example from above, we expect genes that are upregulated in the M phase to have large positive weights, whereas genes that are downregulated in the M phase (or, equivalently, upregulated in the G1 phase) are expected to have large negative weights.\\
+The weights provide a score for each gene on each factor. Genes with no association with the factor are expected to have values close to zero, whereas genes with strong association with the factor are expected to have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature is more active in the cells with positive factor values, and viceversa.  
 
 Let's plot the distribution of weights for Factor 1.
 ```{r, warnings=FALSE, message=FALSE}
-plot_weights(model,
+plot_weights(MOFAobject,
   view = "RNA",
   factor = 1,
   nfeatures = 10,     # Top number of features to highlight
@@ -270,9 +268,9 @@ plot_weights(model,
 )
 ```
 
-If we are not interested in the directionality of the effect, we can take the absolute value of the weights (`abs=TRUE`). We can also highlight some genes of interest using the argument `manual` to see where in the distribution they lie:
+If you are not interested in the directionality of the effect, you can take the absolute value of the weights (`abs=TRUE`). You can also highlight some genes of interest using the argument `manual`:
 ```{r}
-plot_weights(model,
+plot_weights(MOFAobject,
   view = "RNA",
   factor = 1,
   nfeatures = 5,
@@ -285,7 +283,7 @@ plot_weights(model,
 
 If you are not interested in the full distribution, but just on the top weights, you can do:
 ```{r}
-plot_top_weights(model, 
+plot_top_weights(MOFAobject, 
   view = "RNA", 
   factor = 1, 
   nfeatures = 10,
@@ -294,52 +292,57 @@ plot_top_weights(model,
 )
 ```
 
-## Visualisation of factors coloured by gene expression
+## Visualisation of gene expression patterns given by the Factors
 
-We expect negative weights For Factor 1 to be marker genes of ExE Endoderm. If we plot Factor 1 colouring cells by gene expresion of the top genes:
+We expect negative weights For Factor 1 to be marker genes of ExE Endoderm. If we plot Factor 1 colouring cells by mRNA expresion of the genes with the largest weights:
 ```{r}
-genes <- c("Ttr","Apom","Apoa1","Amn")
+genes <- c("Ttr","Apom")
 
 for (i in genes) {
-  
-  p <- plot_factor(model,
+  p <- plot_factor(MOFAobject,
     factor = 1,
     color_by = i
-  ) + scale_colour_gradientn(colours = terrain.colors(10)) # change color scale
-  
+  ) + scale_colour_gradientn(colours = terrain.colors(10))
   print(p)
-  
 }
 ```
 
-The weights are useful to get an idea of which are top genes that drive the factors. However, to get an idea of how well Factors are associated with genomic features we can generate a scatter plot of the Factor values against gene expression for the genes with the highest weights:
+The weights are useful to get an idea of which are top genes that drive the factors. However, to get an idea of how well Factors are associated with genomic features we can generate a scatter plot of the Factor values against mRNA expression for the genes with the highest weights:
 
-Positive weights
+Top genes with positive weights
 ```{r}
-p <- plot_data_scatter(model, 
+p <- plot_data_scatter(MOFAobject, 
   view = "RNA", 
   factor = 1, 
   features = 6,         # Number of features to show
   sign = "positive",     # select top 6 features with positive weights
   color_by = "lineage",  # color cells by lineage
-  add_lm = TRUE          # add linear regression estimates
+  add_lm = T,          # add linear regression estimates
+  lm_per_group = F, 
+  dot_size = 2
 )
-p <- p + scale_color_manual(values=colors) + theme(legend.position = "none")
+p <- p + 
+  scale_fill_manual(values=colors) +
+  theme(legend.position = "none")
 
 print(p)
 ```
 
-Negative weights
+Top genes with negative weights
 ```{r}
-p <- plot_data_scatter(model, 
+p <- plot_data_scatter(MOFAobject, 
   view = "RNA", 
   factor = 1, 
-  features = 6, 
-  sign = "negative",
-  color_by = "lineage",
-  add_lm = TRUE
+  features = 6,         # Number of features to show
+  sign = "negative",     # select top 6 features with positive weights
+  color_by = "lineage",  # color cells by lineage
+  add_lm = T,          # add linear regression estimates
+  lm_per_group = F, 
+  dot_size = 2
 )
-p <- p + scale_color_manual(values=colors) + theme(legend.position = "none")
+p <- p + 
+  scale_fill_manual(values=colors) +
+  theme(legend.position = "none")
 
 print(p)
 ```
@@ -349,22 +352,19 @@ print(p)
 
 The latent space inferred by MOFA can be employed as input to other single-cell algorithms that learn non-linear manifolds such as UMAP or t-SNE. This can be very useful to identify cellular populations and reconstruct complex pseudotime trajectories.  
 
-Run t-SNE (takes ~2min):
+Run t-SNE
 ```{r}
 set.seed(42)
-model <- run_tsne(model)
+MOFAobject <- run_tsne(MOFAobject)
 ```
 
-In this data set, we see that the combination of MOFA factors have enough information to discriminate all cell types. 
-
+In this data set, we see that the combination of MOFA factors have enough information to discriminate all cell types: 
 ```{r }
-plot_dimred(model,
+plot_dimred(MOFAobject,
   method = "TSNE",
   color_by = "lineage"
-) + scale_color_manual(values=colors)
+) + scale_fill_manual(values=colors)
 ```
-
-This is not surprising and yields a similar result as running PCA (after batch correction). Let's move to more exciting applications in the next vignettes!
 
 # sessionInfo
 
