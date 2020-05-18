@@ -79,7 +79,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # print verbose messages
   if (length(unique(object@samples_metadata$group))>1) {
-    cat("You have requested the multi-group inference framework.\nIt is an advanced option, if this is the first time that you are running MOFA, we suggest that you try first without specifying groups")
+    message("\n# Multi-group mode requested.")
+    message("\nThis is an advanced option, if this is the first time that you are running MOFA, we suggest that you try do some exploration first without specifying groups. Two important remarks:")
+    message("\n - The aim of the multi-group framework is to identify the sources of variability *within* the groups. If your aim is to find a factor that 'separates' the groups, you DO NOT want to use the multi-group framework. Please see the FAQ (https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality)") 
+    message("\n - It is important to account for the group effect before selecting highly variable features (HVFs). We suggest that either you calculate HVFs per group and then take the union, or regress out the group effect before HVF selection")
   }
   return(object)
 }

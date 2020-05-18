@@ -205,7 +205,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @importFrom utils tail
 #' @importFrom stats quantile
 #' @export
-plot_data_scatter <- function(object, factor, view = 1, groups = "all", features = 10, sign = "all",
+plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
                               color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
                               dot_size = 2.5, text_size = NULL, add_lm = TRUE, lm_per_group = TRUE, imputed = FALSE) {
   
@@ -213,6 +213,7 @@ plot_data_scatter <- function(object, factor, view = 1, groups = "all", features
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factor)==1)
   stopifnot(length(view)==1)
+  if (isTRUE(lm_per_group)) add_lm = TRUE
   
   # Define views, factors and groups
   groups <- .check_and_get_groups(object, groups)
