@@ -127,7 +127,11 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   }
   if (object@model_options$num_factors > 50) warning("The number of factors is very large, training will be slow...")
   # if (!object@model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
-  
+  if (min(object@dimensions$N) < 4 * object@model_options$num_factors) {
+    warning(sprintf("The number of samples in at least one group is very small for learning %s factors.  
+    Try to reduce the number of factors to obtain meaningful results. It should not exceed ~%s.",
+    object@model_options$num_factors, floor(min(object@dimensions$N/4))))
+  }
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
   # for (m in views_names(object)) {

@@ -140,7 +140,8 @@ class saveModel():
 
         # Define nodes which special characteristics 
         # (note that this code is ugly and is not proper class-oriented programming)
-        multigroup_nodes = ["Y","Tau","Z"]
+        multigroup_nodes = ["Y", "Tau", "Z"]
+        multigroup_factors_nodes = ["AlphaZ", "ThetaZ"]
         # multiview_nodes = ["Y","Tau","Alpha","W"]
 
         # Create HDF5 group
@@ -155,7 +156,7 @@ class saveModel():
             exp = nodes_dic[n].getExpectation()
 
             # Multi-view nodes
-            if isinstance(nodes_dic[n],Multiview_Node):
+            if isinstance(nodes_dic[n], Multiview_Node):
                 for m in range(nodes_dic[n].M):
 
                     # Multi-groups nodes (Tau and Y)
@@ -188,6 +189,12 @@ class saveModel():
                         samp_indices = np.where(np.array(self.samples_groups) == g)[0]
                         foo = exp[samp_indices,:].T
                         node_subgrp.create_dataset(g, data=foo[self.order_factors,:], compression="gzip", compression_opts=self.compression_level)
+
+                # Multi-group nodes with no samples but only factors (AlphaZ, ThetaZ)
+                elif n in multigroup_factors_nodes:
+                    for gi, g in enumerate(self.groups_names):
+                        foo = exp[gi].T
+                        node_subgrp.create_dataset(g, data=foo[self.order_factors], compression="gzip", compression_opts=self.compression_level)
 
                 # Single-group nodes (???)
                 else:
