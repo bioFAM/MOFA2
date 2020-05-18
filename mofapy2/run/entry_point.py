@@ -391,7 +391,7 @@ class entry_point(object):
 
 
         # Store intercepts
-        self.intercepts = []
+        self.intercepts = [[]]
 
         # Define likelihoods
         if likelihoods is None:
@@ -405,7 +405,7 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         for g in self.data_opts['groups_names']:
             samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
-            self.intercepts.append(np.nanmean(data[0][samples_idx,:], axis=0))
+            self.intercepts[].append(np.nanmean(data[0][samples_idx,:], axis=0))
         self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_loom(self, loom, groups_label=None, layer=None, cell_id="CellID"):
