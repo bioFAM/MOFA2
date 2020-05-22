@@ -1,4 +1,4 @@
-FROM r-base:3.6.1
+FROM r-base:3.6.3
 
 WORKDIR /mofa2
 ADD . /mofa2
