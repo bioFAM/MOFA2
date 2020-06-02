@@ -375,28 +375,32 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
   ovw$group <- object@samples_metadata$group
 
   # Melt to data.frame
-  molten_ovw <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
-  molten_ovw$sample <- factor(molten_ovw$sample, levels = rownames(ovw))
+  to.plot <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
+  to.plot$sample <- factor(to.plot$sample, levels = rownames(ovw))
 
-  n <- length(unique(molten_ovw$sample))
+  n <- length(unique(to.plot$sample))
   
   # Add number of samples and features per view/group
-  molten_ovw$combi  <- ifelse(molten_ovw$value, as.character(molten_ovw$view), "missing")
-  if (show_dimensions) {
-    molten_ovw$ntotal <- paste("N=", sapply(data[[1]], function(e) ncol(e))[ as.character(molten_ovw$group) ], sep="")
-    molten_ovw$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(molten_ovw$view) ], sep="")
-    molten_ovw <- mutate(molten_ovw, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
+  to.plot$combi  <- ifelse(to.plot$value, as.character(to.plot$view), "missing")
+  if (isTRUE(show_dimensions)) {
+    to.plot$ntotal <- paste("N=", sapply(data[[1]], function(e) ncol(e))[ as.character(to.plot$group) ], sep="")
+    to.plot$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(to.plot$view) ], sep="")
+    if (length(unique(to.plot$group))==1) { 
+      to.plot <- mutate(to.plot, view_label = paste(view, ptotal, sep="\n"), group_label = ntotal)
+    } else {
+      to.plot <- mutate(to.plot, view_label = paste(view, ptotal, sep="\n"), group_label = paste(group, ntotal, sep="\n"))
+    }
   } else {
-    molten_ovw <- mutate(molten_ovw, view_label = view, group_label = group)
+    to.plot <- mutate(to.plot, view_label = view, group_label = group)
   }
     
   # Plot
-  p <- ggplot(molten_ovw, aes_string(x="sample", y="view_label", fill="combi")) +
+  p <- ggplot(to.plot, aes_string(x="sample", y="view_label", fill="combi")) +
     geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
     # xlab(paste0("Samples (N=", n, ")")) + ylab("") +
     guides(fill = FALSE) + 
-    facet_wrap(~group_label, scales="free_x", nrow=length(unique(molten_ovw$view_label))) +
+    facet_wrap(~group_label, scales="free_x", nrow=length(unique(to.plot$view_label))) +
     theme(
       panel.background = element_rect(fill="white"),
       text = element_text(size=14),
