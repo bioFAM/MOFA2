@@ -140,9 +140,10 @@ plot_factor <- function(object, factors = 1, groups = "all",
   # Add dots
   if (isTRUE(add_dots)) {
     
-    # Dot black border
-    if (is.null(stroke))
-      if (nrow(df)<1000) { stroke <- 0.5 } else { stroke <- 0 }
+    # Set stroke
+    if (is.null(stroke)) {
+      stroke <- .select_stroke(N=length(unique(df$sample)))
+    }
     
     if (isTRUE(rasterize)) {
       warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
@@ -322,7 +323,9 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   if (isTRUE(return_data)) return(df)
   
   # Set stroke
-  if (is.null(stroke)) if (nrow(df)<1000) { stroke <- 0.5 } else { stroke <- 0 }
+  if (is.null(stroke)) {
+    stroke <- .select_stroke(N=length(unique(df$sample)))
+  }
   
   # Generate plot
   p <- ggplot(df, aes_string(x="x", y="y", fill="color_by", shape="shape_by")) + 
