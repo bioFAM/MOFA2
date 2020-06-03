@@ -107,6 +107,15 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   
   object@data <- data
   object@intercepts <- intercepts
+
+
+  # Load metadata if any
+  if ("samples_metadata" %in% h5ls.out$name) {
+    object@samples_metadata <- do.call(rbind, lapply(group_names, function(g) as.data.frame(h5read(file, sprintf("samples_metadata/%s", g)))))
+  }
+  if ("features_metadata" %in% h5ls.out$name) {
+    object@features_metadata <- do.call(rbind, lapply(view_names, function(m) as.data.frame(h5read(file, sprintf("features_metadata/%s", m)))))
+  }
   
   #######################
   ## Load imputed data ##

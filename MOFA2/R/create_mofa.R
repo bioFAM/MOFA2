@@ -52,13 +52,11 @@ create_mofa <- function(data, groups = NULL, ...) {
     object <- .create_mofa_from_matrix(data, groups)
 
   } else if(is(data, "MultiAssayExperiment")){
-    object <- .create_mofa_from_mae(data, groups)
+    object <- .create_mofa_from_mae(data, groups, ...)
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
   
-  # Do quality control
-  object <- quality_control(object)
   
   # Create sample metadata
   foo <- lapply(object@data[[1]], colnames)
@@ -67,7 +65,11 @@ create_mofa <- function(data, groups = NULL, ...) {
     group = unlist(lapply(names(foo), function(x) rep(x, length(foo[[x]])) )),
     stringsAsFactors = FALSE
   )
-  object@samples_metadata <- tmp
+  if (.hasSlot(object, "samples_metadata") && (length(object@samples_metadata) > 0)) {
+    object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),])
+  } else {
+    object@samples_metadata <- tmp
+  }
 
   # Create features metadata
   tmp <- data.frame(
@@ -75,7 +77,14 @@ create_mofa <- function(data, groups = NULL, ...) {
     view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
     stringsAsFactors = FALSE
   )
-  object@features_metadata <- tmp
+  if (.hasSlot(object, "features_metadata") && (length(object@features_metadata) > 0)) {
+    object@features_metadata <- cbind(tmp, object@features_metadata[match(tmp$feature, rownames(object@features_metadata)),])
+  } else {
+    object@features_metadata <- tmp
+  }
+
+  # Do quality control
+  object <- quality_control(object)
   
   # print verbose messages
   if (length(unique(object@samples_metadata$group))>1) {
@@ -89,7 +98,7 @@ create_mofa <- function(data, groups = NULL, ...) {
 
 # (Hidden) function to initialise a MOFA object using a MultiAssayExperiment
 # #' @import MultiAssayExperiment
-.create_mofa_from_mae <- function(data, groups = NULL) {
+.create_mofa_from_mae <- function(data, groups = NULL, save_metadata = FALSE) {
   
   # Re-arrange data for training in MOFA to matrices, fill in NAs
   data_list <- lapply(names(data), function(m) {
@@ -144,6 +153,15 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # Set samples group names
   groups_names(object) <- groups_nms
+
+  # Set metadata
+  if (save_metadata) {
+    # Samples metadata
+    if (ncol(colData(data)) > 0) {
+      object@samples_metadata <- data.frame(colData(data))
+    }
+    # No features metadata is typically contained
+  }
   
   return(object)
 }
@@ -236,7 +254,7 @@ create_mofa <- function(data, groups = NULL, ...) {
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @keywords internal
-.create_mofa_from_seurat <- function(seurat, groups, assays = "RNA", slot = "data", features = NULL) {
+.create_mofa_from_seurat <- function(seurat, groups, assays = "RNA", slot = "data", features = NULL, save_metadata = FALSE) {
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
@@ -290,6 +308,14 @@ create_mofa <- function(data, groups = NULL, ...) {
   # Set views & groups names
   groups_names(object) <- as.character(names(data_matrices[[1]]))
   views_names(object)  <- tolower(assays)
+
+  # Set metadata
+  if (save_metadata) {
+    # Samples metadata
+    object@samples_metadata <- seurat@meta.data
+    # Features metadata
+    object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
+  }
 
   return(object)
 }

@@ -122,7 +122,7 @@ class entry_point(object):
             self.data_opts['samples_names'] = [ ["sample%d_group%d" % (n,g) for n in range(N[g])] for g in range(G) ]
         else:
             assert len(samples_names)==self.dimensionalities["G"], "samples_names must a nested list with length equivalent to the number of groups"
-            self.data_opts['samples_names']  = samples_names
+            self.data_opts['samples_names'] = samples_names
 
         # Check for duplicated entries
         assert len(self.data_opts['groups_names']) == len(set(self.data_opts['groups_names'])), "Duplicated groups names"
@@ -279,7 +279,7 @@ class entry_point(object):
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None):
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None, save_metadata=None):
         """ Method to input the data in AnnData format
 
         PARAMETERS
@@ -329,7 +329,7 @@ class entry_point(object):
             data = [adata_raw_dense]
             # Subset features if required
             if features_subset is not None:
-                data[0] = data[0][:,adata.raw.var[features_subset].values]
+                data[0] = data[0][:,adata.var[features_subset].values]
         else:
             if callable(getattr(adata.X, "todense", None)):
                 data = [np.array(adata.X.todense())]
@@ -346,15 +346,27 @@ class entry_point(object):
         D = self.dimensionalities["D"] = [data[0].shape[1]]  # Feature may have been filtered
         n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby(groups_label).size().values
 
-        # Define views names and features names
+        # Define views names and features names and metadata
         self.data_opts['views_names'] = ["rna"]
-        self.data_opts['features_names'] = [adata.var_names]
+        
+        if features_subset is not None:
+            self.data_opts['features_names'] = [adata.var_names[adata.var[features_subset]]]
+        else:
+            self.data_opts['features_names'] = [adata.var_names]
 
-        # Define groups and samples names
+        if save_metadata:
+            if features_subset is not None:
+                self.data_opts['features_metadata'] = [adata.var[adata.var[features_subset]]]
+            else:
+                self.data_opts['features_metadata'] = [adata.var]
+
+        # Define groups and samples names and metadata
         if groups_label is None:
             self.data_opts['groups_names'] = ["group1"]
             self.data_opts['samples_names'] = [adata.obs.index.values.tolist()]
             self.data_opts['samples_groups'] = ["group1"] * N
+            if save_metadata:
+                self.data_opts['samples_metadata'] = [adata.obs]
         else:
             # While grouping the pandas.DataFrame, the group_label would be sorted.
             # Hence the naive implementation `adata.obs[groups_label].unique()` to get group names
@@ -364,8 +376,11 @@ class entry_point(object):
             self.data_opts['groups_names'] = [str(g) for g in adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values]
             # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
             self.data_opts['samples_names'] = adata.obs.reset_index(drop=False).rename(columns={adata.obs.index.name:'index'}).groupby(groups_label)["index"].apply(list).tolist()
-            # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
-            self.data_opts['samples_groups'] = adata.obs[groups_label].apply(str).values
+            # List of names of groups for samples ordered as they are in the original data, i.e. [group2, group1, group1, ...]
+            self.data_opts['samples_groups'] = adata.obs[groups_label].values.astype(str)
+            if save_metadata:
+                # List of metadata tables for each group of samples
+                self.data_opts['samples_metadata'] = [g for _, g in adata.obs.groupby(groups_label)]
 
 
         # If everything successful, print verbose message
@@ -375,8 +390,8 @@ class entry_point(object):
         print("\n")
 
 
-        # Store intercepts
-        self.intercepts = [None]
+        # Store intercepts (it is for one view only)
+        self.intercepts = [[]]
 
         # Define likelihoods
         if likelihoods is None:
@@ -390,7 +405,7 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         for g in self.data_opts['groups_names']:
             samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
-            self.intercepts[0] = np.nanmean(data[0][samples_idx,:], axis=0)
+            self.intercepts[0].append(np.nanmean(data[0][samples_idx,:], axis=0))
         self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
     def set_data_from_loom(self, loom, groups_label=None, layer=None, cell_id="CellID"):
@@ -798,11 +813,16 @@ class entry_point(object):
           features_names = self.data_opts['features_names'],
           views_names = self.data_opts['views_names'],
           groups_names = self.data_opts['groups_names'],
+          samples_metadata = self.data_opts["samples_metadata"] if "samples_metadata" in self.data_opts else None,
+          features_metadata = self.data_opts["features_metadata"] if "features_metadata" in self.data_opts else None,
           compression_level = 9
         )
 
         # Save sample and feature names
         tmp.saveNames()
+
+        # Save metadata
+        tmp.saveMetaData()
 
         # Save expectations
 
@@ -853,7 +873,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
          gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, 
-         save_parameters: bool = False, save_data: bool = True,
+         save_parameters: bool = False, save_data: bool = True, save_metadata: bool = True,
          seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
          expectations: Optional[List[str]] = None,
          verbose: bool = False, quiet: bool = True, copy: bool = False):
@@ -881,10 +901,12 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     gpu_mode (optional): if to use GPU mode
     Y_ELBO_TauTrick (optional): if to use ELBO Tau trick to speed up computations
     save_parameters (optional): if to save training parameters
-    save_parameters (optional): if to save training data
+    save_data (optional): if to save training data
+    save_metadata (optional): if to load metadata from the AnnData object (.obs and .var tables) and save it, False by default
     seed (optional): random seed
     outfile (optional): path to HDF5 file to store the model
-    expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default)
+    expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default);
+    possible expectations names include Y, W, Z, Tau, AlphaZ, AlphaW, ThetaW, ThetaZ
     verbose (optional): print verbose information during traing
     quiet (optional): silence messages during training procedure
     copy (optional): return a copy of AnnData instead of writing to the provided object
@@ -895,8 +917,8 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     lik = [likelihood] if likelihood is not None else None
 
     ent.set_data_options(scale_views=scale_views, scale_groups=scale_groups)
-    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer, 
-                              likelihoods=lik, features_subset=features_subset)
+    ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer,
+                              likelihoods=lik, features_subset=features_subset, save_metadata=save_metadata)
     ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_factors, 
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
