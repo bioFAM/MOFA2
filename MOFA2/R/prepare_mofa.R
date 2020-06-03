@@ -16,7 +16,7 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
-#' @param regress_covariates list of length corresponding to the number of views containing covariates as a list per group of cells or in a data frame
+#' @param regress_covariates: this function was confusing and has been depreciated. We encourage you to do batch effect corrections before creating the MOFA object.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @export
 #' @examples
@@ -143,8 +143,10 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   # }
   
   # Regress out covariates
-  if (!is.null(regress_covariates))
-    object <- .regress_covariates(object, regress_covariates)
+  if (!is.null(regress_covariates)) {
+    message("regress_covariates has been depreciated, as it is very confusing to use when you have multiple views and multiple groups. We encourage you to do the corrections (using for example limma) before creating the MOFA object")
+    # object <- .regress_covariates(object, regress_covariates)
+  }
 
   # Transform sparse matrices into dense ones
   # See https://github.com/rstudio/reticulate/issues/72
