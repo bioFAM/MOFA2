@@ -332,12 +332,15 @@ create_mofa <- function(data, groups = NULL, ...) {
 
 # (Hidden) function to split data in Seurat object into a list of matrices
 .split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "data", features = NULL) {
-  # If no feature selection is provided, all features are used
-  if (is.null(features))
-    features <- seq_len(dim(GetAssay(object = seurat, assay = assay))[1])
+  # Fetch assay data 
+  data <- GetAssayData(object = seurat, assay = assay, slot = slot)
+  
+  # Subset to provided features if provided
+  if (!is.null(features))
+    data <- data[features, , drop=FALSE]
 
-  # Fetch assay data for every group of samples
-  .split_data_into_groups(list(GetAssayData(object = seurat, assay = assay, slot = slot)[features, , drop=FALSE]))[[1]]
+  # Split into groups
+  .split_data_into_groups(list(data), groups)[[1]]
 }
 
 .df_to_matrix <- function(x) {
