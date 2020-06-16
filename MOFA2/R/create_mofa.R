@@ -322,16 +322,12 @@ create_mofa <- function(data, groups = NULL, ...) {
 
 # (Hidden) function to split a list of matrices into a nested list of matrices
 .split_data_into_groups <- function(data, groups) {
-  groups_names <- unique(groups)
-  tmp <- lapply(data, function(x) {
-    tmp_view <- lapply(groups_names, function(p) {
-      x[,groups == p]
+  group_indices <- split(seq_along(groups), factor(groups, exclude = character(0))) # factor call avoids dropping NA
+  lapply(data, function(x) {
+    lapply(group_indices, function(idx) {
+      x[, idx, drop = FALSE]
     })
-    names(tmp_view) <- groups_names
-    tmp_view
   })
-  names(tmp) <- names(data)
-  tmp
 }
 
 # (Hidden) function to split data in Seurat object into a list of matrices
@@ -341,18 +337,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     features <- seq_len(dim(GetAssay(object = seurat, assay = assay))[1])
 
   # Fetch assay data for every group of samples
-  groups_names <- unique(groups)
-  tmp <- lapply(groups_names, function(g) {
-    # If group name is NA, it has to be treated separately
-    # due to the way R handles NAs and equal signs
-    if (is.na(g)) {
-      GetAssayData(object = seurat, assay = assay, slot = slot)[,is.na(groups)][features,]
-    } else {
-      GetAssayData(object = seurat, assay = assay, slot = slot)[,which(groups == g)][features,]
-    }
-  })
-  names(tmp) <- groups_names
-  tmp
+  .split_data_into_groups(list(GetAssayData(object = seurat, assay = assay, slot = slot)[features, , drop=FALSE]))[[1]]
 }
 
 .df_to_matrix <- function(x) {
