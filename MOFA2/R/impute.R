@@ -42,7 +42,7 @@ impute <- function(object, views = "all", groups = "all", factors = "all",
   if (length(object@imputed_data)>0) warning("imputed_data slot is already filled. It will be replaced and the variance estimates will be lost...")
   
   # Get views and groups
-  views  <- .check_and_get_views(object, views)
+  views  <- .check_and_get_views(object, views, non_gaussian=FALSE)
   groups <- .check_and_get_groups(object, groups)
 
 
