@@ -142,7 +142,7 @@ class BayesNet(object):
                         r2[g][m,k] = 1. - Res/SS
         return r2
 
-    def removeInactiveFactors(self, min_r2=None):
+    def removeInactiveFactors(self, min_r2=None, return_idx = False):
         """Method to remove inactive factors
 
         PARAMETERS
@@ -167,9 +167,18 @@ class BayesNet(object):
                 self.nodes[node].removeFactors(drop)
         self.dim['K'] -= len(drop)
 
+        # Remove factor-wise training stats
+        if len(drop) > 0:
+            if 'Sigma' in self.nodes.keys():
+                self.lscales = self.lscales.drop(columns = drop)
+                self.lscales.columns = range(0, len(self.lscales.columns))
+                self.structsig = self.structsig.drop(columns = drop)
+                self.structsig.columns = range(0, len(self.structsig.columns))
         if self.dim['K']==0:
             print("All factors shut down, no structure found in the data.")
             exit()
+
+        if return_idx: return drop
 
         pass
 
@@ -200,6 +209,10 @@ class BayesNet(object):
         elbo = pd.DataFrame(data = nans((self.options['maxiter']+1, len(nodes)+1 )), columns = nodes+["total"] )
         number_factors = nans((self.options['maxiter']+1))
         iter_time = nans((self.options['maxiter']+1))
+        # keep track of factor-wise training statistics (attribute as needs to be accounted for in factor dropping)
+        if 'Sigma' in self.nodes.keys():
+            self.lscales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
+            self.structsig = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
@@ -213,7 +226,7 @@ class BayesNet(object):
             # Remove inactive factors
             if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
                 if self.options['drop']["min_r2"] is not None:
-                    self.removeInactiveFactors(**self.options['drop'])
+                    dropped = self.removeInactiveFactors(**self.options['drop'], return_idx = True)
                 number_factors[i] = self.dim["K"]
 
             # Update node by node, with E and M step merged
@@ -221,8 +234,17 @@ class BayesNet(object):
             for node in self.options['schedule']:
                 if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
                     continue
+                # t_node = time()
                 self.nodes[node].update()
+                # print("time for", node, time() - t_node)
             t_updates = time() - t_updates
+
+            # Save lengthscales from Sigma node
+            if 'Sigma' in self.nodes.keys():
+                tmp = self.nodes['Sigma'].getParameters()
+                self.lscales.iloc[i] = tmp['l']
+                self.structsig.iloc[i] = tmp['sig']
+
 
             # Calculate Evidence Lower Bound
             if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
@@ -253,6 +275,9 @@ class BayesNet(object):
                         number_factors = number_factors[:i]
                         elbo = elbo[:i]
                         iter_time = iter_time[:i]
+                        if 'Sigma' in self.nodes.keys():
+                            self.lscales = self.lscales[:i]
+                            self.structsig = self.structsig[:i]
                         print ("\nConverged!\n"); break
 
             # Do not calculate lower bound
@@ -270,6 +295,9 @@ class BayesNet(object):
 
         # Finish by collecting the training statistics
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
+        if 'Sigma' in self.nodes.keys():
+            self.train_stats['length_scales'] = self.lscales
+            self.train_stats['structural_sig'] = self.structsig
         self.trained = True
 
     def print_verbose_message(self):
@@ -429,6 +457,9 @@ class StochasticBayesNet(BayesNet):
             self.nodes['AlphaZ'].define_mini_batch(ix)
         if 'ThetaZ' in self.nodes:
             self.nodes['ThetaZ'].define_mini_batch(ix)  
+        if 'Sigma' in self.nodes:
+            self.nodes['Sigma'].define_mini_batch(ix)
+  
 
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
@@ -438,6 +469,9 @@ class StochasticBayesNet(BayesNet):
         elbo = pd.DataFrame(data = nans((self.options['maxiter']+1, len(nodes)+1 )), columns = nodes+["total"] )
         number_factors = nans((self.options['maxiter']+1))
         iter_time = nans((self.options['maxiter']+1))
+        if 'Sigma' in self.nodes.keys():
+            self.lscales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
+            self.structsig = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
@@ -480,6 +514,12 @@ class StochasticBayesNet(BayesNet):
                     continue
                 self.nodes[node].update(ix, ro)
             t_updates = time() - t_updates
+
+            # Save lengthscales from Sigma node
+            if 'Sigma' in self.nodes.keys():
+                tmp = self.nodes['Sigma'].getParameters()
+                self.lscales.iloc[i] = tmp['l']
+                self.structsig.iloc[i] = tmp['sig']
 
             # Calculate Evidence Lower Bound
             if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
@@ -534,4 +574,7 @@ class StochasticBayesNet(BayesNet):
 
         # Finish by collecting the training statistics
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
+        if 'Sigma' in self.nodes.keys():
+            self.train_stats['length_scales'] = self.lscales
+            self.train_stats['structural_sig'] = self.structsig
         self.trained = True

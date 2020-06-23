@@ -133,7 +133,7 @@ class MultivariateGaussian_Unobserved_Variational_Node(Unobserved_Variational_No
     Abstract class for a variational node where P(.) and Q(.)
     are both multivariate Gaussian distributions.
     """
-    def __init__(self, dim, pmean, pcov, qmean, qcov, qE=None):
+    def __init__(self, dim, pmean, pcov, qmean, qcov, qE=None, axis_cov=0):
         # dim (2d tuple): dimensionality of the node
         # pmean (nd array): the mean parameter of the P distribution
         # pcov (nd array): the covariance parameter of the P distribution
@@ -143,8 +143,27 @@ class MultivariateGaussian_Unobserved_Variational_Node(Unobserved_Variational_No
         Unobserved_Variational_Node.__init__(self, dim)
 
         # Initialise the P and Q distributions
-        self.P = MultivariateGaussian(dim=dim, mean=pmean, cov=pcov)
-        self.Q = MultivariateGaussian(dim=dim, mean=qmean, cov=qcov, E=qE)
+        self.P = MultivariateGaussian(dim=dim, mean=pmean, cov=pcov, axis_cov=axis_cov)
+        self.Q = MultivariateGaussian(dim=dim, mean=qmean, cov=qcov, E=qE, axis_cov=axis_cov)
+
+class MultivariateGaussian_AO_Unobserved_Variational_Node(Unobserved_Variational_Node):
+    """
+    Abstract class for a variational node where P(.) and Q(.)
+    are both multivariate Gaussian distributions using the Opper Archambeau reparamtrization for the variational.
+    """
+    def __init__(self, dim, pmean, pcov, qalpha, qlamb, qE=None, axis_cov=0):
+        # dim (2d tuple): dimensionality of the node
+        # pmean (nd array): the mean parameter of the P distribution
+        # pcov (nd array): the covariance parameter of the P distribution
+        # qalpha (nd array): the alpha parameter of the Q distribution (mean = K * alpha)
+        # qlamb (nd array): the lambda parameter of the Q distribution (presicion = K^-1 + diag(lambda**2))
+        # qE (nd array): the initial first moment of the Q distribution
+        Unobserved_Variational_Node.__init__(self, dim)
+
+        # Initialise the P and Q distributions
+        self.P = MultivariateGaussian(dim=dim, mean=pmean, cov=pcov, axis_cov=axis_cov)
+        self.Q = MultivariateGaussian_reparam(dim=dim, K=pcov, alpha=qalpha, lamb=qlamb, E=qE, axis_cov=0)
+
 
 class UnivariateGaussian_Unobserved_Variational_Node_with_MultivariateGaussian_Prior(Unobserved_Variational_Node):
     """
