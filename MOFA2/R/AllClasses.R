@@ -9,6 +9,7 @@
 #' @section Slots:
 #'  \itemize{
 #'    \item{\code{data}:}{ The input data. }
+#'    \item{\code{covariates}:}{Optional covariates for smooth factors. }
 #'    \item{\code{intercepts}:}{ Feature intercepts. }
 #'    \item{\code{samples_metadata}:}{ Samples metadata. }
 #'    \item{\code{features_metadata}:}{ Features metadata. }
@@ -22,8 +23,9 @@
 #'    \item{\code{model_options}:}{ Model options. }
 #'    \item{\code{dimensions}:}{ Dimensionalities of the model: 
 #'    M for the number of views, 
-#'    G for the number of groups, 
-#'    N for the number of samples (per group), 
+#'    G for the number of groups,
+#'    N for the number of samples (per group),
+#'    C for the number of covariates per sample,
 #'    D for the number of features (per view),
 #'    K for the number of factors.}
 #'    \item{\code{on_disk}:}{ Logical indicating whether data is loaded from disk. }
@@ -34,9 +36,12 @@
 #' @rdname MOFA
 #' @aliases MOFA-class
 #' @exportClass MOFA
+
+setClassUnion("matrixOrNULL",members = c("matrix","NULL"))
 setClass("MOFA", 
         slots=c(
             data                = "list",
+            covariates          = "matrixOrNULL",
             intercepts          = "list",
             imputed_data        = "list",
             samples_metadata    = "list",
@@ -65,14 +70,28 @@ setMethod("show", "MOFA", function(object) {
   
   if (object@status == "trained") {
     nfactors <- object@dimensions[["K"]]
-    cat(sprintf("Trained MOFA with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of factors: %d \n",
-                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
-                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
-                nfactors))
+    if(is.null(object@covariates)) {
+      cat(sprintf("Trained MOFA with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of factors: %d \n",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "),
+                  nfactors))
+    } else {
+      cat(sprintf("Trained SMOFA with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of covariates per sample: %d \n Number of factors: %d \n",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "),
+                  object@dimensions[["C"]], nfactors))
+    }
   } else {
-    cat(sprintf("Untrained MOFA model with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n",
-                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
-                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+    if(is.null(object@covariates)) {
+      cat(sprintf("Untrained MOFA model with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n ",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+    } else {
+      cat(sprintf("Untrained SMOFA model with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of covariates per sample: %d \n ",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "),
+                  object@dimensions[["C"]]))
+    }
   }
   cat("\n")
 })

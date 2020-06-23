@@ -9,40 +9,71 @@
 #' @param n_factors number of factors
 #' @param likelihood likelihood for each view, one of "gaussian" (default), "bernoulli", "poisson",
 #'  or a character vector of length n_views
-#' @return Returns an untrained \code{\link{MOFA}} object containing simulated data as training data.
+#' @param lscales vector of lengthscales, needs to be of length n_factors (default is 0 - no smooth factors)
+#' @param sample_cov matrix of sample covariates with covaraites in rows and samples in columns or "equidistant" for sequential ordering, default is NULL (no smooth factors)
+#' @return Returns a list containing the simulated data and simulation parameters.
 #' @importFrom stats rnorm rbinom rpois
 #' @export
 #' @examples
 #' # Generate a simulated data set
 #' MOFAexample <- make_example_data()
 
-make_example_data <- function(n_views = 3, n_features = 100, n_samples = 50, n_groups = 1,
-                              n_factors = 5, likelihood = "gaussian") {
+
+make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_groups = 1,
+                            n_factors = 5, likelihood = "gaussian",
+                            lscales = 0, sample_cov = NULL) {
   
   # Sanity checks
   if (!all(likelihood %in% c("gaussian", "bernoulli", "poisson")))
     stop("Likelihood not implemented: Use either gaussian, bernoulli or poisson")
   
+  if(length(lscales) == 1)
+    lscales = rep(lscales, n_factors)
+  if(!length(lscales) == n_factors)
+    stop("Lengthscalces lscales need to be of length n_factors")
+  if(all(lsclaes == 0)){
+    sample_cov <- NULL
+  }
+  
   if (length(likelihood)==1) likelihood <- rep(likelihood, n_views) 
   if (!length(likelihood) == n_views) 
     stop("Likelihood needs to be a single string or matching the number of views!")
   
-  # set sparsity for factors
-  theta_z <- 0.5
+  if(!is.null(sample_cov)){
+    if(sample_cov == "equidistant") sample_cov <- seq_len(n_samples)
+    if(is.null(dim(sample_cov))) sample_cov <- matrix(sample_cov, nrow = 1)
+    if(ncol(sample_cov) != n_samples){
+      stop("Number of columns in sample_cov must match number of samples n_samples.")
+    }
   
-  # set ARD prior for factors, each factor being active in at least one group
-  alpha_z <- vapply(seq_len(n_factors), function(fc) {
-    active_gw <- sample(seq_len(n_groups), 1)
-    alpha_fc <- sample(c(1, 1000), n_groups, replace = TRUE)
-    if(all(alpha_fc==1000)) alpha_fc[active_gw] <- 1
-    alpha_fc
-  }, numeric(n_groups))
-  alpha_z <- matrix(alpha_z, nrow=n_factors, ncol=n_groups, byrow=TRUE)
+    # Simulate covariance for factors
+    Sigma = lapply(lscales, function(ls) {
+      if(ls ==0) diag(1, n_samples)
+      else (1) * exp(-as.matrix(dist(t(sample_cov)))^2/(2*ls^2))
+      # else (1-0.001) * exp(-as.matrix(dist(t(sample_cov)))^2/(2*ls^2)) + diag(0.001, n_samples)
+    })
   
-  # simulate facors 
-  S_z <- lapply(seq_len(n_groups), function(vw) matrix(rbinom(n_samples * n_factors, 1, theta_z),
-                                                    nrow=n_samples, ncol=n_factors))
-  Z <- lapply(seq_len(n_groups), function(vw) vapply(seq_len(n_factors), function(fc) rnorm(n_samples, 0, sqrt(1/alpha_z[fc,vw])), numeric(n_samples)))
+    # simulate facors 
+    Z <-  vapply(seq_len(n_factors), function(fc) mvtnorm::rmvnorm(1, rep(0, n_samples), Sigma[[fc]]), numeric(n_samples))
+    colnames(Z) <- paste0("simulated_factor_", 1:ncol(Z))
+  } else {
+    # set sparsity for factors
+    theta_z <- 0.5
+    
+    # set ARD prior for factors, each factor being active in at least one group
+    alpha_z <- vapply(seq_len(n_factors), function(fc) {
+      active_gw <- sample(seq_len(n_groups), 1)
+      alpha_fc <- sample(c(1, 1000), n_groups, replace = TRUE)
+      if(all(alpha_fc==1000)) alpha_fc[active_gw] <- 1
+      alpha_fc
+    }, numeric(n_groups))
+    alpha_z <- matrix(alpha_z, nrow=n_factors, ncol=n_groups, byrow=TRUE)
+    
+    # simulate facors 
+    S_z <- lapply(seq_len(n_groups), function(vw) matrix(rbinom(n_samples * n_factors, 1, theta_z),
+                                                         nrow=n_samples, ncol=n_factors))
+    Z <- lapply(seq_len(n_groups), function(vw) vapply(seq_len(n_factors), function(fc) rnorm(n_samples, 0, sqrt(1/alpha_z[fc,vw])), numeric(n_samples)))
+  }
   
   # set sparsity for weights
   theta_w <- 0.5
@@ -89,5 +120,6 @@ make_example_data <- function(n_views = 3, n_features = 100, n_samples = 50, n_g
   })
   names(data) <- paste0("view_", seq_len(n_views))
   
-  return(list(data = data, groups = groups, alpha_w=alpha_w, alpha_z =alpha_z))
+  return(list(data = data, groups = groups, alpha_w=alpha_w, alpha_z =alpha_z,
+              lscales = lscales, sample_cov = sample_cov, Z = Z))
 }

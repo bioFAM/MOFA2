@@ -57,6 +57,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   mofa_entrypoint$set_data_options(
     scale_views = object@data_options$scale_views,
     scale_groups = object@data_options$scale_groups
+    scale_cov = object@data_options$scale_covariates
   )
 
   # Set metadata
@@ -68,10 +69,14 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views, function(m) object@features_metadata[object@features_metadata$view == m,])))
   }
   
+  if(!is.null(object@covariates)) {
+    cov_mat <- t(object@covariates)
+  } else cov_mat <- NULL
   # Set the data
   mofa_entrypoint$set_data_matrix(
     data = r_to_py( unname(lapply(object@data, function(x) unname( lapply(x, function(y) r_to_py(t(y)) ))) ) ),
     likelihoods = unname(object@model_options$likelihoods),
+    sample_cov = r_to_py(cov_mat),
     views_names = r_to_py(as.list(object@data_options$views)),
     groups_names = r_to_py(as.list(object@data_options$groups)),
     samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
@@ -85,7 +90,20 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     spikeslab_weights = object@model_options$spikeslab_weights, 
     ard_factors       = object@model_options$ard_factors,
     ard_weights       = object@model_options$ard_weights 
+    GP_factors       = object@model_options$GP_factors,
+    mv_Znode       = object@model_options$mv_Znode,
+    n_grid            = object@model_options$n_grid,
+    start_opt         = object@model_options$start_opt,
+    smooth_all         = object@model_options$smooth_all
+    
   )
+  
+  if (object@model_options$sparseGP) {
+    SMOFA_entrypoint$set_sparseGP_options(
+      n_inducing = object@model_options$n_inducing,
+      idx_inducing = object@model_options$idx_inducing,
+      seed_inducing = object@model_options$seed_inducing)
+  }
   
   # Set training options  
   mofa_entrypoint$set_train_options(

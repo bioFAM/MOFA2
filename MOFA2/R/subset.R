@@ -171,7 +171,7 @@ subset_factors <- function(object, factors) {
   factors <- .check_and_get_factors(object, factors)
   
   # Subset expectations
-  nodes_with_factors <- list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
+  nodes_with_factors <- list(nodes = c("Z", "W", "Sigma", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 1, 0, 0, 0, 0))
   stopifnot(all(nodes_with_factors$axes %in% c(0, 1, 2)))
 
   if (length(object@expectations)>0) {
@@ -179,6 +179,7 @@ subset_factors <- function(object, factors) {
       node <- nodes_with_factors$nodes[i]
       axis <- nodes_with_factors$axes[i]
       if (node %in% names(object@expectations)) {
+        if(node != "Sigma") {
         if (axis == 1) {
           object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors,,drop=FALSE], simplify = FALSE, USE.NAMES = TRUE)
         } else if (axis == 2) {
@@ -186,18 +187,42 @@ subset_factors <- function(object, factors) {
         } else {
           object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors], simplify = FALSE, USE.NAMES = TRUE)
         }
+        } else {
+          if (axis == 1) {
+            object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[factors,,,drop=FALSE], simplify = FALSE, USE.NAMES = TRUE)
+          } else if (axis == 2) {
+            object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[,factors,,drop=FALSE], simplify = FALSE, USE.NAMES = TRUE)
+          } else if (axis == 3) {
+            object@expectations[[node]] <- sapply(object@expectations[[node]], function(x) x[,,factors,drop=FALSE], simplify = FALSE, USE.NAMES = TRUE)
+          } 
       }
     }
+    }
   }
+  
+  
+  # Remove total variance explained estimates  
+  if (length(factors) < object@dimensions[["K"]]) {
+    object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_per_factor, colSums)
+    warning("After subsetting the factors the total variance explained estimates are not valid anymore, removing them...")
+    object@cache[["variance_explained"]]$r2_total <- NULL
+  }
+  
+  # # Relalculate total variance explained estimates (not valid for non-orthogonal factors)
+  # if (length(factors) < object@dimensions[["K"]]) {
+  #   object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_per_factor, colSums)
   
   # Subset per-factor variance explained estimates
   if ((methods::.hasSlot(object, "cache")) && ("variance_explained" %in% names(object@cache))) {
     object@cache[["variance_explained"]]$r2_per_factor <- lapply(object@cache[["variance_explained"]]$r2_per_factor, function(x) x[factors,,drop=FALSE])
   }
   
-  # Relalculate total variance explained estimates  
-  if (length(factors) < object@dimensions[["K"]]) {
-    object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_per_factor, colSums)
+  # Subset lengthscales per factor
+  if (!is.null(object@training_stats$structural_sig)) {
+    object@training_stats$structural_sig <- object@training_stats$structural_sig[factors,,drop=FALSE]
+  }
+  if (!is.null(object@training_stats$length_scales)) {
+    object@training_stats$length_scales <- object@training_stats$length_scales[factors,,drop=FALSE]
   }
   
   # Update dimensionality
@@ -255,6 +280,17 @@ subset_samples <- function(object, samples) {
           object@expectations$Y[[m]][[g]] <- object@expectations$Y[[m]][[g]][,samples_g,drop=FALSE]
         }  
       }
+      if ("Tau" %in% names(object@expectations) & length(object@expectations$Tau)>0) {
+        for (m in views_names(object)) {
+          object@expectations$Tau[[m]][[g]] <- object@expectations$Tau[[m]][[g]][samples_g, , drop=FALSE]
+        }  
+      }
+    if(g == groups[1]) {# only one Sigma node
+      if ("Sigma" %in% names(object@expectations) & length(object@expectations$Sigma)>0) {
+        samples <- unique(unlist(tmp)) # TODO - make Sigma live on covariate level or expand to group-level
+        object@expectations$Sigma[[1]] <- object@expectations$Sigma[[1]][,samples,samples,drop=FALSE]
+      }
+    }
     }
 
     # Subset data

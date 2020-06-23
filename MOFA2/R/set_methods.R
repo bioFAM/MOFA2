@@ -36,11 +36,60 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
                        rownames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
                      }
                    }
-                     
+
+                   # Modify training stats per factor
+                   if (!is.null(object@training_stats$structural_sig)) {
+                     rownames(object@training_stats$structural_sig) <- value
+                   }
+                   if (!is.null(object@training_stats$length_scales)) {
+                     rownames(object@training_stats$length_scales) <- value
+                   }
+
                    object
                  })
 
+####################################
+## Set and retrieve covariate names ##
+####################################
 
+#' @rdname covariates_names
+#' @param object a \code{\link{MOFA}} object.
+#' @aliases covariates,MOFA-method
+#' @return character vector with the covariate names
+#' @export
+setMethod("covariates_names", signature(object="MOFA"),
+          function(object) {
+            if(is.null(object@covariates))
+              stop("No covariates present in the given MOFA object.")
+            rownames(object@covariates)
+          }
+)
+
+#' @rdname covariates_names
+#' @param value a character vector of covariate names
+#' @import methods
+#' @export
+setReplaceMethod("covariates_names", signature(object="MOFA", value="vector"),
+                 function(object, value) {
+                   if(is.null(object@covariates))
+                     stop("No covariates present in the given MOFA object.")
+                   if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
+                     if (length(value) != object@dimensions["C"])
+                       stop("Length of factor names does not match the dimensionality of the covariate matrix")
+                   
+                   # Modify covariate names
+                   old_names <- rownames(object@covariates)
+                   rownames(object@covariates) <- value
+                   
+                   # Modify meta.data
+                   if (methods::.hasSlot(object, "samples_metadata")) {
+                     if(! all(old_names %in% colnames(object@samples_metadata)))
+                       stop("Mismatch of covariate names in sample meta data and covariate slot")
+                     colnames(object@samples_metadata[,old_names]) <- value
+                   }
+                   
+                   object
+                 })
 
 ####################################
 ## Set and retrieve samples names ##
@@ -458,12 +507,14 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
   nodes_types <- .get_nodes_types()
   
   # Define what entities should be updated for which nodes
-  #   Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
+  #   Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors, 3 for 3-rd dim in tensors
   stopifnot(entity %in% c("features", "samples", "factors"))
   node_lists_options <- list(
-    features = list(nodes = c("Y", "Tau", "W"), axes = c(1, 1, 1, 1)),
-    samples  = list(nodes = c("Y", "Tau", "Z"), axes = c(2, 2, 1, 1)),
-    factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
+    # features = list(nodes = c("Y", "Tau", "W"), axes = c(1, 1, 1, 1)),
+    # samples  = list(nodes = c("Y", "Tau", "Z"), axes = c(2, 2, 1, 1)),
+    features = list(nodes = c("Y", "Tau", "W"), axes = c(1, 2, 1)),
+    samples  = list(nodes = c("Y", "Tau", "Z", "Sigma", "Sigma"), axes = c(2, 1, 1, 2, 3)),
+    factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW", "Sigma"), axes = c(2, 2, 0, 0, 0, 0, 1))
   )
   
   if (paste0(views, collapse = "") == "all") { 
@@ -538,6 +589,14 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             }
           }
         }
+        # Update nodes with multivariate components (e.g. Sigma)
+          } else if (node %in% nodes_types$multivariate_singleview_node) {
+            # Set names for rows
+            if (axis != 0) {
+              dimnames(object@expectations[[node]][[1]])[[axis]] <- values
+            } else {
+              names(object@expectations[[node]][[1]]) <- values
+            }
       } else {
         print(paste0("DEV :: NOTE: There are no expectations for the node ", node))
       }

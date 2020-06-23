@@ -75,7 +75,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   # if (statistical.test %in% c("cor.adj.parametric")) {
   idx <- apply(data,2, function(x) var(x,na.rm=T))==0
   if (sum(idx)>=1) {
-    warning(sprintf("%d fetures were removed because they had no variance in the data.\n",sum(idx)))
+    warning(sprintf("%d features were removed because they had no variance in the data.\n",sum(idx)))
     data <- data[,!idx]
     W <- W[!idx,]
   }

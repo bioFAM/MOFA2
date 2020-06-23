@@ -1,0 +1,206 @@
+---
+title: "Vignette illustrating the use of sparse SMOFA on simulated data with a temporal covariate"
+author: "Britta Velten"
+output:
+  BiocStyle::html_document:
+    toc: true
+package: SMOFA
+vignette: >
+  %\VignetteIndexEntry{SMOFA: Example with simulated data (temporal)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, message=FALSE, warning=FALSE}
+devtools::load_all(".")
+library(tidyverse)
+library(pheatmap)
+```
+
+
+# Data: Simulate an example data set
+To illustrate SMOFA we simulate a small example data set with 4 different views and a single covariate using `make_example_data`. The simulation is based on 4 factors, two of which vary smoothly along the covariate (with different lengthscales) and two are independent of the covariate. To mimic a situation where we only have incomplete data on the samples we mask 50% of the samples on average per view.
+
+```{r}
+set.seed(2020)
+
+# number of views and samples
+M <- 4
+N <- 400
+
+# generate example data
+dd <- make_example_data(n_samples = N, n_features = 500,
+                        n_views = M, lscales = c(100, 30, 0,0))
+
+# mask some samples in some views
+mask <- sample(1:N, N*0.1*M, replace = TRUE)
+# mask <- split(mask, 1:M)
+# dd$data <- lapply(1:M, function(m) {
+#   mdd <- dd$data[[m]]
+#   mdd[, mask[[m]]] <- NA
+#   mdd
+#   })
+```
+
+
+# SMOFA
+## Create a SMOFA object
+To create a SMOFA objevt we need to specify the training data and (optionally) the covariates for pattern detection and inerence of smooth factors. Here, `sample_cov` is a matrix with samples in columns and covariates in rows. The sample order must match the order in data columns. Alternatively, a data frame can be provided containung one `sample` columns with samples names matching the sample names in the data.
+```{r, message=FALSE, warning=FALSE}
+sm <- create_smofa(data = dd$data, sample_cov = dd$sample_cov)
+sm
+
+plot_data_overview(sm)
+```
+
+## Prepare a SMOFA object
+Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. Here, we drop factors that explain less than 1% of variance in the data starting from 10 factors. We use a grid of 50 points to optimise the lengthscale of each factor and make use of sparse Gaussian process inference by setting `sparseGP` to TRUE. This results in a faster inference compared to modelling the full covariance matrix.
+```{r, message=FALSE, warning=FALSE}
+train_opt <- get_default_training_options(sm)
+train_opt$drop_factor_threshold <- 0.01
+train_opt$seed <- 1234567
+train_opt$maxiter <- 300
+model_opts <- get_default_model_options(sm)
+model_opts$num_factors <- 10
+model_opts$mv_Znode <- TRUE
+model_opts$sparseGP <- TRUE
+model_opts$n_inducing <- 0.5*N
+model_opts$n_grid <- 50
+model_opts$seed_inducing <- 1234567
+sm <- prepare_smofa(sm, training_options = train_opt, model_options = model_opts)
+```
+## Run SMOFA
+Now, the SMOFA object is ready for training. Using `run_smofa` we can fit the model, which is saves in the file specified as `outfile`. If none is specified the output is only saved in a temporary location.
+```{r, message=FALSE, warning=FALSE}
+sm <- run_smofa(sm)
+```
+
+## Down-stream analysis
+### Variance explained per factor
+Using `plot_variance_explained` we can explore which factor is active in which view. `plot_factor_cor` shows us whether the factors are correlated.
+```{r}
+plot_variance_explained(sm,plot_total = T)
+r <- plot_factor_cor(sm)
+```
+### Relate factors to the covariate
+The SMOFA model has learnt lenghtscales for each factor that tell us how smoohtly the factor varys along the covariate. A lengthscale of 0 means that the factor captures variation independent of the covariate, a high value tells us that this factor varys very smoothly along the covariate. In this example, we find two factors that are non-smooth and one smooth factor. Using `plot_factors_vs_cov` we can plot the factors along the covariate to visualize this relationship.
+```{r}
+get_lengthscales(sm)
+
+plot_factors_vs_cov(sm, scale = TRUE)
+```
+
+We can compare this to the factors that were simulated:
+```{r}
+df <- data.frame(dd$Z, get_covariates(sm, as.data.frame = T))
+df <- gather(df, key = "factor", value = "value", starts_with("simulated_factor"))
+ggplot(df, aes(x =covariate_1, y = value)) + geom_point() + facet_grid(~factor)
+```
+
+### Exploration of weights
+As with MOFA(+) we can now look deeper into the meaning of these factors by exploring the weigths or performing feature set enrichment analysis.
+```{r}
+# plot_weights(sm, factors = 4, view = 1)
+# plot_top_weights(sm, factors = 3, view = 2)
+```
+
+# Alternative options and comparisons
+
+<!-- ## SMOFA with univariate variational approximation  -->
+<!-- A slightly faster version of SMOFA that is more suitbale for larger sample size can be obtained by setting `mv_Znode` to `FALSE`. By this, the model uses a faster, more approximate inference that still uses the information provided by the covariate.  -->
+
+<!-- ```{r, message=TRUE, warning=TRUE} -->
+<!-- # create new SMOFA object -->
+<!-- sm_univ <- create_smofa(data = dd$data, sample_cov = dd$sample_cov) -->
+
+<!-- # set options -->
+<!-- train_opt <- get_default_training_options(sm_univ) -->
+<!-- train_opt$drop_factor_threshold <- 0.01 -->
+<!-- train_opt$seed <- 1234567 -->
+<!-- model_opts <- get_default_model_options(sm_univ) -->
+<!-- model_opts$num_factors <- 10 -->
+<!-- model_opts$mv_Znode <- FALSE -->
+<!-- model_opts$n_grid <- 100 -->
+
+<!-- # Prepare and train the SMOFA object -->
+<!-- sm_univ <- prepare_smofa(sm_univ, training_options = train_opt, model_options = model_opts) -->
+<!-- sm_univ <- run_smofa(sm_univ) -->
+<!-- ``` -->
+
+<!-- ### Variance explained per factor -->
+<!-- As above, we use `plot_variance_explained` to explore which factor is active in which view. `plot_factor_cor` shows us whether the factors are correlated. -->
+<!-- ```{r} -->
+<!-- plot_variance_explained(sm_univ,plot_total = T) -->
+<!-- r <- plot_factor_cor(sm_univ) -->
+<!-- ``` -->
+
+<!-- ### Relate factors to the covariate -->
+<!-- Again, the SMOFA model has learnt lenghtscales for each factor that tell us how smoohtly the factor varys along the covariate. Here, the factors are slighlty less smooth compared to the training with `mv_Znode` set to TRUE. -->
+<!-- ```{r} -->
+<!-- get_lengthscales(sm_univ) -->
+
+<!-- plot_factors_vs_cov(sm_univ, scale = TRUE) -->
+<!-- ``` -->
+
+<!-- Again we can now look deeper into the meaning of these factors by exploring the weigths or performing feature set enrichment analysis. -->
+<!-- ```{r} -->
+<!-- plot_weights(sm, factors = 4, view = 1) -->
+<!-- plot_top_weights(sm, factors = 3, view = 2) -->
+<!-- ``` -->
+
+
+
+## Standard MOFA(+) (without covariates)
+When we do not specify any sample covariates or set `GP_factors` to `FALSE`, the model falls back to the standard MOFA model. We train this here as a comparison.
+```{r, message=TRUE, warning=TRUE}
+# create new SMOFA object (note we could also set sample_cov to NULL)
+sm_nocov <- create_smofa(data = dd$data, sample_cov = dd$sample_cov)
+
+# set options
+train_opt <- get_default_training_options(sm_nocov)
+train_opt$drop_factor_threshold <- 0.01
+train_opt$seed <- 1234567
+model_opts <- get_default_model_options(sm_nocov)
+model_opts$num_factors <- 10
+model_opts$GP_factors <- FALSE
+
+# Prepare and train the SMOFA object
+sm_nocov <- prepare_smofa(sm_nocov, training_options = train_opt, model_options = model_opts)
+sm_nocov <- run_smofa(sm_nocov)
+```
+
+### Variance explained per factor
+As above, we use `plot_variance_explained` to explore which factor is active in which view. `plot_factor_cor` shows us whether the factors are correlated.
+```{r}
+plot_variance_explained(sm_nocov,plot_total = T)
+r <- plot_factor_cor(sm_nocov)
+```
+
+### Relate factors to the covariate
+Without covariates (using `GP_factors = FALSE`), the SMOFA model does not learn lenghtscales for a factor. However, we can still correlate a posterior the covariate to the learnt factors. We note, that these are less smooth than the factors learnt with covariates and samples with missing values are not placed  correctly.
+```{r}
+plot_factors_vs_cov(sm_nocov, scale = TRUE)
+```
+
+
+
+
+## Comparison of factor smoothness between models
+
+Compare simulated and inferred factors including the posterior variance of factor values (illustrating the uncertainty of the factor values). Note that factors can be flipped (mirrored at the x-axis) and in a different order compared to the simulated factors due to the symmetry of the model.
+```{r}
+df <- data.frame(dd$Z, get_covariates(sm, as.data.frame = T))
+df <- gather(df, key = "factor", value = "value", starts_with("simulated_factor"))
+ggplot(df, aes(x =covariate_1, y = value)) + geom_point() + facet_grid(~factor)
+
+plot_factors_vs_cov(sm, scale = TRUE, show_variance = TRUE)
+# plot_factors_vs_cov(sm_univ, scale = TRUE, show_variance = TRUE)
+plot_factors_vs_cov(sm_nocov, scale = TRUE, show_variance = TRUE)
+```
+
+
+# SessionInfo
+```{r}
+sessionInfo()
+```
+

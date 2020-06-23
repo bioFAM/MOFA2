@@ -72,6 +72,7 @@
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
       
+      warning("Outlier detection is independent of the inferred lengthscale currently - might lead to unwanted results")
       cutoff <- 2.5 * 1.96
       tmp <- abs(Z - mean(Z)) / sd(Z)
 
@@ -116,6 +117,21 @@ return(model)
     }
   }
   
+}
+
+.check_and_get_covariates <- function(object, covariates) {
+  stopifnot(!any(duplicated(covariates)))
+  if (is.numeric(covariates)) {
+    stopifnot(all(covariates <= object@dimensions$C))
+    covariates_names(object)[covariates] 
+  } else {
+    if (paste0(covariates, collapse = "") == "all") { 
+      covariates_names(object)
+    } else {
+      stopifnot(all(covariates %in% covariates_names(object)))
+      covariates
+    }
+  }
 }
 
 .check_and_get_views <- function(object, views, non_gaussian=TRUE) {
@@ -205,7 +221,8 @@ return(model)
   nodes_types <- list(
     multiview_nodes  = c("W", "AlphaW", "ThetaW"),
     multigroup_nodes = c("Z", "AlphaZ", "ThetaZ"),
-    twodim_nodes     = c("Y", "Tau")
+    twodim_nodes     = c("Y", "Tau"),
+    multivariate_singleview_node = "Sigma"
   )
 }
 
@@ -460,3 +477,81 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     stroke <- 0.05
   }
 }
+
+# # (Hidden) function to define the shape
+# .set_shapeby_features <- function(object, shape_by, view) {
+#   
+#   # Option 1: no color
+#   if (is.null(shape_by)) {
+#     shape_by <- rep("1",sum(object@dimensions[["D"]][view]))
+#     
+#     # Option 2: input is a data.frame with columns (feature,color)
+#   } else if (is(shape_by,"data.frame")) {
+#     stopifnot(all(colnames(shape_by) %in% c("feature","color")))
+#     stopifnot(all(unique(shape_by$feature) %in% features(object)[[view]]))
+#     
+#     # Option 3: by a feature_metadata column
+#   } else if ((length(shape_by)==1) && is.character(shape_by) & (shape_by %in% colnames(features_metadata(object)))) {
+#     tmp <- features_metadata(object)
+#     shape_by <- tmp[tmp$view==view,shape_by]
+#     
+#     # Option 4: shape_by is a vector of length D
+#   } else if (length(shape_by) > 1) {
+#     stopifnot(length(shape_by) == object@dimensions[["D"]][[view]])
+#     
+#     # Option not recognised
+#   } else {
+#     stop("'shape_by' was specified but it was not recognised, please read the documentation")
+#   }
+#   
+#   # Create data.frame with columns (feature,shape)
+#   if (!is(shape_by,"data.frame")) {
+#     df = data.frame(
+#       feature = features(object)[[view]],
+#       shape_by = shape_by,
+#       view = view
+#     )
+#   }
+#   
+#   return(df)
+# }
+# 
+# 
+# # (Hidden) function to define the color
+# .set_colorby_features <- function(object, color_by, view) {
+#   
+#   # Option 1: no color
+#   if (is.null(color_by)) {
+#     color_by <- rep("1",sum(object@dimensions[["D"]][view]))
+#     
+#     # Option 2: input is a data.frame with columns (feature,color)
+#   } else if (is(color_by,"data.frame")) {
+#     stopifnot(all(colnames(color_by) %in% c("feature","color")))
+#     stopifnot(all(unique(color_by$feature) %in% features(object)[[view]]))
+#     
+#     # Option 3: by a feature_metadata column
+#   } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {
+#     tmp <- features_metadata(object)
+#     color_by <- tmp[tmp$view==view,color_by]
+#     
+#     # Option 4: color_by is a vector of length D
+#   } else if (length(color_by) > 1) {
+#     stopifnot(length(color_by) == object@dimensions[["D"]][[view]])
+#     
+#     # Option not recognised
+#   } else {
+#     stop("'color_by' was specified but it was not recognised, please read the documentation")
+#   }
+#   
+#   # Create data.frame with columns (feature,color)
+#   if (!is(color_by,"data.frame")) {
+#     df = data.frame(
+#       feature = features(object)[[view]],
+#       color_by = color_by,
+#       view = view
+#     )
+#   }
+#   
+#   return(df)
+# }
+

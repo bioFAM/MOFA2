@@ -30,9 +30,9 @@ quality_control <- function(object, verbose = FALSE) {
   if (verbose == TRUE) message("Checking groups names...")
   if (any(grepl("/", groups_names(object)))) {
     stop("Some of the groups names contain `/` symbol, which is not supported.
-  This can be fixed e.g. with:
+    This can be fixed e.g. with:
     groups_names(object) <- gsub(\"/\", \"-\", groups_names(object))")
-  } 
+  }
   stopifnot(!is.null(groups_names(object)))
   stopifnot(!duplicated(groups_names(object)))
   
@@ -66,6 +66,14 @@ quality_control <- function(object, verbose = FALSE) {
     }
   }
     
+  # check dimensionalities of sample_covariates 
+  if (verbose == TRUE) message("Checking sample covariates...")
+  if(!is.null(object@covariates)){
+    stopifnot(ncol(object@covariates) == object@dimensions$N)
+    stopifnot(nrow(object@covariates) == object@dimensions$C)
+    stopifnot(all(samples(object) == colnames(object@covariates)))
+  }
+  
   # Sanity checks that are exclusive for an untrained model  
   if (object@status == "untrained") {
     
@@ -90,19 +98,19 @@ quality_control <- function(object, verbose = FALSE) {
     
   # Sanity checks that are exclusive for a trained model  
   } else if (object@status == "trained") {
-    
     # Check expectations
-    stopifnot(all(c("W", "Z") %in% names(object@expectations)))
     if (verbose == TRUE) message("Checking expectations...")
+    stopifnot(all(c("W", "Z") %in% names(object@expectations)))
+    if(!is.null(object@covariates)) stopifnot("Sigma" %in% names(object@expectations))
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
     
     # Check for intercept factors
-    if (isTRUE(object@data_options[["loaded"]])) { 
+    if (isTRUE(object@data_options[["loaded"]])) {
       if (verbose == TRUE) message("Checking for intercept factors...")
       if (!is.null(object@data)) {
         factors <- do.call("rbind",get_factors(object))
-        r <- suppressWarnings( t(do.call('rbind', lapply(object@data, function(x) 
+        r <- suppressWarnings( t(do.call('rbind', lapply(object@data, function(x)
           abs(cor(colMeans(do.call("cbind",x),na.rm=T),factors, use="pairwise.complete.obs"))
         ))) )
         intercept_factors <- which(rowSums(r>0.75)>0)
@@ -121,9 +129,8 @@ quality_control <- function(object, verbose = FALSE) {
     tmp <- cor(Z+noise); diag(tmp) <- NA
     options(op) # activate warnings again
     if (max(tmp,na.rm=T)>0.5) {
-      warning("The model contains highly correlated factors (see `plot_factor_cor(MOFAobject)`). \nWe recommend that you train the model with less factors and that you let it train for a longer time.\n")
-    }
-
+      warning("The model contains highly correlated factors (see `plot_factor_cor(MOFAobject)`). \n"
+      "We recommend that you train the model with less factors and that you let it train for a longer time.\n")
   }
   
   return(object)  

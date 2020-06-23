@@ -237,7 +237,9 @@ get_default_training_options <- function(object) {
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
 #'  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
 #'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
-#' }
+#'  \item{\strong{scale_covariates}:}{ logical indicating whether to scale covariates to have the same (unit) variance. 
+#'  This avoids that the prior sample covariance is dominated by covaraites on a larger scale. Default is TRUE}
+#'  }
 #' @return Returns a list with the default data options.
 #' @importFrom utils modifyList
 #' @export
@@ -265,6 +267,7 @@ get_default_data_options <- function(object) {
   data_options <- list(
     scale_views = FALSE,                 # (logical) Scale views to unit variance
     scale_groups = FALSE                 # (logical) Scale groups to unit variance
+    scale_covariates = TRUE
   )
   
   # if data_options already exists, replace the default values but keep the additional ones
@@ -285,9 +288,14 @@ get_default_data_options <- function(object) {
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
 #'  \item{\strong{spikeslab_factors}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
+#'  \item{\strong{GP_factors}:}{ logical indicating whether to use a GP prior on the factors (Default is TRUE if covaraites are present)}
 #'  \item{\strong{spikeslab_weights}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
 #'  \item{\strong{ard_factors}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
 #'  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
+#'  \item{\strong{start_opt}:}{ at which iteration to start optimizing hte lengthscales of the GP prior}
+#'  \item{\strong{n_grid}:}{ number of grid point to use for optimizing the lengthscale of the GP prior}
+#'  \item{\strong{smooth_all}:}{ logical indicating whether to use only smooth factors}
+
 #'  }
 #' @return Returns a list with the default model options.
 #' @importFrom utils modifyList
@@ -335,13 +343,32 @@ get_default_model_options <- function(object) {
     spikeslab_factors = FALSE,         # Spike and Slab sparsity on the factors
     spikeslab_weights = TRUE,          # Spike and Slab sparsity on the loadins
     ard_factors = TRUE,              # Group-wise ARD sparsity on the factors
-    ard_weights = TRUE                # Group-wise ARD sparsity on the loadings
+    ard_weights = TRUE,                # View-wise ARD sparsity on the loadings
+    GP_factors = TRUE,           # GP-prior on Z
+    mv_Znode = FALSE,           #  multivariate variational for Z
+    start_opt = 20,             # when to start optimizing lengthsclaes  # TODO should be trainign_opts --> python
+    n_grid = 50,                 # number of gridpoints per lenghtscales # TODO should be trainign_opts --> python
+    sparseGP = FALSE,
+    idx_inducing = NULL,
+    n_inducing = round(max(100, object@dimensions$N * 0.2)),
+    seed_inducing = NULL, #TODO Move to training opts
+    smooth_all = FALSE
   )
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups
   if (object@dimensions$G==1)
     model_options$ard_factors <-FALSE
 
+  # GP prior  on the factors only if covariates are present
+  if (is.null(object@covariates))
+    model_options$GP_factors <-FALSE
+  
+  # multivariate variational for Z and sparse GPonly if GP prior on Z
+  if (!model_options$GP_factors) {
+    model_options$mv_Znode <- FALSE
+    model_options$sparseGP <- FALSE
+  }
+  
   # if model_options already exist, replace the default values but keep the additional ones
   if (length(object@model_options)>0)
     model_options <- modifyList(model_options, object@model_options)
