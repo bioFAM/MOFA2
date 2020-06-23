@@ -28,7 +28,7 @@ If NULL, default options are used.}
 \item{stochastic_options}{list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 If NULL, default options are used.}
 
-\item{regress_covariates}{list of length corresponding to the number of views containing covariates as a list per group of cells or in a data frame}
+\item{regress_covariates:}{this function was confusing and has been depreciated. We encourage you to do batch effect corrections before creating the MOFA object.}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots

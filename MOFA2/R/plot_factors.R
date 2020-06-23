@@ -492,7 +492,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 #' @importFrom magrittr %>% set_colnames
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
-#' @examples
+
 plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", show_missing = TRUE, scale = FALSE,
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                                 dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE, show_variance = FALSE) {
@@ -628,7 +628,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", sho
 #' @importFrom magrittr %>% set_colnames
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
-#' @examples
+
 plot_factors_on_cov_2d <- function(object, covariates, factors = "all", scale = FALSE,
                                   return_data = FALSE) {
   # Sanity checks

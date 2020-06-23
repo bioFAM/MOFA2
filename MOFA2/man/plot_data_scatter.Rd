@@ -6,7 +6,7 @@
 \usage{
 plot_data_scatter(
   object,
-  factor,
+  factor = 1,
   view = 1,
   groups = "all",
   features = 10,

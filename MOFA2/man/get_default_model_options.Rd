@@ -23,9 +23,13 @@ The model options are the following: \cr
  By default, they are guessed internally.}
  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
  \item{\strong{spikeslab_factors}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
+ \item{\strong{GP_factors}:}{ logical indicating whether to use a GP prior on the factors (Default is TRUE if covaraites are present)}
  \item{\strong{spikeslab_weights}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
  \item{\strong{ard_factors}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
+ \item{\strong{start_opt}:}{ at which iteration to start optimizing hte lengthscales of the GP prior}
+ \item{\strong{n_grid}:}{ number of grid point to use for optimizing the lengthscale of the GP prior}
+ \item{\strong{smooth_all}:}{ logical indicating whether to use only smooth factors}
  }
 }
 \examples{

@@ -12,6 +12,7 @@ The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA
 
  \itemize{
    \item{\code{data}:}{ The input data. }
+   \item{\code{covariates}:}{Optional covariates for smooth factors. }
    \item{\code{intercepts}:}{ Feature intercepts. }
    \item{\code{samples_metadata}:}{ Samples metadata. }
    \item{\code{features_metadata}:}{ Features metadata. }
@@ -25,8 +26,9 @@ The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA
    \item{\code{model_options}:}{ Model options. }
    \item{\code{dimensions}:}{ Dimensionalities of the model: 
    M for the number of views, 
-   G for the number of groups, 
-   N for the number of samples (per group), 
+   G for the number of groups,
+   N for the number of samples (per group),
+   C for the number of covariates per sample,
    D for the number of features (per view),
    K for the number of factors.}
    \item{\code{on_disk}:}{ Logical indicating whether data is loaded from disk. }

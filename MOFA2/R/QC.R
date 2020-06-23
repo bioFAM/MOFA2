@@ -129,8 +129,9 @@ quality_control <- function(object, verbose = FALSE) {
     tmp <- cor(Z+noise); diag(tmp) <- NA
     options(op) # activate warnings again
     if (max(tmp,na.rm=T)>0.5) {
-      warning("The model contains highly correlated factors (see `plot_factor_cor(MOFAobject)`). \n"
-      "We recommend that you train the model with less factors and that you let it train for a longer time.\n")
+      warning("The model contains highly correlated factors (see `plot_factor_cor(MOFAobject)`). \nWe recommend that you train the model with less factors and that you let it train for a longer time.\n")
+    }
+  
   }
   
   return(object)  

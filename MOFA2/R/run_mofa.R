@@ -56,7 +56,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   # Set data options
   mofa_entrypoint$set_data_options(
     scale_views = object@data_options$scale_views,
-    scale_groups = object@data_options$scale_groups
+    scale_groups = object@data_options$scale_groups,
     scale_cov = object@data_options$scale_covariates
   )
 
@@ -89,7 +89,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     spikeslab_factors = object@model_options$spikeslab_factors, 
     spikeslab_weights = object@model_options$spikeslab_weights, 
     ard_factors       = object@model_options$ard_factors,
-    ard_weights       = object@model_options$ard_weights 
+    ard_weights       = object@model_options$ard_weights, 
     GP_factors       = object@model_options$GP_factors,
     mv_Znode       = object@model_options$mv_Znode,
     n_grid            = object@model_options$n_grid,

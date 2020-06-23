@@ -92,6 +92,8 @@ create_mofa <- function(data, groups = NULL, sample_cov = NULL, scale_cov =FALSE
     object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),])
   } else {
     object@samples_metadata <- tmp
+  }
+  
   if(!is.null(object@covariates)){
     for(i in seq_len(nrow(object@covariates))) tmp <- cbind(tmp, object@covariates[i,])
     if(!is.null(rownames(object@covariates))) {

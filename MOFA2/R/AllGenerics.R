@@ -27,9 +27,9 @@ setGeneric("covariates_names", function(object) { standardGeneric("covariates_na
 
 #' @name covariates_names
 #' @rdname covariates_names
-#' @aliases covariates_names <-
+#' @aliases covariates_names<-
 #' @export
-setGeneric("covariates_names <-", function(object, value) { standardGeneric("covariates_names <-") })
+setGeneric("covariates_names<-", function(object, value) { standardGeneric("covariates_names<-") })
 
 
 ##################

@@ -266,7 +266,7 @@ get_default_data_options <- function(object) {
   # Define default data options
   data_options <- list(
     scale_views = FALSE,                 # (logical) Scale views to unit variance
-    scale_groups = FALSE                 # (logical) Scale groups to unit variance
+    scale_groups = FALSE,                 # (logical) Scale groups to unit variance
     scale_covariates = TRUE
   )
   

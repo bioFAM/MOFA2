@@ -2,18 +2,9 @@
 % Please edit documentation in R/create_mofa.R
 \name{create_mofa}
 \alias{create_mofa}
-\alias{.create_mofa_from_seurat}
 \title{create a MOFA object}
 \usage{
-create_mofa(data, groups = NULL, ...)
-
-.create_mofa_from_seurat(
-  seurat,
-  groups,
-  assays = "RNA",
-  slot = "data",
-  features = NULL
-)
+create_mofa(data, groups = NULL, sample_cov = NULL, scale_cov = FALSE, ...)
 }
 \arguments{
 \item{data}{Input data can be in several formats:
@@ -27,24 +18,29 @@ create_mofa(data, groups = NULL, ...)
   Missing values must be filled in prior to creating the MOFA object (see the example)}
   }}
 
-\item{groups}{a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample}
+\item{groups}{information about the groups:
+\itemize{
+\item{If data is a data.frame this argument is not used}.
+\item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
+\item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
+Default is \code{NULL} (no groups)
+}}
 
-\item{seurat}{Seurat object}
+\item{sample_cov}{covariates for each sample used for smoothing and pattern detection: This can be one of the following:
+\itemize{
+\item{A matrix with samples in columns and covariates in rows. Sample order must match the order in data columns.}
+\item{A data-frame with a sample column, all other columns will be taken as covariates and should be numeric. Sample names must match the column names in data.}
+\item{If data is a data.frame, it can be a character (vector) specifying column(s) to use as covariate (should be numeric)}.
+\item{If data is a Seurat object, it can be a string specifying one or multiple column name(s)e present in the samples metadata to use it as covariate(s) (should be numeric)}
+Default is \code{NULL} (no covariates)
+}}
 
-\item{assays}{assays to use for the MOFA model, default is RNA}
-
-\item{slot}{assay slot to be used such as scale.data or data}
-
-\item{features}{a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used}
+\item{scale_cov}{By default all covariates are scaled, if this is not wanted set this to FALSE}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object
-
-Returns an untrained \code{\link{MOFA}} object
 }
 \description{
-Method to create a \code{\link{MOFA}} object
-
 Method to create a \code{\link{MOFA}} object
 }
 \examples{
@@ -55,4 +51,3 @@ file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
 data <- read.table(file, header=TRUE) 
 MOFAmodel <- create_mofa(data)
 }
-\keyword{internal}
