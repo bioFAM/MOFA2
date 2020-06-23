@@ -15,6 +15,22 @@ setGeneric("factors_names", function(object) { standardGeneric("factors_names") 
 #' @export
 setGeneric("factors_names<-", function(object, value) { standardGeneric("factors_names<-") })
 
+#####################
+## Covariate Names ##
+#####################
+
+#' @title covariates_names: set and retrieve covariate names
+#' @name covariates_names
+#' @rdname covariates_names
+#' @export
+setGeneric("covariates_names", function(object) { standardGeneric("covariates_names") })
+
+#' @name covariates_names
+#' @rdname covariates_names
+#' @aliases covariates_names <-
+#' @export
+setGeneric("covariates_names <-", function(object, value) { standardGeneric("covariates_names <-") })
+
 
 ##################
 ## Sample Names ##

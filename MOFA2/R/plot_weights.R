@@ -480,8 +480,12 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   W <- get_weights(object, factors = factors, views = view, as.data.frame=TRUE)
 
   # Scale values by weight with highest (absolute) value
-  if (isTRUE(scale)) W$value <- W$value/max(abs(W$value))
-
+  if (isTRUE(scale)) {
+    W$value <- W$value/max(abs(W$value))
+    # W <- group_by(W, factor)
+    # W <- mutate(W, value = value/max(abs(value)))
+    # W <- ungroup(W)
+}
   # Store sign
   W <- W[W$value!=0,]
   W$sign <- ifelse(W$value>0, "+", "-")

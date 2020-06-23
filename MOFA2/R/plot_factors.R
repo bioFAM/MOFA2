@@ -459,3 +459,228 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   corrplot(r, tl.col = "black", ...)
 }
 
+
+#' @title Scatterplots of a factor's values againt the sample covariates
+#' @name plot_factors_vs_cov
+#' @description  Scatterplots of a factor's values againt the sample covariates
+#' @param object a trained \code{\link{SMOFA}} object.
+#' @param factors character or numeric specifying the factor(s) to plot, default is "all"
+#' @param covariates character or numeric vector specifying the covariates to plot, default is "all"
+#' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param scale logical indicating whether to scale factor values.
+#' @param color_by specifies groups or values used to color the samples. This can be either:
+#' (1) a character giving the name of a feature present in the training data.
+#' (2) a character giving the same of a column present in the sample metadata.
+#' (3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
+#' @param shape_by specifies groups or values used to shape the samples. This can be either:
+#' (1) a character giving the name of a feature present in the training data, 
+#' (2) a character giving the same of a column present in the sample metadata.
+#' (3) a vector of the same length as the number of samples specifying discrete groups.
+#' @param color_name name for color legend.
+#' @param shape_name name for shape legend.
+#' @param dot_size numeric indicating dot size.
+#' @param alpha numeric indicating dot transparency.
+#' @param legend logical indicating whether to add legend.
+#' @param return_data logical indicating whether to return the data frame to plot instead of plotting
+#' @param show_variance logical indicating whether to show the marginal variance of inferred factor values
+#' @details To investigate the factors pattern along the covariates (such as time or a spatial coordinate) 
+#' this function an be used to plot a scatterplot of the factor againt the values of each covariate
+#' @return Returns a \code{ggplot2} object
+#' @import ggplot2 dplyr
+#' @importFrom stats complete.cases
+#' @importFrom tidyr spread
+#' @importFrom magrittr %>% set_colnames
+#' @importFrom ggbeeswarm geom_quasirandom
+#' @export
+#' @examples
+plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", show_missing = TRUE, scale = FALSE,
+                                color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
+                                dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE, show_variance = FALSE) {
+  
+  # Sanity checks
+  if (!is(object, "SMOFA")) stop("'object' has to be an instance of SMOFA")
+
+  if (is.null(object@covariates)) stop("SMOFA object does not contain any sample covariates")
+  
+  # Remember color_name and shape_name if not provided
+  if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))
+    color_name <- color_by
+  if (!is.null(shape_by) && (length(shape_by) == 1) && is.null(shape_name))
+    shape_name <- shape_by
+  
+  # Define factors
+  factors <- .check_and_get_factors(object, factors)
+  
+  # Get factors
+  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
+  
+  # Set color and shape
+  color_by <- .set_colorby(object, color_by)
+  shape_by <- .set_shapeby(object, shape_by )
+  
+  # Remove samples with missing values
+  Z <- Z[complete.cases(Z),]
+
+  # Define covariates
+  covariates <- .check_and_get_covariates(object, covariates)
+  
+  # Get covariates
+  covari <- get_covariates(object, covariates, as.data.frame = TRUE)
+  covari <- gather(covari, key = "covariate", value = "covariate_value", -sample)
+  
+  # Merge factor values with color and shape information
+  df <- merge(Z, color_by, by="sample")
+  df <- merge(df, shape_by, by="sample")
+  df <- merge(df, covari, by = "sample")
+  df$shape_by <- as.character(df$shape_by)
+  
+  # Remove missing values
+  if(!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
+  
+  # Include marginal variance
+  if(show_variance) {
+    if("E2" %in% names(object@expectations$Z)){
+      ZZ = object@expectations$Z$E2
+      ZZ <- reshape2::melt(ZZ, na.rm=T)
+      colnames(ZZ) <- c("sample", "factor", "E2")
+      df <- left_join(df, ZZ, by = c("sample", "factor"))
+      df <- mutate(df, var = E2 - value^2)
+    } else {
+      show_variance <- FALSE
+      warning("No second values present in the trained model - variance can not be shown.")
+    }
+  }
+  
+  
+  # Scale values from 0 to 1
+  if (scale) {
+    df <- group_by(df, factor)
+    df <- mutate(df, value_scaled = value/max(abs(value)))
+    if(show_variance) df <- mutate(df, var = var/(max(abs(value))^2))
+    df <- mutate(df, value = value_scaled)
+    df <- select(df, -value_scaled)
+    Z <- ungroup(Z)
+  }
+    
+  # Return data if requested instead of plotting
+  if (return_data) return(df)
+  
+  # Generate plot
+  p <- ggplot(df, aes(x=covariate_value, y=value)) + 
+    geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
+    facet_grid(covariate ~ factor) +
+    theme_classic() +
+    theme(
+      axis.text = element_text(size = rel(0.9), color = "black"), 
+      axis.title = element_text(size = rel(1.2), color = "black"), 
+      axis.line = element_line(color = "black", size = 0.5), 
+      axis.ticks = element_line(color = "black", size = 0.5)
+    )
+  
+  if(show_variance){
+    p <- p + geom_errorbar(aes(ymin = value - sqrt(var)*1.96, ymax =value + sqrt(var)*1.96), col = "red", alpha = 0.7)
+  }
+  # If color is numeric, define the default gradient
+  if (is.numeric(df$color_by))
+    p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n = 5, name = "RdYlBu")))(10)) 
+  
+  # Add legend for color
+  if (length(unique(df$color_by))>1) { 
+    p <- p + labs(color=color_name)
+  } else { 
+    p <- p + guides(color=FALSE) + scale_color_manual(values="black")
+  }
+  
+  # Add legend for shape
+  if (length(unique(df$shape_by))>1) { 
+    p <- p + labs(shape=shape_name)
+  } else { 
+    p <- p + guides(shape=FALSE) 
+  }
+  
+  if (legend) {
+    p <- p + theme(
+      legend.text = element_text(size=rel(1.2)),
+      legend.title = element_text(size=rel(1.2))
+    )
+  } else {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  return(p)
+}
+
+
+#' @title Plot function values on a 2-dimensional grid given by 2 covariates
+#' @name plot_factors_on_cov_2d
+#' @description  Plot of function values on a 2-dimensional grid given by 2 covariates
+#' @param object a trained \code{\link{SMOFA}} object.
+#' @param factor character or numeric specifying the factor to plot
+#' @param covariates character or numeric vector of length 2 specifying the covariates to plot
+#' @param scale logical indicating whether to scale factor values.
+#' @param return_data logical indicating whether to return the data frame to plot instead of plotting
+#' @details To investigate the factors pattern along two covariates (such as in the space defined by spatial covaraites) 
+#' this function an be used to plot a factor's values in this covariate space
+#' @return Returns a \code{ggplot2} object
+#' @import ggplot2 dplyr
+#' @importFrom stats complete.cases
+#' @importFrom tidyr spread
+#' @importFrom magrittr %>% set_colnames
+#' @importFrom ggbeeswarm geom_quasirandom
+#' @export
+#' @examples
+plot_factors_on_cov_2d <- function(object, covariates, factors = "all", scale = FALSE,
+                                  return_data = FALSE) {
+  # Sanity checks
+  if (!is(object, "SMOFA")) stop("'object' has to be an instance of SMOFA")
+  if(length(covariates) != 2)  stop("'covariates' has to be of length 2")
+  
+  # Define factors
+  factors <- .check_and_get_factors(object, factors)
+  
+  # Get factors
+  Z <- get_factors(object, factors=factors, as.data.frame=TRUE)
+  
+  # Remove samples with missing values
+  Z <- Z[complete.cases(Z),]
+  
+  # Scale values from 0 to 1
+  if (scale) {
+    Z <- group_by(Z, factor)
+    Z <- mutate(Z, value = value/max(abs(value)))
+    Z <- ungroup(Z)
+  }
+  
+  # Define covariates
+  covariates <- .check_and_get_covariates(object, covariates)
+  
+  # Get covariates
+  covari <- get_covariates(object, covariates, as.data.frame = TRUE)
+  
+  # Merge factor values with color and shape information
+  df <- merge(Z, covari, by = "sample")
+
+  # Return data if requested instead of plotting
+  if (return_data) return(df)
+  
+  # Generate plot
+  p <- ggplot(df, aes_string(x=covariates[1], y=covariates[2], col = "value")) + 
+    geom_point() + 
+    # scale_color_viridis() +
+    scale_color_gradient2() +
+    geom_point( col = "grey", alpha =0.05)+
+    facet_grid( ~ factor) + 
+    theme_bw() +
+    theme(
+      axis.text = element_text(size = rel(0.9), color = "black"), 
+      axis.title = element_text(size = rel(1.2), color = "black"), 
+      axis.line = element_line(color = "black", size = 0.5), 
+      axis.ticks = element_line(color = "black", size = 0.5)
+    )
+  
+  return(p)
+}
+
+
+
+
