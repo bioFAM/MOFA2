@@ -6,13 +6,12 @@ import numpy.ma as ma
 import os
 import h5py
 from mofapy2.core.nodes import *
-from mofapy2.core.nodes import *
 
 # To keep same order of views and groups in the hdf5 file
 # h5py.get_config().track_order = True
 
 class saveModel():
-    def __init__(self, model, outfile, data, intercepts, samples_groups, 
+    def __init__(self, model, outfile, data, sample_cov, intercepts, samples_groups, 
         train_opts, model_opts, features_names, views_names, samples_names, groups_names,
         samples_metadata, features_metadata, 
         sort_factors=True, compression_level=9):
@@ -35,6 +34,11 @@ class saveModel():
         # Initialise samples groups
         assert len(samples_groups) == data[0].shape[0], "length of samples groups does not match the number of samples in the data"
         self.samples_groups = samples_groups
+        
+        # Initialise GP prior
+        if not sample_cov is None:
+            assert sample_cov.shape[0] == sum([data[0][g].shape[0] for g in range(len(data[0]))]), "length of samples covariates does not match the number of samples in the data"
+        self.sample_cov = sample_cov
 
         # Initialise intercepts
         self.intercepts = intercepts
@@ -156,6 +160,12 @@ class saveModel():
                 
                 # Create hdf5 data set for intercepts
                 intercept_subgrp.create_dataset(self.groups_names[g], data=self.intercepts[m][g])
+        
+        # Save sample covariates for GP prior
+        cov_samples_grp = self.hdf5.create_group("cov_samples")
+        if not self.sample_cov is None:
+            cov_samples_grp.create_dataset("sample_covariates", data =self.sample_cov, compression="gzip", compression_opts=self.compression_level)
+
 
     def saveImputedData(self, mean, variance):
         """ Method to save the training data"""
@@ -186,7 +196,7 @@ class saveModel():
         if type(nodes) is str:
             nodes = list(nodes_dic.keys()) if nodes=="all" else [nodes]
         elif type(nodes) is list or type(nodes) is tuple:
-            assert set(nodes).issubset(["Z","W","Y","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW"]), "Unrecognised nodes"
+            assert set(nodes).issubset(["Z","W","Y","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW", "Sigma", "U"]), "Unrecognised nodes"
         nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
 
         # Define nodes with special characteristics 
@@ -205,6 +215,8 @@ class saveModel():
 
             # Collect node expectation
             exp = nodes_dic[n].getExpectation()
+            # for saving of higher moments:
+            # exp = nodes_dic[n].getExpectations()
 
             # Multi-view nodes
             if isinstance(nodes_dic[n], Multiview_Node):
@@ -267,7 +279,7 @@ class saveModel():
         if type(nodes) is str:
             nodes = list(nodes_dic.keys()) if nodes=="all" else [nodes]
         elif type(nodes) is list or type(nodes) is tuple:
-            assert set(nodes).issubset(["Z","W","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW"]), "Unrecognised nodes"
+            assert set(nodes).issubset(["Z","W","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW", "Sigma", "U"]), "Unrecognised nodes"
         nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
 
         # Define nodes which special characteristics 
@@ -335,7 +347,7 @@ class saveModel():
     def saveModelOptions(self):
 
         # Subset model options
-        options_to_save = ["likelihoods", "spikeslab_factors", "spikeslab_weights", "ard_factors", "ard_weights"]
+        options_to_save = ["likelihoods", "spikeslab_factors", "spikeslab_weights", "ard_factors", "ard_weights", "GP_factors", "start_opt", "n_grid"]
         opts = dict((k, np.asarray(self.model_opts[k]).astype('S')) for k in options_to_save)
 
         # Sort values by alphabetical order of views
@@ -419,3 +431,7 @@ class saveModel():
         stats_grp.create_dataset("elbo", data=stats["elbo"])
         # stats_grp.create_dataset("elbo_terms", data=stats["elbo_terms"].T)
         # stats_grp['elbo_terms'].attrs['colnames'] = [a.encode('utf8') for a in stats["elbo_terms"].columns.values]
+        if self.model_opts['GP_factors']:
+            stats_grp.create_dataset("length_scales", data=stats["length_scales"])
+            stats_grp.create_dataset("structural_sig", data=stats["structural_sig"])
+

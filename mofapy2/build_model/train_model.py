@@ -12,7 +12,7 @@ from mofapy2.core.BayesNet import BayesNet
 def train_model(model):
 
     # Sanity check on the Bayesian Network
-    assert isinstance(model, BayesNet), "'bayesnet' has to be a BayesNet class"
+    assert isinstance(model, BayesNet), "'model' has to be a BayesNet class"
 
 
     ####################
@@ -24,6 +24,7 @@ def train_model(model):
     print ("## Training the model with seed %d ##" % (model.options['seed']))
     print ("#"*38)
     print ("\n")
+
     model.iterate()
 
     print("\n")
