@@ -38,17 +38,17 @@ class entry_point(object):
         """
 
         print(banner)
-
-        # print(banner)
         sys.stdout.flush()
 
-    def set_data_matrix(self, data, likelihoods=None, views_names=None, groups_names=None, samples_names=None, features_names=None):
+    def set_data_matrix(self, data, sample_cov=None, likelihoods=None, views_names=None, groups_names=None, samples_names=None, features_names=None):
         """ Method to input the data in a wide matrix
 
         PARAMETERS
         ----------
         data: a nested list, first dimension for views, second dimension for groups.
               The dimensions of each matrix must be (samples,features)
+        sample_cov: matrix with samples in rows and covariates to be used for pior covariance of factors in columns
+        			The rows must match the rows for the matrices in data to make sure the samples and covariates are aligned correctly
         """
 
         if not hasattr(self, 'data_opts'): 
@@ -143,12 +143,37 @@ class entry_point(object):
             self.data_opts['samples_groups'].append( [self.data_opts['groups_names'][g]]*N[g] )
         self.data_opts['samples_groups'] = np.concatenate(self.data_opts['samples_groups'])
 
+        # Set covariate on samples such as time, spatial location etc. along which factors are supposed to vary smoothly
+        if not sample_cov is None:
+            if not isinstance(sample_cov, np.ndarray):
+                if isinstance(sample_cov, pd.DataFrame):
+                    sample_cov = sample_cov.values
+                else:
+                    print("Error, sample_cov is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); sys.exit()	
+            sample_cov = sample_cov.astype(np.float64)
+            if not sample_cov.shape[0] == self.dimensionalities["N"]:
+                print("Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % (sample_cov.shape[0], self.dimensionalities["N"]))
+                sys.stdout.flush(); sys.exit()
+        # standardize sample_cov to avoid scale differences
+        # if self.data_opts['scale_cov']:
+            # sample_cov = (sample_cov - sample_cov.mean(axis=0)) / sample_cov.std(axis=0)
+        self.sample_cov = sample_cov
 
         # If everything successful, print verbose message
         for m in range(M):
             for g in range(G):
                 print("Successfully loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
         print("\n")
+                print("Loaded view='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], data[m].shape[0], data[m].shape[1]))
+        print("\n")
+        
+        if not self.sample_cov is None:
+            print("Loaded %d covariate(s) for each sample..." % (self.sample_cov.shape[1]))
+            print("\n")
+        else:
+            print("No covariates provided, using an independent prior for the factors.")
+        print("\n")
+
 
         # Store intercepts
         self.intercepts = [ [ np.nanmean(data[m][g],axis=0) for g in range(G)] for m in range(M) ]
@@ -183,6 +208,11 @@ class entry_point(object):
         data: pd.DataFrame
             a pandas DataFrame with columns (sample,feature,view,group,value)
             the order is irrelevant
+            a pandas DataFrame with columns (sample, feature, view, value)
+            the order is irrelevant, all columns need to be contained in the data frame
+        sample_cov: pd.DataFrame
+             a pandas DataFrame with columns (sample, covariate, value)
+            the order is irrelevant, all columns need to be contained in the data frame, sample names must match the names in the data dataframe
         """
 
         # TO-DO: 
@@ -226,8 +256,8 @@ class entry_point(object):
         data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
         # Split into a list of views, each view being a matrix
-        tmp_features = data[["feature","view"]].drop_duplicates().groupby("view")["feature"].nunique()
-        nfeatures = tmp_features.loc[self.data_opts['views_names']]
+        tmp_nfeatures = data[["feature","view"]].drop_duplicates().groupby("view")["feature"].nunique()  # number of features per view
+        nfeatures = tmp_nfeatures.loc[self.data_opts['views_names']]
         data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
 
         # Define sample groups
@@ -235,6 +265,16 @@ class entry_point(object):
                                             .set_index('sample').loc[np.concatenate(self.data_opts['samples_names'])] \
                                             .group.tolist()
 
+        # Define sample covariates
+        assert isinstance(sample_cov, pd.DataFrame), "'sample_cov' has to be an instance of pd.DataFrame"
+        assert 'sample' in sample_cov.columns, "'data' has to contain the column 'sample'"
+        assert 'covariate' in sample_cov.columns, "'data' has to contain the column 'covariate'"
+        assert 'value' in sample_cov.columns, "'data' has to contain the column 'value'"
+        sample_cov = sample_cov.query('sample in @sample_names')
+        assert len(sample_cov['sample'].unique()) == len(sample_names), "not all samples in data are contained in sample_cov "
+        sample_cov_matrix = sample_cov.pivot(index='sample', columns='covariate', values='value')
+        self.sample_cov = sample_cov_matrix.loc[self.data_opts['samples_names']]
+        
         # Define dimensionalities
         self.dimensionalities = {}
         self.dimensionalities["M"] = M = len(self.data_opts['views_names'])
@@ -492,11 +532,12 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         self.intercepts[0] = [np.nanmean(x, axis=0) for x in [data[0][np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
+    # TODO adapt option to load data from anndata for SMOFA using labels as covariates
 
     def set_train_options(self,
         iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
-        startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, weight_views = False
+        startDrop=20, freqDrop=10, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
+        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False, weight_views = False
         ):
         """ Set training options """
 
@@ -572,6 +613,10 @@ class entry_point(object):
         if schedule is None:
             schedule = ['Y', 'W', 'Z', 'Tau']
 
+            # Insert Sigma into training schedule if GP prior on Z
+            if self.model_opts['GP_factors']:
+                schedule.insert(len(schedule), "Sigma")
+
             # Insert ThetaW after W if Spike and Slab prior on W
             if self.model_opts['spikeslab_weights']:
                 ix = schedule.index("W"); schedule.insert(ix+1, 'ThetaW')
@@ -588,14 +633,20 @@ class entry_point(object):
             if self.model_opts['ard_factors']:
                 ix = schedule.index("Z"); schedule.insert(ix+1, 'AlphaZ')
 
+            # Insert U in schedule if sparse GP
+            if self.model_opts['sparseGP']:
+                ix = schedule.index("Z"); schedule.insert(ix, 'U')
         else:
             assert set(["Y","W","Z","Tau"]) <= set(schedule)
             if self.model_opts['ard_factors']: assert "AlphaZ" in schedule
             if self.model_opts['ard_weights']: assert "AlphaW" in schedule
             if self.model_opts['spikeslab_factors']: assert "ThetaZ" in schedule
             if self.model_opts['spikeslab_weights']: assert "ThetaW" in schedule
+            if self.model_opts['GP_factors']: assert "Sigma" in schedule
+            if self.model_opts['sparseGP']: assert "U" in schedule
 
         self.train_opts['schedule'] = schedule
+        # print(schedule)
 
         # Seed
         if seed is None:  # Seed for the random number generator
@@ -606,12 +657,19 @@ class entry_point(object):
         # Use TauTrick to speed up ELBO computation?
         self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
 
+        # Save variational parameters?
+        self.train_opts['save_parameters'] = save_parameters
+
         # Weight the views to avoid imbalance problems?
         self.train_opts['weight_views'] = weight_views
 
     def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
         # Sanity checks
+        if self.model_opts['GP_factors']:
+            print("Stochastic inference is not possible when using covariates - train_opts['stochastic'] set to False - consider using the option 'sparseGP' instead.")
+            self.train_opts['stochastic'] = False
+            return None
         assert hasattr(self, 'train_opts'), "Train options not defined"
         assert 0 < learning_rate <= 1, 'Learning rate must range from 0 and 1'
         # assert 0 < forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
@@ -636,7 +694,46 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
+    def set_sparseGP_options(self, n_inducing = None, idx_inducing = None, seed_inducing = None):
+        if not self.model_opts['GP_factors']:
+            print("sparseGP_options are only useful when having covariates and GP_factors set to True.")
+            self.model_opts['sparseGP'] = False
+            return None
+        if n_inducing is None:
+            n_inducing = max(0.2 * self.dimensionalities["N"], 100)
+        if self.dimensionalities["N"] < n_inducing:
+            print("Number of inducing points is higher than original number of samples - using non-sparse GP inference")
+            self.model_opts['sparseGP'] = False
+            return None
+
+        n_inducing = int(n_inducing)
+
+        self.model_opts['sparseGP'] = True
+        # if not self.model_opts['mv_Znode']:
+        #     self.model_opts['mv_Znode'] = False
+        #     print("Sparse inference will use multivariate inference scheme setting mv_Znode to True.")
+
+
+        if idx_inducing is None:
+            # sample_cov # TODO sample n_inducing evenly in sample_cov
+            init_inducing_random = False # TODO optional?
+            if init_inducing_random:
+                if not seed_inducing is None:
+                    s.random.seed(int(seed_inducing))
+                idx_inducing = np.random.choice(self.dimensionalities["N"], n_inducing, replace = False)
+                idx_inducing.sort()
+            else: # TODO avoid missing points
+                N = self.dimensionalities["N"]
+                loc = self.sample_cov.sum(axis = 1)
+                idx_inducing = np.array(np.where([x in np.arange(0, N, step = N / n_inducing, dtype = int) for x in np.argsort(loc)]), dtype = 'int').flatten()
+                # idx_inducing = np.arange(0, N, step = N / n_inducing, dtype = int)
+
+        self.model_opts['n_inducing'] = n_inducing
+        self.model_opts['idx_inducing'] = idx_inducing
+
+
+    def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
+                          GP_factors = True, start_opt = 20, n_grid = 30, mv_Znode = True, smooth_all = False):
         """ Set model options """
 
         self.model_opts = {}
@@ -659,8 +756,29 @@ class entry_point(object):
         if self.dimensionalities["M"]>1: ard_weights = True
         self.model_opts['ard_weights'] = ard_weights
 
+        # Define whether sample-covariates are present
+        self.model_opts['GP_factors'] = GP_factors
+        if self.sample_cov is None and GP_factors:
+            print("GP_factors set to TRUE but no samples covariates provided, setting it to FALSE")
+            self.model_opts['GP_factors'] = False
+
+
+        # By default, no sparse GPs are used
+        self.model_opts['sparseGP'] = False
+
+        # Define whether to use a multivariate Z node in the posterior (only when using GP node for Z)
+        if not GP_factors:
+            mv_Znode = False
+        self.model_opts['mv_Znode'] = mv_Znode
+        # focus on smooth factors
+        self.model_opts['smooth_all'] = bool(smooth_all)
+
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
+
+        # Define at which iteration to start optimizing the lengthscales and how many grid points
+        self.model_opts['start_opt'] = start_opt
+        self.model_opts['n_grid'] = int(n_grid)
 
         # Define likelihoods
         self.model_opts['likelihoods'] = self.likelihoods
@@ -670,12 +788,13 @@ class entry_point(object):
         print("- Automatic Relevance Determination prior on the weights: %s" % str(ard_weights))
         print("- Spike-and-slab prior on the factors: %s" % str(spikeslab_factors))
         print("- Spike-and-slab prior on the weights: %s \n" % str(spikeslab_weights))
+        print("- Gaussian process prior on the factors: %s \n" % str(GP_factors))
 
         print("Likelihoods:")
         for m in range(self.dimensionalities["M"]):
           print("- View %d (%s): %s" % (m,self.data_opts["views_names"][m],self.likelihoods[m]) )
 
-    def set_data_options(self, scale_views=False, scale_groups=False):
+    def set_data_options(self, scale_views=False, scale_cov = True, scale_groups = False):
         """ Set data processing options """
 
         self.data_opts = {}
@@ -683,6 +802,10 @@ class entry_point(object):
         # Scale views to unit variance
         self.data_opts['scale_views'] = scale_views
         if (scale_views): print("Scaling views to unit variance...\n")
+        
+        # Scale covariates to unit variance
+        self.data_opts['scale_cov'] = scale_cov
+        if (scale_cov): print("Scaling covariates to unit variance...\n")
 
         # Scale groups to unit variance
         self.data_opts['scale_groups'] = scale_groups
@@ -704,7 +827,9 @@ class entry_point(object):
             print("\nWarning: some group(s) have less than 15 samples, MOFA won't be able to learn meaningful factors for these group(s)...\n")
 
         # Build the nodes
-        tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities, self.train_opts['seed'],  self.train_opts['weight_views'])
+        tmp = buildBiofam(self.data, self.sample_cov, self.data_opts,
+                          self.model_opts, self.dimensionalities,
+                          self.train_opts['seed'], self.train_opts['weight_views'])
 
         # Create BayesNet class
         if self.train_opts['stochastic']:
@@ -807,6 +932,7 @@ class entry_point(object):
           data = self.data,
           intercepts = self.intercepts,
           samples_groups = self.data_opts['samples_groups'],
+          sample_cov = self.sample_cov,
           train_opts = self.train_opts,
           model_opts = self.model_opts,
           samples_names = self.data_opts['samples_names'],
