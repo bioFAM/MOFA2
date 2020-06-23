@@ -11,8 +11,7 @@ def setup_package():
       version = __version__,
       description = 'Multi-Omics Factor Analysis v2, a statistical framework for the integration of multi-group and multi-omics data',
       url = 'http://github.com/bioFAM/MOFA2',
-      author = 'Ricard Argelaguet',
-      author_email = 'ricard.argelaguet@gmail.com',
+      author = 'Ricard Argelaguet <ricard.argelaguet@gmail.com>, Damien Arnol, Danila Bredikhin, Britta Velten <britta.velten@gmail.com>',
       license = 'LGPL-3.0',
       packages = find_packages(),
       install_requires = install_requires
