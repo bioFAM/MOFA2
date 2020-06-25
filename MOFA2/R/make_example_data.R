@@ -31,7 +31,7 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
     lscales = rep(lscales, n_factors)
   if(!length(lscales) == n_factors)
     stop("Lengthscalces lscales need to be of length n_factors")
-  if(all(lsclaes == 0)){
+  if(all(lscales == 0)){
     sample_cov <- NULL
   }
   
@@ -40,7 +40,7 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
     stop("Likelihood needs to be a single string or matching the number of views!")
   
   if(!is.null(sample_cov)){
-    if(sample_cov == "equidistant") sample_cov <- seq_len(n_samples)
+    if(sample_cov[1] == "equidistant") sample_cov <- seq_len(n_samples)
     if(is.null(dim(sample_cov))) sample_cov <- matrix(sample_cov, nrow = 1)
     if(ncol(sample_cov) != n_samples){
       stop("Number of columns in sample_cov must match number of samples n_samples.")
@@ -48,12 +48,14 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
   
     # Simulate covariance for factors
     Sigma = lapply(lscales, function(ls) {
-      if(ls ==0) diag(1, n_samples)
+      if(ls == 0) diag(1, n_samples)
       else (1) * exp(-as.matrix(dist(t(sample_cov)))^2/(2*ls^2))
       # else (1-0.001) * exp(-as.matrix(dist(t(sample_cov)))^2/(2*ls^2)) + diag(0.001, n_samples)
     })
   
-    # simulate facors 
+    # simulate facors
+    alpha_z <- NULL
+    S_z <- lapply(seq_len(n_groups), function(vw) matrix(1, nrow=n_samples, ncol=n_factors))
     Z <-  vapply(seq_len(n_factors), function(fc) mvtnorm::rmvnorm(1, rep(0, n_samples), Sigma[[fc]]), numeric(n_samples))
     colnames(Z) <- paste0("simulated_factor_", 1:ncol(Z))
   } else {

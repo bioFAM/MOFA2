@@ -1,13 +1,17 @@
-
-######################################################
-## Template script to train a MOFA+ model in Python ##
-######################################################
+# script to run SMOFA from python
 
 from mofapy2.run.entry_point import entry_point
+
 import pandas as pd
 import io
 import requests # to download the online data
-from mofapy2.simulate import simulate_mofa as simmofa
+import h5py
+import scipy.stats as stats
+import matplotlib.pyplot as plt
+import math
+import os
+import scipy.spatial as SS
+from mofapy2.test_smofa import simulate_smofa as simsmofa
 
 ###########################
 ## Simulate or load data ##
@@ -19,7 +23,7 @@ from mofapy2.simulate import simulate_mofa as simmofa
 #           samples are stored in the rows and features are stored in the columns.
 # 			Missing values must be filled with NAs, including samples missing an entire view
 
-# sim = simmofa.simulate_data(N=1000, seed=23, views=["0", "1"], D=[500] * 2, K= 3)
+# sim = simsmofa.simulate_data(N=1000, seed=23, views=["0", "1"], D=[500] * 2, K= 3)
 # data = sim['data']
 
 # Option 2: a data.frame with columns ["sample","feature","view","group","value"]
@@ -39,10 +43,10 @@ data = pd.read_csv(file, sep="\t")
 # Dm = 500
 # missing= 0
 # seed = 41284
-# sim = simmofa.simulate_data(N=N, seed=seed, views=["0", "1"], D=[Dm] * 2,
+# sim = simsmofa.simulate_data(N=N, seed=seed, views=["0", "1"], D=[Dm] * 2,
 #                             noise_level=noise_level,
 #                             K=int(nfactors), lscales=lscales)
-# sim['data'] = simmofa.mask_data(sim, perc = missing)
+# sim['data'] = simsmofa.mask_data(sim, perc = missing)
 # data = sim['data'] # introduce groups
 # sample_cov = [sim['sample_cov'].reshape(N,1)]
 
@@ -76,15 +80,7 @@ groups_names = ["groupA","groupB"]
 # - if not provided, MOFA will fill it with default features names
 # features_names = (...)
 
-# ent.set_data_matrix(data,
-# 	views_names = views_names,
-# 	groups_names = groups_names,
-# 	samples_names = samples_names,
-# 	features_names = features_names
-# )
-
-# when using the SMOFA framework additionally specify the sample_cov argument for the continious sample covariate
-# ent.set_data_matrix(data, sample_cov = sample_cov,
+# ent.set_data_matrix(data, sample_cov,
 # 	views_names = views_names,
 # 	groups_names = groups_names,
 # 	samples_names = samples_names,
@@ -153,7 +149,6 @@ ent.set_train_options(
 	verbose = False,
 	seed = 42
 )
-
 
 ## (6, optional) Set stochastic inference options##
 # Only recommended with very large sample size (>1e6) and when having access to GPUs

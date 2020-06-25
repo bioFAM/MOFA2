@@ -47,7 +47,7 @@ class entry_point(object):
         ----------
         data: a nested list, first dimension for views, second dimension for groups.
               The dimensions of each matrix must be (samples,features)
-        sample_cov: matrix with samples in rows and covariates to be used for pior covariance of factors in columns
+        sample_cov: a list of matrices with for each group samples in rows and covariates to be used for pior covariance of factors in columns
         			The rows must match the rows for the matrices in data to make sure the samples and covariates are aligned correctly
         """
 
@@ -145,26 +145,43 @@ class entry_point(object):
 
         # Set covariate on samples such as time, spatial location etc. along which factors are supposed to vary smoothly
         if not sample_cov is None:
-            if not isinstance(sample_cov, np.ndarray):
-                if isinstance(sample_cov, pd.DataFrame):
-                    sample_cov = sample_cov.values
+            # Sanity check
+            if not isinstance(sample_cov, list):
+                if isinstance(sample_cov, dict):
+                    sample_cov = list(sample_cov.values())
+                # if providing a single matrix, treat it as G=1
+                elif isinstance(sample_cov, pd.DataFrame):
+                    sample_cov = [sample_cov.values]
+                elif isinstance(data, np.ndarray):
+                    sample_cov = [data]
                 else:
-                    print("Error, sample_cov is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); sys.exit()	
-            sample_cov = sample_cov.astype(np.float64)
-            if not sample_cov.shape[0] == self.dimensionalities["N"]:
+                    print("Error: sample_cov not recognised");
+                    sys.stdout.flush();
+                    sys.exit()
+
+            assert len(sample_cov) == G, "sample_cov needs to be a list of same length as data (same number of groups)"
+
+            for g in range(G):
+                if not isinstance(sample_cov[g], np.ndarray):
+                    if isinstance(sample_cov[g], pd.DataFrame):
+                        sample_cov[g] = sample_cov[g].values
+                    else:
+                        print("Error, sample_cov is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); sys.exit()
+                sample_cov[g] = sample_cov[g].astype(np.float64)
+
+            if not all([sample_cov[g].shape[0] == self.dimensionalities["N"][g] for g in range(G)]):
                 print("Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % (sample_cov.shape[0], self.dimensionalities["N"]))
                 sys.stdout.flush(); sys.exit()
-        # standardize sample_cov to avoid scale differences
-        # if self.data_opts['scale_cov']:
-            # sample_cov = (sample_cov - sample_cov.mean(axis=0)) / sample_cov.std(axis=0)
+        # concatenate groups and standardize sample_cov to avoid scale differences
+        sample_cov = np.concatenate(sample_cov, axis = 0)
+        if self.data_opts['scale_cov']:
+            sample_cov = (sample_cov - sample_cov.mean(axis=0)) / sample_cov.std(axis=0)
         self.sample_cov = sample_cov
 
         # If everything successful, print verbose message
         for m in range(M):
             for g in range(G):
                 print("Successfully loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
-        print("\n")
-                print("Loaded view='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], data[m].shape[0], data[m].shape[1]))
         print("\n")
         
         if not self.sample_cov is None:

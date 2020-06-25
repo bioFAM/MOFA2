@@ -69,9 +69,9 @@ quality_control <- function(object, verbose = FALSE) {
   # check dimensionalities of sample_covariates 
   if (verbose == TRUE) message("Checking sample covariates...")
   if(!is.null(object@covariates)){
-    stopifnot(ncol(object@covariates) == object@dimensions$N)
+    stopifnot(ncol(object@covariates) == sum(object@dimensions$N))
     stopifnot(nrow(object@covariates) == object@dimensions$C)
-    stopifnot(all(samples(object) == colnames(object@covariates)))
+    stopifnot(all(unlist(samples_names(object)) == colnames(object@covariates)))
   }
   
   # Sanity checks that are exclusive for an untrained model  

@@ -5,8 +5,11 @@ import sys
 import scipy.spatial as SS
 import math
 
-def simulate_data(mofa2=False, N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 200, 500, 200], noise_level = 1,
+def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 200, 500, 200], noise_level = 1,
                   K = 4, lscales = [0.2, 0.8, 0.0, 0.0], sample_cov = None):
+    """
+    Function to simulate test data for MOFA (with one group)
+    """
     # simulate some test data
     np.random.seed(seed)
     M = len(views)
@@ -60,29 +63,22 @@ def simulate_data(mofa2=False, N=200, seed=1234567, views = ["0", "1", "2", "3"]
         tau_m = stats.uniform.rvs(loc=1, scale=3, size=D[m]) * noise_level
         noise.append(np.random.multivariate_normal(np.zeros(D[m]), np.eye(D[m]) * 1 / np.lib.scimath.sqrt(tau_m), N))
 
-    if mofa2: # need a list of groups as input
-        data = []
-        for m in range(M):
-            data.append(Z.dot(W[m].transpose()) + noise[m])
-        data = [[data[m]] for m in range(M)]
-    else:
-        data = []
-        for m in range(M):
-            data.append(Z.dot(W[m].transpose()) + noise[m])
+    data = []
+    for m in range(M):
+        data.append(Z.dot(W[m].transpose()) + noise[m])
+    data = [[data[m]] for m in range(M)]
 
     return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
             'views': views, 'lscales': lscales, 'N': N}
 
 # mask values
-def mask_data(sim, mofa2 = False, perc = 0.2):
+def mask_data(sim, perc = 0.2):
     data = sim['data']
     N = sim['N']
     M = len(sim['views'])
     masked_samples = [np.random.choice(N, math.floor(N * perc), replace = False) for m in range(M)]
-    if mofa2:
-        for m in range(len(data)):
-            data[m][0][masked_samples[m],:] = s.nan
-    else:
-        for m in range(len(data)):
-            data[m][masked_samples[m],:] = s.nan
+
+    for m in range(len(data)):
+        data[m][0][masked_samples[m],:] = s.nan
+
     return data
