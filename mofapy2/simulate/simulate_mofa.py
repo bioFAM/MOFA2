@@ -6,26 +6,31 @@ import scipy.spatial as SS
 import math
 
 def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 200, 500, 200], noise_level = 1,
-                  K = 4, lscales = [0.2, 0.8, 0.0, 0.0], sample_cov = None):
+                  K = 4, G = 1, lscales = [0.2, 0.8, 0.0, 0.0], sample_cov = "equidistant"):
     """
-    Function to simulate test data for MOFA (with one group)
+    Function to simulate test data for MOFA (without ARD or spike-and-slab on factors)
     """
     # simulate some test data
     np.random.seed(seed)
     M = len(views)
     N = int(N)
-    if sample_cov is None:
-        sample_cov = np.linspace(0,1,N)
-        # sample_cov = np.array(range(N))
-        sample_cov = sample_cov.reshape(N, 1)
-    else:
-        assert sample_cov.shape[0] == N, "sample_cov and N does not match"
-        if len(np.repeat(np.arange(0,100,1),2).shape) == 1:
+    if not sample_cov is None:
+        if sample_cov == "equidistant":
+            sample_cov = np.linspace(0,1,N)
+            # sample_cov = np.array(range(N))
             sample_cov = sample_cov.reshape(N, 1)
+        else:
+            assert sample_cov.shape[0] == N, "sample_cov and N does not match"
+            if len(np.repeat(np.arange(0,100,1),2).shape) == 1:
+                sample_cov = sample_cov.reshape(N, 1)
 
-    distC = SS.distance.pdist(sample_cov, 'euclidean')**2.
-    distC = SS.distance.squareform(distC)
+        distC = SS.distance.pdist(sample_cov, 'euclidean')**2.
+        distC = SS.distance.squareform(distC)
 
+    else:
+        lscales = [0]* K
+
+    # simulate Sigma
     Sigma =[]
     for k in range(K):
         if lscales[k] > 0:
@@ -35,11 +40,21 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
         else:
             sys.exit("All lengthscales need to be positive")
 
-    # Sigma = [np.exp(-np.array([[(i - j) ** 2 for i in sample_cov] for j in sample_cov]) / (2 * ls ** 2)) for
-    #          ls in lscales]
-
-    Z = np.vstack([np.random.multivariate_normal(np.zeros(N), sig, 1) for sig in
-                   Sigma]).transpose()  # mix of spatial and non-spatial factors
+    # simulate same factor values for factors with non-zero lengthscales across groups, other can differ (avoids expanding the covaraicen matrix across groups)
+    Z = []
+    for g in range(G):
+        Zks = []
+        for k in range(K):
+            sig = Sigma[k]
+            if lscales[k] == 0:
+                Zks.append(np.random.multivariate_normal(np.zeros(N), sig, 1))
+            else:
+                if g == 0:
+                    Zks.append(np.random.multivariate_normal(np.zeros(N), sig, 1))
+                else:
+                    Zks.append(Z[0][k])
+        Z.append(Zks)
+    Z = [np.vstack(zlist).transpose() for zlist in Z]
 
     W = []
 
@@ -65,9 +80,14 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
 
     data = []
     for m in range(M):
-        data.append(Z.dot(W[m].transpose()) + noise[m])
-    data = [[data[m]] for m in range(M)]
+        tmp = []
+        for g in range(G):
+            tmp.append(Z[g].dot(W[m].transpose()) + noise[m])
+        data.append(tmp)
 
+    # store as list of groups
+    if not sample_cov is None:
+        sample_cov = [sample_cov] * G
     return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
             'views': views, 'lscales': lscales, 'N': N}
 

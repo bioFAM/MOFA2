@@ -143,7 +143,16 @@ class entry_point(object):
             self.data_opts['samples_groups'].append( [self.data_opts['groups_names'][g]]*N[g] )
         self.data_opts['samples_groups'] = np.concatenate(self.data_opts['samples_groups'])
 
-        # Set covariate on samples such as time, spatial location etc. along which factors are supposed to vary smoothly
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Successfully loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
+        print("\n")
+
+        # Store intercepts
+        self.intercepts = [ [ np.nanmean(data[m][g],axis=0) for g in range(G)] for m in range(M) ]
+
+        # Set covariate on samples
         if not sample_cov is None:
             # Sanity check
             if not isinstance(sample_cov, list):
@@ -152,8 +161,8 @@ class entry_point(object):
                 # if providing a single matrix, treat it as G=1
                 elif isinstance(sample_cov, pd.DataFrame):
                     sample_cov = [sample_cov.values]
-                elif isinstance(data, np.ndarray):
-                    sample_cov = [data]
+                elif isinstance(sample_cov, np.ndarray):
+                    sample_cov = [sample_cov]
                 else:
                     print("Error: sample_cov not recognised");
                     sys.stdout.flush();
@@ -172,18 +181,15 @@ class entry_point(object):
             if not all([sample_cov[g].shape[0] == self.dimensionalities["N"][g] for g in range(G)]):
                 print("Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % (sample_cov.shape[0], self.dimensionalities["N"]))
                 sys.stdout.flush(); sys.exit()
-        # concatenate groups and standardize sample_cov to avoid scale differences
-        sample_cov = np.concatenate(sample_cov, axis = 0)
-        if self.data_opts['scale_cov']:
-            sample_cov = (sample_cov - sample_cov.mean(axis=0)) / sample_cov.std(axis=0)
+
+            # concatenate groups in sample_cov and standardize sample_cov to avoid scale differences
+            sample_cov = np.concatenate(sample_cov, axis = 0)
+            if self.data_opts['scale_cov']:
+                sample_cov = (sample_cov - sample_cov.mean(axis=0)) / sample_cov.std(axis=0)
+
         self.sample_cov = sample_cov
 
-        # If everything successful, print verbose message
-        for m in range(M):
-            for g in range(G):
-                print("Successfully loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m],self.data_opts['groups_names'][g], data[m][g].shape[0], data[m][g].shape[1]))
-        print("\n")
-        
+        # If sample_cov loaded successfully, print verbose message
         if not self.sample_cov is None:
             print("Loaded %d covariate(s) for each sample..." % (self.sample_cov.shape[1]))
             print("\n")
@@ -191,11 +197,7 @@ class entry_point(object):
             print("No covariates provided, using an independent prior for the factors.")
         print("\n")
 
-
-        # Store intercepts
-        self.intercepts = [ [ np.nanmean(data[m][g],axis=0) for g in range(G)] for m in range(M) ]
-
-        # Concatenate groups
+        # Concatenate groups in data
         for m in range(len(data)):
             data[m] = np.concatenate(data[m])
             # Convert data to numpy.ndarray.
@@ -750,7 +752,7 @@ class entry_point(object):
 
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
-                          GP_factors = True, start_opt = 20, n_grid = 30, mv_Znode = True, smooth_all = False):
+                          GP_factors = False, start_opt = 20, n_grid = 50, mv_Znode = True, smooth_all = False):
         """ Set model options """
 
         self.model_opts = {}
@@ -783,6 +785,7 @@ class entry_point(object):
         if self.model_opts['GP_factors'] and self.model_opts['ard_factors']:
             print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...")
             self.model_opts['ard_factors'] = False
+            ard_factors = False
         if self.model_opts['GP_factors'] and self.model_opts['spikeslab_factors']:
             print("SMOFA framework is activated (GP_factors = True). This is not compatible with Spike-and-Slab prior on factors. Setting spikeslab_factors to False...")
             self.model_opts['spikeslab_factors'] = False
@@ -815,14 +818,14 @@ class entry_point(object):
         print("- Automatic Relevance Determination prior on the factors: %s" % str(ard_factors))
         print("- Automatic Relevance Determination prior on the weights: %s" % str(ard_weights))
         print("- Spike-and-slab prior on the factors: %s" % str(spikeslab_factors))
-        print("- Spike-and-slab prior on the weights: %s \n" % str(spikeslab_weights))
+        print("- Spike-and-slab prior on the weights: %s" % str(spikeslab_weights))
         print("- Gaussian process prior on the factors: %s \n" % str(GP_factors))
 
         print("Likelihoods:")
         for m in range(self.dimensionalities["M"]):
           print("- View %d (%s): %s" % (m,self.data_opts["views_names"][m],self.likelihoods[m]) )
 
-    def set_data_options(self, scale_views=False, scale_cov = True, scale_groups = False):
+    def set_data_options(self, scale_views=False, scale_cov = False, scale_groups = False):
         """ Set data processing options """
 
         self.data_opts = {}

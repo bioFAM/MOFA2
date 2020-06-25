@@ -35,9 +35,9 @@ class saveModel():
         assert len(samples_groups) == data[0].shape[0], "length of samples groups does not match the number of samples in the data"
         self.samples_groups = samples_groups
         
-        # Initialise GP prior
+        # Initialise GP prior (note groups are concatenated here)
         if not sample_cov is None:
-            assert sample_cov.shape[0] == sum([data[0][g].shape[0] for g in range(len(data[0]))]), "length of samples covariates does not match the number of samples in the data"
+            assert sample_cov.shape[0] == data[0].shape[0], "length of samples covariates does not match the number of samples in the data"
         self.sample_cov = sample_cov
 
         # Initialise intercepts

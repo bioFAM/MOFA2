@@ -19,8 +19,17 @@ from mofapy2.simulate import simulate_mofa as simmofa
 #           samples are stored in the rows and features are stored in the columns.
 # 			Missing values must be filled with NAs, including samples missing an entire view
 
-# sim = simmofa.simulate_data(N=1000, seed=23, views=["0", "1"], D=[500] * 2, K= 3)
+# sim = simmofa.simulate_data(N = 200, seed=23, views=["0", "1"], D=[500] * 2, K= 3)
 # data = sim['data']
+
+# Optional: If the SMOFA framework is to be used additional sample covariates can be specified
+# simulate test data for the SMOFA framework (using continuous sample covariates)
+
+# sim = simmofa.simulate_data(N = 200, seed=42, views=["0", "1"], D=[500] * 2,
+#                             K = 2, lscales = [0.1, 0.3])
+# data = sim['data']
+# sample_cov = sim['sample_cov']
+
 
 # Option 2: a data.frame with columns ["sample","feature","view","group","value"]
 #           In this case there is no need to have missing values in the data.frame,
@@ -29,22 +38,8 @@ from mofapy2.simulate import simulate_mofa as simmofa
 file = "ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/getting_started/data.txt.gz"
 data = pd.read_csv(file, sep="\t")
 
-
-# Optional: If the SMOFA framework is to be used additional sample covariates can be specified
-# simulate test data for the SMOFA framework (using continuous sample covariates)
-# nfactors = 2
-# lscales = [0.1, 0.3]
-# N = 1000
-# noise_level = 1
-# Dm = 500
-# missing= 0
-# seed = 41284
-# sim = simmofa.simulate_data(N=N, seed=seed, views=["0", "1"], D=[Dm] * 2,
-#                             noise_level=noise_level,
-#                             K=int(nfactors), lscales=lscales)
-# sim['data'] = simmofa.mask_data(sim, perc = missing)
-# data = sim['data'] # introduce groups
-# sample_cov = [sim['sample_cov'].reshape(N,1)]
+# Optional: If the SMOFA framework is to be used additional columns can be added to the dataframe and
+# can be specified to be used as sample covariates
 
 ###########################
 ## Initialise MOFA model ##
@@ -58,6 +53,7 @@ ent = entry_point()
 ## (2) Set data options ##
 # - scale_groups: if groups have significantly different ranges, it is good practice to scale each group to unit variance
 # - scale_views: if views have significantly different ranges, it is good practice to scale each view to unit variance
+# - scale_cov: if sample covariates have different ranges,  it is good practice to scale each covariate to unit variance (SMOFA-specific)
 ent.set_data_options(
 	scale_groups = False,
 	scale_views = False
@@ -66,7 +62,7 @@ ent.set_data_options(
 
 ## (3, option 1) Set data using the nested list of matrices format ##
 views_names = ["view1","view2"]
-groups_names = ["groupA","groupB"]
+groups_names = ["groupA"]
 
 # samples_names nested list with length NGROUPS. Each entry g is a list with the sample names for the g-th group
 # - if not provided, MOFA will fill it with default samples names
@@ -102,8 +98,8 @@ ent.set_data_df(data)
 # - spikeslab_weights: use spike-slab sparsity prior in the weights? (recommended TRUE)
 # - ard_factors: use ARD prior in the factors? (TRUE if using multiple groups)
 # - ard_weights: use ARD prior in the weights? (TRUE if using multiple views)
+# SMOFA-specific options:
 # - GP_factors: use a GP prior on the factors (set to True for the SMOFA-framework) (default False)
-# GP-specific options
 # - start_opt: at which iteration to start optimizing the lengthscales of the GP priors
 # - n_grid: how many grid points for lengthscale optimization
 # - mv_Znode: use a multivariate Z node? (default True)
