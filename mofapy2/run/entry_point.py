@@ -684,7 +684,7 @@ class entry_point(object):
 
         # Sanity checks
         if self.model_opts['GP_factors']:
-            print("Stochastic inference is not possible when using covariates - train_opts['stochastic'] set to False - consider using the option 'sparseGP' instead.")
+            print("Stochastic inference is not possible when using covariates - train_opts['stochastic'] is set to False - consider using the option 'sparseGP' instead.")
             self.train_opts['stochastic'] = False
             return None
         assert hasattr(self, 'train_opts'), "Train options not defined"
@@ -773,12 +773,19 @@ class entry_point(object):
         if self.dimensionalities["M"]>1: ard_weights = True
         self.model_opts['ard_weights'] = ard_weights
 
-        # Define whether sample-covariates are present
+        # Define whether the SMOFA framework should be used and check that sample-covariates are present
         self.model_opts['GP_factors'] = GP_factors
         if self.sample_cov is None and GP_factors:
             print("GP_factors set to TRUE but no samples covariates provided, setting it to FALSE")
             self.model_opts['GP_factors'] = False
 
+        # inactivate group-wise ARD when using the SMOFA framework
+        if self.model_opts['GP_factors'] and self.model_opts['ard_factors']:
+            print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...")
+            self.model_opts['ard_factors'] = False
+        if self.model_opts['GP_factors'] and self.model_opts['spikeslab_factors']:
+            print("SMOFA framework is activated (GP_factors = True). This is not compatible with Spike-and-Slab prior on factors. Setting spikeslab_factors to False...")
+            self.model_opts['spikeslab_factors'] = False
 
         # By default, no sparse GPs are used
         self.model_opts['sparseGP'] = False
@@ -787,14 +794,18 @@ class entry_point(object):
         if not GP_factors:
             mv_Znode = False
         self.model_opts['mv_Znode'] = mv_Znode
-        # focus on smooth factors
+        # focus on smooth factors x
         self.model_opts['smooth_all'] = bool(smooth_all)
+        if self.model_opts['smooth_all']:
+            "Option 'smooth_all' is not supported currently, setting to False"
+            self.model_opts['smooth_all'] = False
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
 
         # Define at which iteration to start optimizing the lengthscales and how many grid points
-        self.model_opts['start_opt'] = start_opt
+        start_opt = max(0, start_opt)
+        self.model_opts['start_opt'] = int(start_opt)
         self.model_opts['n_grid'] = int(n_grid)
 
         # Define likelihoods
