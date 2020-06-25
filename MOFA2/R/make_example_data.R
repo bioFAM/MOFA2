@@ -21,7 +21,7 @@
 
 make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_groups = 1,
                             n_factors = 5, likelihood = "gaussian",
-                            lscales = 0, sample_cov = NULL) {
+                            lscales = 1, sample_cov = NULL) {
   
   # Sanity checks
   if (!all(likelihood %in% c("gaussian", "bernoulli", "poisson")))

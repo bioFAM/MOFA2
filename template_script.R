@@ -15,7 +15,18 @@ library(data.table)
 # samples are stored in the rows and features are stored in the columns.
 # Missing values must be filled with NAs, including samples missing an entire view
 
-# (...)
+# ex <- make_example_data(n_views = 3, n_groups = 2,
+#                           n_features = 100, n_samples = 50)
+# data <- ex$data
+
+# if using the SMOFA framework an additional matrix containing the covariate(s) for each 
+# sample needs to be provided with samples in columns and covariate(s) in rows
+
+# ex <- make_example_data(n_views = 3, n_groups = 1,
+#                         n_features = 100, n_samples = 50,
+#                         sample_cov = "equidistant")
+# data <- ex$data
+# sample_cov <-  ex$sample_cov
 
 ## -- Option 2 -- ##
 # data.frame with columns ["sample","feature","view","group","value"]
@@ -30,6 +41,9 @@ data = fread(file)
 #######################
 
 MOFAobject <- create_mofa(data)
+
+# SMOFA-option: specify sample covariates in addition:
+# MOFAobject <- create_mofa(data, sample_cov = sample_cov)
 
 # Visualise data structure
 plot_data_overview(MOFAobject)
@@ -49,6 +63,9 @@ data_opts <- get_default_data_options(MOFAobject)
 # - num_factors: number of factors. By default K=10
 model_opts <- get_default_model_options(MOFAobject)
 model_opts$num_factors <- 10
+
+# optionally: activate SMOFA framework
+# model_opts$GP_factors <- TRUE
 
 # Training options
 # - maxiter: number of iterations
