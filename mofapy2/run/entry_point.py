@@ -91,6 +91,7 @@ class entry_point(object):
             C = self.dimensionalities["C"] = sample_cov.shape[0]
         else:
             C = self.dimensionalities["C"] = 0
+
         # Define views names
         if views_names is None:
             print("View names not provided, using default naming convention:")
@@ -108,7 +109,6 @@ class entry_point(object):
         else:
             assert len(features_names)==self.dimensionalities["M"], "views_names must a nested list with length equivalent to the number of views"
             self.data_opts['features_names'] = features_names
-
 
         # Define groups names
         if groups_names is None:
@@ -197,9 +197,9 @@ class entry_point(object):
         if not self.sample_cov is None:
             print("Loaded %d covariate(s) for each sample..." % (self.sample_cov.shape[1]))
             print("\n")
-        else:
-            print("No covariates provided, using an independent prior for the factors.")
-        print("\n")
+        # else:
+        #     print("No covariates provided.")
+        # print("\n")
 
         # Concatenate groups in data
         for m in range(len(data)):
@@ -307,10 +307,14 @@ class entry_point(object):
                 sample_cov_matrix = sample_cov_matrix.set_index('sample')
 
             else:
-                assert isinstance(sample_cov, pd.DataFrame), "'sample_cov' has to be an instance of pd.DataFrame or a list of names specify columns in data to use"
-                assert 'sample' in sample_cov.columns, "'sample_cov' has to contain the column 'sample' if specified as DataFrame"
-                assert 'covariate' in sample_cov.columns, "'sample_cov' has to contain the column 'covariate' if specified as DataFrame"
-                assert 'value' in sample_cov.columns, "'sample_cov' has to contain the column 'value' if specified as DataFrame"
+                assert isinstance(sample_cov, pd.DataFrame),\
+                    "'sample_cov' has to be an instance of pd.DataFrame or a list of names specify columns in data to use"
+                assert 'sample' in sample_cov.columns,\
+                    "'sample_cov' has to contain the column 'sample' if specified as DataFrame"
+                assert 'covariate' in sample_cov.columns,\
+                    "'sample_cov' has to contain the column 'covariate' if specified as DataFrame"
+                assert 'value' in sample_cov.columns,\
+                    "'sample_cov' has to contain the column 'value' if specified as DataFrame"
 
                 # filter to sample names in data and check matching
                 sample_cov = sample_cov.query('sample in @samples_names_all')
@@ -326,7 +330,7 @@ class entry_point(object):
             print("Loaded %d covariate(s) for each sample..." % (self.sample_cov.shape[1]))
         else:
             self.sample_cov = None
-            # print("No covariates provided, using an independent prior for the factors.")
+            # print("No covariates provided.")
 
         # Define dimensionalities
         self.dimensionalities = {}
@@ -376,7 +380,7 @@ class entry_point(object):
         # Process the data (i.e center, scale, etc.)
         self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None, save_metadata=None):
+    def set_data_from_anndata(self, adata, sample_cov = None, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None, save_metadata=None):
         """ Method to input the data in AnnData format
 
         PARAMETERS
@@ -398,6 +402,13 @@ class entry_point(object):
         if not hasattr(self, 'data_opts'): 
             # print("Data options not defined before setting the data, using default values...")
             self.set_data_options()
+
+        # TODO implement setting sample_cov from anndata
+        if not sample_cov is None :
+            print("Loading data from anndata does not yet support the sample_cov option. Please use a DataFrame or list of matrix as input")
+            print("Setting sample_cov to None.")
+            sample_cov = None
+        self.sample_cov = sample_cov
 
         # Check groups_label is defined properly
         n_groups = 1  # no grouping by default
@@ -505,7 +516,7 @@ class entry_point(object):
             self.intercepts[0].append(np.nanmean(data[0][samples_idx,:], axis=0))
         self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_from_loom(self, loom, groups_label=None, layer=None, cell_id="CellID"):
+    def set_data_from_loom(self, loom, sample_cov = None, groups_label=None, layer=None, cell_id="CellID"):
         """ Method to input the data in Loom format
 
         PARAMETERS
@@ -525,6 +536,13 @@ class entry_point(object):
         if not hasattr(self, 'data_opts'): 
             # print("Data options not defined before setting the data, using default values...")
             self.set_data_options()
+
+        # TODO implement setting sample_cov from loom
+        if not sample_cov is None :
+            print("Loading data from loom does not yet support the sample_cov option. Please use a DataFrame or list of matrix as input")
+            print("Setting sample_cov to None.")
+            sample_cov = None
+        self.sample_cov = sample_cov
 
         # Check groups_label is defined properly
         n_groups = 1  # no grouping by default
@@ -589,7 +607,6 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         self.intercepts[0] = [np.nanmean(x, axis=0) for x in [data[0][np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
-    # TODO adapt option to load data from anndata for SMOFA using labels as covariates
 
     def set_train_options(self,
         iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
@@ -779,7 +796,7 @@ class entry_point(object):
                     s.random.seed(int(seed_inducing))
                 idx_inducing = np.random.choice(self.dimensionalities["N"], n_inducing, replace = False)
                 idx_inducing.sort()
-            else: # TODO avoid missing points
+            else: # TODO avoid missing points for inducing grid
                 N = self.dimensionalities["N"]
                 loc = self.sample_cov.sum(axis = 1)
                 idx_inducing = np.array(np.where([x in np.arange(0, N, step = N / n_inducing, dtype = int) for x in np.argsort(loc)]), dtype = 'int').flatten()
