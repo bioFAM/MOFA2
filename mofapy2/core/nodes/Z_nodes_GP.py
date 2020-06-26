@@ -2,9 +2,9 @@ from __future__ import division
 import numpy as np
 import numpy.ma as ma
 from copy import deepcopy
-from smofapy.core import gp_utils
-from smofapy.core import gpu_utils
-from smofapy.core.distributions import *
+from mofapy2.core import gp_utils
+from mofapy2.core import gpu_utils
+from mofapy2.core.distributions import *
 import scipy as s
 
 # Import manually defined functions

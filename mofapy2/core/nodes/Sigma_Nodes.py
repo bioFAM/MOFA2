@@ -1,11 +1,11 @@
 from __future__ import division
 import numpy as np
 
-from smofapy.core.nodes.variational_nodes import *
-from smofapy.core.gp_utils import *
+from mofapy2.core.nodes.variational_nodes import *
+from mofapy2.core.gp_utils import *
 import scipy as s
 import time
-from smofapy.core import gpu_utils
+from mofapy2.core import gpu_utils
 
 
 class Sigma_Node(Node):
