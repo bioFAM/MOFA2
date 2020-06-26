@@ -7,7 +7,7 @@
 
 # Rstudio projects
 *.Rproj
-
+.Rhistory
 
 # Pycharm
 .idea

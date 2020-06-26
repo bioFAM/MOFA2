@@ -79,7 +79,7 @@ groups_names = ["groupA"]
 # 	features_names = features_names
 # )
 
-# when using the SMOFA framework additionally specify the sample_cov argument for the continious sample covariate
+# SMOFA framework: additionally specify the sample_cov argument for the continuous sample covariate
 # ent.set_data_matrix(data, sample_cov = sample_cov,
 # 	views_names = views_names,
 # 	groups_names = groups_names,
@@ -89,7 +89,10 @@ groups_names = ["groupA"]
 
 # (3, option 2) Set data using a long data frame
 ent.set_data_df(data)
-
+# SMOFA framework:
+# ent.set_data_df(data, sample_cov = 'cov1') # to specify a column in data to use as sample covariate
+# ent.set_data_df(data, sample_cov = ['cov1', 'cov2']) # to specify multiple columns in data to use as sample covariate
+# ent.set_data_df(data, sample_cov = df_cov) # to specify a dataframe containing sample covariates
 
 ## (4) Set model options ##
 # - factors: number of factors. Default is K=10

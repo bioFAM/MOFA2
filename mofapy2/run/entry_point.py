@@ -47,8 +47,9 @@ class entry_point(object):
         ----------
         data: a nested list, first dimension for views, second dimension for groups.
               The dimensions of each matrix must be (samples,features)
-        sample_cov: a list of matrices with for each group samples in rows and covariates to be used for pior covariance of factors in columns
-        			The rows must match the rows for the matrices in data to make sure the samples and covariates are aligned correctly
+        sample_cov: a list of matrices per group
+                    The dimensions of each matrix must be (samples, covariates)
+        			The order of list elements and rows in each matrix must match the structure of data
         """
 
         if not hasattr(self, 'data_opts'): 
@@ -86,7 +87,10 @@ class entry_point(object):
         G = self.dimensionalities["G"] = len(data[0])
         N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
-
+        if not sample_cov is None:
+            C = self.dimensionalities["C"] = sample_cov.shape[0]
+        else:
+            C = self.dimensionalities["C"] = 0
         # Define views names
         if views_names is None:
             print("View names not provided, using default naming convention:")
@@ -219,7 +223,7 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_data_df(self, data, likelihoods=None):
+    def set_data_df(self, data, sample_cov = None, likelihoods=None):
         """Method to input the data in a long data.frame format
 
         PARAMETERS
@@ -229,12 +233,12 @@ class entry_point(object):
             the order is irrelevant
             a pandas DataFrame with columns (sample, feature, view, value)
             the order is irrelevant, all columns need to be contained in the data frame
-        sample_cov: pd.DataFrame
-             a pandas DataFrame with columns (sample, covariate, value)
-            the order is irrelevant, all columns need to be contained in the data frame, sample names must match the names in the data dataframe
+        sample_cov: a pd.DataFrame or a list of characters specifying columns in data to use as covariates
+             If a DataFrame it needs to have the columns (sample, covariate, value), the order is irrelevant,
+             all columns need to be contained in the data frame, sample names must match the names in the data dataframe
         """
 
-        # TO-DO: 
+        # TODO:
         # - CHECK FOR DUPLICATED GROUPS NAMES, VIEWS, NAMES, SAMPLES NAMES, FEATURES NAMES
         
         # Sanity checks
@@ -263,7 +267,11 @@ class entry_point(object):
         self.data_opts['views_names'] = np.sort(data["view"].unique()).tolist()
         self.data_opts['groups_names'] = np.sort(data["group"].unique()).tolist()
         self.data_opts['features_names'] = data.groupby(["view"])["feature"].unique()[self.data_opts['views_names']].tolist()
-        self.data_opts['samples_names'] = data.groupby(["group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
+        samples_names_per_group =  data.groupby(["group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
+        samples_names_all = np.concatenate(samples_names_per_group)
+        assert len(set(samples_names_all)) == len(samples_names_all),\
+            "Duplicated sample names found in data. Make sure every sample has a unique name."
+        self.data_opts['samples_names'] = samples_names_per_group
 
         # Convert data frame to list of matrices
         data['feature'] = data['feature'].astype(str) + data['view'].astype(str) # make sure there are no duplicated feature names before pivoting
@@ -271,7 +279,7 @@ class entry_point(object):
 
         # Sort rows and columns of the matrix according to the sample and feature names
         features_names_tmp = data.groupby(["view"])["feature"].unique()[self.data_opts['views_names']].tolist()
-        data_matrix = data_matrix.loc[np.concatenate(self.data_opts['samples_names'])]
+        data_matrix = data_matrix.loc[samples_names_all]
         data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
 
         # Split into a list of views, each view being a matrix
@@ -281,19 +289,45 @@ class entry_point(object):
 
         # Define sample groups
         self.data_opts['samples_groups'] = data[['sample', 'group']].drop_duplicates() \
-                                            .set_index('sample').loc[np.concatenate(self.data_opts['samples_names'])] \
+                                            .set_index('sample').loc[samples_names_all] \
                                             .group.tolist()
 
         # Define sample covariates
-        assert isinstance(sample_cov, pd.DataFrame), "'sample_cov' has to be an instance of pd.DataFrame"
-        assert 'sample' in sample_cov.columns, "'data' has to contain the column 'sample'"
-        assert 'covariate' in sample_cov.columns, "'data' has to contain the column 'covariate'"
-        assert 'value' in sample_cov.columns, "'data' has to contain the column 'value'"
-        sample_cov = sample_cov.query('sample in @sample_names')
-        assert len(sample_cov['sample'].unique()) == len(sample_names), "not all samples in data are contained in sample_cov "
-        sample_cov_matrix = sample_cov.pivot(index='sample', columns='covariate', values='value')
-        self.sample_cov = sample_cov_matrix.loc[self.data_opts['samples_names']]
-        
+        if not sample_cov is None:
+            if isinstance(sample_cov, str):
+                sample_cov = [sample_cov]
+
+            if isinstance(sample_cov, list):
+                assert all([sc in data.columns for sc in sample_cov]), "specified columns for sample_cov not found in data"
+                sample_cov.append('sample')
+                sample_cov_matrix =  data[sample_cov]
+                sample_cov_matrix = sample_cov_matrix.drop_duplicates()
+                assert len(sample_cov_matrix['sample']) == len(samples_names_all),\
+                    "At least one sample has non-unique covariate values for one or more covariate(s)."
+                sample_cov_matrix = sample_cov_matrix.set_index('sample')
+
+            else:
+                assert isinstance(sample_cov, pd.DataFrame), "'sample_cov' has to be an instance of pd.DataFrame or a list of names specify columns in data to use"
+                assert 'sample' in sample_cov.columns, "'sample_cov' has to contain the column 'sample' if specified as DataFrame"
+                assert 'covariate' in sample_cov.columns, "'sample_cov' has to contain the column 'covariate' if specified as DataFrame"
+                assert 'value' in sample_cov.columns, "'sample_cov' has to contain the column 'value' if specified as DataFrame"
+
+                # filter to sample names in data and check matching
+                sample_cov = sample_cov.query('sample in @samples_names_all')
+                sample_cov = sample_cov.drop_duplicates()
+                assert len(sample_cov['sample'].unique()) == len(samples_names_all),\
+                    "Did not find all samples in data in sample_cov."
+                assert len(sample_cov['sample']) == len(samples_names_all) * len(sample_cov['covariate'].unique()),\
+                    "At least one sample has non-unique or no covariate values for one or more covariate(s)."
+                sample_cov_matrix = sample_cov.pivot(index='sample', columns='covariate', values='value')
+
+
+            self.sample_cov = sample_cov_matrix.loc[samples_names_all]
+            print("Loaded %d covariate(s) for each sample..." % (self.sample_cov.shape[1]))
+        else:
+            self.sample_cov = None
+            # print("No covariates provided, using an independent prior for the factors.")
+
         # Define dimensionalities
         self.dimensionalities = {}
         self.dimensionalities["M"] = M = len(self.data_opts['views_names'])
@@ -301,6 +335,10 @@ class entry_point(object):
         self.dimensionalities["N"] = N = len(np.concatenate(self.data_opts['samples_names']))
         self.dimensionalities["G"] = G = len(self.data_opts['groups_names'])
         self.dimensionalities["D"] = D = [len(x) for x in self.data_opts['features_names']]
+        if not sample_cov is None:
+            C = self.dimensionalities["C"] = self.sample_cov.shape[0]
+        else:
+            C = self.dimensionalities["C"] = 0
 
         # Count the number of features per view and the number of samples per group
         tmp_samples = data[["sample","group","view"]].drop_duplicates().groupby(["group","view"])["sample"].nunique()
@@ -734,8 +772,8 @@ class entry_point(object):
 
 
         if idx_inducing is None:
-            # sample_cov # TODO sample n_inducing evenly in sample_cov
-            init_inducing_random = False # TODO optional?
+            # sample_cov
+            init_inducing_random = False # not used, could be passed as option
             if init_inducing_random:
                 if not seed_inducing is None:
                     s.random.seed(int(seed_inducing))
@@ -749,6 +787,7 @@ class entry_point(object):
 
         self.model_opts['n_inducing'] = n_inducing
         self.model_opts['idx_inducing'] = idx_inducing
+
 
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
@@ -783,11 +822,11 @@ class entry_point(object):
 
         # inactivate group-wise ARD when using the SMOFA framework
         if self.model_opts['GP_factors'] and self.model_opts['ard_factors']:
-            print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...")
+            print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
             self.model_opts['ard_factors'] = False
             ard_factors = False
         if self.model_opts['GP_factors'] and self.model_opts['spikeslab_factors']:
-            print("SMOFA framework is activated (GP_factors = True). This is not compatible with Spike-and-Slab prior on factors. Setting spikeslab_factors to False...")
+            print("SMOFA framework is activated (GP_factors = True). This is not compatible with Spike-and-Slab prior on factors. Setting spikeslab_factors to False...\n")
             self.model_opts['spikeslab_factors'] = False
 
         # By default, no sparse GPs are used
@@ -824,6 +863,7 @@ class entry_point(object):
         print("Likelihoods:")
         for m in range(self.dimensionalities["M"]):
           print("- View %d (%s): %s" % (m,self.data_opts["views_names"][m],self.likelihoods[m]) )
+        print("\n")
 
     def set_data_options(self, scale_views=False, scale_cov = False, scale_groups = False):
         """ Set data processing options """
