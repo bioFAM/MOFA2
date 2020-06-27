@@ -84,8 +84,8 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
-* **Analysis of CITE-seq data**: in preparation...
-* **Analysis of microbiome data**: in preparation...
+* **Analysis of CITE-seq data**: still in preparation, reach us if you have questions...
+* [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/microbiome_vignette.html)
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
 * [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
 <!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->

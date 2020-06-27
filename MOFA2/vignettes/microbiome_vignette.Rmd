@@ -1,0 +1,365 @@
+---
+title: "MOFA: analysis of transkingdom microbiome data"
+author:
+- name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
+- name: "Bas Haak"
+  affiliation: "Amsterdam UMC, Amsterdam, The Netherlands"
+  email: "bashaak@live.nl"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{MOFA: Microbiome data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
+```
+
+# Data set overview
+
+Traditionally, viruses were considered solely pathogens; however, growing evidence suggests a more dynamic relationship between the virome and host, essentially through direct interactions with the bacterial microbiome. Much as the virome, intestinal fungi have only recently been acknowledged as a small but potentially important part of the intestinal ecosystem. As these findings provide clues that specific cross-kingdom interactions potentially contribute to or exacerbate disease, there remains a large paucity on the composition, interactions and function of fungi and viruses. Hence, there is an increasing need for unsupervised integrative computational frameworks that can robustly and systematically identify underlying patterns of variation across these communities in health and disease.  
+
+To examine the extent of these transkingdom interactions during critical illness, we collected faecal samples from 33 patients admitted to the Intensive Care Unit (ICU). Of these patients, 24 were admitted with sepsis while nine patients had a non-infectious diagnosis (non-septic ICU). All patients were treated with broad-spectrum antibiotics. In addition. 13 healthy volunteers were evaluated as controls. 6 healthy subjects received oral broad-spectrum antibiotics for 7 days, whereas 7 volunteers did not receive antibiotics. Subjects were asked to collect faecal samples before antibiotic treatment and one day after the course of antibiotics.  
+We performed parallel sequencing of bacterial 16S ribosomal RNA, and the fungal ITS rDNA gene and sought to examine community compositions by characterizing fungal and bacterial sequences into exact amplicon-sequencing variants. In addition, we also obtained Virus composition using VIDISCA-NGS.
+
+An overview of the data set is shown below. [Link to the paper](https://www.biorxiv.org/content/10.1101/2020.06.25.171553v1)
+
+![](http://ftp.ebi.ac.uk/pub/databases/mofa/microbiome/figure1_vignette.png)
+
+# Load libraries
+
+```{r, message=FALSE}
+library(data.table)
+library(purrr)
+library(ggplot2)
+library(ggpubr)
+library(MOFA2)
+```
+
+# Load data
+
+The data is already processed, filtered and normalised.
+```{r}
+# dt <- fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/microbiome/data.txt.gz")
+# metadata <- fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/microbiome/metadata.txt.gz")
+
+dt <- fread("/Users/ricard/data/mofa_microbiome/data/data.txt.gz")
+metadata <- fread("/Users/ricard/data/mofa_microbiome/data/metadata.txt.gz")
+```
+
+The data consists of three views (no groups): quantification of bacterial, fungi and viral composition, respectively. They all have been normalised using a [central log ratio transformation](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5695134/) with the `compositions::clr` function. Let's explore the data:
+
+```{r }
+head(dt,n=3)
+```
+
+```{r }
+# Views names
+unique(dt$view)
+
+# Number of samples
+length(unique(dt$sample))
+
+# Number of features per view
+dt[,length(unique(feature)),by="view"]
+```
+
+The bacteria and fungi data display real-valued distributions that are appropiately modelled using the gaussian likelihood. The virus data is very sparse, possibly zero-inflated. Better normalisation schemes that the central log ratio transformation that we applied may be appropriate:
+```{r fig.wide = TRUE}
+ggdensity(dt, x="value", fill="gray70") +
+  facet_wrap(~view, nrow=1, scales="free")
+```
+
+Let's explore the sample metadata
+```{r }
+colnames(metadata)
+```
+
+The main column is "Category", which classifies samples into "Healthy, no antibiotics", "Healthy, antibiotics", "Sepsis", "Non septic ICU".
+```{r }
+table(metadata$Category)
+```
+
+Then we also have information about the antibiotic treatment that they received:
+```{r }
+antibiotics <- c(
+  "Penicillins", "Cephalosporins", "Carbapenems", "Macrolides", "Aminoglycosides", 
+  "Quinolones", "Co_trimoxazole", "Metronidazole", "Vancomycin"
+)
+head(metadata[,head(antibiotics,n=4),with=F], n=3)
+```
+
+as well as the short chain fatty acid (SCFA) metabolite concentration in the feces:
+```{r }
+metabolites <- c("Butyrate", "Acetate", "Propionate")
+head(metadata[,metabolites,with=F], n=3)
+```
+
+# Train MOFA model 
+
+## Create MOFA object
+
+```{r message=FALSE}
+mofa <- create_mofa(dt)
+mofa
+```
+
+Visualise data structure
+```{r fig.wide = TRUE}
+plot_data_overview(mofa)
+```
+
+## Prepare MOFA object 
+
+We'll use all default options, with K=10 factors. For details please see `?prepare_mofa`:
+```{r message = FALSE}
+model_opts <- get_default_model_options(mofa)
+model_opts$num_factors <- 10
+
+mofa <- prepare_mofa(mofa, model_options = model_opts)
+```
+
+## Train the model
+
+If you train the model from scratch you will get slightly different results from the ones we obtained when fitting the model, mainly because of some updates in the MOFA code. For reproducibility we provide below the pre-trained model that we used for the article:
+```{r message=FALSE, eval=FALSE}
+# Don't run
+# mofa <- run_mofa(mofa)
+```
+
+```{r message=FALSE}
+# Load pre-computed model
+# mofa <- readRDS(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/microbiome/model.rds"))
+mofa <- readRDS("/Users/ricard/data/mofa_microbiome/model.rds")
+
+# Add sample metadata to the model
+samples_metadata(mofa) <- metadata
+```
+
+<!-- The model was trained with an older version of MOFA where the variance explained values ranged from 0 to 1 instead of from 0 to 100 -->
+```{r echo=FALSE}
+mofa@cache$variance_explained[[1]][[1]] <- mofa@cache$variance_explained[[1]][[1]] * 100 
+mofa@cache$variance_explained[[2]][[1]] <- mofa@cache$variance_explained[[2]][[1]] * 100 
+```
+
+# Downstream analysis
+
+## Variance decomposition
+
+MOFA identified six factors with a minimum explained variance of 5% (see Methods). All together, the latent representation explained 39% of the sample heterogeneity in bacteria, 38% for fungi and 19% for viral composition:
+```{r}
+plot_variance_explained(mofa, plot_total = T)[[2]]
+```
+
+When plotting the variance explained per factor, we observe that Factor 1 and Factor 3 are very interesting because they capture coordinated variability across all three kingdoms.  
+Factor 2 identified sample heterogeneity that is exclusively driven by changes in fungal composition:
+```{r}
+plot_variance_explained(mofa, max_r2=15)
+```
+
+We can also plot the cumulative variance explained per view:
+```{r}
+r2 <- mofa@cache$variance_explained$r2_per_factor[[1]]
+
+r2.dt <- r2 %>%
+  as.data.table %>% .[,factor:=as.factor(1:mofa@dimensions$K)] %>%
+  melt(id.vars=c("factor"), variable.name="view", value.name = "r2") %>%
+  .[,cum_r2:=cumsum(r2), by="view"]
+
+ggline(r2.dt, x="factor", y="cum_r2", color="view") +
+  labs(x="Factor number", y="Cumulative variance explained (%)") +
+  theme(
+    legend.title = element_blank(), 
+    legend.position = "top",
+    axis.text = element_text(size=rel(0.8))
+  )
+```
+
+## Visualise the MOFA Factors
+
+<details>
+<summary>Define color code</summary>
+```{r}
+category.colors <- c(
+  "Healthy, no antibiotics" = "#66C2A5", 
+  "Healthy, antibiotics" = "#8DA0CB",
+  "Sepsis" = "#E78AC3",
+  "Non septic ICU" = "#FC8D62"
+)
+```
+</details>
+
+MOFA Factor 1 and 3 are capable of completely partitioning transkingdom signatures pertaining to critical illness, antibiotic perturbation and health:
+```{r }
+plot_factors(mofa, 
+  factors = c(1,3), 
+  color_by = "Category", 
+  dot_size = 4
+) + scale_fill_manual(values=category.colors)
+```
+
+## Characterisation of Factor 1
+
+Factor 1, the major source of variation, captures a transkingdom microbiome signature in response to antibiotics. Interestingly, this signature is shared by healthy and diseased patients.
+
+### Factor values
+
+Beeswarm plot of Factor 1 values, grouped by Category
+```{r }
+plot_factor(mofa, 
+  factor = 1, 
+  color_by = "Category", 
+  dot_size = 4,
+  dodge = TRUE,
+  stroke = 0.4,
+  add_violin = T, color_violin = T
+) +
+  scale_fill_manual(values=category.colors) +
+  scale_color_manual(values=category.colors) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
+```
+
+### Plot Weights
+
+<details>
+<summary>Define a helper function to plot weights, it will reduce the amount of code in the vignette</summary>
+```{r }
+plot_weights_fn <- function(mofa, factor=1, view=1, nfeatures=10) {
+  p1 <- plot_weights(mofa, 
+    factors = factor, 
+    view = view,
+    nfeatures = nfeatures,
+    text_size = 4
+  )
+  
+  p2 <- plot_top_weights(mofa, 
+    factors = factor, 
+    view = view,
+    nfeatures = nfeatures
+  )
+  
+  p <- cowplot::plot_grid(plotlist=list(p1,p2), nrow=1)
+  return(p)
+}
+```
+</details>
+
+
+**Bacteria**: bacterial taxa positively associated with this factor are facultative aerobic bacterial pathobionts that have been previously associated with critical illness, such as *Staphylococcus*, *Enterococcus*, *Klebsiella*, *Escherichia/Shigella* and *Enterobacter spp*. Bacterial taxa that were negatively associated with this factor consisted predominantly of members of the obligately anaerobic families *Lachnospiraceae* and *Ruminococcaceae*, which have been identified as markers of a healthy microbiota and are linked to colonization resistance against bacterial pathobionts.
+```{r fig.wide = TRUE}
+plot_weights_fn(mofa, factor=1, view="Bacteria", nfeatures=8)
+```
+
+**Fungi**: Fungal taxa positively associated with this factor were characterized by yeasts capable of causing invasive disease, such as *Candida*, *Aspergillus*, and *Debaryomyces*, with a relative absence of the common gut constituents *Filobasidium*, *Malassezia* and *Dipodascus*
+```{r fig.wide = TRUE}
+plot_weights_fn(mofa, factor=1, view="Fungi", nfeatures=10)
+```
+
+**Viruses**: the majority of viral contigs that were associated with Factor consist of bacteriophages that significantly correlated with the presence of the corresponding bacterial targets in the same factor. This is interesting, as it suggests that the expansion of aerobic bacterial species during critical illness and following antibiotics can therefore potentially facilitate the enrichment of their corresponding bacteriophages.
+```{r}
+plot_weights_fn(mofa, factor=1, view="Viruses", nfeatures=9)
+```
+
+### Plot feature values
+
+Heatmaps of bacterial concentration, no denoising:
+```{r message = FALSE, fig.wide = TRUE}
+plot_data_heatmap(mofa, 
+  factor = 1, 
+  view = "Bacteria", 
+  features = 20,
+  denoise = FALSE,
+  cluster_rows = T, cluster_cols = F,
+  show_colnames = F, show_rownames = T,
+  annotation_samples = "Category",  
+  annotation_colors = list("Category"=category.colors), 
+  annotation_legend = F,
+  scale = "row"
+)
+```
+
+Heatmaps of bacterial concentration, after denoising:
+```{r message = FALSE, fig.wide = TRUE}
+plot_data_heatmap(mofa, 
+  factor = 1, 
+  view = "Bacteria", 
+  features = 20,
+  denoise = TRUE,
+  cluster_rows = T, cluster_cols = F,
+  show_colnames = F, show_rownames = T,
+  annotation_samples = "Category",  
+  annotation_colors = list("Category"=category.colors), 
+  annotation_legend = F,
+  scale = "row"
+)
+```
+
+Scatter plots of the bacterial concentration for the bacteria with the largest weight in Factor 1, plotted against the corresponding factor values
+```{r message = FALSE, fig.wide = TRUE}
+plot_data_scatter(mofa, 
+  factor = 1, 
+  view = "Bacteria", 
+  features = 4,
+  dot_size = 3,
+  color_by = "Category",
+  legend = F
+)
+```
+
+## Association with clinical covariates
+
+### Antibiotic treatment
+
+Factor 1 is correlated to pretty much all antibiotics, which is consistent with the observation that it separates the "Healthy non-antibiotic" individuals from all the others.  
+Interestingly, Factor 4 is strongly correlated to Cephalosporin exposure. 
+```{r message = FALSE}
+correlate_factors_with_covariates(mofa, 
+  covariates = antibiotics,
+  plot = "r",  # use "log_pval" to plot log p-values 
+)
+```
+
+### Fecal metabolites
+
+Factor 1 is strongly associated with differences in Short Chain Fatty Acids between individuals that did not receive antibiotics and the rest. This suggests that the microbiome changes induced by antibiotic treatment have profound effects in the metabolite concentrations generated by the microbiome.
+```{r}
+correlate_factors_with_covariates(mofa, 
+  covariates = metabolites,
+  plot = "log_pval",
+)
+```
+
+Plot factor values coloured by metabolite levels. Notice the gradient captured by Factor 1:
+```{r message = FALSE}
+plot_factors(mofa, 
+  factors = c(1,3), 
+  color_by = "Butyrate", 
+  shape_by = "Category", 
+  dot_size = 3.5
+) + scale_fill_gradient(low = "white", high = "#BF3EFF")
+```
+
+
+# Conclusion
+
+These findings further illustrate the complexity of transkingdom interactions within the intestinal environment, and show that modulation of the bacterial component of the microbiome has implications that extend beyond this kingdom alone. The short- and long-term impact of these disruptions will be an important focus of future investigations.
+
+# Contact
+
+Please contact Bas (bashaak@live.nl) if you have questions regarding the experimental design and data interpretation.
+
+# sessionInfo
+
+```{r}
+sessionInfo()
+```
+
