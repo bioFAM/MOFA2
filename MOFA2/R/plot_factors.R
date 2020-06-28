@@ -34,8 +34,11 @@
 #' @param dot_size numeric indicating dot size.
 #' @param dot_alpha numeric indicating dot transparency.
 #' @param add_violin logical indicating whether to add violin plots
+#' @param add_boxplot logical indicating whether to add box plots
 #' @param violin_alpha numeric indicating violin plot transparency.
+#' @param boxplot_alpha numeric indicating boxplot transparency.
 #' @param color_violin logical indicating whether to color violin plots.
+#' @param color_boxplot logical indicating whether to color box plots.
 #' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
 #' @param scale logical indicating whether to scale factor values.
 #' @param dodge logical indicating whether to dodge the dots (default is FALSE).
@@ -75,6 +78,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
                         group_by = "group", color_by = "group", shape_by = NULL, 
                         add_dots = TRUE, dot_size = 2, dot_alpha = 1,
                         add_violin = FALSE, violin_alpha = 0.5, color_violin = TRUE,
+                        add_boxplot = FALSE, boxplot_alpha = 0.5, color_boxplot = TRUE,
                         show_missing = TRUE, scale = FALSE, dodge = FALSE,
                         color_name = "", shape_name = "", stroke = NULL,
                         legend = TRUE, rasterize = FALSE) {
@@ -106,7 +110,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   
   # QC
   if (length(unique(df$color_by))>10 & is.numeric(df$color_by)) {
-    add_violin <- FALSE; dodge <- FALSE
+    add_violin <- FALSE; add_boxplot <- FALSE; dodge <- FALSE
   }
   
   if (length(unique(df$shape_by))>5) {
@@ -125,12 +129,14 @@ plot_factor <- function(object, factors = 1, groups = "all",
   if (isTRUE(scale)) df$value <- df$value/max(abs(df$value))
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="group_by", y="value", fill="color_by", shape="shape_by"))
+  p <- ggplot(df, aes_string(x="group_by", y="value", fill="color_by", shape="shape_by")) +
+    theme_classic()
   
+  # Defien facets as factors or groups
   if (length(factors) == 1) {
     p <- p + facet_wrap(~group_by, nrow=1, scales="free_x") +
       labs(x=group_by, y=as.character(factors))
-    if (length(unique(df$group))==1) p <- p + theme(strip.text = element_blank()) # remove facet title
+    if (length(unique(df$group_by))==1) p <- p + theme(strip.text = element_blank()) # remove facet title
   } else {
     p <- p + facet_wrap(~factor, nrow=1, scales="free_x") +
       labs(x=group_by, y="Factor value")
@@ -141,12 +147,10 @@ plot_factor <- function(object, factors = 1, groups = "all",
   if (isTRUE(add_dots)) {
     
     # Set stroke
-    if (is.null(stroke)) {
-      stroke <- .select_stroke(N=length(unique(df$sample)))
-    }
+    if (is.null(stroke)) stroke <- .select_stroke(N=length(unique(df$sample)))
     
     if (isTRUE(rasterize)) {
-      warning("geom_jitter is not available with rasterise==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
+      warning("geom_jitter is not available with rasterize==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
       if (isTRUE(dodge)) {
         p <- p + ggrastr::geom_quasirandom_rast(size = dot_size, position = "dodge", stroke = stroke,  alpha = dot_alpha, dodge.width = 1)
       } else {
@@ -177,9 +181,23 @@ plot_factor <- function(object, factors = 1, groups = "all",
     }
   }
   
+  # Add boxplot plot
+  if (isTRUE(add_boxplot)) {
+    if (isTRUE(color_boxplot)) {
+      tmp <- summarise(group_by(df, factor, color_by), n=n())
+      if (min(tmp$n)==1) {
+        warning("Warning: some 'color_by' groups have only one observation, boxplot plots cannot be coloured")
+        p <- p + geom_boxplot(color="black", fill="grey", alpha=boxplot_alpha, show.legend = FALSE)
+      } else {
+        p <- p + geom_boxplot(alpha=boxplot_alpha, position=position_dodge(width=1), show.legend = FALSE)
+      }
+    } else {
+      p <- p + geom_boxplot(color="black", fill="grey", alpha=boxplot_alpha, show.legend = FALSE)
+    }
+  }
+  
   # Add theme
   p <- p +
-    theme_classic() +
     geom_hline(yintercept=0, linetype="dashed", size=0.2, alpha=0.5) +
     theme(
         panel.border = element_rect(color="black", size=0.1, fill=NA),

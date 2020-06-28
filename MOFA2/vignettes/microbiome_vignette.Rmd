@@ -1,5 +1,5 @@
 ---
-title: "MOFA: analysis of transkingdom microbiome data"
+title: "MOFA+: analysis of multi-modal microbiome data"
 author:
 - name: "Ricard Argelaguet"
   affiliation: "European Bioinformatics Institute, Cambridge, UK"
@@ -213,12 +213,13 @@ Factor 1, the major source of variation, captures a transkingdom microbiome sign
 Beeswarm plot of Factor 1 values, grouped by Category
 ```{r }
 plot_factor(mofa, 
-  factor = 1, 
+  factor = c(1,2), 
   color_by = "Category", 
   dot_size = 4,
   dodge = TRUE,
   stroke = 0.4,
-  add_violin = T, color_violin = T
+  add_violin = T,
+  add_boxplot = T
 ) +
   scale_fill_manual(values=category.colors) +
   scale_color_manual(values=category.colors) +
