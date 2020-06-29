@@ -12,7 +12,7 @@ from mofapy2.core.nodes import *
 
 class saveModel():
     def __init__(self, model, outfile, data, sample_cov, intercepts, samples_groups, 
-        train_opts, model_opts, features_names, views_names, samples_names, groups_names,
+        train_opts, model_opts, features_names, views_names, samples_names, groups_names, covariates_names,
         samples_metadata, features_metadata, 
         sort_factors=True, compression_level=9):
 
@@ -52,6 +52,10 @@ class saveModel():
         self.samples_names = samples_names
         self.features_names = features_names
         self.groups_names = groups_names
+        if not self.sample_cov is None:
+            self.covariates_names = covariates_names
+        else:
+            self.covariates_names = None
 
         # Initialise metadata
         self.samples_metadata = samples_metadata
@@ -90,6 +94,11 @@ class saveModel():
         features_grp = self.hdf5.create_group("features")
         for m in range(len(self.data)):
             features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
+
+        # Save covariate names
+        if not self.covariates_names is None:
+            covariates_grp = self.hdf5.create_group("covariates")
+            covariates_grp.create_dataset("covariates", data=np.array(self.covariates_names, dtype='S50'))
 
     def saveMetaData(self):
         """ Method to save samples and features metadata """
@@ -164,8 +173,12 @@ class saveModel():
         # Save sample covariates for GP prior
         cov_samples_grp = self.hdf5.create_group("cov_samples")
         if not self.sample_cov is None:
-            cov_samples_grp.create_dataset("sample_covariates", data =self.sample_cov, compression="gzip", compression_opts=self.compression_level)
-
+            for g in range(len(self.groups_names)):
+                samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
+                tmp = self.sample_cov[samples_idx, :]
+                # Create hdf5 data set for data
+                cov_samples_grp.create_dataset(self.groups_names[g], data=tmp, compression="gzip",
+                                           compression_opts=self.compression_level)
 
     def saveImputedData(self, mean, variance):
         """ Method to save the training data"""
@@ -265,7 +278,7 @@ class saveModel():
                         foo = exp[gi].T
                         node_subgrp.create_dataset(g, data=foo[self.order_factors], compression="gzip", compression_opts=self.compression_level)
 
-                # Single-group nodes (???)
+                # Single-group nodes (Sigma)
                 else:
                     node_subgrp.create_dataset("E", data=exp.T, compression="gzip", compression_opts=self.compression_level)
 

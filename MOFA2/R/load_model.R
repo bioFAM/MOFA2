@@ -55,6 +55,11 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     group_names <- names(sample_names)
     h5ls.out <- h5ls.out[grep("variance_explained", h5ls.out$name, invert = T),]
   }
+  if("covariates" %in%  h5ls.out$name){
+    covariate_names <- as.character( h5read(file, "covariates")[[1]])
+  } else {
+    covariate_names <- NULL
+  }
 
   # Load training data (as nested list of matrices)
   data <- list(); intercepts <- list()
@@ -121,7 +126,16 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Load sample covariates ##
   ############################
   if(any(grepl("cov_samples", h5ls.out$group))){
-    covariates <- h5read(file, "cov_samples/sample_covariates")
+    covariates <- list()
+    for (g in group_names) {
+      if (on_disk) {
+        # as DelayedArrays
+        covariates[[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("cov_samples/%s", g) ) )
+      } else {
+        # as matrices
+        covariates[[g]] <- h5read(file, sprintf("cov_samples/%s", g) )
+      }    
+    }
   } else covariates <- NULL
   object@covariates <- covariates
 
@@ -263,7 +277,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   object@dimensions[["G"]] <- length(data[[1]])                       # number of groups
   object@dimensions[["N"]] <- sapply(data[[1]], ncol)                 # number of samples (per group)
   object@dimensions[["D"]] <- sapply(data, function(e) nrow(e[[1]]))  # number of features (per view)
-  object@dimensions[["C"]] <- nrow(covariates)                        # number of covariates
+  object@dimensions[["C"]] <- nrow(covariates[[1]])                        # number of covariates
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])        # number of factors
   
   # Assign sample and feature names (slow for large matrices)
@@ -295,21 +309,15 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   }
   samples_names(object) <- sample_names
 
-  # Add sample names and metadata from covariates
-  samples(object) <- unlist(sample_names)
+  # Add covariates names
   if(!is.null(object@covariates)){
-    tmp <- samples_metadata(object)
-    for(i in seq_len(nrow(object@covariates))) tmp <- cbind(tmp, object@covariates[i,])
-    if(!is.null(rownames(object@covariates))) {
-      colnames(tmp) <- c("sample", rownames(object@covariates))
-    } else {
-      message("No covariate names provided, using generic names: covariate_1,....covariate_C")
-      colnames(tmp) <- c("sample", paste0("covariate_", 1:nrow(object@covariates)))
-      rownames(object@covariates) <- paste0("covariate_", 1:nrow(object@covariates))
+    # Create default covariates names if they are null
+    if (is.null(covariate_names)) {
+      print("Covariate names not found, generating default: covariate1, ..., covariateC")
+      covariate_names <- paste0("sample", as.character(seq_len(object@dimensions[["C"]])))
     }
-    samples_metadata(object) <- tmp
+    covariates_names(object) <- covariate_names
   }
-  
   
   # Set views names
   if (is.null(names(object@data))) {

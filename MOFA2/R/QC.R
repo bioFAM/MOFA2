@@ -101,7 +101,7 @@ quality_control <- function(object, verbose = FALSE) {
     # Check expectations
     if (verbose == TRUE) message("Checking expectations...")
     stopifnot(all(c("W", "Z") %in% names(object@expectations)))
-    if(!is.null(object@covariates)) stopifnot("Sigma" %in% names(object@expectations))
+    # if(!is.null(object@covariates)) stopifnot("Sigma" %in% names(object@expectations))
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
     

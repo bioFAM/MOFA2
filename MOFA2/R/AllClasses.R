@@ -37,11 +37,11 @@
 #' @aliases MOFA-class
 #' @exportClass MOFA
 
-setClassUnion("matrixOrNULL",members = c("matrix","NULL"))
+setClassUnion("listOrNULL",members = c("list","NULL"))
 setClass("MOFA", 
         slots=c(
             data                = "list",
-            covariates          = "matrixOrNULL",
+            covariates          = "listOrNULL",
             intercepts          = "list",
             imputed_data        = "list",
             samples_metadata    = "list",

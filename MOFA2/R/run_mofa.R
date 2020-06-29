@@ -62,25 +62,32 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
 
   # Set metadata
   if (.hasSlot(object, "samples_metadata")) {
-    mofa_entrypoint$data_opts$samples_metadata <- r_to_py(lapply(object@data_options$groups, function(g) object@samples_metadata[object@samples_metadata$group == g,]))
+    mofa_entrypoint$data_opts$samples_metadata <- r_to_py(lapply(object@data_options$groups,
+                                                                 function(g) object@samples_metadata[object@samples_metadata$group == g,]))
   }
 
   if (.hasSlot(object, "features_metadata")) {
-    mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views, function(m) object@features_metadata[object@features_metadata$view == m,])))
+    mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views,
+                                                                         function(m) object@features_metadata[object@features_metadata$view == m,])))
   }
   
   if(!is.null(object@covariates)) {
-    cov_mat <- t(object@covariates)
-  } else cov_mat <- NULL
+    sample_cov_to_py <- r_to_py(unname(lapply(object@covariates, function(x) unname(r_to_py(t(x)))))) 
+    cov_names_2_py <- r_to_py(covariates_names(object))
+  } else {
+    sample_cov_to_py <- NULL
+    cov_names_2_py <- NULL
+  }
   # Set the data
   mofa_entrypoint$set_data_matrix(
     data = r_to_py( unname(lapply(object@data, function(x) unname( lapply(x, function(y) r_to_py(t(y)) ))) ) ),
     likelihoods = unname(object@model_options$likelihoods),
-    sample_cov = r_to_py(cov_mat),
+    sample_cov = sample_cov_to_py,
     views_names = r_to_py(as.list(object@data_options$views)),
     groups_names = r_to_py(as.list(object@data_options$groups)),
     samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
-    features_names = r_to_py(unname(lapply(object@data, function(x) rownames(x[[1]]))))
+    features_names = r_to_py(unname(lapply(object@data, function(x) rownames(x[[1]])))),
+    covariates_names = cov_names_2_py
   )
   
   # Set model options 

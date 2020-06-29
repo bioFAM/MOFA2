@@ -40,7 +40,8 @@ class entry_point(object):
         print(banner)
         sys.stdout.flush()
 
-    def set_data_matrix(self, data, sample_cov=None, likelihoods=None, views_names=None, groups_names=None, samples_names=None, features_names=None):
+    def set_data_matrix(self, data, sample_cov=None, likelihoods=None, views_names=None, groups_names=None,
+                        samples_names=None, features_names=None, covariates_names=None):
         """ Method to input the data in a wide matrix
 
         PARAMETERS
@@ -88,7 +89,7 @@ class entry_point(object):
         N = self.dimensionalities["N"] = [data[0][p].shape[0] for p in range(len(data[0]))]
         D = self.dimensionalities["D"] = [data[m][0].shape[1] for m in range(len(data))]
         if not sample_cov is None:
-            C = self.dimensionalities["C"] = sample_cov.shape[0]
+            C = self.dimensionalities["C"] = sample_cov[0].shape[1]
         else:
             C = self.dimensionalities["C"] = 0
 
@@ -192,6 +193,21 @@ class entry_point(object):
                 sample_cov = (sample_cov - sample_cov.mean(axis=0)) / sample_cov.std(axis=0)
 
         self.sample_cov = sample_cov
+
+        if not self.sample_cov is None:
+            # Define covariate names
+            if covariates_names is None:
+                print("Covariates names not provided, using default naming convention:")
+                print("- covariate1, ..., covariateC\n")
+                self.data_opts['covariates_names'] = ["covariate%d" % (c) for c in range(self.dimensionalities["C"])]
+            else:
+                if isinstance(covariates_names,str):
+                    covariates_names = [covariates_names]
+                assert isinstance(covariates_names, list), "covariates_names must be a string or a list"
+                assert len(covariates_names)==self.dimensionalities["C"], "covariates_names must be of length equivalent to the number of covariates"
+                self.data_opts['covariates_names'] = covariates_names
+        else:
+            self.data_opts['covariates_names'] = None
 
         # If sample_cov loaded successfully, print verbose message
         if not self.sample_cov is None:
@@ -299,13 +315,13 @@ class entry_point(object):
 
             if isinstance(sample_cov, list):
                 assert all([sc in data.columns for sc in sample_cov]), "specified columns for sample_cov not found in data"
+                self.data_opts['covariates_names'] = sample_cov
                 sample_cov.append('sample')
                 sample_cov_matrix =  data[sample_cov]
                 sample_cov_matrix = sample_cov_matrix.drop_duplicates()
                 assert len(sample_cov_matrix['sample']) == len(samples_names_all),\
                     "At least one sample has non-unique covariate values for one or more covariate(s)."
                 sample_cov_matrix = sample_cov_matrix.set_index('sample')
-
             else:
                 assert isinstance(sample_cov, pd.DataFrame),\
                     "'sample_cov' has to be an instance of pd.DataFrame or a list of names specify columns in data to use"
@@ -324,9 +340,10 @@ class entry_point(object):
                 assert len(sample_cov['sample']) == len(samples_names_all) * len(sample_cov['covariate'].unique()),\
                     "At least one sample has non-unique or no covariate values for one or more covariate(s)."
                 sample_cov_matrix = sample_cov.pivot(index='sample', columns='covariate', values='value')
+                self.data_opts['covariates_names'] = sample_cov_matrix.keys().tolist()
 
 
-            self.sample_cov = sample_cov_matrix.loc[samples_names_all]
+            self.sample_cov = sample_cov_matrix.loc[samples_names_all].values
             print("Loaded %d covariate(s) for each sample..." % (self.sample_cov.shape[1]))
         else:
             self.sample_cov = None
@@ -1027,6 +1044,7 @@ class entry_point(object):
           features_names = self.data_opts['features_names'],
           views_names = self.data_opts['views_names'],
           groups_names = self.data_opts['groups_names'],
+          covariates_names=self.data_opts['covariates_names'],
           samples_metadata = self.data_opts["samples_metadata"] if "samples_metadata" in self.data_opts else None,
           features_metadata = self.data_opts["features_metadata"] if "features_metadata" in self.data_opts else None,
           compression_level = 9
@@ -1049,7 +1067,7 @@ class entry_point(object):
 
         if expectations is None:
             # Default is to save only W and Z nodes
-            expectations = ["W", "Z"]
+            expectations = ["W", "Z", "Sigma"]
         
         tmp.saveExpectations(nodes=expectations)
 

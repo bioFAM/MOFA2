@@ -12,7 +12,7 @@ create_mofa(data, groups = NULL, sample_cov = NULL, scale_cov = FALSE, ...)
   \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
   The "group" column indicates the condition or the experiment (a label for the samples). 
   The view indicates the data modality (a label for the features).}
-  \item{\strong{Seurat object}:}{}
+  \item{\strong{\code{Seurat} object}:}{}
   \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
   Samples are stored in columns and features in rows. This option requires the use of the \code{groups} argument.
   Missing values must be filled in prior to creating the MOFA object (see the example)}
@@ -21,17 +21,18 @@ create_mofa(data, groups = NULL, sample_cov = NULL, scale_cov = FALSE, ...)
 \item{groups}{information about the groups:
 \itemize{
 \item{If data is a data.frame this argument is not used}.
-\item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
+\item{If data is a \code{Seurat} object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
 \item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
 Default is \code{NULL} (no groups)
 }}
 
 \item{sample_cov}{covariates for each sample used for smoothing and pattern detection: This can be one of the following:
 \itemize{
-\item{A matrix with samples in columns and covariates in rows. Sample order must match the order in data columns.}
-\item{A data-frame with a sample column, all other columns will be taken as covariates and should be numeric. Sample names must match the column names in data.}
-\item{If data is a data.frame, it can be a character (vector) specifying column(s) to use as covariate (should be numeric)}.
-\item{If data is a Seurat object, it can be a string specifying one or multiple column name(s)e present in the samples metadata to use it as covariate(s) (should be numeric)}
+\item{A data-frame with columns sample, covariate, value.}
+\item{If data is a \code{data.frame}, it can be a character (vector) specifying (numeric) column(s) to use as covariate(s)}.
+\item{If data is a \code{Seurat} or \code{MultiAssayExperiment} object, it can be a character (vector) specifying
+ one or multiple column name(s) present in the samples metadata to use it as covariate(s) (should be numeric)}
+\item{A matrix with samples in columns and covariates in rows. Sample names must match the names in data.}
 Default is \code{NULL} (no covariates)
 }}
 

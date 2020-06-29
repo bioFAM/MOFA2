@@ -10,9 +10,12 @@
 #' @param likelihood likelihood for each view, one of "gaussian" (default), "bernoulli", "poisson",
 #'  or a character vector of length n_views
 #' @param lscales vector of lengthscales, needs to be of length n_factors (default is 0 - no smooth factors)
-#' @param sample_cov matrix of sample covariates with covaraites in rows and samples in columns or "equidistant" for sequential ordering, default is NULL (no smooth factors)
+#' @param sample_cov matrix of sample covariates for one group with covariates in rows and samples in columns 
+#' or "equidistant" for sequential ordering, default is NULL (no smooth factors)
+#' @param as.data.frame return data and covariates as long dataframe 
 #' @return Returns a list containing the simulated data and simulation parameters.
 #' @importFrom stats rnorm rbinom rpois
+#' @importFrom dplyr left_join
 #' @export
 #' @examples
 #' # Generate a simulated data set
@@ -21,7 +24,7 @@
 
 make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_groups = 1,
                             n_factors = 5, likelihood = "gaussian",
-                            lscales = 1, sample_cov = NULL) {
+                            lscales = 1, sample_cov = NULL, as.data.frame = FALSE) {
   
   # Sanity checks
   if (!all(likelihood %in% c("gaussian", "bernoulli", "poisson")))
@@ -40,7 +43,9 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
     stop("Likelihood needs to be a single string or matching the number of views!")
   
   if(!is.null(sample_cov)){
-    if(sample_cov[1] == "equidistant") sample_cov <- seq_len(n_samples)
+    if(sample_cov[1] == "equidistant") {
+      sample_cov <- seq_len(n_samples)
+    }
     if(is.null(dim(sample_cov))) sample_cov <- matrix(sample_cov, nrow = 1)
     if(ncol(sample_cov) != n_samples){
       stop("Number of columns in sample_cov must match number of samples n_samples.")
@@ -53,11 +58,13 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
       # else (1-0.001) * exp(-as.matrix(dist(t(sample_cov)))^2/(2*ls^2)) + diag(0.001, n_samples)
     })
   
-    # simulate facors
+    # simulate factors
     alpha_z <- NULL
     S_z <- lapply(seq_len(n_groups), function(vw) matrix(1, nrow=n_samples, ncol=n_factors))
     Z <-  vapply(seq_len(n_factors), function(fc) mvtnorm::rmvnorm(1, rep(0, n_samples), Sigma[[fc]]), numeric(n_samples))
     colnames(Z) <- paste0("simulated_factor_", 1:ncol(Z))
+    Z <- lapply(seq_len(n_groups), function(gr) Z)
+    sample_cov <- Reduce(cbind, lapply(seq_len(n_groups), function(gr) sample_cov))
   } else {
     # set sparsity for factors
     theta_z <- 0.5
@@ -120,8 +127,27 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
     rownames(dd) <- paste0("feature_", seq_len(nrow(dd)),"_view", vw)
     dd
   })
+
+  if(!is.null(sample_cov)) {
+    colnames(sample_cov) <- colnames(data[[1]])
+    rownames(sample_cov) <- paste0("covariate_", seq_len(nrow(sample_cov)))
+  }
+ 
   names(data) <- paste0("view_", seq_len(n_views))
   
+  if(as.data.frame){
+    gr_df <- data.frame(group = groups, sample = colnames(data[[1]]))
+    dat <- lapply(names(data), function(vw){
+            tmp <- data[[vw]]
+            df <- melt(tmp, varnames = c("feature", "sample"))
+            df$view <- vw
+            df
+    })
+    data <- bind_rows(dat)
+    data <- dplyr::left_join(data, gr_df, by = "sample")
+    
+    sample_cov <- melt(sample_cov, varnames = c("covariate", "sample"))
+  }
   return(list(data = data, groups = groups, alpha_w=alpha_w, alpha_z =alpha_z,
               lscales = lscales, sample_cov = sample_cov, Z = Z))
 }

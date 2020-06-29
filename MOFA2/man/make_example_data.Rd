@@ -11,7 +11,7 @@ make_example_data(
   n_groups = 1,
   n_factors = 5,
   likelihood = "gaussian",
-  lscales = 0,
+  lscales = 1,
   sample_cov = NULL
 )
 }
