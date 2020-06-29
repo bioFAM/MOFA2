@@ -302,6 +302,44 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   return(df)
 }
 
+# (Hidden) function to define the color
+.set_xax <- function(object, xax) {
+  
+    # Option 1: by a metadata column in object@samples_metadata
+  if ((length(xax) == 1) && (is.character(xax)|is.factor(xax)) & (xax[1] %in% colnames(samples_metadata(object)))) {
+    xax <- samples_metadata(object)[,xax]
+    
+    # Option 2: by a feature present in the training data    
+  } else if ((length(xax) == 1) && is.character(xax) && (xax[1] %in% unlist(features_names(object)))) {
+    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
+    features <- lapply(data, rownames)
+    viewidx <- which(sapply(features, function(x) xax %in% x))
+    xax <- data[[viewidx]][xax,]
+    
+    # Option 5: input is a data.frame with columns (sample, value)
+  } else if (is(xax, "data.frame")) {
+    stopifnot(all(colnames(xax) %in% c("sample", "value")))
+    stopifnot(all(unique(xax$sample) %in% unlist(samples_names(object))))
+    xax <- dplyr::rename(xax, covariate_value = value)
+    # Option 6: color_by is a vector of length N
+  } else if (length(xax) > 1) {
+    stopifnot(length(xax) == sum(get_dimensions(object)$N))
+    
+    # Option not recognised
+  } else {
+    stop("'xax' was specified but it was not recognised, please read the documentation")
+  }
+  
+  # Create data.frame with columns (sample,color)
+  if (!is(xax,"data.frame")) {
+    xax = data.frame(
+      sample = unlist(samples_names(object)),
+      covariate_value = xax,
+      stringsAsFactors = FALSE
+    )
+  }
+  return(xax)
+}
 
 # (Hidden) function to define the color
 .set_colorby <- function(object, color_by) {

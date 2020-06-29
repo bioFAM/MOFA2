@@ -463,9 +463,13 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 #' @title Scatterplots of a factor's values againt the sample covariates
 #' @name plot_factors_vs_cov
 #' @description  Scatterplots of a factor's values againt the sample covariates
-#' @param object a trained \code{\link{SMOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character or numeric specifying the factor(s) to plot, default is "all"
-#' @param covariates character or numeric vector specifying the covariates to plot, default is "all"
+#' @param covariates specifies sample covariate to plot against:
+#' (1) a character giving the name of a column present in the sample covariates or sample metadata.
+#' (2) a character giving the name of a feature present in the training data.
+#' (3) a vector of the same length as the number of samples specifying continuous numeric values per sample.
+#' Default is the first sample covariates in covariates slot
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @param scale logical indicating whether to scale factor values.
 #' @param color_by specifies groups or values used to color the samples. This can be either:
@@ -481,6 +485,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 #' @param dot_size numeric indicating dot size.
 #' @param alpha numeric indicating dot transparency.
 #' @param legend logical indicating whether to add legend.
+#' @param original logical indicating whether to use unscaled covariates (only if used with GP prior)
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @param show_variance logical indicating whether to show the marginal variance of inferred factor values
 #' @details To investigate the factors pattern along the covariates (such as time or a spatial coordinate) 
@@ -493,14 +498,23 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 
-plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", show_missing = TRUE, scale = FALSE,
+plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show_missing = TRUE, scale = FALSE,
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                                dot_size = 1.5, alpha = 1, legend = TRUE, return_data = FALSE, show_variance = FALSE) {
+                                dot_size = 1.5, alpha = 1, legend = TRUE, original = FALSE,
+                                return_data = FALSE, show_variance = FALSE) {
   
   # Sanity checks
-  if (!is(object, "SMOFA")) stop("'object' has to be an instance of SMOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
-  if (is.null(object@covariates)) stop("SMOFA object does not contain any sample covariates")
+  if(is.null(covariates)){
+    if(any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
+       stop("No covariate found in object. Please specify one.")
+    covariates <- covariates_names(object)[1]
+  }
+  if(original){
+    covariates <- paste(covariates, "original", sep = "_")
+  }
+  covari <- .set_xax(object, covariates)
   
   # Remember color_name and shape_name if not provided
   if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))
@@ -520,13 +534,6 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", sho
   
   # Remove samples with missing values
   Z <- Z[complete.cases(Z),]
-
-  # Define covariates
-  covariates <- .check_and_get_covariates(object, covariates)
-  
-  # Get covariates
-  covari <- get_covariates(object, covariates, as.data.frame = TRUE)
-  covari <- gather(covari, key = "covariate", value = "covariate_value", -sample)
   
   # Merge factor values with color and shape information
   df <- merge(Z, color_by, by="sample")
@@ -547,7 +554,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", sho
       df <- mutate(df, var = E2 - value^2)
     } else {
       show_variance <- FALSE
-      warning("No second values present in the trained model - variance can not be shown.")
+      warning("No second moments saved in the trained model - variance can not be shown.")
     }
   }
   
@@ -568,7 +575,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", sho
   # Generate plot
   p <- ggplot(df, aes(x=covariate_value, y=value)) + 
     geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
-    facet_grid(covariate ~ factor) +
+    facet_grid(~ factor) +
     theme_classic() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 
@@ -614,10 +621,16 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", sho
 #' @title Plot function values on a 2-dimensional grid given by 2 covariates
 #' @name plot_factors_on_cov_2d
 #' @description  Plot of function values on a 2-dimensional grid given by 2 covariates
-#' @param object a trained \code{\link{SMOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object.
 #' @param factor character or numeric specifying the factor to plot
-#' @param covariates character or numeric vector of length 2 specifying the covariates to plot
+#' @param covariates specifies exactly 2 sample covariates to plot against
+#' (1) a character vector with 2 entires which each acan be one of the following
+#' (i) character vector giving the names of two column spresent in the sample covariates or sample metadata.
+#' (ii) a character vector giving the names of two feature present in the training data.
+#' (2) a named list of two vectors of the same length as the number of samples specifying continuous numeric values per sample.
+#' Default is the first two sample covariates in covariates slot
 #' @param scale logical indicating whether to scale factor values.
+#' @param original logical indicating whether to use covariates before training (unscaled) - only relevant if taken from covariates slot
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @details To investigate the factors pattern along two covariates (such as in the space defined by spatial covaraites) 
 #' this function an be used to plot a factor's values in this covariate space
@@ -629,11 +642,35 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = "all", sho
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 
-plot_factors_on_cov_2d <- function(object, covariates, factors = "all", scale = FALSE,
-                                  return_data = FALSE) {
+  
+plot_factors_on_cov_2d <- function(object, covariates = NULL, factors = "all", scale = FALSE,
+                                  return_data = FALSE, original = FALSE) {
   # Sanity checks
-  if (!is(object, "SMOFA")) stop("'object' has to be an instance of SMOFA")
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if(is.null(covariates)){
+    if(any(object@dimensions[["C"]] < 2, is.null(object@covariates)))
+      stop("No 2 covariates found in covariates slot. Please specify 2 covariates to plot against.")
+    covariates <- covariates_names(object)[1:2]
+  }
+  
   if(length(covariates) != 2)  stop("'covariates' has to be of length 2")
+  
+  if(original){
+    covariates <- paste(covariates, "original", sep = "_")
+  }
+  
+  covari <- lapply(covariates, function(c) .set_xax(object, c))
+ 
+  if(class(covariates) != "character") {
+    if(class(covariates) != "list" | is.null(names(covariates)))
+      stop("Covariates are not cpecified correctly. Please read the documentation.")
+    covariates <- names(covariates)
+  }
+  
+  names(covari) <- covariates
+  covari <- reshape2::melt(covari, id = "sample")
+  covari <- tidyr::spread(covari, key = "L1", value = "value")
+  covari <- dplyr::select(covari, -variable)
   
   # Define factors
   factors <- .check_and_get_factors(object, factors)
@@ -650,12 +687,6 @@ plot_factors_on_cov_2d <- function(object, covariates, factors = "all", scale = 
     Z <- mutate(Z, value = value/max(abs(value)))
     Z <- ungroup(Z)
   }
-  
-  # Define covariates
-  covariates <- .check_and_get_covariates(object, covariates)
-  
-  # Get covariates
-  covari <- get_covariates(object, covariates, as.data.frame = TRUE)
   
   # Merge factor values with color and shape information
   df <- merge(Z, covari, by = "sample")

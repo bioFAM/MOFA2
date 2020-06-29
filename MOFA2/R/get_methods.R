@@ -384,16 +384,19 @@ get_covariates <- function(object, covariates ="all", as.data.frame = FALSE) {
   covariates <- .check_and_get_covariates(object, covariates)
   
   # Get covariates
-  covariates <- object@covariates
+  sample_cov <- lapply(object@covariates, function(cmat) cmat[covariates,,drop=FALSE])
   
   if (isTRUE(as.data.frame)) {
-    if(!is.null(rownames(covariates))) nms <- rownames(covariates) else nms <- paste0("covariate_", 1:nrow(covariates))
-    covariates <- as.data.frame(t(covariates))
-    colnames(covariates) <- nms
-    covariates$sample <- samples(object)
+    if(!is.null(rownames(sample_cov[[1]]))){
+      nms <- rownames(sample_cov[[1]]) 
+    } else {
+      nms <- paste0("covariate_", seq_along(covariates))
+    }
+    sample_cov <- Reduce(cbind, sample_cov) # remove group info
+    sample_cov <- melt(sample_cov, varnames = c("covariate", "sample"))
   }
   
-  return(covariates)
+  return(sample_cov)
 }
 
 #' @title Get expectations

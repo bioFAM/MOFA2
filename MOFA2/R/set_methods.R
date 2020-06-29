@@ -88,12 +88,13 @@ setReplaceMethod("covariates_names", signature(object="MOFA", value="vector"),
                      if(!is.null(old_names)) {
                        if(! all(old_names %in% colnames(object@samples_metadata)))
                          stop("Mismatch of covariate names in sample meta data and covariate slot")
-                       object@samples_metadata <- object@samples_metadata[,- old_names]
+                       object@samples_metadata <- object@samples_metadata[,-old_names]
                      }
                      df <- as.data.frame(Reduce(rbind, unname(lapply(object@covariates,t))))
                      colnames(df) <- value
                      df$sample <- rownames(df)
-                     object@samples_metadata <- dplyr::left_join(object@samples_metadata, df, by = "sample")
+                     object@samples_metadata <- dplyr::left_join(object@samples_metadata, df, by = "sample",
+                                                                 suffix = c("_original", ""))
                    }
                    
                    object
