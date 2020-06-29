@@ -47,8 +47,10 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
         # self.p_cov = s.delete(self.p_cov, axis=0, obj=idx)
         # self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
         # self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
-        self.length_scales = s.delete(self.length_scales, obj=idx)
-        self.struct = s.delete(self.struct, obj=idx)
+        if not self.length_scales is None:
+            self.length_scales = s.delete(self.length_scales, obj=idx)
+        if not self.struct is None:
+            self.struct = s.delete(self.struct, obj=idx)
 
     def get_mini_batch(self):
         """ Method to fetch minibatch """

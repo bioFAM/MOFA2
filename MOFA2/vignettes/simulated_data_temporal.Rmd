@@ -58,11 +58,11 @@ plot_data_overview(sm)
 Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. Here, we drop factors that explain less than 1% of variance in the data starting from 10 factors. We use a grid of 50 points to optimise the lengthscale of each factor and use the moe accurate (though slower) multivariate Z node. To reproduce the results we set a seed for training.
 ```{r, message=FALSE, warning=FALSE}
 train_opt <- get_default_training_options(sm)
-train_opt$drop_factor_threshold <- 0
+train_opt$drop_factor_threshold <- 0.1
 train_opt$seed <- 1234567
 train_opt$maxiter <- 100
 model_opts <- get_default_model_options(sm)
-model_opts$num_factors <- 4
+model_opts$num_factors <- 10
 model_opts$mv_Znode <- TRUE
 model_opts$GP_factors <- TRUE
 sm <- prepare_mofa(sm, training_options = train_opt, model_options = model_opts)
