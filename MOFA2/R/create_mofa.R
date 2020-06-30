@@ -50,7 +50,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     # extract covariates as data.frame if provided as name of Seurat metadata column
     if(is(covariate, "character")){
       if(!all(covariate %in% colnames(data@meta.data)))
-        stop("Columns specified in sampl_cov do not exist in the provided Seurat objects' meta.data slot.")
+        stop("Columns specified in covariate do not exist in the provided Seurat objects' meta.data slot.")
       covariate <- data.frame(data@meta.data[,covariate, drop = FALSE])
       covariate <- gather(covariate, key = "covariate", value = "value")
       covariate$sample <- rownames(data@meta.data)
@@ -60,6 +60,15 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   } else if (is(data, "data.frame")) {
     
     message("Creating MOFA object from a data.frame...")
+    
+    # extract covariates as data.frame if provided as name of data.frame column
+    if(is(covariate, "character")){
+      if(!all(covariate %in% colnames(data)))
+        stop("Columns specified in covariate do not exist in the provided data.")
+      covariate <- data[,c("sample",covariate), drop = FALSE]
+      covariate <- gather(covariate, key = "covariate", value = "value", - sample)
+    }
+
     object <- .create_mofa_from_df(data)
     
   # Creating MOFA object from a (sparse) matrix object
@@ -230,7 +239,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     # message('No "view" column found in the data.frame, we will assume a common view for all features')
     df$view <- "single_view"
   }
-  stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))
+  stopifnot(all(c("sample","feature","value") %in% colnames(df)))
   stopifnot(all(is.numeric(df$value)))
   
   # Convert 'sample' and 'feature' columns to factors
