@@ -51,7 +51,7 @@ To create a MOFA object for the SMOFA framework we need to specify the training 
 sm <- create_mofa(data = dd$data, sample_cov = dd$sample_cov)
 sm
 
-plot_data_overview(sm)
+plot_data_overview(sm, show_covariate = T)
 ```
 
 ## Prepare a MOFA object

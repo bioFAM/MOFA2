@@ -465,7 +465,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 #' @description  Scatterplots of a factor's values againt the sample covariates
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character or numeric specifying the factor(s) to plot, default is "all"
-#' @param covariates specifies sample covariate to plot against:
+#' @param covariate specifies sample covariate to plot against:
 #' (1) a character giving the name of a column present in the sample covariates or sample metadata.
 #' (2) a character giving the name of a feature present in the training data.
 #' (3) a vector of the same length as the number of samples specifying continuous numeric values per sample.
@@ -498,7 +498,7 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 
-plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show_missing = TRUE, scale = FALSE,
+plot_factors_vs_cov <- function(object, factors = "all", covariate = NULL, show_missing = TRUE, scale = FALSE,
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                                 dot_size = 1.5, alpha = 1, legend = TRUE, original = FALSE,
                                 return_data = FALSE, show_variance = FALSE) {
@@ -506,15 +506,15 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
 
-  if(is.null(covariates)){
+  if(is.null(covariate)){
     if(any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
        stop("No covariate found in object. Please specify one.")
-    covariates <- covariates_names(object)[1]
+    covariate <- covariates_names(object)[1]
   }
   if(original){
-    covariates <- paste(covariates, "original", sep = "_")
+    covariate <- paste(covariate, "original", sep = "_")
   }
-  covari <- .set_xax(object, covariates)
+  covari <- .set_xax(object, covariate)
   
   # Remember color_name and shape_name if not provided
   if (!is.null(color_by) && (length(color_by) == 1) && is.null(color_name))

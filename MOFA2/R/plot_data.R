@@ -328,22 +328,39 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
 #' @name plot_data_overview
 #' @description Function to do a tile plot showing the missing value structure of the input data
 #' @param object a \code{\link{MOFA}} object.
+#' @param covariate specifies sample covariate to order samples by in the plot. This should be
+#' a character or  a numeric index giving the name orposition of a column present in the covariates slot of the object.
+#' Default is the first sample covariate in covariates slot. \code{NULL} does not order by covariate
 #' @param colors a vector specifying the colors per view (see example for details).
+#' @param show_covariate boolean specifying whether to include the covariate in the plot
 #' @param show_dimensions logical indicating whether to plot the dimensions of the data (default is TRUE).
 #' @details This function is helpful to get an overview of the structure of the data. 
 #' It shows the model dimensionalities (number of samples, groups, views and features) 
 #' and it indicates which measurements are missing.
 #' @import ggplot2
 #' @importFrom reshape2 melt
-#' @importFrom dplyr mutate
+#' @importFrom dplyr mutate left_join
 #' @export
-plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
+plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covariate = FALSE, show_dimensions = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
   # Collect relevant data
   data <- object@data
+  
+  # Collect covariate
+  if(any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
+    covariate <- NULL
+  if(!is.null(covariate)){
+    if(is.numeric(covariate)){
+      if(covariate > object@dimensions[["C"]]) stop("Covariate index out of range")
+      covariate <- covariates_names(object)[covariate]
+    }
+    if(!is.character(covariate) | !covariate %in% covariates_names(object)) 
+      stop("Covariate mispecified. Please read the documentation")
+    covari <- .set_xax(object, covariate)
+  }
   
   M <- get_dimensions(object)[["M"]]
   G <- get_dimensions(object)[["G"]]
@@ -376,7 +393,12 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
 
   # Melt to data.frame
   to.plot <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
-  to.plot$sample <- factor(to.plot$sample, levels = rownames(ovw))
+  if(!is.null(covariate)) {
+    to.plot <- dplyr::left_join(to.plot, covari, by= "sample")
+    to.plot$sample <- factor(to.plot$sample, levels = unique(to.plot$sample[order(to.plot$covariate_value)]))
+  } else {
+    to.plot$sample <- factor(to.plot$sample, levels = rownames(ovw))
+  }
 
   n <- length(unique(to.plot$sample))
   
@@ -412,6 +434,24 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
       strip.background = element_blank(),
       panel.grid = element_blank()
     )
+  
+  if(show_covariate){
+    p2 <- ggplot(to.plot, aes_string(x="sample", y="covariate_value")) +
+      geom_point(size = 0.5) +  theme_bw() +theme(
+        text = element_text(size=10),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        strip.background = element_blank(),,
+        strip.text = element_blank()
+      ) + ylab(covariate) + facet_wrap(~group_label, ncol =1, scales="free_x")
+    
+    if(object@dimensions["G"] == 1) {
+    p <- cowplot::plot_grid(p, p2, align = "v", ncol = 1, rel_heights = c(1,0.2) )
+    } else{
+      p <- cowplot::plot_grid(p, p2, align = "h", nrow = 1, rel_widths = c(1,1) )
+    }
+  }
   
   return(p)
 }
