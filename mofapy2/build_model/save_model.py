@@ -67,11 +67,11 @@ class saveModel():
         self.order_factors = self.sort_factors(sort_factors)
 
     def sort_factors(self, sort_factors):
-        if sort_factors: 
-            order_factors = np.argsort( np.array(self.r2).sum(axis=(0,1)) )[::-1]
+        if sort_factors:
+            order_factors = np.argsort( np.array(self.r2).sum(axis=(0,1), where= ~np.isnan(np.array(self.r2))) )[::-1]
             self.r2 = [x[:,order_factors] for x in self.r2]
         else:
-            order_factors = self.r2[0].shape[1]
+            order_factors = np.arange(self.r2[0].shape[1])
         return order_factors
 
     def saveNames(self):
@@ -280,7 +280,7 @@ class saveModel():
 
                 # Single-group nodes (Sigma)
                 else:
-                    node_subgrp.create_dataset("E", data=exp.T, compression="gzip", compression_opts=self.compression_level)
+                    node_subgrp.create_dataset("E", data=exp.T[:,:,self.order_factors], compression="gzip", compression_opts=self.compression_level)
 
         pass
 
@@ -445,6 +445,6 @@ class saveModel():
         # stats_grp.create_dataset("elbo_terms", data=stats["elbo_terms"].T)
         # stats_grp['elbo_terms'].attrs['colnames'] = [a.encode('utf8') for a in stats["elbo_terms"].columns.values]
         if self.model_opts['GP_factors']:
-            stats_grp.create_dataset("length_scales", data=stats["length_scales"])
-            stats_grp.create_dataset("structural_sig", data=stats["structural_sig"])
+            stats_grp.create_dataset("length_scales", data=stats["length_scales"][self.order_factors])
+            stats_grp.create_dataset("structural_sig", data=stats["structural_sig"][self.order_factors])
 

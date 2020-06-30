@@ -545,6 +545,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     if(!is.numeric(covariate$value)){
       stop("Values in covariate need to be numeric")
     }
+    covariate <- covariate[!duplicated(covariate), ]
     covariate <- reshape2::acast(covariate, covariate ~ sample)
   }
   # add matrices to object
