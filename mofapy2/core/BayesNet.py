@@ -114,7 +114,7 @@ class BayesNet(object):
 
         # Get groups
         # groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N']) # does not work with groups and no ARD on factors
-        groups = self.nodes['Tau'].nodes[0].groups
+        groups = self.nodes['Tau'].nodes[0].groups if hasattr(self.nodes['Tau'].nodes[0], "groups") else s.array([0]*self.dim['N'])
 
         if total:
             r2 = [ s.zeros(self.dim['M']) for g in range(self.dim['G'])]
