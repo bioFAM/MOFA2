@@ -872,9 +872,9 @@ class entry_point(object):
         self.model_opts['mv_Znode'] = mv_Znode
         # focus on smooth factors x
         self.model_opts['smooth_all'] = bool(smooth_all)
-        if self.model_opts['smooth_all']:
-            "Option 'smooth_all' is not supported currently, setting to False"
-            self.model_opts['smooth_all'] = False
+        # if self.model_opts['smooth_all']:
+        #     "Option 'smooth_all' is not supported currently, setting to False"
+        #     self.model_opts['smooth_all'] = False
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
