@@ -19,7 +19,7 @@
 #'   \item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
 #'   Default is \code{NULL} (no groups)
 #'   }
-#' @param sample_cov covariates for each sample used for smoothing and pattern detection: This can be one of the following:
+#' @param covariate covariates for each sample used for smoothing and pattern detection: This can be one of the following:
 #'   \itemize{
 #'   \item{A data-frame with columns sample, covariate, value.}
 #'   \item{If data is a \code{data.frame}, it can be a character (vector) specifying (numeric) column(s) to use as covariate(s)}.
@@ -39,7 +39,7 @@
 #' data <- read.table(file, header=TRUE) 
 #' MOFAmodel <- create_mofa(data)
 
-create_mofa <- function(data, groups = NULL, ..., sample_cov = NULL, scale_cov =FALSE) {
+create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =FALSE) {
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
@@ -48,12 +48,12 @@ create_mofa <- function(data, groups = NULL, ..., sample_cov = NULL, scale_cov =
     object <- .create_mofa_from_seurat(data, groups, ...)
     
     # extract covariates as data.frame if provided as name of Seurat metadata column
-    if(is(sample_cov, "character")){
-      if(!all(sample_cov %in% colnames(data@meta.data)))
+    if(is(covariate, "character")){
+      if(!all(covariate %in% colnames(data@meta.data)))
         stop("Columns specified in sampl_cov do not exist in the provided Seurat objects' meta.data slot.")
-      sample_cov <- data.frame(data@meta.data[,sample_cov, drop = FALSE])
-      sample_cov <- gather(sample_cov, key = "covariate", value = "value")
-      sample_cov$sample <- rownames(data@meta.data)
+      covariate <- data.frame(data@meta.data[,covariate, drop = FALSE])
+      covariate <- gather(covariate, key = "covariate", value = "value")
+      covariate$sample <- rownames(data@meta.data)
     }
     
     # Creating MOFA object from a data.frame object
@@ -74,12 +74,12 @@ create_mofa <- function(data, groups = NULL, ..., sample_cov = NULL, scale_cov =
   } else if(is(data, "MultiAssayExperiment")){
     
     # extract covariates as data.frame if provided as name of MAE colData columns
-    if(is(sample_cov, "character")){
-      if(!all(sample_cov %in% colnames(MultiAssayExperiment::colData(data))))
+    if(is(covariate, "character")){
+      if(!all(covariate %in% colnames(MultiAssayExperiment::colData(data))))
         stop("Columns specified in sampl_cov do not exist in the provided MultiAssayExperiment objects' colData.")
-      sample_cov <- data.frame(colData(data)[,sample_cov, drop = FALSE])
-      sample_cov <- gather(sample_cov, key = "covariate", value = "value")
-      sample_cov$sample <- rownames(colData(data))
+      covariate <- data.frame(colData(data)[,covariate, drop = FALSE])
+      covariate <- gather(covariate, key = "covariate", value = "value")
+      covariate$sample <- rownames(colData(data))
     }
     
     object <- .create_mofa_from_mae(data, groups, ...)
@@ -89,7 +89,7 @@ create_mofa <- function(data, groups = NULL, ..., sample_cov = NULL, scale_cov =
   }
   
   # Add covariates (should here be in a matrix or data.frame format)
-  object <- .add_sample_cov(object, sample_cov, scale_cov)
+  object <- .add_covariate(object, covariate, scale_cov)
   
   # Do quality control
   object <- quality_control(object)
@@ -523,63 +523,63 @@ create_mofa <- function(data, groups = NULL, ..., sample_cov = NULL, scale_cov =
 
 
 # (Hidden) function to add sample covariates to a SMOFA model as a list of matrices (one per group)
-.add_sample_cov <- function(object, sample_cov, scale_cov) {
+.add_covariate <- function(object, covariate, scale_cov) {
   
   # get sample names
   samples_data <- lapply(object@data[[1]], colnames)
   samples_data_vec <- unlist(samples_data)
   # data.frame turned to matrix
-  if(any(class(sample_cov) %in% c("data.frame", "tibble", "Data.Frame"))) {
-    if(!all(c("sample", "covariate", "value") %in% colnames(sample_cov)))
-      stop("If sample_cov is provided as data.frame it needs to contain the columns: sample, covariate, value")
-    samples <- sample_cov$sample
-    if(!is.numeric(sample_cov$value)){
-      stop("Values in sample_cov need to be numeric")
+  if(any(class(covariate) %in% c("data.frame", "tibble", "Data.Frame"))) {
+    if(!all(c("sample", "covariate", "value") %in% colnames(covariate)))
+      stop("If covariate is provided as data.frame it needs to contain the columns: sample, covariate, value")
+    samples <- covariate$sample
+    if(!is.numeric(covariate$value)){
+      stop("Values in covariate need to be numeric")
     }
-    sample_cov <- reshape2::acast(sample_cov, covariate ~ sample)
+    covariate <- reshape2::acast(covariate, covariate ~ sample)
   }
   # add matrices to object
-  if(all(is.numeric(sample_cov)) || class(sample_cov) %in% c("dgTMatrix", "dgCMatrix")) {
-    samples <- colnames(sample_cov)
+  if(all(is.numeric(covariate)) || class(covariate) %in% c("dgTMatrix", "dgCMatrix")) {
+    samples <- colnames(covariate)
     if(!is.null(samples) & !is.null(samples_data_vec)) {
       if(!(all(samples %in% samples_data_vec) & all(samples_data_vec %in% samples)))
         stop("Sample names of the data and the sample covariates do not match.")
-      sample_cov <- sample_cov[ , samples_data_vec, drop = FALSE]
+      covariate <- covariate[ , samples_data_vec, drop = FALSE]
     } else {
       # warnings and checks if no matching sample names
-      if(sum(object@dimensions[['N']]) != ncol(sample_cov))
+      if(sum(object@dimensions[['N']]) != ncol(covariate))
         stop("Number of columns in sample covariates does not match the number of samples in data")
       if(!is.null(samples_data) & length(samples_data_vec) > 0) {
         warning("No sample names in covariates - we will use the sample names in data. Please ensure that the order matches.")
-        colnames(sample_cov) <- samples_data_vec
+        colnames(covariate) <- samples_data_vec
       } else {
         stop("DEV Error: No sample names found!")
       }
     }
     
-    object@dimensions[["C"]] <- nrow(sample_cov)
+    object@dimensions[["C"]] <- nrow(covariate)
     
   # if no covariates are provided
-  } else if(is.null(sample_cov)) {
+  } else if(is.null(covariate)) {
     object@covariates <- NULL
     object@dimensions[["C"]] <- 0
     
   } else {
-    stop("sample_cov needs to be a charcter vector, a dataframe, a matrix or NULL.")
+    stop("covariate needs to be a charcter vector, a dataframe, a matrix or NULL.")
   }
   
   # scale covariates to have same weight in SE kernel
-  if(scale_cov & !is.null(sample_cov)) {
-    sample_cov <- t(scale((sample_cov)))
+  if(scale_cov & !is.null(covariate)) {
+    covariate <- t(scale((covariate)))
   }
   
   # split covariates by groups
-  if(!is.null(sample_cov)){
-    if(is.null(rownames(sample_cov))){
+  if(!is.null(covariate)){
+    if(is.null(rownames(covariate))){
       message("No covariate names provided - using generic: covariate1,..., covariateC")
-      rownames(sample_cov) <- paste0("covariate", seq_len(nrow(sample_cov)))
+      rownames(covariate) <- paste0("covariate", seq_len(nrow(covariate)))
     }
-    object@covariates <- lapply(samples_data, function(snms)   sample_cov[, snms, drop = FALSE])
+    object@covariates <- lapply(samples_data, function(snms)   covariate[, snms, drop = FALSE])
     names(object@covariates) <- groups_names(object)
     
     # check that we got the right formatting at the end

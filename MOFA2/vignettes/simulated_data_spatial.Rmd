@@ -38,7 +38,7 @@ dd <- make_example_data(sample_cov = sample_cov, n_samples = N, n_factors = 4,
 ## Create a MOFA object with covariates
 To create a MOFA object we need to specify the training data and the covariates for pattern detection and inference of smooth factors. Here, `sample_cov` is a matrix with samples in columns and covariates in rows. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
 ```{r, message=FALSE, warning=FALSE}
-sm <- create_mofa(data = dd$data, sample_cov = dd$sample_cov)
+sm <- create_mofa(data = dd$data, covariate = dd$sample_cov)
 sm
 
 plot_data_overview(sm)
@@ -107,7 +107,7 @@ plot_top_weights(sm, factors = 3, view = 2)
 ## Alternative training option: univariate variational approximation 
 A slightly faster version of SMOFA that is more suitable for larger sample size can be obtained by setting `mv_Znode` to `FALSE`. By this, the model uses a faster, more approximate inference that still uses the information provided by the covariate.
 ```{r, message=FALSE, warning=FALSE}
-sm_univ <- create_mofa(data = dd$data, sample_cov = dd$sample_cov)
+sm_univ <- create_mofa(data = dd$data, covariate = dd$sample_cov)
 model_opts$mv_Znode <- FALSE
 sm_univ <- prepare_mofa(sm_univ, training_options = train_opt, model_options = model_opts)
 sm_univ <- run_mofa(sm_univ)

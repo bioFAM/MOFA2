@@ -48,7 +48,7 @@ dd$data <- lapply(1:M, function(m) {
 ## Create a MOFA object with covariates
 To create a MOFA object for the SMOFA framework we need to specify the training data and the covariates for pattern detection and inerence of smooth factors. Here, `sample_cov` is a matrix with samples in columns and covariates in rows. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
 ```{r, message=FALSE, warning=FALSE}
-sm <- create_mofa(data = dd$data, sample_cov = dd$sample_cov)
+sm <- create_mofa(data = dd$data, covariate = dd$sample_cov)
 sm
 
 plot_data_overview(sm, show_covariate = T)
@@ -108,7 +108,7 @@ A slightly faster version of SMOFA that is more suitbale for larger sample size 
 
 ```{r, message=TRUE, warning=TRUE}
 # create new MOFA object
-sm_univ <- create_mofa(data = dd$data, sample_cov = dd$sample_cov)
+sm_univ <- create_mofa(data = dd$data, covariate = dd$sample_cov)
 
 # replace mv_Znode options
 model_opts$mv_Znode <- FALSE
