@@ -237,9 +237,11 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
     tmp <- lapply(views, function(m) {
       lapply(groups, function(p) {
         tmp <- reshape2::melt(data[[m]][[p]], na.rm=na.rm)
+        if(nrow(tmp) >0 & !is.null(tmp)) {
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = p, tmp)
         return(tmp) 
+        } 
       })
     })
     data <- do.call(rbind, do.call(rbind, tmp))
