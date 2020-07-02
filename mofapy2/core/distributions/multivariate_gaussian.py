@@ -6,7 +6,8 @@ import numpy as np
 from .basic_distributions import Distribution
 
 from mofapy2.core.utils import *
-
+# from mofapy2.core import gpu_utils
+# TODO: Enable GPU support
 
 class MultivariateGaussian(Distribution):
     """
@@ -193,7 +194,6 @@ class MultivariateGaussian_reparam(Distribution):
        alpha : (N, D)
        lambda: (N, D)
     """
-    # TODO gpu
 
     def __init__(self, dim, alpha, K, lamb, axis_cov=1, E =None):
         Distribution.__init__(self, dim)

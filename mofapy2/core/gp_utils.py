@@ -85,7 +85,7 @@ def BlockInv(mat, clust):
     for clust_ix in np.unique(clust):
         cells_ix = np.where(clust == clust_ix)[0]
         mat_tmp = mat[np.ix_(cells_ix, cells_ix)]
-        inv_mat[np.ix_(cells_ix, cells_ix)] = s.linalg.inv(mat_tmp) # TODO speed up with cholesky
+        inv_mat[np.ix_(cells_ix, cells_ix)] = s.linalg.inv(mat_tmp) # TODO speed up
 
     return inv_mat
 

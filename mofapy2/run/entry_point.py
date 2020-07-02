@@ -13,6 +13,8 @@ from mofapy2.build_model.build_model import *
 from mofapy2.build_model.save_model import *
 from mofapy2.build_model.utils import guess_likelihoods
 from mofapy2.build_model.train_model import train_model
+# import matplotlib.pyplot as plt
+
 
 class entry_point(object):
     def __init__(self):
@@ -786,6 +788,10 @@ class entry_point(object):
         self.train_opts['drop']["min_r2"] = None
 
     def set_sparseGP_options(self, n_inducing = None, idx_inducing = None, seed_inducing = None):
+
+        # Sanity check
+        assert not hasattr(self, 'train_opts'), "Sparse GP options have to be defined before training options"
+
         if not self.model_opts['GP_factors']:
             print("sparseGP_options are only useful when having covariates and GP_factors set to True.")
             self.model_opts['sparseGP'] = False
@@ -800,24 +806,41 @@ class entry_point(object):
         n_inducing = int(n_inducing)
 
         self.model_opts['sparseGP'] = True
-        # if not self.model_opts['mv_Znode']:
-        #     self.model_opts['mv_Znode'] = False
-        #     print("Sparse inference will use multivariate inference scheme setting mv_Znode to True.")
 
+        if self.model_opts['sparseGP'] and self.model_opts['ard_factors'] and self.dimensionalities["G"]> 1:
+            print("Sparse SMOFA framework is activated (sparseGP = True). Note: This is still experimental in conjunction with multiple groups and ARD prior.\n")
+
+        if self.model_opts['sparseGP'] and not self.model_opts['mv_Znode']:
+            print("For sparse GP SMOFA uses a multivariate Z node, setting mv_Znode to True")
+            self.model_opts['mv_Znode'] = True
 
         if idx_inducing is None:
-            # sample_cov
+            missing_sample_per_view = np.ones((self.dimensionalities["N"], self.dimensionalities["M"]))
+            for m in range(len(self.data)):
+                missing_sample_per_view[:,m] = np.isnan(self.data[m]).all(axis = 1)
+            nonmissing_samples = np.where(missing_sample_per_view.sum(axis=1) != self.dimensionalities["M"])[0]
+            N_nonmissing = len(nonmissing_samples)
+            n_inducing = min(n_inducing, N_nonmissing)
             init_inducing_random = False # not used, could be passed as option
             if init_inducing_random:
                 if not seed_inducing is None:
                     s.random.seed(int(seed_inducing))
                 idx_inducing = np.random.choice(self.dimensionalities["N"], n_inducing, replace = False)
                 idx_inducing.sort()
-            else: # TODO avoid missing points for inducing grid
+            else:
                 N = self.dimensionalities["N"]
                 loc = self.sample_cov.sum(axis = 1)
-                idx_inducing = np.array(np.where([x in np.arange(0, N, step = N / n_inducing, dtype = int) for x in np.argsort(loc)]), dtype = 'int').flatten()
-                # idx_inducing = np.arange(0, N, step = N / n_inducing, dtype = int)
+                groups = self.data_opts['samples_groups']
+                idx_inducing = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing),loc[nonmissing_samples]))][np.arange(0, N_nonmissing, step = N_nonmissing / n_inducing, dtype = int)] # shuffle ties randomly (between groups)
+                # idx_inducing = np.lexsort((np.random.random(loc.size),loc))[np.arange(0, N, step = N / n_inducing, dtype = int)] # shuffle ties randomly (between groups)
+                # plt.figure(10)
+                # color_labels = np.unique(self.data_opts['samples_groups'])
+                # rgb_values = ['blue', 'red', 'green']
+                # color_map = dict(zip(color_labels, rgb_values))
+                # colors = [color_map[x] for x in self.data_opts['samples_groups']]
+                # plt.scatter(loc, [x in idx_inducing for x in range(N)], c = colors)
+                # plt.pause(1)
+                # idx_inducing = np.array(np.where([x in np.arange(0, N, step = N / n_inducing, dtype = int) for x in np.argsort(loc)]), dtype = 'int').flatten()
 
         self.model_opts['n_inducing'] = n_inducing
         self.model_opts['idx_inducing'] = idx_inducing
@@ -830,6 +853,12 @@ class entry_point(object):
 
         self.model_opts = {}
 
+        # Define whether the SMOFA framework should be used and check that sample-covariates are present
+        self.model_opts['GP_factors'] = GP_factors
+        if self.sample_cov is None and GP_factors:
+            print("GP_factors set to TRUE but no samples covariates provided, setting it to FALSE")
+            self.model_opts['GP_factors'] = False
+
         # Define whether to use sample-wise spike and slab prior for Z
         self.model_opts['spikeslab_factors'] = spikeslab_factors
 
@@ -839,29 +868,30 @@ class entry_point(object):
         # Define whether to use group and factor-wise ARD prior for Z
         # if ((self.dimensionalities["G"]>1) & (ard_factors==False)): 
         #     print("WARNING: 'ard_factors' should be set to True in model_options if using multiple groups\n")
-        if self.dimensionalities["G"]>1: ard_factors = True
+        # always use the ARD prior on Z with more than one group except when using GPs
+        if self.dimensionalities["G"]>1 and not self.model_opts['GP_factors']:
+            ard_factors = True
+
         self.model_opts['ard_factors'] = ard_factors
 
         # Define whether to use view and factor-wise ARD prior for W
         # if ((self.dimensionalities["M"]>1) & (ard_weights==False)): 
         #     print("WARNING: 'ard_weights' should be set to True in model_options if using multiple views\n")
-        if self.dimensionalities["M"]>1: ard_weights = True
+        if self.dimensionalities["M"]>1:
+            ard_weights = True
         self.model_opts['ard_weights'] = ard_weights
 
-        # Define whether the SMOFA framework should be used and check that sample-covariates are present
-        self.model_opts['GP_factors'] = GP_factors
-        if self.sample_cov is None and GP_factors:
-            print("GP_factors set to TRUE but no samples covariates provided, setting it to FALSE")
-            self.model_opts['GP_factors'] = False
 
         # inactivate group-wise ARD when using the SMOFA framework
-        if self.model_opts['GP_factors'] and self.model_opts['ard_factors']:
-            print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
-            self.model_opts['ard_factors'] = False
-            ard_factors = False
+        # if self.model_opts['GP_factors'] and self.model_opts['ard_factors']:
+        #     print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
+        #     self.model_opts['ard_factors'] = False
+        #     ard_factors = False
+
         if self.model_opts['GP_factors'] and self.model_opts['spikeslab_factors']:
             print("SMOFA framework is activated (GP_factors = True). This is not compatible with Spike-and-Slab prior on factors. Setting spikeslab_factors to False...\n")
             self.model_opts['spikeslab_factors'] = False
+            spikeslab_factors = False # should not be needed
 
         # By default, no sparse GPs are used
         self.model_opts['sparseGP'] = False
@@ -1151,7 +1181,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     ent.set_data_options(scale_views=scale_views, scale_groups=scale_groups)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer,
                               likelihoods=lik, features_subset=features_subset, save_metadata=save_metadata)
-    ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_factors, 
+    ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_weights,
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 

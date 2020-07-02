@@ -20,7 +20,7 @@ class Z_GP_Node_mv_AO(MultivariateGaussian_AO_Unobserved_Variational_Node):
 
     def __init__(self, dim, pmean, pcov, qalpha, qlamb, qE=None):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, axis_cov=0, qalpha=qalpha, qlamb=qlamb, qE=qE)
-
+        stop("This not is not maintained: missing Alpha node and other things...")
         self.mini_batch = None
         self.factors_axis = 1
         self.struct = None

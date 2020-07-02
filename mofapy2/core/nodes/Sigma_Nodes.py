@@ -27,7 +27,6 @@ class SigmaGrid_Node(Node):
     """
     def __init__(self, dim, sample_cov, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None, smooth_all = False):
         super().__init__(dim)
-        self.AO = False and mv_Znode #TODO get rid of AO
         self.mini_batch = None
         self.sample_cov = sample_cov
         self.N = sample_cov.shape[0]
@@ -42,7 +41,7 @@ class SigmaGrid_Node(Node):
         if not self.idx_inducing is None:
             self.Nu = len(idx_inducing)
         self.compute4init()
-        # TODO make this node more memory efficient (avoid loading full covariance matrix into memeory + enable stoch updates - only needs sample_cov and Sigam_U)
+        # TODO make this node more memory efficient for sparse GP (avoid loading full covariance matrix into memeory - only needs sample_cov and Sigam_U)
 
     def compute4init(self):
         """
@@ -92,7 +91,7 @@ class SigmaGrid_Node(Node):
                 # determinant of inverse
                 self.Simga_inv_logdet[i] = np.linalg.slogdet(self.Simga_inv[i, :, :])[1]
 
-                # compute inverse using Cholesky decomposition (slower) TODO fix
+                # compute inverse using Cholesky decomposition (slower) TODO
                 # L = s.linalg.cholesky(self.Sigma[i,:,:], lower=True)
                 # # Li = s.linalg.inv(L)
                 # Li = s.linalg.solve_triangular(L, s.eye(self.Sigma.shape[1]), lower = True)
@@ -143,13 +142,11 @@ class SigmaGrid_Node(Node):
         Method to fetch ELBO-optimal covariance matrix, its  inverse and the diagonal of the inverse per factor
         """
         cov = np.array([self.Sigma[i,:,:] for i in self.gridix])
-        if not self.AO:
-            inv = np.array([self.Simga_inv[i,:,:] for i in self.gridix])
-            inv_diag = np.array([self.Simga_inv_diag[i,:] for i in self.gridix])
-            cov_inv_logdet = np.array([self.Simga_inv_logdet[i] for i in self.gridix])
-            return {'cov':cov, 'inv': inv, 'inv_diag':inv_diag, 'E':cov, 'inv_logdet' : cov_inv_logdet}
-        else:
-            return{'cov' : cov}
+        inv = np.array([self.Simga_inv[i,:,:] for i in self.gridix])
+        inv_diag = np.array([self.Simga_inv_diag[i,:] for i in self.gridix])
+        cov_inv_logdet = np.array([self.Simga_inv_logdet[i] for i in self.gridix])
+        return {'cov':cov, 'inv': inv, 'inv_diag':inv_diag, 'E':cov, 'inv_logdet' : cov_inv_logdet}
+
     
     def get_ls(self):
         """ 

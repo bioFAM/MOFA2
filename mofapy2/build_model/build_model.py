@@ -106,13 +106,15 @@ class buildBiofam(buildModel):
         """ Build node for Z given U for the factors or latent variables conditioned on inducing points"""
 
         # initialise ZgU by
-        self.init_model.initZgU(qmean="pca", Y=self.data, impute=True, idx_inducing = self.model_opts['idx_inducing'])
+        self.init_model.initZgU(qmean="pca", Y=self.data, impute=True, idx_inducing = self.model_opts['idx_inducing'],
+                                weight_views = self.weight_views)
 
     def build_U(self):
         """ Build node U for the inducing points of latent variable GP """
 
         # initialise U by PCA (no use of GP prior)
-        self.init_model.initU(idx_inducing = self.model_opts['idx_inducing'], mv_Znode = self.model_opts['mv_Znode'])
+        self.init_model.initU(idx_inducing = self.model_opts['idx_inducing'], mv_Znode = self.model_opts['mv_Znode'],
+                              weight_views = self.weight_views)
 
     def build_W(self):
         """ Build node W for the weights """
@@ -210,8 +212,14 @@ class buildBiofam(buildModel):
 
         # Add AlphaZ in the markov blanket of Z and viceversa if ARD prior on Z
         if self.model_opts['ard_factors']:
-            nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
-            nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
+            if not self.model_opts['sparseGP'] or not self.model_opts['GP_factors']:
+                nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
+                nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
+            else: # TODO: check markov blankets and inudcing points with sparse GPs
+                nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
+                nodes['U'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
+                nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
+
 
         # Add AlphaW in the markov blanket of W and viceversa if ARD prior on W
         if self.model_opts['ard_weights']:

@@ -124,7 +124,7 @@ ent.set_model_options(
 # - n_inducing: number of inducing points
 # - idx_inducing: optional argument to specify with points to use as inducing points (as index of original variables)
 #
-# ent.set_sparseGP_options(n_inducing=100, idx_inducing = None) #TODO assert that this is called before training options
+# ent.set_sparseGP_options(n_inducing=100, idx_inducing = None)
 
 ## (5) Set training options ##
 # - iter: number of iterations

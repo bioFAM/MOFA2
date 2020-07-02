@@ -17,7 +17,7 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
     U node with a Multivariate Gaussian prior and variational distribution
     """
 
-    def __init__(self, dim, pmean, pcov, qmean, qcov, qE=None, idx_inducing = None):
+    def __init__(self, dim, pmean, pcov, qmean, qcov, qE=None, idx_inducing = None, weight_views = False):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qcov=qcov, qE=qE)
 
         self.mini_batch = None
@@ -25,14 +25,16 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
         self.struct = None
         self.length_scales = None
         self.Nu = self.dim[0]
+        self.K = self.dim[1]
         self.idx_inducing = idx_inducing
+        self.weight_views = weight_views
 
         assert len(self.idx_inducing) == self.Nu, "Dimension of U and number of inducing points does not match"
 
         # Precompute terms (inverse covariance ant its determinant for each factor) to speed up computation
-        # self.p_cov = self.P.params['cov'] #TODO needed?
-        # self.p_cov_inv = np.array([s.linalg.inv(cov) for cov in tmp])  # TODO speed-ups
-        # self.p_cov_inv_diag = np.array([s.diag(c) for c in self.p_cov_inv])  # TODO speed-ups
+        # self.p_cov = self.P.params['cov']
+        # self.p_cov_inv = np.array([s.linalg.inv(cov) for cov in tmp])
+        # self.p_cov_inv_diag = np.array([s.diag(c) for c in self.p_cov_inv])
 
     def add_characteristics(self, struct=None, length_scales=None):
         self.struct = np.array(struct)
@@ -44,6 +46,7 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
 
     def removeFactors(self, idx, axis=0):
         super().removeFactors(idx, axis)
+        self.K = self.dim[1]
         # self.p_cov = s.delete(self.p_cov, axis=0, obj=idx)
         # self.p_cov_inv = s.delete(self.p_cov_inv, axis=0, obj=idx)
         # self.p_cov_inv_diag = s.delete(self.p_cov_inv_diag, axis=0, obj=idx)
@@ -63,7 +66,7 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
 
         # Get expectations from other nodes
         W = self.markov_blanket["W"].getExpectations()
-        Y = self.markov_blanket["Y"].get_mini_batch()  # TODO check MBs
+        Y = self.markov_blanket["Y"].get_mini_batch()
         tau = self.markov_blanket["Tau"].get_mini_batch()
         Z = self.markov_blanket["Z"].get_mini_batch()
         mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
@@ -72,6 +75,18 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
         Sigma = self.markov_blanket['Sigma'].get_mini_batch()
         SigmaUZ = Sigma['cov'][:,self.idx_inducing, :]
         p_cov_inv = Sigma['inv']
+        if "AlphaZ" in self.markov_blanket:
+            Alpha = self.markov_blanket['AlphaZ'].get_mini_batch()
+        else:
+            Alpha = s.ones((SigmaUZ.shape[2], self.K)) * 1.
+            if ix is not None: Alpha = Alpha[ix,:]
+
+
+        for k in range(self.K): # scale by Alpha
+            p_cov_inv[k,:,:] = gpu_utils.dot(gpu_utils.dot(np.diag(np.sqrt(Alpha[self.idx_inducing, k])), p_cov_inv[k, :, :]),
+                                       np.diag(np.sqrt(Alpha[self.idx_inducing, k]))) # dimensions K x Nu x Nu
+            SigmaUZ[k,:,:] = gpu_utils.dot(gpu_utils.dot(np.diag(np.sqrt(1/Alpha[self.idx_inducing, k])), SigmaUZ[k, :, :]),
+                                       np.diag(np.sqrt(1/Alpha[:, k]))) # dimensions K x Nu x N
 
         # Get variational parameters of current node
         Q = self.Q.getParameters()
@@ -96,15 +111,21 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
         for m in range(M):
             tau[m][mask[m]] = 0.
 
+        weights = [1] * M
+        if self.weight_views and M > 1:
+            total_w = np.asarray([Y[m].shape[1] for m in range(M)]).sum()
+            weights = np.asarray([total_w / (M * Y[m].shape[1]) for m in range(M)])
+            weights = weights / weights.sum() * M
+
         # Precompute terms to speed up GPU computation
         foo = gpu_utils.array(s.zeros((N, K)))
         precomputed_bar = gpu_utils.array(s.zeros((N, K)))
         for m in range(M):
             tau_gpu = gpu_utils.array(tau[m])
-            foo += gpu_utils.dot(tau_gpu, gpu_utils.array(W[m]["E2"]))
+            foo += weights[m] * gpu_utils.dot(tau_gpu, gpu_utils.array(W[m]["E2"]))
             bar_tmp1 = gpu_utils.array(W[m]["E"])
             bar_tmp2 = tau_gpu * gpu_utils.array(Y[m])
-            precomputed_bar += gpu_utils.dot(bar_tmp2, bar_tmp1)
+            precomputed_bar += weights[m] * gpu_utils.dot(bar_tmp2, bar_tmp1)
         foo = gpu_utils.asnumpy(foo)
 
         # Calculate variational updates - term for mean
@@ -117,10 +138,11 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
                 bar_tmp1 = gpu_utils.array(W[m]["E"][:, k])
                 bar_tmp2 = gpu_utils.array(tau[m]) * (-gpu_utils.dot(tmp_cp1, tmp_cp2))
 
-                bar += gpu_utils.dot(bar_tmp2, bar_tmp1)
+                bar += weights[m] * gpu_utils.dot(bar_tmp2, bar_tmp1)
             bar += precomputed_bar[:, k]
             bar = gpu_utils.asnumpy(bar)
 
+            # note: no Alpha scaling required here compared to Z nodes as done in the updateParameters function
             Mcross = gpu_utils.dot(p_cov_inv[k, :, :], SigmaUZ[k, :, :])
             Mtmp = gpu_utils.dot(Mcross, gpu_utils.dot(np.diag(foo[:, k]), Mcross.transpose()))
             Qcov[k, :, :] = np.linalg.inv(Mtmp + p_cov_inv[k, :, :])
@@ -137,25 +159,31 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
 
         QE = Qexp['E']
 
-        if 'Sigma' in self.markov_blanket:
-            Sigma = self.markov_blanket['Sigma'].getExpectations()
-            p_cov = Sigma['cov']
-            p_cov_inv = Sigma['inv']
-            p_cov_inv_logdet = Sigma['inv_logdet']
+        assert "Sigma" in self.markov_blanket, "Sigma not found in Markov blanket of U node"
+
+        Sigma = self.markov_blanket['Sigma'].getExpectations()
+        p_cov = Sigma['cov']
+        p_cov_inv = Sigma['inv']
+        p_cov_inv_logdet = Sigma['inv_logdet']
+
+        if 'AlphaZ' in self.markov_blanket:
+            Alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True)
         else:
-            p_cov = self.P.params['cov']
-            p_cov_inv = self.p_cov_inv
-            p_cov_inv_logdet = np.linalg.slogdet(self.p_cov_inv)[1]
+            Alpha = dict()
+            Alpha['E'] =  s.ones((p_cov.shape[2], self.K)) * 1.
+            Alpha['lnE'] = s.zeros((p_cov.shape[2], self.K))
 
         # compute term from the exponential in the Gaussian
-        tmp1 = -0.5 * (np.trace(gpu_utils.dot(p_cov_inv[k, :, :], Qcov[k, :, :])) + gpu_utils.dot(QE[:, k].transpose(),
+        scaled_inv = gpu_utils.dot(gpu_utils.dot(np.diag(np.sqrt(Alpha['E'][self.idx_inducing, k])),
+                                                 p_cov_inv[k,:,:]),
+                                   np.diag(np.sqrt(Alpha['E'][self.idx_inducing, k])))
+
+        tmp1 = -0.5 * (np.trace(gpu_utils.dot(scaled_inv, Qcov[k, :, :])) + gpu_utils.dot(QE[:, k].transpose(),
                                                                                                   gpu_utils.dot(
-                                                                                                      p_cov_inv[k, :,
-                                                                                                      :], QE[:,
-                                                                                                          k])))  # expectation of quadratic form
+                                                                                                      scaled_inv, QE[:,k])))  # expectation of quadratic form
 
         # compute term from the precision factor in front of the Gaussian
-        tmp2 = 0.5 * p_cov_inv_logdet[k]
+        tmp2 = 0.5 * p_cov_inv_logdet[k] + 0.5 * Alpha["lnE"][self.idx_inducing, k].sum()
         lb_p = tmp1 + tmp2
 
         lb_q = -0.5 * np.linalg.slogdet(Qcov[k, :, :])[
@@ -163,7 +191,7 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
 
         return lb_p - lb_q
 
-    # sum up individual EBLO calculations
+    # sum up individual ELBO calculations
     def calculateELBO(self):
         elbo = 0
         for k in range(self.dim[1]):
@@ -195,9 +223,9 @@ class U_GP_Node(UnivariateGaussian_Unobserved_Variational_Node_with_Multivariate
     """
     U node with a Multivariate Gaussian prior and univariate Gaussian variational
     """
-    def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_inducing = None):
+    def __init__(self, dim, pmean, pcov, qmean, qvar, qE=None, qE2=None, idx_inducing = None, weight_views = False):
         super().__init__(dim=dim, pmean=pmean, pcov=pcov, qmean=qmean, qvar=qvar, qE=qE, qE2=qE2)
-        assert False, "U_GP_Node Nnot implemented" #TODO
+        assert False, " U_GP_Node not implemented, use U_GP_Node_mv" # TODO or only use multivariate node?
         self.mini_batch = None
         self.factors_axis = 1
         self.struct = None
@@ -208,9 +236,8 @@ class U_GP_Node(UnivariateGaussian_Unobserved_Variational_Node_with_Multivariate
 
         # Precompute terms (inverse covariance ant its determinant for each factor) to speed up computation
         tmp = self.P.params['cov']
-        self.p_cov_inv = np.array([s.linalg.inv(cov) for cov in tmp])  # TODO speed-ups
-        self.p_cov_inv_diag = np.array([s.diag(c) for c in self.p_cov_inv])  # TODO speed-ups
-        assert False, " U_GP_Node not implemented, use U_GP_Node_mv"
+        self.p_cov_inv = np.array([s.linalg.inv(cov) for cov in tmp])
+        self.p_cov_inv_diag = np.array([s.diag(c) for c in self.p_cov_inv])
 #     def add_characteristics(self, struct=None, length_scales=None):
 #         self.struct = np.array(struct)
 #         self.length_scales = np.array(length_scales)

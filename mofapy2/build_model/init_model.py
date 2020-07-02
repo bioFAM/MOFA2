@@ -133,18 +133,18 @@ class initModel(object):
                     dim=(self.N, self.K),
                     pmean=pmean, pcov=pvar,
                     qmean=qmean, qvar=qvar,
-                    qE=qE, qE2=qE2
-                )# TODO implement:  weight_views = weight_views 
+                    qE=qE, qE2=qE2, weight_views = weight_views
+                )
         else:
             self.nodes["Z"] = Z_Node(
                 dim=(self.N, self.K),
                 pmean=pmean, pvar=pvar,
                 qmean=qmean, qvar=qvar,
-                qE=qE, qE2=qE2
-            ) #TODO : implement weight_views = weight_views
+                qE=qE, qE2=qE2, weight_views = weight_views
+            )
 
     def initU(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None, Y = None, impute=True, idx_inducing = None,
-              mv_Znode = True): # prior has diagonal covariance here, ls optimiation in Sigma node
+              mv_Znode = True, weight_views = False): # prior has diagonal covariance here, ls optimiation in Sigma node
         """Method to initialise the inducing points
 
          PARAMETERS
@@ -184,23 +184,26 @@ class initModel(object):
             qvar = s.ones((Nu, self.K)) * qvar
 
         # Initialise the node
-        if mv_Znode: # TODO rename to mv_qnode
-            self.nodes["U"] = U_GP_Node_mv( # TODO rename to GPnode_mv?
+        if mv_Znode:
+            self.nodes["U"] = U_GP_Node_mv(
                 dim=(Nu, self.K),
                 pmean=pmean, pcov=pvar,
                 qmean=qmean, qcov=qvar,
-                qE=qE, idx_inducing = idx_inducing
+                qE=qE, idx_inducing = idx_inducing,
+                weight_views = weight_views
             )
         else:
-            self.nodes["U"] = U_GP_Node( # TODO rename to GP node?
+            self.nodes["U"] = U_GP_Node(
                 dim=(Nu, self.K),
                 pmean=pmean, pcov=pvar,
                 qmean=qmean, qvar=qvar,
-                qE=qE, qE2=qE2, idx_inducing =idx_inducing
+                qE=qE, qE2=qE2, idx_inducing =idx_inducing,
+                weight_views = weight_views
                 )
 
 
-    def initZgU(self, pmean = 0, pvar =1., qmean = "random", qvar = 1., qE = None, qE2 = None, Y = None, impute = True, idx_inducing = None):
+    def initZgU(self, pmean = 0, pvar =1., qmean = "random", qvar = 1., qE = None, qE2 = None, Y = None,
+                impute = True, idx_inducing = None, weight_views = False):
         assert idx_inducing is not None, "Stop: ZgU nodes is used without inducing points"
 
         ## Initialise prior distribution (P)
@@ -260,7 +263,8 @@ class initModel(object):
             pmean=pmean, pvar=pvar,
             qmean=qmean, qvar=qvar,
             qE=qE, qE2=qE2,
-            idx_inducing = idx_inducing
+            idx_inducing = idx_inducing,
+            weight_views = weight_views
         )
 
     def initSigma(self, sample_cov, start_opt = 20, n_grid = 10, mv_Znode = False, idx_inducing = None, smooth_all = False):
