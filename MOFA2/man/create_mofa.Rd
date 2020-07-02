@@ -4,7 +4,7 @@
 \alias{create_mofa}
 \title{create a MOFA object}
 \usage{
-create_mofa(data, groups = NULL, sample_cov = NULL, scale_cov = FALSE, ...)
+create_mofa(data, groups = NULL, ..., covariate = NULL, scale_cov = FALSE)
 }
 \arguments{
 \item{data}{Input data can be in several formats:
@@ -26,7 +26,7 @@ create_mofa(data, groups = NULL, sample_cov = NULL, scale_cov = FALSE, ...)
 Default is \code{NULL} (no groups)
 }}
 
-\item{sample_cov}{covariates for each sample used for smoothing and pattern detection: This can be one of the following:
+\item{covariate}{covariates for each sample used for smoothing and pattern detection: This can be one of the following:
 \itemize{
 \item{A data-frame with columns sample, covariate, value.}
 \item{If data is a \code{data.frame}, it can be a character (vector) specifying (numeric) column(s) to use as covariate(s)}.

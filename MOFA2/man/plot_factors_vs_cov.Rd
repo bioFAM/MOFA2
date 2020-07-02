@@ -7,7 +7,7 @@
 plot_factors_vs_cov(
   object,
   factors = "all",
-  covariates = "all",
+  covariate = NULL,
   show_missing = TRUE,
   scale = FALSE,
   color_by = NULL,
@@ -17,16 +17,21 @@ plot_factors_vs_cov(
   dot_size = 1.5,
   alpha = 1,
   legend = TRUE,
+  original = FALSE,
   return_data = FALSE,
   show_variance = FALSE
 )
 }
 \arguments{
-\item{object}{a trained \code{\link{SMOFA}} object.}
+\item{object}{a trained \code{\link{MOFA}} object.}
 
 \item{factors}{character or numeric specifying the factor(s) to plot, default is "all"}
 
-\item{covariates}{character or numeric vector specifying the covariates to plot, default is "all"}
+\item{covariate}{specifies sample covariate to plot against:
+(1) a character giving the name of a column present in the sample covariates or sample metadata.
+(2) a character giving the name of a feature present in the training data.
+(3) a vector of the same length as the number of samples specifying continuous numeric values per sample.
+Default is the first sample covariates in covariates slot}
 
 \item{show_missing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
 
@@ -51,6 +56,8 @@ plot_factors_vs_cov(
 \item{alpha}{numeric indicating dot transparency.}
 
 \item{legend}{logical indicating whether to add legend.}
+
+\item{original}{logical indicating whether to use unscaled covariates (only if used with GP prior)}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 

@@ -6,20 +6,28 @@
 \usage{
 plot_factors_on_cov_2d(
   object,
-  covariates,
+  covariates = NULL,
   factors = "all",
   scale = FALSE,
-  return_data = FALSE
+  return_data = FALSE,
+  original = FALSE
 )
 }
 \arguments{
-\item{object}{a trained \code{\link{SMOFA}} object.}
+\item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{covariates}{character or numeric vector of length 2 specifying the covariates to plot}
+\item{covariates}{specifies exactly 2 sample covariates to plot against
+(1) a character vector with 2 entires which each acan be one of the following
+(i) character vector giving the names of two column spresent in the sample covariates or sample metadata.
+(ii) a character vector giving the names of two feature present in the training data.
+(2) a named list of two vectors of the same length as the number of samples specifying continuous numeric values per sample.
+Default is the first two sample covariates in covariates slot}
 
 \item{scale}{logical indicating whether to scale factor values.}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
+
+\item{original}{logical indicating whether to use covariates before training (unscaled) - only relevant if taken from covariates slot}
 
 \item{factor}{character or numeric specifying the factor to plot}
 }
