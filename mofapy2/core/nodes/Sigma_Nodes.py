@@ -109,7 +109,6 @@ class SigmaGrid_Node(Node):
                 # determinant of inverse
                 self.Simga_inv_logdet[i] = np.linalg.slogdet(self.Simga_inv[i, :, :])[1]
 
-
     # def define_mini_batch(self, ix):
     #     """
     #     Method to define a mini-batch (only for stochastic inference)

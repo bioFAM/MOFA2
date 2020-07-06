@@ -60,7 +60,7 @@ def PE(X, l):
 
 def BlockSE(X, clust, l):
     """
-    covariance function yielding block matrix with sqaured exponential kernel per block
+    covariance function yielding block matrix with squared exponential kernel per group
     """
     if l == 0:
         return np.eye(X.shape[0])
