@@ -807,8 +807,8 @@ class entry_point(object):
 
         self.model_opts['sparseGP'] = True
 
-        if self.model_opts['sparseGP'] and self.model_opts['ard_factors'] and self.dimensionalities["G"]> 1:
-            print("Sparse SMOFA framework is activated (sparseGP = True). Note: This is still experimental in conjunction with multiple groups and ARD prior.\n")
+        # if self.model_opts['sparseGP'] and self.model_opts['ard_factors'] and self.dimensionalities["G"]> 1:
+        #     print("Sparse SMOFA framework is activated (sparseGP = True). Note: This is still experimental in conjunction with multiple groups and ARD prior.\n")
 
         if self.model_opts['sparseGP'] and not self.model_opts['mv_Znode']:
             print("For sparse GP SMOFA uses a multivariate Z node, setting mv_Znode to True")
@@ -882,11 +882,16 @@ class entry_point(object):
         self.model_opts['ard_weights'] = ard_weights
 
 
-        # inactivate group-wise ARD when using the SMOFA framework
-        # if self.model_opts['GP_factors'] and self.model_opts['ard_factors']:
-        #     print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
-        #     self.model_opts['ard_factors'] = False
-        #     ard_factors = False
+        inactivate group-wise ARD when using the SMOFA framework
+        if self.model_opts['GP_factors'] and self.model_opts['ard_factors']:
+            print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
+            self.model_opts['ard_factors'] = False
+            ard_factors = False
+            #TODO: This is implemented in Z nodes as scaling of the covariance matrix but not valid
+            # (Sigma and Alpha should be in one anothers Markov blanket, for more than one group the alpha variational distribution does not stay in its class
+            # due to cross terms for non-zero across-group covariances in Z
+            # and one would require the expectation of sqrt(alpha) (Nagasaki distribution?) instead of the sqrt of the expectation
+            # in general the ARD_factor argument has little impact here
 
         if self.model_opts['GP_factors'] and self.model_opts['spikeslab_factors']:
             print("SMOFA framework is activated (GP_factors = True). This is not compatible with Spike-and-Slab prior on factors. Setting spikeslab_factors to False...\n")
