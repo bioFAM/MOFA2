@@ -42,6 +42,7 @@ setClass("MOFA",
         slots=c(
             data                = "list",
             covariates          = "listOrNULL",
+            covariates_warped   = "listOrNULL",
             intercepts          = "list",
             imputed_data        = "list",
             samples_metadata    = "list",

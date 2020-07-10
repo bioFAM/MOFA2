@@ -6,10 +6,19 @@ from mofapy2.core.gp_utils import *
 import scipy as s
 import time
 from mofapy2.core import gpu_utils
-
+import pandas as pd
+# from fastdtw import fastdtw
+from dtw import dtw # note this is dtw-python not dtw
+from scipy.spatial.distance import euclidean
+import copy
 
 class Sigma_Node(Node):
     pass
+
+
+# TODO
+#  - make this node more memory efficient for sparse GP (avoid loading full covariance matrix into memeory - only needs sample_cov and Sigam_U)
+# - implement warping for more than one covariate
 
 class SigmaGrid_Node(Node):
     """
@@ -25,30 +34,41 @@ class SigmaGrid_Node(Node):
     mv_Znode: whether a multivariate variational is modelled for the node with prior Sigma covariance
     idx_inducing: Index of inducing points (default None - use the full model)
     """
-    def __init__(self, dim, sample_cov, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None, smooth_all = False):
+    def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None, smooth_all = False,
+                 warping = False, warping_freq = 20, warping_ref = 0):
         super().__init__(dim)
         self.mini_batch = None
         self.sample_cov = sample_cov
+        self.sample_cov_transformed = copy.copy(sample_cov) # keep original covariate in place
+        self.groups = groups
+        self.groupsidx = pd.factorize(self.groups)[0]
+        self.n_groups = len(np.unique(self.groups))
         self.N = sample_cov.shape[0]
         self.start_opt = start_opt
         self.n_grid = n_grid
         self.mv_Znode = mv_Znode
         self.iter = 0                                       # counter of iteration to keep track when to optimize lengthscales
         self.gridix = np.zeros(dim[0], dtype = np.int8)     # index of the grid values to use
+        # self.shift = np.zeros(self.n_groups)                  # group-sepcific offset of covariates
+        # self.scaling = np.ones(self.n_groups)                 # group specific scaling of covariates
         self.struct_sig = np.zeros(dim[0])                  # store improvments compared to diagonal covariance
         self.idx_inducing = idx_inducing
         self.smooth_all = smooth_all
+        self.warping = warping
+        self.reference_group = warping_ref
+        self.warping_freq = warping_freq
         if not self.idx_inducing is None:
             self.Nu = len(idx_inducing)
+        # self.transform_sample_cov()
         self.compute4init()
-        # TODO make this node more memory efficient for sparse GP (avoid loading full covariance matrix into memeory - only needs sample_cov and Sigam_U)
+
 
     def compute4init(self):
         """
         Function to get the lengthscale grid and covariance matrices on initilisation of the Sigma node
         """
         # get grid of lengthscales
-        self.l_grid = get_l_grid(self.sample_cov, n_grid=self.n_grid)
+        self.l_grid = get_l_grid(self.sample_cov, n_grid=self.n_grid) # TODO necessary to recalculate for major transormations?
         # add the diagonal covariance (lengthscale 0) to the grid
 
         if not self.smooth_all:
@@ -77,37 +97,41 @@ class SigmaGrid_Node(Node):
         Function to compute covariance matrices for all lengthscales
         """
         for i in range(self.n_grid):
-            
-            # covariance (scaled by Gower factor)
-            self.Sigma[i,:,:] = SE(self.sample_cov, self.l_grid[i])
-            if not self.mv_Znode:
-                self.Sigma[i,:,:] *= covar_rescaling_factor(self.Sigma[i,:,:])
+            self.compute_cov_at_gridpoint(i)
 
-            if self.idx_inducing is None:
-                # compute inverse (without Cholesky)
-                self.Simga_inv[i,:,:] = s.linalg.inv(self.Sigma[i,:,:])
-                # diagonal of inverse
-                self.Simga_inv_diag[i, :] = s.diag(self.Simga_inv[i, :, :])
-                # determinant of inverse
-                self.Simga_inv_logdet[i] = np.linalg.slogdet(self.Simga_inv[i, :, :])[1]
+    def compute_cov_at_gridpoint(self, i):
+        # covariance (scaled by Gower factor)
+        self.Sigma[i, :, :] = SE(self.sample_cov_transformed, self.l_grid[i])
+        # self.Sigma[i, :, :] = Cauchy(self.sample_cov_transformed, self.l_grid[i])
+        if not self.mv_Znode:
+            self.Sigma[i, :, :] *= covar_rescaling_factor(self.Sigma[i, :, :])
 
-                # compute inverse using Cholesky decomposition (slower) TODO
-                # L = s.linalg.cholesky(self.Sigma[i,:,:], lower=True)
-                # # Li = s.linalg.inv(L)
-                # Li = s.linalg.solve_triangular(L, s.eye(self.Sigma.shape[1]), lower = True)
-                # self.Simga_inv[i,:,:] = Li.transpose().dot(Li)
-                # # determinant of inverse
-                # self.Simga_inv_logdet[i] = 2.0 * s.sum(s.log(s.diag(Li)))  # using cholesky decomp and det. of triangular matrix
-                # # diagonal of inverse
-                # self.Simga_inv_diag[i,:] = s.diag(self.Simga_inv[i,:,:])
+        if self.idx_inducing is None:
+            # compute inverse (without Cholesky)
+            self.Simga_inv[i, :, :] = s.linalg.inv(self.Sigma[i, :, :])
+            # diagonal of inverse
+            self.Simga_inv_diag[i, :] = s.diag(self.Simga_inv[i, :, :])
+            # determinant of inverse
+            self.Simga_inv_logdet[i] = np.linalg.slogdet(self.Simga_inv[i, :, :])[1]
 
-            else:
-                # compute inverse (without Cholesky)
-                self.Simga_inv[i,:,:] = s.linalg.inv(self.Sigma[i][self.idx_inducing,:][:,self.idx_inducing])
-                # diagonal of inverse
-                self.Simga_inv_diag[i, :] = s.diag(self.Simga_inv[i, :, :])
-                # determinant of inverse
-                self.Simga_inv_logdet[i] = np.linalg.slogdet(self.Simga_inv[i, :, :])[1]
+            # compute inverse using Cholesky decomposition (slower) TODO
+            # L = s.linalg.cholesky(self.Sigma[i,:,:], lower=True)
+            # # Li = s.linalg.inv(L)
+            # Li = s.linalg.solve_triangular(L, s.eye(self.Sigma.shape[1]), lower = True)
+            # self.Simga_inv[i,:,:] = Li.transpose().dot(Li)
+            # # determinant of inverse
+            # self.Simga_inv_logdet[i] = 2.0 * s.sum(s.log(s.diag(Li)))  # using cholesky decomp and det. of triangular matrix
+            # # diagonal of inverse
+            # self.Simga_inv_diag[i,:] = s.diag(self.Simga_inv[i,:,:])
+
+        else:
+            # compute inverse (without Cholesky)
+            self.Simga_inv[i, :, :] = s.linalg.inv(self.Sigma[i][self.idx_inducing, :][:, self.idx_inducing])
+            # diagonal of inverse
+            self.Simga_inv_diag[i, :] = s.diag(self.Simga_inv[i, :, :])
+            # determinant of inverse
+            self.Simga_inv_logdet[i] = np.linalg.slogdet(self.Simga_inv[i, :, :])[1]
+
 
     # def define_mini_batch(self, ix):
     #     """
@@ -131,7 +155,7 @@ class SigmaGrid_Node(Node):
     
     def getExpectation(self):
         """ 
-        Method to fetch ELBO-optimal covariance matrix per factor (only used upon saving a model) 
+        Method to fetch ELBO-optimal covariance matrix per factor
         """
         cov = np.array([self.Sigma[i,:,:] for i in self.gridix])
         return cov
@@ -159,7 +183,7 @@ class SigmaGrid_Node(Node):
         Method to fetch ELBO-optimal length-scales, improvements compared to diagonal covariance prior and structural positions
         """
         ls = self.get_ls()
-        return {'l':ls, 'sig': self.struct_sig, 'sample_cov':self.sample_cov}
+        return {'l':ls, 'sig': self.struct_sig, 'sample_cov':self.sample_cov_transformed}
 
     def removeFactors(self, idx, axis=1):
         """
@@ -174,6 +198,7 @@ class SigmaGrid_Node(Node):
         Method to find for each factor the lengthscale parameter that optimises the ELBO of the factor.
         The optimization can be carried out on a per-factor basis (not required on all combinations) as latent variables are independent in the elbo
         """
+
         if not self.idx_inducing is None:
             var = self.markov_blanket['U']
         else:
@@ -181,7 +206,13 @@ class SigmaGrid_Node(Node):
         K = var.dim[1]
         assert K == len(self.gridix), 'problem in dropping factor'
 
-        # use grid search to optimise hyperparameters
+        # perform DTW to align groups
+        if self.warping and self.n_groups > 1 and self.iter % self.warping_freq == 0:
+            self.align_sample_cov_dtw(var.getExpectation())
+            print("Covariates were aligned between groups.")
+            # print("Covariates were aligned between groups: shift:", self.shift, ", scaling:", self.scaling)
+
+        # use grid search to optimise lengthscale hyperparameters
         for k in range(K):
             best_i = -1
             best_elbo = -np.Inf
@@ -197,6 +228,94 @@ class SigmaGrid_Node(Node):
             self.gridix[k] = best_i
         print('Sigma node has been optimised: Lengthscales =', self.l_grid[self.gridix])
         # print('Sigma node has been optimised: struct_sig =', self.struct_sig)
+
+
+    def align_sample_cov_dtw(self, Z):
+        """
+        Method to perform DTW between groups in the factor space
+        #TODO-ALIGN: adapt for more than one covariate
+        """
+
+        paths = []
+        for g in range(self.n_groups):
+            if g is not self.reference_group:
+                # path provides a list of indices with first corresponing to reference_group, second to query group
+                alignment = dtw(Z[self.groupsidx == g, :], Z[self.groupsidx == self.reference_group,:])
+                query_idx = alignment.index1 # dtw-python
+                ref_idx = alignment.index2
+                # alignment = dtw(Z[self.groupsidx == g, :], Z[self.groupsidx == self.reference_group,:], dist = euclidean) #dtw
+                # query_idx = alignment[3][0] #dtw
+                # ref_idx = alignment[3][1]
+                ref_val = self.sample_cov[self.groupsidx == self.reference_group, :][ref_idx]
+                idx = np.where(self.groupsidx == g)[0][query_idx]
+                self.sample_cov_transformed[idx, :] = ref_val
+
+                # distance, path = fastdtw(Z[self.groupsidx == self.reference_group,:],  Z[self.groupsidx == g, :], dist=euclidean) # fastdtw
+                # for i in range(len(path)):
+                #     ref_val = self.sample_cov[self.groupsidx == self.reference_group, :][path[i][0]]
+                #     idx = np.where(self.groupsidx == g)[0][path[i][1]]
+                #     self.sample_cov_transformed[idx, : ] = ref_val
+
+
+    # def transform_sample_cov_linear(self):
+    #     self.sample_cov_transformed =  self.scaling[self.groupsidx,None] * self.sample_cov + self.shift[self.groupsidx, None]
+
+
+    # def align_sample_cov_linear(self):
+    #     """
+    #     Method to find for a linear transformation of covariates to align across groups by optimising the ELBO
+    #     """
+    #     start_val = np.hstack([self.scaling[1:], self.shift[1:]])
+    #     bounds = np.tile([0, None, None, None], self.n_groups - 1)
+    #     res = s.optimize.minimize(self.calc_ELBO_in_warping, start_val,
+    #                               bounds= s.optimize.Bounds(lb = np.repeat([0, -np.inf],self.n_groups - 1), ub =np.repeat(np.inf,2*self.n_groups - 2)))
+    #
+    #     self.scaling = np.insert(res['x'][:self.n_groups -1], 0, 1)
+    #     self.shift = np.insert(res['x'][self.n_groups-1:], 0, 0)
+    #
+    #     # if self.iter == 20: # for debugging purposes - plot objective function
+    #     #     import matplotlib.pyplot as plt
+    #     #     plt.figure(5)
+    #     #     a = np.linspace(0.05,5)
+    #     #     b = np.linspace(-5,5)
+    #     #     l = np.zeros([len(a), len(b)])
+    #     #     for i in range(len(a)):
+    #     #         for j in range(len(b)):
+    #     #             l[i, j] = self.calc_ELBO_in_warping([a[i], b[j]])
+    #     #     aa, bb = np.meshgrid(a, b)
+    #     #     plt.pcolormesh(aa, bb, l.transpose())
+    #     #     plt.xlabel("scale")
+    #     #     plt.ylabel("shift")
+    #     #     plt.axvline(x=0.2, color = "black")
+    #     #     plt.axhline(y=0, color = "black")
+    #     #     plt.axvline(x=self.scaling[1], color="red")
+    #     #     plt.axhline(y=self.shift[1], color="red")
+    #     #     plt.colorbar()
+    #     #     plt.show()
+    #
+    #     self.transform_sample_cov() # transform sample cov
+    #     self.compute_cov()  # recalculate all Sigma matrices in grid
+    #
+    # def calc_ELBO_in_warping(self, x):
+    #     """"
+    #     Method to calculate the ELBO terms in the 2 warping parameters per group
+    #     """
+    #     a = x[:self.n_groups -1]
+    #     b = x[self.n_groups-1:]
+    #
+    #     if not self.idx_inducing is None:
+    #         var = self.markov_blanket['U']
+    #     else:
+    #         var = self.markov_blanket['Z']
+    #     self.scaling = np.insert(a,0,1) # #TODO-ALIGN: adapt for more than one covariate
+    #     self.shift = np.insert(b,0,0)
+    #     self.transform_sample_cov()
+    #     for i in np.unique(self.gridix):
+    #         self.compute_cov_at_gridpoint(i) # recompute covariance matrix at current lengthscale parameters (might differ per factor)
+    #     elb = var.calculateELBO()
+    #
+    #     return -elb
+
 
     def updateParameters(self, ix=None, ro=1.):
         """

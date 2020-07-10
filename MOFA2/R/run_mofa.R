@@ -91,6 +91,15 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   )
   
   # Set model options 
+  warping_ref <- object@model_options$warping_ref
+  if(!is.numeric(warping_ref)){
+    stopifnot(warping_ref %in% groups_names(object))
+    warping_ref <- which(warping_ref == groups_names(object))
+  } else{
+    stopifnot(warping_ref <= object@dimensions[['G']])
+  }
+  warping_ref <- warping_ref - 1 #adapt to Python indexing starting at 0
+  
   mofa_entrypoint$set_model_options(
     factors     = object@model_options$num_factors,
     spikeslab_factors = object@model_options$spikeslab_factors, 
@@ -101,8 +110,10 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     mv_Znode       = object@model_options$mv_Znode,
     n_grid            = object@model_options$n_grid,
     start_opt         = object@model_options$start_opt,
-    smooth_all         = object@model_options$smooth_all
-    
+    smooth_all         = object@model_options$smooth_all,
+    warping  = object@model_options$warping,
+    warping_freq  = object@model_options$warping_freq,
+    warping_ref  = warping_ref
   )
   
   if (object@model_options$sparseGP) {

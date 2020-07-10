@@ -848,7 +848,8 @@ class entry_point(object):
 
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
-                          GP_factors = False, start_opt = 20, n_grid = 50, mv_Znode = True, smooth_all = False):
+                          GP_factors = False, start_opt = 20, n_grid = 50, mv_Znode = True, smooth_all = False, warping = False,
+                          warping_freq = 20, warping_ref = 0):
         """ Set model options """
 
         self.model_opts = {}
@@ -919,6 +920,21 @@ class entry_point(object):
         start_opt = max(0, start_opt)
         self.model_opts['start_opt'] = int(start_opt)
         self.model_opts['n_grid'] = int(n_grid)
+
+        # Activate warping
+        self.model_opts['warping'] = bool(warping)
+        self.model_opts['warping_freq'] = int(warping_freq)
+        self.model_opts['warping_ref'] = int(warping_ref)
+        if self.model_opts['warping']:
+            if self.dimensionalities["C"] > 1:
+                self.model_opts['warping'] = False
+                print("Warping only implemented for one dimensional covariates...")
+
+        if self.model_opts['warping']:
+            if not self.model_opts['smooth_all']:
+                self.model_opts['smooth_all'] = True
+                print("For warping we recommend using smooth_all, setting this option to False...")
+
 
         # Define likelihoods
         self.model_opts['likelihoods'] = self.likelihoods

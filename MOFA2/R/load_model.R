@@ -139,6 +139,19 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   } else covariates <- NULL
   object@covariates <- covariates
 
+  if(any(grepl("cov_samples_transformed", h5ls.out$group))){
+    covariates_warped <- list()
+    for (g in group_names) {
+      if (on_disk) {
+        # as DelayedArrays
+        covariates_warped[[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("cov_samples_transformed/%s", g) ) )
+      } else {
+        # as matrices
+        covariates_warped[[g]] <- h5read(file, sprintf("cov_samples_transformed/%s", g) )
+      }    
+    }
+  } else covariates_warped <- NULL
+  object@covariates_warped <- covariates_warped
   #######################
   ## Load imputed data ##
   #######################

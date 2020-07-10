@@ -348,11 +348,14 @@ get_default_model_options <- function(object) {
     mv_Znode = FALSE,           #  multivariate variational for Z
     start_opt = 20,             # when to start optimizing lengthsclaes  # TODO should be trainign_opts --> python
     n_grid = 50,                 # number of gridpoints per lenghtscales # TODO should be trainign_opts --> python
-    sparseGP = FALSE,
-    idx_inducing = NULL,
-    n_inducing = round(max(100, object@dimensions$N * 0.2)),
+    sparseGP = FALSE,             # use sparse Gaussian processes
+    idx_inducing = NULL,          # index of points used as inducing points
+    n_inducing = round(max(100, object@dimensions$N * 0.2)), # number of inducing points
     seed_inducing = NULL, #TODO Move to training opts
-    smooth_all = FALSE
+    smooth_all = FALSE,             # include only nonzero lengthscales?
+    warping = FALSE,                 # warp the covariates between groups
+    warping_freq = 20,               # warp at each n-th iteration
+    warping_ref = 0                  # group to use as reference for warping
   )
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups

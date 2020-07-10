@@ -44,6 +44,21 @@ def SE(X, l):
 
     return cov
 
+def Cauchy(X, l):
+    """
+    squared exponential covariance function on input X with lengthscale l
+    """
+    if l == 0:
+        return np.eye(X.shape[0])
+    noise_var = 1e-3
+    tmp = SS.distance.pdist(X,'euclidean')**2.
+    tmp = SS.distance.squareform(tmp)
+    cov = (1-noise_var) * 1/(1 + tmp/ (l** 2.))
+    cov += noise_var * np.eye(X.shape[0]) # avoid singularities
+
+    return cov
+
+
 def PE(X, l):
     """
     periodic covariance function on input X with lengthscale l

@@ -143,11 +143,24 @@ class buildBiofam(buildModel):
     def build_Sigma(self, start_opt = 20, n_grid = 10):
         """ Build node Sigma for the GP prior on the factors """
         if self.model_opts['sparseGP']:
-            self.init_model.initSigma(self.sample_cov, start_opt, n_grid, mv_Znode = self.model_opts['mv_Znode'],
-             idx_inducing = self.model_opts['idx_inducing'], smooth_all = self.model_opts['smooth_all'])
+            self.init_model.initSigma(self.sample_cov,
+                                      self.data_opts['samples_groups'],
+                                      start_opt, n_grid,
+                                      mv_Znode = self.model_opts['mv_Znode'],
+                                      idx_inducing = self.model_opts['idx_inducing'],
+                                      smooth_all = self.model_opts['smooth_all'],
+                                      warping=self.model_opts['warping'],
+                                      warping_freq = self.model_opts['warping_freq'],
+                                      warping_ref = self.model_opts['warping_ref'])
         else:
-            self.init_model.initSigma(self.sample_cov, start_opt, n_grid,
-             mv_Znode=self.model_opts['mv_Znode'], smooth_all = self.model_opts['smooth_all'])
+            self.init_model.initSigma(self.sample_cov,
+                                      self.data_opts['samples_groups'],
+                                      start_opt, n_grid,
+                                      mv_Znode=self.model_opts['mv_Znode'],
+                                      smooth_all = self.model_opts['smooth_all'],
+                                      warping = self.model_opts['warping'],
+                                      warping_freq = self.model_opts['warping_freq'],
+                                      warping_ref = self.model_opts['warping_ref'])
 
     def build_AlphaW(self):
         """ Build node AlphaW for the ARD prior on the weights"""

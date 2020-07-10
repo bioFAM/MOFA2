@@ -11,7 +11,7 @@ from mofapy2.core.nodes import *
 # h5py.get_config().track_order = True
 
 class saveModel():
-    def __init__(self, model, outfile, data, sample_cov, intercepts, samples_groups, 
+    def __init__(self, model, outfile, data, sample_cov, intercepts, samples_groups,
         train_opts, model_opts, features_names, views_names, samples_names, groups_names, covariates_names,
         samples_metadata, features_metadata, 
         sort_factors=True, compression_level=9):
@@ -171,13 +171,23 @@ class saveModel():
                 intercept_subgrp.create_dataset(self.groups_names[g], data=self.intercepts[m][g])
         
         # Save sample covariates for GP prior
-        cov_samples_grp = self.hdf5.create_group("cov_samples")
         if not self.sample_cov is None:
+            cov_samples_grp = self.hdf5.create_group("cov_samples")
+            cov_samples_transformed_grp = self.hdf5.create_group("cov_samples_transformed")
+            if 'Sigma' in self.model.getNodes():
+                sample_cov_transformed = self.model.getNodes()['Sigma'].sample_cov_transformed
+            else:
+                sample_cov_transformed = None
+
             for g in range(len(self.groups_names)):
                 samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
                 tmp = self.sample_cov[samples_idx, :]
                 # Create hdf5 data set for data
                 cov_samples_grp.create_dataset(self.groups_names[g], data=tmp, compression="gzip",
+                                           compression_opts=self.compression_level)
+                if not sample_cov_transformed is None:
+                    tmp_transformed = sample_cov_transformed[samples_idx, :]
+                    cov_samples_transformed_grp.create_dataset(self.groups_names[g], data=tmp_transformed, compression="gzip",
                                            compression_opts=self.compression_level)
 
     def saveImputedData(self, mean, variance):

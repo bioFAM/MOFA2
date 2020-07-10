@@ -80,9 +80,11 @@ setReplaceMethod("covariates_names", signature(object="MOFA", value="vector"),
                    
                    # Modify covariate names
                    old_names <- rownames(object@covariates[[1]])
-                   for(c in seq_along(object@covariates))
+                   for(c in seq_along(object@covariates)) {
                      rownames(object@covariates[[c]]) <- value
-                   
+                     if(!is.null(object@covariates_warped)) 
+                        rownames(object@covariates_warped[[c]]) <- value
+                   }
                    # Modify meta.data
                    if (methods::.hasSlot(object, "samples_metadata")) {
                      if(!is.null(old_names)) {
@@ -94,7 +96,14 @@ setReplaceMethod("covariates_names", signature(object="MOFA", value="vector"),
                      colnames(df) <- value
                      df$sample <- rownames(df)
                      object@samples_metadata <- dplyr::left_join(object@samples_metadata, df, by = "sample",
-                                                                 suffix = c("_original", ""))
+                                                                 suffix = c("", "_scaled"))
+                     if(!is.null(object@covariates_warped)) {
+                       df <- as.data.frame(Reduce(rbind, unname(lapply(object@covariates_warped,t))))
+                       colnames(df) <- value
+                       df$sample <- rownames(df)
+                       object@samples_metadata <- dplyr::left_join(object@samples_metadata, df, by = "sample",
+                                                                   suffix = c("", "_warped"))
+                     }
                    }
                    
                    object
@@ -162,6 +171,10 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    if (!is.null(object@covariates)) {
                      for (m in seq_along(object@covariates))
                        colnames(object@covariates[[m]]) <- value[[m]]
+                   }
+                   if (!is.null(object@covariates_warped)) {
+                     for (m in seq_along(object@covariates_warped))
+                       colnames(object@covariates_warped[[m]]) <- value[[m]]
                    }
                    
                    # Add samples names to the imputed data
