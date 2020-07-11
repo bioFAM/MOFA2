@@ -359,7 +359,7 @@ class entry_point(object):
         self.dimensionalities["G"] = G = len(self.data_opts['groups_names'])
         self.dimensionalities["D"] = D = [len(x) for x in self.data_opts['features_names']]
         if not sample_cov is None:
-            C = self.dimensionalities["C"] = self.sample_cov.shape[0]
+            C = self.dimensionalities["C"] = self.sample_cov.shape[1]
         else:
             C = self.dimensionalities["C"] = 0
 
@@ -928,7 +928,7 @@ class entry_point(object):
         if self.model_opts['warping']:
             if self.dimensionalities["C"] > 1:
                 self.model_opts['warping'] = False
-                print("Warping only implemented for one dimensional covariates...")
+                print("Warping only implemented for one dimensional covariates. Setting to False.")
 
         if self.model_opts['warping']:
             if not self.model_opts['smooth_all']:
