@@ -36,3 +36,25 @@ test_that("a model can be created from a Seurat object", {
 	expect_is(create_mofa(srt), "MOFA")
 })
 
+test_that("a list of matrices per view is split correctly into a nested list of matrices according to samples groups", {
+	n_groups <- 3
+	# Create view 1
+	m <- as.matrix(read.csv('matrix.csv'))
+	rownames(m) <- paste("feature", seq_len(nrow(m)), paste = "", sep = "")
+	colnames(m) <- paste("sample", seq_len(ncol(m)), paste = "", sep = "")
+	# Add second view
+	m2 <- m[1:(nrow(m)/3),]
+	rownames(m2) <- paste("view2", rownames(m2), sep = "_")
+	# Define multiple groups
+	samples_groups <- sample(x = paste0("group", 1:n_groups), replace = TRUE, size = ncol(m))
+	# Split the data
+	data_split <- .split_data_into_groups(list("view1" = m, "view2" = m2), samples_groups)
+	# Check group assignments
+	for (g in 1:n_groups) {
+		g_name <- paste0("group", g)
+		expect_equal(colnames(data_split[[1]][[g_name]]), colnames(m)[which(samples_groups == g_name)])
+		expect_equal(colnames(data_split[[2]][[g_name]]), colnames(m)[which(samples_groups == g_name)])
+	}
+})
+
+
