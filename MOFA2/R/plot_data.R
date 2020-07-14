@@ -482,7 +482,8 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   p <- .add_legend(p, df, legend, color_name, shape_name)
   
   if(lineplot){
-    p <- p + geom_line(aes_string(col = "color_by")) + guides(col = FALSE)
+    # p <- p + geom_line(aes_string(col = "color_by")) + guides(col = FALSE)
+    p <- p + stat_summary(aes_string(col = "color_by"), fun = mean, geom = "line") + guides(col = FALSE)
   }
   
   return(p)
