@@ -355,7 +355,10 @@ get_default_model_options <- function(object) {
     smooth_all = FALSE,             # include only nonzero lengthscales?
     warping = FALSE,                 # warp the covariates between groups
     warping_freq = 20,               # warp at each n-th iteration
-    warping_ref = 0                  # group to use as reference for warping
+    warping_ref = 0,                  # group to use as reference for warping
+    warping_open_begin = TRUE,        # allow open beginning for warping?
+    warping_open_end = TRUE           # allow open end for warping?
+    
   )
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups

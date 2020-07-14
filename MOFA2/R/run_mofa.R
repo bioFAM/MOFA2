@@ -113,7 +113,10 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     smooth_all         = object@model_options$smooth_all,
     warping  = object@model_options$warping,
     warping_freq  = object@model_options$warping_freq,
-    warping_ref  = warping_ref
+    warping_ref  = warping_ref,
+    warping_open_begin  = object@model_options$warping_open_begin,
+    warping_open_end  = object@model_options$warping_open_end
+    
   )
   
   if (object@model_options$sparseGP) {

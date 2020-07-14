@@ -35,7 +35,7 @@ class SigmaGrid_Node(Node):
     idx_inducing: Index of inducing points (default None - use the full model)
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None, smooth_all = False,
-                 warping = False, warping_freq = 20, warping_ref = 0):
+                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True):
         super().__init__(dim)
         self.mini_batch = None
         self.sample_cov = sample_cov
@@ -57,6 +57,8 @@ class SigmaGrid_Node(Node):
         self.warping = warping
         self.reference_group = warping_ref
         self.warping_freq = warping_freq
+        self.warping_open_begin = warping_open_begin
+        self.warping_open_end = warping_open_end
         if not self.idx_inducing is None:
             self.Nu = len(idx_inducing)
         # self.transform_sample_cov()
@@ -244,7 +246,7 @@ class SigmaGrid_Node(Node):
                 idx_query_order = np.argsort(self.sample_cov[self.groupsidx == g,0])
                 # allow for patial matching(no corresponding end and beginning)
                 alignment = dtw(Z[self.groupsidx == g, :][idx_query_order,:], Z[self.groupsidx == self.reference_group, :][idx_ref_order,:],
-                                open_begin = True, open_end = True, step_pattern="asymmetric")
+                                open_begin = self.warping_open_begin, open_end = self.warping_open_end, step_pattern="asymmetric")
                 query_idx = alignment.index1 # dtw-python
                 ref_idx = alignment.index2
                 # alignment = dtw(Z[self.groupsidx == g, :][idx_query_order,:], Z[self.groupsidx == self.reference_group,:][idx_ref_order,:], dist = euclidean) #dtw
