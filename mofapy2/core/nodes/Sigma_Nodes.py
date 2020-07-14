@@ -245,8 +245,9 @@ class SigmaGrid_Node(Node):
                 idx_ref_order = np.argsort(self.sample_cov[self.groupsidx == self.reference_group,0])
                 idx_query_order = np.argsort(self.sample_cov[self.groupsidx == g,0])
                 # allow for patial matching(no corresponding end and beginning)
+                step_pattern = "asymmetric" if self.warping_open_begin or self.warping_open_end else "symmetric2"
                 alignment = dtw(Z[self.groupsidx == g, :][idx_query_order,:], Z[self.groupsidx == self.reference_group, :][idx_ref_order,:],
-                                open_begin = self.warping_open_begin, open_end = self.warping_open_end, step_pattern="asymmetric")
+                                open_begin = self.warping_open_begin, open_end = self.warping_open_end, step_pattern=step_pattern)
                 query_idx = alignment.index1 # dtw-python
                 ref_idx = alignment.index2
                 # alignment = dtw(Z[self.groupsidx == g, :][idx_query_order,:], Z[self.groupsidx == self.reference_group,:][idx_ref_order,:], dist = euclidean) #dtw

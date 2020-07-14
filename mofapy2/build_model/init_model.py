@@ -268,9 +268,10 @@ class initModel(object):
         )
 
     def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10, mv_Znode = False, idx_inducing = None,
-                  smooth_all = False, warping = False, warping_freq = 20, warping_ref = 0):
+                  smooth_all = False, warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True):
         dim = (self.K,)
-        self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, mv_Znode, idx_inducing, smooth_all, warping, warping_freq, warping_ref)
+        self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, mv_Znode, idx_inducing, smooth_all, warping, warping_freq, warping_ref,
+                                    warping_open_begin, warping_open_end)
         self.nodes["Sigma"] = self.Sigma
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
