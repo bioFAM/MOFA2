@@ -208,8 +208,8 @@ class SigmaGrid_Node(Node):
 
         # perform DTW to align groups
         if self.warping and self.n_groups > 1 and self.iter % self.warping_freq == 0:
-            self.align_sample_cov_dtw(var.getExpectation())
             print("Covariates were aligned between groups.")
+            self.align_sample_cov_dtw(var.getExpectation())
             # print("Covariates were aligned between groups: shift:", self.shift, ", scaling:", self.scaling)
 
         # use grid search to optimise lengthscale hyperparameters
@@ -239,21 +239,25 @@ class SigmaGrid_Node(Node):
         paths = []
         for g in range(self.n_groups):
             if g is not self.reference_group:
-                # path provides a list of indices with first corresponing to reference_group, second to query group
-                alignment = dtw(Z[self.groupsidx == g, :], Z[self.groupsidx == self.reference_group,:])
+                # reorder by covariate value to ensure monotonicity constrains are correctly placed
+                idx_ref_order = np.argsort(self.sample_cov[self.groupsidx == self.reference_group,0])
+                idx_query_order = np.argsort(self.sample_cov[self.groupsidx == g,0])
+                # allow for patial matching(no corresponding end and beginning)
+                alignment = dtw(Z[self.groupsidx == g, :][idx_query_order,:], Z[self.groupsidx == self.reference_group, :][idx_ref_order,:],
+                                open_begin = True, open_end = True, step_pattern="asymmetric")
                 query_idx = alignment.index1 # dtw-python
                 ref_idx = alignment.index2
-                # alignment = dtw(Z[self.groupsidx == g, :], Z[self.groupsidx == self.reference_group,:], dist = euclidean) #dtw
+                # alignment = dtw(Z[self.groupsidx == g, :][idx_query_order,:], Z[self.groupsidx == self.reference_group,:][idx_ref_order,:], dist = euclidean) #dtw
                 # query_idx = alignment[3][0] #dtw
                 # ref_idx = alignment[3][1]
-                ref_val = self.sample_cov[self.groupsidx == self.reference_group, :][ref_idx]
-                idx = np.where(self.groupsidx == g)[0][query_idx]
-                self.sample_cov_transformed[idx, :] = ref_val
+                ref_val = self.sample_cov[self.groupsidx == self.reference_group, 0][idx_ref_order][ref_idx]
+                idx = np.where(self.groupsidx == g)[0][idx_query_order][query_idx]
+                self.sample_cov_transformed[idx, 0] = ref_val
 
-                # distance, path = fastdtw(Z[self.groupsidx == self.reference_group,:],  Z[self.groupsidx == g, :], dist=euclidean) # fastdtw
+                # distance, path = fastdtw(Z[self.groupsidx == self.reference_group,:][idx_ref_order,:],  Z[self.groupsidx == g, :][idx_query_order,:], dist=euclidean) # fastdtw
                 # for i in range(len(path)):
-                #     ref_val = self.sample_cov[self.groupsidx == self.reference_group, :][path[i][0]]
-                #     idx = np.where(self.groupsidx == g)[0][path[i][1]]
+                #     ref_val = self.sample_cov[self.groupsidx == self.reference_group, :][idx_ref_order,:][path[i][0]]
+                #     idx = np.where(self.groupsidx == g)[0][idx_query_order][path[i][1]]
                 #     self.sample_cov_transformed[idx, : ] = ref_val
 
 
