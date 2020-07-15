@@ -1,7 +1,7 @@
 Package: MOFA2
 Type: Package
 Title: Multi-Omics Factor Analysis v2
-Version: 1.0
+Version: 1.1
 Maintainer: Ricard Argelaguet <ricard@ebi.ac.uk>
 Author: Ricard Argelaguet, Damien Arnol, Danila Bredikhin, Britta Velten
 Date: 2018-04-01

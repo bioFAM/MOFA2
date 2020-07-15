@@ -118,6 +118,8 @@ plot_factor <- function(object, factors = 1, groups = "all",
     df$shape_by <- "1"
   }
   
+  if (all(unique(df$color_by)==unique(df$group_by))) dodge <- TRUE
+  
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   if (is.factor(df$color_by))

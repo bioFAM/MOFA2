@@ -247,16 +247,17 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     
     # Option 1: by default group
   } else if (group_by[1] == "group") {
-    group_by = c()
-    for (group in names(samples_names(object))) {
-      group_by <- c(group_by,rep(group,length(samples_names(object)[[group]])))
-    }
-    group_by = factor(group_by, levels=groups_names(object))
+    # group_by = c()
+    # for (group in names(samples_names(object))) {
+    #   group_by <- c(group_by,rep(group,length(samples_names(object)[[group]])))
+    # }
+    # group_by = factor(group_by, levels=groups_names(object))
+    group_by <- samples_metadata(object)$group
     
     # Option 2: by a metadata column in object@samples$metadata
   } else if ((length(group_by) == 1) && (is.character(group_by)|is.factor(group_by)) & (group_by[1] %in% colnames(samples_metadata(object)))) {
     group_by <- samples_metadata(object)[,group_by]
-    if (is.character(group_by)) group_by <- as.factor( group_by )
+    # if (is.character(group_by)) group_by <- as.factor( group_by )
     
     # Option 3: input is a data.frame with columns (sample,group)
   } else if (is(group_by,"data.frame")) {
@@ -275,7 +276,8 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   # Create data.frame with columns (sample,group)
   if (!is(group_by,"data.frame")) {
     df = data.frame(
-      sample = unlist(samples_names(object)),
+      # sample = unlist(samples_names(object)),
+      sample = samples_metadata(object)$sample,
       group_by = group_by,
       stringsAsFactors = FALSE
     )
@@ -300,7 +302,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     # Option 2: by a metadata column in object@samples$metadata
   } else if ((length(color_by) == 1) && (is.character(color_by)|is.factor(color_by)) & (color_by[1] %in% colnames(samples_metadata(object)))) {
     color_by <- samples_metadata(object)[,color_by]
-    if (is.character(color_by)) color_by <- as.factor( color_by )
+    # if (is.character(color_by)) color_by <- as.factor( color_by )
     
     # Option 3: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
@@ -330,8 +332,9 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   
   # Create data.frame with columns (sample,color)
   if (!is(color_by,"data.frame")) {
-    df = data.frame(
-      sample = unlist(samples_names(object)),
+    df <- data.frame(
+      # sample = unlist(samples_names(object)),
+      sample = samples_metadata(object)$sample,
       color_by = color_by,
       stringsAsFactors = FALSE
     )
@@ -351,15 +354,16 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     
     # Option 1: by default group
   } else if (shape_by[1] == "group") {
-    shape_by = c()
-    for (group in names(samples_names(object))){
-      shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
-    }
+    # shape_by = c()
+    # for (group in names(samples_names(object))){
+    #   shape_by <- c(shape_by,rep(group,length(samples_names(object)[[group]])))
+    # }
+    shape_by <- samples_metadata(object)$group
+    
     
     # Option 2: by a metadata column in object@samples$metadata
   } else if ((length(shape_by) == 1) && is.character(shape_by) & (shape_by %in% colnames(samples_metadata(object)))) {
     shape_by <- samples_metadata(object)[,shape_by]
-    
     
     # Option 3: by a feature present in the training data    
   } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
@@ -385,7 +389,8 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   # Create data.frame with columns (sample,shape)
   if (!is(shape_by,"data.frame")) {
     df = data.frame(
-      sample = unlist(samples_names(object)),
+      sample = samples_metadata(object)$sample,
+      # sample = unlist(samples_names(object)),
       shape_by = as.factor(shape_by),
       stringsAsFactors = FALSE
     )
