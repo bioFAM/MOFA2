@@ -919,7 +919,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     ent.set_data_options(scale_views=scale_views, scale_groups=scale_groups)
     ent.set_data_from_anndata(adata, groups_label=groups_label, use_raw=use_raw, use_layer=use_layer,
                               likelihoods=lik, features_subset=features_subset, save_metadata=save_metadata)
-    ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_factors, 
+    ent.set_model_options(ard_factors=ard_factors, ard_weights=ard_weights, 
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 

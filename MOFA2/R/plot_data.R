@@ -359,9 +359,13 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
     if (M < 18) colors <- palette[seq_len(M)] else colors <- rainbow(M)
     names(colors) <- views_names(object)
   } else {
+    if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
+    if(is.null(names(colors))) {
+      names(colors) <- views_names(object)
+    } else {
       stopifnot(sort(names(colors))==sort(views_names(object)))
+    }
   }
-  if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
   tmp <- lapply(data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
