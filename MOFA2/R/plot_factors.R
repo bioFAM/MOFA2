@@ -168,14 +168,17 @@ plot_factor <- function(object, factors = 1, groups = "all",
   
   # Add violin plot
   if (isTRUE(add_violin)) {
-    if (isTRUE(color_violin)) {
+    if (isTRUE(color_violin) & isTRUE(dodge)) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       if (min(tmp$n)==1) {
-        warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be coloured")
-        p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
+        warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be added. Adding boxplots instead...")
+        add_boxplot <- TRUE
+        # p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
+        # p <- p + geom_violin(color="black", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
       } else {
         p <- p + geom_violin(alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
       }
+      # p <- p + geom_violin(color="black", alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
     } else {
       p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
     }
@@ -183,14 +186,15 @@ plot_factor <- function(object, factors = 1, groups = "all",
   
   # Add boxplot plot
   if (isTRUE(add_boxplot)) {
-    if (isTRUE(color_boxplot)) {
+    if (isTRUE(color_boxplot) & isTRUE(dodge)) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
-      if (min(tmp$n)==1) {
-        warning("Warning: some 'color_by' groups have only one observation, boxplot plots cannot be coloured")
-        p <- p + geom_boxplot(color="black", fill="grey", alpha=boxplot_alpha, show.legend = FALSE)
-      } else {
-        p <- p + geom_boxplot(alpha=boxplot_alpha, position=position_dodge(width=1), show.legend = FALSE)
-      }
+      # if (min(tmp$n)==1) {
+      #   warning("Warning: some 'color_by' groups have only one observation, boxplot plots cannot be coloured")
+      #   p <- p + geom_boxplot(color="black", alpha=boxplot_alpha, show.legend = FALSE)
+      # } else {
+      #   p <- p + geom_boxplot(alpha=boxplot_alpha, position=position_dodge(width=1), show.legend = FALSE)
+      # }
+      p <- p + geom_boxplot(color="black", alpha=boxplot_alpha, position=position_dodge(width=1), show.legend = FALSE)
     } else {
       p <- p + geom_boxplot(color="black", fill="grey", alpha=boxplot_alpha, show.legend = FALSE)
     }
