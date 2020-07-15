@@ -332,18 +332,18 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # }
   
   # [Done in mofapy2] Sort factors by total variance explained
-  # if (isTRUE(sort_factors) && object@dimensions$K > 1) {
-  #   
-  #   # Sanity checks
-  #   if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
-  # 
-  #   # Calculate variance explained per factor across all views
-  #   r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
-  #   order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
-  #   
-  #   # re-order factors
-  #   object <- subset_factors(object, order_factors)
-  # }
+  if (isTRUE(sort_factors) && object@dimensions$K>1) {
+
+    # Sanity checks
+    if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
+
+    # Calculate variance explained per factor across all views
+    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
+    order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
+
+    # re-order factors
+    object <- subset_factors(object, order_factors)
+  }
 
   # Mask outliers
   if (isTRUE(remove_outliers)) {
