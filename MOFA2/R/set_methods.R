@@ -151,7 +151,8 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
                    }
                    
                    # Make sure that the order of samples metadata match the order of samples
-                   samples <- unname(unlist(samples_names(object)))
+                   # samples <- unname(unlist(samples_names(object)))
+                   samples <- unname(unlist(lapply(object@data[[1]],colnames)))
                    value <- value[match(samples, value$sample),]
 
                    object@samples_metadata <- as.data.frame(value)
