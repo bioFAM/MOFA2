@@ -17,6 +17,9 @@ plot_factor(
   add_violin = FALSE,
   violin_alpha = 0.5,
   color_violin = TRUE,
+  add_boxplot = FALSE,
+  boxplot_alpha = 0.5,
+  color_boxplot = TRUE,
   show_missing = TRUE,
   scale = FALSE,
   dodge = FALSE,
@@ -69,6 +72,12 @@ plot_factor(
 \item{violin_alpha}{numeric indicating violin plot transparency.}
 
 \item{color_violin}{logical indicating whether to color violin plots.}
+
+\item{add_boxplot}{logical indicating whether to add box plots}
+
+\item{boxplot_alpha}{numeric indicating boxplot transparency.}
+
+\item{color_boxplot}{logical indicating whether to color box plots.}
 
 \item{show_missing}{logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.}
 

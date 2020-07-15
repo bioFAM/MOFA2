@@ -197,12 +197,20 @@ category.colors <- c(
 
 MOFA Factor 1 and 3 are capable of completely partitioning transkingdom signatures pertaining to critical illness, antibiotic perturbation and health:
 ```{r }
-plot_factors(mofa, 
+p <- plot_factors(mofa, 
   factors = c(1,3), 
   color_by = "Category", 
   dot_size = 4
 ) + scale_fill_manual(values=category.colors)
 ```
+
+```{r}
+p + 
+  # geom_density_2d(aes_string(color="color_by")) +
+  stat_ellipse(aes(color=color_by), geom = "polygon", alpha=0.25) +
+  scale_color_manual(values=category.colors)
+```
+
 
 ## Characterisation of Factor 1
 
@@ -213,7 +221,7 @@ Factor 1, the major source of variation, captures a transkingdom microbiome sign
 Beeswarm plot of Factor 1 values, grouped by Category
 ```{r }
 plot_factor(mofa, 
-  factor = c(1,2), 
+  factor = 1, 
   color_by = "Category", 
   dot_size = 4,
   dodge = TRUE,
@@ -222,7 +230,6 @@ plot_factor(mofa,
   add_boxplot = T
 ) +
   scale_fill_manual(values=category.colors) +
-  scale_color_manual(values=category.colors) +
   theme(
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank()

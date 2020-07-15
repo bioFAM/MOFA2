@@ -12,7 +12,8 @@ create_mofa(data, groups = NULL, ...)
   groups,
   assays = "RNA",
   slot = "data",
-  features = NULL
+  features = NULL,
+  save_metadata = FALSE
 )
 }
 \arguments{
