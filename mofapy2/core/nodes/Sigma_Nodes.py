@@ -35,7 +35,7 @@ class SigmaGrid_Node(Node):
     idx_inducing: Index of inducing points (default None - use the full model)
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None, smooth_all = False,
-                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True):
+                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, opt_freq = 10):
         super().__init__(dim)
         self.mini_batch = None
         self.sample_cov = sample_cov
@@ -55,6 +55,7 @@ class SigmaGrid_Node(Node):
         self.struct_sig = np.zeros(dim[0])                  # store improvments compared to diagonal covariance
         self.idx_inducing = idx_inducing
         self.smooth_all = smooth_all
+        self.opt_freq = opt_freq
         self.warping = warping
         self.reference_group = warping_ref
         self.warping_freq = warping_freq
@@ -76,7 +77,7 @@ class SigmaGrid_Node(Node):
         else:
             idx = None
         self.l_grid = get_l_grid(self.sample_cov, n_grid=self.n_grid, idx = idx)
-        self.zeta_grid = (np.arange(0.5, 20.5, 0.5)/100) ** 2 #TODO general rule? ~ var explained by iid noise on factor
+        self.zeta_grid = (np.array([0.5, 1, 1.5, 2, 5, 10, 15, 20, 30, 50])/100) ** 2#(np.arange(0.5, 50, 0.5)/100) ** 2 #TODO remove this and replace by continuous optimization below ~ var explained by iid noise on factor
         self.n_zeta_grid = len(self.zeta_grid)
 
         # add the diagonal covariance (lengthscale 0) to the grid
@@ -117,7 +118,7 @@ class SigmaGrid_Node(Node):
         if not self.mv_Znode:
             Sigma_struct[i, :, :] *= covar_rescaling_factor(Sigma_struct[i, :, :])
 
-        for j in range(self.n_zeta_grid): #TODO check which one to transpose
+        for j in range(self.n_zeta_grid):
             self.Sigma[i,j,:,:] = (1-self.zeta_grid[j]) * Sigma_struct[i,:,:] + self.zeta_grid[j] * s.eye(self.N)
 
 
@@ -141,7 +142,7 @@ class SigmaGrid_Node(Node):
             # # determinant of inverse
             # self.Simga_inv_logdet[i] = np.linalg.slogdet(self.Simga_inv[i, :, :])[1]
 
-            # compute inverse using Cholesky decomposition (slower) TODO
+            # compute inverse using Cholesky decomposition (slower)
             # L = s.linalg.cholesky(self.Sigma[i,:,:], lower=True)
             # # Li = s.linalg.inv(L)
             # Li = s.linalg.solve_triangular(L, s.eye(self.Sigma.shape[1]), lower = True)
@@ -155,7 +156,7 @@ class SigmaGrid_Node(Node):
             V = np.zeros([self.n_grid, self.Nu, self.Nu])
             D= np.zeros([self.n_grid, self.Nu])
             V[i,:,:], D[i,:] = s.linalg.eig(Sigma_struct[i][self.idx_inducing, :][:, self.idx_inducing])
-            for j in range(self.n_zeta_grid): #TODO check which one to transpose
+            for j in range(self.n_zeta_grid):
                 self.Simga_inv[i,j,:,:] =  1/(1-self.zeta_grid[j]) * gpu_utils.dot(gpu_utils.dot(V[i,:,:],
                                                                                  s.diag(1/(D[i,:] + self.zeta_grid[j]/(1-self.zeta_grid[j])))),
                                                                                    V[i, :, :].transpose())
@@ -195,17 +196,17 @@ class SigmaGrid_Node(Node):
         """ 
         Method to fetch ELBO-optimal covariance matrix per factor
         """
-        cov = np.array([self.Sigma[i,j,:,:] for i,j in zip(self.gridix, self.zeta_gridix)]) #TODO check zip works right only need 1:1
+        cov = np.array([self.Sigma[i,j,:,:] for i,j in zip(self.gridix, self.zeta_gridix)])
         return cov
     
     def getExpectations(self):
         """ 
         Method to fetch ELBO-optimal covariance matrix, its  inverse and the diagonal of the inverse per factor
         """
-        cov = np.array([self.Sigma[i,j,:,:] for i,j in zip(self.gridix, self.zeta_gridix)]) #TODO check zip works right only need 1:1
-        inv = np.array([self.Simga_inv[i,j,:,:] for i,j in zip(self.gridix, self.zeta_gridix)]) #TODO check zip works right only need 1:1
-        inv_diag = np.array([self.Simga_inv_diag[i,j,:] for i,j in zip(self.gridix, self.zeta_gridix)]) #TODO check zip works right only need 1:1
-        cov_inv_logdet = np.array([self.Simga_inv_logdet[i,j] for i,j in zip(self.gridix, self.zeta_gridix)]) #TODO check zip works right only need 1:1
+        cov = np.array([self.Sigma[i,j,:,:] for i,j in zip(self.gridix, self.zeta_gridix)])
+        inv = np.array([self.Simga_inv[i,j,:,:] for i,j in zip(self.gridix, self.zeta_gridix)])
+        inv_diag = np.array([self.Simga_inv_diag[i,j,:] for i,j in zip(self.gridix, self.zeta_gridix)])
+        cov_inv_logdet = np.array([self.Simga_inv_logdet[i,j] for i,j in zip(self.gridix, self.zeta_gridix)])
         return {'cov':cov, 'inv': inv, 'inv_diag':inv_diag, 'E':cov, 'inv_logdet' : cov_inv_logdet}
 
     
@@ -261,26 +262,27 @@ class SigmaGrid_Node(Node):
             # print("Covariates were aligned between groups: shift:", self.shift, ", scaling:", self.scaling)
 
         # use grid search to optimise lengthscale hyperparameters
-        for k in range(K):
-            best_i = -1
-            best_j = -1
-            best_elbo = -np.Inf
-            for i in range(self.n_grid):
-                for j in range(self.n_zeta_grid):
-                    self.gridix[k] = i
-                    self.zeta_gridix[k] = j
-                    elbo = var.calculateELBO_k(k)
-                    if elbo > best_elbo:
-                        best_elbo = elbo
-                        best_i = i
-                        best_j = j
-                    if i == 0: # for i = 0 zeta (j) is irrelevant
-                        elbo0 = elbo
-            self.struct_sig[k] = best_elbo - elbo0
-            self.gridix[k] = best_i
-            self.zeta_gridix[k] = best_j
-        print('Sigma node has been optimised: Lengthscales =', self.l_grid[self.gridix], ', Scales =',  self.zeta_grid[self.zeta_gridix])
-        # print('Sigma node has been optimised: struct_sig =', self.struct_sig)
+        if self.iter % self.opt_freq == 0:
+            for k in range(K):
+                best_i = -1
+                best_j = -1
+                best_elbo = -np.Inf
+                for i in range(self.n_grid):
+                    for j in range(self.n_zeta_grid):
+                        self.gridix[k] = i
+                        self.zeta_gridix[k] = j
+                        elbo = var.calculateELBO_k(k)
+                        if elbo > best_elbo:
+                            best_elbo = elbo
+                            best_i = i
+                            best_j = j
+                        if i == 0: # for i = 0 zeta (j) is irrelevant
+                            elbo0 = elbo
+                self.struct_sig[k] = best_elbo - elbo0
+                self.gridix[k] = best_i
+                self.zeta_gridix[k] = best_j
+            print('Sigma node has been optimised: Lengthscales =', self.l_grid[self.gridix], ', Scales =',  1- self.zeta_grid[self.zeta_gridix])
+            # print('Sigma node has been optimised: struct_sig =', self.struct_sig)
 
 
     def align_sample_cov_dtw(self, Z):
