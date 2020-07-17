@@ -238,7 +238,7 @@ class SigmaGrid_Node(Node):
         Method to remove factors 
         """
         self.gridix = s.delete(self.gridix, axis=0, obj=idx)
-        self.zeta_grid = s.delete(self.zeta_grid, axis=0, obj=idx)
+        self.zeta_gridix = s.delete(self.zeta_gridix, axis=0, obj=idx)
         self.struct_sig = s.delete(self.struct_sig, axis=0, obj=idx)
         self.updateDim(0, self.dim[0] - len(idx))
 
@@ -254,6 +254,7 @@ class SigmaGrid_Node(Node):
             var = self.markov_blanket['Z']
         K = var.dim[1]
         assert K == len(self.gridix), 'problem in dropping factor'
+        assert K == len(self.zeta_gridix), 'problem in dropping factor'
 
         # perform DTW to align groups
         if self.warping and self.n_groups > 1 and self.iter % self.warping_freq == 0:
