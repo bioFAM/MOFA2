@@ -57,6 +57,7 @@ class SigmaGrid_Node(Node):
         self.smooth_all = smooth_all
         self.opt_freq = opt_freq
         self.warping = warping
+        assert warping_ref < self.n_groups, "Reference group not correctly specified, exceeds the number of groups."
         self.reference_group = warping_ref
         self.warping_freq = warping_freq
         self.warping_open_begin = warping_open_begin
