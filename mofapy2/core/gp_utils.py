@@ -30,50 +30,47 @@ def covar_to_corr(C):
     Ccor = np.diag(1/np.sqrt(Cdiag)) @ C @ np.diag(1/np.sqrt(Cdiag))
     return Ccor
 
-def SE(X, l):
+def SE(X, l, zeta = 1e-3):
     """
     squared exponential covariance function on input X with lengthscale l
     """
     if l == 0:
         return np.eye(X.shape[0])
-    noise_var = 1e-3
     tmp = SS.distance.pdist(X,'euclidean')**2.
     tmp = SS.distance.squareform(tmp)
-    cov = (1-noise_var) * np.exp(-tmp/ (2 * l** 2.))
-    cov += noise_var * np.eye(X.shape[0]) # avoid singularities
+    cov = (1-zeta) * np.exp(-tmp/ (2 * l** 2.))
+    cov += zeta * np.eye(X.shape[0])
 
     return cov
 
-def Cauchy(X, l):
+def Cauchy(X, l, zeta =  1e-3):
     """
     squared exponential covariance function on input X with lengthscale l
     """
     if l == 0:
         return np.eye(X.shape[0])
-    noise_var = 1e-3
     tmp = SS.distance.pdist(X,'euclidean')**2.
     tmp = SS.distance.squareform(tmp)
-    cov = (1-noise_var) * 1/(1 + tmp/ (l** 2.))
-    cov += noise_var * np.eye(X.shape[0]) # avoid singularities
+    cov = (1-zeta) * 1/(1 + tmp/ (l** 2.))
+    cov += zeta * np.eye(X.shape[0])
 
     return cov
 
 
-def PE(X, l):
+def PE(X, l, zeta =  1e-3):
     """
     periodic covariance function on input X with lengthscale l
     """
     if l == 0:
         return np.eye(X.shape[0])
-    noise_var = 1e-3
     tmp = SS.distance.pdist(X,'euclidean')
     tmp = SS.distance.squareform(tmp)
-    cov = (1-noise_var) * np.cos( np.pi/l  * tmp)
-    cov += noise_var * np.eye(X.shape[0]) # avoid singularities
+    cov = (1-zeta) * np.cos( np.pi/l  * tmp)
+    cov += zeta * np.eye(X.shape[0]) # avoid singularities
 
     return cov
 
-def BlockSE(X, clust, l):
+def BlockSE(X, clust, l, zeta = 1e-3):
     """
     covariance function yielding block matrix with squared exponential kernel per group
     """
@@ -84,7 +81,7 @@ def BlockSE(X, clust, l):
     for clust_ix in np.unique(clust):
         cells_ix = np.where(clust == clust_ix)[0]
         X_tmp = X[cells_ix,:]
-        se_tmp = SE(X_tmp, l)
+        se_tmp = SE(X_tmp, l, zeta)
         cov[np.ix_(cells_ix, cells_ix)] = se_tmp
 
     return cov
@@ -105,11 +102,13 @@ def BlockInv(mat, clust):
     return inv_mat
 
 
-def get_l_limits(X):
+def get_l_limits(X, idx = None):
     """
     Get boundaries for the grid of lengthscales to optimize over (as implemented in spatialDE) 
     Boundaries of the grid are the shortest observed distance, divided by 2, and the longest observed distance multiplied by 2
     """
+    if not idx is None: # calculate based on distances in the reference group
+        X = X[idx, :]
     tmp = SS.distance.pdist(X,'euclidean')**2.
     tmp = SS.distance.squareform(tmp)
     tmp_vals = np.unique(tmp.flatten())
@@ -120,9 +119,9 @@ def get_l_limits(X):
 
     return l_min, l_max
 
-def get_l_grid(X, n_grid = 5):
+def get_l_grid(X, n_grid = 5, idx = None):
     """
     Function to get points in a logarithmic grid for lengthscales
     """
-    l_min, l_max = get_l_limits(X)
+    l_min, l_max = get_l_limits(X, idx)
     return np.logspace(np.log10(l_min), np.log10(l_max), n_grid)
