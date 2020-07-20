@@ -306,10 +306,14 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     
     # Option 3: by a feature present in the training data    
   } else if ((length(color_by) == 1) && is.character(color_by) && (color_by[1] %in% unlist(features_names(object)))) {
-    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
-    features <- lapply(data, rownames)
-    viewidx <- which(sapply(features, function(x) color_by %in% x))
-    color_by <- data[[viewidx]][color_by,]
+    viewidx <- which(sapply(features_names(object), function(x) color_by %in% x))
+    foo <- list(color_by); names(foo) <- names(viewidx)
+    color_by <- lapply(get_data(object, features = foo), function(l) Reduce(cbind, l))[[1]][1,]
+    
+    # data <- lapply(get_data(object), function(l) Reduce(cbind, l))
+    # features <- lapply(data, rownames)
+    # viewidx <- which(sapply(features, function(x) color_by %in% x))
+    # color_by <- data[[viewidx]][color_by,]
     
     
     # Option 4: by a factor value in object@expectations$Z
@@ -367,10 +371,15 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     
     # Option 3: by a feature present in the training data    
   } else if ((length(shape_by) == 1) && is.character(shape_by) && (shape_by[1] %in% unlist(features_names(object)))) {
-    data <- lapply(get_data(object), function(l) Reduce(cbind, l))
-    features <- lapply(data, rownames)
-    viewidx <- which(sapply(features, function(x) shape_by %in% x))
-    shape_by <- data[[viewidx]][shape_by,]
+    # data <- lapply(get_data(object), function(l) Reduce(cbind, l))
+    # features <- lapply(data, rownames)
+    # viewidx <- which(sapply(features, function(x) shape_by %in% x))
+    # shape_by <- data[[viewidx]][shape_by,]
+    
+    viewidx <- which(sapply(features_names(object), function(x) shape_by %in% x))
+    foo <- list(shape_by); names(foo) <- names(viewidx)
+    shape_by <- lapply(get_data(object, features = foo), function(l) Reduce(cbind, l))[[1]][1,]
+    
     
     # Option 4: input is a data.frame with columns (sample,color)
   } else if (is(shape_by,"data.frame")) {
