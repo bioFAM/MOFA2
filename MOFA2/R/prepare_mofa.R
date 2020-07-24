@@ -208,7 +208,7 @@ get_default_training_options <- function(object) {
   # Get default train options
   training_options <- list(
     maxiter = 1000,                # (numeric) Maximum number of iterations
-    convergence_mode = 'medium',   # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
+    convergence_mode = 'fast',     # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
     drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) verbosity
     startELBO = 1,                 # First iteration to compute the ELBO
