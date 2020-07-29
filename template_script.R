@@ -87,4 +87,4 @@ MOFAobject <- prepare_mofa(MOFAobject,
 #####################
 
 outfile <- paste0(getwd(),"/model.hdf5")
-MOFAmodel <- run_mofa(MOFAobject, outfile)
+MOFAobject <- run_mofa(MOFAobject, outfile)

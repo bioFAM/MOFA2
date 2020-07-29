@@ -244,6 +244,16 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     object@cache[["variance_explained"]] <- r2_list
   }
   
+  # Hack to fix the problems where variance explained values range from 0 to 1 (%)
+  if (max(sapply(object@cache$variance_explained$r2_total,max))<1) {
+    for (m in 1:length(view_names)) {
+      for (g in 1:length(group_names)) {
+        object@cache$variance_explained$r2_total[[g]][[m]] <- 100 * object@cache$variance_explained$r2_total[[g]][[m]]
+        object@cache$variance_explained$r2_per_factor[[g]][,m] <- 100 * object@cache$variance_explained$r2_per_factor[[g]][,m]
+      }
+    }
+  }
+  
   ##############################
   ## Specify dimensionalities ##
   ##############################
