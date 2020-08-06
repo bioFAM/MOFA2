@@ -95,7 +95,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
 
 #' @title Summarise factor values using external groups
 #' @name summarise_factors
-#' @description Function to summarise factor scores using a discrete grouping of samples.
+#' @description Function to summarise factor values using a discrete grouping of samples.
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param df a data.frame with the columns "sample" and "level", where level is a factor with discrete group assigments for each sample.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.
