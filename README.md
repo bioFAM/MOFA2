@@ -110,20 +110,19 @@ MOFA+ remains 100% applicable to bulk data.
 Yes, pretty much everything: handling of missing data, non-gaussian likelihoods and sparsity in the weights.
 
 **(1.3) Do I need to provide multiple groups to use MOFA+?**  
-No. Unless provided, MOFA+ assumes that you do not have multi-group structure in your data. In this case the model simplifies to MOFA v1 (but significantly faster).
+No. Unless provided, MOFA+ assumes that you do not have multi-group structure in your data.
 
 
 ### (2) FAQ on the multi-group functionality
 
 **(2.1) How does the multi-group inference work in MOFA+?**  
-The aim of the multi-group framework is not to capture differential changes in *mean* levels between the groups (as for example when doing differential RNA expression). The goal is to compare the sources of variability that drive each group. If your aim is to find a factor that "separates" the groups, you DO NOT want to use the multi-group framework. In this setting, the features are centered per group before fitting the model.
+The aim of the multi-group framework is not to capture differential changes in *mean* levels between the groups (as for example when doing differential RNA expression). The goal is to compare the sources of variability that drive each group. If your aim is to find a factor that "separates" the groups, you _DO NOT_ want to use the multi-group framework. In this setting, the features are centered per group before fitting the model.
 
 **(2.2) How do I define groups?**  
 The selection of groups is hypothesis-driven, and typically motivated by the experimental design. There is no "right" or "wrong" definition of groups, but some definitions will be more useful than others. However, the user always needs to keep in mind that the aim of the multi-group framework is not to capture differential changes between the groups. The aim is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group. To achieve this, the group effect is regressed out from the data before fitting the model.
 
 **(2.3) How do I assess the quality/robustness of groups?**  
 A quick approach to assess the validity of groups is to inspect the resulting variance explained plot. If the groups are too granular, the model will not recover significant amounts of variation. If the groups are not "interesting", this can result in a lack of "structure" in the variance explained plot (i.e. all factors being shared across all groups). 
-<!-- See the following [vignette](XXX) for more details.   -->
 More computationally intensive approaches can be used to assess the robustness of groups, including cross-validation and downsampling or bootstrapping samples within groups.
 
 ### (3) FAQ on the data processing
@@ -135,7 +134,7 @@ Proper normalisation is critical for the model to work. First, one needs to remo
 It is strongly recommended that you filter highly variable features (HVGs) per assay. When doing multi-group inference, you have to regress out the group effect before selecting HVGs.
 
 **(3.3) How many samples do I need?**  
-Factor Analysis models are only useful with large sample sizes, at least more than ~25.
+Factor Analysis models are only useful with large sample sizes, at least more than 15.
 
 **(3.4) Should I remove undesired sources of variability (i.e. batch effects) before fitting the model?**  
 Yes. If you have clear technical factors, we strongly encourage to regress it out a priori using a simple linear model. The reason for this is that the model will "focus" on the huge variability driven by the technical factors, and smaller sources of variability could be missed. In `prepare_mofa` there is an argument called `regress_covariates` that you can use.
@@ -211,19 +210,22 @@ This is normal and it happens because factor analysis models are rotation invari
 Importantly, the use of non-gaussian likelihoods require statistical approximations and are not as accurate as the gaussian likelihood. If your data can be safely transformed to match the gaussian likelihood assumptions, this is ALWAYS recommended. For example RNA-seq data is expected to be normalised and modelled with a gaussian distribution, do not input the counts directly.
 
 **(5.4) Do I need to do model selection?**  
-As it occurs in most complex Bayesian models, the solution obtained depends on the parameter initialisation. In MOFA v1 we used random initialisation, which leads to (slightly) different solutions depending on the starting point. In MOFA v2 we initialise the factors using Principal Component Analysis on the concatenated data set, and the weights are initialised to zero. If using standard variational inference (not stochastic) this removes the randomness in the training algorithms, which guarantees a consistent solution.
+As it occurs in most complex Bayesian models, the solution obtained depends on the parameter initialisation. In MOFA v1 we did random parameter initialisation, which led to (slightly) different solutions depending on the starting point. In MOFA v2 we initialise the factors using Principal Component Analysis on the concatenated data set, and the weights are initialised to zero. If using standard variational inference (not stochastic) this removes the randomness in the training algorithms.
 
 
 ### (6) FAQ on the downstream analysis
 
-**(6.1) How can I do Gene Set Enrichment Analysis?**  
+**(6.1) How do I interpret the factors?**  
+The MOFA factors capture the global sources of variability in the data. Mathematically, each factor ordinates cells along a one-dimensional axis centered at zero. The value per se is not interpretable, only the relative positioning of samples is important. Samples with different signs manifest opposite "effects" along the inferred axis of variation, with higher absolute value indicating a stronger effect. Note that the interpretation of factors is analogous to the interpretation of the principal components in PCA.
+
+**(6.2) How do I interpret the weights?**  
+The weights provide a score for how strong each feature relates to each factor, hence allowing a biological interpretation of the latent factors. Features with no as- sociation with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
+
+**(6.3) How can I do Gene Set Enrichment Analysis?**  
 This is explained in the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html)
 
-**(6.2) How can I assess the robustness of factors?** 
+**(6.4) How can I assess the robustness of factors?** 
 A procedure that can be applied to evaluate the robustness of factors is to downsample the number of samples and/or the number of features and inspect if the factors are consistently found. However, keep in mind that there could be cases where the full data set is required to detect small yet important sources of variation. Hence, lack of robustness under downsampling does not necessarily imply that a factor is not biologically meaningful.
-
-<!-- **(6.3) Does MOFA show horshoe effects?**  
-One of our reviewers asked whether MOFA can display horseshoes or arch-shaped effects (see [this link](https://www.huber.embl.de/users/whuber/pub/horseshoe.html)). These patterns occure in linear dimensionality reduction methods, including MOFA, when a specific type of non-linear pattern dominates the data. Although this is not frequent, users of MOFA need to be aware of such artifacts and not naively interpret the results. -->
 
 ## Citation
 

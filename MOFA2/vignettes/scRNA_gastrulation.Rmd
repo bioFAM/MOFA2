@@ -126,7 +126,7 @@ load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation
 
 ```{r message=FALSE, echo=FALSE}
 MOFAobject <- model; rm(model)
-MOFAobject@samples_metadata <- as.data.frame(MOFAobject@samples_metadata)
+samples_metadata(MOFAobject) <- as.data.frame(MOFAobject@samples_metadata)
 views_names(MOFAobject) <- c("RNA")
 ```
 
