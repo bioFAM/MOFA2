@@ -33,7 +33,7 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
   if (paste(features, collapse="") =="all") { 
     features <- features_names(object)[[view]]
   } else if (is.numeric(features)) {
-  	features <- features_names(object)[[view]][features]
+    features <- features_names(object)[[view]][features]
   } else {
     stopifnot(all(features %in% features_names(object)[[view]]))  
   }
