@@ -53,7 +53,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     sample_names  <- h5read(file, "samples")
     view_names <- names(feature_names)
     group_names <- names(sample_names)
-    h5ls.out <- h5ls.out[grep("variance_explained", h5ls.out$name, invert = T),]
+    h5ls.out <- h5ls.out[grep("variance_explained", h5ls.out$name, invert = TRUE),]
   }
 
   # Load training data (as nested list of matrices)

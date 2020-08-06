@@ -46,7 +46,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   W <- get_weights(object, views=views, factors=factors)
   Z <- get_factors(object, groups=groups, factors=factors)
   # Y <- lapply(get_expectations(object,"Y")[views], function(view) view[groups])
-  Y <- lapply(get_data(object, add_intercept = F)[views], function(view) view[groups])
+  Y <- lapply(get_data(object, add_intercept = FALSE)[views], function(view) view[groups])
   Y <- lapply(Y, function(x) lapply(x,t))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
@@ -355,7 +355,7 @@ plot_variance_explained_per_feature <- function(object, view, features = 10,
   Z <- get_factors(object, groups = groups, factors = factors)
   # 3. Data: Choose a view, one or multiple groups, and subset chosen features
   # Y <- lapply(get_expectations(object, "Y")[view], function(Y_m) lapply(Y_m[groups], t))
-  Y <- lapply(get_data(object, add_intercept = F)[view], function(Y_m) lapply(Y_m[groups], t))
+  Y <- lapply(get_data(object, add_intercept = FALSE)[view], function(Y_m) lapply(Y_m[groups], t))
   Y <- lapply(Y, function(Y_m) lapply(Y_m, function(Y_mg) Y_mg[,colnames(Y_mg) %in% features,drop=FALSE]))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)

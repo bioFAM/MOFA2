@@ -73,7 +73,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Remove features with no variance
   # if (statistical.test %in% c("cor.adj.parametric")) {
-  idx <- apply(data,2, function(x) var(x,na.rm=T))==0
+  idx <- apply(data,2, function(x) var(x,na.rm=TRUE))==0
   if (sum(idx)>=1) {
     warning(sprintf("%d fetures were removed because they had no variance in the data.\n",sum(idx)))
     data <- data[,!idx]
@@ -320,7 +320,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
   }
   
   # Generate heatmap
-  pheatmap(p.values, color = col, cluster_cols = F, show_rownames = F, ...)
+  pheatmap(p.values, color = col, cluster_cols = FALSE, show_rownames = FALSE, ...)
 }
 
 
@@ -357,19 +357,19 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
   # Fetch and prepare data  
   
   # foo
-  foo <- reshape2::melt(enrichment.results$feature.statistics[,factor], na.rm=T, value.name="feature.statistic")
+  foo <- reshape2::melt(enrichment.results$feature.statistics[,factor], na.rm=TRUE, value.name="feature.statistic")
   foo$feature <- rownames(foo)
   
   # bar
   feature.sets <- enrichment.results$feature.sets
   feature.sets[feature.sets==0] <- NA
-  bar <- reshape2::melt(feature.sets, na.rm=T)[,c(1,2)]
+  bar <- reshape2::melt(feature.sets, na.rm=TRUE)[,c(1,2)]
   colnames(bar) <- c("pathway","feature")
   bar$pathway <- as.character(bar$pathway)
   bar$feature <- as.character(bar$feature)
   
   # baz
-  baz <- reshape2::melt(enrichment.results$pval.adj[,factor], value.name="pvalue", na.rm=T)
+  baz <- reshape2::melt(enrichment.results$pval.adj[,factor], value.name="pvalue", na.rm=TRUE)
   baz$pathway <- rownames(baz)
   
   # Filter out pathways by p-values
@@ -396,7 +396,7 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
   pathways <- unique(tmp_filt$pathway)
   
   # Add Ngenes and p-values to the pathway name
-  df <- data.frame(pathway=pathways, nfeatures=rowSums(feature.sets,na.rm=T)[pathways])
+  df <- data.frame(pathway=pathways, nfeatures=rowSums(feature.sets,na.rm=TRUE)[pathways])
   df <- merge(df, baz, by="pathway")
   df$pathway_long_name <- sprintf("%s\n (Ngenes = %d) \n (p-val = %0.2g)",df$pathway, df$nfeatures, df$pvalue)
   tmp <- merge(tmp, df[,c("pathway","pathway_long_name")], by="pathway")
@@ -548,9 +548,9 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
       # get the feature statistics for this PC
       pc.feature.stats = feature.statistics[,j]
       # compute the mean difference of the feature-level statistics
-      mean.diff = mean(pc.feature.stats[indexes.for.feature.set],na.rm=T) - mean(pc.feature.stats[not.set.indexes], na.rm=T)
+      mean.diff = mean(pc.feature.stats[indexes.for.feature.set],na.rm=TRUE) - mean(pc.feature.stats[not.set.indexes], na.rm=TRUE)
       # compute the pooled standard deviation
-      pooled.sd = sqrt(((m1-1)*var(pc.feature.stats[indexes.for.feature.set], na.rm=T) + (m2-1)*var(pc.feature.stats[not.set.indexes], na.rm=T))/(m1+m2-2))
+      pooled.sd = sqrt(((m1-1)*var(pc.feature.stats[indexes.for.feature.set], na.rm=TRUE) + (m2-1)*var(pc.feature.stats[not.set.indexes], na.rm=TRUE))/(m1+m2-2))
       # compute the t-statistic
       if (isTRUE(cor.adjustment)) {
         t.stat = mean.diff/(pooled.sd*sqrt(vif/m1 + 1/m2))
