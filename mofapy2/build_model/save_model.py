@@ -18,7 +18,9 @@ class saveModel():
         sort_factors=True, compression_level=9):
 
         # Check that the model is trained
-        assert model.trained, "Model is not trained"        
+        # NOTE: it might be not trained if saving when training is interrupted
+        if not model.trained:
+            print("Note: the model to be saved is not trained.")
         self.model = model
 
         # Initialise hdf5 file

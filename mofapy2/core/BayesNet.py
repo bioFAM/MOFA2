@@ -207,70 +207,79 @@ class BayesNet(object):
         number_factors[0] = self.dim['K']
         iter_time[0] = 0.
 
-        for i in range(1,self.options['maxiter']):
-            t = time();
+        try:
+            for i in range(1,self.options['maxiter']):
+                t = time();
 
-            # Remove inactive factors
-            if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
-                if self.options['drop']["min_r2"] is not None:
-                    self.removeInactiveFactors(**self.options['drop'])
-                number_factors[i] = self.dim["K"]
+                # Remove inactive factors
+                if (i>=self.options["start_drop"]) and (i%self.options['freq_drop']) == 0:
+                    if self.options['drop']["min_r2"] is not None:
+                        self.removeInactiveFactors(**self.options['drop'])
+                    number_factors[i] = self.dim["K"]
 
-            # Update node by node, with E and M step merged
-            t_updates = time()
-            for node in self.options['schedule']:
-                if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
-                    continue
-                self.nodes[node].update()
-            t_updates = time() - t_updates
+                # Update node by node, with E and M step merged
+                t_updates = time()
+                for node in self.options['schedule']:
+                    if (node=="ThetaW" or node=="ThetaZ") and i<self.options['start_sparsity']:
+                        continue
+                    self.nodes[node].update()
+                t_updates = time() - t_updates
 
-            # Calculate Evidence Lower Bound
-            if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
-                t_elbo = time()
-                elbo.iloc[i] = self.calculateELBO()
-                t_elbo = time() - t_elbo
+                # Calculate Evidence Lower Bound
+                if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
+                    t_elbo = time()
+                    elbo.iloc[i] = self.calculateELBO()
+                    t_elbo = time() - t_elbo
 
-                # Check convergence using the ELBO
-                if i==self.options["start_elbo"]: 
-                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[0]["total"]
+                    # Check convergence using the ELBO
+                    if i==self.options["start_elbo"]: 
+                        delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[0]["total"]
+                    else:
+                        delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['freqELBO']]["total"]
+
+                    # Print ELBO monitoring
+                    if not self.options['quiet']:
+                        print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.8f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
+                        if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
+
+                    # Print ELBO decomposed by node and variance explained
+                    if self.options['verbose']:
+                        print("- ELBO decomposition:  " + "".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
+                        print('- Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
+
+                    # Assess convergence
+                    if i>self.options["start_elbo"] and not self.options['forceiter']:
+                        convergence_token, converged = self.assess_convergence(delta_elbo, elbo.iloc[0]["total"], convergence_token)
+                        if converged:
+                            number_factors = number_factors[:i]
+                            elbo = elbo[:i]
+                            iter_time = iter_time[:i]
+                            print ("\nConverged!\n"); break
+
+                # Do not calculate lower bound
                 else:
-                    delta_elbo = elbo.iloc[i]["total"]-elbo.iloc[i-self.options['freqELBO']]["total"]
+                    if not self.options['quiet']: print("Iteration %d: time=%.2f, Factors=%d" % (i,time()-t,self.dim["K"]))
 
-                # Print ELBO monitoring
-                if not self.options['quiet']:
-                    print("Iteration %d: time=%.2f, ELBO=%.2f, deltaELBO=%.3f (%.8f%%), Factors=%d" % (i, time()-t, elbo.iloc[i]["total"], delta_elbo, 100*abs(delta_elbo/elbo.iloc[0]["total"]), (self.dim['K'])))
-                    if delta_elbo<0 and not self.options['stochastic']: print("Warning, lower bound is decreasing...\a")
-
-                # Print ELBO decomposed by node and variance explained
+                # Print other statistics
                 if self.options['verbose']:
-                    print("- ELBO decomposition:  " + "".join([ "%s=%.2f  " % (k,v) for k,v in elbo.iloc[i].drop("total").iteritems() ]))
-                    print('- Time spent in ELBO computation: %.1f%%' % (100*t_elbo/(t_updates+t_elbo)) )
+                    self.print_verbose_message()
 
-                # Assess convergence
-                if i>self.options["start_elbo"] and not self.options['forceiter']:
-                    convergence_token, converged = self.assess_convergence(delta_elbo, elbo.iloc[0]["total"], convergence_token)
-                    if converged:
-                        number_factors = number_factors[:i]
-                        elbo = elbo[:i]
-                        iter_time = iter_time[:i]
-                        print ("\nConverged!\n"); break
+                iter_time[i] = time()-t
+                
+                # Flush (we need this to print when running on the cluster)
+                sys.stdout.flush()
 
-            # Do not calculate lower bound
-            else:
-                if not self.options['quiet']: print("Iteration %d: time=%.2f, Factors=%d" % (i,time()-t,self.dim["K"]))
-
-            # Print other statistics
-            if self.options['verbose']:
-                self.print_verbose_message()
-
-            iter_time[i] = time()-t
             
-            # Flush (we need this to print when running on the cluster)
-            sys.stdout.flush()
+            self.trained = True
 
-        # Finish by collecting the training statistics
-        self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
-        self.trained = True
+        except KeyboardInterrupt:
+            self.trained = False
+
+        finally:
+            # Finish by collecting the training statistics
+            # If training is interrupted, remember current training stats
+            self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total", 1) }
+
 
     def print_verbose_message(self):
         """Method to print training statistics if Verbose is TRUE"""
