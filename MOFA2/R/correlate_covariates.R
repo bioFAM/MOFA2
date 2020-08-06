@@ -104,6 +104,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
 #' @param return_data logical indicating whether to return the fa instead of plotting
 #' @import ggplot2
 #' @importFrom dplyr group_by summarise mutate
+#' @importFrom stats median
 #' @importFrom magrittr %>%
 #' @export
 summarise_factors <- function(object, df, factors = "all", groups = "all", abs = FALSE, return_data = FALSE) {
