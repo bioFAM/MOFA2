@@ -848,7 +848,7 @@ class entry_point(object):
 
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
-                          GP_factors = False, start_opt = 20, n_grid = 50, mv_Znode = True, smooth_all = False, warping = False,
+                          GP_factors = False, start_opt = 20, n_grid = 10, mv_Znode = True, smooth_all = False, warping = False,
                           warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True):
         """ Set model options """
 
