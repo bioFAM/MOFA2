@@ -148,7 +148,6 @@ class buildBiofam(buildModel):
                                       start_opt, n_grid,
                                       mv_Znode = self.model_opts['mv_Znode'],
                                       idx_inducing = self.model_opts['idx_inducing'],
-                                      smooth_all = self.model_opts['smooth_all'],
                                       warping=self.model_opts['warping'],
                                       warping_freq = self.model_opts['warping_freq'],
                                       warping_ref = self.model_opts['warping_ref'])
@@ -157,7 +156,6 @@ class buildBiofam(buildModel):
                                       self.data_opts['samples_groups'],
                                       start_opt, n_grid,
                                       mv_Znode=self.model_opts['mv_Znode'],
-                                      smooth_all = self.model_opts['smooth_all'],
                                       warping = self.model_opts['warping'],
                                       warping_freq = self.model_opts['warping_freq'],
                                       warping_ref = self.model_opts['warping_ref'],

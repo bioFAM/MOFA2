@@ -173,6 +173,8 @@ class BayesNet(object):
             if 'Sigma' in self.nodes.keys():
                 self.lscales = self.lscales.drop(columns = drop)
                 self.lscales.columns = range(0, len(self.lscales.columns))
+                self.scales = self.scales.drop(columns = drop)
+                self.scales.columns = range(0, len(self.scales.columns))
                 self.structsig = self.structsig.drop(columns = drop)
                 self.structsig.columns = range(0, len(self.structsig.columns))
         if self.dim['K']==0:
@@ -213,6 +215,7 @@ class BayesNet(object):
         # keep track of factor-wise training statistics (attribute as needs to be accounted for in factor dropping)
         if 'Sigma' in self.nodes.keys():
             self.lscales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
+            self.scales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
             self.structsig = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
@@ -244,6 +247,7 @@ class BayesNet(object):
             if 'Sigma' in self.nodes.keys():
                 tmp = self.nodes['Sigma'].getParameters()
                 self.lscales.iloc[i] = tmp['l']
+                self.scales.iloc[i] = tmp['scale']
                 self.structsig.iloc[i] = tmp['sig']
 
 
@@ -278,6 +282,7 @@ class BayesNet(object):
                         iter_time = iter_time[:i]
                         if 'Sigma' in self.nodes.keys():
                             self.lscales = self.lscales[:i]
+                            self.scales = self.scales[:i]
                             self.structsig = self.structsig[:i]
                         print ("\nConverged!\n"); break
 
@@ -298,6 +303,7 @@ class BayesNet(object):
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         if 'Sigma' in self.nodes.keys():
             self.train_stats['length_scales'] = self.lscales
+            self.train_stats['scales'] = self.scales
             self.train_stats['structural_sig'] = self.structsig
         self.trained = True
 
@@ -472,6 +478,7 @@ class StochasticBayesNet(BayesNet):
         iter_time = nans((self.options['maxiter']+1))
         if 'Sigma' in self.nodes.keys():
             self.lscales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
+            self.scales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
             self.structsig = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
@@ -520,6 +527,7 @@ class StochasticBayesNet(BayesNet):
             if 'Sigma' in self.nodes.keys():
                 tmp = self.nodes['Sigma'].getParameters()
                 self.lscales.iloc[i] = tmp['l']
+                self.scales.iloc[i] = tmp['scale']
                 self.structsig.iloc[i] = tmp['sig']
 
             # Calculate Evidence Lower Bound
@@ -577,5 +585,6 @@ class StochasticBayesNet(BayesNet):
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
         if 'Sigma' in self.nodes.keys():
             self.train_stats['length_scales'] = self.lscales
+            self.train_stats['scales'] = self.scales
             self.train_stats['structural_sig'] = self.structsig
         self.trained = True

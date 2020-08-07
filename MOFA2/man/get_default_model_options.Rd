@@ -29,7 +29,6 @@ The model options are the following: \cr
  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
  \item{\strong{start_opt}:}{ at which iteration to start optimizing hte lengthscales of the GP prior}
  \item{\strong{n_grid}:}{ number of grid point to use for optimizing the lengthscale of the GP prior}
- \item{\strong{smooth_all}:}{ logical indicating whether to use only smooth factors}
  }
 }
 \examples{

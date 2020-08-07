@@ -268,9 +268,9 @@ class initModel(object):
         )
 
     def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10, mv_Znode = False, idx_inducing = None,
-                  smooth_all = False, warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True):
+                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True):
         dim = (self.K,)
-        self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, mv_Znode, idx_inducing, smooth_all, warping, warping_freq, warping_ref,
+        self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, mv_Znode, idx_inducing, warping, warping_freq, warping_ref,
                                     warping_open_begin, warping_open_end)
         self.nodes["Sigma"] = self.Sigma
 

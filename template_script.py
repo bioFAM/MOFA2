@@ -106,7 +106,6 @@ ent.set_data_df(data)
 # - start_opt: at which iteration to start optimizing the lengthscales of the GP priors
 # - n_grid: how many grid points for lengthscale optimization
 # - mv_Znode: use a multivariate Z node? (default True)
-# - smooth_all: only use smooth factors (default False)
 
 # Simple (using default values)
 ent.set_model_options()

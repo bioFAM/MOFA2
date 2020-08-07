@@ -35,7 +35,7 @@ class SigmaGrid_Node(Node):
     mv_Znode: whether a multivariate variational is modelled for the node with prior Sigma covariance
     idx_inducing: Index of inducing points (default None - use the full model)
     """
-    def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None, smooth_all = False,
+    def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None,
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, opt_freq = 10):
         super().__init__(dim)
         self.mini_batch = None
@@ -56,7 +56,6 @@ class SigmaGrid_Node(Node):
         # self.scaling = np.ones(self.n_groups)                 # group specific scaling of covariates
         self.struct_sig = np.zeros(self.n_factors)                  # store improvments compared to diagonal covariance
         self.idx_inducing = idx_inducing
-        self.smooth_all = smooth_all
         self.opt_freq = opt_freq
         self.warping = warping
         assert warping_ref < self.n_groups, "Reference group not correctly specified, exceeds the number of groups."
@@ -82,9 +81,8 @@ class SigmaGrid_Node(Node):
         self.l_grid = get_l_grid(self.sample_cov, n_grid=self.n_grid, idx = idx)
 
         # add the diagonal covariance (lengthscale 0) to the grid
-        if not self.smooth_all:
-	        self.l_grid = np.insert(self.l_grid, 0, 0)
-	        self.n_grid += 1
+        self.l_grid = np.insert(self.l_grid, 0, 0)
+        self.n_grid += 1
 
         # initialise kernel matrix
         self.K = np.zeros([self.n_grid, self.N, self.N])        # kernel matrix on lengthscale grid
@@ -226,8 +224,8 @@ class SigmaGrid_Node(Node):
         Method to fetch ELBO-optimal length-scales, improvements compared to diagonal covariance prior and structural positions
         """
         ls = self.get_ls()
-        zetas = self.get_zeta()
-        return {'l':ls, 'zeta': zetas, 'sig': self.struct_sig, 'sample_cov':self.sample_cov_transformed}
+        scale = 1 - self.get_zeta()
+        return {'l':ls, 'scale': scale, 'sig': self.struct_sig, 'sample_cov':self.sample_cov_transformed}
 
     def removeFactors(self, idx, axis=1):
         """

@@ -456,5 +456,6 @@ class saveModel():
         # stats_grp['elbo_terms'].attrs['colnames'] = [a.encode('utf8') for a in stats["elbo_terms"].columns.values]
         if self.model_opts['GP_factors']:
             stats_grp.create_dataset("length_scales", data=stats["length_scales"][self.order_factors])
+            stats_grp.create_dataset("scales", data=stats["scales"][self.order_factors])
             stats_grp.create_dataset("structural_sig", data=stats["structural_sig"][self.order_factors])
 

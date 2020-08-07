@@ -110,7 +110,6 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     mv_Znode       = object@model_options$mv_Znode,
     n_grid            = object@model_options$n_grid,
     start_opt         = object@model_options$start_opt,
-    smooth_all         = object@model_options$smooth_all,
     warping  = object@model_options$warping,
     warping_freq  = object@model_options$warping_freq,
     warping_ref  = warping_ref,

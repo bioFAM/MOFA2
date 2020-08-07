@@ -848,7 +848,7 @@ class entry_point(object):
 
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
-                          GP_factors = False, start_opt = 20, n_grid = 10, mv_Znode = True, smooth_all = False, warping = False,
+                          GP_factors = False, start_opt = 20, n_grid = 10, mv_Znode = True, warping = False,
                           warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True):
         """ Set model options """
 
@@ -907,11 +907,6 @@ class entry_point(object):
         if not GP_factors:
             mv_Znode = False
         self.model_opts['mv_Znode'] = mv_Znode
-        # focus on smooth factors x
-        self.model_opts['smooth_all'] = bool(smooth_all)
-        # if self.model_opts['smooth_all']:
-        #     "Option 'smooth_all' is not supported currently, setting to False"
-        #     self.model_opts['smooth_all'] = False
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
@@ -932,12 +927,6 @@ class entry_point(object):
             if self.dimensionalities["C"] > 1:
                 self.model_opts['warping'] = False
                 print("Warping only implemented for one dimensional covariates. Setting to False.")
-
-        if self.model_opts['warping']:
-            if not self.model_opts['smooth_all']:
-                self.model_opts['smooth_all'] = True
-                print("For warping we recommend using smooth_all, setting this option to False...")
-
 
         # Define likelihoods
         self.model_opts['likelihoods'] = self.likelihoods

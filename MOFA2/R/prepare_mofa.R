@@ -294,8 +294,6 @@ get_default_data_options <- function(object) {
 #'  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
 #'  \item{\strong{start_opt}:}{ at which iteration to start optimizing hte lengthscales of the GP prior}
 #'  \item{\strong{n_grid}:}{ number of grid point to use for optimizing the lengthscale of the GP prior}
-#'  \item{\strong{smooth_all}:}{ logical indicating whether to use only smooth factors}
-
 #'  }
 #' @return Returns a list with the default model options.
 #' @importFrom utils modifyList
@@ -347,12 +345,11 @@ get_default_model_options <- function(object) {
     GP_factors = TRUE,           # GP-prior on Z
     mv_Znode = FALSE,           #  multivariate variational for Z
     start_opt = 20,             # when to start optimizing lengthsclaes  # TODO should be trainign_opts --> python
-    n_grid = 50,                 # number of gridpoints per lenghtscales # TODO should be trainign_opts --> python
+    n_grid = 10,                 # number of gridpoints per lenghtscales # TODO should be trainign_opts --> python
     sparseGP = FALSE,             # use sparse Gaussian processes
     idx_inducing = NULL,          # index of points used as inducing points
     n_inducing = round(max(100, object@dimensions$N * 0.2)), # number of inducing points
     seed_inducing = NULL, #TODO Move to training opts
-    smooth_all = FALSE,             # include only nonzero lengthscales?
     warping = FALSE,                 # warp the covariates between groups
     warping_freq = 20,               # warp at each n-th iteration
     warping_ref = 0,                  # group to use as reference for warping
