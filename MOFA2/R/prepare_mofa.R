@@ -354,7 +354,8 @@ get_default_model_options <- function(object) {
     warping_freq = 20,               # warp at each n-th iteration
     warping_ref = 0,                  # group to use as reference for warping
     warping_open_begin = TRUE,        # allow open beginning for warping?
-    warping_open_end = TRUE           # allow open end for warping?
+    warping_open_end = TRUE,           # allow open end for warping?
+    opt_freq = 10                       # frequency of GP hyperparameters optimization
     
   )
   

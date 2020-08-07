@@ -160,7 +160,8 @@ class buildBiofam(buildModel):
                                       warping_freq = self.model_opts['warping_freq'],
                                       warping_ref = self.model_opts['warping_ref'],
                                       warping_open_begin = self.model_opts['warping_open_begin'],
-                                      warping_open_end = self.model_opts['warping_open_end'])
+                                      warping_open_end = self.model_opts['warping_open_end'],
+                                      opt_freq = self.model_opts['opt_freq'])
 
     def build_AlphaW(self):
         """ Build node AlphaW for the ARD prior on the weights"""

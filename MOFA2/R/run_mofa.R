@@ -114,7 +114,8 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     warping_freq  = object@model_options$warping_freq,
     warping_ref  = warping_ref,
     warping_open_begin  = object@model_options$warping_open_begin,
-    warping_open_end  = object@model_options$warping_open_end
+    warping_open_end  = object@model_options$warping_open_end,
+    opt_freq = object@model_options$opt_freq
     
   )
   

@@ -36,7 +36,8 @@ class SigmaGrid_Node(Node):
     idx_inducing: Index of inducing points (default None - use the full model)
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None,
-                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, opt_freq = 10):
+                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
+                 opt_freq = 10):
         super().__init__(dim)
         self.mini_batch = None
         self.sample_cov = sample_cov
