@@ -130,7 +130,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # If no groups provided, treat all samples as coming from one group
   if (is.null(groups)) {
-    message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
+    message("No groups provided as argument, we assume that all samples belong to the same group.\n")
     groups <- rep("group1",  length(unique(sampleMap(data)[,"primary"])))
   }
 
@@ -249,17 +249,28 @@ create_mofa <- function(data, groups = NULL, ...) {
 #' @description Method to create a \code{\link{MOFA}} object
 #' @param seurat Seurat object
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample
-#' @param assays assays to use for the MOFA model, default is RNA
+#' @param assays assays to use for the MOFA model, default is NULL, it fetched all assays available
 #' @param slot assay slot to be used such as scale.data or data
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @keywords internal
-.create_mofa_from_seurat <- function(seurat, groups, assays = "RNA", slot = "data", features = NULL, save_metadata = FALSE) {
+.create_mofa_from_seurat <- function(seurat, groups, assays = NULL, slot = "data", features = NULL, save_metadata = FALSE) {
+  
+  
+  
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
   }
 
+  # Define assays
+  if (is.null(assays)) {
+    assays <- Assays(seurat)
+    message(paste0("No assays specified, using all assays by default: ", paste(assays,collapse=" ")))
+  } else {
+    stopifnot(assays%in%Assays(seurat))
+  }
+  
   # Define groups of cells
   if (is(groups, 'character') && (length(groups) == 1)) {
     if (!(groups %in% colnames(seurat@meta.data)))
@@ -278,11 +289,18 @@ create_mofa <- function(data, groups = NULL, ...) {
         stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
     }
   } else {
-    if (!is.null(features) && (length(assays) > 1))
-       stop("When using multiple assays, subset features with a list with corresponding views (assays) names")
-    # Make a list out of a vector
-    features <- list(features)
-    names(features) <- assays
+    # By default select highly variable features if present in the Seurat object
+    if (is.null(features)) {
+      message("No features specified, using variable features from the Seurat object...")
+      features <- lapply(assays, function(i) seurat@assays[[i]]@var.features)
+      names(features) <- assays
+      if (any(sapply(features,length)==0)) stop("No list of features provided and variable features are detected in the Seurat object")
+    } else if (all(is(features, "character"))) {
+      features <- list(features)
+      names(features) <- assays
+    } else {
+       stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
+    }
   }
 
   # If no groups provided, treat all samples as coming from one group
@@ -290,10 +308,13 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", dim(seurat)[2])
   }
+  
+  # Extract data matrices
   data_matrices <- lapply(assays, function(i) 
     .split_seurat_into_groups(seurat, groups = groups, assay = i, slot = slot, features = features[[i]]))
-  names(data_matrices) <- tolower(assays)
+  names(data_matrices) <- assays
 
+  # Create MOFA object
   object <- new("MOFA")
   object@status <- "untrained"
   object@data <- data_matrices
