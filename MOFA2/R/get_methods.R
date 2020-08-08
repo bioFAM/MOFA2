@@ -67,7 +67,7 @@ get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, 
   Z <- get_expectations(object, "Z", as.data.frame)
   if (isTRUE(as.data.frame)) {
     Z <- Z[Z$factor%in%factors & Z$group%in%groups,]
-    if (isTRUE(scale)) Z$value <- Z$value/max(abs(Z$value),na.rm=T)
+    if (isTRUE(scale)) Z$value <- Z$value/max(abs(Z$value),na.rm=TRUE)
   } else {
     Z <- lapply(Z[groups], function(z) z[,factors, drop=FALSE])
     if (isTRUE(scale)) Z <- lapply(Z, function(x) x/max(abs(x)) )
@@ -390,7 +390,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     
     # Z node
     if (variable=="Z") {
-      tmp <- reshape2::melt(exp, na.rm=T)
+      tmp <- reshape2::melt(exp, na.rm=TRUE)
       colnames(tmp) <- c("sample", "factor", "value", "group")
       tmp$sample <- as.character(tmp$sample)
       factor.cols <- c("sample", "factor", "group")
@@ -400,7 +400,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     # W node
     else if (variable=="W") {
       tmp <- lapply(names(exp), function(m) { 
-        tmp <- reshape2::melt(exp[[m]], na.rm=T)
+        tmp <- reshape2::melt(exp[[m]], na.rm=TRUE)
         colnames(tmp) <- c("feature","factor","value")
         tmp$view <- m
         factor.cols <- c("view", "feature", "factor")
@@ -414,7 +414,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     else if (variable=="Y") {
       tmp <- lapply(names(exp), function(m) {
         tmp <- lapply(names(exp[[m]]), function(g) {
-          tmp <- reshape2::melt(exp[[m]][[g]], na.rm=T)
+          tmp <- reshape2::melt(exp[[m]][[g]], na.rm=TRUE)
           colnames(tmp) <- c("sample", "feature", "value")
           tmp$view <- m
           tmp$group <- g

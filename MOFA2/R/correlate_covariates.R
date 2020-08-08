@@ -31,7 +31,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   metadata <- metadata[metadata$group%in%groups,]
   if (is.character(covariates)) {
     stopifnot(all(covariates %in% colnames(metadata)))
-    covariates <- metadata[,covariates,drop=F]
+    covariates <- metadata[,covariates,drop=FALSE]
   } else if (is.data.frame(covariates)) {
     samples <- metadata$sample
     if (is.null(rownames(covariates))) stop("The 'covariates' data.frame does not have samples names")
@@ -104,6 +104,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
 #' @param return_data logical indicating whether to return the fa instead of plotting
 #' @import ggplot2
 #' @importFrom dplyr group_by summarise mutate
+#' @importFrom stats median
 #' @importFrom magrittr %>%
 #' @export
 summarise_factors <- function(object, df, factors = "all", groups = "all", abs = FALSE, return_data = FALSE) {
@@ -120,12 +121,12 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
   factors <- .check_and_get_factors(object, factors)
   groups <- .check_and_get_groups(object, groups)
   factors_df <- get_factors(object, factors = factors, groups = groups, as.data.frame=TRUE) %>% 
-    group_by(factor) %>% mutate(value=value/max(abs(value),na.rm=T)) # Scale factor values
+    group_by(factor) %>% mutate(value=value/max(abs(value),na.rm=TRUE)) # Scale factor values
   
   # Merge data.frames
   to.plot <- merge(factors_df, df, by="sample") %>% 
     group_by(level,factor,group) %>%
-    summarise(value=median(value,na.rm=T))
+    summarise(value=median(value,na.rm=TRUE))
   
   if (isTRUE(abs)) {
     to.plot$value <- abs(to.plot$value)
@@ -154,7 +155,7 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
     p <- p + scale_fill_gradient2(low = "white", high = "red")
   } else {
     # center the color scheme at 0
-    p <- p + scale_fill_distiller(type = "div", limit = max(abs(to.plot$value),na.rm=T)*c(-1,1))
+    p <- p + scale_fill_distiller(type = "div", limit = max(abs(to.plot$value),na.rm=TRUE)*c(-1,1))
   } 
   
   # Return data or plot

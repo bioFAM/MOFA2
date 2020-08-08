@@ -38,14 +38,6 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     stop("'object' has to be an instance of MOFA")
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
-
-  # If not outfile is provided, store a file in the /temp folder with the respective timestamp
-  if (is.null(outfile)) {
-    outfile <- file.path("/tmp", paste0("mofa_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
-    warning(paste0("No output filename provided. Using ", outfile, " to store the trained model.\n\n"))
-  }
-  if (file.exists(outfile))
-    message("Warning: Output file already exists, it will be replaced")
   
   # Initiate reticulate
   mofa <- import("mofapy2")
@@ -96,7 +88,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     freqELBO         = object@training_options$freqELBO,
     seed             = object@training_options$seed, 
     gpu_mode         = object@training_options$gpu_mode,
-    verbose          = object@training_options$verbose
+    verbose          = object@training_options$verbose,
+    outfile          = object@training_options$outfile,
+    save_interrupted = object@training_options$save_interrupted
   )
   
   # Set stochastic options

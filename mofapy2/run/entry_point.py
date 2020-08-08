@@ -2,10 +2,11 @@ import numpy as np
 import pandas as pd
 import scipy as s
 import sys
-from time import sleep
-from time import time
+import os
+from time import sleep, time, strftime
 from typing import List, Optional, Union
 from itertools import chain
+from functools import wraps
 
 from mofapy2.core.BayesNet import *
 from mofapy2.core import gpu_utils
@@ -13,6 +14,28 @@ from mofapy2.build_model.build_model import *
 from mofapy2.build_model.save_model import *
 from mofapy2.build_model.utils import guess_likelihoods
 from mofapy2.build_model.train_model import train_model
+
+
+def keyboardinterrupt_saver(func):
+    @wraps(func)
+    def saver(self, *args, **kwargs):
+        try:
+            func(self, *args, **kwargs)
+        # Internal methods will raise TypeError when interrupted
+        except (KeyboardInterrupt, TypeError):
+            if self.train_opts["save_interrupted"]:
+                print("Attempting to save the model at the current iteration...")
+                if self.train_opts["outfile"] is not None and self.train_opts != "":
+                    tmp_file = self.train_opts["outfile"]
+                    tmp_file = tmp_file.rstrip(".hdf5") + "_interrupted.hdf5"
+                else:
+                    tmp_file = os.path.join('/tmp', "mofa_{}_interrupted.hdf5".format(strftime('%Y%m%d-%H%M%S')))
+                self.save(outfile=tmp_file)
+                print("Saved partially trained model in {}. Exiting now.".format(tmp_file))
+            else:
+                print("Exiting now without saving the partially trained model. To save a partially trained model, set save_interrupted in the training options to true.")
+            sys.exit()
+    return saver
 
 class entry_point(object):
     def __init__(self):
@@ -494,9 +517,10 @@ class entry_point(object):
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_train_options(self,
-        iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
+        iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="fast",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, weight_views = False
+        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, weight_views = False, 
+        outfile=None, save_interrupted=False,
         ):
         """ Set training options """
 
@@ -609,6 +633,12 @@ class entry_point(object):
         # Weight the views to avoid imbalance problems?
         self.train_opts['weight_views'] = weight_views
 
+        # Output file name
+        self.train_opts['outfile'] = outfile
+
+        # If to save the partially trained model when the training is interrupted
+        self.train_opts['save_interrupted'] = save_interrupted
+
     def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
         # Sanity checks
@@ -712,6 +742,7 @@ class entry_point(object):
         else:
             self.model = BayesNet(self.dimensionalities, tmp.get_nodes())
 
+    @keyboardinterrupt_saver
     def run(self):
         """ Run the model """
 
@@ -787,18 +818,31 @@ class entry_point(object):
 
         self.imputed = True # change flag
 
-    def save(self, outfile, save_data=True, save_parameters=False, expectations=None):
+    def save(self, outfile=None, save_data=True, save_parameters=False, expectations=None):
         """ Save the model in an hdf5 file """
 
         # Sanity checks
         assert hasattr(self, 'data'), "Data has to be defined before training the model"
         assert hasattr(self, 'model'), "No trained model found"
 
+        # Use outfile from training options if an outfile to override it is not provided
+        if outfile is None or outfile == "":
+            if self.train_opts["outfile"] is None or self.train_opts["outfile"] == "":
+                outfile = os.path.join('/tmp', "mofa_{}.hdf5".format(strftime('%Y%m%d-%H%M%S')))
+                print("No output file name provided as a training options or to the save method. Saving to {} .".format(
+                    outfile
+                    ))
+            else:
+                outfile = self.train_opts["outfile"]
+
+        if os.path.isfile(outfile):
+            print("Warning: Output file {} already exists, it will be replaced".format(outfile))
+
         # Create output directory
         if not os.path.isdir(os.path.dirname(outfile)) and (os.path.dirname(outfile) != ''):
             print("Output directory does not exist, creating it...")
             os.makedirs(os.path.dirname(outfile))
-        print("Saving model in %s...\n" % outfile)
+        print("Saving model in %s..." % outfile)
 
         # Save the model
         tmp = saveModel(
@@ -864,7 +908,6 @@ class entry_point(object):
             tmp.saveImputedData(self.imputed_data["mean"], self.imputed_data["variance"])
 
 
-
 def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: bool = None, 
          features_subset: Optional[str] = None,
          likelihood: Optional[Union[str, List[str]]] = None, n_factors: int = 10,
@@ -874,8 +917,9 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
          n_iterations: int = 1000, convergence_mode: str = "fast",
          gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, 
          save_parameters: bool = False, save_data: bool = True, save_metadata: bool = True,
-         seed: int = 1, outfile: str = "/tmp/mofa_model.hdf5",
+         seed: int = 1, outfile: Optional[str] = None,
          expectations: Optional[List[str]] = None,
+         save_interrupted: bool = False,
          verbose: bool = False, quiet: bool = True, copy: bool = False):
     """
     Helper function to init and build the model in a single call
@@ -907,6 +951,8 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     outfile (optional): path to HDF5 file to store the model
     expectations (optional): which nodes should be used to save expectations for (will save only W and Z by default);
     possible expectations names include Y, W, Z, Tau, AlphaZ, AlphaW, ThetaW, ThetaZ
+    outfile (optional): output file name
+    save_interrupted (optional): if to save partially trained model when the training is interrupted
     verbose (optional): print verbose information during traing
     quiet (optional): silence messages during training procedure
     copy (optional): return a copy of AnnData instead of writing to the provided object
@@ -924,17 +970,17 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
                           factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 
                           gpu_mode=gpu_mode, Y_ELBO_TauTrick=Y_ELBO_TauTrick,
-                          seed=seed, verbose=verbose, quiet=quiet)
+                          seed=seed, verbose=verbose, quiet=quiet, outfile=outfile, save_interrupted=save_interrupted)
 
     ent.build()
     ent.run()
+
     ent.save(outfile, save_data=save_data, save_parameters=save_parameters, expectations=expectations)
 
     try:
         import h5py
     except ImportError:
         h5py = None
-
 
     if h5py:
         f = h5py.File(outfile)

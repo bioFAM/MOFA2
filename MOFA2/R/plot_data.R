@@ -117,8 +117,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
       tmp <- object@samples_metadata
       rownames(tmp) <- tmp$sample
       tmp$sample <- NULL
-      tmp <- tmp[order_samples,,drop=F]
-      annotation_samples <- tmp[,annotation_samples, drop=F]
+      tmp <- tmp[order_samples,,drop=FALSE]
+      annotation_samples <- tmp[,annotation_samples, drop=FALSE]
       rownames(annotation_samples) <- rownames(tmp)
     } else {
       stop("Input format for 'annotation_samples' not recognised ")
@@ -126,7 +126,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     
     # Convert character columns to factors
     foo <- sapply(annotation_samples, function(x) is.logical(x)|is.character(x))
-    if (any(foo)) annotation_samples[,which(foo)] <- lapply(annotation_samples[,which(foo),drop=F], as.factor)
+    if (any(foo)) annotation_samples[,which(foo)] <- lapply(annotation_samples[,which(foo),drop=FALSE], as.factor)
   }
 
   

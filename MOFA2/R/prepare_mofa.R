@@ -211,12 +211,14 @@ get_default_training_options <- function(object) {
     maxiter = 1000,                # (numeric) Maximum number of iterations
     convergence_mode = 'fast',     # (string) Convergence mode based on change in the ELBO ("slow","medium","fast")
     drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
-    verbose = FALSE,               # (logical) verbosity
-    startELBO = 1,                 # First iteration to compute the ELBO
-    freqELBO = 1,                  # Frequency of ELBO calculation
+    verbose = FALSE,               # (logical) Verbosity
+    startELBO = 1,                 # (numeric) First iteration to compute the ELBO
+    freqELBO = 1,                  # (numeric) Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
-    seed = 42                      # (numeric) random seed
+    seed = 42,                     # (numeric) Random seed
+    outfile = NULL,                # (string)  Output file name
+    save_interrupted = FALSE       # (logical) Save partially trained model when training is interrupted?
   )
   
   # if training_options already exist, replace the default values but keep the additional ones
