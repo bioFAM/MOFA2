@@ -108,11 +108,22 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   
   # Run the model
   mofa_entrypoint$run()
+
+  # If no outfile is provided, store a file in the /temp folder with the respective timestamp
+  if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
+    outfile <- object@training_options$outfile
+    if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
+      outfile <- file.path("/tmp", paste0("mofa_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
+      warning(paste0("No output filename provided. Using ", outfile, " to store the trained model.\n\n"))
+    }
+  }
+  if (file.exists(outfile))
+    message(paste0("Warning: Output file ", outfile, " already exists, it will be replaced"))
   
   # Save the model output as an hdf5 file
   mofa_entrypoint$save(outfile, save_data = save_data, expectations = save_expectations)
   
-  # Load the trained model
+  # Load the trained mode
   object <- load_model(outfile)
   
   return(object)
