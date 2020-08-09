@@ -324,9 +324,11 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if (isTRUE(remove_inactive_factors)) {
     r2 <- rowSums(do.call('cbind', lapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE)))
     var.threshold <- 0.0001
-    if (any(r2<var.threshold)) {
+    if (all(r2 < var.threshold)) {
+      warning(sprintf("All %s factors were found to explain little or no variance so remove_inactive_factors option has been disabled.", length(r2)))
+    } else if (any(r2 < var.threshold)) {
       object <- subset_factors(object, which(r2>=var.threshold))
-      message(sprintf("%s factors were found to explain no variance and they were removed for downstream analysis. You can disable this option by setting load_model(..., remove_inactive_factors = F)",sum(r2<var.threshold)))
+      message(sprintf("%s factors were found to explain little or no variance and they were removed for downstream analysis. You can disable this option by setting load_model(..., remove_inactive_factors = F)", sum(r2 < var.threshold)))
     }
   }
   
