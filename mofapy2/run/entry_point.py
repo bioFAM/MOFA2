@@ -34,6 +34,7 @@ def keyboardinterrupt_saver(func):
                 print("Saved partially trained model in {}. Exiting now.".format(tmp_file))
             else:
                 print("Exiting now without saving the partially trained model. To save a partially trained model, set save_interrupted in the training options to true.")
+            sys.stdout.flush()
             sys.exit()
     return saver
 
@@ -843,6 +844,7 @@ class entry_point(object):
             print("Output directory does not exist, creating it...")
             os.makedirs(os.path.dirname(outfile))
         print("Saving model in %s..." % outfile)
+        sys.stdout.flush()
 
         # Save the model
         tmp = saveModel(
