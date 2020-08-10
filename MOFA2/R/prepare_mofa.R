@@ -337,18 +337,18 @@ get_default_model_options <- function(object) {
   # Define default model options
   model_options <- list(
     likelihoods = likelihoods,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    num_factors = 15,            # (numeric) initial number of latent factors
+    num_factors = 10,            # (numeric) initial number of latent factors
     spikeslab_factors = FALSE,         # Spike and Slab sparsity on the factors
     spikeslab_weights = TRUE,          # Spike and Slab sparsity on the loadins
-    ard_factors = TRUE,              # Group-wise ARD sparsity on the factors
+    ard_factors = FALSE,              # Group-wise ARD sparsity on the factors
     ard_weights = TRUE,                # View-wise ARD sparsity on the loadings
-    GP_factors = TRUE,           # GP-prior on Z
-    mv_Znode = FALSE,           #  multivariate variational for Z
+    GP_factors = FALSE,           # GP-prior on Z
+    mv_Znode = TRUE,           #  multivariate variational for Z
     start_opt = 20,             # when to start optimizing lengthsclaes  # TODO should be trainign_opts --> python
-    n_grid = 10,                 # number of gridpoints per lenghtscales # TODO should be trainign_opts --> python
+    n_grid = 20,                 # number of gridpoints per lenghtscales # TODO should be trainign_opts --> python
     sparseGP = FALSE,             # use sparse Gaussian processes
     idx_inducing = NULL,          # index of points used as inducing points
-    n_inducing = round(max(100, object@dimensions$N * 0.2)), # number of inducing points
+    n_inducing = round(max(100, object@dimensions$N * 0.3)), # number of inducing points
     seed_inducing = NULL, #TODO Move to training opts
     warping = FALSE,                 # warp the covariates between groups
     warping_freq = 20,               # warp at each n-th iteration
