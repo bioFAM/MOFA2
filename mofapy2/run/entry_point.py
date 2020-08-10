@@ -796,6 +796,7 @@ class entry_point(object):
             print("sparseGP_options are only useful when having covariates and GP_factors set to True.")
             self.model_opts['sparseGP'] = False
             return None
+
         if n_inducing is None:
             n_inducing = max(0.2 * self.dimensionalities["N"], 100)
         if self.dimensionalities["N"] < n_inducing:

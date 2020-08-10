@@ -51,7 +51,7 @@ class SigmaGrid_Node(Node):
         self.mv_Znode = mv_Znode
         self.iter = 0                                       # counter of iteration to keep track when to optimize lengthscales
         self.n_factors = dim[0]
-        self.zeta = np.ones(self.n_factors) * 0.5
+        self.zeta = np.ones(self.n_factors) * 1e-3
         self.gridix = np.zeros(self.n_factors, dtype = np.int8)     # index of the grid values to use per factor
         # self.shift = np.zeros(self.n_groups)                  # group-sepcific offset of covariates
         # self.scaling = np.ones(self.n_groups)                 # group specific scaling of covariates
@@ -82,8 +82,8 @@ class SigmaGrid_Node(Node):
         self.l_grid = get_l_grid(self.sample_cov, n_grid=self.n_grid, idx = idx)
 
         # add the diagonal covariance (lengthscale 0) to the grid
-        self.l_grid = np.insert(self.l_grid, 0, 0)
-        self.n_grid += 1
+        # self.l_grid = np.insert(self.l_grid, 0, 0)
+        # self.n_grid += 1
 
         # initialise kernel matrix
         self.K = np.zeros([self.n_grid, self.N, self.N])        # kernel matrix on lengthscale grid
@@ -124,14 +124,14 @@ class SigmaGrid_Node(Node):
         self.K[i, :, :] = SE(self.sample_cov_transformed, self.l_grid[i], zeta=0) # zeta is added later
         # self.K[i, :, :] = Cauchy(self.sample_cov_transformed, self.l_grid[i], zeta=0)
 
-        if not self.mv_Znode:
-            self.K[i, :, :] *= covar_rescaling_factor(self.K[i, :, :])
+        # if not self.mv_Znode:
+        #     self.K[i, :, :] *= covar_rescaling_factor(self.K[i, :, :])
 
         # compute spectral decomposition
         if self.idx_inducing is None:
             self.D[i,:], self.V[i,:,:] = s.linalg.eigh( self.K[i,:,:]) # Sigma = VDV^T with V^T * V = I # important to use eigh and not eig to obtain orthogonal eigenvector (which always exist for symmetric real matrices)
         else:
-            self.V[i, :, :], self.D[i, :] = s.linalg.eigh(self.K[i][self.idx_inducing, :][:, self.idx_inducing])
+            self.D[i, :], self.V[i, :, :] = s.linalg.eigh(self.K[i][self.idx_inducing, :][:, self.idx_inducing])
 
     def compute_cov(self):
         for k in range(self.n_factors):
@@ -156,7 +156,7 @@ class SigmaGrid_Node(Node):
                 self.Sigma_inv_logdet[k] = 1
 
         else:
-            if self.self.zeta[k][k] != 1:
+            if self.zeta[k] != 1:
                 self.Sigma_inv[k, :, :] = 1 / (1 - self.zeta[k]) * gpu_utils.dot(gpu_utils.dot(self.V[self.gridix[k], :, :],
                                                                                                s.diag(1 / (self.D[self.gridix[k],:] + self.zeta[k] / (1 - self.zeta[k])))),
                                                                                  self.V[self.gridix[k], :, :].transpose())
@@ -259,6 +259,7 @@ class SigmaGrid_Node(Node):
             var = self.markov_blanket['U']
         else:
             var = self.markov_blanket['Z']
+        Zvar = self.markov_blanket['U'].markov_blanket['Z'] # use all factor values for alignment #TODO clean this
         K = var.dim[1]
         assert K == len(self.gridix), 'problem in dropping factor'
         assert K == len(self.zeta), 'problem in dropping factor'
@@ -266,7 +267,7 @@ class SigmaGrid_Node(Node):
 
         # perform DTW to align groups
         if self.warping and self.n_groups > 1 and self.iter % self.warping_freq == 0:
-            self.align_sample_cov_dtw(var.getExpectation())
+            self.align_sample_cov_dtw(Zvar.getExpectation())
             print("Covariates were aligned between groups.")
             # self.align_sample_cov_linear()
             # print("Covariates were aligned between groups: shift:", self.shift, ", scaling:", self.scaling)
@@ -280,7 +281,7 @@ class SigmaGrid_Node(Node):
                 # use grid search to optimise lengthscale hyperparameters
                 for i in range(self.n_grid):
                     self.gridix[k] = i
-                    res = s.optimize.minimize(self.calc_neg_elbo_k, args=(var, k), x0 = 0.5, bounds=[(1e-7, 1-1e-7)])
+                    res = s.optimize.minimize(self.calc_neg_elbo_k, args=(var, k), x0 = 0.5, bounds=[(1e-10, 1-1e-10)])
                     elbo = -res.fun
                     # print("ELBO", elbo, ", i:", self.gridix[k], ", zeta:", res.x)
                     if elbo > best_elbo:
