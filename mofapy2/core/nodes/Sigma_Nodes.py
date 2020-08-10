@@ -257,9 +257,11 @@ class SigmaGrid_Node(Node):
 
         if not self.idx_inducing is None:
             var = self.markov_blanket['U']
+            Zvar = self.markov_blanket['U'].markov_blanket['Z']  # use all factor values for alignment #TODO clean this
         else:
             var = self.markov_blanket['Z']
-        Zvar = self.markov_blanket['U'].markov_blanket['Z'] # use all factor values for alignment #TODO clean this
+            Zvar = var
+
         K = var.dim[1]
         assert K == len(self.gridix), 'problem in dropping factor'
         assert K == len(self.zeta), 'problem in dropping factor'
@@ -323,6 +325,10 @@ class SigmaGrid_Node(Node):
                 ref_val = self.sample_cov[self.groupsidx == self.reference_group, 0][idx_ref_order][ref_idx]
                 idx = np.where(self.groupsidx == g)[0][idx_query_order][query_idx]
                 self.sample_cov_transformed[idx, 0] = ref_val
+
+        # recompute covariance matrices
+        self.compute_kernel()
+        self.compute_cov()
 
                 # distance, path = fastdtw(Z[self.groupsidx == self.reference_group,:][idx_ref_order,:],  Z[self.groupsidx == g, :][idx_query_order,:], dist=euclidean) # fastdtw
                 # for i in range(len(path)):
