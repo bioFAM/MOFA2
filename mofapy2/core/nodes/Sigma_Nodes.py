@@ -51,7 +51,7 @@ class SigmaGrid_Node(Node):
         self.mv_Znode = mv_Znode
         self.iter = 0                                       # counter of iteration to keep track when to optimize lengthscales
         self.n_factors = dim[0]
-        self.zeta = np.ones(self.n_factors) * 1e-3
+        self.zeta = np.ones(self.n_factors) * 0.5
         self.gridix = np.zeros(self.n_factors, dtype = np.int8)     # index of the grid values to use per factor
         # self.shift = np.zeros(self.n_groups)                  # group-sepcific offset of covariates
         # self.scaling = np.ones(self.n_groups)                 # group specific scaling of covariates
@@ -283,7 +283,7 @@ class SigmaGrid_Node(Node):
                 # use grid search to optimise lengthscale hyperparameters
                 for i in range(self.n_grid):
                     self.gridix[k] = i
-                    res = s.optimize.minimize(self.calc_neg_elbo_k, args=(var, k), x0 = 0.5, bounds=[(1e-10, 1-1e-10)])
+                    res = s.optimize.minimize(self.calc_neg_elbo_k, args=(var, k), x0 = self.zeta[k], bounds=[(1e-10, 1-1e-10)]) # L-BFGS-B
                     elbo = -res.fun
                     # print("ELBO", elbo, ", i:", self.gridix[k], ", zeta:", res.x)
                     if elbo > best_elbo:
