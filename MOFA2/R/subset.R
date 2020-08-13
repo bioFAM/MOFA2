@@ -224,6 +224,9 @@ subset_factors <- function(object, factors) {
   if (!is.null(object@training_stats$length_scales)) {
     object@training_stats$length_scales <- object@training_stats$length_scales[factors,,drop=FALSE]
   }
+  if (!is.null(object@training_stats$scales)) {
+    object@training_stats$scales <- object@training_stats$scales[factors,,drop=FALSE]
+  }
   
   # Update dimensionality
   object@dimensions[["K"]] <- length(factors)

@@ -44,6 +44,9 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
                    if (!is.null(object@training_stats$length_scales)) {
                      rownames(object@training_stats$length_scales) <- value
                    }
+                   if (!is.null(object@training_stats$scales)) {
+                     rownames(object@training_stats$scales) <- value
+                   }
 
                    object
                  })
