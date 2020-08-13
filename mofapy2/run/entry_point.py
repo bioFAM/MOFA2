@@ -798,7 +798,7 @@ class entry_point(object):
             return None
 
         if n_inducing is None:
-            n_inducing = max(0.2 * self.dimensionalities["N"], 100)
+            n_inducing = max(0.2 * self.dimensionalities["N"], 100) # note: groups are already concatenated, N is total number of samples
         if self.dimensionalities["N"] < n_inducing:
             print("Number of inducing points is higher than original number of samples - using non-sparse GP inference")
             self.model_opts['sparseGP'] = False
@@ -1026,11 +1026,12 @@ class entry_point(object):
             Ztmp[(z_score>zscore_cutoff) & (np.absolute(Z[idx,:])>value_cutoff)] = np.nan
             Z[idx,:] = Ztmp
 
-    def impute(self, uncertainty=True):
+    def impute(self, uncertainty=True, mask_outliers = True):
         """impute missing values with or without uncertainty estimates"""
 
         # detect and mask outliers that could skew the results
-        self.mask_outliers()
+        if mask_outliers:
+            self.mask_outliers()
 
         # get the necessary expectations
         W = [w['E'] for w in self.model.nodes['W'].getExpectations()]
