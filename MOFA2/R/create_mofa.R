@@ -328,7 +328,7 @@ create_mofa <- function(data, groups = NULL, ...) {
 
   # Set views & groups names
   groups_names(object) <- as.character(names(data_matrices[[1]]))
-  views_names(object)  <- tolower(assays)
+  views_names(object)  <- assays
 
   # Set metadata
   if (save_metadata) {

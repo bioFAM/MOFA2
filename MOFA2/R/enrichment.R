@@ -332,7 +332,6 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
 #' The top genes with the highest statistic (max.genes argument) are displayed and labeled in black. The remaining genes are colored in grey.
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param factor string with factor name or numeric with factor index
-#' @param feature.sets data structure that holds feature set membership information, as used in the \link{run_enrichment} function.
 #' @param alpha p.value threshold to filter out feature sets
 #' @param max.pathways maximum number of enriched pathways to display
 #' @param max.genes maximum number of genes to display, per pathway
@@ -343,7 +342,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
 #' @importFrom dplyr top_n
 #' @importFrom ggrepel geom_text_repel
 #' @export
-plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets, 
+plot_enrichment_detailed <- function(enrichment.results, factor, 
                                      alpha = 0.1, max.genes = 5, max.pathways = 10, text_size = 3) {
   
   # Sanity checks
