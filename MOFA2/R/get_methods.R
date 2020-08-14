@@ -142,10 +142,11 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
 #' Default is "all".
 #' @param features a *named* list of character vectors. Example: list("view1"=c("feature_1","feature_2"), "view2"=c("feature_3","feature_4"))
-#' Default is "all" If this is used, the argument views is ignored.
-#' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices.
+#' Default is "all".
+#' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices. Default is \code{FALSE}.
 #' @param add_intercept logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.
-#' @param na.rm remove NAs from the data.frame (only if as.data.frame is TRUE).
+#' @param denoise logical indicating whether to return the denoised data (i.e. the model predictions). Default is \code{FALSE}.
+#' @param na.rm remove NAs from the data.frame (only if as.data.frame is \code{TRUE}).
 #' @details By default this function returns a list where each element is a data matrix with dimensionality (D,N) 
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
@@ -168,7 +169,10 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
 #' 
 #' # Fetch centered data (do not add the feature intercepts)
 #' data <- get_data(model, as.data.frame = FALSE)
-get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE, na.rm = TRUE) {
+#' 
+#' # Fetch denoised data (do not add the feature intercepts)
+#' data <- get_data(model, denoise = TRUE)
+get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE, denoise = FALSE, na.rm = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -193,7 +197,11 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   }
 
   # Fetch data
-  data <- lapply(object@data[views], function(x) x[groups])
+  if (isTRUE(denoise)) {
+    data <- predict(object, views=views, groups=groups)
+  } else {
+    data <- lapply(object@data[views], function(x) x[groups])
+  }
   data <- lapply(views, function(m) lapply(seq_len(length(data[[1]])), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   data <- .name_views_and_groups(data, views, groups)
   

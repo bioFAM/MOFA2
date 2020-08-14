@@ -48,14 +48,14 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   }
   
   # convert all columns to numeric
-  cols <- which(sapply(covariates,class)!="numeric")
+  cols <- which(!sapply(covariates,class)%in%c("numeric","integer"))
   if (length(cols>=1)) {
     cols.factor <- which(sapply(covariates,class)=="factor")
     covariates[cols] <- lapply(covariates[cols], as.numeric)
     warning("There are non-numeric values in the covariates data.frame, converting to numeric...")
     covariates[cols] <- lapply(covariates[cols], as.numeric)
   }
-  stopifnot(all(sapply(covariates,class)=="numeric"))
+  stopifnot(all(sapply(covariates,class)%in%c("numeric","integer")))
   
   # Get factors
   factors <- .check_and_get_factors(object, factors)
@@ -80,6 +80,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     stat[stat>alpha] <- 1.0
     if (all(stat==1.0)) stop("All p-values are 1.0, cannot plot the histogram")
     stat <- -log10(stat)
+    stat[is.infinite(stat)] <- 1000
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
     col <- colorRampPalette(c("lightgrey", "red"))(n=100)
