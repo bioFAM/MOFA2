@@ -186,7 +186,7 @@ class entry_point(object):
                 sample_cov[g] = sample_cov[g].astype(np.float64)
 
             if not all([sample_cov[g].shape[0] == self.dimensionalities["N"][g] for g in range(G)]):
-                print("Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % (sample_cov.shape[0], self.dimensionalities["N"]))
+                print("Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % ([sample_cov[g].shape[0] for g in range(G)], self.dimensionalities["N"]))
                 sys.stdout.flush(); sys.exit()
 
             # concatenate groups in sample_cov and standardize sample_cov to avoid scale differences
