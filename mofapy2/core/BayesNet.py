@@ -214,9 +214,9 @@ class BayesNet(object):
         iter_time = nans((self.options['maxiter']+1))
         # keep track of factor-wise training statistics (attribute as needs to be accounted for in factor dropping)
         if 'Sigma' in self.nodes.keys():
-            self.lscales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
-            self.scales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
-            self.structsig = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
+            self.lscales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
+            self.scales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
+            self.structsig = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
@@ -477,9 +477,9 @@ class StochasticBayesNet(BayesNet):
         number_factors = nans((self.options['maxiter']+1))
         iter_time = nans((self.options['maxiter']+1))
         if 'Sigma' in self.nodes.keys():
-            self.lscales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
-            self.scales = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
-            self.structsig = pd.DataFrame(data = nans((self.options['maxiter']+1, self.dim['K'])), columns = range(self.dim['K']))
+            self.lscales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
+            self.scales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
+            self.structsig = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
