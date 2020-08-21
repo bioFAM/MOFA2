@@ -4,6 +4,8 @@ import scipy.stats as stats
 import sys
 import scipy.spatial as SS
 import math
+# import seaborn as sns
+# import matplotlib.pyplot as plt
 
 def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 200, 500, 200], noise_level = 1,
                   K = 4, G = 1, lscales = [0.2, 0.8, 0.0, 0.0], sample_cov = "equidistant", scales = [1, 0.8, 0, 0]):
@@ -14,12 +16,12 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
     G: Number of groups
     N: Number of time points/ samples per group
     """
-    # set scales to 0 for lengthscale of 0 to obtain identity
-    for k in range(K):
-        if lscales[k] == 0:
-            if scales[k] != 0:
-                scales[k] = 0
-                print("Setting scale of factor ", k, " to 0 as it has a lengthscale of 0 ")
+    # # set scales to 0 for lengthscale of 0 to obtain identity
+    # for k in range(K):
+    #     if lscales[k] == 0:
+    #         if scales[k] != 0:
+    #             scales[k] = 0
+    #             print("Setting scale of factor ", k, " to 0 as it has a lengthscale of 0 ")
 
     # simulate some test data
     np.random.seed(seed)
@@ -49,9 +51,15 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
         if lscales[k] > 0:
             Sigma.append(scales[k] * np.exp(-distC / (2 * lscales[k] ** 2)) + (1-scales[k]) * np.eye(N*G))
         elif lscales[k] == 0:
-            Sigma.append(np.eye(N*G))
+            Sigma.append(scales[k] * (distC == 0).astype(float) + (1-scales[k]) * np.eye(N*G))
+            # Sigma.append(np.eye(N*G))
         else:
             sys.exit("All lengthscales need to be non-negative")
+
+    # plot covariance structure
+    # fig, axs = plt.subplots(1, 3, sharex=True, sharey=True)
+    # for k in range(K):
+    #     sns.heatmap(Sigma[k], ax =axs[k])
 
     # simulate same factor values for factors with non-zero lengthscales across groups, other can differ (avoids expanding the covaraicen matrix across groups)
     Zks = []

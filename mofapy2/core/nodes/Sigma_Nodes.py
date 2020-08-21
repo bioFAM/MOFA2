@@ -39,6 +39,8 @@ class SigmaGrid_Node(Node):
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
                  opt_freq = 10):
         super().__init__(dim)
+        self.zeta_opt = False
+        self.setscaletoone = True
         self.mini_batch = None
         self.sample_cov = sample_cov
         self.sample_cov_transformed = copy.copy(sample_cov) # keep original covariate in place
@@ -82,8 +84,13 @@ class SigmaGrid_Node(Node):
         self.l_grid = get_l_grid(self.sample_cov, n_grid=self.n_grid, idx = idx)
 
         # add the diagonal covariance (lengthscale 0) to the grid
-        # self.l_grid = np.insert(self.l_grid, 0, 0)
-        # self.n_grid += 1
+        if not self.zeta_opt:
+            # for ls optimization:
+            self.l_grid = np.insert(self.l_grid, 0, 0)
+            self.n_grid += 1
+        else:
+            # for zeta optimization:
+            self.l_grid = np.insert(self.l_grid, self.n_grid, 0)
 
         # initialise kernel matrix
         self.K = np.zeros([self.n_grid, self.N, self.N])        # kernel matrix on lengthscale grid
@@ -290,14 +297,20 @@ class SigmaGrid_Node(Node):
                         best_elbo = elbo
                         best_i = i
                         best_zeta = res.x
-                    if i == 0: # for i = 0 K is the identity and zeta (j) is irrelevant
+                    if i == 0 and not self.zeta_opt and self.setscaletoone: # for i = 0 (lengthscale of 0)
                         elbo0 = elbo
-                        best_zeta = 1
+                        best_zeta = 1 # TODO this is not the same (striped vs diagonal)
+                    if self.zeta_opt:
+                        if best_zeta > 1-1e-7: # for best_zeta = 1, lengthscale is irrelevant (set to zero)
+                            best_zeta = 1
+                            best_i = self.n_grid # last grid point at position self.n_grid + 1 corresponds to zero (not included in K grid as 0 * K)
 
-                self.struct_sig[k] = best_elbo - elbo0
+                # self.struct_sig[k] = best_elbo - elbo0
+                self.struct_sig[k] = np.nan # could measure best_elbo - calc_neg_elbo_k(1, var, k)
                 self.gridix[k] = best_i
                 self.zeta[k] = best_zeta
-                self.compute_cov()
+
+            self.compute_cov()
             print('Sigma node has been optimised: Lengthscales =', self.l_grid[self.gridix], ', Scales =',  1- self.zeta)
             # print('Sigma node has been optimised: struct_sig =', self.struct_sig)
 

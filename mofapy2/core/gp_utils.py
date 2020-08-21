@@ -34,11 +34,14 @@ def SE(X, l, zeta = 1e-3):
     """
     squared exponential covariance function on input X with lengthscale l
     """
-    if l == 0:
-        return np.eye(X.shape[0])
-    tmp = SS.distance.pdist(X,'euclidean')**2.
+    # for lengthscale of 0: 1 if tmp = 0, 0 otherwise
+    #(this might alos happen off-diagonal for identical covariate values for distinct samples)
+    tmp = SS.distance.pdist(X, 'euclidean') ** 2.
     tmp = SS.distance.squareform(tmp)
-    cov = (1-zeta) * np.exp(-tmp/ (2 * l** 2.))
+    if l == 0:
+        cov = (1-zeta) * (tmp ==0).astype(float) # np.eye(X.shape[0])
+    else:
+        cov = (1-zeta) * np.exp(-tmp/ (2 * l** 2.))
     cov += zeta * np.eye(X.shape[0])
 
     return cov
