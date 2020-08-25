@@ -247,7 +247,7 @@ class BayesNet(object):
             if 'Sigma' in self.nodes.keys():
                 tmp = self.nodes['Sigma'].getParameters()
                 self.lscales.iloc[i] = tmp['l']
-                self.scales.iloc[i] = tmp['scale']
+                self.scales.iloc[i] = tmp['scale'] # TODO adapt to importatn hyperparameters + x, sigma, rename
                 self.structsig.iloc[i] = tmp['sig']
 
 

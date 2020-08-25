@@ -5,11 +5,15 @@ from .W_nodes import W_Node, SW_Node
 from .Y_nodes import Y_Node
 from .Z_nodes import Z_Node, SZ_Node
 from .Z_nodes_GP import Z_GP_Node
+from .Z_nodes_GP_mv_kron import Z_GP_Node_mv_kron
 from .Z_nodes_GP_mv import Z_GP_Node_mv
 from .multiview_nodes import *
 from .basic_nodes import *
 from .nongaussian_nodes import *
 from .variational_nodes import *
 from .Sigma_Nodes import SigmaGrid_Node
+from .kronSigma_nodes import kronSigma_Node
+from .Kc_node import Kc_Node
+from .Kg_node import Kg_Node
 from .U_nodes import U_GP_Node_mv, U_GP_Node
 from .ZgU_node import ZgU_node

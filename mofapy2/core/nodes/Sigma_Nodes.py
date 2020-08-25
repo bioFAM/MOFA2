@@ -35,7 +35,7 @@ class SigmaGrid_Node(Node):
     mv_Znode: whether a multivariate variational is modelled for the node with prior Sigma covariance
     idx_inducing: Index of inducing points (default None - use the full model)
     """
-    def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, mv_Znode = False, idx_inducing = None,
+    def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing = None,
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
                  opt_freq = 10):
         super().__init__(dim)
@@ -50,7 +50,7 @@ class SigmaGrid_Node(Node):
         self.N = sample_cov.shape[0]
         self.start_opt = start_opt
         self.n_grid = n_grid
-        self.mv_Znode = mv_Znode
+        self.mv_Znode = False
         self.iter = 0                                       # counter of iteration to keep track when to optimize lengthscales
         self.n_factors = dim[0]
         self.zeta = np.ones(self.n_factors) * 0.5
@@ -155,7 +155,7 @@ class SigmaGrid_Node(Node):
                                                                                                            self.zeta[k] / (1 - self.zeta[k])))),
                                                                                  self.V[self.gridix[k], :, :].transpose())
                 self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
-                self.Sigma_inv_logdet[k] = -s.log(1 - self.zeta[k]) - s.log(
+                self.Sigma_inv_logdet[k] = -self.N * s.log(1 - self.zeta[k]) - s.log(
                     (self.D[self.gridix[k], :] + self.zeta[k] / (1 - self.zeta[k]))).sum()
             else:
                 self.Sigma_inv[k, :, :] = s.eye(self.N)
@@ -168,8 +168,8 @@ class SigmaGrid_Node(Node):
                                                                                                s.diag(1 / (self.D[self.gridix[k],:] + self.zeta[k] / (1 - self.zeta[k])))),
                                                                                  self.V[self.gridix[k], :, :].transpose())
                 self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
-                self.Sigma_inv_logdet[k] = -s.log(
-                    (1 - self.zeta[k]) * (self.D[self.gridix[k], :] + self.zeta[k] / (1 - self.zeta[k])).sum())
+                self.Sigma_inv_logdet[k] = -self.Nu * s.log(1 - self.zeta[k]) -s.log(
+                     (self.D[self.gridix[k], :] + self.zeta[k] / (1 - self.zeta[k]))).sum()
             else:
                 self.Sigma_inv[k, :, :] = s.eye(self.Nu)
                 self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
@@ -213,7 +213,6 @@ class SigmaGrid_Node(Node):
         cov_inv_logdet = self.Sigma_inv_logdet
         return {'cov':cov, 'inv': inv, 'inv_diag':inv_diag, 'E':cov, 'inv_logdet' : cov_inv_logdet}
 
-    
     def get_ls(self):
         """ 
         Method to fetch ELBO-optimal length-scales

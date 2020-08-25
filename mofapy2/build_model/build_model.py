@@ -100,7 +100,7 @@ class buildBiofam(buildModel):
             # self.init_model.initZ(qmean="random")
             self.init_model.initZ(qmean="pca", Y=self.data, impute=True,
                       GP_factors = self.model_opts['GP_factors'], mv_Znode = self.model_opts['mv_Znode'],
-                      weight_views = self.weight_views)
+                      weight_views = self.weight_views, model_groups = self.model_opts['model_groups'])
 
     def build_ZgU(self):
         """ Build node for Z given U for the factors or latent variables conditioned on inducing points"""
@@ -146,22 +146,28 @@ class buildBiofam(buildModel):
             self.init_model.initSigma(self.sample_cov,
                                       self.data_opts['samples_groups'],
                                       start_opt, n_grid,
-                                      mv_Znode = self.model_opts['mv_Znode'],
+                                      # mv_Znode = self.model_opts['mv_Znode'],
                                       idx_inducing = self.model_opts['idx_inducing'],
                                       warping=self.model_opts['warping'],
                                       warping_freq = self.model_opts['warping_freq'],
-                                      warping_ref = self.model_opts['warping_ref'])
+                                      warping_ref = self.model_opts['warping_ref'],
+                                      warping_open_begin=self.model_opts['warping_open_begin'],
+                                      warping_open_end=self.model_opts['warping_open_end'],
+                                      opt_freq=self.model_opts['opt_freq'],
+                                      model_groups = self.model_opts['model_groups'])
         else:
             self.init_model.initSigma(self.sample_cov,
                                       self.data_opts['samples_groups'],
                                       start_opt, n_grid,
-                                      mv_Znode=self.model_opts['mv_Znode'],
+                                      # mv_Znode=self.model_opts['mv_Znode'],
+                                      idx_inducing=None,
                                       warping = self.model_opts['warping'],
                                       warping_freq = self.model_opts['warping_freq'],
                                       warping_ref = self.model_opts['warping_ref'],
                                       warping_open_begin = self.model_opts['warping_open_begin'],
                                       warping_open_end = self.model_opts['warping_open_end'],
-                                      opt_freq = self.model_opts['opt_freq'])
+                                      opt_freq = self.model_opts['opt_freq'],
+                                      model_groups = self.model_opts['model_groups'])
 
     def build_AlphaW(self):
         """ Build node AlphaW for the ARD prior on the weights"""

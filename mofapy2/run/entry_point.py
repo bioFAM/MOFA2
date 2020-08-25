@@ -850,7 +850,8 @@ class entry_point(object):
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
                           GP_factors = False, start_opt = 20, n_grid = 20, mv_Znode = True, warping = False,
-                          warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, opt_freq = 10):
+                          warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, opt_freq = 10,
+                          model_groups = False):
         """ Set model options """
 
         self.model_opts = {}
@@ -908,6 +909,9 @@ class entry_point(object):
         if not GP_factors:
             mv_Znode = False
         self.model_opts['mv_Znode'] = mv_Znode
+
+        # Define whether to model a group covariance structure
+        self.model_opts['model_groups'] = model_groups
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)

@@ -38,7 +38,7 @@ class initModel(object):
         self.nodes = {}
 
     def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False,
-     GP_factors = False, mv_Znode = False, weight_views = False):
+     GP_factors = False, mv_Znode = False, weight_views = False, model_groups = False):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -122,12 +122,20 @@ class initModel(object):
         # Initialise the node
         if GP_factors:
             if mv_Znode:
-                self.nodes["Z"] = Z_GP_Node_mv(
-                    dim=(self.N, self.K),
-                    pmean=pmean, pcov=pvar,
-                    qmean=qmean, qcov=qvar,
-                    qE=qE, weight_views = weight_views
-                ) 
+                if not model_groups:
+                    self.nodes["Z"] = Z_GP_Node_mv(
+                        dim=(self.N, self.K),
+                        pmean=pmean, pcov=pvar,
+                        qmean=qmean, qcov=qvar,
+                        qE=qE, weight_views = weight_views
+                    )
+                else:
+                    self.nodes["Z"] = Z_GP_Node_mv_kron(
+                        dim=(self.N, self.K),
+                        pmean=pmean, pcov=pvar,
+                        qmean=qmean, qcov=qvar,
+                        qE=qE, weight_views=weight_views
+                    )
             else:
                 self.nodes["Z"] = Z_GP_Node(
                     dim=(self.N, self.K),
@@ -267,11 +275,18 @@ class initModel(object):
             weight_views = weight_views
         )
 
-    def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10, mv_Znode = False, idx_inducing = None,
-                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True, opt_freq = 10):
+    def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10, idx_inducing = None, # TODO : mv_Znode = False,
+                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True,
+                  opt_freq = 10, model_groups = False):
         dim = (self.K,)
-        self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, mv_Znode, idx_inducing, warping, warping_freq, warping_ref,
-                                    warping_open_begin, warping_open_end, opt_freq)
+        if not model_groups:
+            self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, idx_inducing, warping, warping_freq, warping_ref,
+                                        warping_open_begin, warping_open_end, opt_freq)
+        else:
+            self.Sigma = kronSigma_Node(dim = dim, sample_cov = sample_cov, groups = groups,
+                                        start_opt = start_opt, n_grid = n_grid, idx_inducing = idx_inducing,
+                                        warping = warping, warping_freq = warping_freq, warping_ref = warping_ref,
+                                        warping_open_begin = warping_open_begin, warping_open_end = warping_open_end, opt_freq = opt_freq)
         self.nodes["Sigma"] = self.Sigma
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,

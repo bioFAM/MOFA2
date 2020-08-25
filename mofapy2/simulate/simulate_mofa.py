@@ -4,11 +4,12 @@ import scipy.stats as stats
 import sys
 import scipy.spatial as SS
 import math
-# import seaborn as sns
-# import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 200, 500, 200], noise_level = 1,
-                  K = 4, G = 1, lscales = [0.2, 0.8, 0.0, 0.0], sample_cov = "equidistant", scales = [1, 0.8, 0, 0]):
+                  K = 4, G = 1, lscales = [0.2, 0.8, 0.0, 0.0], sample_cov = "equidistant", scales = [1, 0.8, 0, 0],
+                  group_modelling = False, plot = False):
     """
     Function to simulate test data for MOFA (without ARD or spike-and-slab on factors)
     noise_level: variance of the residuals (1/tau); for each feature this is multiplied by a uniform random number between 0.5 and 1.5 to model differences in feature's noise
@@ -38,28 +39,48 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
                 sample_cov = sample_cov.reshape(N, 1)
 
         # expand across groups
-        sample_cov = np.tile(sample_cov, (G,1))
+        if not group_modelling:
+            sample_cov = np.tile(sample_cov, (G,1))
         distC = SS.distance.pdist(sample_cov, 'euclidean')**2.
         distC = SS.distance.squareform(distC)
 
     else:
         lscales = [0]* K
 
+    if group_modelling:
+        rank_x = 2
+        sigma = 0
+        # x = np.random.binomial(1, 0.5, G * K * rank_x).reshape(K, rank_x ,G)
+        # Gmat = np.zeros([K, G, G])
+        # for k in range(K):
+        #     Gmat[k,:,:] = np.dot(x[k,:,:].transpose(),x[k,:,:]) + sigma * np.eye(G)
+        Gmat = np.random.binomial(1, 0.5, G * K * G).reshape(K, G ,G)
+        for k in range(K):
+            Gmat[k,:,:] = np.dot(Gmat[k,:,:], Gmat[k,:,:].transpose())
+            np.fill_diagonal(Gmat[k,:,:], 1)
+
     # simulate Sigma
     Sigma =[]
     for k in range(K):
         if lscales[k] > 0:
-            Sigma.append(scales[k] * np.exp(-distC / (2 * lscales[k] ** 2)) + (1-scales[k]) * np.eye(N*G))
+            Kmat = scales[k] * np.exp(-distC / (2 * lscales[k] ** 2))
+            if group_modelling:
+                Kmat = np.kron(Gmat[k,:,:], Kmat)
+            Sigma.append( Kmat + (1-scales[k]) * np.eye(N*G))
         elif lscales[k] == 0:
-            Sigma.append(scales[k] * (distC == 0).astype(float) + (1-scales[k]) * np.eye(N*G))
+            Kmat = scales[k] * (distC == 0).astype(float)
+            if group_modelling:
+                Kmat = np.kron(Kmat,  Gmat[k,:,:])
+            Sigma.append(Kmat + (1-scales[k]) * np.eye(N*G))
             # Sigma.append(np.eye(N*G))
         else:
             sys.exit("All lengthscales need to be non-negative")
 
     # plot covariance structure
-    # fig, axs = plt.subplots(1, 3, sharex=True, sharey=True)
-    # for k in range(K):
-    #     sns.heatmap(Sigma[k], ax =axs[k])
+    if plot:
+        fig, axs = plt.subplots(1, K, sharex=True, sharey=True)
+        for k in range(K):
+            sns.heatmap(Sigma[k], ax =axs[k])
 
     # simulate same factor values for factors with non-zero lengthscales across groups, other can differ (avoids expanding the covaraicen matrix across groups)
     Zks = []
@@ -102,9 +123,17 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
 
     # store as list of groups
     if not sample_cov is None:
-        sample_cov = [sample_cov[groupidx == g] for g in range(G)]
-    return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
-            'views': views, 'lscales': lscales, 'N': N}
+        if not group_modelling:
+            sample_cov = [sample_cov[groupidx == g] for g in range(G)]
+        else:
+            sample_cov = [sample_cov] * G
+
+    if not group_modelling:
+        return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
+                'views': views, 'lscales': lscales, 'N': N}
+    else:
+        return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
+                'views': views, 'lscales': lscales, 'N': N, 'Gmat' : Gmat }
 
 # mask values at randomly sampled time points in each group and view
 # perc of time points are drawn in each view and group independtly and all feature values at this time point set to NaN
