@@ -148,11 +148,9 @@ class kronSigma_Node(Node):
         assert self.N == self.G * self.C and (np.bincount(self.groupsidx) == self.C).all(), \
             "Data has no kronecker structure - fill in missing values and shut off alignment" # TODO
         components = self.get_components(k)
-        term1 = gpu_utils.dot(np.kron(components['Vc'], np.eye(self.G)), np.kron(np.eye(self.C), components['Vg']))
-        term2diag = 1/ (np.repeat(components['Dc'], self.G) * np.tile(components['Dg'], self.C) + self.zeta[k] / (1-self.zeta[k]))
-        assert (np.diag(term2diag) == np.linalg.inv(np.kron(np.diag(components['Dc']), np.diag(components['Dg'])) + self.zeta[k]/(1-self.zeta[k]) * np.eye(self.C * self.G))).all(),\
-            "Calculation of diagonal went wrong..."
-        term3 = gpu_utils.dot(np.kron(np.eye(self.C), components['Vg'].transpose()), np.kron(components['Vc'].transpose(), np.eye(self.G)))
+        term1 = np.kron(components['Vg'], components['Vc'])
+        term2diag = 1/ (np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k] / (1-self.zeta[k]))
+        term3 = np.kron(components['Vg'].transpose(), components['Vc'].transpose())
 
         self.Sigma_inv[k, :, :] = 1 / (1-self.zeta[k]) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
         self.Sigma_inv_logdet[k] =  - self.N * s.log(1 - self.zeta[k]) + s.log(term2diag).sum()
@@ -204,9 +202,30 @@ class kronSigma_Node(Node):
             "Data has no kronecker structure - fill in missing values and shut off alignment" # TODO
         for k in range(self.K):
             components = self.get_components(k)
-            term1 = gpu_utils.dot(np.kron(components['Vc'], np.eye(self.G)), np.kron(np.eye(self.C), components['Vg']))
-            term2diag = (np.repeat(components['Dc'], self.G) * np.tile(components['Dg'], self.C) + self.zeta[k])
-            term3 = gpu_utils.dot(np.kron(np.eye(self.C), components['Vg'].transpose()), np.kron(components['Vc'].transpose(), np.eye(self.G)))
+            term1 = np.kron(components['Vg'], components['Vc'])
+            term2diag = np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k]/(1-self.zeta[k])
+            term3 = np.kron(components['Vg'].transpose(),components['Vc'].transpose())
+
+            # # # TODO remove this block
+            # Gmat = np.dot(np.dot(components['Vg'], np.diag(components['Dg'])), components['Vg'].transpose())
+            # Tmat = np.dot(np.dot(components['Vc'], np.diag(components['Dc'])), components['Vc'].transpose())
+            # # np.dot(np.kron(components['Vc'], components['Vg']),
+            # #        np.dot(
+            # #             np.kron(np.diag(components['Dc']), np.diag(components['Dg'])),
+            # #             np.kron(components['Vc'].transpose(), components['Vg'].transpose())
+            # #        )) - np.kron(Tmat, Gmat)
+            #
+            # zeta = self.zeta[k]
+            # diff = (1-zeta)*np.kron(Gmat, Tmat) + zeta * np.eye(self.N) - (1-zeta) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
+            # if not np.all((abs(diff) < 1e-7)):
+            #     print("Stop: Error in Calculation of Sigma")
+            #     import seaborn as sns
+            #     sns.heatmap(diff)
+            # diff2 = gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3)) - np.linalg.inv(self.Sigma_inv[k,:,:])
+            # if not np.all((abs(diff2) < 1e-7)):
+            #     print("Stop: Error in Calculation of Sigma/SigmaInversw:", np.max(abs(diff2)))
+            #     # import seaborn as sns
+            #     # sns.heatmap(diff)
 
             Sigma[k, :, :] = gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
 
