@@ -154,7 +154,8 @@ class buildBiofam(buildModel):
                                       warping_open_begin=self.model_opts['warping_open_begin'],
                                       warping_open_end=self.model_opts['warping_open_end'],
                                       opt_freq=self.model_opts['opt_freq'],
-                                      model_groups = self.model_opts['model_groups'])
+                                      model_groups = self.model_opts['model_groups'],
+                                      use_gpytorch  = self.model_opts['use_gpytorch'])
         else:
             self.init_model.initSigma(self.sample_cov,
                                       self.data_opts['samples_groups'],
@@ -167,7 +168,8 @@ class buildBiofam(buildModel):
                                       warping_open_begin = self.model_opts['warping_open_begin'],
                                       warping_open_end = self.model_opts['warping_open_end'],
                                       opt_freq = self.model_opts['opt_freq'],
-                                      model_groups = self.model_opts['model_groups'])
+                                      model_groups = self.model_opts['model_groups'],
+                                      use_gpytorch  = self.model_opts['use_gpytorch'])
 
     def build_AlphaW(self):
         """ Build node AlphaW for the ARD prior on the weights"""

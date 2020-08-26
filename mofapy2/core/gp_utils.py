@@ -6,7 +6,7 @@ Utility funcions for the GP calculation of the Sigma Node
 import scipy as s
 import scipy.spatial as SS
 import numpy as np
-
+import gpytorch
 
 def covar_rescaling_factor(C):
     """
@@ -128,3 +128,21 @@ def get_l_grid(X, n_grid = 5, idx = None):
     """
     l_min, l_max = get_l_limits(X, idx)
     return np.logspace(np.log10(l_min), np.log10(l_max), n_grid)
+
+
+# does not account for posterior variance of z
+# K = K_GG \otimes K_CC
+class MultitaskGPModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood, n_tasks, rank_x):
+        super(MultitaskGPModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.MultitaskMean(
+            gpytorch.means.ConstantMean(), num_tasks=n_tasks
+        )
+        self.covar_module = gpytorch.kernels.MultitaskKernel(
+            gpytorch.kernels.RBFKernel(), num_tasks=n_tasks, rank=rank_x
+        )
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultitaskMultivariateNormal(mean_x, covar_x)

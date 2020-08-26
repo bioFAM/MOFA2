@@ -250,7 +250,7 @@ class kronSigma_Node(Node):
         assert len(x) == self.Kg.rank * self.G,\
             "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
         x = x.reshape(self.Kg.rank, self.G)
-        self.Kg.set_parameters(x=x, sigma=sigma, k=k)
+        self.Kg.set_parameters(x=x, sigma=sigma, k=k) # todo avoid recomputing eigendecomposition if not cached?
         self.calc_sigma_inverse_k(k)
         elbo = var.calculateELBO_k(k)
         return -elbo

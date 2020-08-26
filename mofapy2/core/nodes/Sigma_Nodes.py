@@ -40,7 +40,7 @@ class SigmaGrid_Node(Node):
                  opt_freq = 10):
         super().__init__(dim)
         self.zeta_opt = False
-        self.setscaletoone = True
+        self.setscaletoone = False # TODO: set back to True?
         self.mini_batch = None
         self.sample_cov = sample_cov
         self.sample_cov_transformed = copy.copy(sample_cov) # keep original covariate in place
@@ -50,7 +50,7 @@ class SigmaGrid_Node(Node):
         self.N = sample_cov.shape[0]
         self.start_opt = start_opt
         self.n_grid = n_grid
-        self.mv_Znode = False
+        self.mv_Znode = True
         self.iter = 0                                       # counter of iteration to keep track when to optimize lengthscales
         self.n_factors = dim[0]
         self.zeta = np.ones(self.n_factors) * 0.5
@@ -155,7 +155,8 @@ class SigmaGrid_Node(Node):
                                                                                                            self.zeta[k] / (1 - self.zeta[k])))),
                                                                                  self.V[self.gridix[k], :, :].transpose())
                 self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
-                self.Sigma_inv_logdet[k] = -self.N * s.log(1 - self.zeta[k]) - s.log(
+                det_fac = self.N
+                self.Sigma_inv_logdet[k] = - det_fac * s.log(1 - self.zeta[k]) - s.log(
                     (self.D[self.gridix[k], :] + self.zeta[k] / (1 - self.zeta[k]))).sum()
             else:
                 self.Sigma_inv[k, :, :] = s.eye(self.N)
@@ -168,7 +169,8 @@ class SigmaGrid_Node(Node):
                                                                                                s.diag(1 / (self.D[self.gridix[k],:] + self.zeta[k] / (1 - self.zeta[k])))),
                                                                                  self.V[self.gridix[k], :, :].transpose())
                 self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
-                self.Sigma_inv_logdet[k] = -self.Nu * s.log(1 - self.zeta[k]) -s.log(
+                det_fac = self.Nu
+                self.Sigma_inv_logdet[k] = - det_fac * s.log(1 - self.zeta[k]) -s.log(
                      (self.D[self.gridix[k], :] + self.zeta[k] / (1 - self.zeta[k]))).sum()
             else:
                 self.Sigma_inv[k, :, :] = s.eye(self.Nu)

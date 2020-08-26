@@ -13,6 +13,7 @@ from .nongaussian_nodes import *
 from .variational_nodes import *
 from .Sigma_Nodes import SigmaGrid_Node
 from .kronSigma_nodes import kronSigma_Node
+from .gpytorch_Sigma_nodes import Gpytorch_Sigma_Node
 from .Kc_node import Kc_Node
 from .Kg_node import Kg_Node
 from .U_nodes import U_GP_Node_mv, U_GP_Node
