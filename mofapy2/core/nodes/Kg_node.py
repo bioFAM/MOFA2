@@ -22,13 +22,17 @@ class Kg_Node(Node):
     n_grid: number of grid points for the lengthscale parameter
     """
 
-    def __init__(self, dim, groups, rank, sigma = 0.5):
+    def __init__(self, dim, groups, rank, sigma = 0.5, sigma_const=True):
         super().__init__(dim)
         self.groups = groups                                # covariate
         self.G = dim[1]                                             # number of observations for covariate
         self.K = dim[0]                                             # number of latent processes
         self.rank = rank
-        self.sigma = np.array([sigma] * self.K)
+        self.sigma_const = sigma_const
+        if sigma_const:
+            self.sigma = np.array([sigma] * self.K)
+        else:
+            self.sigma = [np.array([sigma] * self.G)] * self.K
 
         # initialize components in node
         self.compute4init()
@@ -60,7 +64,10 @@ class Kg_Node(Node):
 
     def compute_kernel_k(self, k):
         # build kernel matrix based on low-rank approximation
-        self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) + self.sigma[k] * np.eye(self.G)
+        if self.sigma_const:
+            self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) + self.sigma[k] * np.eye(self.G)
+        else:
+            self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) +  np.diag(self.sigma[k])
 
         # compute spectral decomposition
         # Sigma = VDV^T with V^T V = I

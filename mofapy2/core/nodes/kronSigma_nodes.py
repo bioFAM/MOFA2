@@ -17,7 +17,6 @@ import copy
 class Sigma_Node(Node):
     pass
 
-     #TODO set option to makse K_g a dense matrix of ones (all groups connected)
 class kronSigma_Node(Node):
     """
     Sigma node to optimises the GP hyperparameters parameter for each factor and
@@ -37,10 +36,12 @@ class kronSigma_Node(Node):
     warping_open_begin: Allow free beginning for the warped covariates in each group?
     warping_open_end:  Allow free end for the warped covariates in each group?
     opt_freq: how often to hyperparameter optimization, every n-th iteration
+    rankx: rank of group covariace matrix \sum_rank x^T x
+    sigma_const offset of group covariace matrix \sum_rank x^T x + sigma constant diagonal or varibale?
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing = None,
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True,
-                 warping_open_end = True, opt_freq = 10, rankx = 1):
+                 warping_open_end = True, opt_freq = 10, rankx = 1, sigma_const = True):
         super().__init__(dim)
 
         # dimensions and inputs
@@ -64,7 +65,7 @@ class kronSigma_Node(Node):
             "start_opt should be a multiple of opt_freq"  # to ensure in the first opt. step optimization is performed
 
         # initalize group kernel
-        self.initKg(self.group_labels, rankx)
+        self.initKg(self.group_labels, rankx, sigma_const)
 
         # initialize covariate kernel if no wraping, otherwise after first warping
         if not warping:
@@ -106,7 +107,7 @@ class kronSigma_Node(Node):
         self.Kc = Kc_Node(dim=(self.K, self.C), covariates = self.covariates, n_grid = self.n_grid)
 
 
-    def initKg(self, group_labels, rank):
+    def initKg(self, group_labels, rank, sigma_const):
         """
         Method to initialize the components required for the group kernel
         """
@@ -115,7 +116,7 @@ class kronSigma_Node(Node):
         self.G = len(self.groups)                                         # number of groups
 
         # set group kernel
-        self.Kg = Kg_Node(dim=(self.K, self.G), groups = self.groups, rank = rank)
+        self.Kg = Kg_Node(dim=(self.K, self.G), groups = self.groups, rank = rank, sigma_const = sigma_const)
 
 
     def precompute(self, options):
@@ -264,8 +265,12 @@ class kronSigma_Node(Node):
     def calc_neg_elbo_k(self, par, lidx, k, var):
         self.zeta[k] = par[0]
         self.Kc.set_gridix(lidx, k)
-        sigma = par[1]
-        x = par[2:]
+        if self.Kg.sigma_const:
+            sigma = par[1]
+            x = par[2:]
+        else:
+            sigma = par[1:(self.G+1)]
+            x = par[(self.G+1):]
         assert len(x) == self.Kg.rank * self.G,\
             "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
         x = x.reshape(self.Kg.rank, self.G)
@@ -300,13 +305,19 @@ class kronSigma_Node(Node):
                 best_i = -1
                 best_zeta = -1
                 best_elbo = -np.Inf
-                par_init = np.hstack([self.zeta[k], self.get_sigma()[k], self.get_x()[k,:,:].flatten()])
+                par_init = np.hstack([self.zeta[k], self.get_sigma()[k].flatten(), self.get_x()[k,:,:].flatten()])
 
                 # use grid search to optimise lengthscale hyperparameters
                 for lidx in range(self.n_grid):
                     # par = (zeta, x, lidx), loop over lidx
-                    bounds = [(1e-10, 1-1e-10), (1e-10, 1-1e-10)]
-                    bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank
+                    if self.Kg.sigma_const:
+                        bounds = [(1e-10, 1-1e-10)] # zeta
+                        bounds = bounds + [(1e-10, 1-1e-10)]  # sigma
+                        bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
+                    else:
+                        bounds = [(1e-10, 1-1e-10)] # zeta
+                        bounds = bounds + [(1e-10, 1-1e-10)] * self.G  # sigma
+                        bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
                     # make sure initial parameters are in admissible region
                     par_init = np.max(np.vstack([par_init, [bounds[k][0] for k in range(len(bounds))]]), axis = 0)
                     par_init = np.min(np.vstack([par_init, [bounds[k][1] for k in range(len(bounds))]]), axis = 0)
@@ -320,8 +331,12 @@ class kronSigma_Node(Node):
                         best_elbo = elbo
                         best_lidx = lidx
                         best_zeta = res.x[0]
-                        best_sigma = res.x[1]
-                        best_x = res.x[2:].reshape(self.Kg.rank, self.G)
+                        if self.Kg.sigma_const:
+                            best_sigma = res.x[1]
+                            best_x = res.x[2:].reshape(self.Kg.rank, self.G)
+                        else:
+                            best_sigma = res.x[1:(self.G+1)]
+                            best_x = res.x[(self.G+1):].reshape(self.Kg.rank, self.G)
 
                 # save optimized kernel paramters
                 self.struct_sig[k] = np.nan # TODO: sth like best_elbo - self.calc_neg_elbo_k(var, k, zeta = 0) but no 1-a to a interparationa any more as first term can have any size
