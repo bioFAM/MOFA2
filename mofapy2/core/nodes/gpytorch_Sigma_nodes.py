@@ -38,7 +38,7 @@ class Gpytorch_Sigma_Node(Node):
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing = None,
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True,
-                 warping_open_end = True, opt_freq = 10, rankx = 2, torch_seed = 84230):
+                 warping_open_end = True, opt_freq = 10, rankx = 2, torch_seed = 2346):
         super().__init__(dim)
 
         # dimensions and inputs
@@ -123,8 +123,11 @@ class Gpytorch_Sigma_Node(Node):
             for k in range(K):
                 ytrain = torch.stack([ZE[self.groupsidx == g,k] for g in range(self.G)])
                 xtrain = torch.as_tensor(self.sample_cov_transformed[self.groupsidx == 0], dtype=torch.float32) # TODO only works for kroncker structure
-                self.gp[k] = MultitaskGPModel(train_x =xtrain, train_y= ytrain, likelihood=self.likelihood[k],
+                self.gp[k] = MultitaskGPModel(train_x =xtrain, train_y= ytrain, likelihood=self.likelihood[k], # TODO avoid entire re-init, do hot-start
                                               n_tasks=self.G, rank_x=self.rankx) # TODO this does not respect the posterior uncertainty of Z add this ot the lokelihood
+                # set bounds on diagonal of task kernel
+                # self.gp[k].covar_module.task_covar_module.register_constraint("raw_var", gpytorch.constraints.Interval(0.0,1.0))
+                # print(f'Variance constraint: {self.gp[k].covar_module.task_covar_module.raw_var_constraint}')
 
                 training_iterations = gp_iter
 
@@ -221,23 +224,21 @@ class Gpytorch_Sigma_Node(Node):
          Method to save inverse covariance matrix and its determinant for a given factor k
         """
         for k in range(self.K):
-            output = self.gp[k](torch.as_tensor(self.sample_cov_transformed[self.groupsidx == 0], dtype=torch.float32))
-            sigma_mixed = output.covariance_matrix.detach().numpy()
-            self.Sigma[k] = np.vstack([np.hstack(
-                [sigma_mixed[np.arange(self.N) % self.G == g][:, np.arange(self.N) % self.G == h]
-                for h in range(self.G)]
-            ) for g in range(self.G)])
+            # output = self.gp[k](torch.as_tensor(self.sample_cov_transformed[self.groupsidx == 0], dtype=torch.float32)) # TODO this is the covariance of the predicitve distribution not of the marginal!
+            # sigma_mixed = output.covariance_matrix.detach().numpy()
+            # self.Sigma[k] = np.vstack([np.hstack(
+            #     [sigma_mixed[np.arange(self.N) % self.G == g][:, np.arange(self.N) % self.G == h]
+            #     for h in range(self.G)]
+            # ) for g in range(self.G)])
+
+            # todo: doublecheck - is there a direct way to obtain the maringal covariance from the fitted gp model
+            KT = SE(self.sample_cov_transformed[self.groupsidx == 0], self.ls[k], zeta=0)
+            self.Sigma[k] = np.kron(self.Gmat[k], KT) + self.noise[k] * np.eye(self.N)
+
+            # uncomment the following to propagate back to Z updates
             self.Sigma_inv[k] = np.linalg.inv(self.Sigma[k]) # TODO re-use stuff from gp model
             self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k])[1] # TODO re-use stuff from gp model
 
-            # for debugging:
-            KT = SE(self.sample_cov_transformed[self.groupsidx == 0], self.ls[k], zeta=0)
-            Sigma_my = np.kron(KT, self.Gmat[k]) + self.noise[k] * np.eye(self.N)
-            # print("diff:", Sigma_my - self.Sigma[k])
-            # import seaborn as sns
-            # import matplotlib.pyplot as plt
-            # plt.figure()
-            # sns.heatmap(Sigma_my - self.Sigma[k])
 
     def get_sigma_inv_Terms_k(self, k):
         """

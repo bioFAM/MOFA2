@@ -40,7 +40,7 @@ class kronSigma_Node(Node):
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing = None,
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True,
-                 warping_open_end = True, opt_freq = 10, rankx = 2):
+                 warping_open_end = True, opt_freq = 10, rankx = 1):
         super().__init__(dim)
 
         # dimensions and inputs
@@ -309,7 +309,7 @@ class kronSigma_Node(Node):
                     bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank
                     # make sure initial parameters are in admissible region
                     par_init = np.max(np.vstack([par_init, [bounds[k][0] for k in range(len(bounds))]]), axis = 0)
-                    par_init = np.min(np.vstack([par_init, [bounds[k][0] for k in range(len(bounds))]]), axis = 0)
+                    par_init = np.min(np.vstack([par_init, [bounds[k][1] for k in range(len(bounds))]]), axis = 0)
 
                     # [bounds[k][0] for k in range(len(bounds))]
                     # [bounds[k][1] for k in range(len(bounds))]
@@ -332,7 +332,7 @@ class kronSigma_Node(Node):
             self.calc_sigma_inverse()
             print('Sigma node has been optimised: Lengthscales =', self.get_ls(), ', Scale =',  1-self.get_zeta(), ', sigma =',  self.get_sigma())
             for k in range(self.K):
-                print('Sigma node has been optimised: x_%s =' % k , np.dot(self.get_x()[k,:,:].transpose(), self.get_x()[k,:,:]))
+                print('Sigma node has been optimised: Gmat_%s =' % k , np.dot(self.get_x()[k,:,:].transpose(), self.get_x()[k,:,:]))
             # print('Sigma node has been optimised: Smoothness =', self.struct_sig)
 
 
