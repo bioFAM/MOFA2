@@ -4,27 +4,24 @@ import numpy as np
 from mofapy2.core.nodes.variational_nodes import *
 from mofapy2.core.gp_utils import *
 import scipy as s
-import time
 from mofapy2.core import gpu_utils
-import pandas as pd
-from scipy.spatial.distance import euclidean
-import copy
 
 class Kg_Node(Node):
     """
-    Sigma node to model the covariance structure K_c along the given covariate.
-    This node constructs the covariate kernel.
+    Sigma node to model the covariance structure K_g across groups.
+    This node constructs the group-group covariance and stores the ELBO-optimal hyperparamters
+    KG = xx^T + diag(sigma)
 
     PARAMETERS
     ----------
-    dim: dimensionality of the node (= number of covariate observations x number of latent factors)
-    covariates: unique covariates for construction of the covariate part of the covariance matrix
-    n_grid: number of grid points for the lengthscale parameter
+    dim: dimensionality of the node (= number of latent factors x number of groups)
+    rank: rank of the approximation of the group-group covariance term (x)
+    sigma: initial value of the diagonal term
+    sigma_const: boolean whether to use a constant diagonal?
     """
 
-    def __init__(self, dim, groups, rank, sigma = 0.5, sigma_const=True):
+    def __init__(self, dim, rank, sigma = 0.5, sigma_const=True):
         super().__init__(dim)
-        self.groups = groups                                # covariate
         self.G = dim[1]                                             # number of observations for covariate
         self.K = dim[0]                                             # number of latent processes
         self.rank = rank
@@ -49,14 +46,14 @@ class Kg_Node(Node):
         self.Kmat = np.zeros([self.K, self.G, self.G])
 
         # initialise spectral decomposition
-        self.V = np.zeros([self.K, self.G, self.G])  # eigenvectors of kernel matrix
-        self.D = np.zeros([self.K, self.G])  # eigenvalues of kernel matrix
+        self.V = np.zeros([self.K, self.G, self.G])     # eigenvectors of kernel matrix
+        self.D = np.zeros([self.K, self.G])             # eigenvalues of kernel matrix
 
         self.compute_kernel()
 
     def compute_kernel(self):
         """
-        Function to compute kernel matrix for all lengthscales
+        Function to compute kernel matrix for current hyperparameters (x, sigma)
         """
         for k in range(self.K):
             self.compute_kernel_k(k)
@@ -70,8 +67,7 @@ class Kg_Node(Node):
             self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) +  np.diag(self.sigma[k])
 
         # compute spectral decomposition
-        # Sigma = VDV^T with V^T V = I
-        # important to use eigh and not eig to obtain orthogonal eigenvector (which always exist for symmetric real matrices)
+        # Kg = VDV^T with V^T V = I
         self.D[k, :], self.V[k, :, :] = s.linalg.eigh(self.Kmat[k, :, :])
 
 
@@ -86,6 +82,9 @@ class Kg_Node(Node):
         return self.V[k, :, :], self.D[k, :]
 
     def set_parameters(self, x, sigma, k):
+        """
+        Method to set hyperparameters of kernel and recompute covariance matrices
+        """
         self.set_x(x,k)
         self.set_sigma(sigma, k)
         self.compute_kernel_k(k)
@@ -99,6 +98,8 @@ class Kg_Node(Node):
     def get_x(self):
         return self.x
 
-
     def get_sigma(self):
         return self.sigma
+
+    def get_Kmat(self):
+        return self.Kmat

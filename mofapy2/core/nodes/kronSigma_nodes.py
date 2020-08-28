@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-
+import sys
 from mofapy2.core.nodes.variational_nodes import *
 from mofapy2.core.nodes.Kc_node import Kc_Node
 from mofapy2.core.nodes.Kg_node import Kg_Node
@@ -14,14 +14,22 @@ from dtw import dtw # note this is dtw-python not dtw
 from scipy.spatial.distance import euclidean
 import copy
 
-class Sigma_Node(Node):
-    pass
+# TODO:
+# - Sigma Node could be a general class with group_model_kron, _nokron and no_group nodes as subclasses,
+#       they are now all cases in this Sigma node
+# - implement warping for more than one covariate
+# - add explicit ELBO and gradient calculuations for optimization
+# - model_groups is not yet supported for warping or sparse GPs or non-Kronecker structure
 
-class kronSigma_Node(Node):
+class Sigma_Node(Node):
     """
-    Sigma node to optimises the GP hyperparameters parameter for each factor and
+    Sigma node to optimises the GP hyperparameters for each factor and
     perform alignment of covariates per group.
-    
+
+    The covariance matrix is modelled as a Kronecker product of a group kernel
+    and a covariate kernel where possible:
+    Sigma = (1-zeta) * KG \otimes KC + zeta * I
+
     PARAMETERS
     ----------
     dim: dimensionality of the node (= number of latent factors)
@@ -31,25 +39,28 @@ class kronSigma_Node(Node):
     n_grid: number of grid points to optimize the lengthscale on
     idx_inducing: Index of inducing points (default None - models the full kernel matrix)
     warping: Boolean, whether to perform warping of covariates across groups in the latent space
-    warping_freq: how often to perform wraping, every n-th iteration
+    warping_freq: how often to perform warping, every n-th iteration
     warping_ref: reference group for warping
     warping_open_begin: Allow free beginning for the warped covariates in each group?
     warping_open_end:  Allow free end for the warped covariates in each group?
     opt_freq: how often to hyperparameter optimization, every n-th iteration
-    rankx: rank of group covariace matrix \sum_rank x^T x
-    sigma_const offset of group covariace matrix \sum_rank x^T x + sigma constant diagonal or varibale?
+    rankx: rank of group covariance matrix \sum_rank x^T x
+    sigma_const offset of group covariance matrix KG = \sum_rank x^T x + sigma constant diagonal or variable?
+    model_groups: whether to use a group kernel on top of the covariate kernel?
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing = None,
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True,
-                 warping_open_end = True, opt_freq = 10, rankx = 1, sigma_const = True):
+                 warping_open_end = True, opt_freq = 10, rankx = 1, sigma_const = True,
+                 model_groups = False):
         super().__init__(dim)
 
         # dimensions and inputs
+        self.mini_batch = None
         self.sample_cov = sample_cov
         self.sample_cov_transformed = copy.copy(sample_cov)         # keep original covariate in place
         self.group_labels = groups
 
-        # covariate kernel is initliazed after first wraping
+        # covariate kernel is initialized after first warping
         self.N = sample_cov.shape[0]                                # total number of observation (C*G in the complete case, otherwise less)
         self.K = dim[0]                                             # number of factors
 
@@ -57,70 +68,109 @@ class kronSigma_Node(Node):
         self.start_opt = start_opt
         self.n_grid = n_grid
         self.iter = 0                                               # counter of iteration to keep track when to optimize lengthscales
-        self.zeta = np.ones(self.K) * 0.5                           # noise hyperparameter
+        self.zeta = np.ones(self.K)                                 # noise hyperparameter, corresponds to idenity matrices (and the init of SimgaInv terms)
         self.gridix = np.zeros(self.K, dtype = np.int8)             # index of the lengthscale grid values to use per factor
         self.struct_sig = np.zeros(self.K)                          # store ELBO improvements compared to diagonal covariance
         self.opt_freq = opt_freq
         assert self.start_opt % self.opt_freq == 0,\
-            "start_opt should be a multiple of opt_freq"  # to ensure in the first opt. step optimization is performed
+            "start_opt should be a multiple of opt_freq"            # to ensure in the first opt. step optimization is performed
 
-        # initalize group kernel
-        self.initKg(self.group_labels, rankx, sigma_const)
+        # initialize group kernel
+        self.model_groups = model_groups
+        self.groupsidx = pd.factorize(self.group_labels)[0]  # for each sample gives the idx in groups
+        self.groups = np.unique(self.group_labels)  # distinct group labels
 
-        # initialize covariate kernel if no wraping, otherwise after first warping
-        if not warping:
-            self.initKc(self.sample_cov_transformed)
+        if self.model_groups:
+            self.G = len(self.groups)  # number of groups
+            # check: has Kronecker structure?
+            self.kronecker = np.all([self.sample_cov_transformed[self.groupsidx == 0] ==
+                                     self.sample_cov_transformed[self.groupsidx == g] for g in
+                                     range(self.G)])
+            if not self.kronecker:
+                print("Warning: Data has no Kronecker structure (groups \otimes covariates) - inference might be slow."
+                      "If possible, reformat your data to have samples with identical covariates across groups.")
+            self.initKg(rankx, sigma_const)
+
+        else:
+            # all samples are modelled jointly in the covariate kernel
+            self.Kg = None
+            self.kronecker = True
+            self.G = 1
 
         # warping
         self.warping = warping
-        assert warping_ref < self.G,\
+        self.G4warping = len(self.groups) # number of groups to consider for warping (if no group kernel this differes from self.G)
+        assert warping_ref < self.G4warping,\
             "Reference group not correctly specified, exceeds the number of groups."
         self.reference_group = warping_ref
         self.warping_freq = warping_freq
         self.warping_open_begin = warping_open_begin
         self.warping_open_end = warping_open_end
-        assert self.warping_freq % self.opt_freq == 0,\
-            "start_opt should be a multiple of opt_freq" # to ensure in the first opt. step alignment is performed
+        assert self.start_opt % self.warping_freq == 0,\
+            "start_opt should be a multiple of opt_freq"            # to ensure in the first opt. step alignment is performed
 
         # sparse GPs
         self.idx_inducing = idx_inducing
         if not self.idx_inducing is None:
             self.Nu = len(idx_inducing)
+            if self.model_groups:
+                print("TODO: implement sparse GP support with group model")
+                sys.exit()
+        else:
+            self.Nu = self.N    # dimension to use for Sigma^(-1)
+
+        # initialize covariate kernel if no warping, otherwise after first warping
+        if not self.warping:
+            if self.idx_inducing is None:
+                self.initKc(self.sample_cov_transformed)
+            else:
+                self.initKc(self.sample_cov_transformed[self.idx_inducing]) #TODO add support for idx inducing and aling?
+        else:
+            self.Kc = None # initialized later
 
         # initialize Sigma terms (unstructured)
-        self.Sigma_inv = np.zeros([self.K, self.N, self.N])
+        self.Sigma_inv = np.zeros([self.K, self.Nu, self.Nu])
         for k in range(self.K):
-            self.Sigma_inv[k, :, :] = np.eye(self.N)
+            self.Sigma_inv[k, :, :] = np.eye(self.Nu)
+
         self.Sigma_inv_logdet = np.ones(self.K)
+
+        # exclude cases not covered
+        if self.model_groups and (self.warping or self.idx_inducing is not None or not self.kronecker):
+            print("The option model_groups cannot (yet) be used in conjunction with warping, sparse GPs or non-Kronekcer data ")
+            sys.exit()
+        if self.warping and self.idx_inducing is not None :
+            print("The option warping cannot be used jointly with sparse GPs")
+            sys.exit()
 
 
     def initKc(self, transformed_sample_cov):
         """
         Method to initialize the components required for the covariate kernel
         """
-        self.covariates = np.unique(transformed_sample_cov, axis=0)  # distinct covariate values
-        self.covidx = [np.where((self.covariates == transformed_sample_cov[j, :]).all(axis=1))
-                       for j in range(self.N)]  # for each sample gives the idx in covariates
-        self.C = self.covariates.shape[0]  # number of distinct covariate values
+        if self.model_groups:
+            self.covariates = np.unique(transformed_sample_cov, axis=0)  # distinct covariate values
+        else:
+            self.covariates = transformed_sample_cov # all covariate values
+
+        # self.covidx = [np.where((self.covariates == transformed_sample_cov[j, :]).all(axis=1))
+        #                for j in range(self.Nu)]  # for each sample gives the idx in covariates
+        self.C = self.covariates.shape[0]  # number of covariate values
 
         # set covariate kernel
         self.Kc = Kc_Node(dim=(self.K, self.C), covariates = self.covariates, n_grid = self.n_grid)
 
 
-    def initKg(self, group_labels, rank, sigma_const):
+    def initKg(self, rank, sigma_const):
         """
-        Method to initialize the components required for the group kernel
+        Method to initialize the group kernel
         """
-        self.groupsidx = pd.factorize(group_labels)[0]                    # for each sample gives the idx in groups
-        self.groups = np.unique(group_labels)                             # distinct group labels
-        self.G = len(self.groups)                                         # number of groups
-
         # set group kernel
-        self.Kg = Kg_Node(dim=(self.K, self.G), groups = self.groups, rank = rank, sigma_const = sigma_const)
+        self.Kg = Kg_Node(dim=(self.K, self.G), rank = rank, sigma_const = sigma_const)
 
 
     def precompute(self, options):
-        gpu_utils.gpu_mode = options['gpu_mode'] # TODO: implement, this is currently not in use
+        gpu_utils.gpu_mode = options['gpu_mode']
 
     
     def get_components(self,k):
@@ -128,10 +178,15 @@ class kronSigma_Node(Node):
         Method to fetch ELBO-optimal covariance matrix components for a given factor k
         """
         Vc, Dc = self.Kc.get_kernel_components_k(k)
-        Vg, Dg = self.Kg.get_kernel_components_k(k)
+
+        if self.model_groups:
+            Vg, Dg = self.Kg.get_kernel_components_k(k)
+        else:
+            Vg = np.array([1]); Dg = np.array([1])
+
         zeta = self.get_zeta()[k]
 
-        return {'Vc':Vc, 'Vg': Vg, 'Dc':Dc, 'Dg':Dg, 'zeta' : zeta}
+        return {'Vc' : Vc, 'Vg' : Vg, 'Dc' : Dc, 'Dg' : Dg, 'zeta' : zeta}
 
     def calc_sigma_inverse(self):
         """
@@ -146,26 +201,30 @@ class kronSigma_Node(Node):
         Method to compute the inverse of sigma and its log determinant based on the spectral decomposition
          of the kernel matrices for a given factor k
         """
-        assert self.N == self.G * self.C and (np.bincount(self.groupsidx) == self.C).all(), \
-            "Data has no kronecker structure - fill in missing values and shut off alignment" # TODO
-        components = self.get_components(k)
-        term1 = np.kron(components['Vg'], components['Vc'])
-        term2diag = 1/ (np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k] / (1-self.zeta[k]))
-        term3 = np.kron(components['Vg'].transpose(), components['Vc'].transpose())
+        if self.zeta[k] == 1:
+            self.Sigma_inv[k, :, :] = np.eye(self.Nu)
+            self.Sigma_inv_logdet[k] = 1
+        else:
+            if self.kronecker or not self.model_groups:
+                components = self.get_components(k)
+                term1 = np.kron(components['Vg'], components['Vc'])
+                term2diag = 1/ (np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k] / (1-self.zeta[k]))
+                term3 = np.kron(components['Vg'].transpose(), components['Vc'].transpose())
+                self.Sigma_inv[k, :, :] = 1 / (1-self.zeta[k]) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
+                self.Sigma_inv_logdet[k] =  - self.Nu * s.log(1 - self.zeta[k]) + s.log(term2diag).sum()
+            else:
+                print("TODO: Implement Sigma node for non-Kroncker structure!")
+                sys.exit()
 
-        self.Sigma_inv[k, :, :] = 1 / (1-self.zeta[k]) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
-        self.Sigma_inv_logdet[k] =  - self.N * s.log(1 - self.zeta[k]) + s.log(term2diag).sum()
 
-        # TODO non-Kronecker strcutre - some gourps can have multiple samples with same covariate value, some groups might be missing samples with covariate value
-
-    def get_sigma_inv_Terms_k(self, k):
+    def getInverseTerms_k(self, k):
         """ 
          Method to fetch ELBO-optimal inverse covariance matrix and its determinant for a given factor k
         """
         return {'inv': self.Sigma_inv[k,:,:], 'inv_logdet':  self.Sigma_inv_logdet[k]}
 
 
-    def get_sigma_inv_Terms(self):
+    def getInverseTerms(self):
         """ 
         Method to fetch ELBO-optimal inverse covariance matrix and its determinant for all factors
         """
@@ -194,43 +253,50 @@ class kronSigma_Node(Node):
         sigma = self.Kg.get_sigma()
         return sigma
 
-    def getExpectation(self):
+    def build_Sigma_complete(self):
         """
-        Method to get sigma hyperparametr
+        Method to build the entire covariance matrix (used in context of sparse GPs to pass to Z|U node)
         """
         Sigma = np.zeros([self.K, self.N, self.N])
-        assert self.N == self.G * self.C and (np.bincount(self.groupsidx) == self.C).all(), \
-            "Data has no kronecker structure - fill in missing values and shut off alignment" # TODO
         for k in range(self.K):
-            components = self.get_components(k)
-            term1 = np.kron(components['Vg'], components['Vc'])
-            term2diag = np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k]/(1-self.zeta[k])
-            term3 = np.kron(components['Vg'].transpose(),components['Vc'].transpose())
-
-            # # # TODO remove this block
-            # Gmat = np.dot(np.dot(components['Vg'], np.diag(components['Dg'])), components['Vg'].transpose())
-            # Tmat = np.dot(np.dot(components['Vc'], np.diag(components['Dc'])), components['Vc'].transpose())
-            # # np.dot(np.kron(components['Vc'], components['Vg']),
-            # #        np.dot(
-            # #             np.kron(np.diag(components['Dc']), np.diag(components['Dg'])),
-            # #             np.kron(components['Vc'].transpose(), components['Vg'].transpose())
-            # #        )) - np.kron(Tmat, Gmat)
-            #
-            # zeta = self.zeta[k]
-            # diff = (1-zeta)*np.kron(Gmat, Tmat) + zeta * np.eye(self.N) - (1-zeta) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
-            # if not np.all((abs(diff) < 1e-7)):
-            #     print("Stop: Error in Calculation of Sigma")
-            #     import seaborn as sns
-            #     sns.heatmap(diff)
-            # diff2 = gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3)) - np.linalg.inv(self.Sigma_inv[k,:,:])
-            # if not np.all((abs(diff2) < 1e-7)):
-            #     print("Stop: Error in Calculation of Sigma/SigmaInversw:", np.max(abs(diff2)))
-            #     # import seaborn as sns
-            #     # sns.heatmap(diff)
-
-            Sigma[k, :, :] = gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
+            if self.zeta[k] == 1 or self.Kc is None:
+                    Sigma[k, :, :] = np.eye(self.N)
+            else:
+                Kc_k = self.Kc.eval_at_newpoints_k(self.sample_cov_transformed, k)
+                for k in range(self.K):
+                    Sigma[k, :, :] = (1 - self.zeta[k]) * Kc_k  + self.zeta[k] * np.eye(self.N) # TODO add multiplication with expanded group kernel to enable group_model support
 
         return Sigma
+
+    def getExpectation(self):
+        """
+        Method to get sigma hyperparameter
+        """
+        Sigma = np.zeros([self.K, self.N, self.N])
+        if self.idx_inducing is not None:
+            Sigma = self.build_Sigma_complete()
+        else:
+            if self.kronecker or not self.model_groups:
+                # if model_groups = False, Vg, Dg, G =1 reduces to (1-zeta)*V(D+zeta/(1-zeta)V^T
+                for k in range(self.K):
+                    components = self.get_components(k)
+                    term1 = np.kron(components['Vg'], components['Vc'])
+                    term2diag = np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k]/(1-self.zeta[k])
+                    term3 = np.kron(components['Vg'].transpose(),components['Vc'].transpose())
+                    Sigma[k, :, :] = (1-self.zeta[k]) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
+            else:
+                print("TODO For non-Kronekcer: build whole covariance matrix from correpsonding entries in covarite and group amtrix")
+                sys.exit()
+
+        return Sigma
+
+    def getExpectations(self):
+        """
+        Method to get covariance matrix and inverse terms (used for sparse GPs)
+        """
+        Sigma = self.getExpectation()
+        invTerms = self.getInverseTerms()
+        return {'cov' : Sigma, 'inv': invTerms['inv'], 'inv_logdet': invTerms['inv_logdet']}
 
     def get_zeta(self):
         """
@@ -245,38 +311,48 @@ class kronSigma_Node(Node):
         """
         ls = self.get_ls()
         zeta = self.get_zeta()
+        if not self.model_groups:
+            return {'l': ls, 'scale': 1 - zeta, 'sample_cov': self.sample_cov_transformed}
+
         x = self.get_x()
         sigma = self.get_sigma()
-        return {'l':ls, 'scale': 1-zeta, 'sig': self.struct_sig, 'sample_cov':self.sample_cov_transformed,  'x': x, 'sigma' : sigma}
+        return {'l':ls, 'scale': 1-zeta, 'sample_cov': self.sample_cov_transformed,  'x': x, 'sigma' : sigma}
 
 
     def removeFactors(self, idx, axis=1):
         """
         Method to remove factors 
         """
-        self.Kg.removeFactors()
-        self.Kc.removeFactors()
+        if self.Kg is not None:
+            self.Kg.removeFactors(idx)
+        if self.Kc is not None:
+            self.Kc.removeFactors(idx)
         self.zeta = s.delete(self.zeta, axis=0, obj=idx)
-        self.struct_sig = s.delete(self.struct_sig, axis=0, obj=idx)
         self.updateDim(0, self.dim[0] - len(idx))
         self.K = self.K - 1
 
 
     def calc_neg_elbo_k(self, par, lidx, k, var):
+
         self.zeta[k] = par[0]
         self.Kc.set_gridix(lidx, k)
-        if self.Kg.sigma_const:
-            sigma = par[1]
-            x = par[2:]
-        else:
-            sigma = par[1:(self.G+1)]
-            x = par[(self.G+1):]
-        assert len(x) == self.Kg.rank * self.G,\
-            "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
-        x = x.reshape(self.Kg.rank, self.G)
-        self.Kg.set_parameters(x=x, sigma=sigma, k=k) # todo avoid recomputing eigendecomposition if not cached?
+
+        # if required set group parameters
+        if self.model_groups:
+            if self.Kg.sigma_const:
+                sigma = par[1]
+                x = par[2:]
+            else:
+                sigma = par[1:(self.G+1)]
+                x = par[(self.G+1):]
+            assert len(x) == self.Kg.rank * self.G,\
+                "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
+            x = x.reshape(self.Kg.rank, self.G)
+            self.Kg.set_parameters(x=x, sigma=sigma, k=k) # set and recalculate group kernel
+
         self.calc_sigma_inverse_k(k)
         elbo = var.calculateELBO_k(k)
+
         return -elbo
 
 
@@ -286,15 +362,25 @@ class kronSigma_Node(Node):
         The optimization can be carried out on a per-factor basis (not required on all combinations) as latent variables are independent in the elbo
         """
 
-        # get Z node of Markov blanket
-        Zvar = self.markov_blanket['Z']
-        ZE = Zvar.getExpectation()
-        K = Zvar.dim[1]
-        assert K == len(self.get_ls()) and K == len(self.zeta) and K == self.K,\
+        # get Z/U node of Markov blanket
+        if not self.idx_inducing is None:
+            var = self.markov_blanket['U']
+        else:
+            var = self.markov_blanket['Z']
+
+        K = var.dim[1]
+        assert K == len(self.zeta) and K == self.K,\
             'problem in dropping factor'
 
         # perform DTW to align groups
-        if self.warping and self.G > 1 and self.iter % self.warping_freq == 0:
+        if self.warping and self.G4warping > 1 and self.iter % self.warping_freq == 0:
+            if not self.idx_inducing is None:
+                Zvar = self.markov_blanket['U'].markov_blanket['Z']  # use all factor values for alignment #TODO clean this, move alignment to Znode?
+            else:
+                Zvar = var
+
+            ZE = Zvar.getExpectation()
+
             self.align_sample_cov_dtw(ZE)
             print("Covariates were aligned between groups.")
 
@@ -305,51 +391,56 @@ class kronSigma_Node(Node):
                 best_i = -1
                 best_zeta = -1
                 best_elbo = -np.Inf
-                par_init = np.hstack([self.zeta[k], self.get_sigma()[k].flatten(), self.get_x()[k,:,:].flatten()])
+
+                # set initial values for optimization
+                if self.model_groups:
+                    # par = (zeta, sigma, x, lidx), loop over lidx
+                    par_init = np.hstack([self.zeta[k], self.get_sigma()[k].flatten(), self.get_x()[k,:,:].flatten()])
+                else:
+                    # par = (zeta, lidx), loop over lidx
+                    par_init = self.zeta[k]
 
                 # use grid search to optimise lengthscale hyperparameters
                 for lidx in range(self.n_grid):
-                    # par = (zeta, x, lidx), loop over lidx
-                    if self.Kg.sigma_const:
-                        bounds = [(1e-10, 1-1e-10)] # zeta
-                        bounds = bounds + [(1e-10, 1-1e-10)]  # sigma
-                        bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
+                    if self.model_groups:
+                        if self.Kg.sigma_const:
+                            bounds = [(1e-10, 1-1e-10)] # zeta
+                            bounds = bounds + [(1e-10, 1-1e-10)]  # sigma
+                            bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
+                        else:
+                            bounds = [(1e-10, 1-1e-10)] # zeta
+                            bounds = bounds + [(1e-10, 1-1e-10)] * self.G  # sigma
+                            bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
                     else:
-                        bounds = [(1e-10, 1-1e-10)] # zeta
-                        bounds = bounds + [(1e-10, 1-1e-10)] * self.G  # sigma
-                        bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
+                        bounds = [(1e-10, 1-1e-10)]
+
                     # make sure initial parameters are in admissible region
                     par_init = np.max(np.vstack([par_init, [bounds[k][0] for k in range(len(bounds))]]), axis = 0)
                     par_init = np.min(np.vstack([par_init, [bounds[k][1] for k in range(len(bounds))]]), axis = 0)
 
-                    # [bounds[k][0] for k in range(len(bounds))]
-                    # [bounds[k][1] for k in range(len(bounds))]
-                    res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, Zvar), x0 = par_init, bounds=bounds) # L-BFGS-B # TODO suitable bounds?
+                    # optimize
+                    res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds) # L-BFGS-B
                     elbo = -res.fun
-                    # print("ELBO", elbo, ", i:", self.gridix[k], ", zeta:", res.x)
                     if elbo > best_elbo:
                         best_elbo = elbo
                         best_lidx = lidx
                         best_zeta = res.x[0]
-                        if self.Kg.sigma_const:
-                            best_sigma = res.x[1]
-                            best_x = res.x[2:].reshape(self.Kg.rank, self.G)
-                        else:
-                            best_sigma = res.x[1:(self.G+1)]
-                            best_x = res.x[(self.G+1):].reshape(self.Kg.rank, self.G)
+                        if self.model_groups:
+                            if self.Kg.sigma_const:
+                                best_sigma = res.x[1]
+                                best_x = res.x[2:].reshape(self.Kg.rank, self.G)
+                            else:
+                                best_sigma = res.x[1:(self.G+1)]
+                                best_x = res.x[(self.G+1):].reshape(self.Kg.rank, self.G)
 
                 # save optimized kernel paramters
-                self.struct_sig[k] = np.nan # TODO: sth like best_elbo - self.calc_neg_elbo_k(var, k, zeta = 0) but no 1-a to a interparationa any more as first term can have any size
                 self.Kc.set_gridix(best_lidx, k)
-                self.Kg.set_parameters(x=best_x, sigma=best_sigma, k=k)
+                if self.model_groups:
+                    self.Kg.set_parameters(x=best_x, sigma=best_sigma, k=k)
                 self.zeta[k] = best_zeta
 
             self.calc_sigma_inverse()
-            print('Sigma node has been optimised: Lengthscales =', self.get_ls(), ', Scale =',  1-self.get_zeta(), ', sigma =',  self.get_sigma())
-            for k in range(self.K):
-                print('Sigma node has been optimised: Gmat_%s =' % k , np.dot(self.get_x()[k,:,:].transpose(), self.get_x()[k,:,:]))
-            # print('Sigma node has been optimised: Smoothness =', self.struct_sig)
-
+            print('Sigma node has been optimised: Lengthscales =', self.get_ls(), ', Scale =',  1-self.get_zeta())
 
     def align_sample_cov_dtw(self, Z):
         """
@@ -357,8 +448,12 @@ class kronSigma_Node(Node):
         The set of possible values for covaraites cannot be expaned (all need to be contained in the reference group)
         Thus, this does not requrie an update of Kc but only of indices mapping samples to covariates.
         """
+        if self.model_groups:
+            print("TODO: resotre kronckec where possible, adapt covairates in Kc to unique one or build full kernel matrix")
+            sys.exit()
+
         paths = []
-        for g in range(self.G):
+        for g in range(self.G4warping):
             if g is not self.reference_group:
                 # reorder by covariate value to ensure monotonicity constrains are correctly placed
                 idx_ref_order = np.argsort(self.sample_cov[self.groupsidx == self.reference_group,0])
@@ -375,13 +470,13 @@ class kronSigma_Node(Node):
 
         # adapt covaraite kernel to warped covariates
         if self.iter == self.start_opt:
-            self.initKc(self.sample_cov_transformed)
+            self.initKc(self.sample_cov_transformed) # only pass unique if grou pmodel and kron
         else:
+            pass
             # only adapt indices
-            self.covidx = [np.where((self.covariates == self.sample_cov_transformed[j, :]).all(axis=1))
-                        for j in range(self.N)]  # for each sample gives the idx in covariates
+            # self.covidx = [np.where((self.covariates == self.sample_cov_transformed[j, :]).all(axis=1))
+            #             for j in range(self.Nu)]  # for each sample gives the idx in covariates
 
-        # TODO need to restore kroncker strucutre here
 
     def updateParameters(self, ix, ro):
         """
@@ -393,3 +488,12 @@ class kronSigma_Node(Node):
 
     def calculateELBO(self): # no contribution to ELBO
         return 0
+
+    def get_mini_batch(self):
+        """
+        Method to fetch minibatch
+        """
+        if self.mini_batch is None:
+            return self.getExpectations()
+        else:
+            return self.mini_batch

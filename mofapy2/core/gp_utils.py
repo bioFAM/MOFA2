@@ -1,108 +1,57 @@
 """
-Utility funcions for the GP calculation of the Sigma Node
-
+Utility funcions for the Gaussian process calculations of the Sigma Node
 """
 
 import scipy as s
 import scipy.spatial as SS
 import numpy as np
-import gpytorch
-
-def covar_rescaling_factor(C):
-    """
-    Returns the rescaling factor for the Gower normalizion on covariance matrix C
-    the rescaled covariance matrix has sample variance of 1 s.t. one obtaines an unbiased estimate of the variance explained
-    (based on https://github.com/PMBio/limix/blob/master/limix/utils/preprocess.py - covar_rescaling_factor_efficient;
-    https://limix.readthedocs.io/en/stable/api/limix.qc.normalise_covariance.html)
-    """
-    n = C.shape[0]
-    P = s.eye(n) - s.ones((n,n))/float(n) # Gower’s centering matrix
-    CP = C - C.mean(0)[:, s.newaxis]
-    trPCP = s.sum(P * CP) # trace of doubly centered covariance matrix
-    r = (n-1) / trPCP
-    return r
-
-def covar_to_corr(C):
-    """
-    Transforms the covariance matrix into a correlation matrix
-    """
-    Cdiag = np.diag(C)
-    Ccor = np.diag(1/np.sqrt(Cdiag)) @ C @ np.diag(1/np.sqrt(Cdiag))
-    return Ccor
+# import gpytorch
 
 def SE(X, l, zeta = 1e-3):
     """
     squared exponential covariance function on input X with lengthscale l
     """
-    # for lengthscale of 0: 1 if tmp = 0, 0 otherwise
-    #(this might alos happen off-diagonal for identical covariate values for distinct samples)
     tmp = SS.distance.pdist(X, 'euclidean') ** 2.
     tmp = SS.distance.squareform(tmp)
     if l == 0:
-        cov = (1-zeta) * (tmp ==0).astype(float) # np.eye(X.shape[0])
+        cov = (1-zeta) * (tmp ==0).astype(float)
     else:
-        cov = (1-zeta) * np.exp(-tmp/ (2 * l** 2.))
+        cov = (1-zeta) * np.exp(-tmp/ (2 * l ** 2.))
     cov += zeta * np.eye(X.shape[0])
 
     return cov
 
 def Cauchy(X, l, zeta =  1e-3):
     """
-    squared exponential covariance function on input X with lengthscale l
+    Cauchy covariance function on input X with lengthscale l
     """
-    if l == 0:
-        return np.eye(X.shape[0])
-    tmp = SS.distance.pdist(X,'euclidean')**2.
+    tmp = SS.distance.pdist(X,'euclidean') ** 2.
     tmp = SS.distance.squareform(tmp)
-    cov = (1-zeta) * 1/(1 + tmp/ (l** 2.))
+    if l == 0:
+        cov = (1-zeta) * (tmp ==0).astype(float)
+    else:
+        cov = (1-zeta) * 1/(1 + tmp/ (l ** 2.))
     cov += zeta * np.eye(X.shape[0])
 
     return cov
 
 
-def PE(X, l, zeta =  1e-3):
-    """
-    periodic covariance function on input X with lengthscale l
-    """
-    if l == 0:
-        return np.eye(X.shape[0])
-    tmp = SS.distance.pdist(X,'euclidean')
-    tmp = SS.distance.squareform(tmp)
-    cov = (1-zeta) * np.cos( np.pi/l  * tmp)
-    cov += zeta * np.eye(X.shape[0]) # avoid singularities
-
-    return cov
-
-def BlockSE(X, clust, l, zeta = 1e-3):
-    """
-    covariance function yielding block matrix with squared exponential kernel per group
-    """
-    if l == 0:
-        return np.eye(X.shape[0])
-
-    cov = np.zeros([X.shape[0], X.shape[0]])
-    for clust_ix in np.unique(clust):
-        cells_ix = np.where(clust == clust_ix)[0]
-        X_tmp = X[cells_ix,:]
-        se_tmp = SE(X_tmp, l, zeta)
-        cov[np.ix_(cells_ix, cells_ix)] = se_tmp
-
-    return cov
-
-def BlockInv(mat, clust):
-    """
-    calculate inverse of block matrix with blocks given by clust
-    """
-    assert mat.shape[0] == mat.shape[1], "non-squared matrix"
-
-    inv_mat = np.zeros([mat.shape[0], mat.shape[0]])
-
-    for clust_ix in np.unique(clust):
-        cells_ix = np.where(clust == clust_ix)[0]
-        mat_tmp = mat[np.ix_(cells_ix, cells_ix)]
-        inv_mat[np.ix_(cells_ix, cells_ix)] = s.linalg.inv(mat_tmp) # TODO speed up
-
-    return inv_mat
+# def PE(X, period, zeta =  1e-3, ls = 1):
+#     """
+#     periodic covariance function on input X with period period and lengthscale ls
+#     """
+#     dist_per_dim = [SS.distance.pdist(X[:,i], 'euclidean') for i in range(X.shape[1])]
+#     dist_per_dim = [SS.distance.squareform(tmp) for tmp in dist_per_dim]
+#     if period == 0:
+#         arg_per_dim =[(dd ==0).astype(float) for dd in dist_per_dim]
+#     else:
+#         arg_per_dim = [np.pi * dd / period for dd in dist_per_dim]  # argument of sin
+#     sum_coord = sum([-0.5 * (np.sin(arg) ** 2 / ls ** 2) for arg in arg_per_dim])  # term in exponent of peridoic kernel
+#     cov = (1-zeta) * np.exp(sum_coord)
+#
+#     cov += zeta * np.eye(X.shape[0])
+#
+#     return cov
 
 
 def get_l_limits(X, idx = None):
@@ -122,27 +71,52 @@ def get_l_limits(X, idx = None):
 
     return l_min, l_max
 
+
 def get_l_grid(X, n_grid = 5, idx = None):
     """
-    Function to get points in a logarithmic grid for lengthscales
+    Function to get points in a logarithmic grid for lengthscales (as implemented in spatialDE)
     """
     l_min, l_max = get_l_limits(X, idx)
     return np.logspace(np.log10(l_min), np.log10(l_max), n_grid)
 
 
-# does not account for posterior variance of z
-# K = K_GG \otimes K_CC
-class MultitaskGPModel(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, n_tasks, rank_x):
-        super(MultitaskGPModel, self).__init__(train_x, train_y, likelihood)
-        self.mean_module = gpytorch.means.MultitaskMean(
-            gpytorch.means.ConstantMean(), num_tasks=n_tasks
-        )
-        self.covar_module = gpytorch.kernels.MultitaskKernel(
-            gpytorch.kernels.RBFKernel(), num_tasks=n_tasks, rank=rank_x
-        )
+# # does not account for posterior variance of z, need to adapt likelihood
+# # K = K_GG \otimes K_CC
+# class MultitaskGPModel(gpytorch.models.ExactGP):
+#     def __init__(self, train_x, train_y, likelihood, n_tasks, rank_x):
+#         super(MultitaskGPModel, self).__init__(train_x, train_y, likelihood)
+#         self.mean_module = gpytorch.means.MultitaskMean(
+#             gpytorch.means.ConstantMean(), num_tasks=n_tasks
+#         )
+#         self.covar_module = gpytorch.kernels.MultitaskKernel(
+#             gpytorch.kernels.RBFKernel(), num_tasks=n_tasks, rank=rank_x
+#         )
+#
+#     def forward(self, x):
+#         mean_x = self.mean_module(x)
+#         covar_x = self.covar_module(x)
+#         return gpytorch.distributions.MultitaskMultivariateNormal(mean_x, covar_x)
 
-    def forward(self, x):
-        mean_x = self.mean_module(x)
-        covar_x = self.covar_module(x)
-        return gpytorch.distributions.MultitaskMultivariateNormal(mean_x, covar_x)
+
+# utility functions from spatialDE
+# def covar_rescaling_factor(C):
+#     """
+#     Returns the rescaling factor for the Gower normalizion on covariance matrix C
+#     the rescaled covariance matrix has sample variance of 1 s.t. one obtaines an unbiased estimate of the variance explained
+#     (based on https://github.com/PMBio/limix/blob/master/limix/utils/preprocess.py - covar_rescaling_factor_efficient;
+#     https://limix.readthedocs.io/en/stable/api/limix.qc.normalise_covariance.html)
+#     """
+#     n = C.shape[0]
+#     P = s.eye(n) - s.ones((n,n))/float(n) # Gower’s centering matrix
+#     CP = C - C.mean(0)[:, s.newaxis]
+#     trPCP = s.sum(P * CP) # trace of doubly centered covariance matrix
+#     r = (n-1) / trPCP
+#     return r
+#
+# def covar_to_corr(C):
+#     """
+#     Transforms the covariance matrix into a correlation matrix
+#     """
+#     Cdiag = np.diag(C)
+#     Ccor = np.diag(1/np.sqrt(Cdiag)) @ C @ np.diag(1/np.sqrt(Cdiag))
+#     return Ccor

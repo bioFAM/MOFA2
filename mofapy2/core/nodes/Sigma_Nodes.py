@@ -36,8 +36,8 @@ class SigmaGrid_Node(Node):
     idx_inducing: Index of inducing points (default None - use the full model)
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing = None,
-                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
-                 opt_freq = 10):
+                 warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True,
+                 warping_open_end = True, opt_freq = 10):
         super().__init__(dim)
         self.zeta_opt = False
         self.setscaletoone = False # TODO: set back to True?
@@ -204,7 +204,16 @@ class SigmaGrid_Node(Node):
         """
         cov = self.Sigma
         return cov
-    
+
+    def getInverseTerms(self):
+        """
+        Method to fetch ELBO-optimal inverse covariance matrix and its diagonal
+        """
+        inv = self.Sigma_inv
+        cov_inv_logdet = self.Sigma_inv_logdet
+        return { 'inv': inv, 'inv_logdet' : cov_inv_logdet}
+
+
     def getExpectations(self):
         """ 
         Method to fetch ELBO-optimal covariance matrix, its  inverse and the diagonal of the inverse per factor

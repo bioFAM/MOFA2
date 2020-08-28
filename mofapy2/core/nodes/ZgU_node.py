@@ -1,8 +1,5 @@
 from __future__ import division
 import numpy as np
-import numpy.ma as ma
-from copy import deepcopy
-from mofapy2.core import gp_utils
 from mofapy2.core import gpu_utils
 from mofapy2.core.distributions import *
 import scipy as s
@@ -66,14 +63,8 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
         tau = self.markov_blanket["Tau"].get_mini_batch()
         mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
 
-        if "AlphaZ" in self.markov_blanket:
-            Alpha = self.markov_blanket['AlphaZ'].get_mini_batch()
-        else:
-            Alpha = s.ones((self.N, self.K)) * 1.
-            if ix is not None: Alpha = Alpha[ix,:]
 
-
-        par_up = self._updateParameters(U, Alpha, Sigma, Qmean, Qvar, Y, W, tau, mask)
+        par_up = self._updateParameters(U, Sigma, Qmean, Qvar, Y, W, tau, mask)
 
         # Update parameters
         if ix is None:
@@ -89,7 +80,7 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
         self.Q.setParameters(mean=Q['mean'], var=Q['var'])  # NOTE should not be necessary but safer to keep for now
         self.P.setParameters(mean=Q['mean'], var=Q['var'])
 
-    def _updateParameters(self, U, Alpha, Sigma, Qmean, Qvar, Y, W, tau, mask):
+    def _updateParameters(self, U, Sigma, Qmean, Qvar, Y, W, tau, mask):
         """ Hidden method to compute parameter updates """
 
         K = self.dim[1]
@@ -140,12 +131,8 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
                     Qmean[:, k] = Qvar[:, k] * bar
             else: # updates according to p(z|u)
                 SigmaZZ = Sigma['cov'][k]
-                SigmaZZ = gpu_utils.dot(gpu_utils.dot(np.diag(np.sqrt(1 / Alpha[:, k])), SigmaZZ),
-                                        np.diag(np.sqrt(1 / Alpha[:, k])))
                 SigmaZU = SigmaZZ[:, self.idx_inducing]
                 p_cov_inv = Sigma['inv'][k,:,:]
-                p_cov_inv = gpu_utils.dot(gpu_utils.dot(np.diag(np.sqrt(Alpha[self.idx_inducing, k])),p_cov_inv),
-                                       np.diag(np.sqrt(Alpha[self.idx_inducing, k])))
                 mat = gpu_utils.dot(SigmaZU, p_cov_inv)
                 Qmean[:, k] = gpu_utils.dot(mat, U['E'][:,k])
                 for n in range(N):
@@ -173,15 +160,9 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
         # unstructured = False
 
         if unstructured:
-            if 'AlphaZ' in self.markov_blanket:
-                Alpha = self.markov_blanket['AlphaZ'].getExpectations(expand=True)
-            else:
-                Alpha = dict()
-                Alpha['E'] = s.ones((self.N, self.K)) * 1.
-                Alpha['lnE'] = s.zeros((self.N, self.K))
 
-            tmp1 = -0.5 * (QE2[:,k] * Alpha['E'][:,k]).sum()
-            tmp2 = 0.5 * Alpha["lnE"][:,k].sum()
+            tmp1 = -0.5 * (QE2[:,k]).sum()
+            tmp2 = 0
 
             lb_p = tmp1 + tmp2
             lb_q = -(s.log(Qvar[:,k])).sum() + self.dim[0] / 2.
@@ -197,15 +178,3 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
         for k in range(self.dim[1]):
             elbo += self.calculateELBO_k(k)
         return elbo
-
-    # def sample(self):
-    #     mu = self.P.params['mean']
-    #     if "Sigma" in self.markov_blanket:
-    #         Sigma = self.markov_blanket['Sigma']
-    #         cov = Sigma.sample()
-    #     else:
-    #         cov = self.P.params['cov']
-    #
-    #     samp_tmp = [s.random.multivariate_normal(mu[:, i], cov[i, :, :]) for i in range(self.dim[1])]
-    #     self.samp = s.array([tmp - tmp.mean() for tmp in samp_tmp]).transpose()
-    #     return self.samp

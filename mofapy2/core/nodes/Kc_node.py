@@ -4,20 +4,21 @@ import numpy as np
 from mofapy2.core.nodes.variational_nodes import *
 from mofapy2.core.gp_utils import *
 import scipy as s
-import time
 from mofapy2.core import gpu_utils
-import pandas as pd
-from scipy.spatial.distance import euclidean
-import copy
+
 
 class Kc_Node(Node):
     """
-    Sigma node to model the covariance structure K_c along the given covariate.
-    This node constructs the covariate kernel.
+    Sigma node to model the covariance structure K_c along the given covariate(s)
+    This node constructs the covariate kernel matrix on a grid of lengthscale parameters and
+    keeps track of the ELBO-optimal idx.
+
+    By default a squared exponential kernel is used:
+    KC_{ij} = SE(i,j) = exp(-0.5 * (i-j)^2 / (l**2))
 
     PARAMETERS
     ----------
-    dim: dimensionality of the node (= number of covariate observations x number of latent factors)
+    dim: dimensionality of the node (= number of latent factors x number of covariate observations)
     covariates: unique covariates for construction of the covariate part of the covariance matrix
     n_grid: number of grid points for the lengthscale parameter
     """
@@ -28,7 +29,7 @@ class Kc_Node(Node):
         self.C = dim[1]                                             # number of observations for covariate
         self.K = dim[0]                                             # number of latent processes
         self.n_grid = n_grid                                        # number of grid points to optimize lengthscale on
-        self.gridix = np.zeros(self.K, dtype = np.int8)     # index of the grid values for lengthscale selected per factor
+        self.gridix = np.zeros(self.K, dtype = np.int8)             # index of the grid values for lengthscale selected per factor
 
 
         # initialize components in node
@@ -48,8 +49,8 @@ class Kc_Node(Node):
         self.Kmat = np.zeros([self.n_grid, self.C, self.C])  # kernel matrix on lengthscale grid
 
         # initialise spectral decomposition
-        self.V = np.zeros([self.n_grid, self.C, self.C])  # eigenvectors of kernel matrix on lengthscale grid
-        self.D = np.zeros([self.n_grid, self.C])  # eigenvalues of kernel matrix on lengthscale grid
+        self.V = np.zeros([self.n_grid, self.C, self.C])    # eigenvectors of kernel matrix on lengthscale grid
+        self.D = np.zeros([self.n_grid, self.C])            # eigenvalues of kernel matrix on lengthscale grid
 
         # compute for each lengthscale the kernel matrix
         self.compute_kernel()
@@ -64,12 +65,11 @@ class Kc_Node(Node):
     def compute_kernel_at_gridpoint(self, i):
 
         # build kernel matrix based on given covariance function
-        self.Kmat[i, :, :] = SE(self.covariates, self.l_grid[i], zeta=0)  # zeta is added later
+        self.Kmat[i, :, :] = SE(self.covariates, self.l_grid[i], zeta=0)
         # self.Kmat[i, :, :] = Cauchy(self.sample_cov_transformed, self.l_grid[i], zeta=0)
 
         # compute spectral decomposition
-        # Sigma = VDV^T with V^T V = I
-        # important to use eigh and not eig to obtain orthogonal eigenvector (which always exist for symmetric real matrices)
+        # Kc = VDV^T with V^T V = I
         self.D[i, :], self.V[i, :, :] = s.linalg.eigh(self.Kmat[i, :,:])
 
     def get_ls(self):
@@ -96,3 +96,9 @@ class Kc_Node(Node):
     def set_gridix(self, lidx, k):
         self.gridix[k] = lidx
         # no recomputation required as stored on grid
+
+    def eval_at_newpoints_k(self, new_cov, k):
+
+        Kc_new = SE(new_cov, self.l_grid[self.gridix[k]], zeta=0)
+
+        return Kc_new

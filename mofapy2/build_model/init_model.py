@@ -20,7 +20,6 @@ class initModel(object):
             M for the number of views
             K for the number of factors or latent variables,
             D for the number of features per view
-            G for the number of features per group
         data: list of length M with numpy arrays of dimensionality (N,Dm)
         lik: list of strings with length M
             likelihood for each view, choose from ('gaussian','poisson','bernoulli')
@@ -122,20 +121,12 @@ class initModel(object):
         # Initialise the node
         if GP_factors:
             if mv_Znode:
-                if not model_groups:
-                    self.nodes["Z"] = Z_GP_Node_mv(
-                        dim=(self.N, self.K),
-                        pmean=pmean, pcov=pvar,
-                        qmean=qmean, qcov=qvar,
-                        qE=qE, weight_views = weight_views
-                    )
-                else:
-                    self.nodes["Z"] = Z_GP_Node_mv_kron(
-                        dim=(self.N, self.K),
-                        pmean=pmean, pcov=pvar,
-                        qmean=qmean, qcov=qvar,
-                        qE=qE, weight_views=weight_views
-                    )
+                self.nodes["Z"] = Z_GP_Node_mv(
+                    dim=(self.N, self.K),
+                    pmean=pmean, pcov=pvar,
+                    qmean=qmean, qcov=qvar,
+                    qE=qE, weight_views = weight_views
+                )
             else:
                 self.nodes["Z"] = Z_GP_Node(
                     dim=(self.N, self.K),
@@ -279,21 +270,21 @@ class initModel(object):
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True,
                   opt_freq = 10, model_groups = False, use_gpytorch = False):
         dim = (self.K,)
-        if not model_groups:
-            self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, idx_inducing, warping, warping_freq, warping_ref,
-                                        warping_open_begin, warping_open_end, opt_freq)
-        else:
-            if use_gpytorch:
-                self.Sigma = Gpytorch_Sigma_Node(dim = dim, sample_cov = sample_cov, groups = groups,
-                                            start_opt = start_opt, n_grid = n_grid, idx_inducing = idx_inducing,
-                                            warping = warping, warping_freq = warping_freq, warping_ref = warping_ref,
-                                            warping_open_begin = warping_open_begin, warping_open_end = warping_open_end, opt_freq = opt_freq)
-            else:
-                self.Sigma = kronSigma_Node(dim=dim, sample_cov=sample_cov, groups=groups,
-                                            start_opt=start_opt, n_grid=n_grid, idx_inducing=idx_inducing,
-                                            warping=warping, warping_freq=warping_freq, warping_ref=warping_ref,
-                                            warping_open_begin=warping_open_begin, warping_open_end=warping_open_end,
-                                            opt_freq=opt_freq)
+        # if not model_groups:
+        #     self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, idx_inducing, warping, warping_freq, warping_ref,
+        #                                 warping_open_begin, warping_open_end, opt_freq)
+        # else:
+        #     if use_gpytorch:
+        #         self.Sigma = Gpytorch_Sigma_Node(dim = dim, sample_cov = sample_cov, groups = groups,
+        #                                     start_opt = start_opt, n_grid = n_grid, idx_inducing = idx_inducing,
+        #                                     warping = warping, warping_freq = warping_freq, warping_ref = warping_ref,
+        #                                     warping_open_begin = warping_open_begin, warping_open_end = warping_open_end, opt_freq = opt_freq)
+        # else:
+        self.Sigma = Sigma_Node(dim=dim, sample_cov=sample_cov, groups=groups,
+                                    start_opt=start_opt, n_grid=n_grid, idx_inducing=idx_inducing,
+                                    warping=warping, warping_freq=warping_freq, warping_ref=warping_ref,
+                                    warping_open_begin=warping_open_begin, warping_open_end=warping_open_end,
+                                    opt_freq=opt_freq, model_groups = model_groups)
         self.nodes["Sigma"] = self.Sigma
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
