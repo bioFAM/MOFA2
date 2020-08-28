@@ -216,7 +216,10 @@ get_default_training_options <- function(object) {
     freqELBO = 1,                  # Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
-    seed = 42                      # (numeric) random seed
+    seed = 42,                      # (numeric) random seed
+    opt_freq = 10,                  # frequency of GP hyperparameters optimization
+    start_opt = 20,                # when to start optimizing lengthsclaes
+    n_grid = 20                   # number of gridpoints per lenghtscales
   )
   
   # if training_options already exist, replace the default values but keep the additional ones
@@ -342,10 +345,7 @@ get_default_model_options <- function(object) {
     spikeslab_weights = TRUE,          # Spike and Slab sparsity on the loadins
     ard_factors = FALSE,              # Group-wise ARD sparsity on the factors
     ard_weights = TRUE,                # View-wise ARD sparsity on the loadings
-    GP_factors = FALSE,           # GP-prior on Z
-    mv_Znode = TRUE,           #  multivariate variational for Z
-    start_opt = 20,             # when to start optimizing lengthsclaes  # TODO should be trainign_opts --> python
-    n_grid = 20,                 # number of gridpoints per lenghtscales # TODO should be trainign_opts --> python
+    GP_factors = TRUE,           # GP-prior on Z
     sparseGP = FALSE,             # use sparse Gaussian processes
     idx_inducing = NULL,          # index of points used as inducing points
     n_inducing = round(max(100, object@dimensions$N * 0.3)), # number of inducing points
@@ -354,9 +354,7 @@ get_default_model_options <- function(object) {
     warping_freq = 20,               # warp at each n-th iteration
     warping_ref = 0,                  # group to use as reference for warping
     warping_open_begin = TRUE,        # allow open beginning for warping?
-    warping_open_end = TRUE,           # allow open end for warping?
-    opt_freq = 10                       # frequency of GP hyperparameters optimization
-    
+    warping_open_end = TRUE           # allow open end for warping?
   )
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups
@@ -369,7 +367,6 @@ get_default_model_options <- function(object) {
   
   # multivariate variational for Z and sparse GPonly if GP prior on Z
   if (!model_options$GP_factors) {
-    model_options$mv_Znode <- FALSE
     model_options$sparseGP <- FALSE
   }
   

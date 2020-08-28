@@ -107,16 +107,11 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     ard_factors       = object@model_options$ard_factors,
     ard_weights       = object@model_options$ard_weights, 
     GP_factors       = object@model_options$GP_factors,
-    mv_Znode       = object@model_options$mv_Znode,
-    n_grid            = object@model_options$n_grid,
-    start_opt         = object@model_options$start_opt,
     warping  = object@model_options$warping,
     warping_freq  = object@model_options$warping_freq,
     warping_ref  = warping_ref,
     warping_open_begin  = object@model_options$warping_open_begin,
-    warping_open_end  = object@model_options$warping_open_end,
-    opt_freq = object@model_options$opt_freq
-    
+    warping_open_end  = object@model_options$warping_open_end
   )
   
   if (object@model_options$sparseGP) {
@@ -135,7 +130,10 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     freqELBO         = object@training_options$freqELBO,
     seed             = object@training_options$seed, 
     gpu_mode         = object@training_options$gpu_mode,
-    verbose          = object@training_options$verbose
+    verbose          = object@training_options$verbose,
+    n_grid           = object@training_options$n_grid,
+    start_opt        = object@training_options$start_opt,
+    opt_freq         = object@training_options$opt_freq
   )
   
   # Set stochastic options

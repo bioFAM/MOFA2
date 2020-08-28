@@ -12,14 +12,13 @@ from mofapy2.build_model.init_model import initModel
 from mofapy2.build_model.utils import *
 
 class buildModel(object):
-    def __init__(self, data, sample_cov, data_opts, model_opts, dimensionalities, seed, weight_views):
+    def __init__(self, data, sample_cov, data_opts, model_opts, dimensionalities, train_opts):
         self.data = data
         self.sample_cov = sample_cov
         self.data_opts = data_opts
         self.model_opts = model_opts
         self.dim = dimensionalities
-        self.seed = seed
-        self.weight_views = weight_views
+        self.train_opts = train_opts
 
     def createMarkovBlankets(self):
         """ Define the markov blankets """
@@ -39,11 +38,11 @@ class buildModel(object):
 
 
 class buildBiofam(buildModel):
-    def  __init__(self, data, sample_cov, data_opts, model_opts, dimensionalities, seed, weight_views):
-        buildModel.__init__(self, data, sample_cov, data_opts, model_opts, dimensionalities, seed, weight_views)
+    def  __init__(self, data, sample_cov, data_opts, model_opts, dimensionalities, train_opts):
+        buildModel.__init__(self, data, sample_cov, data_opts, model_opts, dimensionalities, train_opts)
 
         # create an instance of initModel
-        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed=seed)
+        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed= self.train_opts['seed'])
 
         # Build all nodes
         self.build_nodes()
@@ -79,7 +78,7 @@ class buildBiofam(buildModel):
             self.build_ThetaZ()
         # define Gaussian process prior on Z
         if self.model_opts['GP_factors']:
-            self.build_Sigma(start_opt = self.model_opts['start_opt'], n_grid = self.model_opts['n_grid'])
+            self.build_Sigma()
 
         # define feature-wise spike and slab sparsity in W
         if self.model_opts['spikeslab_weights']:
@@ -94,27 +93,29 @@ class buildBiofam(buildModel):
         if self.model_opts['spikeslab_factors']:
             # self.init_model.initSZ(qmean_T1=0)
             # self.init_model.initSZ(qmean_T1="random")
-            self.init_model.initSZ(qmean_T1="pca", Y=self.data, impute=True, weight_views = self.weight_views)
+            self.init_model.initSZ(qmean_T1="pca", Y=self.data, impute=True, weight_views = self.train_opts['weight_views'])
         else:
             # self.init_model.initZ(qmean=0)
             # self.init_model.initZ(qmean="random")
             self.init_model.initZ(qmean="pca", Y=self.data, impute=True,
                       GP_factors = self.model_opts['GP_factors'], mv_Znode = self.model_opts['mv_Znode'],
-                      weight_views = self.weight_views, model_groups = self.model_opts['model_groups'])
+                      weight_views = self.train_opts['weight_views'], model_groups = self.model_opts['model_groups'])
 
     def build_ZgU(self):
         """ Build node for Z given U for the factors or latent variables conditioned on inducing points"""
 
         # initialise ZgU by
-        self.init_model.initZgU(qmean="pca", Y=self.data, impute=True, idx_inducing = self.model_opts['idx_inducing'],
-                                weight_views = self.weight_views)
+        self.init_model.initZgU(qmean="pca", Y=self.data, impute=True,
+                                idx_inducing = self.model_opts['idx_inducing'],
+                                weight_views = self.train_opts['weight_views'])
 
     def build_U(self):
         """ Build node U for the inducing points of latent variable GP """
 
         # initialise U by PCA (no use of GP prior)
-        self.init_model.initU(idx_inducing = self.model_opts['idx_inducing'], mv_Znode = self.model_opts['mv_Znode'],
-                              weight_views = self.weight_views)
+        self.init_model.initU(idx_inducing = self.model_opts['idx_inducing'],
+                              # mv_Znode = self.model_opts['mv_Znode'],
+                              weight_views = self.train_opts['weight_views'])
 
     def build_W(self):
         """ Build node W for the weights """
@@ -140,36 +141,23 @@ class buildBiofam(buildModel):
         # ARD prior per sample group
         self.init_model.initAlphaZ(self.data_opts['samples_groups'])
 
-    def build_Sigma(self, start_opt = 20, n_grid = 10):
+    def build_Sigma(self):
         """ Build node Sigma for the GP prior on the factors """
-        if self.model_opts['sparseGP']:
-            self.init_model.initSigma(self.sample_cov,
-                                      self.data_opts['samples_groups'],
-                                      start_opt, n_grid,
-                                      # mv_Znode = self.model_opts['mv_Znode'],
-                                      idx_inducing = self.model_opts['idx_inducing'],
-                                      warping=self.model_opts['warping'],
-                                      warping_freq = self.model_opts['warping_freq'],
-                                      warping_ref = self.model_opts['warping_ref'],
-                                      warping_open_begin=self.model_opts['warping_open_begin'],
-                                      warping_open_end=self.model_opts['warping_open_end'],
-                                      opt_freq=self.model_opts['opt_freq'],
-                                      model_groups = self.model_opts['model_groups'],
-                                      use_gpytorch  = self.model_opts['use_gpytorch'])
-        else:
-            self.init_model.initSigma(self.sample_cov,
-                                      self.data_opts['samples_groups'],
-                                      start_opt, n_grid,
-                                      # mv_Znode=self.model_opts['mv_Znode'],
-                                      idx_inducing=None,
-                                      warping = self.model_opts['warping'],
-                                      warping_freq = self.model_opts['warping_freq'],
-                                      warping_ref = self.model_opts['warping_ref'],
-                                      warping_open_begin = self.model_opts['warping_open_begin'],
-                                      warping_open_end = self.model_opts['warping_open_end'],
-                                      opt_freq = self.model_opts['opt_freq'],
-                                      model_groups = self.model_opts['model_groups'],
-                                      use_gpytorch  = self.model_opts['use_gpytorch'])
+
+        self.init_model.initSigma(self.sample_cov,
+                                  self.data_opts['samples_groups'],
+                                  start_opt = self.train_opts['start_opt'],
+                                  n_grid = self.train_opts['n_grid'],
+                                  # mv_Znode = self.model_opts['mv_Znode'],
+                                  idx_inducing = self.model_opts['idx_inducing'],
+                                  warping = self.model_opts['warping'],
+                                  warping_freq = self.model_opts['warping_freq'],
+                                  warping_ref = self.model_opts['warping_ref'],
+                                  warping_open_begin = self.model_opts['warping_open_begin'],
+                                  warping_open_end = self.model_opts['warping_open_end'],
+                                  opt_freq = self.train_opts['opt_freq'],
+                                  model_groups = self.model_opts['model_groups'])#,
+                                  # use_gpytorch  = self.model_opts['use_gpytorch'])
 
     def build_AlphaW(self):
         """ Build node AlphaW for the ARD prior on the weights"""
@@ -234,14 +222,8 @@ class buildBiofam(buildModel):
 
         # Add AlphaZ in the markov blanket of Z and viceversa if ARD prior on Z
         if self.model_opts['ard_factors']:
-            if not self.model_opts['sparseGP'] or not self.model_opts['GP_factors']:
                 nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
                 nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
-            else: # TODO: check markov blankets and inudcing points with sparse GPs
-                nodes['AlphaZ'].addMarkovBlanket(Z=nodes['Z'])
-                nodes['U'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
-                nodes['Z'].addMarkovBlanket(AlphaZ=nodes['AlphaZ'])
-
 
         # Add AlphaW in the markov blanket of W and viceversa if ARD prior on W
         if self.model_opts['ard_weights']:

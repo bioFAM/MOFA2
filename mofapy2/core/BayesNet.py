@@ -175,8 +175,6 @@ class BayesNet(object):
                 self.lscales.columns = range(0, len(self.lscales.columns))
                 self.scales = self.scales.drop(columns = drop)
                 self.scales.columns = range(0, len(self.scales.columns))
-                self.structsig = self.structsig.drop(columns = drop)
-                self.structsig.columns = range(0, len(self.structsig.columns))
         if self.dim['K']==0:
             print("All factors shut down, no structure found in the data.")
             exit()
@@ -216,7 +214,6 @@ class BayesNet(object):
         if 'Sigma' in self.nodes.keys():
             self.lscales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
             self.scales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
-            self.structsig = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
@@ -244,11 +241,10 @@ class BayesNet(object):
             t_updates = time() - t_updates
 
             # Save lengthscales from Sigma node
-            if 'Sigma' in self.nodes.keys():
+            if 'Sigma' in self.nodes.keys() and i >= self.options['start_opt']:
                 tmp = self.nodes['Sigma'].getParameters()
                 self.lscales.iloc[i] = tmp['l']
-                # self.scales.iloc[i] = tmp['scale'] # TODO rename to sclae adapt to importatn hyperparameters + x, sigma, rename
-                self.structsig.iloc[i] = tmp['sig']
+                self.scales.iloc[i] = tmp['scale']
 
 
             # Calculate Evidence Lower Bound
@@ -283,7 +279,6 @@ class BayesNet(object):
                         if 'Sigma' in self.nodes.keys():
                             self.lscales = self.lscales[:i]
                             self.scales = self.scales[:i]
-                            self.structsig = self.structsig[:i]
                         print ("\nConverged!\n"); break
 
             # Do not calculate lower bound
@@ -304,7 +299,6 @@ class BayesNet(object):
         if 'Sigma' in self.nodes.keys():
             self.train_stats['length_scales'] = self.lscales
             self.train_stats['scales'] = self.scales
-            self.train_stats['structural_sig'] = self.structsig
         self.trained = True
 
     def print_verbose_message(self):
@@ -479,7 +473,6 @@ class StochasticBayesNet(BayesNet):
         if 'Sigma' in self.nodes.keys():
             self.lscales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
             self.scales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
-            self.structsig = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
@@ -528,7 +521,6 @@ class StochasticBayesNet(BayesNet):
                 tmp = self.nodes['Sigma'].getParameters()
                 self.lscales.iloc[i] = tmp['l']
                 self.scales.iloc[i] = tmp['scale']
-                self.structsig.iloc[i] = tmp['sig']
 
             # Calculate Evidence Lower Bound
             if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
@@ -586,5 +578,4 @@ class StochasticBayesNet(BayesNet):
         if 'Sigma' in self.nodes.keys():
             self.train_stats['length_scales'] = self.lscales
             self.train_stats['scales'] = self.scales
-            self.train_stats['structural_sig'] = self.structsig
         self.trained = True

@@ -291,7 +291,6 @@ class saveModel():
                 # Single-group nodes (Sigma)
                 else:
                     node_subgrp.create_dataset("E", data=exp.T[:,:,self.order_factors], compression="gzip", compression_opts=self.compression_level)
-
         pass
 
     def saveParameters(self, nodes="all"):
@@ -370,7 +369,7 @@ class saveModel():
     def saveModelOptions(self):
 
         # Subset model options
-        options_to_save = ["likelihoods", "spikeslab_factors", "spikeslab_weights", "ard_factors", "ard_weights", "GP_factors", "start_opt", "n_grid"]
+        options_to_save = ["likelihoods", "spikeslab_factors", "spikeslab_weights", "ard_factors", "ard_weights", "GP_factors"]
         opts = dict((k, np.asarray(self.model_opts[k]).astype('S')) for k in options_to_save)
 
         # Sort values by alphabetical order of views
@@ -393,7 +392,7 @@ class saveModel():
         # For more information see: https://github.com/h5py/h5py/pull/1032 or https://github.com/h5py/h5py/issues/289
 
         # Subset training options
-        opts = dict((k, self.train_opts[k]) for k in ["maxiter", "freqELBO", "start_elbo", "gpu_mode", "stochastic", "seed"])
+        opts = dict((k, self.train_opts[k]) for k in ["maxiter", "freqELBO", "start_elbo", "gpu_mode", "stochastic", "seed", "start_opt", "n_grid"])
 
         # Replace dictionaries (not supported in hdf5) by lists 
         # opts = self.train_opts
@@ -457,5 +456,3 @@ class saveModel():
         if self.model_opts['GP_factors']:
             stats_grp.create_dataset("length_scales", data=stats["length_scales"][self.order_factors])
             stats_grp.create_dataset("scales", data=stats["scales"][self.order_factors])
-            stats_grp.create_dataset("structural_sig", data=stats["structural_sig"][self.order_factors])
-

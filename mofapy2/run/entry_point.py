@@ -630,8 +630,8 @@ class entry_point(object):
     def set_train_options(self,
         iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
         startDrop=20, freqDrop=10, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False, weight_views = False
-        ):
+        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False, weight_views = False,
+        start_opt=20, n_grid=20, opt_freq=10):
         """ Set training options """
 
         # Sanity checks
@@ -641,6 +641,12 @@ class entry_point(object):
 
         # Maximum number of iterations
         self.train_opts['maxiter'] = int(iter)
+
+        # Define at which iteration to start optimizing the lengthscales, at which frequency and how many grid points
+        start_opt = max(0, start_opt)
+        self.train_opts['start_opt'] = int(start_opt)
+        self.train_opts['n_grid'] = int(n_grid)
+        self.train_opts['opt_freq'] = int(opt_freq)
 
         # Lower bound computation frequency
         if freqELBO is None or freqELBO==0: freqELBO=iter+1
@@ -788,6 +794,7 @@ class entry_point(object):
         self.train_opts['drop']["min_r2"] = None
 
     def set_sparseGP_options(self, n_inducing = None, idx_inducing = None, seed_inducing = None):
+        """ Set options for sparse GPs"""
 
         # Sanity check
         assert not hasattr(self, 'train_opts'), "Sparse GP options have to be defined before training options"
@@ -807,9 +814,6 @@ class entry_point(object):
         n_inducing = int(n_inducing)
 
         self.model_opts['sparseGP'] = True
-
-        # if self.model_opts['sparseGP'] and self.model_opts['ard_factors'] and self.dimensionalities["G"]> 1:
-        #     print("Sparse SMOFA framework is activated (sparseGP = True). Note: This is still experimental in conjunction with multiple groups and ARD prior.\n")
 
         if self.model_opts['sparseGP'] and not self.model_opts['mv_Znode']:
             print("For sparse GP SMOFA uses a multivariate Z node, setting mv_Znode to True")
@@ -848,18 +852,20 @@ class entry_point(object):
 
 
 
-    def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True,
-                          GP_factors = False, start_opt = 20, n_grid = 20, mv_Znode = True, warping = False,
-                          warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, opt_freq = 10,
-                          model_groups = False, use_gpytorch = False):
+    def set_model_options(self, factors=10,
+                          spikeslab_factors=False, spikeslab_weights=True,
+                          ard_factors=False, ard_weights=True,
+                          GP_factors = True, warping = False, warping_freq = 20, warping_ref = 0,
+                          warping_open_begin = True, warping_open_end = True,
+                          model_groups = False):
         """ Set model options """
 
         self.model_opts = {}
 
         # Define whether the SMOFA framework should be used and check that sample-covariates are present
         self.model_opts['GP_factors'] = GP_factors
-        if self.sample_cov is None and GP_factors:
-            print("GP_factors set to TRUE but no samples covariates provided, setting it to FALSE")
+        if self.sample_cov is None:
+            # print("GP_factors set to TRUE but no samples covariates provided, setting it to FALSE")
             self.model_opts['GP_factors'] = False
 
         # Define whether to use sample-wise spike and slab prior for Z
@@ -904,23 +910,21 @@ class entry_point(object):
 
         # By default, no sparse GPs are used
         self.model_opts['sparseGP'] = False
+        self.model_opts['idx_inducing'] = None
 
         # Define whether to use a multivariate Z node in the posterior (only when using GP node for Z)
         if not GP_factors:
             mv_Znode = False
+        else:
+            mv_Znode = True # this could be passes as a model_option but to keep options uncluttered use mv node only
         self.model_opts['mv_Znode'] = mv_Znode
 
         # Define whether to model a group covariance structure
         self.model_opts['model_groups'] = model_groups
-        self.model_opts['use_gpytorch'] = use_gpytorch
+        self.model_opts['use_gpytorch'] = False # experimental, this could be passes as a model_option but to keep options uncluttered set to False
 
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
-
-        # Define at which iteration to start optimizing the lengthscales and how many grid points
-        start_opt = max(0, start_opt)
-        self.model_opts['start_opt'] = int(start_opt)
-        self.model_opts['n_grid'] = int(n_grid)
 
         # Activate warping
         self.model_opts['warping'] = bool(warping)
@@ -928,7 +932,6 @@ class entry_point(object):
         self.model_opts['warping_ref'] = int(warping_ref)
         self.model_opts['warping_open_begin'] = bool(warping_open_begin)
         self.model_opts['warping_open_end'] = bool(warping_open_end)
-        self.model_opts['opt_freq'] = int(opt_freq)
 
 
         if self.model_opts['warping']:
@@ -986,7 +989,7 @@ class entry_point(object):
         # Build the nodes
         tmp = buildBiofam(self.data, self.sample_cov, self.data_opts,
                           self.model_opts, self.dimensionalities,
-                          self.train_opts['seed'], self.train_opts['weight_views'])
+                          self.train_opts)
 
         # Create BayesNet class
         if self.train_opts['stochastic']:
