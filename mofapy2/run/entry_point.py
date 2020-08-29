@@ -518,7 +518,7 @@ class entry_point(object):
         self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
 
     def set_train_options(self,
-        iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="fast",
+        iter=1000, startELBO=1, freqELBO=1, startSparsity=50, tolerance=None, convergence_mode="fast",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, weight_views = False, 
         outfile=None, save_interrupted=False,

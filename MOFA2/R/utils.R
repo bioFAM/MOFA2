@@ -423,7 +423,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   } else {
     if (length(unique(df$color_by))>1) {
       p <- p +
-        guides(fill=guide_legend(override.aes = list(shape=21, size=3))) +
+        guides(fill=guide_legend(override.aes = list(shape=21))) +
         labs(fill=color_name)
     } else {
       p <- p + guides(fill=FALSE, color=FALSE) +

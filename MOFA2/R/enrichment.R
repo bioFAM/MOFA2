@@ -85,7 +85,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(length(features)== 0) stop("Feature names in feature.sets do not match feature names in model.")
   message(sprintf("Intersecting features names in the model and the gene set annotation results in a total of %d features.",length(features)))
   data <- data[,features]
-  W <- W[features,]
+  W <- W[features,,drop=F]
   feature.sets <- feature.sets[,features]
   
   # Filter feature sets with small number of features

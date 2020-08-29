@@ -9,6 +9,7 @@
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
+#' @param scale logical indicating whether to scale factor values.
 #' @param group_by specifies grouping of samples:
 #' \itemize{
 #' \item (default) the string "group": in this case, the plot will color samples with respect to their predefined groups.
@@ -31,17 +32,16 @@
 #' \item a vector of the same length as the number of samples specifying the value for each sample. 
 #' }
 #' @param add_dots logical indicating whether to add dots.
-#' @param dot_size numeric indicating dot size.
-#' @param dot_alpha numeric indicating dot transparency.
 #' @param add_violin logical indicating whether to add violin plots
 #' @param add_boxplot logical indicating whether to add box plots
-#' @param violin_alpha numeric indicating violin plot transparency.
-#' @param boxplot_alpha numeric indicating boxplot transparency.
-#' @param color_violin logical indicating whether to color violin plots.
-#' @param color_boxplot logical indicating whether to color box plots.
-#' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
-#' @param scale logical indicating whether to scale factor values.
 #' @param dodge logical indicating whether to dodge the dots (default is FALSE).
+#' @param show_missing logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.
+#' @param dot_size numeric indicating dot size.
+#' @param dot_alpha numeric indicating dot transparency.
+#' @param violin_alpha numeric indicating violin plot transparency.
+#' @param color_violin logical indicating whether to color violin plots.
+#' @param boxplot_alpha numeric indicating boxplot transparency.
+#' @param color_boxplot logical indicating whether to color box plots.
 #' @param color_name name for color legend (usually only used if color_by is not a character itself).
 #' @param shape_name name for shape legend (usually only used if shape_by is not a character itself).
 #' @param stroke numeric indicating the stroke size (the black border around the dots).
@@ -178,7 +178,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
         # p <- p + geom_violin(color="black", fill="grey", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
         # p <- p + geom_violin(color="black", alpha=violin_alpha, trim=TRUE, scale="width", show.legend = FALSE)
       } else {
-        p <- p + geom_violin(alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
+        p <- p + geom_violin(alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1))
       }
       # p <- p + geom_violin(color="black", alpha=violin_alpha, trim=TRUE, scale="width", position=position_dodge(width=1), show.legend = FALSE)
     } else {
@@ -196,7 +196,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
       # } else {
       #   p <- p + geom_boxplot(alpha=boxplot_alpha, position=position_dodge(width=1), show.legend = FALSE)
       # }
-      p <- p + geom_boxplot(color="black", alpha=boxplot_alpha, position=position_dodge(width=1), show.legend = FALSE)
+      p <- p + geom_boxplot(color="black", alpha=boxplot_alpha, position=position_dodge(width=1))
     } else {
       p <- p + geom_boxplot(color="black", fill="grey", alpha=boxplot_alpha, show.legend = FALSE)
     }
