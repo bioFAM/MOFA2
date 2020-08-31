@@ -29,7 +29,7 @@ get_elbo <- function(object) {
 #' @title Get lengthscales
 #' @name get_lengthscales
 #' @description Extract the inferred lengthscale for each factor after model training. 
-#' @details This can be used only if GP_factors is set to True.
+#' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
 #' @param object a \code{\link{MOFA}} object.
 #' @export
 get_lengthscales <- function(object) {
@@ -37,15 +37,14 @@ get_lengthscales <- function(object) {
   if(is.null(object@covariates)) stop("No covariates specified in 'object'")
   if(is.null(object@training_stats$length_scales)) stop("No lenghtscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
   tmp <- object@training_stats$length_scales
-  tmp <- tmp[, apply(tmp,2, function(s) !all(is.na(s))), drop = FALSE]
-  return(tmp[,ncol(tmp)])
+  return(tmp)
 }
 
 
 #' @title Get scales
 #' @name get_scales
 #' @description Extract the inferred scale for each factor after model training. 
-#' @details This can be used only if GP_factors is set to True.
+#' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
 #' @param object a \code{\link{MOFA}} object.
 #' @export
 get_scales <- function(object) {
@@ -53,10 +52,23 @@ get_scales <- function(object) {
   if(is.null(object@covariates)) stop("No covariates specified in 'object'")
   if(is.null(object@training_stats$scales)) stop("No scales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
   tmp <- object@training_stats$scales
-  tmp <- tmp[, apply(tmp,2, function(s) !all(is.na(s))), drop = FALSE]
-  return(tmp[,ncol(tmp)])
+  return(tmp)
 }
 
+#' @title Get group covariance matrix
+#' @name get_group_kernel
+#' @description Extract the inferred group-group covariance matrix per factor
+#' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
+#' @param object a \code{\link{MOFA}} object.
+#' @export
+get_group_kernel <- function(object) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if(is.null(object@training_stats$Kg)) stop("No lenghtscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
+  tmp <- lapply(seq_len(dim(object@training_stats$Kg)[3]), function(x) object@training_stats$Kg[ , , x])
+  names(tmp) <- factors_names(object)
+  return(tmp)
+}
 
 #' @title Get factors
 #' @name get_factors

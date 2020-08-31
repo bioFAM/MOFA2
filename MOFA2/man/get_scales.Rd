@@ -13,5 +13,5 @@ get_scales(object)
 Extract the inferred scale for each factor after model training.
 }
 \details{
-This can be used only if GP_factors is set to True.
+This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
 }
