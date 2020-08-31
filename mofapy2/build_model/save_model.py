@@ -456,3 +456,4 @@ class saveModel():
         if self.model_opts['GP_factors']:
             stats_grp.create_dataset("length_scales", data=stats["length_scales"][self.order_factors])
             stats_grp.create_dataset("scales", data=stats["scales"][self.order_factors])
+            stats_grp.create_dataset("Kg", data=stats["Kg"][self.order_factors])
