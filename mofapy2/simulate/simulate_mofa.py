@@ -53,7 +53,7 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
     if model_groups:
         Gmat = np.random.binomial(1, 0.5, G * K * G).reshape(K, G ,G)
         for k in range(K):
-            Gmat[k,:,:] = np.dot(Gmat[k,:,:], Gmat[k,:,:].transpose())
+            Gmat[k,:,:] = np.tril(Gmat[k,:,:]) + np.triu(Gmat[k,:,:].T, 1) # symmetrize
             np.fill_diagonal(Gmat[k,:,:], 1)
 
     # simulate Sigma
