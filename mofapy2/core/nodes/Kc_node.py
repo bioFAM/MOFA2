@@ -23,12 +23,16 @@ class Kc_Node(Node):
     n_grid: number of grid points for the lengthscale parameter
     """
 
-    def __init__(self, dim, covariates, n_grid=10):
+    def __init__(self, dim, covariates, n_grid=10, cov4grid = None):
         super().__init__(dim)
         self.covariates = covariates                                # covariate
         self.C = dim[1]                                             # number of observations for covariate
         self.K = dim[0]                                             # number of latent processes
         self.n_grid = n_grid                                        # number of grid points to optimize lengthscale on
+        if cov4grid is None:
+            self.cov4grid = covariates                              # covariates use to build grid - for consistsney with non-spasre GP
+        else:
+            self.cov4grid = cov4grid                                    #(can differ from covariates, e.g. if kernel is built on subset on inducing points)
         self.gridix = np.zeros(self.K, dtype = np.int8)             # index of the grid values for lengthscale selected per factor
 
 
@@ -39,7 +43,9 @@ class Kc_Node(Node):
         """
         Function to initiailize the grid, kernel matrix and spectral decomposition
         """
-        self.l_grid = get_l_grid(self.covariates, n_grid = self.n_grid)
+
+        # use all covariate to determine grid
+        self.l_grid = get_l_grid(self.cov4grid, n_grid = self.n_grid)
 
         # add the diagonal covariance (lengthscale 0) to the grid
         self.l_grid = np.insert(self.l_grid, 0, 0)
@@ -59,8 +65,10 @@ class Kc_Node(Node):
         """
         Function to compute kernel matrix for all lengthscales
         """
+
         for i in range(self.n_grid):
             self.compute_kernel_at_gridpoint(i)
+
 
     def compute_kernel_at_gridpoint(self, i):
 

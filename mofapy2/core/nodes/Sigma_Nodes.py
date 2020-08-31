@@ -126,6 +126,7 @@ class SigmaGrid_Node(Node):
         for i in range(self.n_grid):
             self.compute_kernel_at_gridpoint(i)
 
+
     def compute_kernel_at_gridpoint(self, i):
         # covariance (scaled by Gower factor)
         self.K[i, :, :] = SE(self.sample_cov_transformed, self.l_grid[i], zeta=0) # zeta is added later
@@ -139,6 +140,7 @@ class SigmaGrid_Node(Node):
             self.D[i,:], self.V[i,:,:] = s.linalg.eigh( self.K[i,:,:]) # Sigma = VDV^T with V^T * V = I # important to use eigh and not eig to obtain orthogonal eigenvector (which always exist for symmetric real matrices)
         else:
             self.D[i, :], self.V[i, :, :] = s.linalg.eigh(self.K[i][self.idx_inducing, :][:, self.idx_inducing])
+
 
     def compute_cov(self):
         for k in range(self.n_factors):
@@ -154,13 +156,13 @@ class SigmaGrid_Node(Node):
                                                                                                s.diag(1 / (self.D[self.gridix[k],:] +
                                                                                                            self.zeta[k] / (1 - self.zeta[k])))),
                                                                                  self.V[self.gridix[k], :, :].transpose())
-                self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
+                # self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
                 det_fac = self.N
                 self.Sigma_inv_logdet[k] = - det_fac * s.log(1 - self.zeta[k]) - s.log(
                     (self.D[self.gridix[k], :] + self.zeta[k] / (1 - self.zeta[k]))).sum()
             else:
                 self.Sigma_inv[k, :, :] = s.eye(self.N)
-                self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
+                # self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
                 self.Sigma_inv_logdet[k] = 1
 
         else:
@@ -168,13 +170,14 @@ class SigmaGrid_Node(Node):
                 self.Sigma_inv[k, :, :] = 1 / (1 - self.zeta[k]) * gpu_utils.dot(gpu_utils.dot(self.V[self.gridix[k], :, :],
                                                                                                s.diag(1 / (self.D[self.gridix[k],:] + self.zeta[k] / (1 - self.zeta[k])))),
                                                                                  self.V[self.gridix[k], :, :].transpose())
-                self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
+                # self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
                 det_fac = self.Nu
                 self.Sigma_inv_logdet[k] = - det_fac * s.log(1 - self.zeta[k]) -s.log(
                      (self.D[self.gridix[k], :] + self.zeta[k] / (1 - self.zeta[k]))).sum()
+
             else:
                 self.Sigma_inv[k, :, :] = s.eye(self.Nu)
-                self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
+                # self.Sigma_inv_diag[k, :] = s.diag(self.Sigma_inv[k, :, :])
                 self.Sigma_inv_logdet[k] = 1
 
 

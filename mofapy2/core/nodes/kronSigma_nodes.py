@@ -99,7 +99,7 @@ class Sigma_Node(Node):
 
         # warping
         self.warping = warping
-        self.G4warping = len(self.groups) # number of groups to consider for warping (if no group kernel this differes from self.G)
+        self.G4warping = len(self.groups) # number of groups to consider for warping (if no group kernel this differs from self.G)
         assert warping_ref < self.G4warping,\
             "Reference group not correctly specified, exceeds the number of groups."
         self.reference_group = warping_ref
@@ -124,16 +124,18 @@ class Sigma_Node(Node):
             if self.idx_inducing is None:
                 self.initKc(self.sample_cov_transformed)
             else:
-                self.initKc(self.sample_cov_transformed[self.idx_inducing]) #TODO add support for idx inducing and aling?
+                self.initKc(self.sample_cov_transformed[self.idx_inducing], cov4grid = self.sample_cov_transformed) #use all point to determine grid limits
         else:
             self.Kc = None # initialized later
 
         # initialize Sigma terms (unstructured)
         self.Sigma_inv = np.zeros([self.K, self.Nu, self.Nu])
+        self.Sigma = np.zeros([self.K, self.N, self.N])
         for k in range(self.K):
             self.Sigma_inv[k, :, :] = np.eye(self.Nu)
+            self.Sigma[k, :, :] = np.eye(self.N)
 
-        self.Sigma_inv_logdet = np.ones(self.K)
+        self.Sigma_inv_logdet = np.zeros(self.K)
 
         # exclude cases not covered
         if self.model_groups and (self.warping or self.idx_inducing is not None or not self.kronecker):
@@ -144,7 +146,7 @@ class Sigma_Node(Node):
             sys.exit()
 
 
-    def initKc(self, transformed_sample_cov):
+    def initKc(self, transformed_sample_cov, cov4grid = None):
         """
         Method to initialize the components required for the covariate kernel
         """
@@ -158,7 +160,7 @@ class Sigma_Node(Node):
         self.C = self.covariates.shape[0]  # number of covariate values
 
         # set covariate kernel
-        self.Kc = Kc_Node(dim=(self.K, self.C), covariates = self.covariates, n_grid = self.n_grid)
+        self.Kc = Kc_Node(dim=(self.K, self.C), covariates = self.covariates, n_grid = self.n_grid, cov4grid = cov4grid)
 
 
     def initKg(self, rank, sigma_const):
@@ -188,15 +190,15 @@ class Sigma_Node(Node):
 
         return {'Vc' : Vc, 'Vg' : Vg, 'Dc' : Dc, 'Dg' : Dg, 'zeta' : zeta}
 
-    def calc_sigma_inverse(self):
+    def calc_sigma_terms(self, only_inverse = False):
         """
         Method to compute the inverse of sigma and its log determinant based on the spectral decomposition
          of the kernel matrices for all factors
         """
         for k in range(self.K):
-            self.calc_sigma_inverse_k(k)
+            self.calc_sigma_terms_k(k, only_inverse)
 
-    def calc_sigma_inverse_k(self, k):
+    def calc_sigma_terms_k(self, k, only_inverse = False):
         """
         Method to compute the inverse of sigma and its log determinant based on the spectral decomposition
          of the kernel matrices for a given factor k
@@ -204,16 +206,32 @@ class Sigma_Node(Node):
         if self.zeta[k] == 1:
             self.Sigma_inv[k, :, :] = np.eye(self.Nu)
             self.Sigma_inv_logdet[k] = 1
+            self.Sigma[k, :, :] = np.eye(self.N)
         else:
             if self.kronecker or not self.model_groups:
                 components = self.get_components(k)
                 term1 = np.kron(components['Vg'], components['Vc'])
                 term2diag = 1/ (np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k] / (1-self.zeta[k]))
                 term3 = np.kron(components['Vg'].transpose(), components['Vc'].transpose())
-                self.Sigma_inv[k, :, :] = 1 / (1-self.zeta[k]) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
-                self.Sigma_inv_logdet[k] =  - self.Nu * s.log(1 - self.zeta[k]) + s.log(term2diag).sum()
+                self.Sigma_inv[k, :, :] = 1 / (1 - self.zeta[k]) * gpu_utils.dot(gpu_utils.dot(term1, np.diag(term2diag)), term3)
+                self.Sigma_inv_logdet[k] = - self.Nu * s.log(1 - self.zeta[k]) + s.log(term2diag).sum()
+
+                # update Sigma as well (not required in ELBO of Z but for updates of Z|U in the sparse GP setting and to obtain valid expectation of Sigma)
+                if not only_inverse:
+                    if self.idx_inducing is not None:
+                        self.update_Sigma_complete_k(k)
+                    else:
+                        for k in range(self.K):
+                            components = self.get_components(k)
+                            term1 = np.kron(components['Vg'], components['Vc'])
+                            term2diag = np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + \
+                                        self.zeta[k] / (1 - self.zeta[k])
+                            term3 = np.kron(components['Vg'].transpose(), components['Vc'].transpose())
+                            self.Sigma[k, :, :] = (1 - self.zeta[k]) * gpu_utils.dot(term1,
+                                                                                gpu_utils.dot(np.diag(term2diag),
+                                                                                              term3))
             else:
-                print("TODO: Implement Sigma node for non-Kroncker structure!")
+                print("If model_groups = True, data needs to have Kronecker structure.")
                 sys.exit()
 
 
@@ -253,42 +271,22 @@ class Sigma_Node(Node):
         sigma = self.Kg.get_sigma()
         return sigma
 
-    def build_Sigma_complete(self):
+    def update_Sigma_complete_k(self, k):
         """
-        Method to build the entire covariance matrix (used in context of sparse GPs to pass to Z|U node)
+        Method to update the entire covariance matrix for the k-th factor (used in context of sparse GPs to pass to Z|U node)
         """
-        Sigma = np.zeros([self.K, self.N, self.N])
-        for k in range(self.K):
-            if self.zeta[k] == 1 or self.Kc is None:
-                    Sigma[k, :, :] = np.eye(self.N)
-            else:
-                Kc_k = self.Kc.eval_at_newpoints_k(self.sample_cov_transformed, k)
-                for k in range(self.K):
-                    Sigma[k, :, :] = (1 - self.zeta[k]) * Kc_k  + self.zeta[k] * np.eye(self.N) # TODO add multiplication with expanded group kernel to enable group_model support
+        if self.zeta[k] == 1 or self.Kc is None:
+                self.Sigma[k, :, :] = np.eye(self.N)
+        else:
+            Kc_k = self.Kc.eval_at_newpoints_k(self.sample_cov_transformed, k)
+            self.Sigma[k, :, :] = (1 - self.zeta[k]) * Kc_k  + self.zeta[k] * np.eye(self.N) # TODO add multiplication with expanded group kernel to enable group_model support
 
-        return Sigma
 
     def getExpectation(self):
         """
         Method to get sigma hyperparameter
         """
-        Sigma = np.zeros([self.K, self.N, self.N])
-        if self.idx_inducing is not None:
-            Sigma = self.build_Sigma_complete()
-        else:
-            if self.kronecker or not self.model_groups:
-                # if model_groups = False, Vg, Dg, G =1 reduces to (1-zeta)*V(D+zeta/(1-zeta)V^T
-                for k in range(self.K):
-                    components = self.get_components(k)
-                    term1 = np.kron(components['Vg'], components['Vc'])
-                    term2diag = np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k]/(1-self.zeta[k])
-                    term3 = np.kron(components['Vg'].transpose(),components['Vc'].transpose())
-                    Sigma[k, :, :] = (1-self.zeta[k]) * gpu_utils.dot(term1, gpu_utils.dot(np.diag(term2diag), term3))
-            else:
-                print("TODO For non-Kronekcer: build whole covariance matrix from correpsonding entries in covarite and group amtrix")
-                sys.exit()
-
-        return Sigma
+        return self.Sigma
 
     def getExpectations(self):
         """
@@ -350,7 +348,7 @@ class Sigma_Node(Node):
             x = x.reshape(self.Kg.rank, self.G)
             self.Kg.set_parameters(x=x, sigma=sigma, k=k) # set and recalculate group kernel
 
-        self.calc_sigma_inverse_k(k)
+        self.calc_sigma_terms_k(k, only_inverse = True)
         elbo = var.calculateELBO_k(k)
 
         return -elbo
@@ -439,7 +437,7 @@ class Sigma_Node(Node):
                     self.Kg.set_parameters(x=best_x, sigma=best_sigma, k=k)
                 self.zeta[k] = best_zeta
 
-            self.calc_sigma_inverse()
+            self.calc_sigma_terms(only_inverse = False)
             print('Sigma node has been optimised: Lengthscales =', self.get_ls(), ', Scale =',  1-self.get_zeta())
 
     def align_sample_cov_dtw(self, Z):
