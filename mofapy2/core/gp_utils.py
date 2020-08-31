@@ -113,10 +113,10 @@ def get_l_grid(X, n_grid = 5, idx = None):
 #     r = (n-1) / trPCP
 #     return r
 #
-# def covar_to_corr(C):
-#     """
-#     Transforms the covariance matrix into a correlation matrix
-#     """
-#     Cdiag = np.diag(C)
-#     Ccor = np.diag(1/np.sqrt(Cdiag)) @ C @ np.diag(1/np.sqrt(Cdiag))
-#     return Ccor
+def covar_to_corr(C):
+    """
+    Transforms the covariance matrix into a correlation matrix
+    """
+    Cdiag = np.diag(C)
+    Ccor = np.diag(1/np.sqrt(Cdiag)) @ C @ np.diag(1/np.sqrt(Cdiag))
+    return Ccor

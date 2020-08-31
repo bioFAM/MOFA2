@@ -5,6 +5,7 @@ from mofapy2.core.nodes.variational_nodes import *
 from mofapy2.core.gp_utils import *
 import scipy as s
 from mofapy2.core import gpu_utils
+from mofapy2.core.gp_utils import covar_to_corr
 
 class Kg_Node(Node):
     """
@@ -20,7 +21,7 @@ class Kg_Node(Node):
     sigma_const: boolean whether to use a constant diagonal?
     """
 
-    def __init__(self, dim, rank, sigma = 0.5, sigma_const=True):
+    def __init__(self, dim, rank, sigma = 0.1, sigma_const=True, scale_to_cor = True):
         super().__init__(dim)
         self.G = dim[1]                                             # number of observations for covariate
         self.K = dim[0]                                             # number of latent processes
@@ -30,7 +31,7 @@ class Kg_Node(Node):
             self.sigma = np.array([sigma] * self.K)
         else:
             self.sigma = [np.array([sigma] * self.G)] * self.K
-
+        self.scale_to_cor = scale_to_cor
         # initialize components in node
         self.compute4init()
 
@@ -66,6 +67,8 @@ class Kg_Node(Node):
         else:
             self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) +  np.diag(self.sigma[k])
 
+        if self.scale_to_cor:
+            self.Kmat[k, :, :] = covar_to_corr(self.Kmat[k, :, :])
         # compute spectral decomposition
         # Kg = VDV^T with V^T V = I
         self.D[k, :], self.V[k, :, :] = s.linalg.eigh(self.Kmat[k, :, :])
