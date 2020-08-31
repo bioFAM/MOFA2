@@ -26,7 +26,7 @@ class Sigma_Node(Node):
     Sigma node to optimises the GP hyperparameters for each factor and
     perform alignment of covariates per group.
 
-    The covariance matrix is modelled as a Kronecker product of a group kernel
+    The covariance matrix is modelled as a Kronecker product of a (low-rank) group kernel
     and a covariate kernel where possible:
     Sigma = (1-zeta) * KG \otimes KC + zeta * I
 
