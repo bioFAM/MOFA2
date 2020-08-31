@@ -50,7 +50,7 @@ class Sigma_Node(Node):
     """
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing = None,
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True,
-                 warping_open_end = True, opt_freq = 10, rankx = 1, sigma_const = True,
+                 warping_open_end = True, opt_freq = 10, rankx = None, sigma_const = True,
                  model_groups = False):
         super().__init__(dim)
 
@@ -82,6 +82,13 @@ class Sigma_Node(Node):
 
         if self.model_groups:
             self.G = len(self.groups)  # number of groups
+            if rankx is None:
+                # rankx = np.min([np.max([1, np.floor(np.log(self.G)).astype(np.int64)]), 5])
+                if self.G < 15:
+                    rankx = 1
+                else:
+                    rankx = 2
+
             # check: has Kronecker structure?
             self.kronecker = np.all([self.sample_cov_transformed[self.groupsidx == 0] ==
                                      self.sample_cov_transformed[self.groupsidx == g] for g in
@@ -314,7 +321,7 @@ class Sigma_Node(Node):
 
         x = self.get_x()
         sigma = self.get_sigma()
-        return {'l':ls, 'scale': 1-zeta, 'sample_cov': self.sample_cov_transformed,  'x': x, 'sigma' : sigma}
+        return {'l':ls, 'scale': 1-zeta, 'sample_cov': self.sample_cov_transformed,  'x': x, 'sigma' : sigma, 'Kg' : self.Kg.Kmat}
 
 
     def removeFactors(self, idx, axis=1):
@@ -405,36 +412,51 @@ class Sigma_Node(Node):
                             bounds = [(1e-10, 1-1e-10)] # zeta
                             bounds = bounds + [(1e-10, 1-1e-10)]  # sigma
                             bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
+                            par0 = [1, 0] + [1/np.sqrt(self.Kg.rank)] * self.G *  self.Kg.rank # parameters for zero lengthscale
                         else:
                             bounds = [(1e-10, 1-1e-10)] # zeta
                             bounds = bounds + [(1e-10, 1-1e-10)] * self.G  # sigma
                             bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
+                            par0 = [1] + [0] * self.G + [1/np.sqrt(self.Kg.rank)] * self.G * self.Kg.rank
                     else:
-                        bounds = [(1e-10, 1-1e-10)]
+                        bounds = [(1e-10, 1-1e-10)] # zeta
+                        par0 = [1]
+                    par0 = np.array(par0)
 
                     # make sure initial parameters are in admissible region
                     par_init = np.max(np.vstack([par_init, [bounds[k][0] for k in range(len(bounds))]]), axis = 0)
                     par_init = np.min(np.vstack([par_init, [bounds[k][1] for k in range(len(bounds))]]), axis = 0)
 
                     # optimize
+                    # if lidx == 0: # for lengthscale of zeros only admit scale of 0 and group matrix of ones, this does not work as 0 not chosen any more #TODO
+                    #     elbo = -self.calc_neg_elbo_k(par0, lidx, k, var)
+                    #     elbo0 = elbo
+                    # else:
                     res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds) # L-BFGS-B
                     elbo = -res.fun
+                    if lidx == 0:
+                        best_param4ls = par0
+                    else:
+                        best_param4ls = res.x
+
                     if elbo > best_elbo:
                         best_elbo = elbo
                         best_lidx = lidx
-                        best_zeta = res.x[0]
+                        best_zeta = best_param4ls[0]
+
                         if self.model_groups:
                             if self.Kg.sigma_const:
-                                best_sigma = res.x[1]
-                                best_x = res.x[2:].reshape(self.Kg.rank, self.G)
+                                best_sigma = best_param4ls[1]
+                                best_x = best_param4ls[2:].reshape(self.Kg.rank, self.G)
                             else:
-                                best_sigma = res.x[1:(self.G+1)]
-                                best_x = res.x[(self.G+1):].reshape(self.Kg.rank, self.G)
+                                best_sigma = best_param4ls[1:(self.G+1)]
+                                best_x = best_param4ls[(self.G+1):].reshape(self.Kg.rank, self.G)
 
                 # save optimized kernel paramters
                 self.Kc.set_gridix(best_lidx, k)
                 if self.model_groups:
                     self.Kg.set_parameters(x=best_x, sigma=best_sigma, k=k)
+
                 self.zeta[k] = best_zeta
 
             self.calc_sigma_terms(only_inverse = False)
