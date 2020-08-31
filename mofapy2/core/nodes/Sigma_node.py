@@ -316,8 +316,10 @@ class Sigma_Node(Node):
         """
         ls = self.get_ls()
         zeta = self.get_zeta()
+
         if not self.model_groups:
-            return {'l': ls, 'scale': 1 - zeta, 'sample_cov': self.sample_cov_transformed}
+            Kg = np.ones([self.K, self.G, self.G])
+            return {'l': ls, 'scale': 1 - zeta, 'sample_cov': self.sample_cov_transformed, 'Kg' : Kg}
 
         x = self.get_x()
         sigma = self.get_sigma()
