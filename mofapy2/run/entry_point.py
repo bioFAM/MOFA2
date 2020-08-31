@@ -836,8 +836,12 @@ class entry_point(object):
                 N = self.dimensionalities["N"]
                 loc = self.sample_cov.sum(axis = 1)
                 groups = self.data_opts['samples_groups']
-                idx_inducing = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing),loc[nonmissing_samples]))][np.arange(0, N_nonmissing, step = N_nonmissing / n_inducing, dtype = int)] # shuffle ties randomly (between groups)
-                # idx_inducing = np.lexsort((np.random.random(loc.size),loc))[np.arange(0, N, step = N / n_inducing, dtype = int)] # shuffle ties randomly (between groups)
+                nonmissing_samples_tiesshuffled = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing), loc[nonmissing_samples]))] # shuffle ties randomly (e.g. between groups)
+                grid_ix = np.ceil(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
+                idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
+
+                # Show inducing points
+                # import matplotlib.pyplot as plt
                 # plt.figure(10)
                 # color_labels = np.unique(self.data_opts['samples_groups'])
                 # rgb_values = ['blue', 'red', 'green']
@@ -845,7 +849,6 @@ class entry_point(object):
                 # colors = [color_map[x] for x in self.data_opts['samples_groups']]
                 # plt.scatter(loc, [x in idx_inducing for x in range(N)], c = colors)
                 # plt.pause(1)
-                # idx_inducing = np.array(np.where([x in np.arange(0, N, step = N / n_inducing, dtype = int) for x in np.argsort(loc)]), dtype = 'int').flatten()
 
         self.model_opts['n_inducing'] = n_inducing
         self.model_opts['idx_inducing'] = idx_inducing
