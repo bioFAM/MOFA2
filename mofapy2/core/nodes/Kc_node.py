@@ -23,7 +23,7 @@ class Kc_Node(Node):
     n_grid: number of grid points for the lengthscale parameter
     """
 
-    def __init__(self, dim, covariates, n_grid=10, cov4grid = None):
+    def __init__(self, dim, covariates, n_grid=10, cov4grid = None, spectral_decomp = True):
         super().__init__(dim)
         self.covariates = covariates                                # covariate
         self.C = dim[1]                                             # number of observations for covariate
@@ -37,9 +37,9 @@ class Kc_Node(Node):
 
 
         # initialize components in node
-        self.compute4init()
+        self.compute4init(spectral_decomp)
 
-    def compute4init(self):
+    def compute4init(self, spectral_decomp = True):
         """
         Function to initiailize the grid, kernel matrix and spectral decomposition
         """
@@ -59,18 +59,18 @@ class Kc_Node(Node):
         self.D = np.zeros([self.n_grid, self.C])            # eigenvalues of kernel matrix on lengthscale grid
 
         # compute for each lengthscale the kernel matrix
-        self.compute_kernel()
+        self.compute_kernel(spectral_decomp = spectral_decomp)
 
-    def compute_kernel(self):
+    def compute_kernel(self, spectral_decomp = True):
         """
         Function to compute kernel matrix for all lengthscales
         """
 
         for i in range(self.n_grid):
-            self.compute_kernel_at_gridpoint(i)
+            self.compute_kernel_at_gridpoint(i, spectral_decomp = spectral_decomp)
 
 
-    def compute_kernel_at_gridpoint(self, i):
+    def compute_kernel_at_gridpoint(self, i, spectral_decomp = True):
 
         # build kernel matrix based on given covariance function
         self.Kmat[i, :, :] = SE(self.covariates, self.l_grid[i], zeta=0)
@@ -78,7 +78,8 @@ class Kc_Node(Node):
 
         # compute spectral decomposition
         # Kc = VDV^T with V^T V = I
-        self.D[i, :], self.V[i, :, :] = s.linalg.eigh(self.Kmat[i, :,:])
+        if spectral_decomp:
+            self.D[i, :], self.V[i, :, :] = s.linalg.eigh(self.Kmat[i, :,:])
 
     def get_ls(self):
         """
@@ -91,9 +92,11 @@ class Kc_Node(Node):
         """
         Method to ELBO optimal components of kernel for given factor k
         """
-        best_ls_idx = self.gridix[k]
+        best_ls_idx = self.get_best_lidx(k)
         return self.V[best_ls_idx, :, :], self.D[best_ls_idx,:]
 
+    def get_best_lidx(self, k):
+        return self.gridix[k]
 
     def removeFactors(self, idx, axis=1):
         self.gridix = s.delete(self.gridix, axis=0, obj=idx)

@@ -90,12 +90,12 @@ class Sigma_Node(Node):
                     rankx = 2
 
             # check: has Kronecker structure?
-            self.kronecker = np.all([self.sample_cov_transformed[self.groupsidx == 0] ==
-                                     self.sample_cov_transformed[self.groupsidx == g] for g in
+            self.kronecker = np.all([np.all(self.sample_cov_transformed[self.groupsidx == 0] ==
+                                     self.sample_cov_transformed[self.groupsidx == g]) for g in
                                      range(self.G)])
             if not self.kronecker:
                 print("Warning: Data has no Kronecker structure (groups \otimes covariates) - inference might be slow."
-                      "If possible, reformat your data to have samples with identical covariates across groups.")
+                      "If possible and no alignment required, reformat your data to have samples with identical covariates across groups, e.g. by including missing values.")
             self.initKg(rankx, sigma_const)
 
         else:
@@ -127,11 +127,12 @@ class Sigma_Node(Node):
             self.Nu = self.N    # dimension to use for Sigma^(-1)
 
         # initialize covariate kernel if no warping, otherwise after first warping
+        # if no Kronecker structure no eigendecomposition required
         if not self.warping:
             if self.idx_inducing is None:
-                self.initKc(self.sample_cov_transformed)
+                self.initKc(self.sample_cov_transformed, spectral_decomp = self.kronecker)
             else:
-                self.initKc(self.sample_cov_transformed[self.idx_inducing], cov4grid = self.sample_cov_transformed) #use all point to determine grid limits
+                self.initKc(self.sample_cov_transformed[self.idx_inducing], cov4grid = self.sample_cov_transformed, spectral_decomp = self.kronecker) #use all point to determine grid limits
         else:
             self.Kc = None # initialized later
 
@@ -145,15 +146,15 @@ class Sigma_Node(Node):
         self.Sigma_inv_logdet = np.zeros(self.K)
 
         # exclude cases not covered
-        if self.model_groups and (self.warping or self.idx_inducing is not None or not self.kronecker):
-            print("The option model_groups cannot (yet) be used in conjunction with warping, sparse GPs or non-Kronekcer data ")
+        if self.model_groups and (self.warping or self.idx_inducing is not None):
+            print("The option model_groups cannot (yet) be used in conjunction with warping or sparse GPs")
             sys.exit()
         if self.warping and self.idx_inducing is not None :
-            print("The option warping cannot be used jointly with sparse GPs")
+            print("The option warping cannot be used jointly with sparse GPs.")
             sys.exit()
 
 
-    def initKc(self, transformed_sample_cov, cov4grid = None):
+    def initKc(self, transformed_sample_cov, cov4grid = None, spectral_decomp = True):
         """
         Method to initialize the components required for the covariate kernel
         """
@@ -162,12 +163,12 @@ class Sigma_Node(Node):
         else:
             self.covariates = transformed_sample_cov # all covariate values
 
-        # self.covidx = [np.where((self.covariates == transformed_sample_cov[j, :]).all(axis=1))
-        #                for j in range(self.Nu)]  # for each sample gives the idx in covariates
+        self.covidx = np.asarray([np.where((self.covariates == transformed_sample_cov[j, :]).all(axis=1))[0].item()
+                       for j in range(self.Nu)])  # for each sample gives the idx in covariates
         self.C = self.covariates.shape[0]  # number of covariate values
 
         # set covariate kernel
-        self.Kc = Kc_Node(dim=(self.K, self.C), covariates = self.covariates, n_grid = self.n_grid, cov4grid = cov4grid)
+        self.Kc = Kc_Node(dim=(self.K, self.C), covariates = self.covariates, n_grid = self.n_grid, cov4grid = cov4grid, spectral_decomp = spectral_decomp)
 
 
     def initKg(self, rank, sigma_const):
@@ -238,8 +239,12 @@ class Sigma_Node(Node):
                                                                                 gpu_utils.dot(np.diag(term2diag),
                                                                                               term3))
             else:
-                print("If model_groups = True, data needs to have Kronecker structure.")
-                sys.exit()
+                for k in range(self.K):
+                    self.Sigma[k, :, :] = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
+                    self.Sigma_inv[k, :, :] = np.linalg.inv(self.Sigma[k, :, :])
+                    self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
+                # print("If model_groups = True, data needs to have Kronecker structure.")
+                # sys.exit()
 
 
     def getInverseTerms_k(self, k):
@@ -337,6 +342,9 @@ class Sigma_Node(Node):
         self.zeta = s.delete(self.zeta, axis=0, obj=idx)
         self.updateDim(0, self.dim[0] - len(idx))
         self.K = self.K - 1
+        self.Sigma  = s.delete(self.Sigma, axis=0, obj=idx)
+        self.Sigma_inv  = s.delete(self.Sigma_inv, axis=0, obj=idx)
+        self.Sigma_inv_logdet  = s.delete(self.Sigma_inv_logdet, axis=0, obj=idx)
 
 
     def calc_neg_elbo_k(self, par, lidx, k, var):
@@ -355,7 +363,7 @@ class Sigma_Node(Node):
             assert len(x) == self.Kg.rank * self.G,\
                 "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
             x = x.reshape(self.Kg.rank, self.G)
-            self.Kg.set_parameters(x=x, sigma=sigma, k=k) # set and recalculate group kernel
+            self.Kg.set_parameters(x=x, sigma=sigma, k=k, spectral_decomp=self.kronecker) # set and recalculate group kernel (matrix and spectral decomposition if Kronecker
 
         self.calc_sigma_terms_k(k, only_inverse = True)
         elbo = var.calculateELBO_k(k)

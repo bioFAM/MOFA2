@@ -52,15 +52,15 @@ class Kg_Node(Node):
 
         self.compute_kernel()
 
-    def compute_kernel(self):
+    def compute_kernel(self, spectral_decomp = True):
         """
         Function to compute kernel matrix for current hyperparameters (x, sigma)
         """
         for k in range(self.K):
-            self.compute_kernel_k(k)
+            self.compute_kernel_k(k, spectral_decomp = spectral_decomp)
 
 
-    def compute_kernel_k(self, k):
+    def compute_kernel_k(self, k, spectral_decomp = True):
         # build kernel matrix based on low-rank approximation
         if self.sigma_const:
             self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) + self.sigma[k] * np.eye(self.G)
@@ -71,7 +71,8 @@ class Kg_Node(Node):
             self.Kmat[k, :, :] = covar_to_corr(self.Kmat[k, :, :])
         # compute spectral decomposition
         # Kg = VDV^T with V^T V = I
-        self.D[k, :], self.V[k, :, :] = s.linalg.eigh(self.Kmat[k, :, :])
+        if spectral_decomp:
+            self.D[k, :], self.V[k, :, :] = s.linalg.eigh(self.Kmat[k, :, :])
 
 
     def removeFactors(self, idx, axis=1):
@@ -84,13 +85,13 @@ class Kg_Node(Node):
         """
         return self.V[k, :, :], self.D[k, :]
 
-    def set_parameters(self, x, sigma, k):
+    def set_parameters(self, x, sigma, k, spectral_decomp = True):
         """
         Method to set hyperparameters of kernel and recompute covariance matrices
         """
         self.set_x(x,k)
         self.set_sigma(sigma, k)
-        self.compute_kernel_k(k)
+        self.compute_kernel_k(k, spectral_decomp)
 
     def set_x(self, x, k):
         self.x[k,:,:] = x
