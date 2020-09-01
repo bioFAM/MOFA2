@@ -1037,8 +1037,83 @@ class entry_point(object):
             Ztmp[(z_score>zscore_cutoff) & (np.absolute(Z[idx,:])>value_cutoff)] = np.nan
             Z[idx,:] = Ztmp
 
+    def predict_factor(self, new_covariates = None, uncertainty=True, groups = "all"):
+        """
+        Predict factor values at new covariate values or in missing groups
+        new_covariates: new covariate values to predict at, should be of same format as covariates.
+                        If None all present covariate values are used
+        uncertainty: provide uncertainty measures for the prediction
+        groups: Groups for which to predict, default is "all"
+        """
+
+        assert self.model_opts['GP_factors'], "Using predict_factors requires the use of GP_factors," \
+                                              " maybe you want to use impute instead?"
+
+        if new_covariates is None:
+            new_covariates = self.sample_cov
+
+        # get group-covariate combinations included in the model
+        old_groups = self.model.nodes['Sigma'].groupsidx
+        old_covariates = self.model.nodes['Sigma'].sample_cov_transformed
+        all_covariates = np.unique(np.vstack([new_covariates, old_covariates]), axis =0)
+        N = all_covariates.shape[0]
+        M = new_covariates.shape[0]
+
+        # get the necessary expectations
+        Z = self.model.nodes['Z'].getExpectations()['E']
+        K = Z.shape[1]
+        Sigma_terms = self.model.nodes['Sigma'].getExpectations()
+        Sigma = Sigma_terms['cov']
+        Sigma_inv = Sigma_terms['inv']
+        GP_param = self.model.nodes['Sigma'].getParameters()
+        if groups == "all":
+            G = len(self.model.nodes['Sigma'].groups)
+            groups = np.arange(G)
+        else:
+            G = len(groups)
+        if not self.model_opts['model_groups']:
+            Kg = np.ones([K, G, G])
+        else:
+            Kg = self.model.nodes['Sigma'].Kg.Kmat
+            Kg = Kg[:, groups, :][:, :, groups]
+
+        # which rows/columns in Sigma_new correspond to original Sigma and which to new test covariates?
+        old = np.hstack([old_groups[:,None], old_covariates])
+        all = np.hstack([np.repeat(groups, all_covariates.shape[0])[:,None], np.tile(all_covariates.transpose(), G).transpose()])
+        new = np.hstack([np.repeat(groups, new_covariates.shape[0])[:,None], np.tile(new_covariates.transpose(), G).transpose()])
+        oldix = np.concatenate([np.where(np.all(np.equal(old[j,:], all), axis = 1))[0] for j in range(old.shape[0])])
+        newidx = np.concatenate([np.where(np.all(np.equal(new[j,:], all), axis = 1))[0] for j in range(new.shape[0])])
+
+        Z_new_mean = np.zeros([M*G, K])
+        if uncertainty:
+            Z_new_var = np.zeros([M*G, K])
+        for k in range(K):
+            Kc_new = self.model.nodes['Sigma'].Kc.eval_at_newpoints_k(all_covariates,k)
+            Sigma_new_k =  GP_param['scale'][k] * np.kron(Kg[k,:,:], Kc_new) + (1 - GP_param['scale'][k]) * np.eye(N * G)
+            Z_new_mean[:,k] = gpu_utils.dot(Sigma_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k,:,:], Z[:,k]))
+            if uncertainty:
+                # marginal variances p(z, z*|c, c*, y) =  p(z*|z, y,c,c*) *p(z|y,c,c*)  = p(z*|z, c*) * p(z|y,c)
+                if not self.model_opts['mv_Znode']:
+                    Z2 = np.diag(self.model.nodes['Z'].getExpectations()['E2'][:,k] - self.model.nodes['Z'].getExpectations()['E'][:,k]**2)
+                else:
+                    Z2 = self.model.nodes['Z'].getExpectations()['cov'][k,:,:]
+                Z_new_var[:,k] = np.diag(Sigma_new_k[newidx, :][:, newidx] -\
+                            gpu_utils.dot(Sigma_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k, :, :], Sigma_new_k[oldix,:][:,newidx])) + \
+                            gpu_utils.dot(Sigma_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k, :, :],
+                                                                           gpu_utils.dot(Z2,gpu_utils.dot(Sigma_inv[k, :, :],Sigma_new_k[oldix,:][:,newidx])))))
+
+        if uncertainty:
+            self.Zpredictions = {"mean": Z_new_mean, "variance": Z_new_var}
+        else:
+            self.Zpredictions = {"mean": Z_new_mean, "variance": None}
+
+        self.Zcompleted = True
+
+
     def impute(self, uncertainty=True, mask_outliers = True):
-        """impute missing values with or without uncertainty estimates"""
+        """
+        impute missing values with or without uncertainty estimates
+        """
 
         # detect and mask outliers that could skew the results
         if mask_outliers:
