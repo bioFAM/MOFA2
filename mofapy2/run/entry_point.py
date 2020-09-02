@@ -837,7 +837,7 @@ class entry_point(object):
                 loc = self.sample_cov.sum(axis = 1)
                 groups = self.data_opts['samples_groups']
                 nonmissing_samples_tiesshuffled = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing), loc[nonmissing_samples]))] # shuffle ties randomly (e.g. between groups)
-                grid_ix = np.ceil(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
+                grid_ix = np.floor(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
                 idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
 
                 # Show inducing points
