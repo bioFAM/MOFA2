@@ -90,12 +90,17 @@ class Sigma_Node(Node):
                     rankx = 2
 
             # check: has Kronecker structure?
-            self.kronecker = np.all([np.all(self.sample_cov_transformed[self.groupsidx == 0] ==
-                                     self.sample_cov_transformed[self.groupsidx == g]) for g in
-                                     range(self.G)])
-            if not self.kronecker:
-                print("Warning: Data has no Kronecker structure (groups \otimes covariates) - inference might be slow."
-                      "If possible and no alignment required, reformat your data to have samples with identical covariates across groups.")
+            if warping:
+                self.kronecker = False
+                print("Note: When learning an alignments and group covariance jointly inference might be slow.")
+            else:
+                self.kronecker = np.all([np.all(self.sample_cov_transformed[self.groupsidx == 0] ==
+                                         self.sample_cov_transformed[self.groupsidx == g]) for g in
+                                         range(self.G)])
+                if not self.kronecker:
+                    print("Warning: Data has no Kronecker structure (groups \otimes covariates) - inference might be slow."
+                          "If possible and no alignment required, reformat your data to have samples with identical covariates across groups.")
+
             self.initKg(rank = rankx, sigma_const= sigma_const, spectral_decomp = self.kronecker)
 
         else:
@@ -146,8 +151,8 @@ class Sigma_Node(Node):
         self.Sigma_inv_logdet = np.zeros(self.K)
 
         # exclude cases not covered
-        if self.model_groups and (self.warping or self.idx_inducing is not None):
-            print("The option model_groups cannot (yet) be used in conjunction with warping or sparse GPs")
+        if self.model_groups and (self.idx_inducing is not None):
+            print("The option model_groups has not been tested in conjunction with sparse GPs")
             sys.exit()
         if self.warping and self.idx_inducing is not None :
             print("The option warping cannot be used jointly with sparse GPs.")
@@ -478,10 +483,6 @@ class Sigma_Node(Node):
         The set of possible values for covaraites cannot be expaned (all need to be contained in the reference group)
         Thus, this does not requrie an update of Kc but only of indices mapping samples to covariates.
         """
-        if self.model_groups:
-            print("TODO: resotre kronckec where possible, adapt covairates in Kc to unique one or build full kernel matrix")
-            sys.exit()
-
         paths = []
         for g in range(self.G4warping):
             if g is not self.reference_group:
@@ -498,14 +499,8 @@ class Sigma_Node(Node):
                 idx = np.where(self.groupsidx == g)[0][idx_query_order][query_idx]
                 self.sample_cov_transformed[idx, 0] = ref_val
 
-        # adapt covaraite kernel to warped covariates
-        if self.iter == self.start_opt:
-            self.initKc(self.sample_cov_transformed) # only pass unique if grou pmodel and kron
-        else:
-            pass
-            # only adapt indices
-            # self.covidx = [np.where((self.covariates == self.sample_cov_transformed[j, :]).all(axis=1))
-            #             for j in range(self.Nu)]  # for each sample gives the idx in covariates
+        # covariate kernel need to be re-initialized after each warping
+        self.initKc(self.sample_cov_transformed, spectral_decomp=self.kronecker)
 
 
     def updateParameters(self, ix, ro):
