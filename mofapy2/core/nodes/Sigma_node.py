@@ -126,7 +126,7 @@ class Sigma_Node(Node):
         if not self.idx_inducing is None:
             self.Nu = len(idx_inducing)
             if self.model_groups:
-                print("TODO: implement sparse GP support with group model")
+                print("To be tested: sparse GP with group model")
                 sys.exit()
         else:
             self.Nu = self.N    # dimension to use for Sigma^(-1)
@@ -248,8 +248,6 @@ class Sigma_Node(Node):
                 self.Sigma[k, :, :] = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
                 self.Sigma_inv[k, :, :] = np.linalg.inv(self.Sigma[k, :, :])
                 self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
-                # print("If model_groups = True, data needs to have Kronecker structure.")
-                # sys.exit()
 
 
     def getInverseTerms_k(self, k):
