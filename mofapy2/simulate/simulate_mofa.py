@@ -67,7 +67,7 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
         elif lscales[k] == 0:
             Kmat = scales[k] * (distC == 0).astype(float)
             if model_groups:
-                Kmat = np.kron(Kmat,  Gmat[k,:,:])
+                Kmat = np.kron(Gmat[k,:,:], Kmat)
             Sigma.append(Kmat + (1-scales[k]) * np.eye(N*G))
             # Sigma.append(np.eye(N*G))
         else:
