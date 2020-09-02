@@ -93,6 +93,8 @@ class Sigma_Node(Node):
             if warping:
                 self.kronecker = False
                 print("Note: When learning an alignments and group covariance jointly inference might be slow.")
+            elif idx_inducing is not None:
+                self.kronecker = False # TODO select inducing points to ensure kronecker structure
             else:
                 self.kronecker = np.all([np.all(self.sample_cov_transformed[self.groupsidx == 0] ==
                                          self.sample_cov_transformed[self.groupsidx == g]) for g in
@@ -125,9 +127,6 @@ class Sigma_Node(Node):
         self.idx_inducing = idx_inducing
         if not self.idx_inducing is None:
             self.Nu = len(idx_inducing)
-            if self.model_groups:
-                print("To be tested: sparse GP with group model")
-                sys.exit()
         else:
             self.Nu = self.N    # dimension to use for Sigma^(-1)
 
@@ -245,9 +244,14 @@ class Sigma_Node(Node):
                                                                             gpu_utils.dot(np.diag(term2diag),
                                                                                           term3))
             else:
-                self.Sigma[k, :, :] = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
-                self.Sigma_inv[k, :, :] = np.linalg.inv(self.Sigma[k, :, :])
-                self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
+                if self.idx_inducing is not None:
+                    self.update_Sigma_complete_k(k)
+                    self.Sigma_inv[k, :, :] = np.linalg.inv(self.Sigma[k, self.idx_inducing, :][:,self.idx_inducing])
+                    self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
+                else:
+                    self.Sigma[k, :, :] = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
+                    self.Sigma_inv[k, :, :] = np.linalg.inv(self.Sigma[k, :, :])
+                    self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
 
 
     def getInverseTerms_k(self, k):
