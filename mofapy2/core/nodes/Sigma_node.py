@@ -425,12 +425,14 @@ class Sigma_Node(Node):
                             bounds = [(1e-10, 1-1e-10)] # zeta
                             bounds = bounds + [(1e-10, 1-1e-10)]  # sigma
                             bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
-                            par0 = [1, 0] + [1/np.sqrt(self.Kg.rank)] * self.G *  self.Kg.rank # parameters for zero lengthscale
+                            par0 = [1, 1] + [0] * self.G *  self.Kg.rank # parameters for zero lengthscale/scale (unstrucutred)
+                            # par0 = [1, 0] + [1/np.sqrt(self.Kg.rank)] * self.G *  self.Kg.rank # parameters for zero lengthscale (fully connected groups)
                         else:
                             bounds = [(1e-10, 1-1e-10)] # zeta
                             bounds = bounds + [(1e-10, 1-1e-10)] * self.G  # sigma
                             bounds = bounds + [(-1,1)] * self.G *  self.Kg.rank # x
-                            par0 = [1] + [0] * self.G + [1/np.sqrt(self.Kg.rank)] * self.G * self.Kg.rank
+                            par0 = [1] + [1] * self.G + [0] * self.G * self.Kg.rank
+                            # par0 = [1] + [0] * self.G + [1/np.sqrt(self.Kg.rank)] * self.G * self.Kg.rank
                     else:
                         bounds = [(1e-10, 1-1e-10)] # zeta
                         par0 = [1]
@@ -441,16 +443,19 @@ class Sigma_Node(Node):
                     par_init = np.min(np.vstack([par_init, [bounds[k][1] for k in range(len(bounds))]]), axis = 0)
 
                     # optimize
-                    # if lidx == 0: # for lengthscale of zeros only admit scale of 0 and group matrix of ones, this does not work as 0 not chosen any more #TODO
-                    #     elbo = -self.calc_neg_elbo_k(par0, lidx, k, var)
-                    #     elbo0 = elbo
-                    # else:
                     res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds) # L-BFGS-B
                     elbo = -res.fun
+
+                    # for lidx = 0: zeta can be non-identifiable, use unstructured model (do not model soley group structure)
                     if lidx == 0:
                         best_param4ls = par0
                     else:
                         best_param4ls = res.x
+
+                    # for zeta = 1: K_G and K_C are non-identifiable, use unstructured model
+                    if best_param4ls[0] == 1:
+                        best_param4ls = par0
+                        lidx = 0
 
                     if elbo > best_elbo:
                         best_elbo = elbo
