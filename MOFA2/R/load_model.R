@@ -360,7 +360,9 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   
   # Remove inactive factors
   if (isTRUE(remove_inactive_factors)) {
-    r2 <- rowSums(do.call('cbind', lapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE)))
+    # set all negative values to 0 (e.g. for completely missing views is -Inf from python)
+    r2 <- rowSums(do.call("cbind", lapply(object@cache[["variance_explained"]]$r2_per_factor,
+                                          function(x) rowSums(pmax(x,0), na.rm = TRUE))))
     var.threshold <- 0.0001
     if (any(r2<var.threshold)) {
       object <- subset_factors(object, which(r2>=var.threshold))
