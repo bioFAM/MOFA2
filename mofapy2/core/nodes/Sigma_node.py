@@ -95,8 +95,8 @@ class Sigma_Node(Node):
                                      range(self.G)])
             if not self.kronecker:
                 print("Warning: Data has no Kronecker structure (groups \otimes covariates) - inference might be slow."
-                      "If possible and no alignment required, reformat your data to have samples with identical covariates across groups, e.g. by including missing values.")
-            self.initKg(rankx, sigma_const)
+                      "If possible and no alignment required, reformat your data to have samples with identical covariates across groups.")
+            self.initKg(rank = rankx, sigma_const= sigma_const, spectral_decomp = self.kronecker)
 
         else:
             # all samples are modelled jointly in the covariate kernel
@@ -126,7 +126,7 @@ class Sigma_Node(Node):
         else:
             self.Nu = self.N    # dimension to use for Sigma^(-1)
 
-        # initialize covariate kernel if no warping, otherwise after first warping
+        # initialize covariate kernel if no warping, otherwise recalculation after each warping required
         # if no Kronecker structure no eigendecomposition required
         if not self.warping:
             if self.idx_inducing is None:
@@ -160,23 +160,25 @@ class Sigma_Node(Node):
         """
         if self.model_groups:
             self.covariates = np.unique(transformed_sample_cov, axis=0)  # distinct covariate values
+            # non unique if no group model
+            self.covidx = np.asarray([np.where((self.covariates == transformed_sample_cov[j, :]).all(axis=1))[0].item()
+                                      for j in range(self.Nu)])  # for each sample gives the idx in covariates
         else:
             self.covariates = transformed_sample_cov # all covariate values
 
-        self.covidx = np.asarray([np.where((self.covariates == transformed_sample_cov[j, :]).all(axis=1))[0].item()
-                       for j in range(self.Nu)])  # for each sample gives the idx in covariates
+
         self.C = self.covariates.shape[0]  # number of covariate values
 
         # set covariate kernel
         self.Kc = Kc_Node(dim=(self.K, self.C), covariates = self.covariates, n_grid = self.n_grid, cov4grid = cov4grid, spectral_decomp = spectral_decomp)
 
 
-    def initKg(self, rank, sigma_const):
+    def initKg(self, rank, sigma_const, spectral_decomp):
         """
         Method to initialize the group kernel
         """
         # set group kernel
-        self.Kg = Kg_Node(dim=(self.K, self.G), rank = rank, sigma_const = sigma_const)
+        self.Kg = Kg_Node(dim=(self.K, self.G), rank = rank, sigma_const = sigma_const, spectral_decomp = spectral_decomp)
 
 
     def precompute(self, options):
@@ -229,20 +231,18 @@ class Sigma_Node(Node):
                     if self.idx_inducing is not None:
                         self.update_Sigma_complete_k(k)
                     else:
-                        for k in range(self.K):
-                            components = self.get_components(k)
-                            term1 = np.kron(components['Vg'], components['Vc'])
-                            term2diag = np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + \
-                                        self.zeta[k] / (1 - self.zeta[k])
-                            term3 = np.kron(components['Vg'].transpose(), components['Vc'].transpose())
-                            self.Sigma[k, :, :] = (1 - self.zeta[k]) * gpu_utils.dot(term1,
-                                                                                gpu_utils.dot(np.diag(term2diag),
-                                                                                              term3))
+                        components = self.get_components(k)
+                        term1 = np.kron(components['Vg'], components['Vc'])
+                        term2diag = np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + \
+                                    self.zeta[k] / (1 - self.zeta[k])
+                        term3 = np.kron(components['Vg'].transpose(), components['Vc'].transpose())
+                        self.Sigma[k, :, :] = (1 - self.zeta[k]) * gpu_utils.dot(term1,
+                                                                            gpu_utils.dot(np.diag(term2diag),
+                                                                                          term3))
             else:
-                for k in range(self.K):
-                    self.Sigma[k, :, :] = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
-                    self.Sigma_inv[k, :, :] = np.linalg.inv(self.Sigma[k, :, :])
-                    self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
+                self.Sigma[k, :, :] = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
+                self.Sigma_inv[k, :, :] = np.linalg.inv(self.Sigma[k, :, :])
+                self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
                 # print("If model_groups = True, data needs to have Kronecker structure.")
                 # sys.exit()
 

@@ -21,7 +21,7 @@ class Kg_Node(Node):
     sigma_const: boolean whether to use a constant diagonal?
     """
 
-    def __init__(self, dim, rank, sigma = 0.1, sigma_const=True, scale_to_cor = True):
+    def __init__(self, dim, rank, sigma = 0.1, sigma_const=True, scale_to_cor = True, spectral_decomp = True):
         super().__init__(dim)
         self.G = dim[1]                                             # number of observations for covariate
         self.K = dim[0]                                             # number of latent processes
@@ -33,10 +33,10 @@ class Kg_Node(Node):
             self.sigma = [np.array([sigma] * self.G)] * self.K
         self.scale_to_cor = scale_to_cor
         # initialize components in node
-        self.compute4init()
+        self.compute4init(spectral_decomp = spectral_decomp)
 
 
-    def compute4init(self):
+    def compute4init(self, spectral_decomp = True):
         """
         Function to initialize kernel matrix
         """
@@ -50,7 +50,7 @@ class Kg_Node(Node):
         self.V = np.zeros([self.K, self.G, self.G])     # eigenvectors of kernel matrix
         self.D = np.zeros([self.K, self.G])             # eigenvalues of kernel matrix
 
-        self.compute_kernel()
+        self.compute_kernel(spectral_decomp = spectral_decomp)
 
     def compute_kernel(self, spectral_decomp = True):
         """
