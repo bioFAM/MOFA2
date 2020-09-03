@@ -19,7 +19,6 @@ import copy
 #       they are now all cases in this Sigma node
 # - implement warping for more than one covariate
 # - add explicit ELBO and gradient calculuations for optimization
-# - model_groups is not yet supported for warping or sparse GPs or non-Kronecker structure
 
 class Sigma_Node(Node):
     """
@@ -152,7 +151,7 @@ class Sigma_Node(Node):
         # exclude cases not covered
         if self.model_groups and (self.idx_inducing is not None):
             print("The option model_groups has not been tested in conjunction with sparse GPs")
-            sys.exit()
+            # sys.exit()
         if self.warping and self.idx_inducing is not None :
             print("The option warping cannot be used jointly with sparse GPs.")
             sys.exit()
@@ -222,7 +221,7 @@ class Sigma_Node(Node):
             self.Sigma_inv_logdet[k] = 1
             self.Sigma[k, :, :] = np.eye(self.N)
         else:
-            if self.kronecker or not self.model_groups:
+            if self.kronecker:
                 components = self.get_components(k)
                 term1 = np.kron(components['Vg'], components['Vc'])
                 term2diag = 1/ (np.repeat(components['Dg'], self.C) * np.tile(components['Dc'], self.G) + self.zeta[k] / (1-self.zeta[k]))
@@ -298,7 +297,7 @@ class Sigma_Node(Node):
                 self.Sigma[k, :, :] = np.eye(self.N)
         else:
             Kc_k = self.Kc.eval_at_newpoints_k(self.sample_cov_transformed, k)
-            self.Sigma[k, :, :] = (1 - self.zeta[k]) * Kc_k  + self.zeta[k] * np.eye(self.N) # TODO add multiplication with expanded group kernel to enable group_model support
+            self.Sigma[k, :, :] = (1 - self.zeta[k]) * Kc_k  + self.zeta[k] * np.eye(self.N)
 
 
     def getExpectation(self):
