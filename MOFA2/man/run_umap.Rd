@@ -13,7 +13,7 @@ run_umap(object, factors = "all", groups = "all", ...)
 
 \item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
 
-\item{...}{arguments passed to \code{\link{uwot::umap}}}
+\item{...}{arguments passed to \code{\link{umap}}}
 }
 \value{
 Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
@@ -26,7 +26,7 @@ use set.seed before the function call to get reproducible results.
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Run UMAP

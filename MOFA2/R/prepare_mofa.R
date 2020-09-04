@@ -16,12 +16,12 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
-#' @param regress_covariates: this function was confusing and has been depreciated. We encourage you to do batch effect corrections before creating the MOFA object.
+#' @param regress_covariates This option was confusing and has been depreciated. We encourage you to do batch effect corrections before creating the MOFA object.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.txt.gz", package = "MOFA2")
 #' 
 #' # Load data (in data.frame format)
 #' data <- read.table(file, header=TRUE) 
@@ -36,8 +36,8 @@
 #' model_opts <- get_default_model_options(MOFAmodel)
 #' model_opts$num_factors <- 10
 #' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
-prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL,
-                         regress_covariates = NULL) {
+prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL,
+                         stochastic_options = NULL, regress_covariates = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -186,7 +186,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.txt.gz", package = "MOFA2")
 #' 
 #' # Load data (in data.frame format)
 #' data <- read.table(file, header=TRUE) 
@@ -245,7 +245,7 @@ get_default_training_options <- function(object) {
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.txt.gz", package = "MOFA2")
 #' 
 #' # Load data (in data.frame format)
 #' data <- read.table(file, header=TRUE) 
@@ -296,7 +296,7 @@ get_default_data_options <- function(object) {
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.txt.gz", package = "MOFA2")
 #' 
 #' # Load data (in data.frame format)
 #' data <- read.table(file, header=TRUE) 
@@ -436,7 +436,7 @@ get_default_model_options <- function(object) {
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.txt.gz", package = "MOFA2")
 #' 
 #' # Load data (in data.frame format)
 #' data <- read.table(file, header=TRUE) 

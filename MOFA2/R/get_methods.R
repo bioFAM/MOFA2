@@ -43,7 +43,7 @@ get_elbo <- function(object) {
 #' 
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Fetch factors in matrix format (a list, one matrix per group)
@@ -97,7 +97,7 @@ get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, 
 #' 
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Fetch weights in matrix format (a list, one matrix per view)
@@ -141,6 +141,8 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
 #' @param object a \code{\link{MOFA}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
 #' Default is "all".
+#' @param groups character vector with the group name(s), or numeric vector with the group index(es). 
+#' Default is "all".
 #' @param features a *named* list of character vectors. Example: list("view1"=c("feature_1","feature_2"), "view2"=c("feature_3","feature_4"))
 #' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices. Default is \code{FALSE}.
@@ -155,7 +157,7 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
 #' 
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Fetch data
@@ -259,8 +261,8 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 #' @details TO FINISH 
 #' @return TO FINISH 
 #' @export
-get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, 
-                             add_intercept = TRUE, only_mean = TRUE) {
+get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE,
+                             only_mean = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -448,7 +450,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
 #' Default is "all".
 #' @param groups character vector with the group name(s), or numeric vector with the group index(es).
 #' Default is "all".
-#' @param groups character vector with the view name(s), or numeric vector with the view index(es).
+#' @param views character vector with the view name(s), or numeric vector with the view index(es).
 #' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a matrix.
 #' Default is \code{FALSE}.
@@ -456,7 +458,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
 #' 
 #' @examples
 #' # Using an existing trained model
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Fetch variance explained values (in matrix format)

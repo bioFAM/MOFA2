@@ -7,7 +7,7 @@
 \alias{features_metadata<-,MOFA,data.frame-method}
 \title{features_metadata: set and retrieve feature metadata}
 \usage{
-features_metadata(object, format = "default")
+features_metadata(object)
 
 features_metadata(object) <- value
 

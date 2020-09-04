@@ -1,9 +1,12 @@
 ---
 title: "MOFA2: training a model in R"
 author:
-  name: "Ricard Argelaguet"
+- name: "Ricard Argelaguet"
   affiliation: "European Bioinformatics Institute, Cambridge, UK"
   email: "ricard@ebi.ac.uk"
+- name: "Britta Velten"
+  affiliation: "German Cancer Research Center, Heidelberg, Germany"
+  email: "b.velten@dkfz-heidelberg.de"
 date: "`r Sys.Date()`"
 
 output:
@@ -22,7 +25,7 @@ library(data.table)
 library(MOFA2)
 ```
 
-This vignette contains a detailed tutorial on how to train a MOFA model using R. A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R)
+This vignette contains a detailed tutorial on how to train a MOFA model using R. A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R). Many more examples on application of MOFA to various multi-omics data sets can be found [here](https://github.com/bioFAM/MOFA2/tree/master/examples).
 
 # What is MOFA?
 
@@ -107,7 +110,10 @@ A long data.frame with columns `sample`, `feature`, `view`, `group` (optional), 
 In my opinion this is the best format for complex data sets with multiple omics and potentially multiple groups of data. Also, there is no need to add rows that correspond to missing data:
 
 ```{r }
-dt = fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/getting_started/data.txt.gz")
+# loading an example data.table (dt)
+filepath <- system.file("extdata", "test_data.RData", package = "MOFA2")
+load(filepath)
+
 head(dt)
 
 # Let's ignore the grouping information to start
@@ -182,8 +188,8 @@ MOFAobject <- prepare_mofa(
 ```
 
 Train the MOFA model
-```{r eval=FALSE}
-outfile = paste0(getwd(),"/model.hdf5")
+```{r}
+outfile = file.path(getwd(),"model.hdf5")
 MOFAobject.trained <- run_mofa(MOFAobject, outfile)
 ```
 
@@ -204,7 +210,7 @@ Iteration 9: time=0.04, ELBO=-50114.43, deltaELBO=23.907 (0.002686924%), Factors
 ## Training finished ##
 #######################
 
-Saving model in /Users/ricard/data/mofa2/hdf5/model.hdf5...
+Saving model in `/Users/ricard/data/mofa2/hdf5/model.hdf5...`r outfile`.
 ```
 
 # Downstream analysis

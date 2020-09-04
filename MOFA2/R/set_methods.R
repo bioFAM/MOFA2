@@ -269,7 +269,6 @@ setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame
 #' @rdname views_names
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each view
-#' @rdname views_names
 #' @export
 setMethod("views_names", signature(object="MOFA"), 
           function(object) {
@@ -357,7 +356,6 @@ setMethod("views_names<-", signature(object="MOFA", value="character"),
 #' @rdname groups_names
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each sample group
-#' @rdname groups_names
 #' @export
 setMethod("groups_names", signature(object="MOFA"), 
           function(object) {

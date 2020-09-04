@@ -40,7 +40,7 @@ setGeneric("samples_names<-", function(object, value) { standardGeneric("samples
 #' @name samples_metadata
 #' @rdname samples_metadata
 #' @export
-setGeneric("samples_metadata", function(object, format = "default") { standardGeneric("samples_metadata") })
+setGeneric("samples_metadata", function(object) { standardGeneric("samples_metadata") })
 
 #' @name samples_metadata
 #' @rdname samples_metadata
@@ -72,7 +72,7 @@ setGeneric("features_names<-", function(object, value) { standardGeneric("featur
 #' @name features_metadata
 #' @rdname features_metadata
 #' @export
-setGeneric("features_metadata", function(object, format = "default") { standardGeneric("features_metadata") })
+setGeneric("features_metadata", function(object) { standardGeneric("features_metadata") })
 
 #' @name features_metadata
 #' @rdname features_metadata
@@ -112,42 +112,42 @@ setGeneric("groups_names", function(object) { standardGeneric("groups_names") })
 #' @export
 setGeneric("groups_names<-", function(object, value) { standardGeneric("groups_names<-") })
 
-###################
-## Train Options ##
-###################
-
-#' @title training_options: set and retrieve training opts
-#' @name training_options
-#' @rdname training_options
-#' @export
-setGeneric("training_options", function(object) { standardGeneric("training_options") })
-
-
-###################
-## Model Options ##
-###################
-
-#' @title model_options: set and retrieve model options
-#' @name model_options
-#' @export
-setGeneric("model_options", function(object) { standardGeneric("model_options") })
-
-
-######################
-## Train Statistics ##
-######################
-
-#' @title training_stats: set and retrieve training statistics
-#' @name training_stats
-#' @export
-setGeneric("training_stats", function(object) { standardGeneric("training_stats") })
-
-##################
-## Expectations ##
-##################
-
-#' @title expectations: set and retrieve expectations
-#' @name expectations
-#' @rdname expectations
-#' @export
-setGeneric("expectations", function(object) { standardGeneric("expectations") })
+# ###################
+# ## Train Options ##
+# ###################
+# 
+# #' @title training_options: set and retrieve training opts
+# #' @name training_options
+# #' @rdname training_options
+# #' @export
+# setGeneric("training_options", function(object) { standardGeneric("training_options") })
+# 
+# 
+# ###################
+# ## Model Options ##
+# ###################
+# 
+# #' @title model_options: set and retrieve model options
+# #' @name model_options
+# #' @export
+# setGeneric("model_options", function(object) { standardGeneric("model_options") })
+# 
+# 
+# ######################
+# ## Train Statistics ##
+# ######################
+# 
+# #' @title training_stats: set and retrieve training statistics
+# #' @name training_stats
+# #' @export
+# setGeneric("training_stats", function(object) { standardGeneric("training_stats") })
+# 
+# ##################
+# ## Expectations ##
+# ##################
+# 
+# #' @title expectations: set and retrieve expectations
+# #' @name expectations
+# #' @rdname expectations
+# #' @export
+# setGeneric("expectations", function(object) { standardGeneric("expectations") })

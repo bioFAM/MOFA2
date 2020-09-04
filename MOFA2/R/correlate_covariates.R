@@ -14,6 +14,7 @@
 #' @param plot character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).
 #' @param return_data logical indicating whether to return the correlation results instead of plotting
 #' @param transpose logical indicating whether to transpose the plot
+#' @param alpha p-value threshold
 #' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}).
 #' @importFrom pheatmap pheatmap
 #' @importFrom corrplot corrplot

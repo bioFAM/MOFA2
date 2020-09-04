@@ -27,5 +27,5 @@ summarise_factors(
 \item{return_data}{logical indicating whether to return the fa instead of plotting}
 }
 \description{
-Function to summarise factor scores using a discrete grouping of samples.
+Function to summarise factor values using a discrete grouping of samples.
 }

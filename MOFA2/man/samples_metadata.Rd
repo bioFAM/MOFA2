@@ -7,7 +7,7 @@
 \alias{samples_metadata<-,MOFA,data.frame-method}
 \title{samples_metadata: retrieve sample metadata}
 \usage{
-samples_metadata(object, format = "default")
+samples_metadata(object)
 
 samples_metadata(object) <- value
 

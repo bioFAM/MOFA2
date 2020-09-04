@@ -11,11 +11,11 @@
 #' @param ... arguments passed to \code{\link{Rtsne}}
 #' @details use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the t-SNE output
-# #' @importFrom Rtsne Rtsne
+#' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Run t-SNE
@@ -56,14 +56,14 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
-#' @param ... arguments passed to \code{\link{uwot::umap}}
+#' @param ... arguments passed to \code{\link{umap}}
 #' @details use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
-# #' @importFrom uwot umap
+#' @importFrom uwot umap
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Run UMAP
@@ -120,6 +120,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @param alpha_missing numeric indicating dot transparency of missing data.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting
+#' @param rasterize logical indicating whether to rasterize plot
 #' @param ... extra arguments passed to \code{\link{run_umap}} or \code{\link{run_tsne}}.
 #' @details This function plots dimensionality reduction projections that are stored in the \code{dim_red} slot.
 #' Typically this contains UMAP or t-SNE projections computed using \code{\link{run_tsne}} or \code{\link{run_umap}}, respectively.
@@ -132,7 +133,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Run UMAP

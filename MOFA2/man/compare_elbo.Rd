@@ -19,7 +19,7 @@ For model selection the model with the highest ELBO value is selected.
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model1 <- load_model(file)
 model2 <- load_model(file)
 

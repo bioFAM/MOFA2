@@ -51,7 +51,7 @@
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} 
-#' @import ggplot2 grDevices
+#' @import ggplot2 grDevices ggrastr
 #' @importFrom stats complete.cases
 #' @importFrom forcats fct_explicit_na
 #' @importFrom RColorBrewer brewer.pal
@@ -59,7 +59,7 @@
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Plot Factors 1 and 2 and colour by "group"
@@ -274,7 +274,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Scatterplot of factors 1 and 2
@@ -464,7 +464,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Plot correlation between all factors

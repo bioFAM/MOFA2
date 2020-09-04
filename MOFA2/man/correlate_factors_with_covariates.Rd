@@ -34,6 +34,8 @@ correlate_factors_with_covariates(
 
 \item{plot}{character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).}
 
+\item{alpha}{p-value threshold}
+
 \item{return_data}{logical indicating whether to return the correlation results instead of plotting}
 
 \item{transpose}{logical indicating whether to transpose the plot}

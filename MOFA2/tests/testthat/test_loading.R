@@ -2,6 +2,7 @@ context("Loading the model")
 library(MOFA2)
 
 test_that("a pre-trained model can be loaded from disk", {
-  expect_is(load_model("test_mofa2.hdf5"), "MOFA")
+  filepath <- system.file("extdata", "model.hdf5", package = "MOFA2")
+  expect_is(load_model(filepath), "MOFA")
 })
 

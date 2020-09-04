@@ -29,7 +29,7 @@ If you have several versions of Python installed and R is not detecting the corr
 }
 \examples{
 # Using an existing simulated data with two groups and two views
-file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+file <- system.file("extdata", "test_data.txt.gz", package = "MOFA2")
 
 # Load data (in data.frame format)
 data <- read.table(file, header=TRUE) 

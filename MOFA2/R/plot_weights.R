@@ -219,7 +219,7 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Plot distribution of weights for Factor 1 and View 1
@@ -451,7 +451,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Plot top weights for Factors 1 and 2 and View 1

@@ -1,13 +1,16 @@
 ---
 title: "Applying MOFA+ to the Chronic Lymphocytic Leukemia cohort"
 author: 
-  name: "Britta Velten and Ricard Argelaguet"
-  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+- name: "Britta Velten"
+  affiliation: "German Cancer Research Center, Heidelberg, Germany"
   email: "b.velten@dkfz-heidelberg.de"
+- name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:
-    toc: true
+    toc_float: true
 vignette: >
   %\VignetteIndexEntry{MOFA2: Applying MOFA2 to the Chronic Lymphocytic Leukemia cohort}
   %\VignetteEngine{knitr::rmarkdown}
@@ -546,7 +549,7 @@ print(p)
 
 # Gene set enrichment analysis (GSEA)
 
-In addition to exploring the individual weights for each factor, we can use enrichment analysis to look for signiificant associations of factors to genesets. Here, we use the Reactome genesets for illustrations, which is contained in the `MOFAdata` package. For more details on how the GSEA works we encourage the users to read the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html)
+In addition to exploring the individual weights for each factor, we can use enrichment analysis to look for signiificant associations of factors to genesets. Here, we use the Reactome genesets for illustrations, which is contained in the `MOFAdata` package. For more details on how the GSEA works we encourage the users to read the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/tutorials_extended/GSEA.html)
 
 
 ## Load Reactome gene set annotations.  
@@ -562,7 +565,7 @@ head(rownames(reactomeGS))
 
 ## Run enrichment analysis
 
-These are the steps for doing [Gene Set Enrichment Analysis (GSEA) with MOFA](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html):  
+These are the steps for doing [Gene Set Enrichment Analysis (GSEA) with MOFA](https://raw.githack.com/bioFAM/MOFA2/tutorials_extended/GSEA.html):  
 
 - **(1) Define your gene set matrix**: this can be specified as a binary matrix where rows are gene sets and columns are genes. A value of 1 indicates that gene `j` belongs to pathway `i`. A value of 0 indicates elsewise.  
 - **(2) Select a gene set statistic**: the statistic used to quantify the scores at the pathway level. Must be one of the following: `mean.diff` (difference in the average weight between foreground and background genes) or `rank.sum` (difference in the sum of ranks between foreground and background genes).  
@@ -618,7 +621,6 @@ It is always advised to not rely only on the p-values and to visualise which gen
 plot_enrichment_detailed(
   enrichment.results = res.positive,
   factor = 5, 
-  feature.sets = reactomeGS, 
   max.pathways = 3
 )
 ```
@@ -684,9 +686,9 @@ Let's take time to treatment as an example here. The sample metadata contains th
 
 ### Fit Cox models
 
-```{r}
-suppressPackageStartupMessages(library(survival))
-suppressPackageStartupMessages(library(survminer))
+```{r, message=FALSE}
+library(survival)
+library(survminer)
 ```
 
 ```{r}
@@ -740,9 +742,6 @@ ggsurvplot(fit, data = df,
   xlab = "Time to treatment", ylab="Survival probability (%)", title= "Factor 1"
 )$plot
 ```
-
-<!-- # Multi-group analysis (TO-DO) -->
-<!-- In the first application of MOFA we considered all 200 patients as a single group. Here, we will separately consider samples from male and female patients and apply multi-group inference using MOFA+. -->
 
 
 # sessionInfo

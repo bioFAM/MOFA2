@@ -10,7 +10,6 @@ get_imputed_data(
   groups = "all",
   features = "all",
   as.data.frame = FALSE,
-  add_intercept = TRUE,
   only_mean = TRUE
 )
 }

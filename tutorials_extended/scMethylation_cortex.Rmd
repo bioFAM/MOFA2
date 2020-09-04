@@ -1,0 +1,369 @@
+---
+title: "MOFA+: integration of heterogeneous single-cell DNA methylation data sets"
+author:
+  name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to single-cell DNA methylation data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Description
+
+This vignette demonstrates how MOFA+ can be used to investigate variation in epigenetic signatures between populations of neurons. This application illustrates how a multi-group and multi-view structure can be defined from seemingly uni-modal data, which can then be used to test specific biological hypotheses.  
+We consider the analysis of 3,377 cells isolated from young adult mouse frontal cortex, where DNA methylation was profiled using single-cell bisulfite sequencing [(Luo et al. 2017)]([https://science.sciencemag.org/content/357/6351/600).
+
+In mammalian genomes, DNA methylation predominantly occurs at CpG dinucleotides (mCG). non-CpG methylation (mCH) has been historically dismissed as methodological artifact of incomplete bisulfite conversion, until recent works have confirmed their existence in restricted cell types. Yet, evidence for a potential functional role remains controversial. We will use MOFA+ to dissect the cellular heterogeneity associated with mCH and mCG contexts. 
+
+The data set can be downloaded from [here](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE97179)
+
+# Define global settings
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
+```
+
+# Load dependencies
+
+```{r, message=FALSE}
+library(data.table)
+library(purrr)
+library(ggplot2)
+library(RColorBrewer)
+# library(umap)
+library(ggpubr)
+library(MOFA2)
+```
+
+
+Define cell type colors for the visualisations
+```{r}
+colors1 <- c(
+  "Excitatory" = "#e31a1c",
+  "Inhibitory" = "#1f78b4"
+)
+
+colors2 <- c(
+  "mL5-1" = "#696969",  "mL5-2" = "#FEB24C",
+  "mL6-1" = "#FED976",  "mL6-2" = "#FFEDA0",
+  "mDL-12" = "#FC4E2A", "mDL-3" = "#FD8D3C",
+  "mL2/3" = "#E31A1C",  "mL4" = "#8B4513", 
+  "mVip" = "#8c96c6",   "mSst-12" = "#bae4bc", 
+  "mPv" = "#7bccc4",    "mNdnf-12" = "#2b8cbe"
+)
+```
+
+## Load data
+As input data we quantified mCH and mCG levels at gene bodies, promoters and putative enhancer elements. Each combination of genomic and sequence context was defined as a separate view. To explore the influence of the neuron’s location we grouped cells according to their cortical layer: Deep, Middle or Superficial.
+
+```{r}
+# data("Luo2017_Methylation")
+load("/Users/ricard/data/mofa2_vignettes/Luo2017Methylation_data.RData")
+# save(met.dt, "/Users/ricard/data/mofa2_vignettes/Luo2017Methylation_data.RData")
+```
+
+Instead of using a Seurat object as input, here we will use the data.frame (or data.table) option as input.
+This format is convenient because it can store all molecular layers and groups in a single text file. It requires 5 columns: sample, group, feature, view, value:
+- The "group" column indicates the condition or the experiment (a label for the samples). 
+- The "view" column indicates the molecular layer (a label for the features).
+- The "sample" column indicates the sample name
+- The "feature" column indicates the feature name
+- The "value" column indicates the actual measurement
+
+Missing values do not need to be explicitly added. They will be automatically filled when converting from the long format to the wide matrix-like format
+```{r}
+head(met.dt)
+```
+
+```{r}
+# save(met.dt, file="/Users/ricard/data/mofa2_vignettes/Luo2017Methylation_data.RData")
+```
+
+The data was preprocessed in the following way:
+(1) DNA methylation rates were quantified for each cell and each genomic feature using a binomial model where the number of successes is the number of reads that support methylation (or accessibility) and the number of trials is the total number of reads.
+(2) The rates were transformed to M-values, which are better modelled using a Gaussian likelihood.
+(3) We filtered loci with low coverage (at least 3 CpG measurements or at least 10 CH measurements per cell in at least 10% of the cells) 
+(4) For every genomic context, we regress out the effect of cortical layer (our grouping structure) and subset the top 5000 most variable sites.
+
+The preprocessing scripts can be found [here](TO-FILL)
+# Create MOFA object
+
+This takes a minute to convert the data.frame into a set of matrices
+```{r}
+MOFAobject <- create_mofa(met.dt)
+```
+
+Rename views for clarity:
+```{r}
+views(MOFAobject) <- c(
+  "Enhancers (mCG)",
+  "Enhancers (mCH)",
+  "Genebody (mCG)",
+  "Genebody (mCH)",
+  "Promoters (mCG)",
+  "Promoters (mCH)"
+)
+```
+
+# Overview of training data
+The function `plot_data_overview` can be used to obtain an overview of the input data. 
+It shows how many views (rows) and how many groups (columns) exist, what are their corresponding dimensionalities and how many cells are missing the data (grey bars).  
+
+Here we quantified mCH and mCG levels at gene bodies, promoters and putative enhancer elements. Each combination of genomic feature and sequence context was defined as a separate view. To explore the influence of the neuron’s location we grouped cells according to their cortical layer: Deep, Middle or Superficial.
+```{r}
+plot_data_overview(MOFAobject)
+```
+
+A major challenge in single-cell DNA methylation data is the large amounts of missing data, which hampers the use of conventional dimensionality reduction techniques such as PCA, t-SNE or UMAP. The probabilistic framework underlying MOFA+ naturally enables the handling of missing values by ignoring the corresponding terms in the likelihood function (see Supplementary Methods for details).
+We can plot the fraction of missing values for every sample and every view:
+```{r}
+to.plot <- met.dt[,Nfeatures:=length(unique(feature)), by="view"] %>%
+  .[,.(fraction_missing=1-(.N/unique(Nfeatures))), by=c("view","group","sample")]
+
+ggplot(to.plot, aes(x=sample, y=view, fill=fraction_missing)) +
+  geom_tile() + 
+  scale_fill_gradient2(low="white", high='black') +
+  facet_wrap(~group, scales="free_x") +
+  labs(x="Cells", y="") +
+  theme(
+    axis.text.x = element_blank(),
+    strip.background = element_blank(),
+    axis.ticks = element_blank(),
+    axis.line = element_blank(),
+    legend.title = element_blank()
+  )
+```
+
+# Define MOFA options
+Data options: let's use default
+```{r}
+data_opts <- get_default_data_options(MOFAobject)
+```
+
+Model options: let's use default
+```{r}
+model_opts <- get_default_model_options(MOFAobject)
+```
+
+Training options
+```{r}
+train_opts <- get_default_training_options(MOFAobject)
+train_opts$convergence_mode <- "fast"
+train_opts$seed <- 1
+```
+
+# Prepare the MOFA object
+```{r}
+MOFAobject <- prepare_mofa(
+  object = MOFAobject,
+  data_options = data_opts,
+  model_options = model_opts,
+  training_options = train_opts
+)
+```
+
+
+# Train the MOFA model
+This can take quite some time, we provide a pre-trained model in the next chunk
+```{r}
+MOFAmodel <- run_mofa(MOFAobject)
+```
+
+# Load pre-computed model
+
+MOFA models are saved in hdf5 format and can be loaded into R with the function `load_model`. In this case, however, we provide the trained model as an RData file, which contains the corresponding cell metadata
+```{r}
+# MOFAmodel <- load_model("/(...)/model.hdf5")
+# load("/Users/ricard/data/mofa2_vignettes/Luo2017Methylation_mofa.RData")
+```
+
+See cell metadata:
+- sample: cell name
+- Laminar layer: cortical layer (Deep, Middle or Superficial)
+- Neuron type: high resolution neuron type annotation (generated by Luo2017, not me)
+- mCH/CH: genome-wide levels of non-CG (mCH) methylation (as a rate)
+- mCG/CG: genome-wide levels of CG methylation (as a rate)
+- Neuron type broad: classification of neurons into the two major classes: Excitatory or Inhibitory
+- Neuron type 2: medium resolution neuron type annotation (similar neuron types aggregated together)
+- Neuron type 3: low resolution neuron type annotation (similar neuron types further aggregated together)
+- group: the grouping variable used for MOFA+. This corresponds to the column `Laminar layer`.
+```{r}
+head(MOFAmodel@samples_metadata)
+```
+
+
+
+
+# Check factor redundancy
+As a sanity check, one should verify that the factors are (fairly) uncorrelated. A small amount of correlation is expected and not detrimental, because true biological variation is never independent! Very large correlations (let's say more than 50%) suggests that the model has not converged or that perhaps you are using too many factors.
+```{r}
+cor <- plot_factor_cor(MOFAmodel)
+
+cor[1:3,1:3]
+```
+
+# Plot variance explained per factor across groups
+
+Quantifying the variance explained across groups and views is probably the most important plot that MOFA+ generates. It summarises the (latent) signal from a complex heterogeneous data set in a single figure. 
+
+```{r}
+plot_variance_explained(MOFAmodel, x="group", y="view", factor=1:3)
+```
+
+
+# Characterise Factor 1
+
+## Visualisation of factor values
+
+Each factor ordinates cells along a one-dimensional axis that is centered at zero. Samples with different signs indicate opposite phenotypes, with higher absolute value indicating a stronger phenotype. For example, if the $k$-th factor captures the variability associated with cell cycle, we could expect cells in Mitosis to be at one end of the factor (irrespective of the sign, only the relative positioning being of importance). In contrast, cells in G1 phase are expected to be at the other end of the factor. Cells with intermediate phenotype, or with no clear phenotype (i.e. no cell cycle genes profiled), are expected to be located around zero.
+
+Let's plot Factor 1 values and we color cells by broad cell type assignment (excitatory vs inhibitory, the two major division of enruons). As expected, Factor 1 captures the largest source of variation linked to the existence of inhibitory and excitatory neurons.  
+This factor shows significant mCG activity across all cortical layers, mostly driven by coordinated changes in enhancer elements, but to some extent also gene bodies.
+
+```{r}
+plot_variance_explained(MOFAmodel, x="group", y="view", factor=1)
+```
+
+
+```{r}
+plot_factor(MOFAmodel, 
+  factor = 1,
+  color_by = "Neuron type broad",
+  dodge = TRUE, 
+  add_violin = TRUE
+)
+```
+
+Here are other ways of representing the same plot:
+```{r}
+plot_factor(MOFAmodel, 
+  factor = 1,
+  color_by = "Neuron type broad",
+  shape_by = "group",  # shape dots by default group (cortical layer)
+  dot_size = 1.0,      # change dot size
+  dodge = F,           # do not dodge points with different colors
+  legend = T,          # add legend
+  add_violin = F,      # remove violin plots
+) + scale_color_manual(values=colors1) # Change color scale
+```
+
+One can also change the default groups by some manually defined grouping structure. For example a column in the sample metadata
+```{r}
+plot_factor(MOFAmodel, 
+  factor = 1,
+  color_by = "group",
+  group_by = "Neuron type 2",         # cells are now grouped by cell type, rather than laminar layer
+  legend = FALSE,
+  dodge = TRUE
+)
+```
+
+
+## Visualisation of weights/loadings
+
+The weights or loadings provide a score for each gene on each factor. Genes with no association with the factor are expected to have values close to zero, whereas genes with strong association with the factor are expected to have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature is more active in the cells with positive factor values, and viceversa. \\
+Following the cell cycle example from above, we expect genes that are upregulated in the M phase to have large positive loadings, whereas genes that are downregulated in the M phase (or, equivalently, upregulated in the G1 phase) are expected to have large negative loadings.\\
+
+Let's plot the distribution of loadings for Genebody (mCG) in Factor 1. Let's highlight the top 10 genes with the largest loading (in absolute value). Also, we highlight two markers of excitatory cell types:
+```{r}
+plot_weights(MOFAmodel, 
+  view = "Genebody (mCG)",
+  factor = 1,
+  nfeatures = 10,
+  manual = list(c("Neurod6","Nrgn")),
+  color_manual = c("red"),
+  abs = FALSE, scale = TRUE
+)
+```
+
+If we are not interested in the directionality of the effect, we can take the absolute value of the loadings (`abs=TRUE`):
+```{r}
+plot_weights(MOFAmodel, 
+  view = "Genebody (mCG)",
+  factor = 1,
+  nfeatures = 10,
+  manual = list(c("Neurod6","Nrgn")),
+  color_manual = c("red"),
+  abs = TRUE, scale = TRUE
+)
+```
+
+If you are not interested in the full distribution, but just on the top loadings, you can do:
+```{r}
+plot_top_weights(MOFAmodel, 
+  view = "Genebody (mCG)", 
+  factor = 1, 
+  nfeatures = 10,
+  scale = TRUE
+)
+```
+
+<!-- Correlation of weights between CG and CH context -->
+
+Interestingly, in addition to the dominant mCG signal, MOFA connects Factor 1 and Factor 3 to changes in mCH. This could indicate a role of mCH in cellular diversity.  
+We hypothesise that only if the associated genomic regions are independent from the conventional mCG signatures. To investigate this, we correlated the feature loadings of enhancer mCH and enhancer mCG for Factor 1 and Factor 3. In both cases we observe a strong positive dependency, indicating that mCH and mCG signatures are spatially correlated. This result supports the hypothesis that mCH and mCG tag the same genomic loci and are associated with the same sources of variation, suggesting that the presence of mCH may be the result of non-specific de novo methylation as a by-product of the establishment of mCG.
+
+```{r}
+w1 <- get_weights(MOFAmodel, views="Enhancers (mCG)", factor=3, as.data.frame=TRUE)
+w2 <- get_weights(MOFAmodel, views="Enhancers (mCH)", factor=3, as.data.frame=TRUE)
+
+# remove suffixes that MOFA automatically add for features that are present in multiple views
+w1$feature <- stringr::str_replace_all(w1$feature,"_distal_H3K27ac_cortex_CG","")
+w2$feature <- stringr::str_replace_all(w2$feature,"_distal_H3K27ac_cortex_nonCG","")
+
+# merge
+df <- merge(w1[,c("feature","value")], w2[,c("feature","value")], by="feature")
+
+# Here we use the ggpubr package
+ggscatter(df, x="value.x", y="value.y", 
+          add="reg.line", add.params = list(color="blue"), conf.int=TRUE) +
+  stat_cor(method = "pearson") +
+  labs(x="Enhancer (mCG) loading", y="Enhancer (mCH) loading")
+```
+
+
+# Non-linear dimensionality reduction from the MOFA factors
+
+The latent space inferred by MOFA can be employed as input to other single-cell algorithms that learn non-linear manifolds such as UMAP or t-SNE. This can be very useful to identify cellular populations and reconstruct complex pseudotime trajectories. 
+
+In this data set, we see that the combination of MOFA factors have enough information to discriminate multiple excitatory and inhibitory subpopulations:
+
+```{r}
+# Fetch factors and concatenate groups
+Z <- get_factors(MOFAmodel) %>% do.call("rbind",.)
+
+# Run t-SNE
+# set.seed(1)
+# tsne <- Rtsne::Rtsne(Z, check_duplicates=FALSE, pca=FALSE, theta=0.5, dims=2)
+
+# Run UMAP
+umap.defaults$n_neighbors <- 15
+umap.defaults$min_dist <- 0.5
+umap.out <- umap(Z, config = umap.defaults)
+
+# Plot    
+to.plot <- umap.out$layout %>% as.data.table %>% 
+  .[,sample:=rownames(Z)] %>%
+  merge(MOFAmodel@samples_metadata, by="sample")
+
+p <- ggplot(to.plot, aes(x=V1, y=V2, color=`Neuron type 3`, shape=`Neuron type broad`)) +
+  geom_point(alpha=0.7, size=1.5) +
+  scale_color_manual(values=colors2) +
+  labs(x="", y="") +
+  theme_classic() +
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  )
+
+pdf(sprintf("%s/%s_%s.pdf",io$pdfdir,algorithm,view), width=5, height=4.5, useDingbats = F)
+print(p1)
+dev.off()
+```
+

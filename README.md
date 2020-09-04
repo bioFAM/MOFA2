@@ -71,24 +71,24 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 
 ### Learning the basics
 
-* [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started.md): general overview and description of the method.
+* [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/tutorials_extended/getting_started.md): general overview and description of the method.
 * [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html)
 * [**Training a model in Python (jupyter notebook)**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
 * [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
 * **Downstream analysis in python**: in preparation...
-* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis.
+* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/GSEA.html): demonstrates how to do gene set enrichment analysis.
 
 ### Case examples
 
 * [**(authors' favourite) Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): a bulk multi-omics data set. Figure 2 and 3 of the MOFA v1 paper.
-* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
+* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/SNARE_seq.html)
 * **Analysis of CITE-seq data**: still in preparation, reach us if you have questions...
-* [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/microbiome_vignette.html)
-<!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
-* [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
-<!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
+* [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/microbiome_vignette.html)
+<!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/old/model_selection.html) -->
+* [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/stochastic_inference.html)
+<!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/tutorials_extended/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 
 ## Web server
 We provide a [Shiny-based web server](http://www.ebi.ac.uk/shiny/mofa/) to interactively explore MOFA models. Note that the web server only provides basic functionalities. For a comprehensive analysis please use the MOFA2 R package.  
@@ -197,7 +197,7 @@ If you have no idea on what to expect, it is better to start with a fixed number
 
 **(5.2) Can I include known covariates in the model?**  
 We extensively tested this functionality and it was not yielding good results. The reason is that covariates are usually discrete labels that do not reflect the underlying molecular biology. For example, if you introduce age as a covariate, but the actual age is different from the molecular age, the model will simply learn a new factor that corresponds to this _latent_ molecular age, and it will drop the covariate from the model.  
-We recommend that you learn the factors in a completely unsupervised manner and then relate them to the biological covariates a posteriori (see vignettes). If your covariate of interest is an important driver of variability, do not worry, MOFA will find it! 
+We recommend that you learn the factors in a completely unsupervised manner and then relate them to the biological covariates a posteriori (see vignettes and tutorials). If your covariate of interest is an important driver of variability, do not worry, MOFA will find it! 
 
 <!-- **(5.4) The factors and weights have different values between runs. Is this expected?**  
 This is normal and it happens because factor analysis models are rotation invariant. This means that you can rotate your factors and your weights and still find the same solution. This implies that the signs of the weight or the factors can NOT be compared across trials, only within a trial. -->
@@ -222,7 +222,7 @@ The MOFA factors capture the global sources of variability in the data. Mathemat
 The weights provide a score for how strong each feature relates to each factor, hence allowing a biological interpretation of the latent factors. Features with no as- sociation with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
 
 **(6.3) How can I do Gene Set Enrichment Analysis?**  
-This is explained in the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html)
+This is explained in the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/GSEA.html)
 
 **(6.4) How can I assess the robustness of factors?** 
 A procedure that can be applied to evaluate the robustness of factors is to downsample the number of samples and/or the number of features and inspect if the factors are consistently found. However, keep in mind that there could be cases where the full data set is required to detect small yet important sources of variation. Hence, lack of robustness under downsampling does not necessarily imply that a factor is not biologically meaningful.

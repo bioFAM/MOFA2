@@ -47,7 +47,7 @@ Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots 
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Calculate variance explained (R2)

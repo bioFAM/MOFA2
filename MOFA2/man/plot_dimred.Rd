@@ -53,6 +53,8 @@ plot_dimred(
 
 \item{legend}{logical indicating whether to add legend.}
 
+\item{rasterize}{logical indicating whether to rasterize plot}
+
 \item{return_data}{logical indicating whether to return the long data frame to plot instead of plotting}
 
 \item{...}{extra arguments passed to \code{\link{run_umap}} or \code{\link{run_tsne}}.}
@@ -69,7 +71,7 @@ Typically this contains UMAP or t-SNE projections computed using \code{\link{run
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Run UMAP
