@@ -11,6 +11,9 @@ select_model(models, plot = FALSE)
 
 \item{plot}{boolean indicating whether to show a plot of the ELBO for each model instance}
 }
+\value{
+A \code{\link{MOFA}} object
+}
 \description{
 Different objects of \code{\link{MOFA}} are compared in terms of the final value of the ELBO statistics
 and the model with the highest ELBO value is selected.

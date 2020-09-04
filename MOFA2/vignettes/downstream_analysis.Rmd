@@ -57,8 +57,8 @@ Nsamples = sum(model@dimensions$N)
 
 sample_metadata <- data.frame(
   sample = samples_names(model)[[1]],
-  condition = sample(c("A","B"), size = Nsamples, replace = T),
-  age = sample(1:100, size = Nsamples, replace = T)
+  condition = sample(c("A","B"), size = Nsamples, replace = TRUE),
+  age = sample(1:100, size = Nsamples, replace = TRUE)
 )
 
 samples_metadata(model) <- sample_metadata
@@ -90,7 +90,7 @@ plot_variance_explained(model, x="view", y="factor")
 ```
 
 ```{r}
-plot_variance_explained(model, x="group", y="factor", plot_total = T)[[2]]
+plot_variance_explained(model, x="group", y="factor", plot_total = TRUE)[[2]]
 ```
 
 
@@ -115,9 +115,9 @@ p <- plot_factor(model,
   factors = c(1,2,3),
   color_by = "condition",
   dot_size = 3,        # change dot size
-  dodge = T,           # dodge points with different colors
-  legend = F,          # remove legend
-  add_violin = T,      # add violin plots,
+  dodge = TRUE,           # dodge points with different colors
+  legend = FALSE,          # remove legend
+  add_violin = TRUE,      # add violin plots,
   violin_alpha = 0.25  # transparency of violin plots
 )
 
@@ -151,8 +151,8 @@ plot_weights(model,
   view = "view_0",
   factor = 1,
   nfeatures = 10,     # Number of features to highlight
-  scale = T,          # Scale weights from -1 to 1
-  abs = F             # Take the absolute value?
+  scale = TRUE,          # Scale weights from -1 to 1
+  abs = FALSE             # Take the absolute value?
 )
 ```
 
@@ -257,17 +257,17 @@ lapply(data, function(x) lapply(x, dim))[[1]]
 For convenience, the user can extract the data in long data.frame format:
 
 ```{r}
-factors <- get_factors(model, as.data.frame = T)
+factors <- get_factors(model, as.data.frame = TRUE)
 head(factors, n=3)
 ```
 
 ```{r}
-weights <- get_weights(model, as.data.frame = T)
+weights <- get_weights(model, as.data.frame = TRUE)
 head(weights, n=3)
 ```
 
 ```{r}
-data <- get_data(model, as.data.frame = T)
+data <- get_data(model, as.data.frame = TRUE)
 head(data, n=3)
 ```
 

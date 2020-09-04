@@ -11,6 +11,9 @@ subset_factors(object, factors)
 
 \item{factors}{character vector with the factor names, or numeric vector with the index of the factors.}
 }
+\value{
+A \code{\link{MOFA}} object
+}
 \description{
 Method to subset (or sort) factors
 }

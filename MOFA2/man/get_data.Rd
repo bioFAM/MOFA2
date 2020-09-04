@@ -35,6 +35,9 @@ Default is "all".}
 
 \item{na.rm}{remove NAs from the data.frame (only if as.data.frame is \code{TRUE}).}
 }
+\value{
+A  list of data matrices with dimensionality (D,N) or a \code{data.frame} (if \code{as.data.frame} is TRUE)
+}
 \description{
 Fetch the input data
 }

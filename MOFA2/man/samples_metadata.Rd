@@ -27,3 +27,9 @@ a data frame with sample metadata
 \description{
 samples_metadata: retrieve sample metadata
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+samples_metadata(model)
+}

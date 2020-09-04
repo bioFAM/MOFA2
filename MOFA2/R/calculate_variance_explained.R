@@ -138,6 +138,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @importFrom cowplot plot_grid
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt
+#' @return A list of \code{\link{ggplot}} objects (if \code{plot_total} is TRUE) or a single \code{\link{ggplot}} object
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -322,6 +323,12 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_variance_explained_per_feature(model, view = 1)
+
 plot_variance_explained_per_feature <- function(object, view, features = 10,
                                                 split_by_factor = FALSE, group_features_by = NULL,
                                                 groups = "all", factors = "all",

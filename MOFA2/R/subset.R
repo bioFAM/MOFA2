@@ -9,6 +9,7 @@
 #' @param object a \code{\link{MOFA}} object.
 #' @param groups character vector with the groups names, numeric vector with the groups indices
 #' or logical vector with the groups to be kept as TRUE.
+#' @return A \code{\link{MOFA}} object
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -85,6 +86,7 @@ subset_groups <- function(object, groups) {
 #' @param object a \code{\link{MOFA}} object.
 #' @param views character vector with the views names, numeric vector with the views indices,
 #' or logical vector with the views to be kept as TRUE.
+#' @return A \code{\link{MOFA}} object
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -154,6 +156,7 @@ subset_views <- function(object, views) {
 #' @param object a \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors.
 #' @export
+#' @return A \code{\link{MOFA}} object
 #' @examples
 #' # Using an existing trained model on simulated data
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
@@ -218,6 +221,7 @@ subset_factors <- function(object, factors) {
 #' @param object a \code{\link{MOFA}} object.
 #' @param samples character vector with the sample names or numeric vector with the sample indices.
 #' @export
+#' @return A \code{\link{MOFA}} object
 #' @examples
 #' # Using an existing trained model on simulated data
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
@@ -303,7 +307,9 @@ subset_samples <- function(object, samples) {
 #' @param view character vector with the view name or integer with the view index
 #' @param features character vector with the sample names, numeric vector with the feature indices 
 #' or logical vector with the samples to be kept as TRUE.
+#' @return A \code{\link{MOFA}} object
 #' @export
+
 subset_features <- function(object, view, features) {
   
   # Sanity checks

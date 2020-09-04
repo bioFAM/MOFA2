@@ -41,3 +41,8 @@ a \code{\link{MOFA}} model
 Method to load a trained MOFA \cr
 The training of mofa is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.
 }
+\examples{
+#' # Using an existing trained model on simulated data
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+}

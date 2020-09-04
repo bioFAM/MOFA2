@@ -64,6 +64,9 @@ plot_weights(
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 }
+\value{
+A \code{\link{ggplot}} object or a \code{data.frame} if return_data is TRUE
+}
 \description{
 An important step to annotate factors is to visualise the corresponding feature weights. \cr
 This function plots all weights for a given latent factor and view, labeling the top ones. \cr

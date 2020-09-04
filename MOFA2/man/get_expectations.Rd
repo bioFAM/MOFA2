@@ -29,3 +29,10 @@ In particular, to achieve scalability we used the variational inference framewor
 This function extracts the expectations of the variational distributions, which can be used as final point estimates to analyse the results of the model. \cr 
 The priors and variational distributions of each variable are extensively described in the supplementary methods of the original paper.
 }
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+factors <- get_expectations(model, "Z")
+weights <- get_expectations(model, "W")
+}

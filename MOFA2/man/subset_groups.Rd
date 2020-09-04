@@ -12,6 +12,9 @@ subset_groups(object, groups)
 \item{groups}{character vector with the groups names, numeric vector with the groups indices
 or logical vector with the groups to be kept as TRUE.}
 }
+\value{
+A \code{\link{MOFA}} object
+}
 \description{
 Method to subset (or sort) groups
 }

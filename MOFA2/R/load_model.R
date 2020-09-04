@@ -23,6 +23,11 @@
 #' @importFrom HDF5Array HDF5ArraySeed
 #' @importFrom DelayedArray DelayedArray
 #' @export
+#' @examples
+#' #' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+
 load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
                        remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
 

@@ -11,6 +11,9 @@ quality_control(object, verbose = FALSE)
 
 \item{verbose}{logical indicating whether to generate a verbose output.}
 }
+\value{
+a \code{\link{MOFA}} object
+}
 \description{
 Function to do quality control on a \code{\link{MOFA}} object.
 }

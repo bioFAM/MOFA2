@@ -42,6 +42,9 @@ correlate_factors_with_covariates(
 
 \item{...}{extra arguments passed to \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}).}
 }
+\value{
+A \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}) or the underlying data.frame if return_data is TRUE
+}
 \description{
 Function to correlate factor values with external covariates.
 }

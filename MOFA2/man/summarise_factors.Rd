@@ -26,6 +26,9 @@ summarise_factors(
 
 \item{return_data}{logical indicating whether to return the fa instead of plotting}
 }
+\value{
+A \code{\link{ggplot}} object or a \code{data.frame} if return_data is TRUE
+}
 \description{
 Function to summarise factor values using a discrete grouping of samples.
 }

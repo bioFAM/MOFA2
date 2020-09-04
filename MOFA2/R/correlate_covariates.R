@@ -18,6 +18,7 @@
 #' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}).
 #' @importFrom pheatmap pheatmap
 #' @importFrom corrplot corrplot
+#' @return A \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}) or the underlying data.frame if return_data is TRUE
 #' @export
 correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", 
                                               abs = FALSE, plot = c("log_pval","r"), 
@@ -108,6 +109,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
 #' @importFrom dplyr group_by summarise mutate
 #' @importFrom stats median
 #' @importFrom magrittr %>%
+#' @return A \code{\link{ggplot}} object or a \code{data.frame} if return_data is TRUE
 #' @export
 summarise_factors <- function(object, df, factors = "all", groups = "all", abs = FALSE, return_data = FALSE) {
   

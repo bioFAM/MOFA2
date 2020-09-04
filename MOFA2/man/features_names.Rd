@@ -26,3 +26,9 @@ list of character vectors with the feature names for each view
 \description{
 features_names: set and retrieve feature names
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+features_names(model)
+}

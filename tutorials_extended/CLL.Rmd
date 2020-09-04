@@ -226,7 +226,7 @@ A reasonable question is whether the model is providing a good fit to the data. 
 
 In this data set, using only K=15 factors the model explains up to ~54% of the variation in the Drug response and ~42% of the variation in the mRNA data. This is quite remarkable for a linear model.
 ```{r}
-plot_variance_explained(MOFAobject, plot_total = T)[[2]]
+plot_variance_explained(MOFAobject, plot_total = TRUE)[[2]]
 ```
 
 <!-- ### Plot variance explained for individual features -->
@@ -297,7 +297,7 @@ plot_weights(MOFAobject,
  view = "Mutations",
  factor = 1,
  nfeatures = 10,     # Top number of features to highlight
- scale = T           # Scale weights from -1 to 1
+ scale = TRUE           # Scale weights from -1 to 1
 )
 ```
 
@@ -309,7 +309,7 @@ plot_top_weights(MOFAobject,
  view = "Mutations",
  factor = 1,
  nfeatures = 10,     # Top number of features to highlight
- scale = T           # Scale weights from -1 to 1
+ scale = TRUE           # Scale weights from -1 to 1
 )
 ```
 
@@ -405,7 +405,7 @@ plot_weights(MOFAobject,
   view = "Mutations", 
   factor = 3, 
   nfeatures = 10,
-  abs = F
+  abs = FALSE
 )
 ```
 
@@ -457,7 +457,7 @@ p <- plot_factors(MOFAobject,
   color_by = "IGHV",
   shape_by = "trisomy12",
   dot_size = 2.5,
-  show_missing = T
+  show_missing = TRUE
 )
 
 p <- p + 
@@ -509,7 +509,7 @@ p <- plot_factors(MOFAobject,
   color_by = "IGHV.pred",
   shape_by = "IGHV.pred_logical",
   dot_size = 2.5,
-  show_missing = T
+  show_missing = TRUE
 )
 
 p <- p + 
@@ -528,7 +528,7 @@ print(p)
 <!--   color_by = "trisomy12.pred", -->
 <!--   shape_by = "trisomy12.pred_logical", -->
 <!--   dot_size = 2.5, -->
-<!--   show_missing = T -->
+<!--   show_missing = TRUE -->
 <!-- ) -->
 
 <!-- p <- p +  -->

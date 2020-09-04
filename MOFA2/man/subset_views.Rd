@@ -12,6 +12,9 @@ subset_views(object, views)
 \item{views}{character vector with the views names, numeric vector with the views indices,
 or logical vector with the views to be kept as TRUE.}
 }
+\value{
+A \code{\link{MOFA}} object
+}
 \description{
 Method to subset (or sort) views
 }

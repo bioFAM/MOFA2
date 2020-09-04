@@ -11,9 +11,18 @@ plot_ascii_data(object, nonzero = FALSE)
 
 \item{nonzero}{a logical value specifying whether to calculate the fraction of non-zero values (non-NA values by default)}
 }
+\value{
+None
+}
 \description{
 A Fancy printing method
 }
 \details{
 This function is helpful to get an overview of the structure of the data as a text output
+}
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_ascii_data(model)
 }

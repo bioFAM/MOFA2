@@ -41,6 +41,9 @@ plot_variance_explained(
 
 \item{...}{extra arguments to be passed to \code{\link{calculate_variance_explained}}}
 }
+\value{
+A list of \code{\link{ggplot}} objects (if \code{plot_total} is TRUE) or a single \code{\link{ggplot}} object
+}
 \description{
 plots the variance explained by the MOFA factors across different views and groups, as specified by the user.
 Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots that this function generates.

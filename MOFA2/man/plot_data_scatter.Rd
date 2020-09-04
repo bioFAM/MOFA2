@@ -70,6 +70,9 @@ plot_data_scatter(
 
 \item{imputed}{logical indicating whether to include imputed measurements}
 }
+\value{
+A \code{\link{ggplot}} object
+}
 \description{
 Function to do a scatterplot of features against factor values.
 }
@@ -77,4 +80,10 @@ Function to do a scatterplot of features against factor values.
 One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}.
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 A similar function for doing heatmaps rather than scatterplots is \code{\link{plot_data_heatmap}}.
+}
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_data_scatter(model)
 }

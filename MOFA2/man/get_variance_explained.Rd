@@ -27,6 +27,9 @@ Default is "all".}
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a matrix.
 Default is \code{FALSE}.}
 }
+\value{
+A list of data matrices with variance explained per group or a \code{data.frame} (if \code{as.data.frame} is TRUE)
+}
 \description{
 Extract the latent factors from the model.
 }

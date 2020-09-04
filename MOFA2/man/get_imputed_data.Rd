@@ -32,11 +32,18 @@ Default is \code{FALSE}.}
 If FALSE, it also retrieves the variance (only if it has been previously calculated).}
 }
 \value{
-TO FINISH
+A list containing the imputed valued or a data.frame if as.data.frame is TRUE
 }
 \description{
 Function to get the imputed data. It requires the previous use of the \code{\link{impute}} method.
 }
 \details{
-TO FINISH
+Data is imputed from the generative model of MOFA.
+}
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+model <- impute(model)
+imputed <- get_imputed_data(model)
 }

@@ -11,6 +11,9 @@ subset_samples(object, samples)
 
 \item{samples}{character vector with the sample names or numeric vector with the sample indices.}
 }
+\value{
+A \code{\link{MOFA}} object
+}
 \description{
 Method to subset (or sort) samples
 }
