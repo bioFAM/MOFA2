@@ -115,6 +115,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' (3) a vector of the same length as the number of samples specifying discrete groups.
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
+#' @param label logical indicating whether to label the medians of the clusters. Only if color_by is specified
 #' @param dot_size numeric indicating dot size.
 #' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
 #' @param alpha_missing numeric indicating dot transparency of missing data.
@@ -129,6 +130,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @importFrom stats complete.cases
 #' @importFrom tidyr spread gather
 #' @importFrom magrittr %>% set_colnames
+#' @importFrom ggrepel geom_text_repel
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -148,7 +150,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' plot_dimred(model, method = "UMAP", color_by = "feature_0_view_0")
 #' 
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
-                        color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
+                        color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL, label = FALSE,
                         dot_size = 1.5, stroke = NULL, alpha_missing = 1, legend = TRUE, rasterize = FALSE, return_data = FALSE, ...) {
   
   # Sanity checks
@@ -244,6 +246,23 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   }
   p <- p + guides(alpha=FALSE)
     
+  # Label clusters
+  if (isTRUE(label) & length(unique(df$color_by))>1 & length(unique(df$color_by))<50) {
+    groups <- unique(df$color_by)
+    labels.loc <- lapply(
+      X = groups,
+      FUN = function(i) {
+        data.use <- df[df[,"color_by"] == i, , drop = FALSE]
+        data.medians <- as.data.frame(x = t(x = apply(X = data.use[, c("x","y"), drop = FALSE], MARGIN = 2, FUN = median, na.rm = TRUE)))
+        data.medians[, "color_by"] <- i
+        # data.medians$color <- data.use$color[1]
+        return(data.medians)
+      }
+    ) %>% do.call("rbind",.)
+    p <- p + geom_text_repel(aes_string(label="color_by"), data=labels.loc)
+  }
+  
+  
   # Add legend
   p <- .add_legend(p, df, legend, color_name, shape_name)
   

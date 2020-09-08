@@ -56,7 +56,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   Z <- do.call(rbind, Z)[,1]
   Z <- Z[!is.na(Z)]
   
-  # Get imputed data
+
+  # Get data
   if (isTRUE(denoise)) {
     data <- predict(object, views=view, groups=groups)[[1]]
   } else {
@@ -71,14 +72,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   if (is(data, "list")) {
     data <- do.call(cbind, data)
   }
-
-  # Select respective samples
-  data <- data[,names(Z)]
   
-  # Ignore samples with full missing views
-  data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
-  
-  # Define features
+  # Subset features
   if (is(features, "numeric")) {
     if (length(features)==1) {
       features <- rownames(W)[tail(order(abs(W)), n=features)]
@@ -93,6 +88,13 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     stop("Features need to be either a numeric or character vector")
   }
   data <- data[features,]
+  
+
+  # Select respective samples
+  data <- data[,names(Z)]
+  
+  # Ignore samples with full missing views
+  data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
   
   # By default, sort samples according to the factor values
   order_samples <- names(sort(Z, decreasing = TRUE))
