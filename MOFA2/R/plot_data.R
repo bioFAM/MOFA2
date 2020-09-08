@@ -354,6 +354,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
 #' @param lm_per_group logical indicating whether to add a linear regression line separately for each group
 #' @param imputed logical indicating whether to include imputed measurements
+#' @param return_data logical indicating whether to return a data frame instead of a plot
 #' @details One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}
 #' and inspect the relationshio of the factor to the covariate(s) using  \code{\link{plot_factors_vs_cov}}.
 #' However, one might also be interested in visualising the direct relationship between features and covariate(s), rather than looking at "abstract" weights and
@@ -366,7 +367,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
 #' @export
 plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
                               color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL, lineplot = TRUE,
-                              dot_size = 2.5, text_size = NULL, add_lm = FALSE, lm_per_group = FALSE, imputed = FALSE) {
+                              dot_size = 2.5, text_size = NULL, add_lm = FALSE, lm_per_group = FALSE, imputed = FALSE, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -439,6 +440,10 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   
   # (Q) Remove samples with missing values in Factor values
   df <- df[!is.na(df$value),]
+  
+  if(return_data){
+    return(df)
+  }
   
   # Set stroke
   if (is.null(stroke)) {

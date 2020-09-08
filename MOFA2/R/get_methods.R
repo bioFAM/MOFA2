@@ -74,6 +74,26 @@ get_group_kernel <- function(object) {
   return(tmp)
 }
 
+#' @title Get interpolated factor values
+#' @name get_interpolated_factors
+#' @description Extract the interpolated factor values
+#' @details This can be used only if covariates are passed to the object upon creation, GP_factors is set to True and new covariates were passed for interpolation.
+#' @param object a \code{\link{MOFA}} object.
+#' @export
+get_interpolated_factors <- function(object, as.data.frame = FALSE) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if(is.null(object@interpolated_Z)) stop("No interpolated factors present in 'object'")
+  if(!as.data.frame){
+    return(object@interpolated_Z)
+  } else {
+    df_interpol <- melt(object@interpolated_Z, varnames = c("factor", covariates_names(object)))
+    df_interpol <- rename(df_interpol, group = L1, type = L2)
+    df_interpol <- mutate(df_interpol, factor = factors_names(object)[factor])
+    return(df_interpol)
+  }
+}
+
+
 #' @title Get factors
 #' @name get_factors
 #' @description Extract the latent factors from the model.

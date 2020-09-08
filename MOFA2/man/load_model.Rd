@@ -12,7 +12,8 @@ load_model(
   load_imputed_data = FALSE,
   remove_outliers = FALSE,
   remove_inactive_factors = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  load_interpol_Z = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,9 @@ On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\li
 \item{remove_inactive_factors}{logical indicating whether to remove inactive factors from the model.}
 
 \item{verbose}{logical indicating whether to print verbose output (default is FALSE)}
+
+\item{load_interpol_Z}{logical indicating whether to load predictions for factor values based on latent processed (only
+relevant for models trained with covariates and Gaussian processes, where prediction was enabled)}
 }
 \value{
 a \code{\link{MOFA}} model

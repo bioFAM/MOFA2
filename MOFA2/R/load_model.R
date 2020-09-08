@@ -18,13 +18,16 @@
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
 # #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
 #' @param verbose logical indicating whether to print verbose output (default is FALSE)
+#' @param load_interpol_Z logical indicating whether to load predictions for factor values based on latent processed (only
+#'  relevant for models trained with covariates and Gaussian processes, where prediction was enabled)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
 # #' @importFrom DelayedArray DelayedArray
 #' @export
 load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
-                       remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
+                       remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE,
+                       load_interpol_Z = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -180,6 +183,29 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   }
   object@imputed_data <- imputed_data
   
+  #######################
+  ## Load interpolated factor values ##
+  #######################
+  
+  interpolated_Z <- list()
+  if (isTRUE(load_interpol_Z)) {
+    
+    if (isTRUE(verbose)) message("Loading interpolated factor values...")
+    
+    for (g in group_names) {
+      interpolated_Z[[g]] <- list()
+      if (on_disk) {
+        # as DelayedArrays
+        # interpolated_Z[[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("Z_predictions/%s", g) ) )
+      } else {
+        # as matrices
+        interpolated_Z[[g]][["mean"]] <- h5read(file, sprintf("Z_predictions/%s/mean", g) )
+        interpolated_Z[[g]][["variance"]] <- h5read(file, sprintf("Z_predictions/%s/variance", g) )
+        interpolated_Z[[g]][["new_values"]] <- h5read(file, "Z_predictions/new_values")
+      }
+    }
+  }
+  object@interpolated_Z <- interpolated_Z
   #######################
   ## Load expectations ##
   #######################

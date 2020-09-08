@@ -52,6 +52,7 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
 
         assert "Sigma" in self.markov_blanket, "Sigma Node not found in Markov blanket of ZgU node."
         Sigma = self.markov_blanket['Sigma'].get_mini_batch()
+        GPparam = self.markov_blanket['Sigma'].getParameters()
 
         # Get variational parameters of current node
         Q = self.Q.getParameters()
@@ -64,7 +65,7 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
         mask = [self.markov_blanket["Y"].nodes[m].getMask() for m in range(len(Y))]
 
 
-        par_up = self._updateParameters(U, Sigma, Qmean, Qvar, Y, W, tau, mask)
+        par_up = self._updateParameters(U, Sigma, GPparam, Qmean, Qvar, Y, W, tau, mask)
 
         # Update parameters
         if ix is None:
@@ -80,7 +81,7 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
         self.Q.setParameters(mean=Q['mean'], var=Q['var'])  # NOTE should not be necessary but safer to keep for now
         self.P.setParameters(mean=Q['mean'], var=Q['var'])
 
-    def _updateParameters(self, U, Sigma, Qmean, Qvar, Y, W, tau, mask):
+    def _updateParameters(self, U, Sigma, GPparam, Qmean, Qvar, Y, W, tau, mask):
         """ Hidden method to compute parameter updates """
 
         K = self.dim[1]
@@ -131,12 +132,26 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
                     Qmean[:, k] = Qvar[:, k] * bar
             else: # updates according to p(z|u)
                 SigmaZZ = Sigma['cov'][k]
-                SigmaZU = SigmaZZ[:, self.idx_inducing]
+                old = True # TODO: New approach is incorrect
+                if old:
+                    SigmaZU = SigmaZZ[:, self.idx_inducing]
+                else:
+                    Kmat = Sigma['cov'][k] - (1 - GPparam['scale'][k]) * np.eye(N)
+                    K_ZU = Kmat[:, self.idx_inducing]
+                    K_UZ = Kmat[self.idx_inducing, :]
                 p_cov_inv = Sigma['inv'][k,:,:]
-                mat = gpu_utils.dot(SigmaZU, p_cov_inv)
+                if old:
+                    mat = gpu_utils.dot(SigmaZU, p_cov_inv)
+                else:
+                    mat = gpu_utils.dot(K_ZU, p_cov_inv)
+
                 Qmean[:, k] = gpu_utils.dot(mat, U['E'][:,k])
                 for n in range(N):
-                    exp_var =  SigmaZZ[n, n] - gpu_utils.dot(gpu_utils.dot( SigmaZZ[n,self.idx_inducing], p_cov_inv),  SigmaZZ[self.idx_inducing, n])
+                    if old:
+                        exp_var = SigmaZZ[n, n] - gpu_utils.dot(gpu_utils.dot(SigmaZZ[n, self.idx_inducing], p_cov_inv),
+                                                                SigmaZZ[self.idx_inducing, n])
+                    else:
+                        exp_var = SigmaZZ[n, n] - gpu_utils.dot(gpu_utils.dot(K_ZU[n,:], p_cov_inv),  K_UZ[:, n])
                     var_exp = gpu_utils.dot(gpu_utils.dot(mat[n,:],U['cov'][k,:,:]), mat[n,:].transpose())
                     Qvar[n, k] = exp_var + var_exp
 

@@ -22,6 +22,7 @@ class entry_point(object):
         self.dimensionalities = {}
         self.model = None
         self.imputed = False # flag
+        self.Zcompleted = False # flag
 
     def print_banner(self):
         """ Method to print the mofapy2 banner """
@@ -959,10 +960,11 @@ class entry_point(object):
           print("- View %d (%s): %s" % (m,self.data_opts["views_names"][m],self.likelihoods[m]) )
         print("\n")
 
-    def set_data_options(self, scale_views=False, scale_cov = False, scale_groups = False):
+    def set_data_options(self, scale_views=False, scale_cov = False, scale_groups = False, center_groups = True):
         """ Set data processing options """
 
         self.data_opts = {}
+        self.data_opts['center_groups'] = center_groups
 
         # Scale views to unit variance
         self.data_opts['scale_views'] = scale_views
@@ -1091,23 +1093,29 @@ class entry_point(object):
             Z_new_var = np.zeros([M*G, K])
         for k in range(K):
             Kc_new = self.model.nodes['Sigma'].Kc.eval_at_newpoints_k(all_covariates,k)
-            Sigma_new_k =  GP_param['scale'][k] * np.kron(Kg[k,:,:], Kc_new) + (1 - GP_param['scale'][k]) * np.eye(N * G)
-            Z_new_mean[:,k] = gpu_utils.dot(Sigma_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k,:,:], Z[:,k]))
+            K_new_k = GP_param['scale'][k] * np.kron(Kg[k,:,:], Kc_new)
+            Sigma_new_k = K_new_k + (1 - GP_param['scale'][k]) * np.eye(N * G)
+            Z_new_mean[:,k] = gpu_utils.dot(K_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k,:,:], Z[:,k]))
             if uncertainty:
                 # marginal variances p(z, z*|c, c*, y) =  p(z*|z, y,c,c*) *p(z|y,c,c*)  = p(z*|z, c*) * p(z|y,c)
+                # Var[z*] = Var([E(z*|z)]) + Var(E(z*|z))
                 if not self.model_opts['mv_Znode']:
                     Z2 = np.diag(self.model.nodes['Z'].getExpectations()['E2'][:,k] - self.model.nodes['Z'].getExpectations()['E'][:,k]**2)
                 else:
                     Z2 = self.model.nodes['Z'].getExpectations()['cov'][k,:,:]
-                Z_new_var[:,k] = np.diag(Sigma_new_k[newidx, :][:, newidx] -\
-                            gpu_utils.dot(Sigma_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k, :, :], Sigma_new_k[oldix,:][:,newidx])) + \
-                            gpu_utils.dot(Sigma_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k, :, :],
-                                                                           gpu_utils.dot(Z2,gpu_utils.dot(Sigma_inv[k, :, :],Sigma_new_k[oldix,:][:,newidx])))))
+                # TODO: avoid calculating full matrix, only require diagonal
+                Z_new_var[:, k] = np.diag(Sigma_new_k[newidx, :][:, newidx] - \
+                                          gpu_utils.dot(K_new_k[newidx, :][:, oldix],
+                                                        gpu_utils.dot(Sigma_inv[k, :, :],
+                                                                      K_new_k[oldix, :][:, newidx])) + \
+                                                            gpu_utils.dot(K_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k, :, :],
+                                                                           gpu_utils.dot(Z2,gpu_utils.dot(Sigma_inv[k, :, :],K_new_k[oldix,:][:,newidx])))))
 
         if uncertainty:
-            self.Zpredictions = {"mean": Z_new_mean, "variance": Z_new_var}
+            assert np.all(Z_new_var >= 0), "Something went wrong in the prediction: variances of the predictive distribution are negative"
+            self.Zpredictions = {"mean": Z_new_mean, "variance": Z_new_var, 'values' : new_covariates, 'groups' : groups}
         else:
-            self.Zpredictions = {"mean": Z_new_mean, "variance": None}
+            self.Zpredictions = {"mean": Z_new_mean, "variance": None, 'values' : new_covariates, 'groups' : groups}
 
         self.Zcompleted = True
 
@@ -1230,6 +1238,10 @@ class entry_point(object):
         # Save imputed data
         if self.imputed:
             tmp.saveImputedData(self.imputed_data["mean"], self.imputed_data["variance"])
+
+        # Save predictions
+        if self.Zcompleted:
+            tmp.saveZpredictions(self.Zpredictions["mean"], self.Zpredictions["variance"], self.Zpredictions['values'], self.Zpredictions['groups'])
 
 
 

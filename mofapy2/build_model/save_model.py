@@ -211,7 +211,30 @@ class saveModel():
                 group_subgrp.create_dataset("mean", data=mean[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
                 if variance is not None:
                     group_subgrp.create_dataset("variance", data=variance[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
-                
+
+    def saveZpredictions(self, mean, variance, values, groups):
+        """ Method to save the training data"""
+
+        # Create HDF5 groups
+        data_grp = self.hdf5.create_group("Z_predictions")
+        # save values
+        data_grp.create_dataset("new_values", data=values, compression="gzip",
+                                    compression_opts=self.compression_level)
+        for g in groups:
+            # Create HDF5 subgroup
+            group_subgrp = data_grp.create_group(self.groups_names[g])
+            sampleidx = np.arange(values.shape[0]) + values.shape[0] * g
+
+            # Save mean
+            group_subgrp.create_dataset("mean", data=mean[sampleidx,:][:, self.order_factors], compression="gzip",
+                                        compression_opts=self.compression_level)
+
+
+            # Save variance
+            if variance is not None:
+                group_subgrp.create_dataset("variance", data=variance[sampleidx,:][:, self.order_factors], compression="gzip",
+                                            compression_opts=self.compression_level)
+
     def saveExpectations(self, nodes="all"):
 
         # Get nodes from the model

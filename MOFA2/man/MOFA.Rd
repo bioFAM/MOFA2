@@ -17,6 +17,7 @@ The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA
    \item{\code{samples_metadata}:}{ Samples metadata. }
    \item{\code{features_metadata}:}{ Features metadata. }
    \item{\code{imputed_data}:}{ The imputed data. }
+   \item{\code{interpolated_Z}:}{Interpolated factor values}
    \item{\code{expectations}:}{ expected values of the factors and the loadings. }
    \item{\code{dim_red}:}{ non-linear dimensionality reduction manifolds. }
    \item{\code{training_stats}:}{ model training statistics. }

@@ -72,9 +72,10 @@ def process_data(data, likelihoods, data_opts, samples_groups):
         if likelihoods[m] in ["gaussian"]:
 
             # Center features per group
-            for g in data_opts['groups_names']:
-                filt = [gp==g for gp in samples_groups]
-                data[m][filt,:] -= np.nanmean(data[m][filt,:],axis=0)
+            if data_opts['center_groups']:
+                for g in data_opts['groups_names']:
+                    filt = [gp==g for gp in samples_groups]
+                    data[m][filt,:] -= np.nanmean(data[m][filt,:],axis=0)
 
             # Scale views to unit variance
             if data_opts['scale_views']:
