@@ -86,9 +86,25 @@ get_interpolated_factors <- function(object, as.data.frame = FALSE) {
   if(!as.data.frame){
     return(object@interpolated_Z)
   } else {
-    df_interpol <- melt(object@interpolated_Z, varnames = c("factor", covariates_names(object)))
+    preds <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) != "new_values"]])
+    df_interpol <- melt(preds, varnames = c("factor", "sample_id"))
     df_interpol <- rename(df_interpol, group = L1, type = L2)
+    
+    if("new_values" %in% names(object@interpolated_Z[[1]])) {
+      new_vals <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) == "new_values"]])
+      new_vals <- melt(new_vals, varnames = c("covariate","sample_id"))
+      new_vals <- mutate(new_vals, covariate = covariates_names(object)[covariate])
+      new_vals <- rename(new_vals, group = L1, covariate_value = value)
+      new_vals <- spread(new_vals, key = covariate, value = covariate_value)
+      new_vals <- select(new_vals, -L2)
+      df_interpol <- left_join(df_interpol, new_vals, by = c("group", "sample_id"))
+      df_interpol <- select(df_interpol, -sample_id)
+    } else { # compatibility to older objects
+      df_interpol <- rename(df_interpol, covariate_value = sample_id)
+      df_interpol <- mutate(df_interpol, covariate = covariates_names(object))
+    }
     df_interpol <- mutate(df_interpol, factor = factors_names(object)[factor])
+    df_interpol <- spread(df_interpol, key = type, value = value)
     return(df_interpol)
   }
 }
@@ -427,10 +443,11 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
 #' @param object a \code{\link{MOFA}} object.
 #' @param covariates character vector with the covariate name(s), or numeric vector with the covariate index(es). 
 #' @param as.data.frame logical indicating whether to output the result as a long data frame, default is \code{FALSE}.
+#' @param warped logical indicating whether to extract the aligned covariates
 #' @return a matrix with dimensions (samples,covariates). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)
 #' @export
 
-get_covariates <- function(object, covariates ="all", as.data.frame = FALSE) {
+get_covariates <- function(object, covariates ="all", as.data.frame = FALSE, warped = FALSE) {
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
@@ -438,7 +455,12 @@ get_covariates <- function(object, covariates ="all", as.data.frame = FALSE) {
   covariates <- .check_and_get_covariates(object, covariates)
   
   # Get covariates
-  sample_cov <- lapply(object@covariates, function(cmat) cmat[covariates,,drop=FALSE])
+  if(warped){
+    sample_cov <- lapply(object@covariates_warped, function(cmat) cmat[covariates,,drop=FALSE])
+  } else {
+    sample_cov <- lapply(object@covariates, function(cmat) cmat[covariates,,drop=FALSE])
+    
+  }
   
   if (isTRUE(as.data.frame)) {
     if(!is.null(rownames(sample_cov[[1]]))){
