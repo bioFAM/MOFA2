@@ -16,7 +16,6 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
-#' @param regress_covariates This option was confusing and has been depreciated. We encourage you to do batch effect corrections before creating the MOFA object.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @export
 #' @examples
@@ -36,14 +35,13 @@
 #' model_opts <- get_default_model_options(MOFAmodel)
 #' model_opts$num_factors <- 10
 #' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
-prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL,
-                         stochastic_options = NULL, regress_covariates = NULL) {
+prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (any(object@dimensions$N<15)) warning("Some group(s) have less than 15 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
   if (any(object@dimensions$D<15)) warning("Some view(s) have less than 15 features, MOFA will have little power to to learn meaningful factors for these view(s)....")
-  if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is strongly recommended to perform feature selection before creating the MOFA object....")
+  if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to performa more stringent feature selection before creating the MOFA object....")
   
   # Get data options
   message("Checking data options...")
@@ -143,12 +141,6 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   #   }
   # }
   
-  # Regress out covariates
-  if (!is.null(regress_covariates)) {
-    message("regress_covariates has been depreciated, as it is very confusing to use when you have multiple views and multiple groups. We encourage you to do the corrections (using for example limma) before creating the MOFA object")
-    # object <- .regress_covariates(object, regress_covariates)
-  }
-
   # Transform sparse matrices into dense ones
   # See https://github.com/rstudio/reticulate/issues/72
   for (m in views_names(object)) {
@@ -326,8 +318,8 @@ get_default_model_options <- function(object) {
   }
   
   # Guess likelihoods from the data
-  likelihoods <- .infer_likelihoods(object)
-  # likelihoods <- rep(x="gaussian", times=object@dimensions$M)
+  # likelihoods <- .infer_likelihoods(object)
+  likelihoods <- rep(x="gaussian", times=object@dimensions$M)
   names(likelihoods) <- views_names(object)
   
   # Define default model options
@@ -352,68 +344,6 @@ get_default_model_options <- function(object) {
 }
 
 
-
-
-#' @importFrom stats lm
-.regress_covariates <- function(object, covariates, min_observations = 10) {
-
-  # First round of sanity checks
-  if (!is(object, "MOFA")) 
-    stop("'object' has to be an instance of MOFA")
-  if (length(object@data)==0)
-    stop("Input data has not been provided")
-  
-  # Fetch data
-  views <- names(covariates)
-  groups <- names(covariates[[1]])
-  Y <- sapply(object@data[views], function(x) x[groups], simplify = FALSE, USE.NAMES = TRUE)
-  # Y <- get_data(object, views=views, groups=groups)
-  
-  # Second round of sanity checks
-  if (any(object@model_options$likelihoods[views]!="gaussian")) 
-    stop("Some of the specified views contains discrete data. \nRegressing out covariates only works in views with continuous (gaussian) data")
-  
-  # Prepare data.frame with covariates
-  if (!is(covariates,"list"))
-    stop("Covariates has to be a list of vectors (for one covariate) or a list of data.frames (for multiple covariates)")
-  for (m in names(covariates)) {
-    for (g in names(covariates[[m]])) {
-      if (!is(covariates[[m]][[g]],"data.frame"))
-        covariates[[m]][[g]] <- data.frame(x=covariates[[m]][[g]])
-      stopifnot(nrow(covariates[[m]][[g]])==object@dimensions$N[g])
-    }
-  }
-  
-  print("Regressing out the specified covariates...")
-  
-  Y_regressed <- list()
-  for (m in views) {
-    Y_regressed[[m]] <- list()
-    for (g in groups) {
-      if (!(is(Y[[m]][[g]], "dgCMatrix") || is(Y[[m]][[g]], "dgTMatrix")))  # is.na only makes sense for non-sparse matrices
-        if (any(rowSums(!is.na(Y[[m]][[g]])) < min_observations))
-          stop(sprintf("Some features do not have enough observations (N=%s) to fit the linear model",min_observations))
-      
-      Y_regressed[[m]][[g]] <- t(apply(Y[[m]][[g]], 1, function(y) {
-
-        # Fit linear model
-        df <- cbind(data.frame(y=y), covariates[[m]][[g]])
-        lm.out <- lm(y~., data=df)
-        residuals <- lm.out[["residuals"]]
-        
-        # Fill missing values
-        all_samples <- colnames(Y[[m]][[g]])
-        missing_samples <- all_samples[!all_samples %in% names(residuals)]
-        residuals[missing_samples] <- NA
-        residuals[all_samples]
-      }))
-
-    }
-  }
-  object@data[views] <- Y_regressed
-  
-  return(object)
-}
 
 
 #' @title Get default stochastic options

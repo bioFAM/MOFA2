@@ -93,9 +93,11 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Subset weights by sign
   if (sign=="positive") {
-    W[W<0] <- 0
+    # W[W<0] <- 0
+    W[W<0] <- NA
   } else if (sign=="negative") {
-    W[W>0] <- 0
+    # W[W>0] <- 0
+    W[W>0] <- NA
     W <- abs(W)
   }
   
@@ -191,6 +193,14 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(!p.adj.method %in%  p.adjust.methods) 
     stop("p.adj.method needs to be an element of p.adjust.methods")
   adj.p.values <- apply(results$p.values, 2,function(lfw) p.adjust(lfw, method = p.adj.method))
+
+  # If we specify a direction, we are only interested in overrepresented pathawys in the selected direction
+  if (sign%in%c("positive","negative")) {
+    results$p.values[results$statistics<0] <- 1.0
+    adj.p.values[results$statistics<0] <- 1.0
+    results$statistics[results$statistics<0] <- 0
+  }
+  
   
   # obtain list of significant pathways
   sigPathways <- lapply(factors, function(j) rownames(adj.p.values)[adj.p.values[,j] <= alpha])
@@ -202,7 +212,6 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
     pval.adj = adj.p.values, 
     feature.statistics = results$feature.statistics,
     set.statistics = results$statistics,
-    # pathway.activity = tmp,
     sigPathways = sigPathways
   )
   return(output)
