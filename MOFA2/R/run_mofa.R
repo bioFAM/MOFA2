@@ -18,13 +18,13 @@
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("extdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 #' 
-#' # Load data (in data.frame format)
-#' data <- read.table(file, header=TRUE) 
+#' # Load data dt (in data.frame format)
+#' load(file) 
 #' 
-#' # Create MOFA object
-#' MOFAmodel <- create_mofa(data)
+#' # Create the MOFA object
+#' MOFAmodel <- create_mofa(dt)
 #' 
 #' # Prepare the MOFA object with default options
 #' MOFAmodel <- prepare_mofa(MOFAmodel)

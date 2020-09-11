@@ -13,6 +13,7 @@ plot_dimred(
   shape_by = NULL,
   color_name = NULL,
   shape_name = NULL,
+  label = FALSE,
   dot_size = 1.5,
   stroke = NULL,
   alpha_missing = 1,
@@ -44,6 +45,8 @@ plot_dimred(
 \item{color_name}{name for color legend.}
 
 \item{shape_name}{name for shape legend.}
+
+\item{label}{logical indicating whether to label the medians of the clusters. Only if color_by is specified}
 
 \item{dot_size}{numeric indicating dot size.}
 
