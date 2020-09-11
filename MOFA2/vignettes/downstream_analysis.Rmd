@@ -22,10 +22,6 @@ vignette: >
 
 In the MOFA2 R package we provide a wide range of downstream analysis to visualise and interpret the model output. Here we provide a brief description of the main functionalities. This vignette is made of simulated data and we do not highlight biologically relevant results.
 
-<!-- <p align="center"> -->
-<!-- <img src="../../images/figure1b_mofa2.png" style="width: 100%; height: 100%"/> -->
-<!-- </p> -->
-
 # Load libraries
 ```{r, message=FALSE}
 library(ggplot2)
@@ -51,9 +47,9 @@ plot_data_overview(model)
 The metadata is stored as a data.frame object in `model@samples_metadata`, and it requires at least the column `sample`. The column `group` is required only if you are doing multi-group inference.  
 The number of rows must match the total number of samples in the model (`sum(model@dimensions$N)`).
 
-Let's add some artifical metadata...
+Let's add some artificial metadata...
 ```{r }
-Nsamples = sum(model@dimensions$N)
+Nsamples = sum(get_dimensions(model)[["N"]])
 
 sample_metadata <- data.frame(
   sample = samples_names(model)[[1]],
@@ -200,7 +196,7 @@ plot_data_scatter(model,
 
 The MOFA factors are linear (as in Principal Component analysis). Nevertheless, the MOFA factors can be used as input to other methods that learn compact nonlinear manifolds (t-SNE or UMAP).
 
-Run UMAP and t-SNE
+Run UMAP or t-SNE
 ```{r }
 set.seed(42)
 # model <- run_umap(model)
@@ -270,19 +266,11 @@ head(weights, n=3)
 data <- get_data(model, as.data.frame = TRUE)
 head(data, n=3)
 ```
-
-<!-- ### Subset data -->
-<!-- ```{r } -->
-<!-- # Fetch variance explained quantifications form the cache -->
-<!-- r2 <- model@cache$variance_explained$r2_per_factor -->
-<!-- # Identify inactive factors -->
-<!-- tmp <- sapply(r2, function(x) x[,"RNA"]>0.01) -->
-<!-- factors <- which(apply(tmp,1,sum) >= 1) -->
-<!-- # Subset factors -->
-<!-- # model <- subset_factors(model, factors) -->
-<!-- ``` -->
-
-# SessionInfo
+<details>
+  <summary>**Session Info**</summary>
+  
 ```{r}
 sessionInfo()
 ```
+
+</details>

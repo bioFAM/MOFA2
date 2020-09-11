@@ -37,32 +37,6 @@ Effectively MOFA disentangles the sources of variation in the data, identifying 
 
 MOFA (and factor analysis models in general) are useful to uncover variation in complex data sets that are expected to contain multiple sources of heterogeneity. This requires a relatively large sample size (at least ~15 samples). In addition, MOFA needs the multi-modal measurements to be derived from the same samples. It is fine if you have samples that are missing some data modality, but there has to be a significant degree of matched measurements. 
 
-<!-- ## How do I prepare my data? -->
-
-<!-- You need to normalise each data modality  -->
-<!-- Missing values are allowed. -->
-
-<!-- # Setting up `reticulate` connection with Python -->
-
-<!-- To connect with the Python core, `MOFA2` uses the `reticulate` package. Most of the times this is straightforward, but it may require some configuration if you have multiple conda environments and versions of Python installed. -->
-
-<!-- ``` -->
-<!-- library(reticulate) -->
-
-<!-- # Option 1: Using a specific python binary -->
-<!-- use_python("/home/user/python", required = TRUE) -->
-
-<!-- # Option 2: Using a conda enviroment called "r-reticulate" -->
-<!-- use_condaenv("r-reticulate", required = TRUE) -->
-
-<!-- # If successful, you should be able to run the following two lines without error: -->
-<!-- mofa <- import("mofapy2") -->
-<!-- mofa_entrypoint <- mofa$run.entry_point$entry_point() -->
-<!-- ``` -->
-<!-- If you have problems, please read the [FAQ](https://github.com/bioFAM/MOFA2). If the problem persists, contact us.   -->
-<!-- Read more about the [reticulate](https://rstudio.github.io/reticulate/) package and [how it integrates Python and R](https://rstudio.github.io/reticulate/articles/versions.html). -->
-
-
 # Load data
 
 To create a MOFA object you need to specify four dimensions: samples, features, view(s) and group(s). MOFA objects can be created from a wide range of input formats, including:  
@@ -70,7 +44,7 @@ To create a MOFA object you need to specify four dimensions: samples, features, 
 - **a list of matrices**: this is recommended for relatively simple data.
 - **a long data.frame**: this is recommended for complex data sets with multiple views and/or groups.
 - **MultiAssayExperiment**: to connect with Bioconductor objects.
-- **Seurat**: only for single-cell genomics users.
+- **Seurat**: for single-cell genomics users. See [this vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html)
 
 ## List of matrices
 
@@ -93,9 +67,7 @@ Create the MOFA object:
 MOFAobject <- create_mofa(data)
 ```
 
-In case you are using the multi-group functionality, the groups can be specified using a vector with the group ID for each sample.  
-
-Please keep in mind that this is a rather advanced option that we disencourage for MOFA beginners. For more details on how the multi-group inference works, read the [FAQ section](https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality). 
+In case you are using the multi-group functionality, the groups can be specified using the `groups` argument as a vector with the group ID for each sample. Keep in mind that this is a rather advanced option that we discourage for MOFA beginners. For more details on how the multi-group inference works, read the [FAQ section](https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality) and [check this vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html). 
 
 ```{r message=FALSE}
 N = ncol(data[[1]])
@@ -110,14 +82,10 @@ A long data.frame with columns `sample`, `feature`, `view`, `group` (optional), 
 In my opinion this is the best format for complex data sets with multiple omics and potentially multiple groups of data. Also, there is no need to add rows that correspond to missing data:
 
 ```{r }
-# loading an example data.table (dt)
 filepath <- system.file("extdata", "test_data.RData", package = "MOFA2")
 load(filepath)
 
 head(dt)
-
-# Let's ignore the grouping information to start
-dt[,group:=NULL]
 ```
 
 Create the MOFA object
@@ -145,16 +113,16 @@ head(data_opts)
 ## Define model options
 
 - **num_factors**: number of factors
-- **likelihoods**: likelihood per view (options are "gaussian", "poisson", "bernoulli"). By default they are learnt automatically. We advise users to use "gaussian" whenever possible!
+- **likelihoods**: likelihood per view (options are "gaussian", "poisson", "bernoulli"). Default is "gaussian".
 - **spikeslab_factors**: use spike-slab sparsity prior in the factors? default is `FALSE`.
 - **spikeslab_weights**: use spike-slab sparsity prior in the weights? default is `TRUE`.
 - **ard_factors**: use ARD prior in the factors? Default is `TRUE` if using multiple groups.
 - **ard_weights**: use ARD prior in the weights? Default is `TRUE` if using multiple views.
 
-Only change the default model options if you are familiar with the underlying mathematical model!
-
+Please only change the default model options if you are familiar with the underlying mathematical model
 ```{r }
 model_opts <- get_default_model_options(MOFAobject)
+model_opts$num_factors <- 10
 head(model_opts)
 ```
 
@@ -162,13 +130,13 @@ head(model_opts)
 ## Define train options
 
 - **maxiter**: number of iterations. Default is 1000.
-- **convergence_mode**: "fast", "medium", "slow". For exploration, the fast mode is good enough.
-- **startELBO**: initial iteration to compute the ELBO (the objective function used to assess convergence).
-- **freqELBO**: frequency of computations of the ELBO.
+- **convergence_mode**: "fast" (default), "medium", "slow". For exploration, the fast mode is sufficient. For a final model, consider using medium" or even "slow". It will yield sparser weights.
+<!-- - **startELBO**: initial iteration to compute the ELBO (the objective function used to assess convergence). -->
+<!-- - **freqELBO**: frequency of computations of the ELBO. -->
 - **gpu_mode**: use GPU mode? (needs [cupy](https://cupy.chainer.org/) installed and a functional GPU).
-- **stochastic**: use stochastic inference? (default is `FALSE`).
+- **stochastic**: use stochastic inference? (default is `FALSE`, only use this functionality with very large data sets and in combination with GPUs).
 - **verbose**: verbose mode?
-- **seed**: random seed
+- **seed**: random seed (default is 42)
 
 ```{r }
 train_opts <- get_default_training_options(MOFAobject)
@@ -216,3 +184,12 @@ Saving model in `/Users/ricard/data/mofa2/hdf5/model.hdf5...`r outfile`.
 # Downstream analysis
 
 This finishes the tutorial on how to train a MOFA object from R. To continue with the downstream analysis, follow [this tutorial](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
+
+<details>
+  <summary>**Session Info**</summary>
+  
+```{r}
+sessionInfo()
+```
+
+</details>
