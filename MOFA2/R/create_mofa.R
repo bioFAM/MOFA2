@@ -265,10 +265,10 @@ create_mofa <- function(data, groups = NULL, ...) {
 
   # Define assays
   if (is.null(assays)) {
-    assays <- Assays(seurat)
+    assays <- Seurat::Assays(seurat)
     message(paste0("No assays specified, using all assays by default: ", paste(assays,collapse=" ")))
   } else {
-    stopifnot(assays%in%Assays(seurat))
+    stopifnot(assays%in%Seurat::Assays(seurat))
   }
   
   # Define groups of cells
