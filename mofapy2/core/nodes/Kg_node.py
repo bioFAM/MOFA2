@@ -7,6 +7,7 @@ import scipy as s
 from mofapy2.core import gpu_utils
 from mofapy2.core.gp_utils import covar_to_corr
 
+# TODO: for large number of groups avoid constructing Kmat if spectral decomp and only save x at the end (getParameters in SigmaNode)
 class Kg_Node(Node):
     """
     Sigma node to model the covariance structure K_g across groups.

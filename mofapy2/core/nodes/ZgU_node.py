@@ -113,8 +113,7 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
 
         # Calculate updates
         for k in range(K):
-            unstructured = (Sigma['cov'][k] == np.eye(N)).all() # #TODO find better ways to choose between sparse and non-sparse inference depending on factor smoothness?
-            # unstructured = False
+            unstructured = (Sigma['cov'][k] == np.eye(N)).all() # TODO: Are there better ways to choose between sparse and non-sparse inference depending on factor smoothness?
             if unstructured: # updates according to q(z) without sparse inference
                     bar = gpu_utils.array(s.zeros((N,)))
                     tmp_cp1 = gpu_utils.array(Qmean[:, s.arange(K) != k])
@@ -132,26 +131,14 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
                     Qmean[:, k] = Qvar[:, k] * bar
             else: # updates according to p(z|u)
                 SigmaZZ = Sigma['cov'][k]
-                old = True # TODO: New approach is incorrect
-                if old:
-                    SigmaZU = SigmaZZ[:, self.idx_inducing]
-                else:
-                    Kmat = Sigma['cov'][k] - (1 - GPparam['scale'][k]) * np.eye(N)
-                    K_ZU = Kmat[:, self.idx_inducing]
-                    K_UZ = Kmat[self.idx_inducing, :]
-                p_cov_inv = Sigma['inv'][k,:,:]
-                if old:
-                    mat = gpu_utils.dot(SigmaZU, p_cov_inv)
-                else:
-                    mat = gpu_utils.dot(K_ZU, p_cov_inv)
+                SigmaZU = SigmaZZ[:, self.idx_inducing]
+                p_cov_inv = Sigma['inv'][k, :, :]
+                mat = gpu_utils.dot(SigmaZU, p_cov_inv)
 
                 Qmean[:, k] = gpu_utils.dot(mat, U['E'][:,k])
                 for n in range(N):
-                    if old:
-                        exp_var = SigmaZZ[n, n] - gpu_utils.dot(gpu_utils.dot(SigmaZZ[n, self.idx_inducing], p_cov_inv),
-                                                                SigmaZZ[self.idx_inducing, n])
-                    else:
-                        exp_var = SigmaZZ[n, n] - gpu_utils.dot(gpu_utils.dot(K_ZU[n,:], p_cov_inv),  K_UZ[:, n])
+                    exp_var = SigmaZZ[n, n] - gpu_utils.dot(gpu_utils.dot(SigmaZZ[n, self.idx_inducing], p_cov_inv),
+                                                            SigmaZZ[self.idx_inducing, n])
                     var_exp = gpu_utils.dot(gpu_utils.dot(mat[n,:],U['cov'][k,:,:]), mat[n,:].transpose())
                     Qvar[n, k] = exp_var + var_exp
 
@@ -172,8 +159,6 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
 
         # only non-stucutred nodes contribute here, else p(z|u) = q(z|u) --> ELBO is zero
         unstructured = (p_cov[k] == np.eye(p_cov[k].shape[0])).all()
-        # unstructured = False
-
         if unstructured:
 
             tmp1 = -0.5 * (QE2[:,k]).sum()
@@ -182,8 +167,7 @@ class ZgU_node(UnivariateGaussian_Unobserved_Variational_Node):
             lb_p = tmp1 + tmp2
             lb_q = -(s.log(Qvar[:,k])).sum() + self.dim[0] / 2.
 
-            return lb_p - lb_q - self.markov_blanket['U'].calculateELBO_k(k) # TODO check optim Sigma and avoid correction for ELBO of U node for unstructured node as U node doesn't contribute anymore
-
+            return lb_p - lb_q - self.markov_blanket['U'].calculateELBO_k(k)
         else:
             return 0
 

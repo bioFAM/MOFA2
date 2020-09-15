@@ -476,7 +476,7 @@ class Sigma_Node(Node):
                 # save optimized kernel paramters
                 self.Kc.set_gridix(best_lidx, k)
                 if self.model_groups:
-                    self.Kg.set_parameters(x=best_x, sigma=best_sigma, k=k)
+                    self.Kg.set_parameters(x=best_x, sigma=best_sigma, k=k, spectral_decomp=self.kronecker)
 
                 self.zeta[k] = best_zeta
 
