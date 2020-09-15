@@ -52,11 +52,13 @@ class Kc_Node(Node):
         self.n_grid += 1
 
         # initialise kernel matrix
-        self.Kmat = np.zeros([self.n_grid, self.C, self.C])  # kernel matrix on lengthscale grid
+        if not spectral_decomp:
+            self.Kmat = np.zeros([self.n_grid, self.C, self.C])  # kernel matrix on lengthscale grid
 
         # initialise spectral decomposition
-        self.V = np.zeros([self.n_grid, self.C, self.C])    # eigenvectors of kernel matrix on lengthscale grid
-        self.D = np.zeros([self.n_grid, self.C])            # eigenvalues of kernel matrix on lengthscale grid
+        else:
+            self.V = np.zeros([self.n_grid, self.C, self.C])    # eigenvectors of kernel matrix on lengthscale grid
+            self.D = np.zeros([self.n_grid, self.C])            # eigenvalues of kernel matrix on lengthscale grid
 
         # compute for each lengthscale the kernel matrix
         self.compute_kernel(spectral_decomp = spectral_decomp)
@@ -73,13 +75,15 @@ class Kc_Node(Node):
     def compute_kernel_at_gridpoint(self, i, spectral_decomp = True):
 
         # build kernel matrix based on given covariance function
-        self.Kmat[i, :, :] = SE(self.covariates, self.l_grid[i], zeta=0)
-        # self.Kmat[i, :, :] = Cauchy(self.sample_cov_transformed, self.l_grid[i], zeta=0)
+        if not spectral_decomp:
+            self.Kmat[i, :, :] = SE(self.covariates, self.l_grid[i], zeta=0)
+            # self.Kmat[i, :, :] = Cauchy(self.sample_cov_transformed, self.l_grid[i], zeta=0)
+        else:
+            Kmat = SE(self.covariates, self.l_grid[i], zeta=0)
+            # compute spectral decomposition
+            # Kc = VDV^T with V^T V = I
+            self.D[i, :], self.V[i, :, :] = s.linalg.eigh(Kmat)
 
-        # compute spectral decomposition
-        # Kc = VDV^T with V^T V = I
-        if spectral_decomp:
-            self.D[i, :], self.V[i, :, :] = s.linalg.eigh(self.Kmat[i, :,:])
 
     def get_ls(self):
         """
