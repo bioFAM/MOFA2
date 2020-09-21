@@ -83,7 +83,7 @@ class Sigma_Node(Node):
             self.G = len(self.groups)  # number of groups
             if rankx is None:
                 # rankx = np.min([np.max([1, np.floor(np.log(self.G)).astype(np.int64)]), 5])
-                if self.G < 15:
+                if self.G < 50:
                     rankx = 1
                 else:
                     rankx = 2

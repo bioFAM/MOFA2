@@ -201,13 +201,13 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
         # as matrices
         tryCatch( {
           interpolated_Z[[g]][["mean"]] <- h5read(file, sprintf("Z_predictions/%s/mean", g) )
-        }, error = function(x) { print("Predicitions of Z, not loading it...") })
+        }, error = function(x) { print("Predicitions of Z not found, not loading it...") })
         tryCatch( {
           interpolated_Z[[g]][["variance"]] <- h5read(file, sprintf("Z_predictions/%s/variance", g) )
-        }, error = function(x) { print("Variance of predictions of Z, not loading it...") })
+        }, error = function(x) { print("Variance of predictions of Z not found, not loading it...") })
         tryCatch( {
           interpolated_Z[[g]][["new_values"]] <- h5read(file, "Z_predictions/new_values")
-        }, error = function(x) { print("New values of Z, not loading it...") })
+        }, error = function(x) { print("New values of Z not found, not loading it...") })
       }
     }
   }
