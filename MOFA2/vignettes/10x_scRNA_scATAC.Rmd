@@ -65,7 +65,7 @@ matrix.please<-function(x) {
 
 We have created a Seurat object with RNA and ATAC data modalities stored as different assays. [Here is the script](ftp://ftp.ebi.ac.uk/pub/databases/mofa/10x_rna_atac_vignette/create_seurat.R) to create the Seurat object from the CellRanger output
 ```{r}
-# run099999999998 this to download the data set
+# run this to download the data set
 # seurat <- readRDS(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/10x_rna_atac_vignette/seurat.rds"))
 
 seurat <- readRDS("/Users/ricard/data/10x_rna_atac/PBMC/seurat.rds")
