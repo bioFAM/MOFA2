@@ -219,13 +219,13 @@ subset_factors <- function(object, factors) {
   
   # Subset lengthscales per factor
   if (!is.null(object@training_stats$structural_sig)) {
-    object@training_stats$structural_sig <- object@training_stats$structural_sig[factors,,drop=FALSE]
+    object@training_stats$structural_sig <- object@training_stats$structural_sig[factors,drop=FALSE]
   }
   if (!is.null(object@training_stats$length_scales)) {
-    object@training_stats$length_scales <- object@training_stats$length_scales[factors,,drop=FALSE]
+    object@training_stats$length_scales <- object@training_stats$length_scales[factors,drop=FALSE]
   }
   if (!is.null(object@training_stats$scales)) {
-    object@training_stats$scales <- object@training_stats$scales[factors,,drop=FALSE]
+    object@training_stats$scales <- object@training_stats$scales[factors,drop=FALSE]
   }
   
   # Update dimensionality
