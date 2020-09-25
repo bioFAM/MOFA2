@@ -405,7 +405,6 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", ncol(data[[1]]))
   }
-  groups_names <- as.character(unique(groups))
   
   # Set views names
   if (is.null(names(data))) {
@@ -419,6 +418,9 @@ create_mofa <- function(data, groups = NULL, ...) {
   object <- new("MOFA")
   object@status <- "untrained"
   object@data <- .split_data_into_groups(data, groups)
+  
+  # groups_names <- as.character(unique(groups))
+  groups_names <- names(object@data[[1]])
   
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data)
