@@ -71,27 +71,27 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 
 ### Learning the basics
 
-* [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/vignettes/getting_started.md): general overview and description of the method.
-* [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html)
+* [**Getting started**](https://github.com/bioFAM/MOFA2/bioc/tutorials_extended/getting_started.md): general overview and description of the method.
+* [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/bioc/MOFA2/vignettes/getting_started_R.html)
 * [**Training a model in Python (jupyter notebook)**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb)
-* [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
+* [**Downstream analysis (in R)**](https://raw.githack.com/bioFAM/MOFA2/bioc/MOFA2/vignettes/downstream_analysis.html)
 * **Downstream analysis in python**: in preparation...
-* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis.
+* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/GSEA.html): demonstrates how to do gene set enrichment analysis.
 
 ### Case examples
 
-* [**(authors' favourite) Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): a bulk multi-omics data set. Figure 2 and 3 of the MOFA v1 paper.
-* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/SNARE_seq.html)
-* [**(authors' favourite) Integrative analysis of the Chromium Single Cell Multiome ATAC + Gene Expression assay**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/10x_scRNA_scATAC.html): the new multi-modal protocol released by 10x Genomics.
-* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
-* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html)
+* [**(authors' favourite) Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/CLL.html): a bulk multi-omics data set. Figure 2 and 3 of the MOFA v1 paper.
+* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/SNARE_seq.html)
+* [**(authors' favourite) Integrative analysis of the Chromium Single Cell Multiome ATAC + Gene Expression assay**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/10x_scRNA_scATAC.html): the new multi-modal protocol released by 10x Genomics.
+* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/SNARE_seq.html)
 * **Analysis of CITE-seq data**: still in preparation, reach us if you have questions...
-* [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/microbiome_vignette.html)
+* [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/microbiome_vignette.html)
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/old/model_selection.html) -->
-* [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/stochastic_inference.html)
+* [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/stochastic_inference.html)
 <!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 
 ## Web server
@@ -226,7 +226,7 @@ The MOFA factors capture the global sources of variability in the data. Mathemat
 The weights provide a score for how strong each feature relates to each factor, hence allowing a biological interpretation of the latent factors. Features with no as- sociation with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
 
 **(6.3) How can I do Gene Set Enrichment Analysis?**  
-This is explained in the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/vignettes/GSEA.html)
+This is explained in the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/bioc/tutorials_extended/GSEA.html)
 
 **(6.4) How can I assess the robustness of factors?** 
 A procedure that can be applied to evaluate the robustness of factors is to downsample the number of samples and/or the number of features and inspect if the factors are consistently found. However, keep in mind that there could be cases where the full data set is required to detect small yet important sources of variation. Hence, lack of robustness under downsampling does not necessarily imply that a factor is not biologically meaningful.
