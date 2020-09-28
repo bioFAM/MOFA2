@@ -29,7 +29,7 @@ The core of MOFA is implemented in Python. However, the whole procedure can be r
 
 ### Python dependencies 
 
-Python dependencies can be installed using pip (from the Unix terminal)
+Python dependencies can be installed using pip (from the Unix terminal). This has to be done before opening the R terminal
 
 ```r
 pip install mofapy2
@@ -40,10 +40,10 @@ pip install mofapy2
 MOFA2 R package can be installed using R:
 
 ```r
-remotes::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data --no-build-vignettes"))
-# or use the devtools::install_github() equivalent
+devtools::install_github("bioFAM/MOFA2/MOFA2", build_opts = c("--no-resave-data --no-build-vignettes"))
 ```
 
+After this, if you have multiple versions of Python installed you may have to configure [reticulate](https://rstudio.github.io/reticulate/reference/use_python.html) to [connect R to the right Python binary](https://github.com/bioFAM/MOFA2#4-faq-on-the-software)
 --------------
 
 ### Installation using Docker image
@@ -84,6 +84,10 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
 * [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/SNARE_seq.html)
+* [**(authors' favourite) Integrative analysis of the Chromium Single Cell Multiome ATAC + Gene Expression assay**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/tutorials_extended/10x_scRNA_scATAC.html): the new multi-modal protocol released by 10x Genomics.
+* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/tutorials_extended/scRNA_gastrulation.html): Figure 2 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (scNMT-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/tutorials_extended/scNMT_gastrulation.html): Figure 4 of the MOFA+ paper.
+* [**Integration of single-cell multi-modal data (matching scRNA-seq and scATAC-seq)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/tutorials_extended/SNARE_seq.html)
 * **Analysis of CITE-seq data**: still in preparation, reach us if you have questions...
 * [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/microbiome_vignette.html)
 <!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/tutorials_extended/old/model_selection.html) -->
