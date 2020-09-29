@@ -19,14 +19,14 @@ In MOFA v2 (MOFA+) we added the following improvements:
 For more details you can read our papers: 
 - MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124  
 - MOFA+: https://www.biorxiv.org/content/10.1101/837104v1  
-- MEFISTO: TBD
 
 <p align="center"> 
 <img src="images/figure1a_mofa2.png" style="width: 50%; height: 50%"/>​
 </p>
 
+- MEFISTO: TBD
 <p align="center"> 
-<img src="images/MEFISTO.png" width="40%"/>​
+<img src="images/MEFISTO.png" width="80%"/>​
 </p>
 
 ## Installation
