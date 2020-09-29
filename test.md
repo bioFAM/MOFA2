@@ -1,11 +1,20 @@
+---
+title: "Title"
+author: "Author"
+date: "DATE"
+output: 
+  html_document:
+     css: assets/css/style.scss
+---
+
 <html>
     <head>
         <link href="assets/css/style.scss" rel="stylesheet">
     </head>
 
-<!--     <body class="class-for-index">
+    <body class="class-for-index">
         Page 1
-    </body> -->
+    </body>
 </html>
 
 
