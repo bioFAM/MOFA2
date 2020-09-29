@@ -1,3 +1,14 @@
+<html>
+    <head>
+        <link href="assets/css/style.scss" rel="stylesheet">
+    </head>
+
+<!--     <body class="class-for-index">
+        Page 1
+    </body> -->
+</html>
+
+
 ## Frequently asked questions (FAQ)
 
 ### (1) FAQ on the transition from MOFA to MOFA+
