@@ -1,37 +1,37 @@
-## Welcome to GitHub Pages
+## What is MOFA?
 
-You can use the [editor on GitHub](https://github.com/bioFAM/MOFA2/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/bioFAM/MOFA2/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
+Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis to multi-omics data. Given several data matrices with measurements of multiple -omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional representation in terms of a few latent factors**. These learnt factors represent the driving sources of variation across data modalities, thus facilitating the identification of cellular states or disease subgroups. 
 
 ### Support or Contact
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+- **Slack (recommended)**: we have a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
+- e-mail: Ricard Argelaguet (ricard@ebi.ac.uk)
+
+### Citation
+
+    @article{Argelaguet2018,
+        author = {Argelaguet, R. and Velten, B. and Arnol, D. and Dietrich, S. and Zenz, T. and Marioni, J. C. and Buettner, F. and Huber, W. and Stegle, O.},
+        title = {Multi-Omics Factor Analysis-a framework for unsupervised integration of multi-omics data sets},
+        journal = {Mol Syst Biol},
+        volume = {14},
+        number = {6},
+        pages = {e8124},
+        ISSN = {1744-4292 (Electronic) 1744-4292 (Linking)},
+        DOI = {10.15252/msb.20178124},
+        url = {https://www.ncbi.nlm.nih.gov/pubmed/29925568},
+        year = {2018},
+        type = {Journal Article}
+    }
+
+    @article{Argelaguet2020,
+        Author = {Argelaguet, Ricard and Arnol, Damien and Bredikhin, Danila and Deloro, Yonatan and Velten, Britta and Marioni, John C. and Stegle, Oliver},
+        Title = {MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data},
+        Journal = {Genome Biology},
+        Number = {1},
+        Pages = {111},
+        Volume = {21},
+        Year = {2020}
+    }
+
+
