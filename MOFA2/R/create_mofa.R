@@ -139,7 +139,8 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@status <- "untrained"
   object@data <- .split_data_into_groups(data_list, groups)
   
-  groups_nms <- unique(as.character(groups))
+  # groups_nms <- unique(as.character(groups))
+  groups_nms <- names(object@data[[1]])
   
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data_list)
