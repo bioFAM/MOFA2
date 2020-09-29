@@ -10,7 +10,7 @@ from .multiview_nodes import *
 from .basic_nodes import *
 from .nongaussian_nodes import *
 from .variational_nodes import *
-from .Sigma_node import Sigma_Node
+from .Sigma_node import Sigma_Node, Sigma_Node_torch
 from .Kc_node import Kc_Node
 from .Kg_node import Kg_Node
 from .U_nodes import U_GP_Node_mv
