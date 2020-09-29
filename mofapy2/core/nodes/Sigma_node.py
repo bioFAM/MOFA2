@@ -12,7 +12,7 @@ from dtw import dtw # note this is dtw-python not dtw
 import copy
 import gpytorch
 import torch
-from mofapy2.core.distributions.multi_task_GP import MultitaskGPModel, ELBO
+from mofapy2.core.distributions.multi_task_GP import MultitaskGPModel, ELBO, myMultitaskGaussianLikelihood
 
 # TODO:
 # - Sigma Node could be a general class with group_model_kron, _nokron and no_group nodes as subclasses,
@@ -641,15 +641,15 @@ class Sigma_Node_torch(Sigma_Node):
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing=None,
                  warping=False, warping_freq=20, warping_ref=0, warping_open_begin=True,
                  warping_open_end=True, opt_freq=10, rankx=None, sigma_const=True,
-                 model_groups=False, torch_seed = 7823982, gp_iter = 50, verbose = False):
+                 model_groups=False, torch_seed = 7823982, gp_iter = 50, verbose = True):
         super().__init__(dim, sample_cov, groups, start_opt, n_grid, idx_inducing,
                  warping, warping_freq, warping_ref, warping_open_begin,
                  warping_open_end, opt_freq, rankx, sigma_const,
                  model_groups)
 
         self.gp = [None] * self.K
-        # self.likelihood = [gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=self.G)] * self.K # TODO change to ELBO
-        self.likelihood = [gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=self.G, noise_constraint=gpytorch.constraints.Interval(1e-4,1 - 1e-4), rank = 0)] * self.K # noise constraint from original mutltiakslik, no correlation model for noise (rank = 0) TODO change to ELBO
+        self.likelihood = [myMultitaskGaussianLikelihood(num_tasks=self.G, noise_constraint=gpytorch.constraints.Interval(1e-4,1 - 1e-4), rank = 0)] * self.K # noise constraint from original mutltiakslik, no correlation model for noise (rank = 0) TODO change to ELBO
+
         self.noise = [np.nan] * self.K
         self.sigma = [np.nan] * self.K
         self.ls = [np.nan] * self.K
@@ -712,11 +712,12 @@ class Sigma_Node_torch(Sigma_Node):
                 xtrain = torch.as_tensor(self.sample_cov_transformed[self.groupsidx == 0], dtype=torch.float32) # TODO only works for kroncker structure
                 self.gp[k] = MultitaskGPModel(train_x=xtrain, train_y=ytrain,
                                               likelihood=self.likelihood[k],
-                                              n_tasks=self.G, rank=self.rank)
+                                              n_tasks=self.G, rank=self.rank,
+                                              var_constraint = gpytorch.constraints.Interval(1e-10,1 - 1e-10),
+                                              covar_factor_constraint=gpytorch.constraints.Interval(-1 + 1e-10, 1 - 1e-10))
 
                 # set bounds on parameters
-                self.gp[k].covar_module.task_covar_module.register_constraint("raw_var", gpytorch.constraints.Interval(1e-10,1 - 1e-10)) # sigma in (0,1)
-                self.gp[k].covar_module.task_covar_module.register_constraint("covar_factor", gpytorch.constraints.Interval(-1, 1)) # x in [-1,1]
+                # self.gp[k].covar_module.task_covar_module.register_constraint("covar_factor", gpytorch.constraints.Interval(-1, 1)) # x in [-1,1]
                 # noise in (0,1) constrained in likelihood
 
                 training_iterations = self.gp_iter
@@ -731,7 +732,7 @@ class Sigma_Node_torch(Sigma_Node):
                 ], lr=0.1)
 
                 # "Loss" for GP given by ELBO
-                ZCov = var.getExpectations()['cov']
+                ZCov = torch.as_tensor(var.getExpectations()['cov'][k], dtype=torch.float32)
                 elbo = ELBO(self.likelihood[k], self.gp[k], ZCov)
 
                 for i in range(training_iterations):
@@ -752,13 +753,14 @@ class Sigma_Node_torch(Sigma_Node):
                 self.sigma[k] = (self.gp[k].covar_module.task_covar_module.var).detach().numpy() # TODO use constant diagonal?
                 self.B[k] = (self.gp[k].covar_module.task_covar_module.covar_factor).detach().numpy()
                 # self.Gmat[k] = np.dot(self.B[k], self.B[k].transpose()) + np.diag(self.sigma[k]) #equivalent to below
-                self.Gmat[k] = gpytorch.lazy.LazyTensor.evaluate(self.gp[k].covar_module.task_covar_module.covar_matrix).detach().numpy()
+                # self.Gmat[k] = gpytorch.lazy.LazyTensor.evaluate(self.gp[k].covar_module.task_covar_module.covar_matrix).detach().numpy()
+                self.Gmat[k] = self.gp[k].covar_module.task_covar_module.covar_matrix.detach().numpy()
 
                 # TODO avoid these recomputations build from in gp objects
                 K_mixed = gpytorch.lazy.LazyTensor.evaluate(self.gp[k].covar_module(xtrain)).detach().numpy() # this is Kc \odot Kg not Kg \odot Kc
                 Kmat = np.vstack([np.hstack(K_mixed[np.arange(self.N) % self.G == g][:, np.arange(self.N) % self.G == h] for h in range(self.G)) for g in range(self.G)])
-                self.gp[k](xtrain).precision_matrix
-                self.gp[k](xtrain).covariance_matrix
+                # self.gp[k](xtrain).precision_matrix
+                # self.gp[k](xtrain).covariance_matrix
                 assert np.max(np.abs(SE(self.covariates, self.ls[k], zeta=0)[self.covidx, :][:,self.covidx] *
                                      self.Gmat[k][self.groupsidx, :][:,self.groupsidx] - Kmat)) < 1e-4,\
                     "bug in kernel computation"
