@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Sessions
-permalink: /sessions/
+title: FAQ
+output: 
+     css: assets/css/style.scss
 ---
 
 ## Frequently asked questions (FAQ)
