@@ -651,9 +651,8 @@ class Sigma_Node_torch(Sigma_Node):
         self.likelihood = [myMultitaskGaussianLikelihood(num_tasks=self.G, noise_constraint=gpytorch.constraints.Interval(1e-4,1 - 1e-4), rank = 0)] * self.K # noise constraint from original mutltiakslik, no correlation model for noise (rank = 0),  ELBO instead of MLL
         # self.likelihood = [MultitaskGaussianLikelihood(num_tasks=self.G, rank = 0)] * self.K # basic multitaks model (no ELBO term and noise/scale dependence)
 
-        self.noise = [np.nan] * self.K
-        self.sigma = [np.nan] * self.K
-        self.ls = [np.nan] * self.K
+        self.sigma = np.array([np.nan] * self.K)
+        self.ls = np.array([np.nan] * self.K)
         self.Gmat = [np.nan] * self.K
         self.B = [np.nan] * self.K
         self.gp_iter = gp_iter
@@ -712,13 +711,6 @@ class Sigma_Node_torch(Sigma_Node):
                 ytrain = torch.stack([ZE[self.groupsidx == g, k] for g in range(self.G)])
                 xtrain = torch.as_tensor(self.sample_cov_transformed[self.groupsidx == 0], dtype=torch.float32) # TODO only works for kroncker structure RIGHT DIMS?
 
-                if self.iter == self.start_opt:
-                    import matplotlib.pyplot as plt
-                    plt.figure(k)
-                    for g in range(self.G):
-                        plt.scatter(xtrain.detach().numpy(), ytrain[g, :].detach().numpy())
-
-
                 # self.gp[k] = commonMultitaskGPModel(train_x=xtrain, train_y=ytrain,
                 #                               likelihood=self.likelihood[k],
                 #                               n_tasks=self.G, rank=self.rank)
@@ -760,9 +752,9 @@ class Sigma_Node_torch(Sigma_Node):
                 self.likelihood[k].eval()
 
                 print('Sigma node for factor %s has been optimised: ' %k)
-                self.zeta[k] = 1 - (self.gp[k].likelihood.noise).detach().numpy().item()
+                self.zeta[k] = (self.gp[k].likelihood.noise).detach().numpy().item()
                 self.ls[k] = (self.gp[k].covar_module.data_covar_module.lengthscale).detach().numpy().item()
-                self.sigma[k] = (self.gp[k].covar_module.task_covar_module.var).detach().numpy() # TODO use constant diagonal?
+                self.sigma[k] = (self.gp[k].covar_module.task_covar_module.var).detach().numpy()
                 self.B[k] = (self.gp[k].covar_module.task_covar_module.covar_factor).detach().numpy()
                 # self.Gmat[k] = np.dot(self.B[k], self.B[k].transpose()) + np.diag(self.sigma[k]) #equivalent to below
                 # self.Gmat[k] = gpytorch.lazy.LazyTensor.evaluate(self.gp[k].covar_module.task_covar_module.covar_matrix).detach().numpy()
@@ -794,12 +786,17 @@ class Sigma_Node_torch(Sigma_Node):
 
         return mean, lower, upper
 
+    def get_zeta(self):
+        """
+        Method to fetch ELBO-optimal noise
+        """
+        return self.zeta
+
     def get_ls(self):
         """
         Method to fetch ELBO-optimal length-scales
         """
         return self.ls
-
 
     def get_x(self):
         """
@@ -813,3 +810,17 @@ class Sigma_Node_torch(Sigma_Node):
         """
         return self.sigma
 
+    def getParameters(self):
+        """
+        Method to fetch ELBO-optimal length-scales, improvements compared to diagonal covariance prior and structural positions
+        """
+        ls = self.get_ls()
+        zeta = self.get_zeta()
+
+        if not self.model_groups:
+            Kg = np.ones([self.K, self.G, self.G])
+            return {'l': ls, 'scale': 1 - zeta, 'sample_cov': self.sample_cov_transformed, 'Kg' : Kg}
+
+        x = self.get_x()
+        sigma = self.get_sigma()
+        return {'l':ls, 'scale': 1-zeta, 'sample_cov': self.sample_cov_transformed,  'x': x, 'sigma' : sigma, 'Kg' : self.Gmat}
