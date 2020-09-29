@@ -1,19 +1,8 @@
 ---
-output: 
-  html_document:
-     css: assets/css/style.scss
+layout: page
+title: Sessions
+permalink: /sessions/
 ---
-
-<html>
-    <head>
-        <link href="assets/css/style.scss" rel="stylesheet">
-    </head>
-
-    <body class="class-for-index">
-        Page 1
-    </body>
-</html>
-
 
 ## Frequently asked questions (FAQ)
 
