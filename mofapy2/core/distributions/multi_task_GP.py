@@ -3,6 +3,7 @@ from gpytorch.constraints import Positive, GreaterThan
 from gpytorch.lazy import DiagLazyTensor,BlockDiagLazyTensor,MatmulLazyTensor, InterpolatedLazyTensor, PsdSumLazyTensor, RootLazyTensor, KroneckerProductLazyTensor, lazify
 from gpytorch.utils.broadcasting import _mul_broadcast_shape
 from gpytorch.kernels.kernel import Kernel
+from gpytorch.kernels import MultitaskKernel
 from typing import Any
 from gpytorch.distributions import base_distributions, MultivariateNormal
 from gpytorch.functions import add_diag
@@ -17,6 +18,7 @@ from torch import Tensor
 from gpytorch.mlls.marginal_log_likelihood import MarginalLogLikelihood
 # from mofapy2.core.distributions.myExactGP import myExactGP
 
+from gpytorch.models import ExactGP
 from gpytorch.models.gp import GP
 from gpytorch import settings
 from copy import deepcopy
@@ -27,6 +29,8 @@ from copy import deepcopy
 # K is constructed by myMultitaskKernel
 # - the index kernel is constrained to a correlation matrix --> added a scaling factor to the IndexKernel
 # - likelihood is replaced by the ELBO --> the trace(Sigma^(-1) Cov(z)) term to the multitaskmarginal likelihood which is then optimized
+
+# Most of these classes are directly based on classed in gpytorch with minor changes as described above.
 
 # make sure it accepts the new likelihood
 class myExactGP(GP):
@@ -310,17 +314,31 @@ class myExactGP(GP):
             predictive_mean = predictive_mean.view(*batch_shape, *test_shape).contiguous()
             return full_output.__class__(predictive_mean, predictive_covar)
 
-
-class MultitaskGPModel(myExactGP):
-    def __init__(self, train_x, train_y, likelihood, n_tasks, rank, zeta_constraint = None,
-                 var_constraint = None, covar_factor_constraint = None):
+# default multtask model (with margina likelihood, not scaled task_cov and no coupling
+class MultitaskGPModel(ExactGP):
+    def __init__(self, train_x, train_y, likelihood, n_tasks, rank):
         super(MultitaskGPModel, self).__init__(train_x, train_y, likelihood)
 
-        # if zeta_constraint is None:
-        #     zeta_constraint = GreaterThan(1e-4)
-        #
-        # self.register_parameter(name="zeta", parameter=torch.nn.Parameter(torch.zeros(1)))
-        # self.register_constraint("zeta", zeta_constraint)
+        # self.mean_module = gpytorch.means.MultitaskMean(          # optional: learn mean function instead of centering
+        #     gpytorch.means.ConstantMean(), num_tasks=n_tasks
+        # )
+        self.mean_module = gpytorch.means.MultitaskMean(
+            gpytorch.means.ZeroMean(), num_tasks=n_tasks
+        )
+
+        self.covar_module = MultitaskKernel(
+            gpytorch.kernels.RBFKernel(), num_tasks=n_tasks, rank=rank
+        )
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultitaskMultivariateNormal(mean_x, covar_x)
+
+class MyMultitaskGPModel(myExactGP):
+    def __init__(self, train_x, train_y, likelihood, n_tasks, rank,
+                 var_constraint = None, covar_factor_constraint = None):
+        super(MyMultitaskGPModel, self).__init__(train_x, train_y, likelihood)
 
         # self.mean_module = gpytorch.means.MultitaskMean(          # optional: learn mean function instead of centering
         #     gpytorch.means.ConstantMean(), num_tasks=n_tasks
@@ -442,8 +460,11 @@ class myIndexKernel(Kernel):
             self.register_prior("IndexKernelPrior", prior, self._eval_covar_matrix)
 
         self.register_constraint("raw_var", var_constraint)
-        self.register_constraint("raw_covar_factor", covar_factor_constraint)
-
+        if covar_factor_constraint is not None:
+            self.register_constraint("raw_covar_factor", covar_factor_constraint)
+            self.has_covar_factor_constraint = True
+        else:
+            self.has_covar_factor_constraint = False
 
     @property
     def var(self):
@@ -458,7 +479,10 @@ class myIndexKernel(Kernel):
 
     @property
     def covar_factor(self):
-        return self.raw_covar_factor_constraint.transform(self.raw_covar_factor)
+        if self.has_covar_factor_constraint:
+            return self.raw_covar_factor_constraint.transform(self.raw_covar_factor)
+        else:
+            return self.raw_covar_factor
 
     @covar_factor.setter
     def covar_factor(self, value):
@@ -470,8 +494,6 @@ class myIndexKernel(Kernel):
 
     def _eval_covar_matrix(self):
         cf = self.covar_factor
-        print(cf)
-        print(self.var)
         C = cf @ cf.transpose(-1, -2) + self.var *  torch.eye(self.num_tasks)   # instead of diag(var)
         Cdiag = torch.diag(C)
         C = torch.diag(1 / Cdiag.sqrt()) @ C @ torch.diag(1 / Cdiag.sqrt())       # scale to correlation matrix
@@ -579,23 +601,23 @@ class _myGaussianLikelihoodBase(Likelihood):
             res = res.sum(list(range(-1, -num_event_dim, -1)))
         return res
 
-    # def forward(self, function_samples: Tensor, *params: Any, **kwargs: Any) -> base_distributions.Normal:
-    #     noise = self._shaped_noise_covar(function_samples.shape, *params, **kwargs).diag()
-    #     return base_distributions.Normal(function_samples, noise.sqrt())
-    #
-    # def log_marginal(
-    #     self, observations: Tensor, function_dist: MultivariateNormal, *params: Any, **kwargs: Any
-    # ) -> Tensor:
-    #     marginal = self.marginal(function_dist, *params, **kwargs)
-    #     # We're making everything conditionally independent
-    #     indep_dist = base_distributions.Normal(marginal.mean, marginal.variance.clamp_min(1e-8).sqrt())
-    #     res = indep_dist.log_prob(observations)
-    #
-    #     # Do appropriate summation for multitask Gaussian likelihoods
-    #     num_event_dim = len(function_dist.event_shape)
-    #     if num_event_dim > 1:
-    #         res = res.sum(list(range(-1, -num_event_dim, -1)))
-    #     return res
+    def forward(self, function_samples: Tensor, *params: Any, **kwargs: Any) -> base_distributions.Normal:
+        noise = self._shaped_noise_covar(function_samples.shape, *params, **kwargs).diag()
+        return base_distributions.Normal(function_samples, noise.sqrt())
+
+    def log_marginal(
+        self, observations: Tensor, function_dist: MultivariateNormal, *params: Any, **kwargs: Any
+    ) -> Tensor:
+        marginal = self.marginal(function_dist, *params, **kwargs)
+        # We're making everything conditionally independent
+        indep_dist = base_distributions.Normal(marginal.mean, marginal.variance.clamp_min(1e-8).sqrt())
+        res = indep_dist.log_prob(observations)
+
+        # Do appropriate summation for multitask Gaussian likelihoods
+        num_event_dim = len(function_dist.event_shape)
+        if num_event_dim > 1:
+            res = res.sum(list(range(-1, -num_event_dim, -1)))
+        return res
 
     def marginal(self, function_dist: MultivariateNormal, *params: Any, **kwargs: Any) -> MultivariateNormal:
         mean, covar = function_dist.mean, function_dist.lazy_covariance_matrix

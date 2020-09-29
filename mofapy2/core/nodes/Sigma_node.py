@@ -13,6 +13,7 @@ import copy
 import gpytorch
 import torch
 from mofapy2.core.distributions.multi_task_GP import MultitaskGPModel, ELBO, myMultitaskGaussianLikelihood
+from gpytorch.likelihoods import MultitaskGaussianLikelihood
 
 # TODO:
 # - Sigma Node could be a general class with group_model_kron, _nokron and no_group nodes as subclasses,
@@ -635,20 +636,20 @@ class Sigma_Node(Node):
         else:
             return self.mini_batch
 
-# TODO: use this if model_groups = True
-# requires Kronecker?
+# gpytorch based implementation of the above - only works for data with Kronecker structure
 class Sigma_Node_torch(Sigma_Node):
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing=None,
                  warping=False, warping_freq=20, warping_ref=0, warping_open_begin=True,
                  warping_open_end=True, opt_freq=10, rankx=None, sigma_const=True,
-                 model_groups=False, torch_seed = 7823982, gp_iter = 50, verbose = True):
+                 model_groups=False, torch_seed = 7823982, gp_iter = 200, verbose = True):
         super().__init__(dim, sample_cov, groups, start_opt, n_grid, idx_inducing,
                  warping, warping_freq, warping_ref, warping_open_begin,
                  warping_open_end, opt_freq, rankx, sigma_const,
                  model_groups)
 
         self.gp = [None] * self.K
-        self.likelihood = [myMultitaskGaussianLikelihood(num_tasks=self.G, noise_constraint=gpytorch.constraints.Interval(1e-4,1 - 1e-4), rank = 0)] * self.K # noise constraint from original mutltiakslik, no correlation model for noise (rank = 0) TODO change to ELBO
+        self.likelihood = [myMultitaskGaussianLikelihood(num_tasks=self.G, noise_constraint=gpytorch.constraints.Interval(1e-4,1 - 1e-4), rank = 0)] * self.K # noise constraint from original mutltiakslik, no correlation model for noise (rank = 0),  ELBO instead of MLL
+        # self.likelihood = [MultitaskGaussianLikelihood(num_tasks=self.G, rank = 0)] * self.K # basic multitaks model (no ELBO term and noise/scale dependence)
 
         self.noise = [np.nan] * self.K
         self.sigma = [np.nan] * self.K
@@ -706,19 +707,28 @@ class Sigma_Node_torch(Sigma_Node):
                 best_elbo = -np.Inf
 
                 # set initial values for optimization
-                ZE = var.getExpectation()
+                ZE = copy.deepcopy(var.getExpectation())
                 ZE = torch.as_tensor(ZE, dtype=torch.float32)
                 ytrain = torch.stack([ZE[self.groupsidx == g, k] for g in range(self.G)])
-                xtrain = torch.as_tensor(self.sample_cov_transformed[self.groupsidx == 0], dtype=torch.float32) # TODO only works for kroncker structure
-                self.gp[k] = MultitaskGPModel(train_x=xtrain, train_y=ytrain,
+                xtrain = torch.as_tensor(self.sample_cov_transformed[self.groupsidx == 0], dtype=torch.float32) # TODO only works for kroncker structure RIGHT DIMS?
+
+                if self.iter == self.start_opt:
+                    import matplotlib.pyplot as plt
+                    plt.figure(k)
+                    for g in range(self.G):
+                        plt.scatter(xtrain.detach().numpy(), ytrain[g, :].detach().numpy())
+
+
+                # self.gp[k] = commonMultitaskGPModel(train_x=xtrain, train_y=ytrain,
+                #                               likelihood=self.likelihood[k],
+                #                               n_tasks=self.G, rank=self.rank)
+
+                self.gp[k] = MyMultitaskGPModel(train_x=xtrain, train_y=ytrain,
                                               likelihood=self.likelihood[k],
                                               n_tasks=self.G, rank=self.rank,
-                                              var_constraint = gpytorch.constraints.Interval(1e-10,1 - 1e-10),
-                                              covar_factor_constraint=gpytorch.constraints.Interval(-1 + 1e-10, 1 - 1e-10))
+                                              var_constraint = None,#gpytorch.constraints.Interval(1e-10,1 - 1e-10),
+                                              covar_factor_constraint=None)#gpytorch.constraints.Interval(-1 + 1e-10, 1 - 1e-10))
 
-                # set bounds on parameters
-                # self.gp[k].covar_module.task_covar_module.register_constraint("covar_factor", gpytorch.constraints.Interval(-1, 1)) # x in [-1,1]
-                # noise in (0,1) constrained in likelihood
 
                 training_iterations = self.gp_iter
 
@@ -732,13 +742,15 @@ class Sigma_Node_torch(Sigma_Node):
                 ], lr=0.1)
 
                 # "Loss" for GP given by ELBO
-                ZCov = torch.as_tensor(var.getExpectations()['cov'][k], dtype=torch.float32)
+                ZCov = copy.deepcopy(torch.as_tensor(var.getExpectations()['cov'][k], dtype=torch.float32))
                 elbo = ELBO(self.likelihood[k], self.gp[k], ZCov)
+                # mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood[k], self.gp[k])
 
                 for i in range(training_iterations):
                     optimizer.zero_grad()
                     output = self.gp[k](xtrain)
                     loss = -elbo(output, ytrain)
+                    # loss = -mll(output, ytrain)
                     loss.backward()
                     if self.verbose:
                         print('Iter %d/%d - Loss: %.3f' % (i + 1, training_iterations, loss.item()))
@@ -771,6 +783,7 @@ class Sigma_Node_torch(Sigma_Node):
 
 
             print('Inferred hyperparameters: Lengthscales =', self.ls, ', noise =', self.get_zeta())
+            print('Inferred hyperparameters: B =', self.B, ', sigma =', self.sigma)
 
     def make_predictions(self, k, test_x):
         # Make predictions
