@@ -12,21 +12,21 @@ In MOFA v2 (MOFA+) we added the following improvements:
 
 * **Multi-group functionality**: intuitively, this update breaks the assumption of independent samples and allows inference across multiple groups, where groups are predefined sets of samples (i.e. different conditions, batches, cohorts, etc.). Importantly, the model is not focused on capturing the differential changes between the groups (as for example when doing differential expression). The aim of the multi-group framework is to find out which sources of variability are shared between the different groups and which ones are exclusive to a single group.  
 
-* **SMOFA - continuous sample structures (e.g. timecourse data, spatial data)**: framework for the integration of multi-omics data with detection of continuous variation amongst samples, such as spatio-temporal patterns or other kind of continuous metadata.  The aim of SMOFA is to exploit known relationships between samples given by sample-level covariate such as temporal or spatial relations and to disentangle smooth sources of variation given by factors that change gradually along the covariate and other source of variation that are independent of the covariate.
+* **MEFISTO - continuous sample structures (e.g. timecourse data, spatial data)**: framework for the integration of multi-omics data with detection of continuous variation amongst samples, such as spatio-temporal patterns or other kind of continuous metadata.  The aim of MEFISTO is to exploit known relationships between samples given by sample-level covariate such as temporal or spatial relations and to disentangle smooth sources of variation given by factors that change gradually along the covariate and other source of variation that are independent of the covariate.
 
 * **GPU support**: the training procedure can now be massively accelerated using GPUs. For this you have to install and configure the [CuPy package](https://cupy.chainer.org).
 
 For more details you can read our papers: 
 - MOFA v1: http://msb.embopress.org/cgi/doi/10.15252/msb.20178124  
 - MOFA+: https://www.biorxiv.org/content/10.1101/837104v1  
-- SMOFA: TBD
 
 <p align="center"> 
 <img src="images/figure1a_mofa2.png" style="width: 50%; height: 50%"/>​
 </p>
 
+- MEFISTO: TBD
 <p align="center"> 
-<img src="img/SMOFA.png" width="40%"/>​
+<img src="images/MEFISTO.png" width="80%"/>​
 </p>
 
 ## Installation
@@ -96,9 +96,12 @@ You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/
 * [**Demonstration of the stochastic inference algorithm (for very large data sets)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html)
 <!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 
-### SMOFA tutorials
-* [**SMOFA with temporal data**](https://github.com/bv2/SMOFA/blob/master/SMOFA/vignettes/simulated_data_temporal.html): illustration of the method with a temporal covariate
-* [**SMOFA with spatial data**](https://github.com/bv2/SMOFA/blob/master/SMOFA/vignettes/simulated_data_spatial.html): illustration of the method with a spatial covariate
+### Using MOFA2 with temporal or spatial data: MEFISTO tutorials
+* [**MEFISTO with temporal data**](https://github.com/bv2/MOFA2/blob/master/MEFISTO/vignettes/simulated_data_temporal.html): illustration of the method with a temporal covariate
+* [**MEFISTO with spatial data**](https://github.com/bv2/MOFA2/blob/master/MEFISTO/vignettes/simulated_data_spatial.html): illustration of the method with a spatial covariate
+* [**Application to an evodevo gene expression atlas**] TBD
+* [**Application to a longitudinal microbiome data set**] TBD
+* [**Application to spatial transcritptomics data**] TBD
 
 ## Web server
 We provide a [Shiny-based web server](http://www.ebi.ac.uk/shiny/mofa/) to interactively explore MOFA models. Note that the web server only provides basic functionalities. For a comprehensive analysis please use the MOFA2 R package.  
@@ -123,7 +126,7 @@ Yes, pretty much everything: handling of missing data, non-gaussian likelihoods 
 No. Unless provided, MOFA+ assumes that you do not have multi-group structure in your data. In this case the model simplifies to MOFA v1 (but significantly faster).
 
 
-### (2) FAQ on the multi-group functionality and SMOFA
+### (2) FAQ on the multi-group functionality and MEFISTO
 
 **(2.1) How does the multi-group inference work in MOFA+?**  
 The aim of the multi-group framework is not to capture differential changes in *mean* levels between the groups (as for example when doing differential RNA expression). The goal is to compare the sources of variability that drive each group. If your aim is to find a factor that "separates" the groups, you DO NOT want to use the multi-group framework. In this setting, the features are centered per group before fitting the model.
@@ -136,20 +139,24 @@ A quick approach to assess the validity of groups is to inspect the resulting va
 <!-- See the following [vignette](XXX) for more details.   -->
 More computationally intensive approaches can be used to assess the robustness of groups, including cross-validation and downsampling or bootstrapping samples within groups.
 
-**(2.4) When should I use SMOFA instead of MOFA?**  
-If you have metadata on your samples that give information on how samples relate to one another such as nearby temporal or spatial positions or related clinilal background. Using such known similarities can improve the inferred factors and enables to separate factors that vary smoothly along these known covariates and those that capture variation independent of them. In particular with many missing sample-view combinations, MOFA(+) can have difficulties to detect such smooth sources of variation. By exploiting known relationships between samples , SMOFA can better infer such smooth variation.
+**(2.4) When should I use MEFISTO instead of MOFA?**  
+If you have metadata on your samples that give information on how samples relate to one another such as nearby temporal or spatial positions or related clinical background. Using such known similarities can improve the inferred factors, provides the ability to interpolate and enables to separate factors that vary smoothly along these known covariates and those that capture variation independent of them. In particular with many missing sample-view combinations, MOFA(+) can have difficulties to detect such smooth sources of variation. By exploiting known relationships between samples, MEFISTO can better infer such smooth variation.
 
-**(2.5) What is the input to SMOFA?**
-Along with the one or multiple omics data sets you have provide a matrix of covariates that should be used to learn smooth factors. This can for instance be a single covariate such as a time point per sample or multiple covariates such as x-,y- coordinate of spatial postions. All covariates will be scaled and get equal weight to define a a-priori sample similarity. We mainly recommend the use of SMOFA to explore the variation along one continuous covariate (or two in case of space).
+**(2.5) What is the input to MEFISTO?**
+Along with the one or multiple omics data sets you have provide a matrix of covariates that should be used to learn smooth factors. This can for instance be a single covariate such as a time point per sample or multiple covariates such as x-,y- coordinate of spatial postions. All covariates will be scaled and get equal weight to define a a-priori sample similarity. We mainly recommend the use of MEFISTO to explore the variation along one continuous covariate (or two in case of space).
 
-**(2.6) How does the smooth factor inference work in SMOFA?**
+**(2.6) How does the smooth factor inference work in MEFISTO?**
 Like in MOFA, factors are inferred to represent the driving sources of variation across data modalities. By specifying sample covariates the model is encoraged to learn factors that vary smoothly along the covariates. This is implemented using a Gaussian process prior for the factors with a squared exponential kernel in the covariates. For each factor the model learns a different lengthscale parameter: For factors that vary smoothly with covariate this will be nonzero, factors that capture variation independent of the covariate will have a lenghtscale of 0.
 
-**(2.7) Do I need to have continuous covariates to use MOFA+?**  
-No. Unless provided, MOFA+ assumes that you do not have any covariates.
+**(2.7) Can I use multiple groups in MEFISTO?**
+Yes you can. If you have multiple repeated measurement on spatial or temporal data, e.g. time course data from multiple individual. You can specify the groups as describes above for MOFA+. MEFISTO will then infer latent process for each group and (if `model_groups` is set to True) infer a group-group correlation matrix that indicated for each latent components how the groups relate to one another. Note that setting model_groups to True can be slow for large number of groups. In this case, we recommend setting it to False for initial analysis.
 
-**(2.8) SMOFA runs super slow. Are there limits in the number of samples for SMOFA?**
-SMOFA is not yet optimized for the use of large sample numbers. Therefore we recommend to restrict the number of samples to less than 2000. For a slightly faster version you can set the model_option `mv_Znode`  to FALSE. If you have more samples please use the MOFA framework without covariates.
+**(2.8) What if my covariates are not aligned across groups?**
+If you have muliple groups where the covariate is not aligned, e.g. time course data across development from different species, MEFISTO provides an option to learn an optimal alignment. For this, use the `warping` option. See also out evodevo tutorial for an example.
+
+
+**(2.9) Do I need to have continuous covariates to use MOFA+?**  
+No. Unless provided, MOFA+ assumes that you do not have any covariates.
 
 ### (3) FAQ on the data processing
 
