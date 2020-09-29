@@ -1,9 +1,11 @@
 ---
 layout: page
 title: FAQ
-output: 
-     css: assets/css/style.scss
+permalink: test
 ---
+
+<!-- output:  -->
+     <!-- css: assets/css/style.scss -->
 
 ## Frequently asked questions (FAQ)
 

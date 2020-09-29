@@ -2,3 +2,5 @@ theme: jekyll-theme-cayman
 title: Multi-Omics Factor Analysis (MOFA+)
 description: 
 # show_downloads: true
+
+# include: ['_images', '_css']
