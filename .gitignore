@@ -9,6 +9,7 @@
 *.Rproj
 
 
+*_site/
 # Pycharm
 .idea
 
