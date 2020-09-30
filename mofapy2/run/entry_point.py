@@ -1078,7 +1078,7 @@ class entry_point(object):
         if not self.model_opts['model_groups']:
             Kg = np.ones([K, G, G])
         else:
-            Kg = self.model.nodes['Sigma'].Kg.Kmat
+            Kg = self.model.nodes['Sigma'].getParameters()['Kg']
             Kg = Kg[:, groups, :][:, :, groups]
 
         # which rows/columns in Sigma_new correspond to original Sigma and which to new test covariates?

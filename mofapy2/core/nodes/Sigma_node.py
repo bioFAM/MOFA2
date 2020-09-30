@@ -119,8 +119,9 @@ class Sigma_Node(Node):
         self.warping_freq = warping_freq
         self.warping_open_begin = warping_open_begin
         self.warping_open_end = warping_open_end
-        assert self.start_opt % self.warping_freq == 0,\
-            "start_opt should be a multiple of opt_freq"            # to ensure in the first opt. step alignment is performed
+        if self.warping:
+            assert self.start_opt % self.warping_freq == 0,\
+                "start_opt should be a multiple of warping_freq"            # to ensure in the first opt. step alignment is performed
 
         # sparse GPs
         self.idx_inducing = idx_inducing
