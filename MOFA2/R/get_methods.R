@@ -271,8 +271,6 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 #' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 #' Default is \code{FALSE}.
-#' @param only_mean logical indicating whether to return only the point estimates for the imputation. 
-#' If FALSE, it also retrieves the variance (only if it has been previously calculated).
 #' @details Data is imputed from the generative model of MOFA.
 #' @return A list containing the imputed valued or a data.frame if as.data.frame is TRUE
 #' @export
@@ -283,8 +281,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 #' model <- impute(model)
 #' imputed <- get_imputed_data(model)
 
-get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE,
-                             only_mean = TRUE) {
+get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -308,18 +305,9 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   }
   
   # Fetch mean
-  mean <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","mean"))
-  mean <- lapply(seq_len(length(mean)), function(m) lapply(seq_len(length(mean[[1]])), function(p) mean[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
-  mean <- .name_views_and_groups(mean, views, groups)
-  
-  # Fetch variance
-  if (only_mean) {
-    variance <- list()
-  } else {
-    variance <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","variance"))
-    variance <- lapply(seq_len(length(variance)), function(m) lapply(seq_len(length(variance[[1]])), function(p) variance[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
-    variance <- .name_views_and_groups(variance, views, groups)
-  }
+  imputed_data <- lapply(object@imputed_data[views], function(x) x[groups] )
+  imputed_data <- lapply(seq_len(length(imputed_data)), function(m) lapply(seq_len(length(imputed_data[[1]])), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
+  imputed_data <- .name_views_and_groups(imputed_data, views, groups)
   
   # Add feature intercepts
   # tryCatch( {
@@ -338,43 +326,23 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   # Convert to long data frame
   if (isTRUE(as.data.frame)) {
     
-    mean <- lapply(views, function(m) { 
+    imputed_data <- lapply(views, function(m) { 
       lapply(groups, function(g) { 
-        tmp <- reshape2::melt(mean[[m]][[g]])
+        tmp <- reshape2::melt(imputed_data[[m]][[g]])
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = g, tmp)
         return(tmp) 
       })
     })
-    mean <- do.call(rbind, do.call(rbind, mean))
+    imputed_data <- do.call(rbind, do.call(rbind, imputed_data))
     
-    if (only_mean) {
-      imputed_data <- mean
-    } else {
-      variance <- lapply(views, function(m) { 
-        lapply(groups, function(g) { 
-          tmp <- reshape2::melt(variance[[m]][[g]])
-          colnames(tmp) <- c("feature", "sample", "value")
-          tmp <- cbind(view = m, group = g, tmp)
-          return(tmp) 
-        })
-      })
-      variance <- do.call(rbind, do.call(rbind, variance))
-      mean$estimate <- "mean"
-      variance$estimate <- "variance"
-      imputed_data <- rbind(mean,variance)
-    }
 
     factor.cols <- c("view","group","feature","sample")
     imputed_data[factor.cols] <- lapply(imputed_data[factor.cols], factor)
     
   } else {
     
-    if (only_mean) {
-      imputed_data <- mean
-    } else {
-      imputed_data <- list("mean"=mean, "variance"=variance)
-    }
+    imputed_data <- mean
   }
   
   return(imputed_data)

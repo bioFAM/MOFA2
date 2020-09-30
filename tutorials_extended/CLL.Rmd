@@ -669,7 +669,7 @@ MOFAobject@data$mRNA[[1]][1:5,190:195]
 
 After imputation
 ```{r}
-MOFAobject@imputed_data$mRNA[[1]][["mean"]][1:5,190:195]
+MOFAobject@imputed_data$mRNA[[1]][1:5,190:195]
 ```
 
 
@@ -744,8 +744,11 @@ ggsurvplot(fit, data = df,
 ```
 
 
-# sessionInfo
-
+<details>
+  <summary>**Session Info**</summary>
+  
 ```{r}
 sessionInfo()
 ```
+
+</details>

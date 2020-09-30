@@ -361,9 +361,12 @@ These findings further illustrate the complexity of transkingdom interactions wi
 
 Please contact Bas (bashaak@live.nl) if you have questions regarding the experimental design and data interpretation.
 
-# sessionInfo
-
+<details>
+  <summary>**Session Info**</summary>
+  
 ```{r}
 sessionInfo()
 ```
+
+</details>
 

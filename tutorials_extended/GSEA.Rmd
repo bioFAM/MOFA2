@@ -41,7 +41,7 @@ For more details, we refer the reader to the following paper: [Principal compone
 
 # Load libraries
 
-```{r}
+```{r message=FALSE}
 library(data.table)
 library(purrr)
 library(ggplot2)
@@ -51,6 +51,7 @@ library(MOFA2)
 ```
 
 # Where can I find gene set annotations?
+
 There are a large number of gene set annotations, and the right one to use will depend on your data set. Some generic and commonly used ones are [MSigDB](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp), [Reactome](https://reactome.org/) and [Gene Ontology](http://geneontology.org/).  
 
 We have manually processed some gene sets, which can be found in the [MOFAdata package](https://bioconductor.org/packages/release/data/experiment/html/MOFAdata.html):
@@ -187,7 +188,7 @@ genes %>% map(~ plot_factors(model,
 
 # Compare different statistical tests
 
-Let's run the correlation-adjusted parametric test:
+Let's run the correlation-adjusted parametric test (this takes ~30min):
 ```{r}
 enrichment.parametric.adj <- run_enrichment(model,
   view = "RNA", factors = 1:5,

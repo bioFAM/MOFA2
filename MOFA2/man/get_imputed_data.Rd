@@ -9,8 +9,7 @@ get_imputed_data(
   views = "all",
   groups = "all",
   features = "all",
-  as.data.frame = FALSE,
-  only_mean = TRUE
+  as.data.frame = FALSE
 )
 }
 \arguments{
@@ -27,9 +26,6 @@ Default is "all".}
 
 \item{as.data.frame}{logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 Default is \code{FALSE}.}
-
-\item{only_mean}{logical indicating whether to return only the point estimates for the imputation. 
-If FALSE, it also retrieves the variance (only if it has been previously calculated).}
 }
 \value{
 A list containing the imputed valued or a data.frame if as.data.frame is TRUE

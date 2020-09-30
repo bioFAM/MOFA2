@@ -380,9 +380,13 @@ ggplot(w.dt, aes(x=value.x, y=value.y)) +
   labs(x="DNA methylation (weight)", y="Chr. accessibility weight")
 ```
 
-# sessionInfo()
-
+<details>
+  <summary>**Session Info**</summary>
+  
 ```{r}
 sessionInfo()
 ```
+
+</details>
+
 

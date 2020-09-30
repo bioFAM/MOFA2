@@ -359,15 +359,10 @@ Define MOFA options
 model_opts <- get_default_model_options(mofa)
 model_opts$num_factors <- 4
 
-# Training options
-train_opts <- get_default_training_options(mofa)
-train_opts$seed <- 42
-
 # Prepare MOFA object
 mofa <- prepare_mofa(
   object = mofa,
-  model_options = model_opts,
-  training_options = train_opts
+  model_options = model_opts
 )
 ```
 
@@ -516,9 +511,11 @@ The count ATAC-seq matrix is too sparse to be used as input to MOFA. We recommen
 I want to thank Carmen Bravo for feedback on how to best use CisTopic, and Song Chen for sharing the scripts to analyse SNARE-seq data.  
 Having said this, one should not request scripts to reproduce results by e-mail in 2020, we should all document our code and release it upon publication.
 
-# sessionInfo
-
+<details>
+  <summary>**Session Info**</summary>
+  
 ```{r}
 sessionInfo()
 ```
 
+</details>

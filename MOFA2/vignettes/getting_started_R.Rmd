@@ -18,6 +18,9 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+This vignette contains a detailed tutorial on how to train a MOFA model using R. A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R). Many more examples on application of MOFA to various multi-omics data sets can be found [here](https://biofam.github.io/MOFA2/tutorials.html).
+
+
 # Load libraries
 
 ```{r message=FALSE}
@@ -25,21 +28,23 @@ library(data.table)
 library(MOFA2)
 ```
 
-This vignette contains a detailed tutorial on how to train a MOFA model using R. A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R). Many more examples on application of MOFA to various multi-omics data sets can be found [here](https://github.com/bioFAM/MOFA2/tree/master/examples).
+# Is MOFA the right method for my data?
 
-# What is MOFA?
+MOFA (and factor analysis models in general) are useful to uncover variation in complex data sets that contain multiple sources of heterogeneity. This requires a **relatively large sample size (at least ~15 samples)**. In addition, MOFA needs the multi-modal measurements to be derived **from the same samples**. It is fine if you have samples that are missing some data modality, but there has to be a significant degree of matched measurements. 
 
-MOFA is an **unsupervised statistical framework for the integration of multi-omic data sets**.  
-Intuitively, MOFA can be viewed as a versatile and statistically rigorous generalization of principal component analysis (PCA) to multi-omics data. Given several data matrices with measurements of multiple -omics data types on the same or on overlapping sets of samples, MOFA infers an **interpretable low-dimensional representation in terms of a few latent factors** that (hopefully) captures the relevant signal in the input data.  
-Effectively MOFA disentangles the sources of variation in the data, identifying the factors that are shared across multiple data modalities from the factors that drive variability in a single data modality.
+# Preprocessing the data
 
-## Is MOFA appropriate for my data?
+## Normalisation
 
-MOFA (and factor analysis models in general) are useful to uncover variation in complex data sets that are expected to contain multiple sources of heterogeneity. This requires a relatively large sample size (at least ~15 samples). In addition, MOFA needs the multi-modal measurements to be derived from the same samples. It is fine if you have samples that are missing some data modality, but there has to be a significant degree of matched measurements. 
+Proper normalisation of the data is critical. **The model can handle three types of data**: continuous (modelled with a gaussian likelihood), small counts (modelled with a Poisson likelihood) and binary measurements (modelled with a bernoulli likelihood). Non-gaussian likelihoods give non-optimal results, we recommend the user to apply data transformations to obtain continuous measurements. For example, for count-based data such as RNA-seq or ATAC-seq we recommend size factor normalisation + variance stabilisation (i.e. a log transformation). 
 
-# Load data
+## Feature selection
 
-To create a MOFA object you need to specify four dimensions: samples, features, view(s) and group(s). MOFA objects can be created from a wide range of input formats, including:  
+It is strongly recommended that you select **highly variable features (HVGs) per assay** before fitting the model. This ensures a faster training and a more robust inference procedure. Also, for data modalities that have very different dimensionalities we suggest a stronger feature selection fort he bigger views, with the aim of reducing the feature imbalance between data modalities.
+
+# Create the MOFA object
+
+To create a MOFA object you need to specify three dimensions: samples, features and view(s). Optionally, a group can also be specified for each sample (no group structure by default). MOFA objects can be created from a wide range of input formats, including:  
 
 - **a list of matrices**: this is recommended for relatively simple data.
 - **a long data.frame**: this is recommended for complex data sets with multiple views and/or groups.
@@ -67,13 +72,23 @@ Create the MOFA object:
 MOFAobject <- create_mofa(data)
 ```
 
-In case you are using the multi-group functionality, the groups can be specified using the `groups` argument as a vector with the group ID for each sample. Keep in mind that this is a rather advanced option that we discourage for MOFA beginners. For more details on how the multi-group inference works, read the [FAQ section](https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality) and [check this vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html). 
+Plot the data overview
+```{r}
+plot_data_overview(MOFAobject)
+```
+
+In case you are using the multi-group functionality, the groups can be specified using the `groups` argument as a vector with the group ID for each sample. Keep in mind that the multi-group functionality is a rather advanced option that we discourage for beginners. For more details on how the multi-group inference works, read the [FAQ section](https://biofam.github.io/MOFA2/faq.html) and [check this vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html). 
 
 ```{r message=FALSE}
 N = ncol(data[[1]])
 groups = c(rep("A",N/2), rep("B",N/2))
 
 MOFAobject <- create_mofa(data, groups=groups)
+```
+
+Plot the data overview
+```{r}
+plot_data_overview(MOFAobject)
 ```
 
 ## Long data.frame
@@ -94,7 +109,7 @@ MOFAobject <- create_mofa(dt)
 print(MOFAobject)
 ```
 
-## Visualise the structure of the data 
+Plot data overview
 ```{r  out.width = "80%"}
 plot_data_overview(MOFAobject)
 ```
@@ -119,7 +134,7 @@ head(data_opts)
 - **ard_factors**: use ARD prior in the factors? Default is `TRUE` if using multiple groups.
 - **ard_weights**: use ARD prior in the weights? Default is `TRUE` if using multiple views.
 
-Please only change the default model options if you are familiar with the underlying mathematical model
+Only change the default model options if you are familiar with the underlying mathematical model
 ```{r }
 model_opts <- get_default_model_options(MOFAobject)
 model_opts$num_factors <- 10
@@ -127,16 +142,12 @@ head(model_opts)
 ```
 
 
-## Define train options
+## Define training options
 
 - **maxiter**: number of iterations. Default is 1000.
-- **convergence_mode**: "fast" (default), "medium", "slow". For exploration, the fast mode is sufficient. For a final model, consider using medium" or even "slow". It will yield sparser weights.
-<!-- - **startELBO**: initial iteration to compute the ELBO (the objective function used to assess convergence). -->
-<!-- - **freqELBO**: frequency of computations of the ELBO. -->
+- **convergence_mode**: "fast" (default), "medium", "slow". For exploration, the fast mode is sufficient. For a final model, consider using medium" or even "slow", but hopefully results should not change much.
 - **gpu_mode**: use GPU mode? (needs [cupy](https://cupy.chainer.org/) installed and a functional GPU).
-- **stochastic**: use stochastic inference? (default is `FALSE`, only use this functionality with very large data sets and in combination with GPUs).
 - **verbose**: verbose mode?
-- **seed**: random seed (default is 42)
 
 ```{r }
 train_opts <- get_default_training_options(MOFAobject)
@@ -155,7 +166,7 @@ MOFAobject <- prepare_mofa(
 )
 ```
 
-Train the MOFA model
+Train the MOFA model. Remember that in this step the `MOFA2` R package connets with the `mofapy2` Python package using `reticulate`. This sht source of most problems when running MOFA. See our [FAQ section](https://biofam.github.io/MOFA2/faq.html) if you have issues
 ```{r}
 outfile = file.path(getwd(),"model.hdf5")
 MOFAobject.trained <- run_mofa(MOFAobject, outfile)

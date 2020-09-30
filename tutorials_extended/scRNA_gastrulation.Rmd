@@ -53,8 +53,8 @@ load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scrna_gastrulation/gastrulation
 seurat
 ```
 
-Define cell type colors for the visualisations
-```{r}
+<!-- Define cell type colors for the visualisations -->
+```{r echo=FALSE}
 colors <- c(
   "Epiblast" = "grey70",
   "Primitive Streak" = "sandybrown",
@@ -68,8 +68,8 @@ colors <- c(
 
 Group cells according to the embryo and the stage they comne from
 ```{r}
-seurat@meta.data$stage_sample <- paste(seurat@meta.data$stage,seurat@meta.data$sample, sep="_")
-unique(seurat@meta.data$stage_sample)
+seurat$stage_sample <- paste(seurat$stage,seurat$sample, sep="_")
+unique(seurat$stage_sample)
 ```
 
 ```{r}
@@ -92,7 +92,6 @@ model_opts <- get_default_model_options(MOFAobject)
 # Training options
 train_opts <- get_default_training_options(MOFAobject)
 train_opts$convergence_mode <- "fast"
-train_opts$seed <- 42
 ```
 
 ## Prepare the MOFA object
@@ -107,7 +106,8 @@ MOFAobject <- prepare_mofa(
 
 
 # Train the MOFA model
-This step can take quite some time (~1h with standard CPU inference), so we provide a pre-trained model in the next chunk of code.  
+
+This step can take some time (~1h with standard CPU inference), so we provide a pre-trained model in the next chunk of code.  
 
 Note: if you train the model from scratch, the results will not be 100% reproducible with the pre-trained model (but hopefully similar enough!).
 
@@ -137,15 +137,14 @@ The MOFAobject consists of multiple slots where relevant data and information is
 slotNames(MOFAobject)
 ```
 
-`dimensions` contains the dimensions of the model (K for factors, M for views, G for groups, N for samples (per group), D for features (per view)):
+`get_dimensions` shows the dimensions of the model (K for factors, M for views, G for groups, N for samples (per group), D for features (per view)):
 ```{r}
-MOFAobject@dimensions
+get_dimensions(MOFAobject)
 ```
-
-`data` contains the centered (and optionally scaled) input data matrices. It is a nested list of matrices where the first index refers to the view, and the second index to the group. In this case we have one view (RNA) and six groups
+`get_data` fetches the centered (and optionally scaled) input data matrices. It is a nested list of matrices where the first index refers to the view, and the second index to the group. In this case we have one view (RNA) and six groups
 ```{r}
-names(MOFAobject@data)
-names(MOFAobject@data[[1]])
+names(get_data(MOFAobject))
+names(get_data(MOFAobject)[[1]])
 ```
 
 `samples_metadata` contains the cell metadata that I have previously added to the MOFA object. Columns are:  
@@ -154,7 +153,7 @@ names(MOFAobject@data[[1]])
 - **lineage**: cell type annotation.
 - **group**: the grouping used for MOFA. In this case each embryo corresponds to a separate group.
 ```{r}
-head(MOFAobject@samples_metadata)
+head(samples_metadata(MOFAobject))
 ```
 
 
@@ -257,7 +256,6 @@ plot_factors(MOFAobject,
 ## Visualisation of weights
 
 The weights provide a score for each gene on each factor. Genes with no association with the factor are expected to have values close to zero, whereas genes with strong association with the factor are expected to have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature is more active in the cells with positive factor values, and viceversa.  
-
 Let's plot the distribution of weights for Factor 1.
 ```{r, warnings=FALSE, message=FALSE}
 plot_weights(MOFAobject,
@@ -366,9 +364,11 @@ plot_dimred(MOFAobject,
 ) + scale_fill_manual(values=colors)
 ```
 
-# sessionInfo
-
+<details>
+  <summary>**Session Info**</summary>
+  
 ```{r}
 sessionInfo()
 ```
 
+</details>

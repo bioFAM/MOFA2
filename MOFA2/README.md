@@ -1,3 +1,3 @@
-# MOFA+ R package
+# MOFA2 R package
 
-MOFA+ R package provides functionality to load and interpret trained MOFA+ models as well as to create, prepare and train models from existing R objects.
+The `MOFA2` R package provides functionality to train, load and interpret trained MOFA models.
