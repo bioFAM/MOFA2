@@ -337,7 +337,7 @@ class MultitaskGPModel(ExactGP):
 
 class MyMultitaskGPModel(myExactGP):
     def __init__(self, train_x, train_y, likelihood, n_tasks, rank,
-                 var_constraint = None, covar_factor_constraint = None):
+                 var_constraint = None, covar_factor_constraint = None, lengthscale_constraint = None):
         super(MyMultitaskGPModel, self).__init__(train_x, train_y, likelihood)
 
         # self.mean_module = gpytorch.means.MultitaskMean(          # optional: learn mean function instead of centering
@@ -348,7 +348,7 @@ class MyMultitaskGPModel(myExactGP):
         )
 
         self.covar_module = myMultitaskKernel(
-            gpytorch.kernels.RBFKernel(), num_tasks=n_tasks, rank=rank,
+            gpytorch.kernels.RBFKernel(lengthscale_constraint = lengthscale_constraint), num_tasks=n_tasks, rank=rank,
             var_constraint = var_constraint, covar_factor_constraint = covar_factor_constraint
         )
 

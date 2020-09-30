@@ -14,6 +14,8 @@ import gpytorch
 import torch
 from mofapy2.core.distributions.multi_task_GP import MultitaskGPModel, ELBO, myMultitaskGaussianLikelihood
 from gpytorch.likelihoods import MultitaskGaussianLikelihood
+import mofapy2.core.gp_utils as gp_utils
+
 
 # TODO:
 # - Sigma Node could be a general class with group_model_kron, _nokron and no_group nodes as subclasses,
@@ -55,7 +57,7 @@ class Sigma_Node(Node):
         super().__init__(dim)
 
         # dimensions and inputs
-        self.use_gradients = False
+        self.use_gradients = True
         self.mini_batch = None
         self.sample_cov = sample_cov
         self.sample_cov_transformed = copy.copy(sample_cov)         # keep original covariate in place
@@ -641,7 +643,7 @@ class Sigma_Node_torch(Sigma_Node):
     def __init__(self, dim, sample_cov, groups, start_opt=20, n_grid=10, idx_inducing=None,
                  warping=False, warping_freq=20, warping_ref=0, warping_open_begin=True,
                  warping_open_end=True, opt_freq=10, rankx=None, sigma_const=True,
-                 model_groups=False, torch_seed = 7823982, gp_iter = 200, verbose = True):
+                 model_groups=False, torch_seed = 7823982, gp_iter = 200, verbose = False):
         super().__init__(dim, sample_cov, groups, start_opt, n_grid, idx_inducing,
                  warping, warping_freq, warping_ref, warping_open_begin,
                  warping_open_end, opt_freq, rankx, sigma_const,
@@ -651,6 +653,7 @@ class Sigma_Node_torch(Sigma_Node):
         self.likelihood = [myMultitaskGaussianLikelihood(num_tasks=self.G, noise_constraint=gpytorch.constraints.Interval(1e-4,1 - 1e-4), rank = 0)] * self.K # noise constraint from original mutltiakslik, no correlation model for noise (rank = 0),  ELBO instead of MLL
         # self.likelihood = [MultitaskGaussianLikelihood(num_tasks=self.G, rank = 0)] * self.K # basic multitaks model (no ELBO term and noise/scale dependence)
 
+        self.l_limits = gp_utils.get_l_limits(sample_cov)
         self.sigma = np.array([np.nan] * self.K)
         self.ls = np.array([np.nan] * self.K)
         self.Gmat = [np.nan] * self.K
@@ -718,8 +721,9 @@ class Sigma_Node_torch(Sigma_Node):
                 self.gp[k] = MyMultitaskGPModel(train_x=xtrain, train_y=ytrain,
                                               likelihood=self.likelihood[k],
                                               n_tasks=self.G, rank=self.rank,
-                                              var_constraint = None,#gpytorch.constraints.Interval(1e-10,1 - 1e-10),
-                                              covar_factor_constraint=None)#gpytorch.constraints.Interval(-1 + 1e-10, 1 - 1e-10))
+                                              var_constraint = gpytorch.constraints.Interval(1e-10,1 - 1e-10),
+                                              covar_factor_constraint=gpytorch.constraints.Interval(-1 + 1e-10,1 - 1e-10),
+                                              lengthscale_constraint = gpytorch.constraints.Interval(self.l_limits[0], self.l_limits[1]))#gpytorch.constraints.Interval(-1 + 1e-10, 1 - 1e-10))
 
 
                 training_iterations = self.gp_iter
