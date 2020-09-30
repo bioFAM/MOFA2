@@ -65,3 +65,9 @@ Scatterplot of the weights values for two factors
 One of the first steps for the annotation of factors is to visualise and group/color them using known covariates such as phenotypic or clinical data.
 This method generates a single scatterplot for the combination of two latent factors.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_weights_scatter(model, factors = 1:2)
+}

@@ -9,6 +9,12 @@
 #' @aliases factors_names,MOFA-method
 #' @return character vector with the factor names
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' factors_names(model)
+
 setMethod("factors_names", signature(object="MOFA"), 
           function(object) {
             colnames(object@expectations$Z[[1]]) 
@@ -51,6 +57,12 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
 #' @aliases samples_names,MOFA-method
 #' @return list of character vectors with the sample names for each group
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' samples_names(model)
+
 setMethod("samples_names", signature(object="MOFA"), 
           function(object) {
             
@@ -115,6 +127,12 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
 #' @param object a \code{\link{MOFA}} object.
 #' @return a data frame with sample metadata
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' samples_metadata(model)
+ 
 setMethod("samples_metadata", signature(object="MOFA"), 
           function(object) { 
             object@samples_metadata
@@ -169,6 +187,12 @@ setReplaceMethod("samples_metadata", signature(object="MOFA", value="data.frame"
 #' @aliases features_names,MOFA-method
 #' @return list of character vectors with the feature names for each view
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' features_names(model)
+
 setMethod("features_names", signature(object="MOFA"), 
           function(object) {
             # When the model is not trained, the features slot is not initialized yet
@@ -230,6 +254,12 @@ setReplaceMethod("features_names", signature(object="MOFA", value="list"),
 #' @param object a \code{\link{MOFA}} object.
 #' @return a data frame with sample metadata
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' features_metadata(model)
+ 
 setMethod("features_metadata", signature(object="MOFA"), 
           function(object) { 
             object@features_metadata
@@ -269,8 +299,14 @@ setReplaceMethod("features_metadata", signature(object="MOFA", value="data.frame
 #' @rdname views_names
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each view
-#' @rdname views_names
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' views_names(model)
+#' views_names(model) <- c("viewA", "viewB")
+
 setMethod("views_names", signature(object="MOFA"), 
           function(object) {
             object@data_options$views
@@ -357,8 +393,14 @@ setMethod("views_names<-", signature(object="MOFA", value="character"),
 #' @rdname groups_names
 #' @param object a \code{\link{MOFA}} object.
 #' @return character vector with the names for each sample group
-#' @rdname groups_names
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' groups_names(model)
+#' groups_names(model) <- c("my_group")
+ 
 setMethod("groups_names", signature(object="MOFA"), 
           function(object) {
             object@data_options$groups

@@ -31,9 +31,16 @@
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
+#' @return A  \code{\link[pheatmap]{pheatmap}} object
 #' @importFrom pheatmap pheatmap
 #' @importFrom utils tail
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_data_heatmap(model, factor = 1, show_rownames = FALSE, show_colnames = FALSE)
+
 plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features = 50, 
     annotation_features = NULL, annotation_samples = NULL, transpose = FALSE, 
     imputed = FALSE, denoise = FALSE, max.value = NULL, min.value = NULL, ...) {
@@ -206,7 +213,14 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @importFrom dplyr left_join
 #' @importFrom utils tail
 #' @importFrom stats quantile
+#' @return A \code{\link{ggplot}} object
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_data_scatter(model)
+
 plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
                               color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
                               dot_size = 2.5, text_size = NULL, add_lm = TRUE, lm_per_group = TRUE, imputed = FALSE) {
@@ -338,7 +352,14 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @importFrom dplyr mutate
+#' @return A \code{\link{ggplot}} object
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_data_overview(model)
+
 plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
   
   # Sanity checks
@@ -428,7 +449,14 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
 #' @param object a \code{\link{MOFA}} object
 #' @param nonzero a logical value specifying whether to calculate the fraction of non-zero values (non-NA values by default)
 #' @details This function is helpful to get an overview of the structure of the data as a text output
+#' @return None
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_ascii_data(model)
+
 plot_ascii_data <- function(object, nonzero = FALSE) {
   stopifnot(is(object, "MOFA"))
 

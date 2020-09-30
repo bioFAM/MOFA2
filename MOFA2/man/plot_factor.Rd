@@ -108,7 +108,7 @@ Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Plot Factors 1 and 2 and colour by "group"

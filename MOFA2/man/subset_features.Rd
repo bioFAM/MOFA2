@@ -14,6 +14,9 @@ subset_features(object, view, features)
 \item{features}{character vector with the sample names, numeric vector with the feature indices 
 or logical vector with the samples to be kept as TRUE.}
 }
+\value{
+A \code{\link{MOFA}} object
+}
 \description{
 Method to subset (or sort) features
 }

@@ -38,14 +38,16 @@ test_that("a model can be created from a Seurat object", {
 	# Create a Seurat object from demo data
 	library(Seurat)
 	m <- readMM(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/matrix.mtx?raw=true'))
-	genes <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/genes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
+	genes <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/genes.tsv?raw=true'), sep='\t', header=FALSE)[,2]
 	cells <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/barcodes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
 	colnames(m) <- cells
+	m <- m[!duplicated(genes),]
+	genes <- genes[!duplicated(genes)]
 	rownames(m) <- genes
 	srt <- Seurat::CreateSeuratObject(m)
 
 	# Prepare a model before training
-	factor_model <- create_mofa(srt)
+	factor_model <- create_mofa(srt, features = genes)
 
 	# Test if a Seurat object can be used to prepare the MOFA model for training
 	expect_is(prepare_mofa(factor_model), "MOFA")

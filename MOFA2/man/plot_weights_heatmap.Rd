@@ -29,8 +29,17 @@ Default is 'all'.}
 
 \item{...}{extra arguments passed to \code{\link[pheatmap]{pheatmap}}.}
 }
+\value{
+A \code{\link{pheatmap}} object
+}
 \description{
 Function to visualize the weights for a given set of factors in a given view. \cr 
 This is useful to visualize the overall pattern of the weights but not to individually characterise the factors. \cr
 To inspect the weights of individual factors, use the functions \code{\link{plot_weights}} and \code{\link{plot_top_weights}}
+}
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_weights_heatmap(model)
 }

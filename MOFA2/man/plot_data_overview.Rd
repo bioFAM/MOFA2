@@ -13,6 +13,9 @@ plot_data_overview(object, colors = NULL, show_dimensions = TRUE)
 
 \item{show_dimensions}{logical indicating whether to plot the dimensions of the data (default is TRUE).}
 }
+\value{
+A \code{\link{ggplot}} object
+}
 \description{
 Function to do a tile plot showing the missing value structure of the input data
 }
@@ -20,4 +23,10 @@ Function to do a tile plot showing the missing value structure of the input data
 This function is helpful to get an overview of the structure of the data. 
 It shows the model dimensionalities (number of samples, groups, views and features) 
 and it indicates which measurements are missing.
+}
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_data_overview(model)
 }

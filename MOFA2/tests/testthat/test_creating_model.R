@@ -27,13 +27,16 @@ test_that("a model can be created from a list of sparse matrices", {
 test_that("a model can be created from a Seurat object", {
 	skip_if_not_installed("Seurat")
 	library(Seurat)
+  library(Matrix)
 	m <- readMM(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/matrix.mtx?raw=true'))
-	genes <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/genes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
+	genes <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/genes.tsv?raw=true'), sep='\t', header=FALSE)[,2]
 	cells <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/barcodes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
 	colnames(m) <- cells
+	m <- m[!duplicated(genes),]
+	genes <- genes[!duplicated(genes)]
 	rownames(m) <- genes
 	srt <- Seurat::CreateSeuratObject(m)
-	expect_is(create_mofa(srt), "MOFA")
+	expect_is(create_mofa(srt, features = genes), "MOFA")
 })
 
 test_that("a list of matrices per view is split correctly into a nested list of matrices according to samples groups", {

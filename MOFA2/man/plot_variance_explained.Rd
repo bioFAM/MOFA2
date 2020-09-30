@@ -41,13 +41,16 @@ plot_variance_explained(
 
 \item{...}{extra arguments to be passed to \code{\link{calculate_variance_explained}}}
 }
+\value{
+A list of \code{\link{ggplot}} objects (if \code{plot_total} is TRUE) or a single \code{\link{ggplot}} object
+}
 \description{
 plots the variance explained by the MOFA factors across different views and groups, as specified by the user.
 Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots that this function generates.
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Calculate variance explained (R2)

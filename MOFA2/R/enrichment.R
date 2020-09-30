@@ -68,8 +68,8 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Remove empty factors
   # factors <- apply(Z,2,var, na.rm=TRUE)>0
-  # Z <- Z[,factors,drop=F]
-  # W <- W[,factors,drop=F]
+  # Z <- Z[,factors,drop=FALSE]
+  # W <- W[,factors,drop=FALSE]
   
   # Remove features with no variance
   # if (statistical.test %in% c("cor.adj.parametric")) {
@@ -85,7 +85,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(length(features)== 0) stop("Feature names in feature.sets do not match feature names in model.")
   message(sprintf("Intersecting features names in the model and the gene set annotation results in a total of %d features.",length(features)))
   data <- data[,features]
-  W <- W[features,,drop=F]
+  W <- W[features,,drop=FALSE]
   feature.sets <- feature.sets[,features]
   
   # Filter feature sets with small number of features
@@ -299,6 +299,7 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param alpha FDR threshold to filter out unsignificant feature sets which are
 #'  not represented in the heatmap. Default is 0.10.
+#' @param cap cap p-values below this threshold
 #' @param log_scale logical indicating whether to plot the -log of the p.values.
 #' @param ... extra arguments to be passed to the \link{pheatmap} function
 #' @return produces a heatmap
@@ -314,7 +315,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
   p.values <- p.values[,colMeans(is.na(p.values))<1]
   
   # remove factors that do not have any significant enrichment
-  # p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha,na.rm=T)) == ncol(p.values),, drop=FALSE]
+  # p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha,na.rm=TRUE)) == ncol(p.values),, drop=FALSE]
   
   # cap p-values 
   p.values[p.values<cap] <- cap

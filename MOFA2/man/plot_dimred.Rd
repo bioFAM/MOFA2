@@ -13,6 +13,7 @@ plot_dimred(
   shape_by = NULL,
   color_name = NULL,
   shape_name = NULL,
+  label = FALSE,
   dot_size = 1.5,
   stroke = NULL,
   alpha_missing = 1,
@@ -45,6 +46,8 @@ plot_dimred(
 
 \item{shape_name}{name for shape legend.}
 
+\item{label}{logical indicating whether to label the medians of the clusters. Only if color_by is specified}
+
 \item{dot_size}{numeric indicating dot size.}
 
 \item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
@@ -52,6 +55,8 @@ plot_dimred(
 \item{alpha_missing}{numeric indicating dot transparency of missing data.}
 
 \item{legend}{logical indicating whether to add legend.}
+
+\item{rasterize}{logical indicating whether to rasterize plot}
 
 \item{return_data}{logical indicating whether to return the long data frame to plot instead of plotting}
 
@@ -69,7 +74,7 @@ Typically this contains UMAP or t-SNE projections computed using \code{\link{run
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Run UMAP

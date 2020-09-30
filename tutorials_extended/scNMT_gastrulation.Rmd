@@ -1,0 +1,388 @@
+---
+title: "MOFA+: simultaneous multi-view and multi-group integration using single-cell multi-modal data"
+author:
+  name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
+date: "`r Sys.Date()`"
+
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{MOFA2: Applying MOFA2 to scNMT-seq data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Description
+
+This vignette demonstrates the simultaneous multi-view and multi-group integration framework of MOFA+.  
+
+We consider a dataset where scNMT-seq was used to simultaneously profile RNA expression, DNA methylation and chromatin accessibility in 1,828 cells at multiple stages of mouse development. MOFA+ provides a method for delineating coordinated variation between the transcriptome and the epigenome and for detecting at which stage(s) of development it occurs.
+
+As input to the model we quantified DNA methylation and chromatin accessibility values over different sets of regulatory elements. Here we considered gene promoters and enhancer elements (distal H3K27ac sites). RNA expression was quantified over protein-coding genes. After data processing, separate views were defined for the RNA expression and for each combination of genomic context and epigenetic readout.
+Cells were grouped according to their developmental stage (E5.5, E6.5 and E7.5). For details in the data processing, see the following [github repository](https://github.com/rargelaguet/scnmt_gastrulation)
+
+The data set we use here is a simplified version of the original data set published in (Nature)[https://www.nature.com/articles/s41586-019-1825-8]. The full data set can be downloaded from [this FTP](ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation).
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align="center")
+```
+
+# Load libraries
+
+Load dependencies. Make sure that MOFA is imported last, to avoid collisions with functions from other packages
+```{r, echo=FALSE}
+library(data.table)
+library(purrr)
+library(ggplot2)
+library(MOFA2)
+```
+
+Define cell type colors for the visualisations
+```{r echo = FALSE}
+colors <- c(
+  "Epiblast" = "grey70",
+  "Mesoderm" = "#CD3278",
+  "Primitive Streak" = "sandybrown",
+  "Endoderm" = "#43CD80",
+  "Ectoderm" = "steelblue",
+  "ExE Endoderm" = "#E066FF"
+)
+```
+
+In this vignette we skip all the data processing and model training part and we focus on the downstream characterisation of the model. For details on the data preparation and setting up the MOFA object we refer to the following [github repository](https://github.com/rargelaguet/scnmt_gastrulation)
+
+# Load pre-computed model
+
+MOFA models are saved in hdf5 format and can be loaded into R with the function `load_model`. In this case, however, we provide the trained model as an RData file, which already contains the cell metadata.
+
+```{r}
+# MOFAmodel <- load_model("(...)/model.hdf5")
+
+# load("/Users/ricard/data/mofa2_vignettes/gastrulation_scnmt_mofa.RData")
+load(url("ftp://ftp.ebi.ac.uk/pub/databases/mofa/scnmt_gastrulation/gastrulation_scnmt_mofa.RData"))
+```
+
+Explore the cell metadata:  
+* **sample**: cell identity.  
+* **stage**: developmental stage.  
+* **lineage**: cell type annotation (derived from mapping the cells to the 10x atlas).  
+* **pass_rnaQC**: did the cell pass QC for RNA expression?.  
+* **pass_metQC**: did the cell pass QC for DNA methylation? `NA` if the cell was only profiled for RNA.  
+* **pass_accQC**: did the cell pass QC for chromatin accessibility? `NA` if the cell was only profiled for RNA.  
+* **group**: the grouping used for MOFA, corresponds to the stage.
+
+```{r}
+head(MOFAmodel@samples_metadata)
+```
+
+
+# Overview of training data
+The function `plot_data_overview` can be used to obtain an overview of the input data. 
+It shows how many views (rows) and how many groups (columns) exist, what are their corresponding dimensionalities and how many missing information they have (grey bars).  
+```{r fig.align="center"}
+view.colors <- c(
+  "RNA expression" = "#3CB54E",
+  "Enhancer accessibility" = "#00BFC4",
+  "Promoter accessibility" = "#00BFC4",
+  "Enhancer methylation" = "#F37A71",
+  "Promoter methylation" = "#F37A71"
+)
+view.colors = view.colors[views_names(MOFAmodel)]
+
+plot_data_overview(MOFAmodel, colors = view.colors)
+```
+
+As a sanity check, one should verify that the factors are (fairly) uncorrelated. Otherwise it suggests that the model has not converged or that perhaps you are using too many factors.
+```{r}
+cor <- plot_factor_cor(MOFAmodel)
+```
+
+# Plot variance explained per factor
+
+Quantifying the variance explained across groups and views is probably the most important plot that MOFA+ generates. It summarises the (latent) signal from a complex heterogeneous data set in a single figure.  
+When having a multi-group and multi-view setting, it is advised to plot one factor at a time:
+
+Factor 1
+```{r}
+plot_variance_explained(MOFAmodel, x="group", y="view", factor=1, legend = T)
+```
+
+Factor 2
+```{r}
+plot_variance_explained(MOFAmodel, x="group", y="view", factor=2, legend = T)
+```
+
+Factor 1 and 2 show a very structured and interesting signal. When looking at the signal across views, you can notice that these factors connect transcriptome variation to changes in DNA methylation and chromatin accessibility. When looking at the signal across groups, you can notice that Factor 1 is active across all groups, whereas Factor 2 only appears at E7.5.
+
+# Characterisation of Factor 1
+
+## Visualisation of factor values
+
+Each factor ordinates cells along a one-dimensional axis that is centered at zero. Samples with different signs indicate opposite phenotypes, with higher absolute value indicating a stronger phenotype. Let's plot Factor 1 values and we color cells by lineage assignment.  
+Clearly, this factor captures the signal associated with the formation of ExE endoderm.
+
+```{r}
+plot_factor(MOFAmodel,
+  factor = 1,
+  color_by = "lineage", 
+  scale = TRUE, 
+  add_violin = TRUE, color_violin = TRUE, 
+  dodge = TRUE, dot_size = 1, legend = TRUE
+) + scale_color_manual(values=colors) + scale_fill_manual(values=colors)
+```
+
+Here is another way of representing the same plot:
+
+```{r}
+plot_factor(MOFAmodel,
+  factor = 1,
+  color_by = "lineage", 
+  dot_size = 1.5,
+  scale = TRUE, legend = FALSE
+) + scale_color_manual(values=colors) + scale_fill_manual(values=colors)
+```
+
+
+## Visualisation of RNA weights
+
+The weights provide a score for each gene on each factor. Genes with no association with the factor are expected to have values close to zero, whereas genes with strong association with the factor are expected to have large absolute values. The sign of the loading indicates the direction of the effect: a positive loading indicates that the feature is more active in the cells with positive factor values, and viceversa.  
+
+Let's plot the distribution of weights for Factor 1.
+```{r, warnings=FALSE, message=FALSE}
+plot_weights(MOFAmodel,
+  view = "RNA expression",
+  factor = 1,
+  nfeatures = 10,     # Top number of features to highlight
+  scale = T           # Scale weights from -1 to 1
+)
+```
+
+We can also highlight some genes of interest using the argument `manual` to see where in the distribution they lie:
+```{r}
+plot_weights(MOFAmodel,
+  view = "RNA expression",
+  factor = 1,
+  nfeatures = 5,
+  manual = list(c("Snai1","Mesp1","Phlda2"), c("Spink1","Amot")),
+  color_manual = c("darkgreen","red"),
+  scale = T
+)
+```
+
+If you are not interested in the full distribution, but just on the top weights, you can do:
+```{r}
+plot_top_weights(MOFAmodel, 
+  view = "RNA expression", 
+  factor = 1, 
+  nfeatures = 10,
+  scale = T, 
+  abs = T
+)
+```
+
+We expect that genes with large positive weights For Factor 1 to be highlighy expressed in the ExE Endoderm cells. If we plot Factor 1 colouring cells by gene expresion of the top genes:
+```{r}
+genes <- c("Spink1","Dab2")
+
+for (i in genes) {
+  
+  p <- plot_factor(MOFAmodel,
+    factor = 1,
+    dot_size = 2.5,
+    color_by = i
+  ) + scale_colour_gradientn(colours = terrain.colors(10)) # change color scale
+  
+  print(p)
+  
+}
+```
+
+## Visualisation of RNA expression patterns
+
+The weights are useful to get an idea of which are top genes that drive the factors. However, to get an idea of how well Factors are associated with genomic features we can generate a heatmap plot of the samples sorted by Factor values against gene expression for the genes with the largest weights:
+
+```{r}
+plot_data_heatmap(MOFAmodel, 
+  view = "RNA expression", 
+  factor = 1, 
+  features = 25,
+  show_colnames = F, cluster_cols = F # extra arguments passed to `pheatmap`
+)
+```
+
+Interestingly, we provide the option to plot the "denoised" observations obtained by reconstructing the data using the MOFA factors. This essentially removes all the variation that is not captured by the model:
+
+```{r}
+plot_data_heatmap(MOFAmodel, 
+  view = "RNA expression", 
+  factor = 1, 
+  denoise = TRUE,
+  features = 25,
+  show_colnames = F, cluster_cols = F # extra arguments passed to `pheatmap`
+)
+```
+
+## Visualisation of DNA methylation weights
+
+We observe that essentially all genes have a large and negative weight. This suggests that samples with a positive factor value (ExE endoderm cells) are globally demethylated as compared to cells with negative factor values.
+
+```{r}
+plot_weights(MOFAmodel,
+  view = c("Promoter methylation"),
+  factor = 1,
+  nfeatures = 3,
+  scale = T
+)
+```
+
+## Visualisation of DNA methylation patterns
+
+Let's visualise the coordinated variation that MOFA captures using a heatmap. We will select the top features with largest loading and plot its DNA methylation levels, with sampels ordered according to Factor 1. In addition, here we are going to use the imputation capabilities of MOFA to obtain a cleaner representation.  
+
+First, we need to impute missing values:
+
+```{r}
+MOFAmodel <- impute(MOFAmodel)
+```
+
+Generate Heatmap of the top 25 features with largest loading, before imputation (`impute=FALSE`):
+
+```{r, out.width="120%"}
+plot_data_heatmap(MOFAmodel, 
+  view = "Promoter methylation", 
+  factor = 1, 
+  impute = FALSE,
+  features = 25,
+  show_colnames = F, cluster_cols = F # extra arguments passed to `pheatmap`
+)
+```
+
+After imputation (`impute=TRUE`):
+
+```{r}
+plot_data_heatmap(MOFAmodel, 
+  view = "Promoter methylation", 
+  factor = 1, 
+  impute = TRUE,
+  features = 25,
+  show_colnames = F, cluster_cols = F # extra arguments passed to `pheatmap`
+)
+```
+
+Clearly, as the distribution of the weights indicate, ExE endoderm cells are in a state of global demethylation.
+
+# Characterisation of Factor 2
+
+We can now follow a similar approach to characterise Factor 1. 
+
+## Visualisation of factor values
+
+```{r}
+plot_factor(MOFAmodel,
+  factor = 2,
+  color_by = "lineage", 
+  scale = TRUE,
+  add_violin = TRUE, color_violin = TRUE, 
+  dodge = TRUE, dot_size = 1, legend = TRUE
+) + scale_color_manual(values=colors) + scale_fill_manual(values=colors)
+```
+
+
+## Visualisation of RNA weights
+
+```{r, warnings=FALSE, message=FALSE}
+plot_weights(MOFAmodel,
+  view = "RNA expression",
+  factor = 2,
+  nfeatures = 10,     # Top number of features to highlight
+  scale = T           # Scale weights from -1 to 1
+)
+```
+
+## Visualisation of DNA methylation weights
+
+If we compare the loadings of promoter DNA methylation between Factor 1 and Factor 2 we observe that in Factor 2 they are very small! This indicates that formation of mesoderm is not associated with changes in promoter DNA methylation status. 
+
+```{r}
+plot_weights(MOFAmodel,
+  view = c("Promoter methylation"),
+  factor = 1:2,
+  nfeatures = 0,
+  scale = T
+)
+```
+
+Enhancers however look more promising. The dynamics of DNA methylation are not as strong as in Factor 1, but there is definitely something there.
+
+```{r}
+plot_weights(MOFAmodel,
+  view = c("Enhancer methylation"),
+  factor = 1:2,
+  nfeatures = 0,
+  scale = T
+)
+```
+
+## Visualisation of DNA methylation patterns
+
+Next step would be to zoom in into those enhancers and characterise them in detail:
+
+```{r}
+df <- MOFAmodel@samples_metadata[,c("sample","lineage")]
+rownames(df) <- df$sample; df$sample <- NULL
+
+plot_data_heatmap(MOFAmodel,
+  view = c("Enhancer methylation"),
+  factor = 2,
+  impute = TRUE,
+  features = 15,
+  # extra arguments passed to `pheatmap`
+  show_colnames = F, show_rownames = F, 
+  annotation_samples = df,  annotation_colors = list("lineage"=colors),
+  cluster_cols = F 
+)
+```
+
+# Ad hoc analysis with the factors and the weights
+
+You can extract the factor values and the weights to do your own downstream analysis This is done with the functions `get_factors` and `get_weights`.  
+Here we are going to plot the correlation between the DNA methylation and chromatin accessibility weights for promoters.
+
+```{r}
+# Fetch weights
+w.met <- get_weights(MOFAmodel, factors = 1, views = "Promoter methylation", as.data.frame=T) %>%
+  as.data.table
+w.acc <- get_weights(MOFAmodel, factors = 1, views = "Promoter accessibility", as.data.frame=T) %>%
+  as.data.table
+
+# Remove the met_ and acc_ prefix from the feature names
+w.met[,feature:=substr(feature,5,nchar(as.character(feature)))]
+w.acc[,feature:=substr(feature,5,nchar(as.character(feature)))]
+
+# Scale the loadings 
+w.met[,value:=value/max(abs(value))]
+w.acc[,value:=value/max(abs(value))]
+
+# Merge loadings
+w.dt <- merge(
+  w.met[,c("feature","factor","value")], 
+  w.acc[,c("feature","factor","value")], 
+  by=c("feature","factor")
+)
+
+ggplot(w.dt, aes(x=value.x, y=value.y)) +
+  geom_point() + stat_smooth(method="lm") +
+  theme_classic() +
+  facet_wrap(~factor, scales="free", ncol=3) +
+  labs(x="DNA methylation (weight)", y="Chr. accessibility weight")
+```
+
+# sessionInfo()
+
+```{r}
+sessionInfo()
+```
+

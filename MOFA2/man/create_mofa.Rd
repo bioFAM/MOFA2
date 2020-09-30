@@ -10,7 +10,7 @@ create_mofa(data, groups = NULL, ...)
 .create_mofa_from_seurat(
   seurat,
   groups,
-  assays = "RNA",
+  assays = NULL,
   slot = "data",
   features = NULL,
   save_metadata = FALSE
@@ -32,7 +32,7 @@ create_mofa(data, groups = NULL, ...)
 
 \item{seurat}{Seurat object}
 
-\item{assays}{assays to use for the MOFA model, default is RNA}
+\item{assays}{assays to use for the MOFA model, default is NULL, it fetched all assays available}
 
 \item{slot}{assay slot to be used such as scale.data or data}
 
@@ -50,10 +50,10 @@ Method to create a \code{\link{MOFA}} object
 }
 \examples{
 # Using an existing simulated data with two groups and two views
-file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 
-# Load data (in data.frame format)
-data <- read.table(file, header=TRUE) 
-MOFAmodel <- create_mofa(data)
+# Load data dt (in data.frame format)
+load(file) 
+MOFAmodel <- create_mofa(dt)
 }
 \keyword{internal}

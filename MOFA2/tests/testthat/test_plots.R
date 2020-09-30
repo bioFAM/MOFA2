@@ -1,7 +1,8 @@
 context("Making plots")
 library(MOFA2)
 
-test_mofa2 <- load_model("test_mofa2.hdf5")
+filepath <- system.file("extdata", "model.hdf5", package = "MOFA2")
+test_mofa2 <- load_model(filepath)
 
 # Data plots
 

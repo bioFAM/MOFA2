@@ -7,7 +7,6 @@
 plot_enrichment_detailed(
   enrichment.results,
   factor,
-  feature.sets,
   alpha = 0.1,
   max.genes = 5,
   max.pathways = 10,
@@ -18,8 +17,6 @@ plot_enrichment_detailed(
 \item{enrichment.results}{output of \link{run_enrichment} function}
 
 \item{factor}{string with factor name or numeric with factor index}
-
-\item{feature.sets}{data structure that holds feature set membership information, as used in the \link{run_enrichment} function.}
 
 \item{alpha}{p.value threshold to filter out feature sets}
 
