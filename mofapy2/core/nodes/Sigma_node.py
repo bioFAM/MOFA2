@@ -131,6 +131,7 @@ class Sigma_Node(Node):
         self.idx_inducing = idx_inducing
         if not self.idx_inducing is None:
             self.Nu = len(idx_inducing)
+            self.groupsidx = self.groupsidx[self.idx_inducing] # subset to gruop labels for inducing points
         else:
             self.Nu = self.N    # dimension to use for Sigma^(-1)
 
@@ -421,7 +422,7 @@ class Sigma_Node(Node):
             Kc = self.Kc.Kmat[self.Kc.get_best_lidx(k),:,:]
             Kg = self.Kg.Kmat[k,:,:]
 
-        val = (1-self.zeta[k]) * Kc[ self.covidx, :][:,self.covidx] * Kg[self.groupsidx, :][:, self.groupsidx] + self.zeta[k] *np.eye(self.N)
+        val = (1-self.zeta[k]) * Kc[ self.covidx, :][:,self.covidx] * Kg[self.groupsidx, :][:, self.groupsidx] + self.zeta[k] *np.eye(self.Nu)
 
         return val[id1,id2]
 
@@ -459,7 +460,7 @@ class Sigma_Node(Node):
         # gradient wrt zeta
         gradient_Sigma_zeta = - Kc[self.covidx, :][:,self.covidx] *\
                               Kg[self.groupsidx, :][:, self.groupsidx] +\
-                              np.eye(self.N)
+                              np.eye(self.Nu)
 
         # gradient wrt sigma
         Gmat_unscaled = np.dot(x.transpose(), x) + sigma * np.eye(self.G) # this is Kg before scaled to correlation
@@ -501,8 +502,8 @@ class Sigma_Node(Node):
             z = np.random.uniform(0, 1, len(par_init))
             gradient_Sigma_zeta, gradient_Sigma_sigma, gradient_Sigma_x = self.calc_gradient_Sigma(z, lidx, k)
             G_sigma_calc = [gradient_Sigma_zeta ]+ [gradient_Sigma_sigma] + gradient_Sigma_x
-            G_sigma_approx = np.array([[s.optimize.approx_fprime(z, self.calc_Sigma_element, 1.4901161193847656e-08, lidx, k, i, j) for i in range(self.N)] for j in range(self.N)])
-            # F_calc = np.array([[ self.sigma_fun(z, lidx, k, var, i, j) for i in range(self.N)] for j in range(self.N)])
+            G_sigma_approx = np.array([[s.optimize.approx_fprime(z, self.calc_Sigma_element, 1.4901161193847656e-08, lidx, k, i, j) for i in range(self.Nu)] for j in range(self.Nu)])
+            # F_calc = np.array([[ self.sigma_fun(z, lidx, k, var, i, j) for i in range(self.Nu)] for j in range(self.Nu)])
             for l in range(len(a)):
                 a[l] = np.max(np.abs(G_sigma_approx[:,:,l] - G_sigma_calc[l]))
             print("Maximal differences in gradient of Sigma for lidx", lidx,":", a)
@@ -579,7 +580,7 @@ class Sigma_Node(Node):
 
                     # optimize
                     if self.use_gradients and self.model_groups: # without group model there is only a single parameter (zeta) and analytical gradients not required
-                        # self.check_gradient(par_init, lidx, k, var)
+                        self.check_gradient(par_init, lidx, k, var)
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds, jac = self.calc_neg_elbo_grad_k) # L-BFGS-B
                     else:
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0=par_init, bounds=bounds)

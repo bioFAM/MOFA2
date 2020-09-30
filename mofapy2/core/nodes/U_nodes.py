@@ -129,6 +129,26 @@ class U_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
 
         return {'Qmean': Qmean, 'Qcov': Qcov}
 
+    def calcELBOgrad_k(self, k, gradSigma):
+        """
+        Method to calculate ELBO gradients per factor - required for optimization in Sigma node
+        """
+        Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
+        Qmean, Qcov = Qpar['mean'], Qpar['cov']
+        QE = Qexp['E']
+
+        assert "Sigma" in self.markov_blanket, "Sigma not found in Markov blanket of U node"
+        Sigma = self.markov_blanket['Sigma'].getExpectations()
+        p_cov = Sigma['cov']
+        p_cov_inv = Sigma['inv']
+        p_cov_inv_logdet = Sigma['inv_logdet']
+
+        term1 = - 0.5 * np.trace(gpu_utils.dot(gradSigma, p_cov_inv[k, :,:]))
+        term2 = 0.5 * np.trace(gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:],  Qcov[k, :, :]))))
+        term3 = 0.5 * gpu_utils.dot(QE[:, k].transpose(), gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:], QE[:,k]))))
+
+        return term1 + term2 + term3
+
     # Eblo calculation per factor - required for grid search for optimal hyperparameter in sigma per factor
     def calculateELBO_k(self, k):
         # Collect parameters and expectations of current node
