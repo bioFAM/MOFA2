@@ -11,22 +11,23 @@ All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2/tree/master/t
 
 All jupyter notebook files can be found ...
 
-## R
+## Getting started using R
 
-* [**Getting started: training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html): using simple simulated data  
+* [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html): using simple simulated data  
 
-* [**Getting started: downstream analysis in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html): using simple simulated data  
+* [**Downstream analysis in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html): using simple simulated data  
 
 * [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis in R.  
 
 * [**Demonstration of the stochastic inference algorithm**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html): this is only useful for very large data sets and when having access to GPUs.
 
-## Python
 
+## Getting started using Python
 
-* [**Getting started: training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a jupyter notebook demonstrating how to train a MOFA model using simple simulated data  
+* [**Training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a jupyter notebook demonstrating how to train a MOFA model using simple simulated data  
 
 * **Downstream analysis in Python**: in preparation...
+
 
 ## Case examples using real data (in R)
 
@@ -48,9 +49,11 @@ All jupyter notebook files can be found ...
 
 * **Analysis of CITE-seq data**: still in preparation, reach us if you have questions... 
  
+
 ## Case examples (in Python)
 
 In preparation...
+
 
 ## Template scripts
 
