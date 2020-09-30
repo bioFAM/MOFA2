@@ -49,7 +49,7 @@ The MOFA community has a Slack group where we provide quick and personalised hel
   <div class="column">
     <figure align="center">
     <img src="images/damien.jpeg" alt='missing' width="250" height="250"/>
-    <figcaption> <b>Damien Arnol</b> <br> Predoctoral Researcher  <br> EMBL-EBI <br> <a href="mailto:damien.arnol@gmail.com">damien.arnol@gmail.com</a> </figcaption>
+    <figcaption> <b>Damien Arnol</b> <br> Director J2-Reliance Ltd  <br> EMBL-EBI <br> <a href="mailto:damien.arnol@gmail.com">damien.arnol@gmail.com</a> </figcaption>
     </figure>
   </div>
 </div>
