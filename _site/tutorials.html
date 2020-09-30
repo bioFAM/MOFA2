@@ -51,18 +51,29 @@
 
 <h3 id="r">R</h3>
 <ul>
-  <li><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html"><strong>Training a model in R</strong></a>: using simple simulated data</li>
-  <li><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html"><strong>Downstream analysis in R</strong></a>: using simple simulated data</li>
-  <li><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html"><strong>Gene set enrichment analysis</strong></a>: demonstrates how to do gene set enrichment analysis in R.</li>
-  <li><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html"><strong>Demonstration of the stochastic inference algorithm</strong></a>: this is only useful for very large data sets and when having access to GPUs.</li>
+  <li>
+    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html"><strong>Training a model in R</strong></a>: using simple simulated data</p>
+  </li>
+  <li>
+    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html"><strong>Downstream analysis in R</strong></a>: using simple simulated data</p>
+  </li>
+  <li>
+    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html"><strong>Gene set enrichment analysis</strong></a>: demonstrates how to do gene set enrichment analysis in R.</p>
+  </li>
+  <li>
+    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html"><strong>Demonstration of the stochastic inference algorithm</strong></a>: this is only useful for very large data sets and when having access to GPUs.</p>
+  </li>
 </ul>
 
 <h3 id="python">Python</h3>
 
 <ul>
-  <li><a href="https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb"><strong>Training a model in Python</strong></a>: a jupyter notebook demonstrating how to train a MOFA model using simple simulated data
-<!-- * [**Downstream analysis in Python**:](https://github.com/gtca/mofax):  --></li>
-  <li><strong>Downstream analysis in Python</strong>: in preparation…</li>
+  <li>
+    <p><a href="https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb"><strong>Training a model in Python</strong></a>: a jupyter notebook demonstrating how to train a MOFA model using simple simulated data</p>
+  </li>
+  <li>
+    <p><strong>Downstream analysis in Python</strong>: in preparation…</p>
+  </li>
 </ul>
 
 <h2 id="case-examples-using-real-data-in-r">Case examples using real data (in R)</h2>
@@ -78,10 +89,10 @@
     <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html"><strong>Analysis of a time course scRNA-seq data set using the multi-group framework</strong></a>: <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1#Fig2">Figure 2 of the MOFA+ paper</a>. Demonstrates the multi-group functionality and how to train a MOFA model from a Seurat object.</p>
   </li>
   <li>
-    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html"><strong>Integration of scNMT-seq data</strong></a>: <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1#Fig4">Figure 4 of the MOFA+ paper</a>. Demonstrates the simultaneous multi-view and multi-group functionality using the <a href="https://www.nature.com/articles/s41586-019-1825-8">scNMT-seq mouse gastrulation atlas</a>.</p>
+    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html"><strong>Integration of scNMT-seq data  (single-cell multi-omics)</strong></a>: <a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1#Fig4">Figure 4 of the MOFA+ paper</a>. Demonstrates the simultaneous multi-view and multi-group functionality using the <a href="https://www.nature.com/articles/s41586-019-1825-8">scNMT-seq mouse gastrulation atlas</a>.</p>
   </li>
   <li>
-    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html"><strong>Integration of SNARE-seq data: scRNA-seq and scATAC-seq from the same cell)</strong></a>. Demonstrates how MOFA can be used for the analysis of paired scRNA+scATAC data (from the same cell) using a multi-modal Seurat object. This data set is very noisy and the results are not fantastic, we suggest you have a look at the Chromium Single Cell Multiome ATAC + Gene Expression vignette instead.</p>
+    <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html"><strong>Integration of SNARE-seq data (single-cell multi-omics)</strong></a>. Demonstrates how MOFA can be used for the analysis of paired scRNA+scATAC data (from the same cell) using a multi-modal Seurat object. This data set is very noisy and the results are not fantastic, we suggest you have a look at the Chromium Single Cell Multiome ATAC + Gene Expression vignette instead.</p>
   </li>
   <li>
     <p><a href="https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/microbiome_vignette.html"><strong>Analysis of multi-modal microbiome data</strong></a>: we demonstrate how to systematically integrate viral, fungal and bacterial sequence data.
@@ -99,6 +110,17 @@
 <h2 id="case-examples-in-python">Case examples (in Python)</h2>
 
 <p>In preparation…</p>
+
+<h2 id="template-scripts">Template scripts</h2>
+
+<p>We provide two template scripts to train your model in <a href="https://github.com/bioFAM/MOFA2/blob/master/template_script.R">R</a> and <a href="https://github.com/bioFAM/MOFA2/blob/master/template_script.py">Python</a>. Please see the tutorials for more details regarding the input data format, etc.</p>
+
+<h2 id="documentation">Documentation</h2>
+
+<ul>
+  <li><a href="https://github.com/bioFAM/MOFA2/blob/master/documentation.pdf">R package</a></li>
+  <li><a href="">Python package</a></li>
+</ul>
 
 
 <!--       <footer class="site-footer">
