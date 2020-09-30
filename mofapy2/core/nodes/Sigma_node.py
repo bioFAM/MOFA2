@@ -123,8 +123,9 @@ class Sigma_Node(Node):
         self.warping_freq = warping_freq
         self.warping_open_begin = warping_open_begin
         self.warping_open_end = warping_open_end
-        assert self.start_opt % self.warping_freq == 0,\
-            "start_opt should be a multiple of opt_freq"            # to ensure in the first opt. step alignment is performed
+        if self.warping:
+            assert self.start_opt % self.warping_freq == 0,\
+                "start_opt should be a multiple of warping_freq"            # to ensure in the first opt. step alignment is performed
 
         # sparse GPs
         self.idx_inducing = idx_inducing
@@ -434,6 +435,7 @@ class Sigma_Node(Node):
             self.Kg.set_parameters(x=x, sigma=sigma, k=k,
                                    spectral_decomp=self.kronecker)  # set and recalculate group kernel (matrix and spectral decomposition if Kronecker
 
+        # TODO if kronekcer struc Kc has only V and D not Kmat
         val = (1-self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx, :][:,self.covidx] * self.Kg.Kmat[k, self.groupsidx, :][:, self.groupsidx] + self.zeta[k] *np.eye(self.N)
         return val[id1,id2]
 
@@ -458,13 +460,27 @@ class Sigma_Node(Node):
         gradient_Sigma_zeta = - self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx, :][:,self.covidx] *\
                               self.Kg.Kmat[k, self.groupsidx, :][:, self.groupsidx] +\
                               np.eye(self.N)
+
+        Gmat = np.dot(x.transpose(), x) + sigma * np.eye(self.G)
+        Gmat_sqrt = np.sqrt(Gmat)
+        N = np.array([[Gmat_sqrt[g,g] * Gmat_sqrt[h,h] for g in range(self.G)] for h in range(self.G)])
+        AN_sigma = np.array([[-0.5 * Gmat_sqrt[g,g] / Gmat_sqrt[h,h] -0.5 * Gmat_sqrt[h,h] / Gmat_sqrt[g,g] for g in range(self.G)] for h in range(self.G)])
+        N2  = np.array([[Gmat[g,g] * Gmat[h,h] for g in range(self.G)]for h in range(self.G)])
+        Z =  np.dot(x.transpose(), x) # diagonal can be neglected as set to 1, gradient 0
+        # AZ_sigma = 0
+        diffGmat_sigma = (1-np.eye(self.G)) * Z * AN_sigma / N2
+        gradient_Sigma_sigma = (1 - self.zeta[k]) *\
+                               diffGmat_sigma[self.groupsidx, :][:,self.groupsidx] \
+                               * self.Kc.Kmat[self.Kc.get_best_lidx(k),self.covidx, :][:, self.covidx]
+        drg = [[-0.5 * 1/ Gmat_sqrt[g,g] * 2 * x[r, g] for r in range(self.Kg.rank)] for g in range(self.G)]
+        # below diagonal can be neglected as set to 1, gradient 0
+        AN_x = [[np.outer(np.diag(Gmat_sqrt), drg[g][r] * np.eye(self.G)[g, :]) + np.outer(np.diag(Gmat_sqrt), drg[g][r] * np.eye(self.G)[g, :]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
+        AZ_x = [[np.outer(x[r, :], np.eye(self.G)[g, :]) + np.outer(x[r, :],np.eye(self.G)[g,:]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
+        diffGmat_x  = [[(1-np.eye(self.G)) * (Z * AN_x[g][r] + AZ_x[g][r] * N) / N2 for r in range(self.Kg.rank)] for g in range(self.G)]
         gradient_Sigma_x = [(1 - self.zeta[k]) *
-                            (np.outer(x[r, :], np.eye(self.G)[g, :]) + np.outer(x[r, :],np.eye(self.G)[g,:]).transpose())[self.groupsidx, :][:, self.groupsidx] *
+                            diffGmat_x[g][r][self.groupsidx, :][:,self.groupsidx] *
                             self.Kc.Kmat[self.Kc.get_best_lidx(k),self.covidx, :][:,self.covidx]
                             for r in range(self.Kg.rank) for g in range(self.G)]
-        gradient_Sigma_sigma = (1 - self.zeta[k]) *\
-                               np.eye(self.G)[self.groupsidx, :][:,self.groupsidx] \
-                               * self.Kc.Kmat[self.Kc.get_best_lidx(k),self.covidx, :][:, self.covidx]
 
         return [gradient_Sigma_zeta[id1,id2]] + [gradient_Sigma_sigma[id1,id2]] + [k[id1,id2] for k in gradient_Sigma_x]
 
@@ -539,20 +555,25 @@ class Sigma_Node(Node):
 
                     # optimize
                     if self.use_gradients and self.model_groups:
+                        # check gradients are calulcated correctly
                         # z = np.random.uniform(0, 1, len(par_init))
                         # s.optimize.approx_fprime(z, self.calc_neg_elbo_k, 1.4901161193847656e-08, lidx, k, var) - self.calc_gradient(z, lidx, k, var)
-                        a = np.zeros(len(par_init))
-                        for n in range(10):
-                            z = np.random.uniform(0, 1, len(par_init))
-                            for i in range(self.N):
-                                for j in range(self.N):
-                                    diff = np.abs(s.optimize.approx_fprime(z, self.sigma_fun, 1.4901161193847656e-08, lidx, k, var,i,j) - self.sigma_fun_grad(z, lidx, k, var,i,j))
-                                    for l in range(len(diff)):
-                                        if diff[l] > a[l]:
-                                            a[l] = diff[l]
-                            print(a)
+                        # a = np.zeros(len(par_init))
+                        # for n in range(1):
+                        #     z = np.random.uniform(0, 1, len(par_init))
+                        #     G_sigma_approx = np.array([[s.optimize.approx_fprime(z, self.sigma_fun, 1.4901161193847656e-08, lidx, k, var, i, j) for i in range(self.N)] for j in range(self.N)])
+                        #     G_sigma_calc = np.array([[self.sigma_fun_grad(z, lidx, k, var, i, j) for i in range(self.N)] for j in range(self.N)])
+                        #     F_calc = np.array([[ self.sigma_fun(z, lidx, k, var, i, j) for i in range(self.N)] for j in range(self.N)])
+                        #     for i in range(self.N):
+                        #         for j in range(self.N):
+                        #             diff = np.abs(s.optimize.approx_fprime(z, self.sigma_fun, 1.4901161193847656e-08, lidx, k, var,i,j) - self.sigma_fun_grad(z, lidx, k, var,i,j))
+                        #             for l in range(len(diff)):
+                        #                 if diff[l] > a[l]:
+                        #                     a[l] = diff[l]
+                        #     print(a)
+                        # assert np.all([s.optimize.check_grad(self.calc_neg_elbo_k,self.calc_gradient, np.random.uniform(0,1,4), lidx, k, var) < 1e-7 for k in range(10)]),\
+                        #     "Wrong gradients"
 
-                        assert np.all([s.optimize.check_grad(self.calc_neg_elbo_k,self.calc_gradient, np.random.uniform(0,1,4), lidx, k, var) < 1e-7 for k in range(10)]), "Wrong gradients"
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds, jac = self.calc_gradient) # L-BFGS-B
                     else:
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0=par_init, bounds=bounds)

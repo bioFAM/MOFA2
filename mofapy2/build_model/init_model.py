@@ -271,9 +271,7 @@ class initModel(object):
                   opt_freq = 10, model_groups = False, use_gpytorch = False):
         dim = (self.K,)
 
-        # self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, idx_inducing, warping, warping_freq, warping_ref,
-        #                             warping_open_begin, warping_open_end, opt_freq)
-        if model_groups:
+        if use_gpytorch and model_groups: # to use gpytorch - this does not work yet
             self.Sigma = Sigma_Node_torch(dim=dim, sample_cov=sample_cov, groups=groups,
                                         start_opt=start_opt, n_grid=n_grid, idx_inducing=idx_inducing,
                                         warping=warping, warping_freq=warping_freq, warping_ref=warping_ref,
