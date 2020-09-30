@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+
+    <meta charset="UTF-8">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Installation | Multi-Omics Factor Analysis (MOFA+)</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Installation" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Multi-Omics Factor Analysis V2 (MOFA+)" />
+<meta property="og:description" content="Multi-Omics Factor Analysis V2 (MOFA+)" />
+<link rel="canonical" href="http://localhost:4000/installation.html" />
+<meta property="og:url" content="http://localhost:4000/installation.html" />
+<meta property="og:site_name" content="Multi-Omics Factor Analysis (MOFA+)" />
+<script type="application/ld+json">
+{"headline":"Installation","description":"Multi-Omics Factor Analysis V2 (MOFA+)","@type":"WebPage","url":"http://localhost:4000/installation.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#157878">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="/assets/css/style.css?v=33b8e818418c8e3e88668fb03d1d52bc031c390a">
+  </head>
+  <body>
+    <!-- <a id="skip-to-content" href="#content">Skip to the content.</a> -->
+
+    <header class="page-header" role="banner">
+      <h1 class="project-name">Installation</h1>
+      <h2 class="project-tagline">Multi-Omics Factor Analysis V2 (MOFA+)</h2>
+
+      <a href="index.html" class="btn">Home</a>
+      <a href="installation.html" class="btn">Installation</a>
+      <a href="tutorials.html" class="btn">Tutorials</a>
+      <a href="http://www.ebi.ac.uk/shiny/mofa/" class="btn">Interactive web server</a>
+      <a href="faq.html" class="btn">FAQ</a>
+      <a href="contact.html" class="btn">Contact</a>
+      
+        <a href="https://github.com/bioFAM/MOFA2" class="btn">View on GitHub</a>
+      
+    </header>
+
+    <main id="content" class="main-content" role="main">
+      <p>The core of MOFA is implemented in Python. However, the training and downstream analysis can also be run with R</p>
+
+<h3 id="python-dependencies-for-both-python-and-r-users">Python dependencies (for both Python and R users)</h3>
+
+<p>Python dependencies can be installed using pip (from the Unix terminal). This has to be done before opening the R terminal</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">mofapy2</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="r-package-only-for-r-users">R package (only for R users)</h3>
+
+<p>MOFA2 R package can be installed in R:</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"bioFAM/MOFA2/MOFA2"</span><span class="p">,</span><span class="w"> </span><span class="n">build_opts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"--no-resave-data --no-build-vignettes"</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The connection between R and Python is dona via <a href="ttps://rstudio.github.io/reticulate">reticulate</a>. Sometimes this needs <a href="(https://rstudio.github.io/reticulate/reference/use_python.html)">configuration</a> and it is the source of most problems in the MOFA R package, specially when you have multiple versions of Python installed. See our FAQ section or reach us if you have issues.</p>
+
+<h3 id="installation-using-docker-image">Installation using Docker image</h3>
+
+<p>If you use Docker, you can build an image using the provided Dockerfile:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker build -t mofa2 .
+</code></pre></div></div>
+
+<p>You will then be able to use R or Python from the container.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
+#                   ^
+#                   |
+#                    use `-v` to map a folder on your machine to a container directory
+</code></pre></div></div>
+
+<p>The command above will launch R with MOFA2 and its dependencies installed while mounting <code class="language-plaintext highlighter-rouge">$DATA_DIRECTORY</code> to the container.</p>
+
+<p>You can also pull <a href="https://hub.docker.com/r/gtca/mofa2">the pre-build image from dockerhub</a>.</p>
+
+
+<!--       <footer class="site-footer">
+        
+          <span class="site-footer-owner"><a href="https://github.com/bioFAM/MOFA2">MOFA2</a> is maintained by <a href="https://github.com/bioFAM">bioFAM</a>.</span>
+        
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a>.</span>
+      </footer> -->
+
+    </main>
+  </body>
+</html>
