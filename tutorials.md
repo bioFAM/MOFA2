@@ -3,22 +3,28 @@ layout: default
 title: Tutorials
 ---
 
-## Learning the basics
+<!-- ## Learning the basics -->
 
-* [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started.md): general overview and description of the method, for both R and Python users.
+<!-- * [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started.md): general overview and description of the method, for both R and Python users. -->
 
-### R
-* [**Training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html): using simple simulated data  
+All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2/tree/master/tutorials_extended)
 
-* [**Downstream analysis in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html): using simple simulated data  
+All jupyter notebook files can be found ...
+
+## R
+
+* [**Getting started: training a model in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/getting_started_R.html): using simple simulated data  
+
+* [**Getting started: downstream analysis in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html): using simple simulated data  
 
 * [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis in R.  
 
 * [**Demonstration of the stochastic inference algorithm**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html): this is only useful for very large data sets and when having access to GPUs.
 
-### Python
+## Python
 
-* [**Training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a jupyter notebook demonstrating how to train a MOFA model using simple simulated data  
+
+* [**Getting started: training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a jupyter notebook demonstrating how to train a MOFA model using simple simulated data  
 
 * **Downstream analysis in Python**: in preparation...
 

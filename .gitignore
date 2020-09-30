@@ -1,0 +1,33 @@
+# Resilio Sync
+*.sync
+
+# MAC
+*Icon*
+*.DS_Store
+
+*_site/*
+
+# R stuff
+*.Rhistory
+*.rds
+
+# Images
+*.pdf
+*.tiff
+*.ai
+*.svg
+# *.png
+
+# Data files
+*.hdf5
+*.gz
+*.zip
+
+# output files
+*.html
+*.log
+*.tsv
+
+# Ignore local folders
+**/local-data
+*.Rproj.user
