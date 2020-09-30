@@ -124,7 +124,7 @@ class Z_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
 
     def calcELBOgrad_k(self, k, gradSigma):
         """
-        Method to calculate ELBO per factor - required for grid search in Sigma node
+        Method to calculate ELBO gradients per factor - required for optimization in Sigma node
         """
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
         Qmean, Qcov = Qpar['mean'], Qpar['cov']
@@ -147,7 +147,7 @@ class Z_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
 
     def calculateELBO_k(self, k):
         """
-        Method to calculate ELBO per factor - required for grid search in Sigma node
+        Method to calculate ELBO per factor - required for optimization in Sigma node
         """
         # Collect parameters and expectations of current node
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
