@@ -27,27 +27,3 @@ In MOFA2 we added the following improvements:
 * **Speed**: the training procedure is now 2-3x faster in standard CPUs.
 
 * **GPU support**: the training procedure can be massively accelerated using GPUs. For this you have to install and configure the [CuPy package](https://cupy.chainer.org).
-
-## Citation
-
-    @article{Argelaguet2018,
-        author = {Argelaguet, R. and Velten, B. and Arnol, D. and Dietrich, S. and Zenz, T. and Marioni, J. C. and Buettner, F. and Huber, W. and Stegle, O.},
-        title = {Multi-Omics Factor Analysis-a framework for unsupervised integration of multi-omics data sets},
-        journal = {Mol Syst Biol},
-        year = {2018},
-        volume = {14},
-        number = {6},
-        pages = {e8124}
-    }
-
-    @article{Argelaguet2020,
-        author = {Argelaguet, R. and Arnol, D. and Bredikhin, D. and Deloro, Y. and Velten, B. and Marioni, J.C. and Stegle, O.},
-        title = {MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data},
-        journal = {Genome Biology},
-        year = {2020},
-        volume = {21},
-        number = {1},
-        pages = {111}
-    }
-
-
