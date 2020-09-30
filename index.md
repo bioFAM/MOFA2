@@ -1,6 +1,6 @@
 ---
 layout: default
-title: What is MOFA?
+title: MOFA
 ---
 
 MOFA is a factor analysis model that provides a **general framework for the integration of multi-omic data sets** in an unsupervised fashion.  
