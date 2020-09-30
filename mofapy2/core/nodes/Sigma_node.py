@@ -462,11 +462,11 @@ class Sigma_Node(Node):
                               np.eye(self.N)
 
         # gradient wrt sigma
-        Gmat = Kg #np.dot(x.transpose(), x) + sigma * np.eye(self.G)
-        Gmat_sqrt = np.sqrt(Gmat)
-        N = np.array([[Gmat_sqrt[g,g] * Gmat_sqrt[h,h] for g in range(self.G)] for h in range(self.G)])
-        AN_sigma = np.array([[-0.5 * Gmat_sqrt[g,g] / Gmat_sqrt[h,h] -0.5 * Gmat_sqrt[h,h] / Gmat_sqrt[g,g] for g in range(self.G)] for h in range(self.G)])
-        N2  = np.array([[Gmat[g,g] * Gmat[h,h] for g in range(self.G)]for h in range(self.G)])
+        Gmat_unscaled = np.dot(x.transpose(), x) + sigma * np.eye(self.G) # this is Kg before scaled to correlation
+        Gmat_unscaled_sqrt = np.sqrt(Gmat_unscaled)
+        N = np.array([[Gmat_unscaled_sqrt[g,g] * Gmat_unscaled_sqrt[h,h] for g in range(self.G)] for h in range(self.G)])
+        AN_sigma = np.array([[-0.5 * Gmat_unscaled_sqrt[g,g] / Gmat_unscaled_sqrt[h,h] -0.5 * Gmat_unscaled_sqrt[h,h] / Gmat_unscaled_sqrt[g,g] for g in range(self.G)] for h in range(self.G)])
+        N2  = np.array([[Gmat_unscaled[g,g] * Gmat_unscaled[h,h] for g in range(self.G)]for h in range(self.G)])
         Z =  np.dot(x.transpose(), x) # diagonal can be neglected as set to 1, gradient 0
         # AZ_sigma = 0
         diffGmat_sigma = (1-np.eye(self.G)) * Z * AN_sigma / N2
@@ -475,9 +475,9 @@ class Sigma_Node(Node):
                                * Kc[self.covidx, :][:, self.covidx]
 
         # gradient wrt x
-        drg = [[-0.5 * 1/ Gmat_sqrt[g,g] * 2 * x[r, g] for r in range(self.Kg.rank)] for g in range(self.G)]
+        drg = [[-0.5 * 1/ Gmat_unscaled_sqrt[g,g] * 2 * x[r, g] for r in range(self.Kg.rank)] for g in range(self.G)]
         # below diagonal can be neglected as set to 1, gradient 0
-        AN_x = [[np.outer(np.diag(Gmat_sqrt), drg[g][r] * np.eye(self.G)[g, :]) + np.outer(np.diag(Gmat_sqrt), drg[g][r] * np.eye(self.G)[g, :]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
+        AN_x = [[np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]) + np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
         AZ_x = [[np.outer(x[r, :], np.eye(self.G)[g, :]) + np.outer(x[r, :],np.eye(self.G)[g,:]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
         diffGmat_x  = [[(1-np.eye(self.G)) * (Z * AN_x[g][r] + AZ_x[g][r] * N) / N2 for r in range(self.Kg.rank)] for g in range(self.G)]
         gradient_Sigma_x = [(1 - self.zeta[k]) *
@@ -506,7 +506,9 @@ class Sigma_Node(Node):
             for l in range(len(a)):
                 a[l] = np.max(np.abs(G_sigma_approx[:,:,l] - G_sigma_calc[l]))
             print("Maximal differences in gradient of Sigma for lidx", lidx,":", a)
-            print("Difference in ELBO gradient:", s.optimize.check_grad(self.calc_neg_elbo_k, self.calc_neg_elbo_grad_k, z), lidx, k, var))
+            s.optimize.approx_fprime(z, self.calc_neg_elbo_k, 1.4901161193847656e-08, lidx, k, var)
+            self.calc_neg_elbo_grad_k( z, lidx, k, var)
+            print("Difference in ELBO gradient:", s.optimize.check_grad(self.calc_neg_elbo_k, self.calc_neg_elbo_grad_k, z, lidx, k, var))
 
     def optimise(self):
         """
@@ -577,7 +579,7 @@ class Sigma_Node(Node):
 
                     # optimize
                     if self.use_gradients and self.model_groups: # without group model there is only a single parameter (zeta) and analytical gradients not required
-                        self.check_gradient(par_init, lidx, k, var)
+                        # self.check_gradient(par_init, lidx, k, var)
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds, jac = self.calc_neg_elbo_grad_k) # L-BFGS-B
                     else:
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0=par_init, bounds=bounds)

@@ -139,9 +139,9 @@ class Z_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
             p_cov_inv = self.p_cov_inv
             p_cov_inv_logdet = np.linalg.slogdet(self.p_cov_inv)[1]
 
-        term1 = 0.5 * np.trace(gpu_utils.dot(gradSigma, p_cov_inv[k, :,:]))
-        term2 = - 0.5 * np.trace(gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:],  Qcov[k, :, :]))))
-        term3 = -0.5 * gpu_utils.dot(QE[:, k].transpose(), gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:], QE[:,k]))))
+        term1 = - 0.5 * np.trace(gpu_utils.dot(gradSigma, p_cov_inv[k, :,:]))
+        term2 = 0.5 * np.trace(gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:],  Qcov[k, :, :]))))
+        term3 = 0.5 * gpu_utils.dot(QE[:, k].transpose(), gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:], QE[:,k]))))
 
         return term1 + term2 + term3
 
