@@ -10,23 +10,18 @@ The MOFA community has a Slack group where we provide quick and personalised hel
 ## Software maintainers
 
 <head>
-<!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
-
 <style type="text/css">
-
 /* Create two equal columns that floats next to each other */
 .column {
   float: left;
   width: 50%;
   padding: 10px;
 }
-
 /* Clear floats after the columns */
 .row:after {
   content: "";
   display: table;
-  clear: both;
-  padding: 100px;
+  clear: both
 }
 </style>
 </head>
@@ -58,5 +53,12 @@ The MOFA community has a Slack group where we provide quick and personalised hel
     </figure>
   </div>
 </div>
+</div>
 
 
+## Sponsors
+
+<figure align="center">
+  <img src="images/tod.jpg" alt='missing' width="500" height="250"/>
+  <figcaption> Tod (Ricard's cat) </figcaption>
+</figure>
