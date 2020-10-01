@@ -17,9 +17,9 @@ All jupyter notebook files can be found ...
 
 * [**Downstream analysis in R**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html): using simple simulated data  
 
-* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html): demonstrates how to do gene set enrichment analysis in R.  
+* [**Gene set enrichment analysis**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/GSEA.html): demonstrates how to do gene set enrichment analysis in R.  
 
-* [**Demonstration of the stochastic inference algorithm**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/stochastic_inference.html): this is only useful for very large data sets and when having access to GPUs.
+* [**Demonstration of the stochastic inference algorithm**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/stochastic_inference.html): this is only useful for very large data sets and when having access to GPUs.
 
 
 ## Getting started using Python
@@ -31,19 +31,19 @@ All jupyter notebook files can be found ...
 
 ## Case examples using real data (in R)
 
-* [**(authors' favourite) Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/CLL.html): a bulk multi-omics data set. [Figure 2 and 3 of the MOFA v1 paper](https://www.embopress.org/doi/full/10.15252/msb.20178124#msb178124-fig-0002).  
+* [**(authors' favourite) Analysis of chronic lymphocytic leukaemia cohort for personalised medicine**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/CLL.html): a bulk multi-omics data set. [Figure 2 and 3 of the MOFA v1 paper](https://www.embopress.org/doi/full/10.15252/msb.20178124#msb178124-fig-0002).  
 
-* [**(authors' favourite) Integrative analysis of the Chromium Single Cell Multiome ATAC + Gene Expression assay**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/10x_scRNA_scATAC.html): this is the result of a collaboration between the MOFA team and the 10x Genomics R&D team to provide a downstream analysis pipeline for the new RNA+ATAC multi-modal technology.  
+* [**(authors' favourite) Integrative analysis of the Chromium Single Cell Multiome ATAC + Gene Expression assay**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/10x_scRNA_scATAC.html): this is the result of a collaboration between the MOFA team and the 10x Genomics R&D team to provide a downstream analysis pipeline for the new RNA+ATAC multi-modal technology.  
 
-* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html): [Figure 2 of the MOFA+ paper](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1#Fig2). Demonstrates the multi-group functionality and how to train a MOFA model from a Seurat object.  
+* [**Analysis of a time course scRNA-seq data set using the multi-group framework**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/scRNA_gastrulation.html): [Figure 2 of the MOFA+ paper](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1#Fig2). Demonstrates the multi-group functionality and how to train a MOFA model from a Seurat object.  
 
-* [**Integration of scNMT-seq data  (single-cell multi-omics)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scNMT_gastrulation.html): [Figure 4 of the MOFA+ paper](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1#Fig4). Demonstrates the simultaneous multi-view and multi-group functionality using the [scNMT-seq mouse gastrulation atlas](https://www.nature.com/articles/s41586-019-1825-8).  
+* [**Integration of scNMT-seq data  (single-cell multi-omics)**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/scNMT_gastrulation.html): [Figure 4 of the MOFA+ paper](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1#Fig4). Demonstrates the simultaneous multi-view and multi-group functionality using the [scNMT-seq mouse gastrulation atlas](https://www.nature.com/articles/s41586-019-1825-8).  
 
-* [**Integration of SNARE-seq data (single-cell multi-omics)**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/SNARE_seq.html). Demonstrates how MOFA can be used for the analysis of paired scRNA+scATAC data (from the same cell) using a multi-modal Seurat object. This data set is very noisy and the results are not fantastic, we suggest you have a look at the Chromium Single Cell Multiome ATAC + Gene Expression vignette instead.  
+* [**Integration of SNARE-seq data (single-cell multi-omics)**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/SNARE_seq.html). Demonstrates how MOFA can be used for the analysis of paired scRNA+scATAC data (from the same cell) using a multi-modal Seurat object. This data set is very noisy and the results are not fantastic, we suggest you have a look at the Chromium Single Cell Multiome ATAC + Gene Expression vignette instead.  
 
-* [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/microbiome_vignette.html): we demonstrate how to systematically integrate viral, fungal and bacterial sequence data.
+* [**Analysis of multi-modal microbiome data**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/microbiome_vignette.html): we demonstrate how to systematically integrate viral, fungal and bacterial sequence data.
 *
-<!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/model_selection.html) -->
+<!-- * [**Robustness analysis and model selection**](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/model_selection.html) -->
 
 <!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 
