@@ -38,15 +38,21 @@ compare_factors <- function(models, ...) {
   # Get latent factors
   LFs <- lapply(seq_along(models), function(i){
     do.call(rbind, get_factors(models[[i]]))
-    })
-  
-  # Rename factors
-  for (i in seq_along(LFs))
-    colnames(LFs[[i]]) <- paste(names(models)[i], colnames(LFs[[i]]), sep="_")
+  })
   
   # Sanity checks
   if (is.null(Reduce(intersect,lapply(LFs, rownames))))
     stop("No common samples in all models for comparison")
+
+  # Align samples between models
+  samples_names <- Reduce(intersect, map(LFs, rownames))
+  LFs <- lapply(LFs, function(z) {
+    z[samples_names,,drop=FALSE]
+  })
+  
+  # Rename factors
+  for (i in seq_along(LFs))
+    colnames(LFs[[i]]) <- paste(names(models)[i], colnames(LFs[[i]]), sep="_")
 
   # calculate correlation between factors across models
   corLFs <- cor(Reduce(cbind, LFs), use="complete.obs")

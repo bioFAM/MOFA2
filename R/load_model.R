@@ -243,8 +243,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   
   if ("variance_explained" %in% h5ls.out$name) {
     r2_list <- list(
-      r2_total = h5read(file, "variance_explained/r2_total"),
-      r2_per_factor = h5read(file, "variance_explained/r2_per_factor")
+      r2_total = h5read(file, "variance_explained/r2_total")[group_names],
+      r2_per_factor = h5read(file, "variance_explained/r2_per_factor")[group_names]
     )
     object@cache[["variance_explained"]] <- r2_list
   }

@@ -1,4 +1,4 @@
-FROM r-base:3.6.3
+FROM r-base:4.0.2
 
 WORKDIR /mofa2
 ADD . /mofa2
@@ -15,6 +15,6 @@ RUN R --vanilla -e "\
            'cowplot', 'ggrepel', 'foreach', 'reticulate', 'HDF5Array', 'DelayedArray', \
            'ggpubr', 'forcats', 'Rtsne', 'uwot'), \ 
          BiocManager::install)"
-RUN R CMD INSTALL --build MOFA2
+RUN R CMD INSTALL --build .
 
 CMD []
