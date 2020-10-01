@@ -1,0 +1,206 @@
+---
+title: "MOFA2: training a model in R"
+author:
+- name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
+- name: "Britta Velten"
+  affiliation: "German Cancer Research Center, Heidelberg, Germany"
+  email: "b.velten@dkfz-heidelberg.de"
+date: "`r Sys.Date()`"
+
+output:
+  BiocStyle::html_document:
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{MOFA2: How to train a model in R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette contains a detailed tutorial on how to train a MOFA model using R. A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R). Many more examples on application of MOFA to various multi-omics data sets can be found [here](https://biofam.github.io/MOFA2/tutorials.html).
+
+
+# Load libraries
+
+```{r message=FALSE}
+library(data.table)
+library(MOFA2)
+```
+
+# Is MOFA the right method for my data?
+
+MOFA (and factor analysis models in general) are useful to uncover variation in complex data sets that contain multiple sources of heterogeneity. This requires a **relatively large sample size (at least ~15 samples)**. In addition, MOFA needs the multi-modal measurements to be derived **from the same samples**. It is fine if you have samples that are missing some data modality, but there has to be a significant degree of matched measurements. 
+
+# Preprocessing the data
+
+## Normalisation
+
+Proper normalisation of the data is critical. **The model can handle three types of data**: continuous (modelled with a gaussian likelihood), small counts (modelled with a Poisson likelihood) and binary measurements (modelled with a bernoulli likelihood). Non-gaussian likelihoods give non-optimal results, we recommend the user to apply data transformations to obtain continuous measurements. For example, for count-based data such as RNA-seq or ATAC-seq we recommend size factor normalisation + variance stabilisation (i.e. a log transformation). 
+
+## Feature selection
+
+It is strongly recommended that you select **highly variable features (HVGs) per assay** before fitting the model. This ensures a faster training and a more robust inference procedure. Also, for data modalities that have very different dimensionalities we suggest a stronger feature selection fort he bigger views, with the aim of reducing the feature imbalance between data modalities.
+
+# Create the MOFA object
+
+To create a MOFA object you need to specify three dimensions: samples, features and view(s). Optionally, a group can also be specified for each sample (no group structure by default). MOFA objects can be created from a wide range of input formats, including:  
+
+- **a list of matrices**: this is recommended for relatively simple data.
+- **a long data.frame**: this is recommended for complex data sets with multiple views and/or groups.
+- **MultiAssayExperiment**: to connect with Bioconductor objects.
+- **Seurat**: for single-cell genomics users. See [this vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html)
+
+## List of matrices
+
+A list of matrices, where each entry corresponds to one view. Samples are stored in columns and features in rows.
+
+Let's simulate some data to start with
+```{r}
+data <- make_example_data(
+  n_views = 2, 
+  n_samples = 200, 
+  n_features = 1000, 
+  n_factors = 10
+)[[1]]
+
+lapply(data,dim)
+```
+
+Create the MOFA object:
+```{r message=FALSE}
+MOFAobject <- create_mofa(data)
+```
+
+Plot the data overview
+```{r}
+plot_data_overview(MOFAobject)
+```
+
+In case you are using the multi-group functionality, the groups can be specified using the `groups` argument as a vector with the group ID for each sample. Keep in mind that the multi-group functionality is a rather advanced option that we discourage for beginners. For more details on how the multi-group inference works, read the [FAQ section](https://biofam.github.io/MOFA2/faq.html) and [check this vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/scRNA_gastrulation.html). 
+
+```{r message=FALSE}
+N = ncol(data[[1]])
+groups = c(rep("A",N/2), rep("B",N/2))
+
+MOFAobject <- create_mofa(data, groups=groups)
+```
+
+Plot the data overview
+```{r}
+plot_data_overview(MOFAobject)
+```
+
+## Long data.frame
+
+A long data.frame with columns `sample`, `feature`, `view`, `group` (optional), `value`.  
+In my opinion this is the best format for complex data sets with multiple omics and potentially multiple groups of data. Also, there is no need to add rows that correspond to missing data:
+
+```{r }
+filepath <- system.file("extdata", "test_data.RData", package = "MOFA2")
+load(filepath)
+
+head(dt)
+```
+
+Create the MOFA object
+```{r }
+MOFAobject <- create_mofa(dt)
+print(MOFAobject)
+```
+
+Plot data overview
+```{r  out.width = "80%"}
+plot_data_overview(MOFAobject)
+```
+
+# Define options 
+
+## Define data options
+
+- **scale_groups**: if groups have different ranges/variances, it is good practice to scale each group to unit variance. Default is `FALSE`
+- **scale_views**: if views have different ranges/variances, it is good practice to scale each view to unit variance. Default is `FALSE`
+```{r }
+data_opts <- get_default_data_options(MOFAobject)
+head(data_opts)
+```
+
+## Define model options
+
+- **num_factors**: number of factors
+- **likelihoods**: likelihood per view (options are "gaussian", "poisson", "bernoulli"). Default is "gaussian".
+- **spikeslab_factors**: use spike-slab sparsity prior in the factors? default is `FALSE`.
+- **spikeslab_weights**: use spike-slab sparsity prior in the weights? default is `TRUE`.
+- **ard_factors**: use ARD prior in the factors? Default is `TRUE` if using multiple groups.
+- **ard_weights**: use ARD prior in the weights? Default is `TRUE` if using multiple views.
+
+Only change the default model options if you are familiar with the underlying mathematical model
+```{r }
+model_opts <- get_default_model_options(MOFAobject)
+model_opts$num_factors <- 10
+head(model_opts)
+```
+
+
+## Define training options
+
+- **maxiter**: number of iterations. Default is 1000.
+- **convergence_mode**: "fast" (default), "medium", "slow". For exploration, the fast mode is sufficient. For a final model, consider using medium" or even "slow", but hopefully results should not change much.
+- **gpu_mode**: use GPU mode? (needs [cupy](https://cupy.chainer.org/) installed and a functional GPU).
+- **verbose**: verbose mode?
+
+```{r }
+train_opts <- get_default_training_options(MOFAobject)
+head(train_opts)
+```
+
+# Build and train the MOFA object 
+
+Prepare the MOFA object
+```{r message=FALSE}
+MOFAobject <- prepare_mofa(
+  object = MOFAobject,
+  data_options = data_opts,
+  model_options = model_opts,
+  training_options = train_opts
+)
+```
+
+Train the MOFA model. Remember that in this step the `MOFA2` R package connets with the `mofapy2` Python package using `reticulate`. This sht source of most problems when running MOFA. See our [FAQ section](https://biofam.github.io/MOFA2/faq.html) if you have issues
+```{r}
+outfile = file.path(getwd(),"model.hdf5")
+MOFAobject.trained <- run_mofa(MOFAobject, outfile)
+```
+
+If everything is successful, you should observe an output analogous to the following:
+```
+
+######################################
+## Training the model with seed 1 ##
+######################################
+
+Iteration 1: time=0.03, ELBO=-52650.68, deltaELBO=837116.802 (94.082647669%), Factors=10
+
+(...)
+
+Iteration 9: time=0.04, ELBO=-50114.43, deltaELBO=23.907 (0.002686924%), Factors=10
+
+#######################
+## Training finished ##
+#######################
+
+Saving model in `/Users/ricard/data/mofa2/hdf5/model.hdf5...`r outfile`.
+```
+
+# Downstream analysis
+
+This finishes the tutorial on how to train a MOFA object from R. To continue with the downstream analysis, follow [this tutorial](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
+
+<details>
+  <summary>**Session Info**</summary>
+  
+```{r}
+sessionInfo()
+```
+
+</details>
