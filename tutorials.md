@@ -3,11 +3,7 @@ layout: default
 title: Tutorials
 ---
 
-<!-- ## Learning the basics -->
-
-<!-- * [**Getting started**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/getting_started.md): general overview and description of the method, for both R and Python users. -->
-
-All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2/tree/master/tutorials_extended)
+All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2_tutorials)
 
 All jupyter notebook files can be found ...
 
