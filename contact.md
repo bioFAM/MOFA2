@@ -3,7 +3,7 @@ layout: default
 title: Contact
 ---
 
-## Slack contact (recommended)
+## Slack (recommended)
 
 The MOFA community has a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
 
