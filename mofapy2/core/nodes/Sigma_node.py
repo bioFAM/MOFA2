@@ -505,10 +505,10 @@ class Sigma_Node(Node):
             G_sigma_approx = np.array([[s.optimize.approx_fprime(z, self.calc_Sigma_element, 1.4901161193847656e-08, lidx, k, i, j) for i in range(self.Nu)] for j in range(self.Nu)])
             # F_calc = np.array([[ self.sigma_fun(z, lidx, k, var, i, j) for i in range(self.Nu)] for j in range(self.Nu)])
             for l in range(len(a)):
-                a[l] = np.max(np.abs(G_sigma_approx[:,:,l] - G_sigma_calc[l]))
-            print("Maximal differences in gradient of Sigma for lidx", lidx,":", a)
-            print("Numerical:", s.optimize.approx_fprime(z, self.calc_neg_elbo_k, 1.4901161193847656e-08, lidx, k, var))
-            print("Analytical:", self.calc_neg_elbo_grad_k( z, lidx, k, var))
+                a[l] = np.sum(np.abs(G_sigma_approx[:,:,l] - G_sigma_calc[l]))
+            print("Sum of absolute differences in gradient of Sigma for lidx", lidx,":", a)
+            print("Numerical ELBO gradient:", s.optimize.approx_fprime(z, self.calc_neg_elbo_k, 1.4901161193847656e-08, lidx, k, var))
+            print("Analytical ELBO gradient:", self.calc_neg_elbo_grad_k( z, lidx, k, var))
             print("Difference in ELBO gradient:", s.optimize.check_grad(self.calc_neg_elbo_k, self.calc_neg_elbo_grad_k, z, lidx, k, var))
 
     def optimise(self):
