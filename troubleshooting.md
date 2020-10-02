@@ -9,7 +9,10 @@ MOFA works with R>=3. You need to clone the repository:
 ```
 git clone https://github.com/bioFAM/MOFA2
 ```
-and edit the `Depends` option in the `DESCRIPTION` file to your R version
+and edit the `Depends` option in the `DESCRIPTION` file to your R version. Then install the R package using 
+```
+R CMD INSTALL MOFA2
+```
 
 ### I get the following error when running `run_mofa` 
 
