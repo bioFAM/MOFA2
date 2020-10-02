@@ -1,0 +1,112 @@
+---
+title: "Illustration of MEFISTO on simulated data with spatial covariates"
+author: "Britta Velten"
+output:
+  BiocStyle::html_document:
+    toc: true
+package: MOFA
+vignette: >
+  %\VignetteIndexEntry{MOFA: MEFISTO usage on simulated data (spatial)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r, message=FALSE, warning=FALSE}
+library(MOFA2)
+library(tidyverse)
+library(pheatmap)
+```
+
+# Spatial data: Simulate an example data set
+To illustrate the SMOFA functionality of MOFA2 we simulate a small example data set with 4 different views and two covariates defining a spatial grid using `make_example_data`. The simulation is based on 4 factors, two of which vary smoothly along the covariate (with different lengthscales) and two are independent of the covariate. To mimic a situation where we only have incomplete data on the samples we mask 50% of the samples on average per view.
+```{r}
+set.seed(2020)
+
+# generate spatial grid and set number of views and samples
+sample_cov <- expand_grid(x = 1:10, y =1:10) %>% t()
+N <- ncol(sample_cov)
+M <- 4
+
+# generate example data
+dd <- make_example_data(sample_cov = sample_cov, n_samples = N, n_factors = 4,
+                        n_features = 200, n_views = M, lscales = c(5, 2, 0, 0))
+```
+
+Let's have a look at the simulated latent processes, which we want to recover:
+```{r}
+df <- data.frame(dd$Z, t(dd$sample_cov))
+df <- gather(df, key = "factor", value = "value", starts_with("simulated_factor"))
+ggplot(df, aes(x=covariate_1, y=covariate_2, fill = value)) + 
+    geom_tile() + 
+    facet_grid( ~ factor) + 
+    theme_bw() +
+    theme(
+      axis.text = element_text(size = rel(0.9), color = "black"), 
+      axis.title = element_text(size = rel(1.2), color = "black"), 
+      axis.line = element_line(color = "black", size = 0.5), 
+      axis.ticks = element_line(color = "black", size = 0.5)
+    )
+```
+
+# MEFISTO framework
+Using the MEFISTO framework is very similar to using MOFA2. In addition to the omics data, however, we now additionally specify the spatial positions for each sample. If you are not familiar with the MOFA2 framework, it might be helpful to have a look at MOFA2 tutorials first.
+
+## Create a MOFA object with covariates
+To create the MOFA object we need to specify the training data and the covariates for pattern detection and inference of smooth factors. Here, `sample_cov` is a matrix with samples in columns and covariates in rows. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
+
+```{r, message=FALSE, warning=FALSE}
+sm <- create_mofa(data = dd$data, covariate = dd$sample_cov)
+sm
+```
+
+We now successfully created a MOFA object that contains 4 views, 1 group and 2 covariates giving the spatial coordinates.
+
+## Prepare a MOFA object
+Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. For illustration pruposes, we only use a small number of training iterations.
+```{r, message=FALSE, warning=FALSE}
+train_opt <- get_default_training_options(sm)
+train_opt$maxiter <- 100
+model_opts <- get_default_model_options(sm)
+model_opts$num_factors <- 4
+sm <- prepare_mofa(sm, training_options = train_opt,
+                   model_options = model_opts)
+```
+
+## Run MOFA
+Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saves in the file specified as `outfile`. If none is specified the output is only saved in a temporary location.
+```{r, message=FALSE, warning=FALSE}
+sm <- run_mofa(sm)
+```
+
+## Down-stream analysis
+### Variance explained per factor
+Using `plot_variance_explained` we can explore which factor is active in which view. `plot_factor_cor` shows us whether the factors are correlated.
+```{r}
+plot_variance_explained(sm)
+r <- plot_factor_cor(sm)
+```
+
+### Plot the factors on the covariate
+The MOFA model has learnt paramerers for each factor that tell us how smoothly the factor varys along the covariate. A scale of 0 means that the factor captures variation independent of the covariate, a value close to 1 tells us that this factor varys very smoothly along the covariate. In this example, we find two factors that are non-smooth and two smooth factors. Using `plot_factors_on_cov_2d` we can plot the factors along the spatial coordinates, where we can distinguish smooth and non smooth variation across space.
+```{r}
+get_scales(sm)
+plot_factors_on_cov_2d(sm)
+```
+
+We can compare this to the factors that were simulated above and find that the model recaptured the two smooth as well as two stochstic patterns in space.
+
+### Exploration of weights
+As with MOFA+ we can now look deeper into the meaning of these factors by exploring the weights or performing feature set enrichment analysis.
+```{r}
+plot_weights(sm, factors = 4, view = 1)
+plot_top_weights(sm, factors = 3, view = 2)
+```
+
+
+# SessionInfo
+```{r}
+sessionInfo()
+```
+
+
