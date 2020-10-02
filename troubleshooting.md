@@ -3,6 +3,13 @@ layout: default
 title: Troubleshooting
 ---
 
+### I do not have R 4.0
+
+MOFA works with R>=3. You need to clone the repository:
+```
+git clone https://github.com/bioFAM/MOFA2
+```
+and edit the `Depends` option in the `DESCRIPTION` file to your R version
 
 ### I get the following error when running `run_mofa` 
 
