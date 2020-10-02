@@ -384,6 +384,7 @@ class Sigma_Node(Node):
 
     def calc_neg_elbo_grad_k(self, par, lidx, k, var):
         gradient_Sigma_zeta, gradient_Sigma_sigma, gradient_Sigma_x = self.calc_gradient_Sigma(par, lidx, k)
+
         gradient = [-var.calcELBOgrad_k(k, gradient_Sigma_zeta)] + \
                    [-var.calcELBOgrad_k(k, gradient_Sigma_sigma)] +\
                    [-var.calcELBOgrad_k(k, gradient_Sigma_x[i]) for i in range(len(gradient_Sigma_x))]
@@ -415,14 +416,14 @@ class Sigma_Node(Node):
 
         if self.kronecker:
             Vc, Dc = self.Kc.get_kernel_components_k(k)
-            Kc = gpu_utils.dot(gpu_utils.dot(Vc.transpose(), np.diag(Dc)), Vc)
+            Kc = gpu_utils.dot(gpu_utils.dot(Vc, np.diag(Dc)), Vc.transpose())
             Vg, Dg = self.Kg.get_kernel_components_k(k)
-            Kg = gpu_utils.dot(gpu_utils.dot(Vg.transpose(), np.diag(Dg)), Vg)
+            Kg = gpu_utils.dot(gpu_utils.dot(Vg, np.diag(Dg)), Vg.transpose())
+            val = (1-self.zeta[k]) * np.kron(Kg, Kc) + self.zeta[k] * np.eye(self.Nu)
         else:
             Kc = self.Kc.Kmat[self.Kc.get_best_lidx(k),:,:]
             Kg = self.Kg.Kmat[k,:,:]
-
-        val = (1-self.zeta[k]) * Kc[ self.covidx, :][:,self.covidx] * Kg[self.groupsidx, :][:, self.groupsidx] + self.zeta[k] *np.eye(self.Nu)
+            val = (1-self.zeta[k]) * Kc[ self.covidx, :][:,self.covidx] * Kg[self.groupsidx, :][:, self.groupsidx] + self.zeta[k] *np.eye(self.Nu)
 
         return val[id1,id2]
 
@@ -450,9 +451,9 @@ class Sigma_Node(Node):
         # get kernel matrices
         if self.kronecker: # TODO avoid building the full matrix use V and D below
             Vc, Dc = self.Kc.get_kernel_components_k(k)
-            Kc = gpu_utils.dot(gpu_utils.dot(Vc.transpose(), np.diag(Dc)), Vc)
+            Kc = gpu_utils.dot(gpu_utils.dot(Vc, np.diag(Dc)), Vc.transpose())
             Vg, Dg = self.Kg.get_kernel_components_k(k)
-            Kg = gpu_utils.dot(gpu_utils.dot(Vg.transpose(), np.diag(Dg)), Vg)
+            Kg = gpu_utils.dot(gpu_utils.dot(Vg, np.diag(Dg)), Vg.transpose())
         else:
             Kc = self.Kc.Kmat[self.Kc.get_best_lidx(k),:,:]
             Kg = self.Kg.Kmat[k,:,:]
@@ -508,7 +509,8 @@ class Sigma_Node(Node):
                 a[l] = np.sum(np.abs(G_sigma_approx[:,:,l] - G_sigma_calc[l]))
             print("Sum of absolute differences in gradient of Sigma for lidx", lidx,":", a)
             print("Numerical ELBO gradient:", s.optimize.approx_fprime(z, self.calc_neg_elbo_k, 1.4901161193847656e-08, lidx, k, var))
-            print("Analytical ELBO gradient:", self.calc_neg_elbo_grad_k( z, lidx, k, var))
+            print("Analytical ELBO gradient:", self.calc_neg_elbo_grad_k(z, lidx, k, var))
+            print("ELBO value:", self.calc_neg_elbo_k(z, lidx, k, var))
             print("Difference in ELBO gradient:", s.optimize.check_grad(self.calc_neg_elbo_k, self.calc_neg_elbo_grad_k, z, lidx, k, var))
 
     def optimise(self):
@@ -580,7 +582,7 @@ class Sigma_Node(Node):
 
                     # optimize
                     if self.use_gradients:
-                        self.check_gradient(par_init, lidx, k, var)
+                        # self.check_gradient(par_init, lidx, k, var)
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds, jac = self.calc_neg_elbo_grad_k) # L-BFGS-B
                     else:
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0=par_init, bounds=bounds)
