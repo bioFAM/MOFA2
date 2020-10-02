@@ -4,7 +4,7 @@ WORKDIR /mofa2
 ADD . /mofa2
 
 RUN apt-get update && apt-get install -f && apt-get install -y python3 python3-setuptools python3-dev
-RUN apt-get install -y libcurl4-openssl-dev
+RUN apt-get install -y libcurl4-openssl-dev libcairo2-dev
 RUN python3 setup.py install
 
 # Install bioconductor dependencies
@@ -13,7 +13,8 @@ RUN R --vanilla -e "\
   sapply(c('rhdf5', 'dplyr', 'tidyr', 'reshape2', 'pheatmap', 'corrplot', \
            'ggplot2', 'ggbeeswarm', 'scales', 'GGally', 'doParallel', 'RColorBrewer', \
            'cowplot', 'ggrepel', 'foreach', 'reticulate', 'HDF5Array', 'DelayedArray', \
-           'ggpubr', 'forcats', 'Rtsne', 'uwot', 'ggrastr'), \ 
+           'ggpubr', 'forcats', 'Rtsne', 'uwot', \
+           'systemfonts', 'ragg', 'Cairo', 'ggrastr'), \ 
          BiocManager::install)"
 RUN R CMD INSTALL --build .
 
