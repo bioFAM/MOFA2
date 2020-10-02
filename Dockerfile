@@ -13,7 +13,7 @@ RUN R --vanilla -e "\
   sapply(c('rhdf5', 'dplyr', 'tidyr', 'reshape2', 'pheatmap', 'corrplot', \
            'ggplot2', 'ggbeeswarm', 'scales', 'GGally', 'doParallel', 'RColorBrewer', \
            'cowplot', 'ggrepel', 'foreach', 'reticulate', 'HDF5Array', 'DelayedArray', \
-           'ggpubr', 'forcats', 'Rtsne', 'uwot'), \ 
+           'ggpubr', 'forcats', 'Rtsne', 'uwot', 'ggrastr'), \ 
          BiocManager::install)"
 RUN R CMD INSTALL --build .
 
