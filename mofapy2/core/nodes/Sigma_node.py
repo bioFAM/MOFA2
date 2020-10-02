@@ -57,7 +57,7 @@ class Sigma_Node(Node):
         super().__init__(dim)
 
         # dimensions and inputs
-        self.use_gradients = True
+        self.use_gradients = model_groups                           # without group model there is only a single parameter (zeta) and analytical gradients not required
         self.mini_batch = None
         self.sample_cov = sample_cov
         self.sample_cov_transformed = copy.copy(sample_cov)         # keep original covariate in place
@@ -86,11 +86,11 @@ class Sigma_Node(Node):
         if self.model_groups:
             self.G = len(self.groups)  # number of groups
             if rankx is None:
-                # rankx = np.min([np.max([1, np.floor(np.log(self.G)).astype(np.int64)]), 5])
-                if self.G < 50:
-                    rankx = 1
-                else:
-                    rankx = 2
+                rankx = 1
+                # if self.G < 50:
+                #     rankx = 1
+                # else:
+                #     rankx = 2
 
             # check: has Kronecker structure?
             if warping:
@@ -415,9 +415,9 @@ class Sigma_Node(Node):
 
         if self.kronecker:
             Vc, Dc = self.Kc.get_kernel_components_k(k)
-            Kc = gpu_utils.dot(gpu_utils.dot(Vc.tranpose(), Dc), Vc)
+            Kc = gpu_utils.dot(gpu_utils.dot(Vc.transpose(), np.diag(Dc)), Vc)
             Vg, Dg = self.Kg.get_kernel_components_k(k)
-            Kg = gpu_utils.dot(gpu_utils.dot(Vg.tranpose(), Dg), Vg)
+            Kg = gpu_utils.dot(gpu_utils.dot(Vg.transpose(), np.diag(Dg)), Vg)
         else:
             Kc = self.Kc.Kmat[self.Kc.get_best_lidx(k),:,:]
             Kg = self.Kg.Kmat[k,:,:]
@@ -448,11 +448,11 @@ class Sigma_Node(Node):
                                    spectral_decomp=self.kronecker)  # set and recalculate group kernel (matrix and spectral decomposition if Kronecker
 
         # get kernel matrices
-        if self.kronecker:
+        if self.kronecker: # TODO avoid building the full matrix use V and D below
             Vc, Dc = self.Kc.get_kernel_components_k(k)
-            Kc = gpu_utils.dot(gpu_utils.dot(Vc.tranpose(), Dc), Vc)
+            Kc = gpu_utils.dot(gpu_utils.dot(Vc.transpose(), np.diag(Dc)), Vc)
             Vg, Dg = self.Kg.get_kernel_components_k(k)
-            Kg = gpu_utils.dot(gpu_utils.dot(Vg.tranpose(), Dg), Vg)
+            Kg = gpu_utils.dot(gpu_utils.dot(Vg.transpose(), np.diag(Dg)), Vg)
         else:
             Kc = self.Kc.Kmat[self.Kc.get_best_lidx(k),:,:]
             Kg = self.Kg.Kmat[k,:,:]
@@ -507,8 +507,8 @@ class Sigma_Node(Node):
             for l in range(len(a)):
                 a[l] = np.max(np.abs(G_sigma_approx[:,:,l] - G_sigma_calc[l]))
             print("Maximal differences in gradient of Sigma for lidx", lidx,":", a)
-            s.optimize.approx_fprime(z, self.calc_neg_elbo_k, 1.4901161193847656e-08, lidx, k, var)
-            self.calc_neg_elbo_grad_k( z, lidx, k, var)
+            print("Numerical:", s.optimize.approx_fprime(z, self.calc_neg_elbo_k, 1.4901161193847656e-08, lidx, k, var))
+            print("Analytical:", self.calc_neg_elbo_grad_k( z, lidx, k, var))
             print("Difference in ELBO gradient:", s.optimize.check_grad(self.calc_neg_elbo_k, self.calc_neg_elbo_grad_k, z, lidx, k, var))
 
     def optimise(self):
@@ -579,7 +579,7 @@ class Sigma_Node(Node):
                     par_init = np.min(np.vstack([par_init, [bounds[k][1] for k in range(len(bounds))]]), axis = 0)
 
                     # optimize
-                    if self.use_gradients and self.model_groups: # without group model there is only a single parameter (zeta) and analytical gradients not required
+                    if self.use_gradients:
                         self.check_gradient(par_init, lidx, k, var)
                         res = s.optimize.minimize(self.calc_neg_elbo_k, args=(lidx, k, var), x0 = par_init, bounds=bounds, jac = self.calc_neg_elbo_grad_k) # L-BFGS-B
                     else:
