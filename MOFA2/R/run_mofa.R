@@ -115,7 +115,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   )
   
   if (object@model_options$sparseGP) {
-    SMOFA_entrypoint$set_sparseGP_options(
+    mofa_entrypoint$set_sparseGP_options(
       n_inducing = object@model_options$n_inducing,
       idx_inducing = object@model_options$idx_inducing,
       seed_inducing = object@model_options$seed_inducing)

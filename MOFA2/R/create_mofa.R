@@ -304,7 +304,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
 
 # (Hidden) function to initialise a MOFA object using a Seurat object
 #' @title create a MOFA object
-#' @name .create_smofa_from_seurat
+#' @name .create_mofa_from_seurat
 #' @description Method to create a \code{\link{MOFA}} object
 #' @param seurat Seurat object
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample
@@ -531,7 +531,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
 }
 
 
-# (Hidden) function to add sample covariates to a SMOFA model as a list of matrices (one per group)
+# (Hidden) function to add sample covariates to a MOFA model as a list of matrices (one per group)
 .add_covariate <- function(object, covariate, scale_cov) {
   
   # get sample names

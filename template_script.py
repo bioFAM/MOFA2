@@ -105,7 +105,6 @@ ent.set_data_df(data)
 # - GP_factors: use a GP prior on the factors (set to True for the SMOFA-framework) (default False)
 # - start_opt: at which iteration to start optimizing the lengthscales of the GP priors
 # - n_grid: how many grid points for lengthscale optimization
-# - mv_Znode: use a multivariate Z node? (default True)
 
 # Simple (using default values)
 ent.set_model_options()
