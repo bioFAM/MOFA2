@@ -21,7 +21,6 @@ import mofapy2.core.gp_utils as gp_utils
 # - Sigma Node could be a general class with group_model_kron, _nokron and no_group nodes as subclasses,
 #       they are now all cases in this Sigma node
 # - implement warping for more than one covariate
-# - add explicit ELBO and gradient calculuations for optimization
 
 class Sigma_Node(Node):
     """
@@ -454,38 +453,65 @@ class Sigma_Node(Node):
             Kc = gpu_utils.dot(gpu_utils.dot(Vc, np.diag(Dc)), Vc.transpose())
             Vg, Dg = self.Kg.get_kernel_components_k(k)
             Kg = gpu_utils.dot(gpu_utils.dot(Vg, np.diag(Dg)), Vg.transpose())
+
+            # gradient wrt zeta
+            gradient_Sigma_zeta = - np.kron(Kg, Kc) + np.eye(self.Nu)
+
         else:
             Kc = self.Kc.Kmat[self.Kc.get_best_lidx(k),:,:]
             Kg = self.Kg.Kmat[k,:,:]
 
-        # gradient wrt zeta
-        gradient_Sigma_zeta = - Kc[self.covidx, :][:,self.covidx] *\
-                              Kg[self.groupsidx, :][:, self.groupsidx] +\
-                              np.eye(self.Nu)
+            # gradient wrt zeta
+            gradient_Sigma_zeta = - Kc[self.covidx, :][:,self.covidx] *\
+                                  Kg[self.groupsidx, :][:, self.groupsidx] +\
+                                  np.eye(self.Nu)
 
         # gradient wrt sigma
-        Gmat_unscaled = np.dot(x.transpose(), x) + sigma * np.eye(self.G) # this is Kg before scaled to correlation
+        Z = np.dot(x.transpose(), x) # diagonal can be neglected as set to 1, gradient 0
+        Gmat_unscaled = Z + sigma * np.eye(self.G) # this is Kg before scaled to correlation
         Gmat_unscaled_sqrt = np.sqrt(Gmat_unscaled)
-        N = np.array([[Gmat_unscaled_sqrt[g,g] * Gmat_unscaled_sqrt[h,h] for g in range(self.G)] for h in range(self.G)])
-        AN_sigma = np.array([[-0.5 * Gmat_unscaled_sqrt[g,g] / Gmat_unscaled_sqrt[h,h] -0.5 * Gmat_unscaled_sqrt[h,h] / Gmat_unscaled_sqrt[g,g] for g in range(self.G)] for h in range(self.G)])
-        N2  = np.array([[Gmat_unscaled[g,g] * Gmat_unscaled[h,h] for g in range(self.G)]for h in range(self.G)])
-        Z =  np.dot(x.transpose(), x) # diagonal can be neglected as set to 1, gradient 0
+        N = np.outer(np.diag(Gmat_unscaled_sqrt), np.diag(Gmat_unscaled_sqrt))
+        # N = np.array([[Gmat_unscaled_sqrt[g,g] * Gmat_unscaled_sqrt[h,h] for g in range(self.G)] for h in range(self.G)])
+        tmp = -0.5 * np.outer(np.diag(Gmat_unscaled_sqrt), 1/np.diag(Gmat_unscaled_sqrt))
+        AN_sigma = tmp + tmp.transpose()
+        # AN_sigma = np.array([[-0.5 * Gmat_unscaled_sqrt[g,g] / Gmat_unscaled_sqrt[h,h] -0.5 * Gmat_unscaled_sqrt[h,h] / Gmat_unscaled_sqrt[g,g] for g in range(self.G)] for h in range(self.G)])
+        N2 = N**2
+        # N2  = np.array([[Gmat_unscaled[g,g] * Gmat_unscaled[h,h] for g in range(self.G)]for h in range(self.G)])
         # AZ_sigma = 0
         diffGmat_sigma = (1-np.eye(self.G)) * Z * AN_sigma / N2
-        gradient_Sigma_sigma = (1 - self.zeta[k]) *\
-                               diffGmat_sigma[self.groupsidx, :][:,self.groupsidx] \
-                               * Kc[self.covidx, :][:, self.covidx]
+        if self.kronecker:
+            gradient_Sigma_sigma = (1 - self.zeta[k]) * np.kron(diffGmat_sigma, Kc)
+        else:
+            gradient_Sigma_sigma = (1 - self.zeta[k]) *\
+                                   diffGmat_sigma[self.groupsidx, :][:,self.groupsidx] \
+                                   * Kc[self.covidx, :][:, self.covidx]
 
         # gradient wrt x
-        drg = [[-0.5 * 1/ Gmat_unscaled_sqrt[g,g] * 2 * x[r, g] for r in range(self.Kg.rank)] for g in range(self.G)]
-        # below diagonal can be neglected as set to 1, gradient 0
-        AN_x = [[np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]) + np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
-        AZ_x = [[np.outer(x[r, :], np.eye(self.G)[g, :]) + np.outer(x[r, :],np.eye(self.G)[g,:]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
-        diffGmat_x  = [[(1-np.eye(self.G)) * (Z * AN_x[g][r] + AZ_x[g][r] * N) / N2 for r in range(self.Kg.rank)] for g in range(self.G)]
-        gradient_Sigma_x = [(1 - self.zeta[k]) *
-                            diffGmat_x[g][r][self.groupsidx, :][:,self.groupsidx] *
-                            Kc[self.covidx, :][:,self.covidx]
-                            for r in range(self.Kg.rank) for g in range(self.G)]
+        gradient_Sigma_x = []
+        for r in range(self.Kg.rank):
+            drg = - 1/np.diag(Gmat_unscaled_sqrt) * x[r,:]
+            for g in range(self.G):
+                tmp = np.outer(np.diag(Gmat_unscaled_sqrt), drg[g] * np.eye(self.G)[g, :])
+                AN_x = tmp + tmp.transpose()
+                tmp = np.outer(x[r, :], np.eye(self.G)[g, :])
+                AZ_x = tmp + tmp.transpose()
+                diffGmat_x = (1-np.eye(self.G)) * (Z * AN_x + AZ_x * N) / N2
+                if self.kronecker:
+                    grad = (1 - self.zeta[k]) * np.kron(diffGmat_x, Kc)
+                else:
+                    grad = (1 - self.zeta[k]) * diffGmat_x[self.groupsidx, :][:,self.groupsidx] *  Kc[self.covidx, :][:,self.covidx]
+                gradient_Sigma_x.append(grad)
+
+
+        # drg = [[-0.5 * 1/ Gmat_unscaled_sqrt[g,g] * 2 * x[r, g] for r in range(self.Kg.rank)] for g in range(self.G)]
+        # # below diagonal can be neglected as set to 1, gradient 0
+        # AN_x = [[np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]) + np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
+        # AZ_x = [[np.outer(x[r, :], np.eye(self.G)[g, :]) + np.outer(x[r, :],np.eye(self.G)[g,:]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
+        # diffGmat_x  = [[(1-np.eye(self.G)) * (Z * AN_x[g][r] + AZ_x[g][r] * N) / N2 for r in range(self.Kg.rank)] for g in range(self.G)]
+        # gradient_Sigma_x = [(1 - self.zeta[k]) *
+        #                     diffGmat_x[g][r][self.groupsidx, :][:,self.groupsidx] *
+        #                     Kc[self.covidx, :][:,self.covidx]
+        #                     for r in range(self.Kg.rank) for g in range(self.G)]
 
         return gradient_Sigma_zeta, gradient_Sigma_sigma, gradient_Sigma_x
 
