@@ -547,7 +547,7 @@ class Sigma_Node_base(Node):
         Public method to update the nodes parameters
         """
         self.iter += 1
-        if self.iter >= self.start_opt:
+        if self.iter >= self.start_opt and self.iter % self.opt_freq == 0:
             var = self.markov_blanket['Z']
             self.optimise(var)
 
@@ -569,7 +569,7 @@ class Sigma_Node(Sigma_Node_base):
     def __init__(self, dim, sample_cov, groups, start_opt=20, opt_freq = 10,
                  n_grid = 10, rankx = None,  model_groups = False):
 
-        super().__init__(dim, sample_cov, groups, start_opt, opt_freq, rankx, model_groups)
+        super().__init__(dim, sample_cov, groups, start_opt, opt_freq, n_grid, rankx, model_groups)
 
         # initialize covariate kernel
         self.initKc(self.sample_cov_transformed, spectral_decomp=self.kronecker)
@@ -659,11 +659,12 @@ class Sigma_Node_warping(Sigma_Node_base):
         - warping_open_end:  Allow free end for the warped covariates in each group?
     """
 
-    def __init__(self, dim, sample_cov, groups, start_opt=20, opt_freq = 10, rankx = None,
-                 model_groups = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True,
+    def __init__(self, dim, sample_cov, groups, start_opt=20, opt_freq = 10,
+                 n_grid=10, rankx = None, model_groups = False,
+                 warping_freq = 20, warping_ref = 0, warping_open_begin = True,
                  warping_open_end = True):
 
-        super().__init__(dim, sample_cov, groups, start_opt, opt_freq, rankx, model_groups)
+        super().__init__(dim, sample_cov, groups, start_opt, opt_freq, n_grid, rankx, model_groups)
 
         self.kronecker = False
 
