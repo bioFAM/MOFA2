@@ -21,7 +21,7 @@ import mofapy2.core.gp_utils as gp_utils
 # - implement warping for more than one covariate
 # - test sparse + warping
 
-class Sigma_Node(Node):
+class Sigma_Node_base(Node):
     """
     Sigma node to optimises the GP hyperparameters for each factor and
     perform alignment of covariates per group.
@@ -92,9 +92,6 @@ class Sigma_Node(Node):
             self.Kg = None
             self.kronecker = True
             self.G = 1
-
-        # initialize covariate kernel
-        self.initKc(self.sample_cov_transformed, spectral_decomp=self.kronecker)
 
         # initialize Sigma terms (unstructured)
         self.Sigma_inv = np.zeros([self.K, self.Nu, self.Nu])
@@ -566,7 +563,19 @@ class Sigma_Node(Node):
         else:
             return self.mini_batch
 
-class Sigma_Node_sparse(Sigma_Node):
+
+class Sigma_Node(Sigma_Node_base):
+
+    def __init__(self, dim, sample_cov, groups, start_opt=20, opt_freq = 10,
+                 n_grid = 10, rankx = None,  model_groups = False):
+
+        super().__init__(dim, sample_cov, groups, start_opt, opt_freq, rankx, model_groups)
+
+        # initialize covariate kernel
+        self.initKc(self.sample_cov_transformed, spectral_decomp=self.kronecker)
+
+
+class Sigma_Node_sparse(Sigma_Node_base):
     """
         Sigma node making use of sparse inference.
 
@@ -585,7 +594,7 @@ class Sigma_Node_sparse(Sigma_Node):
         self.Nu = len(idx_inducing)
         self.groupsidx = self.groupsidx[self.idx_inducing]                  # subset to group labels for inducing points
 
-        # initialize sparse covariance kernel #TODO this is reinitialized - how to avoid init in class above?
+        # initialize sparse covariance kernel
         self.initKc(self.sample_cov_transformed[self.idx_inducing], cov4grid=self.sample_cov_transformed,
                     spectral_decomp=self.kronecker)  # use all point to determine grid limits
 
@@ -638,7 +647,7 @@ class Sigma_Node_sparse(Sigma_Node):
 
 
 
-class Sigma_Node_warping(Sigma_Node):
+class Sigma_Node_warping(Sigma_Node_base):
     """
         Sigma node with the ability to align covariates acorss sample groups (for one-dimensional covariates)
 
@@ -670,7 +679,7 @@ class Sigma_Node_warping(Sigma_Node):
         assert self.start_opt % self.warping_freq == 0,\
             "start_opt should be a multiple of warping_freq"            # to ensure in the first opt. step alignment is performed
 
-        # covariate kernel is initialized after first warping #TODO this is reinitialized avoid init in class above
+        # covariate kernel is initialized after first warping
         self.Kc = None
 
     def updateParameters(self, ix, ro):
