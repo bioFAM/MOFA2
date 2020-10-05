@@ -17,7 +17,9 @@ class saveModel():
         sort_factors=True, compression_level=9):
 
         # Check that the model is trained
-        assert model.trained, "Model is not trained"        
+        # NOTE: it might be not trained if saving when training is interrupted
+        if not model.trained:
+            print("Note: the model to be saved is not trained.")
         self.model = model
 
         # Initialise hdf5 file
@@ -116,8 +118,17 @@ class saveModel():
 
                 for col in cols:
                     ctype = self.samples_metadata[g][col].dtype
-                    ctype = '|S' if ctype == "object" else ctype.type
-                    group_meta.create_dataset(col, data=np.array(self.samples_metadata[g][col], dtype=ctype))
+                    
+                    # import ipdb; ipdb.set_trace()
+                    if ctype == "object":
+                        try:
+                            # Try to encode as ASCII strings
+                            group_meta.create_dataset(col, data=np.array(self.samples_metadata[g][col], dtype="|S"))
+                        except UnicodeEncodeError:
+                            # Encode strings as Unicode
+                            group_meta.create_dataset(col, data=np.char.encode(self.samples_metadata[g][col].values.astype("U"), encoding='utf8'))
+                    else:
+                        group_meta.create_dataset(col, data=np.array(self.samples_metadata[g][col], dtype=ctype.type))
                 # # Store objects as strings
                 # for col in cols[self.samples_metadata[g].dtypes == "object"]:
                 #     self.samples_metadata[g][col] = self.samples_metadata[g][col].astype("|S")

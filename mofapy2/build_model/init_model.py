@@ -36,8 +36,7 @@ class initModel(object):
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False,
-     GP_factors = False, mv_Znode = False, weight_views = False, model_groups = False):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views = False):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -54,7 +53,85 @@ class initModel(object):
         Y: matrix to run PCA on (when qmean="pca")
         impute: logical value if to perform imputation before running PCA,
             this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
-        GP_factors: logical whether to use a Z node with GP prior or not
+        weight_views: logical whether to weight the ELBO
+        """
+
+        ## Initialise prior distribution (P)
+
+        # mean
+        pmean = s.ones((self.N, self.K)) * pmean
+
+        ## Initialise variational distribution (Q)
+
+        # variance
+        qvar = s.ones((self.N, self.K)) * qvar
+
+        # mean
+        if qmean is not None:
+            if isinstance(qmean, str):
+
+                # Random initialisation
+                if qmean == "random":
+                    qmean = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
+
+                # Random initialisation with orthogonal factors
+                elif qmean == "orthogonal":
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                    pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.N, 9999)).T)
+                    qmean = pca.components_.T
+
+                # PCA initialisation
+                elif qmean == "pca":
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                    Ytmp = s.concatenate(Y, axis=1)
+
+                    if impute == True:
+                        if np.any(np.isnan(Ytmp)):
+                            imp = SimpleImputer(missing_values=np.NaN, strategy="mean")
+                            imp.fit(Ytmp)
+                            Ytmp = imp.transform(Ytmp)
+
+                    pca.fit(Ytmp)
+                    qmean = pca.transform(Ytmp)
+
+                # scale factor values from -1 to 1 (per factor)
+                qmean = 2.*(qmean - np.min(qmean,axis=0))/np.ptp(qmean,axis=0)-1
+
+            elif isinstance(qmean, s.ndarray):
+                assert qmean.shape == (self.N, self.K), "Wrong shape for the expectation of the Q distribution of Z"
+
+            elif isinstance(qmean, (int, float)):
+                qmean = s.ones((self.N, self.K)) * qmean
+
+            else:
+                print("Wrong initialisation for Z")
+                exit()
+
+        # Initialise the node
+        self.nodes["Z"] = Z_Node(
+            dim=(self.N, self.K),
+            pmean=pmean, pvar=pvar,
+            qmean=qmean, qvar=qvar,
+            qE=qE, qE2=qE2, weight_views = weight_views
+        )
+
+    def initZ_smooth(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, mv_Znode = False, weight_views = False):
+        """Method to initialise the latent variables
+
+        PARAMETERS
+        ----------
+        pmean: mean of the prior distribution
+        pvar: (co)variance of the prior distribution
+        qmean: initialisation of the mean of the variational distribution
+            "random" for a random initialisation sampled from a standard normal distribution
+            "pca" for an initialisation based on PCA
+            "orthogonal" for a random initialisation with orthogonal factors
+        qvar: initial value of the (co)variance of the variational distribution
+        qE: initial value of the expectation of the variational distribution
+        qE2: initial value of the second moment of the variational distribution
+        Y: matrix to run PCA on (when qmean="pca")
+        impute: logical value if to perform imputation before running PCA,
+            this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
         mv_Znode: logical whether to use a Z node with GP posterior (only relevant if GP_factors = True)
         weight_views: logical whether to weight the ELBO
         """
@@ -64,15 +141,12 @@ class initModel(object):
         # mean
         pmean = s.ones((self.N, self.K)) * pmean
         if isinstance(pvar, (int,float)):
-            if GP_factors:
-                pvar = s.array([s.eye(self.N)*pvar for k in range(self.K)])
-            else:
-                pvar = s.ones((self.N, self.K)) * pvar
+            pvar = s.array([s.eye(self.N)*pvar for k in range(self.K)])
 
         ## Initialise variational distribution (Q)
 
         # variance
-        if mv_Znode and GP_factors:
+        if mv_Znode:
             qvar = s.array([s.eye(self.N)*qvar for k in range(self.K)])
         else:
             qvar = s.ones((self.N, self.K)) * qvar
@@ -119,27 +193,21 @@ class initModel(object):
                 exit()
 
         # Initialise the node
-        if GP_factors:
-            if mv_Znode:
-                self.nodes["Z"] = Z_GP_Node_mv(
-                    dim=(self.N, self.K),
-                    pmean=pmean, pcov=pvar,
-                    qmean=qmean, qcov=qvar,
-                    qE=qE, weight_views = weight_views
-                )
-            else:
-                self.nodes["Z"] = Z_GP_Node(
-                    dim=(self.N, self.K),
-                    pmean=pmean, pcov=pvar,
-                    qmean=qmean, qvar=qvar,
-                    qE=qE, qE2=qE2, weight_views = weight_views
-                )
-        else:
-            self.nodes["Z"] = Z_Node(
+        if mv_Znode:
+            self.nodes["Z"] = Z_GP_Node_mv(
                 dim=(self.N, self.K),
-                pmean=pmean, pvar=pvar,
+                pmean=pmean, pcov=pvar,
+                qmean=qmean, qcov=qvar,
+                qE=qE, 
+                weight_views = weight_views
+            )
+        else:
+            self.nodes["Z"] = Z_GP_Node(
+                dim=(self.N, self.K),
+                pmean=pmean, pcov=pvar,
                 qmean=qmean, qvar=qvar,
-                qE=qE, qE2=qE2, weight_views = weight_views
+                qE=qE, qE2=qE2, 
+                weight_views = weight_views
             )
 
     def initU(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None, Y = None, impute=True, idx_inducing = None,
@@ -199,7 +267,6 @@ class initModel(object):
                 qE=qE, qE2=qE2, idx_inducing =idx_inducing,
                 weight_views = weight_views
                 )
-
 
     def initZgU(self, pmean = 0, pvar =1., qmean = "random", qvar = 1., qE = None, qE2 = None, Y = None,
                 impute = True, idx_inducing = None, weight_views = False):
@@ -274,11 +341,22 @@ class initModel(object):
         # self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, idx_inducing, warping, warping_freq, warping_ref,
         #                             warping_open_begin, warping_open_end, opt_freq)
 
-        self.Sigma = Sigma_Node(dim=dim, sample_cov=sample_cov, groups=groups,
-                                    start_opt=start_opt, n_grid=n_grid, idx_inducing=idx_inducing,
-                                    warping=warping, warping_freq=warping_freq, warping_ref=warping_ref,
-                                    warping_open_begin=warping_open_begin, warping_open_end=warping_open_end,
-                                    opt_freq=opt_freq, model_groups = model_groups)
+        # TO-DO: USE MODULAR SIGMA
+        self.Sigma = Sigma_Node(
+            dim=dim, 
+            sample_cov=sample_cov, 
+            groups=groups,
+            start_opt=start_opt, 
+            n_grid=n_grid, 
+            # idx_inducing=idx_inducing,
+            # warping=warping, 
+            # warping_freq=warping_freq, 
+            # warping_ref=warping_ref,
+            # warping_open_begin=warping_open_begin, 
+            # warping_open_end=warping_open_end,
+            opt_freq=opt_freq, 
+            model_groups = model_groups
+        )
         self.nodes["Sigma"] = self.Sigma
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
