@@ -9,7 +9,14 @@
 #' @details K indicates the number of factors, D indicates the number of features, 
 #' N indicates the (total) number of samples, M indicates the number of views and C indicates the number of covariates.
 #' @param object a \code{\link{MOFA}} object.
+#' @return list containing the dimensionalities of the model
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' dims <- get_dimensions(model)
+
 get_dimensions <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   return(object@dimensions)
@@ -20,7 +27,14 @@ get_dimensions <- function(object) {
 #' @description Extract the value of the ELBO statistics after model training. This can be useful for model selection.
 #' @details This can be useful for model selection.
 #' @param object a \code{\link{MOFA}} object.
+#' @return Value of the ELBO
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' elbo <- get_elbo(model)
+
 get_elbo <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   return(max(object@training_stats$elbo, na.rm=TRUE))
@@ -127,7 +141,7 @@ get_interpolated_factors <- function(object, as.data.frame = FALSE) {
 #' 
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #'
 #' # Fetch factors in matrix format (a list, one matrix per group)
@@ -152,7 +166,7 @@ get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, 
   Z <- get_expectations(object, "Z", as.data.frame)
   if (isTRUE(as.data.frame)) {
     Z <- Z[Z$factor%in%factors & Z$group%in%groups,]
-    if (isTRUE(scale)) Z$value <- Z$value/max(abs(Z$value),na.rm=T)
+    if (isTRUE(scale)) Z$value <- Z$value/max(abs(Z$value),na.rm=TRUE)
   } else {
     Z <- lapply(Z[groups], function(z) z[,factors, drop=FALSE])
     if (isTRUE(scale)) Z <- lapply(Z, function(x) x/max(abs(x)) )
@@ -182,7 +196,7 @@ get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, 
 #' 
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #'
 #' # Fetch weights in matrix format (a list, one matrix per view)
@@ -227,19 +241,23 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
 #' @param object a \code{\link{MOFA}} object.
 #' @param views character vector with the view name(s), or numeric vector with the view index(es). 
 #' Default is "all".
+#' @param groups character vector with the group name(s), or numeric vector with the group index(es). 
+#' Default is "all".
 #' @param features a *named* list of character vectors. Example: list("view1"=c("feature_1","feature_2"), "view2"=c("feature_3","feature_4"))
-#' Default is "all" If this is used, the argument views is ignored.
-#' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices.
+#' Default is "all".
+#' @param as.data.frame logical indicating whether to return a long data frame instead of a list of matrices. Default is \code{FALSE}.
 #' @param add_intercept logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.
-#' @param na.rm remove NAs from the data.frame (only if as.data.frame is TRUE).
+#' @param denoise logical indicating whether to return the denoised data (i.e. the model predictions). Default is \code{FALSE}.
+#' @param na.rm remove NAs from the data.frame (only if as.data.frame is \code{TRUE}).
 #' @details By default this function returns a list where each element is a data matrix with dimensionality (D,N) 
 #' where D is the number of features and N is the number of samples. \cr
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, the function returns a long-formatted data frame with columns (view,feature,sample,value).
 #' Missing values are not included in the the long data.frame format by default. To include them use the argument \code{na.rm=FALSE}.
+#' @return A  list of data matrices with dimensionality (D,N) or a \code{data.frame} (if \code{as.data.frame} is TRUE)
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #'
 #' # Fetch data
@@ -253,8 +271,10 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
 #'
 #' # Fetch centered data (do not add the feature intercepts)
 #' data <- get_data(model, as.data.frame = FALSE)
-  
-get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE, na.rm = TRUE) {
+#' 
+#' # Fetch denoised data (do not add the feature intercepts)
+#' data <- get_data(model, denoise = TRUE)
+get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE, denoise = FALSE, na.rm = TRUE) {
 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -279,7 +299,11 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   }
 
   # Fetch data
-  data <- lapply(object@data[views], function(x) x[groups])
+  if (isTRUE(denoise)) {
+    data <- predict(object, views=views, groups=groups)
+  } else {
+    data <- lapply(object@data[views], function(x) x[groups])
+  }
   data <- lapply(views, function(m) lapply(seq_len(length(data[[1]])), function(p) data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   data <- .name_views_and_groups(data, views, groups)
   
@@ -334,13 +358,17 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
 #' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long-formatted data frame instead of a list of matrices. 
 #' Default is \code{FALSE}.
-#' @param only_mean logical indicating whether to return only the point estimates for the imputation. 
-#' If FALSE, it also retrieves the variance (only if it has been previously calculated).
-#' @details TO FINISH 
-#' @return TO FINISH 
+#' @details Data is imputed from the generative model of MOFA.
+#' @return A list containing the imputed valued or a data.frame if as.data.frame is TRUE
 #' @export
-get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE,
-                             add_intercept = TRUE, only_mean = TRUE) {
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' model <- impute(model)
+#' imputed <- get_imputed_data(model)
+
+get_imputed_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -364,18 +392,9 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   }
   
   # Fetch mean
-  mean <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","mean"))
-  mean <- lapply(seq_len(length(mean)), function(m) lapply(seq_len(length(mean[[1]])), function(p) mean[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
-  mean <- .name_views_and_groups(mean, views, groups)
-  
-  # Fetch variance
-  if (only_mean) {
-    variance <- list()
-  } else {
-    variance <- lapply(object@imputed_data[views], function(x) lapply(x[groups],"[[","variance"))
-    variance <- lapply(seq_len(length(variance)), function(m) lapply(seq_len(length(variance[[1]])), function(p) variance[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
-    variance <- .name_views_and_groups(variance, views, groups)
-  }
+  imputed_data <- lapply(object@imputed_data[views], function(x) x[groups] )
+  imputed_data <- lapply(seq_len(length(imputed_data)), function(m) lapply(seq_len(length(imputed_data[[1]])), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
+  imputed_data <- .name_views_and_groups(imputed_data, views, groups)
   
 # Add feature intercepts
 # tryCatch( {
@@ -394,43 +413,22 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   # Convert to long data frame
   if (isTRUE(as.data.frame)) {
     
-    mean <- lapply(views, function(m) { 
-      lapply(groups, function(g) {
-        tmp <- reshape2::melt(mean[[m]][[g]])
+    imputed_data <- lapply(views, function(m) { 
+      lapply(groups, function(g) { 
+        tmp <- reshape2::melt(imputed_data[[m]][[g]])
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = g, tmp)
         return(tmp) 
       })
     })
-    mean <- do.call(rbind, do.call(rbind, mean))
+    imputed_data <- do.call(rbind, do.call(rbind, imputed_data))
     
-    if (only_mean) {
-      imputed_data <- mean
-    } else {
-      variance <- lapply(views, function(m) { 
-        lapply(groups, function(g) {
-          tmp <- reshape2::melt(variance[[m]][[g]])
-          colnames(tmp) <- c("feature", "sample", "value")
-          tmp <- cbind(view = m, group = g, tmp)
-          return(tmp)
-        })
-      })
-      variance <- do.call(rbind, do.call(rbind, variance))
-      mean$estimate <- "mean"
-      variance$estimate <- "variance"
-      imputed_data <- rbind(mean,variance)
-    }
-
     factor.cols <- c("view","group","feature","sample")
     imputed_data[factor.cols] <- lapply(imputed_data[factor.cols], factor)
     
   } else {
     
-    if (only_mean) {
-      imputed_data <- mean
-    } else {
-      imputed_data <- list("mean"=mean, "variance"=variance)
-    }
+    imputed_data <- mean
   }
   
   return(imputed_data)
@@ -491,6 +489,13 @@ get_covariates <- function(object, covariates ="all", as.data.frame = FALSE, war
 #'  \item{"W"}{a list of length (views) where each element is a matrix with dimensions (features,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (view,feature,factor,value)}
 #' }
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' factors <- get_expectations(model, "Z")
+#' weights <- get_expectations(model, "W")
+
 get_expectations <- function(object, variable, as.data.frame = FALSE) {
   
   # Sanity checks
@@ -517,7 +522,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     
     # Z node
     if (variable=="Z") {
-      tmp <- reshape2::melt(exp, na.rm=T)
+      tmp <- reshape2::melt(exp, na.rm=TRUE)
       colnames(tmp) <- c("sample", "factor", "value", "group")
       tmp$sample <- as.character(tmp$sample)
       factor.cols <- c("sample", "factor", "group")
@@ -527,7 +532,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     # W node
     else if (variable=="W") {
       tmp <- lapply(names(exp), function(m) { 
-        tmp <- reshape2::melt(exp[[m]], na.rm=T)
+        tmp <- reshape2::melt(exp[[m]], na.rm=TRUE)
         colnames(tmp) <- c("feature","factor","value")
         tmp$view <- m
         factor.cols <- c("view", "feature", "factor")
@@ -541,7 +546,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
     else if (variable=="Y") {
       tmp <- lapply(names(exp), function(m) {
         tmp <- lapply(names(exp[[m]]), function(g) {
-          tmp <- reshape2::melt(exp[[m]][[g]], na.rm=T)
+          tmp <- reshape2::melt(exp[[m]][[g]], na.rm=TRUE)
           colnames(tmp) <- c("sample", "feature", "value")
           tmp$view <- m
           tmp$group <- g
@@ -567,15 +572,16 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
 #' Default is "all".
 #' @param groups character vector with the group name(s), or numeric vector with the group index(es).
 #' Default is "all".
-#' @param groups character vector with the view name(s), or numeric vector with the view index(es).
+#' @param views character vector with the view name(s), or numeric vector with the view index(es).
 #' Default is "all".
 #' @param as.data.frame logical indicating whether to return a long data frame instead of a matrix.
 #' Default is \code{FALSE}.
+#' @return A list of data matrices with variance explained per group or a \code{data.frame} (if \code{as.data.frame} is TRUE)
 #' @export
 #'
 #' @examples
 #' # Using an existing trained model
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #'
 #' # Fetch variance explained values (in matrix format)

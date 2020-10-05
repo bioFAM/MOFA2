@@ -10,7 +10,7 @@
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Calculate variance explained (R2)
@@ -46,7 +46,7 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
   W <- get_weights(object, views=views, factors=factors)
   Z <- get_factors(object, groups=groups, factors=factors)
   # Y <- lapply(get_expectations(object,"Y")[views], function(view) view[groups])
-  Y <- lapply(get_data(object, add_intercept = F)[views], function(view) view[groups])
+  Y <- lapply(get_data(object, add_intercept = FALSE)[views], function(view) view[groups])
   Y <- lapply(Y, function(x) lapply(x,t))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)
@@ -138,10 +138,11 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 #' @importFrom cowplot plot_grid
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt
+#' @return A list of \code{\link{ggplot}} objects (if \code{plot_total} is TRUE) or a single \code{\link{ggplot}} object
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Calculate variance explained (R2)
@@ -322,6 +323,12 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 #' @importFrom stats as.formula
 #' @importFrom reshape2 melt
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_variance_explained_per_feature(model, view = 1)
+
 plot_variance_explained_per_feature <- function(object, view, features = 10,
                                                 split_by_factor = FALSE, group_features_by = NULL,
                                                 groups = "all", factors = "all",
@@ -355,7 +362,7 @@ plot_variance_explained_per_feature <- function(object, view, features = 10,
   Z <- get_factors(object, groups = groups, factors = factors)
   # 3. Data: Choose a view, one or multiple groups, and subset chosen features
   # Y <- lapply(get_expectations(object, "Y")[view], function(Y_m) lapply(Y_m[groups], t))
-  Y <- lapply(get_data(object, add_intercept = F)[view], function(Y_m) lapply(Y_m[groups], t))
+  Y <- lapply(get_data(object, add_intercept = FALSE)[view], function(Y_m) lapply(Y_m[groups], t))
   Y <- lapply(Y, function(Y_m) lapply(Y_m, function(Y_mg) Y_mg[,colnames(Y_mg) %in% features,drop=FALSE]))
 
   # Replace masked values on Z by 0 (so that they do not contribute to predictions)

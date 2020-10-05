@@ -4,9 +4,10 @@
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param verbose logical indicating whether to generate a verbose output.
 #' @export
+#' @return a \code{\link{MOFA}} object
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Do quality control
@@ -59,7 +60,7 @@ quality_control <- function(object, verbose = FALSE) {
     if (verbose == TRUE) message("Checking there are no features with complete missing values...")
     for (i in views_names(object)) {
       if (!(is(object@data[[i]][[1]], "dgCMatrix") || is(object@data[[i]][[1]], "dgTMatrix"))) {
-        tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = T))
+        tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = TRUE))
         if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))
           warning("You have features which do not contain a single observation in any group, consider removing them...")
       }
@@ -110,8 +111,8 @@ quality_control <- function(object, verbose = FALSE) {
       if (verbose == TRUE) message("Checking for intercept factors...")
       if (!is.null(object@data)) {
         factors <- do.call("rbind",get_factors(object))
-        r <- suppressWarnings( t(do.call('rbind', lapply(object@data, function(x)
-          abs(cor(colMeans(do.call("cbind",x),na.rm=T),factors, use="pairwise.complete.obs"))
+        r <- suppressWarnings( t(do.call('rbind', lapply(object@data, function(x) 
+          abs(cor(colMeans(do.call("cbind",x),na.rm=TRUE),factors, use="pairwise.complete.obs"))
         ))) )
         intercept_factors <- which(rowSums(r>0.75)>0)
         if (length(intercept_factors)) {
@@ -128,7 +129,7 @@ quality_control <- function(object, verbose = FALSE) {
     noise <- matrix(rnorm(n=length(Z), mean=0, sd=1e-10), nrow(Z), ncol(Z))
     tmp <- cor(Z+noise); diag(tmp) <- NA
     options(op) # activate warnings again
-    if (max(tmp,na.rm=T)>0.5) {
+    if (max(tmp,na.rm=TRUE)>0.5) {
       warning("The model contains highly correlated factors (see `plot_factor_cor(MOFAobject)`). \nWe recommend that you train the model with less factors and that you let it train for a longer time.\n")
     }
   

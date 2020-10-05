@@ -8,7 +8,7 @@
 #' @description Method to load a trained MOFA \cr
 #' The training of mofa is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.
 #' @param file an hdf5 file saved by the mofa Python framework
-# #' @param sort_factors logical indicating whether factors should be sorted by variance explained (default is TRUE)
+#' @param sort_factors logical indicating whether factors should be sorted by variance explained (default is TRUE)
 #' @param on_disk logical indicating whether to work from memory (FALSE) or disk (TRUE). \cr
 #' This should be set to TRUE when the training data is so big that cannot fit into memory. \cr
 #' On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.
@@ -23,8 +23,13 @@
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
-# #' @importFrom DelayedArray DelayedArray
+#' @importFrom DelayedArray DelayedArray
 #' @export
+#' @examples
+#' #' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+
 load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
                        remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE,
                        load_interpol_Z = FALSE) {
@@ -56,7 +61,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     sample_names  <- h5read(file, "samples")
     view_names <- names(feature_names)
     group_names <- names(sample_names)
-    h5ls.out <- h5ls.out[grep("variance_explained", h5ls.out$name, invert = T),]
+    h5ls.out <- h5ls.out[grep("variance_explained", h5ls.out$name, invert = TRUE),]
   }
   if("covariates" %in%  h5ls.out$name){
     covariate_names <- as.character( h5read(file, "covariates")[[1]])
@@ -313,6 +318,16 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     object@cache[["variance_explained"]] <- r2_list
   }
   
+  # Hack to fix the problems where variance explained values range from 0 to 1 (%)
+  if (max(sapply(object@cache$variance_explained$r2_total,max))<1) {
+    for (m in 1:length(view_names)) {
+      for (g in 1:length(group_names)) {
+        object@cache$variance_explained$r2_total[[g]][[m]] <- 100 * object@cache$variance_explained$r2_total[[g]][[m]]
+        object@cache$variance_explained$r2_per_factor[[g]][,m] <- 100 * object@cache$variance_explained$r2_per_factor[[g]][,m]
+      }
+    }
+  }
+  
   ##############################
   ## Specify dimensionalities ##
   ##############################
@@ -396,9 +411,11 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     r2 <- rowSums(do.call("cbind", lapply(object@cache[["variance_explained"]]$r2_per_factor,
                                           function(x) rowSums(pmax(x,0), na.rm = TRUE))))
     var.threshold <- 0.0001
-    if (any(r2<var.threshold)) {
+    if (all(r2 < var.threshold)) {
+      warning(sprintf("All %s factors were found to explain little or no variance so remove_inactive_factors option has been disabled.", length(r2)))
+    } else if (any(r2 < var.threshold)) {
       object <- subset_factors(object, which(r2>=var.threshold))
-      message(sprintf("%s factors were found to explain no variance and they were removed for downstream analysis. You can disable this option by setting load_model(..., remove_inactive_factors = F)",sum(r2<var.threshold)))
+      message(sprintf("%s factors were found to explain little or no variance and they were removed for downstream analysis. You can disable this option by setting load_model(..., remove_inactive_factors = F)", sum(r2 < var.threshold)))
     }
   }
   
@@ -414,18 +431,18 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # }
   
   # [Done in mofapy2] Sort factors by total variance explained
-  # if (isTRUE(sort_factors) && object@dimensions$K > 1) {
-  #   
-  #   # Sanity checks
-  #   if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
-  # 
-  #   # Calculate variance explained per factor across all views
-  #   r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
-  #   order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
-  #   
-  #   # re-order factors
-  #   object <- subset_factors(object, order_factors)
-  # }
+  if (isTRUE(sort_factors) && object@dimensions$K>1) {
+
+    # Sanity checks
+    if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
+
+    # Calculate variance explained per factor across all views
+    r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
+    order_factors <- c(names(r2)[order(r2, decreasing = TRUE)])
+
+    # re-order factors
+    object <- subset_factors(object, order_factors)
+  }
 
   # Mask outliers
   if (isTRUE(remove_outliers)) {

@@ -11,11 +11,11 @@
 #' @param ... arguments passed to \code{\link{Rtsne}}
 #' @details use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the t-SNE output
-# #' @importFrom Rtsne Rtsne
+#' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Run t-SNE
@@ -56,14 +56,14 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
-#' @param ... arguments passed to \code{\link{uwot::umap}}
+#' @param ... arguments passed to \code{\link{umap}}
 #' @details use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
-# #' @importFrom uwot umap
+#' @importFrom uwot umap
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Run UMAP
@@ -115,11 +115,13 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' (3) a vector of the same length as the number of samples specifying discrete groups.
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
+#' @param label logical indicating whether to label the medians of the clusters. Only if color_by is specified
 #' @param dot_size numeric indicating dot size.
 #' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
 #' @param alpha_missing numeric indicating dot transparency of missing data.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting
+#' @param rasterize logical indicating whether to rasterize plot
 #' @param ... extra arguments passed to \code{\link{run_umap}} or \code{\link{run_tsne}}.
 #' @details This function plots dimensionality reduction projections that are stored in the \code{dim_red} slot.
 #' Typically this contains UMAP or t-SNE projections computed using \code{\link{run_tsne}} or \code{\link{run_umap}}, respectively.
@@ -129,10 +131,11 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' @importFrom stats complete.cases
 #' @importFrom tidyr spread gather
 #' @importFrom magrittr %>% set_colnames
+#' @importFrom ggrepel geom_text_repel
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Run UMAP
@@ -148,7 +151,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
 #' plot_dimred(model, method = "UMAP", color_by = "feature_0_view_0")
 #' 
 plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show_missing = TRUE,
-                        color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
+                        color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL, label = FALSE,
                         dot_size = 1.5, stroke = NULL, alpha_missing = 1, legend = TRUE, rasterize = FALSE, return_data = FALSE, ...) {
   
   # Sanity checks
@@ -244,6 +247,23 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   }
   p <- p + guides(alpha=FALSE)
     
+  # Label clusters
+  if (isTRUE(label) & length(unique(df$color_by))>1 & length(unique(df$color_by))<50) {
+    groups <- unique(df$color_by)
+    labels.loc <- lapply(
+      X = groups,
+      FUN = function(i) {
+        data.use <- df[df[,"color_by"] == i, , drop = FALSE]
+        data.medians <- as.data.frame(x = t(x = apply(X = data.use[, c("x","y"), drop = FALSE], MARGIN = 2, FUN = median, na.rm = TRUE)))
+        data.medians[, "color_by"] <- i
+        # data.medians$color <- data.use$color[1]
+        return(data.medians)
+      }
+    ) %>% do.call("rbind",.)
+    p <- p + geom_text_repel(aes_string(label="color_by"), data=labels.loc)
+  }
+  
+  
   # Add legend
   p <- .add_legend(p, df, legend, color_name, shape_name)
   

@@ -31,9 +31,16 @@
 #' However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 #' This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr
 #' A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
+#' @return A  \code{\link[pheatmap]{pheatmap}} object
 #' @importFrom pheatmap pheatmap
 #' @importFrom utils tail
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_data_heatmap(model, factor = 1, show_rownames = FALSE, show_colnames = FALSE)
+
 plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features = 50, 
     annotation_features = NULL, annotation_samples = NULL, transpose = FALSE, 
     imputed = FALSE, denoise = FALSE, max.value = NULL, min.value = NULL, ...) {
@@ -56,7 +63,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   Z <- do.call(rbind, Z)[,1]
   Z <- Z[!is.na(Z)]
   
-  # Get imputed data
+
+  # Get data
   if (isTRUE(denoise)) {
     data <- predict(object, views=view, groups=groups)[[1]]
   } else {
@@ -71,14 +79,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   if (is(data, "list")) {
     data <- do.call(cbind, data)
   }
-
-  # Select respective samples
-  data <- data[,names(Z)]
   
-  # Ignore samples with full missing views
-  data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
-  
-  # Define features
+  # Subset features
   if (is(features, "numeric")) {
     if (length(features)==1) {
       features <- rownames(W)[tail(order(abs(W)), n=features)]
@@ -93,6 +95,13 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     stop("Features need to be either a numeric or character vector")
   }
   data <- data[features,]
+  
+
+  # Select respective samples
+  data <- data[,names(Z)]
+  
+  # Ignore samples with full missing views
+  data <- data[, apply(data, 2, function(x) !all(is.na(x)))]
   
   # By default, sort samples according to the factor values
   order_samples <- names(sort(Z, decreasing = TRUE))
@@ -117,8 +126,8 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
       tmp <- object@samples_metadata
       rownames(tmp) <- tmp$sample
       tmp$sample <- NULL
-      tmp <- tmp[order_samples,,drop=F]
-      annotation_samples <- tmp[,annotation_samples, drop=F]
+      tmp <- tmp[order_samples,,drop=FALSE]
+      annotation_samples <- tmp[,annotation_samples, drop=FALSE]
       rownames(annotation_samples) <- rownames(tmp)
     } else {
       stop("Input format for 'annotation_samples' not recognised ")
@@ -126,7 +135,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     
     # Convert character columns to factors
     foo <- sapply(annotation_samples, function(x) is.logical(x)|is.character(x))
-    if (any(foo)) annotation_samples[,which(foo)] <- lapply(annotation_samples[,which(foo),drop=F], as.factor)
+    if (any(foo)) annotation_samples[,which(foo)] <- lapply(annotation_samples[,which(foo),drop=FALSE], as.factor)
   }
 
   
@@ -204,7 +213,14 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @importFrom dplyr left_join
 #' @importFrom utils tail
 #' @importFrom stats quantile
+#' @return A \code{\link{ggplot}} object
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_data_scatter(model)
+
 plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
                               color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
                               dot_size = 2.5, text_size = NULL, add_lm = TRUE, lm_per_group = TRUE, imputed = FALSE) {
@@ -436,7 +452,7 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   }
   
   df2$sample <- as.character(df2$sample)
-  df <- dplyr::left_join(df1, df2, by = "sample")
+  df <- left_join(df1, df2, by = "sample")
   
   # (Q) Remove samples with missing values in Factor values
   df <- df[!is.na(df$value),]
@@ -512,7 +528,14 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @importFrom dplyr mutate left_join
+#' @return A \code{\link{ggplot}} object
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_data_overview(model)
+
 plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covariate = FALSE, show_dimensions = TRUE) {
   
   # Sanity checks
@@ -549,9 +572,9 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
     names(colors) <- views_names(object)
   } else {
     if (length(colors) != M) stop("Length of 'colors' does not match the number of views")
-    if(is.null(names(colors))){
+    if(is.null(names(colors))) {
       names(colors) <- views_names(object)
-    } else{
+    } else {
       stopifnot(sort(names(colors))==sort(views_names(object)))
     }
   }
@@ -570,7 +593,7 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   # Melt to data.frame
   to.plot <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
   if(!is.null(covariate)) {
-    to.plot <- dplyr::left_join(to.plot, covari, by= "sample")
+    to.plot <- left_join(to.plot, covari, by= "sample")
     to.plot$sample <- factor(to.plot$sample, levels = unique(to.plot$sample[order(to.plot$covariate_value)]))
   } else {
     to.plot$sample <- factor(to.plot$sample, levels = rownames(ovw))
@@ -638,7 +661,14 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
 #' @param object a \code{\link{MOFA}} object
 #' @param nonzero a logical value specifying whether to calculate the fraction of non-zero values (non-NA values by default)
 #' @details This function is helpful to get an overview of the structure of the data as a text output
+#' @return None
 #' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_ascii_data(model)
+
 plot_ascii_data <- function(object, nonzero = FALSE) {
   stopifnot(is(object, "MOFA"))
 

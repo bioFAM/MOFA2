@@ -68,12 +68,12 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Remove empty factors
   # factors <- apply(Z,2,var, na.rm=TRUE)>0
-  # Z <- Z[,factors,drop=F]
-  # W <- W[,factors,drop=F]
+  # Z <- Z[,factors,drop=FALSE]
+  # W <- W[,factors,drop=FALSE]
   
   # Remove features with no variance
   # if (statistical.test %in% c("cor.adj.parametric")) {
-  idx <- apply(data,2, function(x) var(x,na.rm=T))==0
+  idx <- apply(data,2, function(x) var(x,na.rm=TRUE))==0
   if (sum(idx)>=1) {
     warning(sprintf("%d features were removed because they had no variance in the data.\n",sum(idx)))
     data <- data[,!idx]
@@ -85,7 +85,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(length(features)== 0) stop("Feature names in feature.sets do not match feature names in model.")
   message(sprintf("Intersecting features names in the model and the gene set annotation results in a total of %d features.",length(features)))
   data <- data[,features]
-  W <- W[features,]
+  W <- W[features,,drop=FALSE]
   feature.sets <- feature.sets[,features]
   
   # Filter feature sets with small number of features
@@ -93,9 +93,11 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Subset weights by sign
   if (sign=="positive") {
-    W[W<0] <- 0
+    # W[W<0] <- 0
+    W[W<0] <- NA
   } else if (sign=="negative") {
-    W[W>0] <- 0
+    # W[W>0] <- 0
+    W[W>0] <- NA
     W <- abs(W)
   }
   
@@ -191,6 +193,14 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(!p.adj.method %in%  p.adjust.methods) 
     stop("p.adj.method needs to be an element of p.adjust.methods")
   adj.p.values <- apply(results$p.values, 2,function(lfw) p.adjust(lfw, method = p.adj.method))
+
+  # If we specify a direction, we are only interested in overrepresented pathawys in the selected direction
+  if (sign%in%c("positive","negative")) {
+    results$p.values[results$statistics<0] <- 1.0
+    adj.p.values[results$statistics<0] <- 1.0
+    results$statistics[results$statistics<0] <- 0
+  }
+  
   
   # obtain list of significant pathways
   sigPathways <- lapply(factors, function(j) rownames(adj.p.values)[adj.p.values[,j] <= alpha])
@@ -202,7 +212,6 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
     pval.adj = adj.p.values, 
     feature.statistics = results$feature.statistics,
     set.statistics = results$statistics,
-    # pathway.activity = tmp,
     sigPathways = sigPathways
   )
   return(output)
@@ -290,6 +299,7 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param alpha FDR threshold to filter out unsignificant feature sets which are
 #'  not represented in the heatmap. Default is 0.10.
+#' @param cap cap p-values below this threshold
 #' @param log_scale logical indicating whether to plot the -log of the p.values.
 #' @param ... extra arguments to be passed to the \link{pheatmap} function
 #' @return produces a heatmap
@@ -305,7 +315,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
   p.values <- p.values[,colMeans(is.na(p.values))<1]
   
   # remove factors that do not have any significant enrichment
-  # p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha,na.rm=T)) == ncol(p.values),, drop=FALSE]
+  # p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha,na.rm=TRUE)) == ncol(p.values),, drop=FALSE]
   
   # cap p-values 
   p.values[p.values<cap] <- cap
@@ -320,7 +330,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
   }
   
   # Generate heatmap
-  pheatmap(p.values, color = col, cluster_cols = F, show_rownames = F, ...)
+  pheatmap(p.values, color = col, cluster_cols = FALSE, show_rownames = FALSE, ...)
 }
 
 
@@ -332,7 +342,6 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
 #' The top genes with the highest statistic (max.genes argument) are displayed and labeled in black. The remaining genes are colored in grey.
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param factor string with factor name or numeric with factor index
-#' @param feature.sets data structure that holds feature set membership information, as used in the \link{run_enrichment} function.
 #' @param alpha p.value threshold to filter out feature sets
 #' @param max.pathways maximum number of enriched pathways to display
 #' @param max.genes maximum number of genes to display, per pathway
@@ -343,7 +352,7 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
 #' @importFrom dplyr top_n
 #' @importFrom ggrepel geom_text_repel
 #' @export
-plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets, 
+plot_enrichment_detailed <- function(enrichment.results, factor, 
                                      alpha = 0.1, max.genes = 5, max.pathways = 10, text_size = 3) {
   
   # Sanity checks
@@ -357,19 +366,19 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
   # Fetch and prepare data  
   
   # foo
-  foo <- reshape2::melt(enrichment.results$feature.statistics[,factor], na.rm=T, value.name="feature.statistic")
+  foo <- reshape2::melt(enrichment.results$feature.statistics[,factor], na.rm=TRUE, value.name="feature.statistic")
   foo$feature <- rownames(foo)
   
   # bar
   feature.sets <- enrichment.results$feature.sets
   feature.sets[feature.sets==0] <- NA
-  bar <- reshape2::melt(feature.sets, na.rm=T)[,c(1,2)]
+  bar <- reshape2::melt(feature.sets, na.rm=TRUE)[,c(1,2)]
   colnames(bar) <- c("pathway","feature")
   bar$pathway <- as.character(bar$pathway)
   bar$feature <- as.character(bar$feature)
   
   # baz
-  baz <- reshape2::melt(enrichment.results$pval.adj[,factor], value.name="pvalue", na.rm=T)
+  baz <- reshape2::melt(enrichment.results$pval.adj[,factor], value.name="pvalue", na.rm=TRUE)
   baz$pathway <- rownames(baz)
   
   # Filter out pathways by p-values
@@ -396,7 +405,7 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
   pathways <- unique(tmp_filt$pathway)
   
   # Add Ngenes and p-values to the pathway name
-  df <- data.frame(pathway=pathways, nfeatures=rowSums(feature.sets,na.rm=T)[pathways])
+  df <- data.frame(pathway=pathways, nfeatures=rowSums(feature.sets,na.rm=TRUE)[pathways])
   df <- merge(df, baz, by="pathway")
   df$pathway_long_name <- sprintf("%s\n (Ngenes = %d) \n (p-val = %0.2g)",df$pathway, df$nfeatures, df$pvalue)
   tmp <- merge(tmp, df[,c("pathway","pathway_long_name")], by="pathway")
@@ -548,9 +557,9 @@ plot_enrichment_detailed <- function(enrichment.results, factor, feature.sets,
       # get the feature statistics for this PC
       pc.feature.stats = feature.statistics[,j]
       # compute the mean difference of the feature-level statistics
-      mean.diff = mean(pc.feature.stats[indexes.for.feature.set],na.rm=T) - mean(pc.feature.stats[not.set.indexes], na.rm=T)
+      mean.diff = mean(pc.feature.stats[indexes.for.feature.set],na.rm=TRUE) - mean(pc.feature.stats[not.set.indexes], na.rm=TRUE)
       # compute the pooled standard deviation
-      pooled.sd = sqrt(((m1-1)*var(pc.feature.stats[indexes.for.feature.set], na.rm=T) + (m2-1)*var(pc.feature.stats[not.set.indexes], na.rm=T))/(m1+m2-2))
+      pooled.sd = sqrt(((m1-1)*var(pc.feature.stats[indexes.for.feature.set], na.rm=TRUE) + (m2-1)*var(pc.feature.stats[not.set.indexes], na.rm=TRUE))/(m1+m2-2))
       # compute the t-statistic
       if (isTRUE(cor.adjustment)) {
         t.stat = mean.diff/(pooled.sd*sqrt(vif/m1 + 1/m2))

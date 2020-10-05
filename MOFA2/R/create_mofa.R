@@ -33,7 +33,7 @@
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 #' 
 #' # Load data (in data.frame format)
 #' data <- read.table(file, header=TRUE) 
@@ -189,7 +189,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   
   # If no groups provided, treat all samples as coming from one group
   if (is.null(groups)) {
-    message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
+    message("No groups provided as argument, we assume that all samples belong to the same group.\n")
     groups <- rep("group1",  length(unique(sampleMap(data)[,"primary"])))
   }
 
@@ -198,7 +198,8 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   object@status <- "untrained"
   object@data <- .split_data_into_groups(data_list, groups)
   
-  groups_nms <- unique(as.character(groups))
+  # groups_nms <- unique(as.character(groups))
+  groups_nms <- names(object@data[[1]])
   
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data_list)
@@ -308,17 +309,27 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
 #' @description Method to create a \code{\link{MOFA}} object
 #' @param seurat Seurat object
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample
-#' @param assays assays to use for the MOFA model, default is RNA
+#' @param assays assays to use for the MOFA model, default is NULL, it fetched all assays available
 #' @param slot assay slot to be used such as scale.data or data
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @keywords internal
-.create_mofa_from_seurat <- function(seurat, groups, assays = "RNA", slot = "data", features = NULL, save_metadata = FALSE) {
+.create_mofa_from_seurat <- function(seurat, groups, assays = NULL, slot = "data", features = NULL, save_metadata = FALSE) {
+  
+  
+  
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
   }
 
+  # Define assays
+  if (is.null(assays)) {
+    assays <- Seurat::Assays(seurat)
+    message(paste0("No assays specified, using all assays by default: ", paste(assays,collapse=" ")))
+  } else {
+    stopifnot(assays%in%Seurat::Assays(seurat))
+  }
   
   # Define groups of cells
   if (is(groups, 'character') && (length(groups) == 1)) {
@@ -338,11 +349,18 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
         stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
     }
   } else {
-    if (!is.null(features) && (length(assays) > 1))
-       stop("When using multiple assays, subset features with a list with corresponding views (assays) names")
-    # Make a list out of a vector
-    features <- list(features)
-    names(features) <- assays
+    # By default select highly variable features if present in the Seurat object
+    if (is.null(features)) {
+      message("No features specified, using variable features from the Seurat object...")
+      features <- lapply(assays, function(i) seurat@assays[[i]]@var.features)
+      names(features) <- assays
+      if (any(sapply(features,length)==0)) stop("No list of features provided and variable features are detected in the Seurat object")
+    } else if (all(is(features, "character"))) {
+      features <- list(features)
+      names(features) <- assays
+    } else {
+       stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
+    }
   }
 
   # If no groups provided, treat all samples as coming from one group
@@ -350,10 +368,13 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", dim(seurat)[2])
   }
+  
+  # Extract data matrices
   data_matrices <- lapply(assays, function(i) 
     .split_seurat_into_groups(seurat, groups = groups, assay = i, slot = slot, features = features[[i]]))
-  names(data_matrices) <- tolower(assays)
+  names(data_matrices) <- assays
 
+  # Create MOFA object
   object <- new("MOFA")
   object@status <- "untrained"
   object@data <- data_matrices
@@ -367,7 +388,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
 
   # Set views & groups names
   groups_names(object) <- as.character(names(data_matrices[[1]]))
-  views_names(object)  <- tolower(assays)
+  views_names(object)  <- assays
 
   # Set metadata
   if (save_metadata) {
@@ -382,37 +403,25 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
 
 # (Hidden) function to split a list of matrices into a nested list of matrices
 .split_data_into_groups <- function(data, groups) {
-  groups_names <- unique(groups)
-  tmp <- lapply(data, function(x) {
-    tmp_view <- lapply(groups_names, function(p) {
-      x[,groups == p]
+  group_indices <- split(seq_along(groups), factor(groups, exclude = character(0))) # factor call avoids dropping NA
+  lapply(data, function(x) {
+    lapply(group_indices, function(idx) {
+      x[, idx, drop = FALSE]
     })
-    names(tmp_view) <- groups_names
-    tmp_view
   })
-  names(tmp) <- names(data)
-  tmp
 }
 
 # (Hidden) function to split data in Seurat object into a list of matrices
 .split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "data", features = NULL) {
-  # If no feature selection is provided, all features are used
-  if (is.null(features))
-    features <- seq_len(dim(GetAssay(object = seurat, assay = assay))[1])
+  # Fetch assay data 
+  data <- GetAssayData(object = seurat, assay = assay, slot = slot)
+  
+  # Subset to provided features if provided
+  if (!is.null(features))
+    data <- data[features, , drop=FALSE]
 
-  # Fetch assay data for every group of samples
-  groups_names <- unique(groups)
-  tmp <- lapply(groups_names, function(g) {
-    # If group name is NA, it has to be treated separately
-    # due to the way R handles NAs and equal signs
-    if (is.na(g)) {
-      GetAssayData(object = seurat, assay = assay, slot = slot)[,is.na(groups)][features,]
-    } else {
-      GetAssayData(object = seurat, assay = assay, slot = slot)[,which(groups == g)][features,]
-    }
-  })
-  names(tmp) <- groups_names
-  tmp
+  # Split into groups
+  .split_data_into_groups(list(data), groups)[[1]]
 }
 
 .df_to_matrix <- function(x) {
@@ -456,7 +465,6 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
     groups <- rep("group1", ncol(data[[1]]))
   }
-  groups_names <- as.character(unique(groups))
   
   # Set views names
   if (is.null(names(data))) {
@@ -470,6 +478,9 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   object <- new("MOFA")
   object@status <- "untrained"
   object@data <- .split_data_into_groups(data, groups)
+  
+  # groups_names <- as.character(unique(groups))
+  groups_names <- names(object@data[[1]])
   
   # Set dimensionalities
   object@dimensions[["M"]] <- length(data)

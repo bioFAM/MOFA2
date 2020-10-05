@@ -6,33 +6,29 @@
 #' @title Class to store a mofa model
 #' @description
 #' The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA model
-#' @section Slots:
-#'  \itemize{
-#'    \item{\code{data}:}{ The input data. }
-#'    \item{\code{covariates}:}{Optional covariates for smooth factors. }
-#'    \item{\code{intercepts}:}{ Feature intercepts. }
-#'    \item{\code{samples_metadata}:}{ Samples metadata. }
-#'    \item{\code{features_metadata}:}{ Features metadata. }
-#'    \item{\code{imputed_data}:}{ The imputed data. }
-#'    \item{\code{interpolated_Z}:}{Interpolated factor values}
-#'    \item{\code{expectations}:}{ expected values of the factors and the loadings. }
-#'    \item{\code{dim_red}:}{ non-linear dimensionality reduction manifolds. }
-#'    \item{\code{training_stats}:}{ model training statistics. }
-#'    \item{\code{data_options}:}{ Data processing options. }
-#'    \item{\code{training_options}:}{ Model training options. }
-#'    \item{\code{stochastic_options}:}{ Stochastic variational inference options. }
-#'    \item{\code{model_options}:}{ Model options. }
-#'    \item{\code{dimensions}:}{ Dimensionalities of the model: 
+#' @slot data The input data
+#' @slot intercepts Feature intercepts
+#' @slot samples_metadata Samples metadata
+#' @slot features_metadata Features metadata.
+#' @slot imputed_data The imputed data.
+#' @slot expectations expected values of the factors and the loadings.
+#' @slot dim_red non-linear dimensionality reduction manifolds.
+#' @slot training_stats model training statistics.
+#' @slot data_options Data processing options.
+#' @slot training_options Model training options.
+#' @slot stochastic_options Stochastic variational inference options.
+#' @slot model_options Model options.
+#' @slot dimensions Dimensionalities of the model: 
 #'    M for the number of views, 
 #'    G for the number of groups,
 #'    N for the number of samples (per group),
 #'    C for the number of covariates per sample,
 #'    D for the number of features (per view),
-#'    K for the number of factors.}
-#'    \item{\code{on_disk}:}{ Logical indicating whether data is loaded from disk. }
-#'    \item{\code{cache}:}{ Cache.}
-#'    \item{\code{status}:}{ Auxiliary variable indicating whether the model has been trained.}
-#'}
+#'    K for the number of factors.
+#' @slot on_disk Logical indicating whether data is loaded from disk.
+#' @slot cache Cache.
+#' @slot status Auxiliary variable indicating whether the model has been trained.
+#' 
 #' @name MOFA
 #' @rdname MOFA
 #' @aliases MOFA-class

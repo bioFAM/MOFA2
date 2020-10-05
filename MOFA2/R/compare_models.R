@@ -18,7 +18,7 @@
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model1 <- load_model(file)
 #' model2 <- load_model(file)
 #' 
@@ -38,15 +38,21 @@ compare_factors <- function(models, ...) {
   # Get latent factors
   LFs <- lapply(seq_along(models), function(i){
     do.call(rbind, get_factors(models[[i]]))
-    })
-  
-  # Rename factors
-  for (i in seq_along(LFs))
-    colnames(LFs[[i]]) <- paste(names(models)[i], colnames(LFs[[i]]), sep="_")
+  })
   
   # Sanity checks
   if (is.null(Reduce(intersect,lapply(LFs, rownames))))
     stop("No common samples in all models for comparison")
+
+  # Align samples between models
+  samples_names <- Reduce(intersect, map(LFs, rownames))
+  LFs <- lapply(LFs, function(z) {
+    z[samples_names,,drop=FALSE]
+  })
+  
+  # Rename factors
+  for (i in seq_along(LFs))
+    colnames(LFs[[i]]) <- paste(names(models)[i], colnames(LFs[[i]]), sep="_")
 
   # calculate correlation between factors across models
   corLFs <- cor(Reduce(cbind, LFs), use="complete.obs")
@@ -68,10 +74,11 @@ compare_factors <- function(models, ...) {
 #' @param models a list containing \code{\link{MOFA}} objects.
 #' @param log logical indicating whether to plot the log of the ELBO.
 #' @param return_data logical indicating whether to return a data.frame with the ELBO values per model
+#' @return A \code{\link{ggplot}} object or the underlying data.frame if return_data is TRUE
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model1 <- load_model(file)
 #' model2 <- load_model(file)
 #' 
@@ -130,6 +137,7 @@ compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
 #' and the model with the highest ELBO value is selected.
 #' @param models a list containing \code{\link{MOFA}} objects.
 #' @param plot boolean indicating whether to show a plot of the ELBO for each model instance
+#' @return A \code{\link{MOFA}} object
 #' @export
 select_model <- function(models, plot = FALSE) {
   # Sanity checks

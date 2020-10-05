@@ -18,13 +18,13 @@
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
-#' file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+#' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 #' 
-#' # Load data (in data.frame format)
-#' data <- read.table(file, header=TRUE) 
+#' # Load data dt (in data.frame format)
+#' load(file) 
 #' 
-#' # Create MOFA object
-#' MOFAmodel <- create_mofa(data)
+#' # Create the MOFA object
+#' MOFAmodel <- create_mofa(dt)
 #' 
 #' # Prepare the MOFA object with default options
 #' MOFAmodel <- prepare_mofa(MOFAmodel)
@@ -38,14 +38,6 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     stop("'object' has to be an instance of MOFA")
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
-
-  # If not outfile is provided, store a file in the /temp folder with the respective timestamp
-  if (is.null(outfile)) {
-    outfile <- file.path("/tmp", paste0("mofa_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
-    warning(paste0("No output filename provided. Using ", outfile, " to store the trained model.\n\n"))
-  }
-  if (file.exists(outfile))
-    message("Warning: Output file already exists, it will be replaced")
   
   # Initiate reticulate
   mofa <- import("mofapy2")
@@ -133,7 +125,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     verbose          = object@training_options$verbose,
     n_grid           = object@training_options$n_grid,
     start_opt        = object@training_options$start_opt,
-    opt_freq         = object@training_options$opt_freq
+    opt_freq         = object@training_options$opt_freq,
+    outfile          = object@training_options$outfile,
+    save_interrupted = object@training_options$save_interrupted
   )
   
   # Set stochastic options
@@ -151,11 +145,22 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   
   # Run the model
   mofa_entrypoint$run()
+
+  # If no outfile is provided, store a file in the /temp folder with the respective timestamp
+  if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
+    outfile <- object@training_options$outfile
+    if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
+      outfile <- file.path("/tmp", paste0("mofa_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
+      warning(paste0("No output filename provided. Using ", outfile, " to store the trained model.\n\n"))
+    }
+  }
+  if (file.exists(outfile))
+    message(paste0("Warning: Output file ", outfile, " already exists, it will be replaced"))
   
   # Save the model output as an hdf5 file
   mofa_entrypoint$save(outfile, save_data = save_data, expectations = save_expectations)
   
-  # Load the trained model
+  # Load the trained mode
   object <- load_model(outfile)
   
   return(object)

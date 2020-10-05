@@ -17,7 +17,14 @@
 #' @param threshold threshold on absolute weight values, so that weights with a magnitude below this threshold (in all factors) are removed
 #' @param ... extra arguments passed to \code{\link[pheatmap]{pheatmap}}.
 #' @importFrom pheatmap pheatmap
+#' @return A \code{\link{pheatmap}} object
 #' @export
+#' @examples 
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_weights_heatmap(model)
+
 plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "all", threshold = 0, ...) {
   
   # Sanity checks
@@ -33,7 +40,7 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
   if (paste(features, collapse="") =="all") { 
     features <- features_names(object)[[view]]
   } else if (is.numeric(features)) {
-  	features <- features_names(object)[[view]][features]
+    features <- features_names(object)[[view]][features]
   } else {
     stopifnot(all(features %in% features_names(object)[[view]]))  
   }
@@ -81,6 +88,12 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
+#' @examples 
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_weights_scatter(model, factors = 1:2)
+
 plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, shape_by = NULL, dot_size = 1,  
                                  name_color="", name_shape="", show_missing = TRUE, abs = FALSE, scale = TRUE, legend = TRUE) {
   
@@ -216,10 +229,11 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
 #' @import ggplot2 dplyr tidyr
 #' @importFrom magrittr %>%
 #' @importFrom ggrepel geom_text_repel
+#' @return A \code{\link{ggplot}} object or a \code{data.frame} if return_data is TRUE
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Plot distribution of weights for Factor 1 and View 1
@@ -451,7 +465,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Plot top weights for Factors 1 and 2 and View 1

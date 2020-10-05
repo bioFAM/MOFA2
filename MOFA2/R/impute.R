@@ -26,7 +26,7 @@
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
-#' file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
 #' # Impute missing values in all data modalities
@@ -53,10 +53,9 @@ impute <- function(object, views = "all", groups = "all", factors = "all",
   imputed <- get_data(object, views=views, groups=groups, add_intercept = add_intercept)
   for (m in views) {
     for (g in groups) {
-      imputed[[m]][[g]] <- list("mean" = imputed[[m]][[g]])
-      non_observed <- is.na(imputed[[m]][[g]]$mean)
-      imputed[[m]][[g]]$mean[non_observed] <- pred[[m]][[g]][non_observed]
-      imputed[[m]][[g]]$variance <- list() # empty variance
+      imputed[[m]][[g]] <- imputed[[m]][[g]]
+      non_observed <- is.na(imputed[[m]][[g]])
+      imputed[[m]][[g]][non_observed] <- pred[[m]][[g]][non_observed]
     }
   }
   

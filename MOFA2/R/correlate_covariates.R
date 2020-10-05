@@ -14,9 +14,11 @@
 #' @param plot character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).
 #' @param return_data logical indicating whether to return the correlation results instead of plotting
 #' @param transpose logical indicating whether to transpose the plot
+#' @param alpha p-value threshold
 #' @param ... extra arguments passed to \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}).
 #' @importFrom pheatmap pheatmap
 #' @importFrom corrplot corrplot
+#' @return A \code{\link[corrplot]{corrplot}} (if \code{plot=="r"}) or \code{\link[pheatmap]{pheatmap}} (if \code{plot=="log_pval"}) or the underlying data.frame if return_data is TRUE
 #' @export
 correlate_factors_with_covariates <- function(object, covariates, factors = "all", groups = "all", 
                                               abs = FALSE, plot = c("log_pval","r"), 
@@ -31,7 +33,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   metadata <- metadata[metadata$group%in%groups,]
   if (is.character(covariates)) {
     stopifnot(all(covariates %in% colnames(metadata)))
-    covariates <- metadata[,covariates,drop=F]
+    covariates <- metadata[,covariates,drop=FALSE]
   } else if (is.data.frame(covariates)) {
     samples <- metadata$sample
     if (is.null(rownames(covariates))) stop("The 'covariates' data.frame does not have samples names")
@@ -48,14 +50,14 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   }
   
   # convert all columns to numeric
-  cols <- which(sapply(covariates,class)!="numeric")
+  cols <- which(!sapply(covariates,class)%in%c("numeric","integer"))
   if (length(cols>=1)) {
     cols.factor <- which(sapply(covariates,class)=="factor")
     covariates[cols] <- lapply(covariates[cols], as.numeric)
     warning("There are non-numeric values in the covariates data.frame, converting to numeric...")
     covariates[cols] <- lapply(covariates[cols], as.numeric)
   }
-  stopifnot(all(sapply(covariates,class)=="numeric"))
+  stopifnot(all(sapply(covariates,class)%in%c("numeric","integer")))
   
   # Get factors
   factors <- .check_and_get_factors(object, factors)
@@ -80,6 +82,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     stat[stat>alpha] <- 1.0
     if (all(stat==1.0)) stop("All p-values are 1.0, cannot plot the histogram")
     stat <- -log10(stat)
+    stat[is.infinite(stat)] <- 1000
     if (isTRUE(transpose)) stat <- t(stat)
     if (isTRUE(return_data)) return(stat)
     col <- colorRampPalette(c("lightgrey", "red"))(n=100)
@@ -95,7 +98,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
 
 #' @title Summarise factor values using external groups
 #' @name summarise_factors
-#' @description Function to summarise factor scores using a discrete grouping of samples.
+#' @description Function to summarise factor values using a discrete grouping of samples.
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param df a data.frame with the columns "sample" and "level", where level is a factor with discrete group assigments for each sample.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.
@@ -104,7 +107,9 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
 #' @param return_data logical indicating whether to return the fa instead of plotting
 #' @import ggplot2
 #' @importFrom dplyr group_by summarise mutate
+#' @importFrom stats median
 #' @importFrom magrittr %>%
+#' @return A \code{\link{ggplot}} object or a \code{data.frame} if return_data is TRUE
 #' @export
 summarise_factors <- function(object, df, factors = "all", groups = "all", abs = FALSE, return_data = FALSE) {
   
@@ -120,12 +125,12 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
   factors <- .check_and_get_factors(object, factors)
   groups <- .check_and_get_groups(object, groups)
   factors_df <- get_factors(object, factors = factors, groups = groups, as.data.frame=TRUE) %>% 
-    group_by(factor) %>% mutate(value=value/max(abs(value),na.rm=T)) # Scale factor values
+    group_by(factor) %>% mutate(value=value/max(abs(value),na.rm=TRUE)) # Scale factor values
   
   # Merge data.frames
   to.plot <- merge(factors_df, df, by="sample") %>% 
     group_by(level,factor,group) %>%
-    summarise(value=median(value,na.rm=T))
+    summarise(value=median(value,na.rm=TRUE))
   
   if (isTRUE(abs)) {
     to.plot$value <- abs(to.plot$value)
@@ -154,7 +159,7 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
     p <- p + scale_fill_gradient2(low = "white", high = "red")
   } else {
     # center the color scheme at 0
-    p <- p + scale_fill_distiller(type = "div", limit = max(abs(to.plot$value),na.rm=T)*c(-1,1))
+    p <- p + scale_fill_distiller(type = "div", limit = max(abs(to.plot$value),na.rm=TRUE)*c(-1,1))
   } 
   
   # Return data or plot
