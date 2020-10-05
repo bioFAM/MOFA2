@@ -309,8 +309,15 @@ class initModel(object):
 
     def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10, idx_inducing = None, 
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True,
-                  opt_freq = 10, model_groups = False, use_gpytorch = False):
+                  opt_freq = 10, model_groups = False):
         dim = (self.K,)
+
+
+        # self.Sigma = Sigma_Node_torch(dim=dim, sample_cov=sample_cov, groups=groups,
+        #                             start_opt=start_opt, n_grid=n_grid, idx_inducing=idx_inducing,
+        #                             warping=warping, warping_freq=warping_freq, warping_ref=warping_ref,
+        #                             warping_open_begin=warping_open_begin, warping_open_end=warping_open_end,
+        #                             opt_freq=opt_freq, model_groups = model_groups)
 
         # self.Sigma = SigmaGrid_Node(dim, sample_cov, groups, start_opt, n_grid, idx_inducing, warping, warping_freq, warping_ref,
         #                             warping_open_begin, warping_open_end, opt_freq)
@@ -331,6 +338,8 @@ class initModel(object):
             opt_freq=opt_freq, 
             model_groups = model_groups
         )
+
+
         self.nodes["Sigma"] = self.Sigma
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,

@@ -7,3 +7,4 @@ from .binomial import Binomial
 from .gamma import Gamma
 from .multivariate_gaussian import MultivariateGaussian
 from .poisson import Poisson
+from .multi_task_GP import MyMultitaskGPModel, MultitaskGPModel, _myGaussianLikelihoodBase, myExactGP

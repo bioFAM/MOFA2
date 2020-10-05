@@ -122,9 +122,31 @@ class Z_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
         # Save updated parameters of the Q distribution
         return {'Qmean': Qmean, 'Qcov':Qcov}
 
+    def calcELBOgrad_k(self, k, gradSigma):
+        """
+        Method to calculate ELBO gradients per factor - required for optimization in Sigma node
+        """
+        Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
+        Qmean, Qcov = Qpar['mean'], Qpar['cov']
+        QE = Qexp['E']
+
+        if 'Sigma' in self.markov_blanket:
+            Sigma = self.markov_blanket['Sigma'].getInverseTerms()
+            p_cov_inv = Sigma['inv']
+            p_cov_inv_logdet = Sigma['inv_logdet']
+        else:
+            p_cov = self.P.params['cov']
+            p_cov_inv = self.p_cov_inv
+            p_cov_inv_logdet = np.linalg.slogdet(self.p_cov_inv)[1]
+
+        term1 = - 0.5 * np.trace(gpu_utils.dot(gradSigma, p_cov_inv[k, :,:]))
+        term2 = 0.5 * np.trace(gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:],  Qcov[k, :, :]))))
+        term3 = 0.5 * gpu_utils.dot(QE[:, k].transpose(), gpu_utils.dot(p_cov_inv[k, :,:], gpu_utils.dot(gradSigma, gpu_utils.dot(p_cov_inv[k, :,:], QE[:,k]))))
+        return term1 + term2 + term3
+
     def calculateELBO_k(self, k):
         """
-        Method to calculate ELBO per factor - required for grid search in Sigma node
+        Method to calculate ELBO per factor - required for optimization in Sigma node
         """
         # Collect parameters and expectations of current node
         Qpar, Qexp = self.Q.getParameters(), self.Q.getExpectations()
@@ -141,12 +163,18 @@ class Z_GP_Node_mv(MultivariateGaussian_Unobserved_Variational_Node):
             p_cov_inv = self.p_cov_inv
             p_cov_inv_logdet = np.linalg.slogdet(self.p_cov_inv)[1]
 
-        # compute term from the exponential in the Gaussian
-        tmp1 = -0.5 * (np.trace(gpu_utils.dot(p_cov_inv[k,:,:], Qcov[k,:,:])) +  gpu_utils.dot(QE[:,k].transpose(), gpu_utils.dot(p_cov_inv[k,:,:], QE[:,k])))# expectation of quadratic form
         # compute term from the precision factor in front of the Gaussian
-        tmp2 = 0.5 * p_cov_inv_logdet[k]
-        lb_p = tmp1 + tmp2
-        
+        term1 = 0.5 * p_cov_inv_logdet[k]
+        # compute term from the exponential in the Gaussian
+        term2 = -0.5 * np.trace(gpu_utils.dot(p_cov_inv[k,:,:], Qcov[k,:,:]))
+        term3 = -0.5 *  gpu_utils.dot(QE[:,k].transpose(), gpu_utils.dot(p_cov_inv[k,:,:], QE[:,k]))
+
+        # tmp1 = -0.5 * (np.trace(gpu_utils.dot(p_cov_inv[k,:,:], Qcov[k,:,:])) +  gpu_utils.dot(QE[:,k].transpose(), gpu_utils.dot(p_cov_inv[k,:,:], QE[:,k])))# expectation of quadratic form
+        # tmp2 = 0.5 * p_cov_inv_logdet[k]
+        # lb_p = tmp1 + tmp2
+
+        lb_p = term1 + term2 + term3
+
         lb_q = -0.5 * np.linalg.slogdet(Qcov[k,:,:])[1] # term -N*(log(2* np.pi)) cancels out between p and q term; -N/2 is added below
 
         return lb_p - lb_q
