@@ -233,6 +233,9 @@ class build_mofa_smooth(buildBiofam):
         """ Build node Sigma for the GP prior on the factors """
 
         # TO-DO: USE MODULAR SIGMA
+        # TO-DO: assert on build that G >1 if warping
+        # TO-DO: exclude idx_inducing when using warping
+
         self.init_model.initSigma(
             self.sample_cov,
             self.data_opts['samples_groups'],
