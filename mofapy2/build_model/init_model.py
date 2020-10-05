@@ -115,7 +115,7 @@ class initModel(object):
             qE=qE, qE2=qE2, weight_views = weight_views
         )
 
-    def initZ_smooth(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, mv_Znode = False, weight_views = False):
+    def initZ_smooth(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views = False):
         """Method to initialise the latent variables
 
         PARAMETERS
@@ -132,7 +132,6 @@ class initModel(object):
         Y: matrix to run PCA on (when qmean="pca")
         impute: logical value if to perform imputation before running PCA,
             this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
-        mv_Znode: logical whether to use a Z node with GP posterior (only relevant if GP_factors = True)
         weight_views: logical whether to weight the ELBO
         """
 
@@ -146,10 +145,7 @@ class initModel(object):
         ## Initialise variational distribution (Q)
 
         # variance
-        if mv_Znode:
-            qvar = s.array([s.eye(self.N)*qvar for k in range(self.K)])
-        else:
-            qvar = s.ones((self.N, self.K)) * qvar
+        qvar = s.array([s.eye(self.N)*qvar for k in range(self.K)])
 
         # mean
         if qmean is not None:
@@ -193,25 +189,15 @@ class initModel(object):
                 exit()
 
         # Initialise the node
-        if mv_Znode:
-            self.nodes["Z"] = Z_GP_Node_mv(
-                dim=(self.N, self.K),
-                pmean=pmean, pcov=pvar,
-                qmean=qmean, qcov=qvar,
-                qE=qE, 
-                weight_views = weight_views
-            )
-        else:
-            self.nodes["Z"] = Z_GP_Node(
-                dim=(self.N, self.K),
-                pmean=pmean, pcov=pvar,
-                qmean=qmean, qvar=qvar,
-                qE=qE, qE2=qE2, 
-                weight_views = weight_views
-            )
+        self.nodes["Z"] = Z_GP_Node_mv(
+            dim=(self.N, self.K),
+            pmean=pmean, pcov=pvar,
+            qmean=qmean, qcov=qvar,
+            qE=qE, 
+            weight_views = weight_views
+        )
 
-    def initU(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None, Y = None, impute=True, idx_inducing = None,
-              mv_Znode = True, weight_views = False): # prior has diagonal covariance here, ls optimiation in Sigma node
+    def initU(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None, Y = None, impute=True, idx_inducing = None, weight_views = False): # prior has diagonal covariance here, ls optimiation in Sigma node
         """Method to initialise the inducing points
 
          PARAMETERS
@@ -229,7 +215,6 @@ class initModel(object):
          impute: logical value if to perform imputation before running PCA,
              this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
          GP_factors: logical whether to use a Z node with GP prior or not
-         mv_Znode: logical whether to use a Z node with GP posterior (only relevant if GP_factors = True)
          """
 
         assert idx_inducing is not  None, "Stop: U nodes is used without inducing points"
@@ -244,29 +229,18 @@ class initModel(object):
 
         ## Initialise variational distribution (Q)
         qmean = s.ones((Nu, self.K)) * qmean
+
         # variance
-        if mv_Znode:
-            qvar = s.array([s.eye(Nu) * qvar for k in range(self.K)])
-        else:
-            qvar = s.ones((Nu, self.K)) * qvar
+        qvar = s.array([s.eye(Nu) * qvar for k in range(self.K)])
 
         # Initialise the node
-        if mv_Znode:
-            self.nodes["U"] = U_GP_Node_mv(
-                dim=(Nu, self.K),
-                pmean=pmean, pcov=pvar,
-                qmean=qmean, qcov=qvar,
-                qE=qE, idx_inducing = idx_inducing,
-                weight_views = weight_views
-            )
-        else:
-            self.nodes["U"] = U_GP_Node(
-                dim=(Nu, self.K),
-                pmean=pmean, pcov=pvar,
-                qmean=qmean, qvar=qvar,
-                qE=qE, qE2=qE2, idx_inducing =idx_inducing,
-                weight_views = weight_views
-                )
+        self.nodes["U"] = U_GP_Node_mv(
+            dim=(Nu, self.K),
+            pmean=pmean, pcov=pvar,
+            qmean=qmean, qcov=qvar,
+            qE=qE, idx_inducing = idx_inducing,
+            weight_views = weight_views
+        )
 
     def initZgU(self, pmean = 0, pvar =1., qmean = "random", qvar = 1., qE = None, qE2 = None, Y = None,
                 impute = True, idx_inducing = None, weight_views = False):
@@ -333,7 +307,7 @@ class initModel(object):
             weight_views = weight_views
         )
 
-    def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10, idx_inducing = None, # TODO : mv_Znode = False,
+    def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10, idx_inducing = None, 
                  warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True,
                   opt_freq = 10, model_groups = False, use_gpytorch = False):
         dim = (self.K,)

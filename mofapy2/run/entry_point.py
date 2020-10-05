@@ -142,8 +142,7 @@ class entry_point(object):
 
         return None
 
-    def set_data_matrix(self, data, likelihoods=None, 
-        views_names=None, groups_names=None, samples_names=None, features_names=None):
+    def set_data_matrix(self, data, likelihoods=None, views_names=None, groups_names=None, samples_names=None, features_names=None):
         """ Method to input the data in a wide matrix
 
         PARAMETERS
@@ -437,9 +436,6 @@ class entry_point(object):
         self.smooth_opts['sparseGP'] = False
         self.smooth_opts['idx_inducing'] = None
 
-        # Define whether to use a multivariate Z node in the posterior
-        self.smooth_opts['mv_Znode'] = multivariate_Z
-
 
         # Define warping
         self.smooth_opts['warping'] = bool(warping)
@@ -519,10 +515,6 @@ class entry_point(object):
                 return None
 
         self.smooth_opts['sparseGP'] = True
-
-        if self.smooth_opts['sparseGP'] and not self.smooth_opts['mv_Znode']:
-            print("For sparse GP SMOFA uses a multivariate Z node, setting mv_Znode to True")
-            self.smooth_opts['mv_Znode'] = True
 
         # Set the identity of the inducing points
         if idx_inducing is None:
@@ -609,7 +601,7 @@ class entry_point(object):
     def set_data_options(self, scale_views=False, scale_groups = False, center_groups = True):
         """ Set data processing options """
 
-        self.data_opts = {}
+        if not hasattr(self, 'data_opts'): self.data_opts = {}
         self.data_opts['center_groups'] = center_groups
 
         # Scale views to unit variance
@@ -746,10 +738,10 @@ class entry_point(object):
             if uncertainty:
                 # marginal variances p(z, z*|c, c*, y) =  p(z*|z, y,c,c*) *p(z|y,c,c*)  = p(z*|z, c*) * p(z|y,c)
                 # Var[z*] = Var([E(z*|z)]) + Var(E(z*|z))
-                if not self.model_opts['mv_Znode']:
-                    Z2 = np.diag(self.model.nodes['Z'].getExpectations()['E2'][:,k] - self.model.nodes['Z'].getExpectations()['E'][:,k]**2)
-                else:
-                    Z2 = self.model.nodes['Z'].getExpectations()['cov'][k,:,:]
+                # if not self.model_opts['mv_Znode']:
+                #     Z2 = np.diag(self.model.nodes['Z'].getExpectations()['E2'][:,k] - self.model.nodes['Z'].getExpectations()['E'][:,k]**2)
+                # else:
+                Z2 = self.model.nodes['Z'].getExpectations()['cov'][k,:,:]
                 # TODO: avoid calculating full matrix, only require diagonal
                 Z_new_var[:, k] = np.diag(Sigma_new_k[newidx, :][:, newidx] - \
                                           gpu_utils.dot(K_new_k[newidx, :][:, oldix],

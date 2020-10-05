@@ -205,7 +205,6 @@ class build_mofa_smooth(buildBiofam):
             qmean="pca", 
             Y=self.data, 
             impute=True,
-            mv_Znode = self.smooth_opts['mv_Znode'],
             weight_views = self.train_opts['weight_views']
         )
 
@@ -227,7 +226,6 @@ class build_mofa_smooth(buildBiofam):
         # initialise U by PCA (no use of GP prior)
         self.init_model.initU(
             idx_inducing = self.smooth_opts['idx_inducing'],
-          # mv_Znode = self.smooth_opts['mv_Znode'],
             weight_views = self.train_opts['weight_views']
         )
 
@@ -240,7 +238,6 @@ class build_mofa_smooth(buildBiofam):
             self.data_opts['samples_groups'],
             start_opt = self.smooth_opts['start_opt'],
             n_grid = self.smooth_opts['n_grid'],
-            # [TO-DO] # mv_Znode = self.model_opts['mv_Znode'],
             # idx_inducing = self.smooth_opts['idx_inducing'],
             # warping = self.smooth_opts['warping'],
             # warping_freq = self.smooth_opts['warping_freq'],
