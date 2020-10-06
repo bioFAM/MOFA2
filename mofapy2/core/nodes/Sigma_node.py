@@ -10,10 +10,10 @@ import pandas as pd
 # from fastdtw import fastdtw
 from dtw import dtw # note this is dtw-python not dtw
 import copy
-import gpytorch
-import torch
-from mofapy2.core.distributions.multi_task_GP import MultitaskGPModel, ELBO, myMultitaskGaussianLikelihood
-from gpytorch.likelihoods import MultitaskGaussianLikelihood
+# import gpytorch
+# import torch
+# from mofapy2.core.distributions.multi_task_GP import MultitaskGPModel, ELBO, myMultitaskGaussianLikelihood
+# from gpytorch.likelihoods import MultitaskGaussianLikelihood
 import mofapy2.core.gp_utils as gp_utils
 
 
