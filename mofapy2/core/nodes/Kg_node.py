@@ -19,19 +19,14 @@ class Kg_Node(Node):
     dim: dimensionality of the node (= number of latent factors x number of groups)
     rank: rank of the approximation of the group-group covariance term (x)
     sigma: initial value of the diagonal term
-    sigma_const: boolean whether to use a constant diagonal?
     """
 
-    def __init__(self, dim, rank, sigma = 0.1, sigma_const=True, scale_to_cor = True, spectral_decomp = True):
+    def __init__(self, dim, rank, sigma = 0.1, scale_to_cor = True, spectral_decomp = True):
         super().__init__(dim)
         self.G = dim[1]                                             # number of observations for covariate
         self.K = dim[0]                                             # number of latent processes
         self.rank = rank
-        self.sigma_const = sigma_const
-        if sigma_const:
-            self.sigma = np.array([sigma] * self.K)
-        else:
-            self.sigma = [np.array([sigma] * self.G)] * self.K
+        self.sigma = np.array([sigma] * self.K)
         self.scale_to_cor = scale_to_cor
         # initialize components in node
         self.compute4init(spectral_decomp = spectral_decomp)
@@ -63,10 +58,7 @@ class Kg_Node(Node):
 
     def compute_kernel_k(self, k, spectral_decomp = True):
         # build kernel matrix based on low-rank approximation
-        if self.sigma_const:
-            self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) + self.sigma[k] * np.eye(self.G)
-        else:
-            self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) +  np.diag(self.sigma[k])
+        self.Kmat[k, :, :] = np.dot(self.x[k,:,:].transpose(), self.x[k,:,:]) + self.sigma[k] * np.eye(self.G)
 
         if self.scale_to_cor:
             self.Kmat[k, :, :] = covar_to_corr(self.Kmat[k, :, :])

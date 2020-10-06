@@ -58,7 +58,6 @@ class Sigma_Node_base(Node):
 
         # compatibility to other Sigma nodes and avoid code duplication
         self.sample_cov_transformed = copy.copy(sample_cov)         # for compatibility with warping node
-        self.Nu = self.N                                            # dimension of the inverse matrix (can differ for sparse subclasses)
 
         # hyperparameter optimization
         self.start_opt = start_opt
@@ -93,15 +92,6 @@ class Sigma_Node_base(Node):
             self.kronecker = True
             self.G = 1
 
-        # initialize Sigma terms (unstructured)
-        self.Sigma_inv = np.zeros([self.K, self.Nu, self.Nu])
-        self.Sigma = np.zeros([self.K, self.N, self.N])
-        for k in range(self.K):
-            self.Sigma_inv[k, :, :] = np.eye(self.Nu)
-            self.Sigma[k, :, :] = np.eye(self.N)
-
-        self.Sigma_inv_logdet = np.zeros(self.K)
-
     def initKc(self, transformed_sample_cov, cov4grid=None, spectral_decomp=True):
         """
         Method to initialize the components required for the covariate kernel
@@ -120,12 +110,12 @@ class Sigma_Node_base(Node):
         self.Kc = Kc_Node(dim=(self.K, self.C), covariates=self.covariates, n_grid=self.n_grid, cov4grid=cov4grid,
                           spectral_decomp=spectral_decomp)
 
-    def initKg(self, rank, sigma_const, spectral_decomp):
+    def initKg(self, rank, spectral_decomp):
         """
         Method to initialize the group kernel
         """
         # set group kernel
-        self.Kg = Kg_Node(dim=(self.K, self.G), rank=rank, sigma_const=sigma_const, spectral_decomp=spectral_decomp)
+        self.Kg = Kg_Node(dim=(self.K, self.G), rank=rank, spectral_decomp=spectral_decomp)
 
     def precompute(self, options):
         gpu_utils.gpu_mode = options['gpu_mode']
@@ -182,11 +172,16 @@ class Sigma_Node_base(Node):
                                                                         gpu_utils.dot(np.diag(term2diag),
                                                                                       term3))
             else:
-                Sigma = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
+                if self.model_groups:
+                    Sigma = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), self.covidx,:][:, self.covidx] * self.Kg.Kmat[k,self.groupsidx,:][:,self.groupsidx] + self.zeta[k] * np.eye(self.N)
+                else:
+                    Sigma = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), :, :] + self.zeta[k] * np.eye(self.N)
                 self.Sigma_inv[k, :, :] = np.linalg.inv(Sigma)
                 self.Sigma_inv_logdet[k] = np.linalg.slogdet(Sigma)[1]
                 if not only_inverse:
                     self.Sigma[k, :, :] = Sigma
+
+
 
     def getInverseTerms_k(self, k):
         """
@@ -278,12 +273,9 @@ class Sigma_Node_base(Node):
 
         # if required set group parameters
         if self.model_groups:
-            if self.Kg.sigma_const:
-                sigma = par[1]
-                x = par[2:]
-            else:
-                sigma = par[1:(self.G+1)]
-                x = par[(self.G+1):]
+            sigma = par[1]
+            x = par[2:]
+
             assert len(x) == self.Kg.rank * self.G,\
                 "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
             x = x.reshape(self.Kg.rank, self.G)
@@ -314,12 +306,9 @@ class Sigma_Node_base(Node):
 
         # if required set group parameters
         if self.model_groups:
-            if self.Kg.sigma_const:
-                sigma = par[1]
-                x = par[2:]
-            else:
-                sigma = par[1:(self.G + 1)]
-                x = par[(self.G + 1):]
+            sigma = par[1]
+            x = par[2:]
+
             assert len(x) == self.Kg.rank * self.G, \
                 "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
             x = x.reshape(self.Kg.rank, self.G)
@@ -335,7 +324,10 @@ class Sigma_Node_base(Node):
         else:
             Kc = self.Kc.Kmat[self.Kc.get_best_lidx(k),:,:]
             Kg = self.Kg.Kmat[k,:,:]
-            val = (1-self.zeta[k]) * Kc[ self.covidx, :][:,self.covidx] * Kg[self.groupsidx, :][:, self.groupsidx] + self.zeta[k] *np.eye(self.Nu)
+            if self.model_groups:
+                val = (1-self.zeta[k]) * Kc[ self.covidx, :][:,self.covidx] * Kg[self.groupsidx, :][:, self.groupsidx] + self.zeta[k] *np.eye(self.Nu)
+            else:
+                val = (1-self.zeta[k]) * Kc + self.zeta[k] *np.eye(self.Nu)
 
         return val[id1,id2]
 
@@ -348,12 +340,9 @@ class Sigma_Node_base(Node):
 
         # if required set group parameters
         if self.model_groups:
-            if self.Kg.sigma_const:
-                sigma = par[1]
-                x = par[2:]
-            else:
-                sigma = par[1:(self.G + 1)]
-                x = par[(self.G + 1):]
+            sigma = par[1]
+            x = par[2:]
+
             assert len(x) == self.Kg.rank * self.G, \
                 "Length of x incorrect: Is %s, should be  %s * %s" % (len(x), self.Kg.rank, self.G)
             x = x.reshape(self.Kg.rank, self.G)
@@ -375,56 +364,63 @@ class Sigma_Node_base(Node):
             Kg = self.Kg.Kmat[k,:,:]
 
             # gradient wrt zeta
-            gradient_Sigma_zeta = - Kc[self.covidx, :][:,self.covidx] *\
-                                  Kg[self.groupsidx, :][:, self.groupsidx] +\
-                                  np.eye(self.Nu)
+            if self.model_groups:
+                gradient_Sigma_zeta = - Kc[self.covidx, :][:,self.covidx] *\
+                                      Kg[self.groupsidx, :][:, self.groupsidx] +\
+                                      np.eye(self.Nu)
+            else:
+                gradient_Sigma_zeta = - Kc + np.eye(self.Nu)
 
-        # gradient wrt sigma
-        Z = np.dot(x.transpose(), x) # diagonal can be neglected as set to 1, gradient 0
-        Gmat_unscaled = Z + sigma * np.eye(self.G) # this is Kg before scaled to correlation
-        Gmat_unscaled_sqrt = np.sqrt(Gmat_unscaled)
-        N = np.outer(np.diag(Gmat_unscaled_sqrt), np.diag(Gmat_unscaled_sqrt))
-        # N = np.array([[Gmat_unscaled_sqrt[g,g] * Gmat_unscaled_sqrt[h,h] for g in range(self.G)] for h in range(self.G)])
-        tmp = -0.5 * np.outer(np.diag(Gmat_unscaled_sqrt), 1/np.diag(Gmat_unscaled_sqrt))
-        AN_sigma = tmp + tmp.transpose()
-        # AN_sigma = np.array([[-0.5 * Gmat_unscaled_sqrt[g,g] / Gmat_unscaled_sqrt[h,h] -0.5 * Gmat_unscaled_sqrt[h,h] / Gmat_unscaled_sqrt[g,g] for g in range(self.G)] for h in range(self.G)])
-        N2 = N**2
-        # N2  = np.array([[Gmat_unscaled[g,g] * Gmat_unscaled[h,h] for g in range(self.G)]for h in range(self.G)])
-        # AZ_sigma = 0
-        diffGmat_sigma = (1-np.eye(self.G)) * Z * AN_sigma / N2
-        if self.kronecker:
-            gradient_Sigma_sigma = (1 - self.zeta[k]) * np.kron(diffGmat_sigma, Kc)
+        if self.model_groups:
+            # gradient wrt sigma
+            Z = np.dot(x.transpose(), x) # diagonal can be neglected as set to 1, gradient 0
+            Gmat_unscaled = Z + sigma * np.eye(self.G) # this is Kg before scaled to correlation
+            Gmat_unscaled_sqrt = np.sqrt(Gmat_unscaled)
+            N = np.outer(np.diag(Gmat_unscaled_sqrt), np.diag(Gmat_unscaled_sqrt))
+            # N = np.array([[Gmat_unscaled_sqrt[g,g] * Gmat_unscaled_sqrt[h,h] for g in range(self.G)] for h in range(self.G)])
+            tmp = -0.5 * np.outer(np.diag(Gmat_unscaled_sqrt), 1/np.diag(Gmat_unscaled_sqrt))
+            AN_sigma = tmp + tmp.transpose()
+            # AN_sigma = np.array([[-0.5 * Gmat_unscaled_sqrt[g,g] / Gmat_unscaled_sqrt[h,h] -0.5 * Gmat_unscaled_sqrt[h,h] / Gmat_unscaled_sqrt[g,g] for g in range(self.G)] for h in range(self.G)])
+            N2 = N**2
+            # N2  = np.array([[Gmat_unscaled[g,g] * Gmat_unscaled[h,h] for g in range(self.G)]for h in range(self.G)])
+            # AZ_sigma = 0
+            diffGmat_sigma = (1-np.eye(self.G)) * Z * AN_sigma / N2
+            if self.kronecker:
+                gradient_Sigma_sigma = (1 - self.zeta[k]) * np.kron(diffGmat_sigma, Kc)
+            else:
+                gradient_Sigma_sigma = (1 - self.zeta[k]) *\
+                                       diffGmat_sigma[self.groupsidx, :][:,self.groupsidx] \
+                                       * Kc[self.covidx, :][:, self.covidx]
+
+            # gradient wrt x
+            gradient_Sigma_x = []
+            for r in range(self.Kg.rank):
+                drg = - 1/np.diag(Gmat_unscaled_sqrt) * x[r,:]
+                for g in range(self.G):
+                    tmp = np.outer(np.diag(Gmat_unscaled_sqrt), drg[g] * np.eye(self.G)[g, :])
+                    AN_x = tmp + tmp.transpose()
+                    tmp = np.outer(x[r, :], np.eye(self.G)[g, :])
+                    AZ_x = tmp + tmp.transpose()
+                    diffGmat_x = (1-np.eye(self.G)) * (Z * AN_x + AZ_x * N) / N2
+                    if self.kronecker:
+                        grad = (1 - self.zeta[k]) * np.kron(diffGmat_x, Kc)
+                    else:
+                        grad = (1 - self.zeta[k]) * diffGmat_x[self.groupsidx, :][:,self.groupsidx] *  Kc[self.covidx, :][:,self.covidx]
+                    gradient_Sigma_x.append(grad)
+
+
+            # drg = [[-0.5 * 1/ Gmat_unscaled_sqrt[g,g] * 2 * x[r, g] for r in range(self.Kg.rank)] for g in range(self.G)]
+            # # below diagonal can be neglected as set to 1, gradient 0
+            # AN_x = [[np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]) + np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
+            # AZ_x = [[np.outer(x[r, :], np.eye(self.G)[g, :]) + np.outer(x[r, :],np.eye(self.G)[g,:]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
+            # diffGmat_x  = [[(1-np.eye(self.G)) * (Z * AN_x[g][r] + AZ_x[g][r] * N) / N2 for r in range(self.Kg.rank)] for g in range(self.G)]
+            # gradient_Sigma_x = [(1 - self.zeta[k]) *
+            #                     diffGmat_x[g][r][self.groupsidx, :][:,self.groupsidx] *
+            #                     Kc[self.covidx, :][:,self.covidx]
+            #                     for r in range(self.Kg.rank) for g in range(self.G)]
         else:
-            gradient_Sigma_sigma = (1 - self.zeta[k]) *\
-                                   diffGmat_sigma[self.groupsidx, :][:,self.groupsidx] \
-                                   * Kc[self.covidx, :][:, self.covidx]
-
-        # gradient wrt x
-        gradient_Sigma_x = []
-        for r in range(self.Kg.rank):
-            drg = - 1/np.diag(Gmat_unscaled_sqrt) * x[r,:]
-            for g in range(self.G):
-                tmp = np.outer(np.diag(Gmat_unscaled_sqrt), drg[g] * np.eye(self.G)[g, :])
-                AN_x = tmp + tmp.transpose()
-                tmp = np.outer(x[r, :], np.eye(self.G)[g, :])
-                AZ_x = tmp + tmp.transpose()
-                diffGmat_x = (1-np.eye(self.G)) * (Z * AN_x + AZ_x * N) / N2
-                if self.kronecker:
-                    grad = (1 - self.zeta[k]) * np.kron(diffGmat_x, Kc)
-                else:
-                    grad = (1 - self.zeta[k]) * diffGmat_x[self.groupsidx, :][:,self.groupsidx] *  Kc[self.covidx, :][:,self.covidx]
-                gradient_Sigma_x.append(grad)
-
-
-        # drg = [[-0.5 * 1/ Gmat_unscaled_sqrt[g,g] * 2 * x[r, g] for r in range(self.Kg.rank)] for g in range(self.G)]
-        # # below diagonal can be neglected as set to 1, gradient 0
-        # AN_x = [[np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]) + np.outer(np.diag(Gmat_unscaled_sqrt), drg[g][r] * np.eye(self.G)[g, :]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
-        # AZ_x = [[np.outer(x[r, :], np.eye(self.G)[g, :]) + np.outer(x[r, :],np.eye(self.G)[g,:]).transpose() for r in range(self.Kg.rank)] for g in range(self.G)]
-        # diffGmat_x  = [[(1-np.eye(self.G)) * (Z * AN_x[g][r] + AZ_x[g][r] * N) / N2 for r in range(self.Kg.rank)] for g in range(self.G)]
-        # gradient_Sigma_x = [(1 - self.zeta[k]) *
-        #                     diffGmat_x[g][r][self.groupsidx, :][:,self.groupsidx] *
-        #                     Kc[self.covidx, :][:,self.covidx]
-        #                     for r in range(self.Kg.rank) for g in range(self.G)]
+            gradient_Sigma_sigma = None
+            gradient_Sigma_x = None
 
         return gradient_Sigma_zeta, gradient_Sigma_sigma, gradient_Sigma_x
 
@@ -478,18 +474,11 @@ class Sigma_Node_base(Node):
             # use grid search to optimise lengthscale hyperparameters
             for lidx in range(self.n_grid):
                 if self.model_groups:
-                    if self.Kg.sigma_const:
-                        bounds = [(1e-10, 1 - 1e-10)]  # zeta
-                        bounds = bounds + [(1e-10, 1 - 1e-10)]  # sigma
-                        bounds = bounds + [(-1, 1)] * self.G * self.Kg.rank  # x
-                        par0 = [1, 1] + [0] * self.G * self.Kg.rank  # parameters for zero lengthscale/scale (unstrucutred)
-                        # par0 = [1, 0] + [1/np.sqrt(self.Kg.rank)] * self.G *  self.Kg.rank # parameters for zero lengthscale (fully connected groups)
-                    else:
-                        bounds = [(1e-10, 1 - 1e-10)]  # zeta
-                        bounds = bounds + [(1e-10, 1 - 1e-10)] * self.G  # sigma
-                        bounds = bounds + [(-1, 1)] * self.G * self.Kg.rank  # x
-                        par0 = [1] + [1] * self.G + [0] * self.G * self.Kg.rank
-                        # par0 = [1] + [0] * self.G + [1/np.sqrt(self.Kg.rank)] * self.G * self.Kg.rank
+                    bounds = [(1e-10, 1 - 1e-10)]  # zeta
+                    bounds = bounds + [(1e-10, 1 - 1e-10)]  # sigma
+                    bounds = bounds + [(-1, 1)] * self.G * self.Kg.rank  # x
+                    par0 = [1, 1] + [0] * self.G * self.Kg.rank  # parameters for zero lengthscale/scale (unstrucutred)
+                    # par0 = [1, 0] + [1/np.sqrt(self.Kg.rank)] * self.G *  self.Kg.rank # parameters for zero lengthscale (fully connected groups)
                 else:
                     bounds = [(1e-10, 1 - 1e-10)]  # zeta
                     par0 = [1]
@@ -525,12 +514,8 @@ class Sigma_Node_base(Node):
                     best_zeta = best_param4ls[0]
 
                     if self.model_groups:
-                        if self.Kg.sigma_const:
-                            best_sigma = best_param4ls[1]
-                            best_x = best_param4ls[2:].reshape(self.Kg.rank, self.G)
-                        else:
-                            best_sigma = best_param4ls[1:(self.G + 1)]
-                            best_x = best_param4ls[(self.G + 1):].reshape(self.Kg.rank, self.G)
+                        best_sigma = best_param4ls[1]
+                        best_x = best_param4ls[2:].reshape(self.Kg.rank, self.G)
 
             # save optimized kernel paramters
             self.Kc.set_gridix(best_lidx, k)
@@ -571,6 +556,15 @@ class Sigma_Node(Sigma_Node_base):
 
         super().__init__(dim, sample_cov, groups, start_opt, opt_freq, n_grid, rankx, model_groups)
 
+        # initialize Sigma terms (unstructured)
+        self.Nu = self.N                                            # dimension of the inverse matrix (can differ for sparse subclasses)
+        self.Sigma_inv = np.zeros([self.K, self.Nu, self.Nu])
+        self.Sigma = np.zeros([self.K, self.N, self.N])
+        for k in range(self.K):
+            self.Sigma_inv[k, :, :] = np.eye(self.Nu)
+            self.Sigma[k, :, :] = np.eye(self.N)
+        self.Sigma_inv_logdet = np.zeros(self.K)
+
         # initialize covariate kernel
         self.initKc(self.sample_cov_transformed, spectral_decomp=self.kronecker)
 
@@ -593,6 +587,15 @@ class Sigma_Node_sparse(Sigma_Node_base):
         self.idx_inducing = idx_inducing
         self.Nu = len(idx_inducing)
         self.groupsidx = self.groupsidx[self.idx_inducing]                  # subset to group labels for inducing points
+
+        # initialize Sigma terms (unstructured)
+        self.Sigma_inv = np.zeros([self.K, self.Nu, self.Nu])
+        self.Sigma = np.zeros([self.K, self.N, self.N])
+        for k in range(self.K):
+            self.Sigma_inv[k, :, :] = np.eye(self.Nu)
+            self.Sigma[k, :, :] = np.eye(self.N)
+        self.Sigma_inv_logdet = np.zeros(self.K)
+
 
         # initialize sparse covariance kernel
         self.initKc(self.sample_cov_transformed[self.idx_inducing], cov4grid=self.sample_cov_transformed,
@@ -680,6 +683,15 @@ class Sigma_Node_warping(Sigma_Node_base):
         assert self.start_opt % self.warping_freq == 0,\
             "start_opt should be a multiple of warping_freq"            # to ensure in the first opt. step alignment is performed
 
+        # initialize Sigma terms (unstructured)
+        self.Nu = self.N                                            # dimension of the inverse matrix (can differ for sparse subclasses)
+        self.Sigma_inv = np.zeros([self.K, self.Nu, self.Nu])
+        self.Sigma = np.zeros([self.K, self.N, self.N])
+        for k in range(self.K):
+            self.Sigma_inv[k, :, :] = np.eye(self.Nu)
+            self.Sigma[k, :, :] = np.eye(self.N)
+        self.Sigma_inv_logdet = np.zeros(self.K)
+
         # covariate kernel is initialized after first warping
         self.Kc = None
 
@@ -688,8 +700,7 @@ class Sigma_Node_warping(Sigma_Node_base):
         Public method to update the nodes parameters
         """
         self.iter += 1
-
-        if self.iter % self.warping_freq == 0:
+        if self.iter >= self.start_opt and self.iter % self.warping_freq == 0:
             ZE = self.markov_blanket['Z'].getExpectation()
             self.align_sample_cov_dtw(ZE)
             print("Covariates were aligned between groups.")
