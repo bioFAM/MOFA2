@@ -200,7 +200,7 @@ class build_mofa_smooth(buildBiofam):
         self.createMarkovBlankets()
 
     def build_Z(self):
-        """ Build node Z for the factors or latent variables """
+        """ Build node Z for the factors """
         self.init_model.initZ_smooth(
             qmean="pca", 
             Y=self.data, 
@@ -211,7 +211,6 @@ class build_mofa_smooth(buildBiofam):
     def build_ZgU(self):
         """ Build node for Z given U for the factors or latent variables conditioned on inducing points"""
 
-        # initialise ZgU by
         self.init_model.initZgU(
             qmean="pca", 
             Y=self.data, 
@@ -232,25 +231,60 @@ class build_mofa_smooth(buildBiofam):
     def build_Sigma(self):
         """ Build node Sigma for the GP prior on the factors """
 
-        # TO-DO: USE MODULAR SIGMA
         # TO-DO: assert on build that G >1 if warping
         # TO-DO: exclude idx_inducing when using warping
 
-        self.init_model.initSigma(
-            self.sample_cov,
-            self.data_opts['samples_groups'],
-            start_opt = self.smooth_opts['start_opt'],
-            n_grid = self.smooth_opts['n_grid'],
-            # idx_inducing = self.smooth_opts['idx_inducing'],
-            # warping = self.smooth_opts['warping'],
-            # warping_freq = self.smooth_opts['warping_freq'],
-            # warping_ref = self.smooth_opts['warping_ref'],
-            # warping_open_begin = self.smooth_opts['warping_open_begin'],
-            # warping_open_end = self.smooth_opts['warping_open_end'],
-            opt_freq = self.smooth_opts['opt_freq'],
-            model_groups = self.smooth_opts['model_groups']#,
-            # use_gpytorch  = self.model_opts['use_gpytorch']
-        )
+        # Sparse GPs
+        if self.smooth_opts['sparseGP'] is True:
+            # Warping
+            if self.smooth_opts['warping'] is True:
+                raise NotImplementedError
+            # Non-Warping
+            else:
+                self.init_model.initSigma_sparse(
+                    self.sample_cov,
+                    self.data_opts['samples_groups'],
+                    start_opt = self.smooth_opts['start_opt'],
+                    n_grid = self.smooth_opts['n_grid'],
+                    idx_inducing = self.smooth_opts['idx_inducing'],
+                    opt_freq = self.smooth_opts['opt_freq'],
+                    model_groups = self.smooth_opts['model_groups']
+                )
+
+        # Non-sparse GPs
+        else:
+            # Warping
+            if self.smooth_opts['warping'] is True:
+                self.init_model.initSigma_warping(
+                    sample_cov = self.sample_cov,
+                    groups = self.data_opts['samples_groups'],
+                    start_opt = self.smooth_opts['start_opt'],
+                    n_grid = self.smooth_opts['n_grid'],
+                    warping_freq = self.smooth_opts['warping_freq'],
+                    warping_ref = self.smooth_opts['warping_ref'],
+                    warping_open_begin = self.smooth_opts['warping_open_begin'],
+                    warping_open_end = self.smooth_opts['warping_open_end'],
+                    opt_freq = self.smooth_opts['opt_freq'],
+                    model_groups = self.smooth_opts['model_groups']#,
+                    # use_gpytorch  = self.model_opts['use_gpytorch']
+                )
+            # Non-warping
+            else:
+                self.init_model.initSigma(
+                    self.sample_cov,
+                    self.data_opts['samples_groups'],
+                    start_opt = self.smooth_opts['start_opt'],
+                    n_grid = self.smooth_opts['n_grid'],
+                    # idx_inducing = self.smooth_opts['idx_inducing'],
+                    # warping = self.smooth_opts['warping'],
+                    # warping_freq = self.smooth_opts['warping_freq'],
+                    # warping_ref = self.smooth_opts['warping_ref'],
+                    # warping_open_begin = self.smooth_opts['warping_open_begin'],
+                    # warping_open_end = self.smooth_opts['warping_open_end'],
+                    opt_freq = self.smooth_opts['opt_freq'],
+                    model_groups = self.smooth_opts['model_groups']#,
+                    # use_gpytorch  = self.model_opts['use_gpytorch']
+                )
 
     def build_nodes(self):
         """ Method to build all nodes """

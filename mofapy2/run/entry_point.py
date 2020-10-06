@@ -495,8 +495,9 @@ class entry_point(object):
 
         # Sanity check
         assert hasattr(self, 'smooth_opts'), "Please run set_covariates() and set_smooth_options() before set_sparseGP_options()"
-        assert hasattr(self, 'model_opts'), "Model options not defined. Please run set_model_opts() before set_sparseGP_options()"
-        assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_opts() before set_sparseGP_options()"
+        assert len(self.smooth_opts.keys())>5, "Smooth options not defined. Please run set_smooth_options() before set_sparseGP_options()"
+        assert hasattr(self, 'model_opts'), "Model options not defined. Please run set_model_options() before set_sparseGP_options()"
+        assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_options() before set_sparseGP_options()"
         assert self.sample_cov is not None, "Before setting sparse GP options, you need to define the covariates with set_covariates()"
 
         if not self.smooth_opts['GP_factors']:
