@@ -64,7 +64,7 @@ get_scales <- function(object) {
 get_group_kernel <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(is.null(object@covariates)) stop("No covariates specified in 'object'")
-  if(is.null(object@training_stats$Kg)) stop("No lenghtscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
+  if(is.null(object@training_stats$Kg)) stop("No group kernel saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' as well as 'model_groups' to TRUE.")
   tmp <- lapply(seq_len(dim(object@training_stats$Kg)[3]), function(x) {
     mat <- object@training_stats$Kg[ , , x]
     rownames(mat) <- colnames(mat) <- groups_names(object)
