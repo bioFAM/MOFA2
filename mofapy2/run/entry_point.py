@@ -273,7 +273,7 @@ class entry_point(object):
     def set_train_options(self,
         iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
         startDrop=20, freqDrop=10, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, save_parameters=False, weight_views = False,
+        schedule=None, gpu_mode=False, save_parameters=False, weight_views = False,
         outfile=None, save_interrupted=False):
         """ Set training options """
 
@@ -380,9 +380,6 @@ class entry_point(object):
         self.train_opts['seed'] = int(seed)
         # s.random.seed(self.train_opts['seed'])
 
-        # Use TauTrick to speed up ELBO computation?
-        self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
-
         # Save variational parameters?
         self.train_opts['save_parameters'] = save_parameters
 
@@ -396,8 +393,7 @@ class entry_point(object):
         self.train_opts['save_interrupted'] = save_interrupted
 
     def set_smooth_options(self, 
-        scale_cov = False,
-        start_opt=20, n_grid=20, opt_freq=10, GP_factors = True, multivariate_Z = False,
+        scale_cov = False, start_opt=20, n_grid=20, opt_freq=10,
         warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
         model_groups = False):
 
@@ -482,7 +478,6 @@ class entry_point(object):
         # self.train_opts['schedule'].insert(1,"Z")
 
         self.train_opts['stochastic'] = True
-        # self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick speed up only works in non-stochastic mode
         self.train_opts['learning_rate'] = learning_rate
         self.train_opts['forgetting_rate'] = forgetting_rate
         self.train_opts['start_stochastic'] = start_stochastic
@@ -540,16 +535,6 @@ class entry_point(object):
                 if grid_ix[-1] == N_nonmissing: # avoid out of bound
                     grid_ix = grid_ix[:-1]
                 idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
-
-                # Show inducing points
-                # import matplotlib.pyplot as plt
-                # plt.figure(10)
-                # color_labels = np.unique(self.data_opts['samples_groups'])
-                # rgb_values = ['blue', 'red', 'green']
-                # color_map = dict(zip(color_labels, rgb_values))
-                # colors = [color_map[x] for x in self.data_opts['samples_groups']]
-                # plt.scatter(loc, [x in idx_inducing for x in range(N)], c = colors)
-                # plt.pause(1)
 
         # Insert U in schedule
         ix = self.train_opts['schedule'].index("Z")
@@ -622,10 +607,8 @@ class entry_point(object):
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
         if hasattr(self, 'smooth_opts'):
             assert len(self.smooth_opts)>2, "Smooth covariates applied but smooth options not defined. Please define set_smooth_options() before build()"
-
         if np.any(np.array(self.dimensionalities["D"])<15):
             print("\nWarning: some view(s) have less than 15 features, MOFA won't be able to learn meaningful factors for these view(s)...\n")
-        
         _, counts = np.unique(self.data_opts["samples_groups"], axis=0, return_counts=True)
         if np.any(counts<15):
             print("\nWarning: some group(s) have less than 15 samples, MOFA won't be able to learn meaningful factors for these group(s)...\n")
@@ -904,7 +887,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
          ard_weights: bool = True, ard_factors: bool = True,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
-         gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, 
+         gpu_mode: bool = False, 
          save_parameters: bool = False, save_data: bool = True, save_metadata: bool = True,
          seed: int = 1, outfile: Optional[str] = None,
          expectations: Optional[List[str]] = None,
@@ -932,7 +915,6 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     n_iterations (optional): upper limit on the number of iterations
     convergence_mode (optional): fast, medium, or slow convergence mode
     gpu_mode (optional): if to use GPU mode
-    Y_ELBO_TauTrick (optional): if to use ELBO Tau trick to speed up computations
     save_parameters (optional): if to save training parameters
     save_data (optional): if to save training data
     save_metadata (optional): if to load metadata from the AnnData object (.obs and .var tables) and save it, False by default
@@ -958,7 +940,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 
-                          gpu_mode=gpu_mode, Y_ELBO_TauTrick=Y_ELBO_TauTrick,
+                          gpu_mode=gpu_mode,
                           seed=seed, verbose=verbose, quiet=quiet, outfile=outfile, save_interrupted=save_interrupted)
 
     ent.build()
