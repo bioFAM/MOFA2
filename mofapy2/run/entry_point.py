@@ -14,6 +14,8 @@ from mofapy2.build_model.build_model import *
 from mofapy2.build_model.save_model import *
 from mofapy2.build_model.utils import guess_likelihoods
 from mofapy2.build_model.train_model import train_model
+from mofapy2.core import gp_utils
+
 # import matplotlib.pyplot as plt
 
 
@@ -396,6 +398,10 @@ class entry_point(object):
         scale_cov = False, start_opt=20, n_grid=20, opt_freq=10,
         warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
         model_groups = False):
+        """ 
+        Set option to use Gaussian process prior on the factors along a covariate. 
+        This requires to have specified a covariate in the model usings et_covariates().
+        """
 
         # Sanity checks
         assert hasattr(self, 'smooth_opts'), "Please run set_covariates() before set_smooth_options()"
@@ -403,6 +409,7 @@ class entry_point(object):
         assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_opts() before set_smooth_options()"
         assert self.sample_cov is not None, "Before setting smooth options, you need to define the covariates with set_covariates"
 
+        # activate GP prior on factors
         self.smooth_opts['GP_factors'] = True
 
         # Define whether to scale covariates to unit variance
@@ -411,7 +418,7 @@ class entry_point(object):
         if self.smooth_opts['scale_cov']:
             self.sample_cov = (self.sample_cov - self.sample_cov.mean(axis=0)) / self.sample_cov.std(axis=0)
 
-        # Define at which iteration to start optimizing the lengthscales, at which frequency and how many grid points
+        # Define at which iteration to start optimizing the lengthscales, how many grid points to use for the lengthscales and at which frequency to optimize
         start_opt = max(0, start_opt)
         self.smooth_opts['start_opt'] = int(start_opt)
         self.smooth_opts['n_grid'] = int(n_grid)
@@ -451,7 +458,7 @@ class entry_point(object):
 
         # Define whether to model a group covariance structure
         self.smooth_opts['model_groups'] = model_groups
-        self.smooth_opts['use_gpytorch'] = False # experimental, this could be passes as a model_option but to keep options uncluttered set to False
+        # self.smooth_opts['use_gpytorch'] = False # experimental, this could be passes as a model_option but to keep options uncluttered set to False
 
         # print("- Gaussian process prior on the factors: %s \n" % str(GP_factors))
 
@@ -485,7 +492,7 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_sparseGP_options(self, n_inducing = None, idx_inducing = None, seed_inducing = None):
+    def set_sparseGP_options(self, n_inducing = None, idx_inducing = None):
         """ Set options for sparse GPs (only when using smooth factors)"""
 
         # Sanity check
@@ -514,27 +521,8 @@ class entry_point(object):
 
         # Set the identity of the inducing points
         if idx_inducing is None:
-            missing_sample_per_view = np.ones((self.dimensionalities["N"], self.dimensionalities["M"]))
-            for m in range(len(self.data)):
-                missing_sample_per_view[:,m] = np.isnan(self.data[m]).all(axis = 1)
-            nonmissing_samples = np.where(missing_sample_per_view.sum(axis=1) != self.dimensionalities["M"])[0]
-            N_nonmissing = len(nonmissing_samples)
-            n_inducing = min(n_inducing, N_nonmissing)
-            init_inducing_random = False # not used, could be passed as option
-            if init_inducing_random:
-                if not seed_inducing is None:
-                    s.random.seed(int(seed_inducing))
-                idx_inducing = np.random.choice(self.dimensionalities["N"], n_inducing, replace = False)
-                idx_inducing.sort()
-            else:
-                N = self.dimensionalities["N"]
-                loc = self.sample_cov.sum(axis = 1)
-                groups = self.data_opts['samples_groups']
-                nonmissing_samples_tiesshuffled = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing), loc[nonmissing_samples]))] # shuffle ties randomly (e.g. between groups)
-                grid_ix = np.floor(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
-                if grid_ix[-1] == N_nonmissing: # avoid out of bound
-                    grid_ix = grid_ix[:-1]
-                idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
+            idx_inducing = gp_utils.set_inducing_points(self.data, self.sample_cov, self.data_opts['samples_groups'],
+                                        self.dimensionalities, n_inducing)
 
         # Insert U in schedule
         ix = self.train_opts['schedule'].index("Z")

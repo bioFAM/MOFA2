@@ -92,6 +92,7 @@ class Sigma_Node_base(Node):
             self.kronecker = True
             self.G = 1
 
+
     def initKc(self, transformed_sample_cov, cov4grid=None, spectral_decomp=True):
         """
         Method to initialize the components required for the covariate kernel
