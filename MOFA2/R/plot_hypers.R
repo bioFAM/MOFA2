@@ -71,7 +71,7 @@ plot_smoothness <- function(object, factors = "all", color = "cadetblue") {
   factors <- .check_and_get_factors(object, factors)
   
   # Get scale parameters
-  ss <- get_scales(MOFAobject)[factors]
+  ss <- get_scales(object)[factors]
   df <- data.frame(factor = names(ss), smooth = ss, non_smooth = 1- ss)
   df <- gather(df, -factor, key = "smoothness", value = "value")
   gg_bar <- ggplot(df, aes(x= 1, y = value, fill = smoothness)) +
@@ -156,7 +156,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' 
 #'   if(show_observed) {
 #'     # add the factor values of the observed time point  to the plot
-#'     df_observed <- plot_factors_vs_cov(MOFAobject, covariate = covariate, return_data = TRUE)
+#'     df_observed <- plot_factors_vs_cov(object, covariate = covariate, return_data = TRUE)
 #'   }
 #'   
 #'   gg_interpol <- ggplot(df, aes_string(x="covariate", y = "mean", col = "group")) +
