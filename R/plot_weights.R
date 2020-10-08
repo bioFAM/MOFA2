@@ -176,7 +176,7 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
     p <- p + guides(color=FALSE) + scale_color_manual(values="black")
   
   # Add legend
-  if ( (length(unique(df$color_by))>1 | length(unique(df$shape_by))>1) & legend) {
+  if ( (length(unique(df$color_by))>1 || length(unique(df$shape_by))>1) && legend) {
     p <- p + labs(color = name_color, shape = name_shape) + 
       theme(
       legend.key = element_rect(fill = "white"),
@@ -365,7 +365,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
     labs(x="Weight", y="Rank", size=dot_size)
   
   # Add labels to the top features
-  if (nfeatures>0 | length(unique(W$labelling_group))>0) {
+  if (nfeatures>0 || length(unique(W$labelling_group))>0) {
     p <- p + geom_text_repel(
       force = 10,
       data = W[W$labelling_group != "0",], aes_string(label = "feature", col = "labelling_group"),

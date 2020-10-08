@@ -211,7 +211,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
 
   # Convert True/False strings to logical values
   for (i in names(object@model_options)) {
-    if (object@model_options[i] == "False" | object@model_options[i] == "True") {
+    if (object@model_options[i] == "False" || object@model_options[i] == "True") {
       object@model_options[i] <- as.logical(object@model_options[i])
     } else {
       object@model_options[i] <- object@model_options[i]

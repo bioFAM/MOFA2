@@ -45,7 +45,7 @@ compare_factors <- function(models, ...) {
     stop("No common samples in all models for comparison")
 
   # Align samples between models
-  samples_names <- Reduce(intersect, map(LFs, rownames))
+  samples_names <- Reduce(intersect, lapply(LFs, rownames))
   LFs <- lapply(LFs, function(z) {
     z[samples_names,,drop=FALSE]
   })
