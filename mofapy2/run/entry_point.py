@@ -489,24 +489,11 @@ class entry_point(object):
                     self.smooth_opts['sparseGP'] = False
 
             # Sparse GPs: Set the identity of the inducing points
-            missing_sample_per_view = np.ones((self.dimensionalities["N"], self.dimensionalities["M"]))
-            for m in range(len(self.data)):
-                missing_sample_per_view[:,m] = np.isnan(self.data[m]).all(axis = 1)
-            nonmissing_samples = np.where(missing_sample_per_view.sum(axis=1) != self.dimensionalities["M"])[0]
-            N_nonmissing = len(nonmissing_samples)
-            n_inducing = min(n_inducing, N_nonmissing)
-            N = self.dimensionalities["N"]
-            loc = self.sample_cov.sum(axis = 1)
-            groups = self.data_opts['samples_groups']
-            nonmissing_samples_tiesshuffled = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing), loc[nonmissing_samples]))] # shuffle ties randomly (e.g. between groups)
-            grid_ix = np.floor(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
-            if grid_ix[-1] == N_nonmissing: # avoid out of bound
-                grid_ix = grid_ix[:-1]
-            idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
+            idx_inducing = set_inducing_points(self.data, self.sample_cov, self.data_opts['samples_groups'], self.dimensionalities, n_inducing, random = False, seed_inducing = 0)
 
             self.smooth_opts['n_inducing'] = n_inducing
             self.smooth_opts['idx_inducing'] = idx_inducing
-            
+
             # Sparse GPs: Insert U in schedule
             ix = self.train_opts['schedule'].index("Z")
             self.train_opts['schedule'].insert(ix, 'U')
