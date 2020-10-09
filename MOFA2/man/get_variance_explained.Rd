@@ -15,7 +15,10 @@ get_variance_explained(
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{groups}{character vector with the view name(s), or numeric vector with the view index(es).
+\item{groups}{character vector with the group name(s), or numeric vector with the group index(es).
+Default is "all".}
+
+\item{views}{character vector with the view name(s), or numeric vector with the view index(es).
 Default is "all".}
 
 \item{factors}{character vector with the factor name(s), or numeric vector with the factor index(es).
@@ -24,12 +27,15 @@ Default is "all".}
 \item{as.data.frame}{logical indicating whether to return a long data frame instead of a matrix.
 Default is \code{FALSE}.}
 }
+\value{
+A list of data matrices with variance explained per group or a \code{data.frame} (if \code{as.data.frame} is TRUE)
+}
 \description{
 Extract the latent factors from the model.
 }
 \examples{
 # Using an existing trained model
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Fetch variance explained values (in matrix format)

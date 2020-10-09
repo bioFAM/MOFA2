@@ -20,10 +20,9 @@ The training options are the following: \cr
 \itemize{
  \item{\strong{maxiter}:}{ numeric value indicating the maximum number of iterations. 
  Default is 1000. Convergence is assessed using the ELBO statistic.}
- \item{\strong{drop_factor_threshold}:}{ (not functional yet) numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
- For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped.}
+ \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
+ For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped. Default is -1 (no dropping of factors)}
  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast", corresponding to 5e-7\%, 5e-6\% or 5e-5\% deltaELBO change w.r.t. to the ELBO at the first iteration. }
- \item{\strong{drop_factor_threshold}:}{ minimum variance explained threshold to drop inactive factors. Default is -1 (no dropping of factors)}
  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
@@ -34,13 +33,13 @@ The training options are the following: \cr
 }
 \examples{
 # Using an existing simulated data with two groups and two views
-file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 
-# Load data (in data.frame format)
-data <- read.table(file, header=TRUE) 
+# Load data dt (in data.frame format)
+load(file) 
 
-# Create MOFA object
-MOFAmodel <- create_mofa(data)
+# Create the MOFA object
+MOFAmodel <- create_mofa(dt)
 
 # Load default training options
 train_opts <- get_default_training_options(MOFAmodel)

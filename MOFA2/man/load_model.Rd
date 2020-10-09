@@ -19,6 +19,8 @@ load_model(
 \arguments{
 \item{file}{an hdf5 file saved by the mofa Python framework}
 
+\item{sort_factors}{logical indicating whether factors should be sorted by variance explained (default is TRUE)}
+
 \item{on_disk}{logical indicating whether to work from memory (FALSE) or disk (TRUE). \cr
 This should be set to TRUE when the training data is so big that cannot fit into memory. \cr
 On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.}
@@ -42,4 +44,9 @@ a \code{\link{MOFA}} model
 \description{
 Method to load a trained MOFA \cr
 The training of mofa is done using a Python framework, and the model output is saved as an .hdf5 file, which has to be loaded in the R package.
+}
+\examples{
+#' # Using an existing trained model on simulated data
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
 }

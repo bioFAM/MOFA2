@@ -11,6 +11,7 @@ get_data(
   features = "all",
   as.data.frame = FALSE,
   add_intercept = TRUE,
+  denoise = FALSE,
   na.rm = TRUE
 )
 }
@@ -20,14 +21,22 @@ get_data(
 \item{views}{character vector with the view name(s), or numeric vector with the view index(es). 
 Default is "all".}
 
-\item{features}{a *named* list of character vectors. Example: list("view1"=c("feature_1","feature_2"), "view2"=c("feature_3","feature_4"))
-Default is "all" If this is used, the argument views is ignored.}
+\item{groups}{character vector with the group name(s), or numeric vector with the group index(es). 
+Default is "all".}
 
-\item{as.data.frame}{logical indicating whether to return a long data frame instead of a list of matrices.}
+\item{features}{a *named* list of character vectors. Example: list("view1"=c("feature_1","feature_2"), "view2"=c("feature_3","feature_4"))
+Default is "all".}
+
+\item{as.data.frame}{logical indicating whether to return a long data frame instead of a list of matrices. Default is \code{FALSE}.}
 
 \item{add_intercept}{logical indicating whether to add feature intercepts to the data. Default is \code{TRUE}.}
 
-\item{na.rm}{remove NAs from the data.frame (only if as.data.frame is TRUE).}
+\item{denoise}{logical indicating whether to return the denoised data (i.e. the model predictions). Default is \code{FALSE}.}
+
+\item{na.rm}{remove NAs from the data.frame (only if as.data.frame is \code{TRUE}).}
+}
+\value{
+A  list of data matrices with dimensionality (D,N) or a \code{data.frame} (if \code{as.data.frame} is TRUE)
 }
 \description{
 Fetch the input data
@@ -40,7 +49,7 @@ Missing values are not included in the the long data.frame format by default. To
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Fetch data
@@ -54,4 +63,7 @@ data <- get_data(model, as.data.frame = TRUE)
 
 # Fetch centered data (do not add the feature intercepts)
 data <- get_data(model, as.data.frame = FALSE)
+
+# Fetch denoised data (do not add the feature intercepts)
+data <- get_data(model, denoise = TRUE)
 }

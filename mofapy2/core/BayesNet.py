@@ -195,7 +195,8 @@ class BayesNet(object):
         # Precompute ELBO
         for node in self.nodes["Y"].getNodes(): node.TauTrick = False # important to do this for ELBO computation
         elbo = self.calculateELBO()
-        for node in self.nodes["Y"].getNodes(): node.TauTrick = self.options["Y_ELBO_TauTrick"]
+        # for node in self.nodes["Y"].getNodes(): node.TauTrick = self.options["Y_ELBO_TauTrick"]
+        for node in self.nodes["Y"].getNodes(): node.TauTrick = True
 
         if self.options['verbose']:
             print("ELBO before training:")

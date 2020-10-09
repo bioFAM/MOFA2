@@ -455,6 +455,8 @@ class Sigma_Node_base(Node):
         Parameters:
             - var: Node to interact with
         """
+        print('Optimising sigma node...')
+
         K = var.dim[1]
         assert K == len(self.zeta) and K == self.K, \
             'problem in dropping factor'
@@ -525,7 +527,8 @@ class Sigma_Node_base(Node):
             self.zeta[k] = best_zeta
 
         self.calc_sigma_terms(only_inverse=False)
-        print('Sigma node has been optimised: Lengthscales =', self.get_ls(), ', Scale =', 1 - self.get_zeta())
+        print('Sigma node has been optimised:\n- Lengthscales = %s \n- Scale = %s' % \
+            (np.array2string(self.get_ls(), precision=2, separator=", "), np.array2string(1-self.get_zeta(), precision=2, separator=", ")))
 
     def updateParameters(self, ix, ro):
         """
@@ -602,9 +605,7 @@ class Sigma_Node_sparse(Sigma_Node_base):
                     spectral_decomp=self.kronecker)  # use all point to determine grid limits
 
         # exclude cases not covered
-        if self.model_groups:
-            print("The option model_groups has not been tested in conjunction with sparse GPs")
-            # sys.exit()
+        assert self.model_groups is False, "The option model_groups is not yet implemented in conjunction with sparse GPs"
 
 
     def calc_sigma_terms_k(self, k, only_inverse = False):

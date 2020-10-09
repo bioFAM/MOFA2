@@ -17,6 +17,9 @@ plot_factor(
   add_violin = FALSE,
   violin_alpha = 0.5,
   color_violin = TRUE,
+  add_boxplot = FALSE,
+  boxplot_alpha = 0.5,
+  color_boxplot = TRUE,
   show_missing = TRUE,
   scale = FALSE,
   dodge = FALSE,
@@ -70,6 +73,12 @@ plot_factor(
 
 \item{color_violin}{logical indicating whether to color violin plots.}
 
+\item{add_boxplot}{logical indicating whether to add box plots}
+
+\item{boxplot_alpha}{numeric indicating boxplot transparency.}
+
+\item{color_boxplot}{logical indicating whether to color box plots.}
+
 \item{show_missing}{logical indicating whether to remove samples for which \code{shape_by} or \code{color_by} is missing.}
 
 \item{scale}{logical indicating whether to scale factor values.}
@@ -99,7 +108,7 @@ Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # Plot Factors 1 and 2 and colour by "group"

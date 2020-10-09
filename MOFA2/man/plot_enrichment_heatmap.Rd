@@ -18,6 +18,8 @@ plot_enrichment_heatmap(
 \item{alpha}{FDR threshold to filter out unsignificant feature sets which are
 not represented in the heatmap. Default is 0.10.}
 
+\item{cap}{cap p-values below this threshold}
+
 \item{log_scale}{logical indicating whether to plot the -log of the p.values.}
 
 \item{...}{extra arguments to be passed to the \link{pheatmap} function}

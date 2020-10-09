@@ -12,7 +12,7 @@
 #' @param save_data logical indicating whether to save the training data in the hdf5 file. 
 #'  This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.
 #' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
-#' @param save_expectations vector with capitalized node names. If NA, only W and Z are saved by default.
+# #' @param save_expectations vector with capitalized node names. If NULL, only W and Z are saved by default.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @export
@@ -31,7 +31,7 @@
 #' 
 #' # Run the MOFA model
 #' \dontrun{ MOFAmodel <- run_mofa(MOFAmodel, outfile = "~/model.hdf5") }
-run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations = NULL) {
+run_mofa <- function(object, outfile = NULL, save_data = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) 
@@ -48,70 +48,46 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   # Set data options
   mofa_entrypoint$set_data_options(
     scale_views = object@data_options$scale_views,
-    scale_groups = object@data_options$scale_groups,
-    scale_cov = object@data_options$scale_covariates
+    scale_groups = object@data_options$scale_groups
   )
 
-  # Set metadata
+  # Set samples metadata
   if (.hasSlot(object, "samples_metadata")) {
     mofa_entrypoint$data_opts$samples_metadata <- r_to_py(lapply(object@data_options$groups,
                                                                  function(g) object@samples_metadata[object@samples_metadata$group == g,]))
   }
 
+  # Set features metadata
   if (.hasSlot(object, "features_metadata")) {
     mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views,
                                                                          function(m) object@features_metadata[object@features_metadata$view == m,])))
   }
   
-  if(!is.null(object@covariates)) {
-    sample_cov_to_py <- r_to_py(unname(lapply(object@covariates, function(x) unname(r_to_py(t(x)))))) 
-    cov_names_2_py <- r_to_py(covariates_names(object))
-  } else {
-    sample_cov_to_py <- NULL
-    cov_names_2_py <- NULL
-  }
   # Set the data
   mofa_entrypoint$set_data_matrix(
     data = r_to_py( unname(lapply(object@data, function(x) unname( lapply(x, function(y) r_to_py(t(y)) ))) ) ),
     likelihoods = unname(object@model_options$likelihoods),
-    sample_cov = sample_cov_to_py,
     views_names = r_to_py(as.list(object@data_options$views)),
     groups_names = r_to_py(as.list(object@data_options$groups)),
     samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
-    features_names = r_to_py(unname(lapply(object@data, function(x) rownames(x[[1]])))),
-    covariates_names = cov_names_2_py
+    features_names = r_to_py(unname(lapply(object@data, function(x) rownames(x[[1]]))))
   )
   
-  # Set model options 
-  warping_ref <- object@model_options$warping_ref
-  if(!is.numeric(warping_ref)){
-    stopifnot(warping_ref %in% groups_names(object))
-    warping_ref <- which(warping_ref == groups_names(object))
-  } else{
-    stopifnot(warping_ref <= object@dimensions[['G']])
+  # Set covariates
+  if (!is.null(object@covariates)) {
+    sample_cov_to_py <- r_to_py(unname(lapply(object@covariates, function(x) unname(r_to_py(t(x))))))
+    cov_names_2_py <- r_to_py(covariates_names(object))
+    mofa_entrypoint$set_covariates(sample_cov_to_py, cov_names_2_py)
   }
-  warping_ref <- warping_ref - 1 #adapt to Python indexing starting at 0
   
+  # Set model options 
   mofa_entrypoint$set_model_options(
     factors     = object@model_options$num_factors,
     spikeslab_factors = object@model_options$spikeslab_factors, 
     spikeslab_weights = object@model_options$spikeslab_weights, 
     ard_factors       = object@model_options$ard_factors,
-    ard_weights       = object@model_options$ard_weights, 
-    GP_factors       = object@model_options$GP_factors,
-    warping  = object@model_options$warping,
-    warping_freq  = object@model_options$warping_freq,
-    warping_ref  = warping_ref,
-    warping_open_begin  = object@model_options$warping_open_begin,
-    warping_open_end  = object@model_options$warping_open_end
+    ard_weights       = object@model_options$ard_weights 
   )
-  
-  if (object@model_options$sparseGP) {
-    mofa_entrypoint$set_sparseGP_options(
-      n_inducing = object@model_options$n_inducing,
-      idx_inducing = object@model_options$idx_inducing,
-      seed_inducing = object@model_options$seed_inducing)
-  }
   
   # Set training options  
   mofa_entrypoint$set_train_options(
@@ -123,12 +99,10 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     seed             = object@training_options$seed, 
     gpu_mode         = object@training_options$gpu_mode,
     verbose          = object@training_options$verbose,
-    n_grid           = object@training_options$n_grid,
-    start_opt        = object@training_options$start_opt,
-    opt_freq         = object@training_options$opt_freq,
     outfile          = object@training_options$outfile,
     save_interrupted = object@training_options$save_interrupted
   )
+  
   
   # Set stochastic options
   if (object@training_options$stochastic) {
@@ -137,6 +111,25 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
       forgetting_rate  = object@stochastic_options$forgetting_rate,
       batch_size       = object@stochastic_options$batch_size,
       start_stochastic = object@stochastic_options$start_stochastic
+    )
+  }
+  
+  # Set smooth covariate options  
+  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
+    warping_ref <- which(groups_names(object) == object@smooth_options$warping_ref)
+    mofa_entrypoint$set_smooth_options(
+      scale_cov           = object@smooth_options$scale_cov,
+      start_opt           = as.integer(object@smooth_options$start_opt),
+      n_grid              = as.integer(object@smooth_options$n_grid),
+      opt_freq            = as.integer(object@smooth_options$opt_freq),
+      model_groups        = object@smooth_options$model_groups,
+      sparseGP            = object@smooth_options$sparseGP,
+      n_inducing          = as.integer(object@smooth_options$n_inducing),
+      warping             = object@smooth_options$warping,
+      warping_freq        = as.integer(object@smooth_options$warping_freq),
+      warping_ref         = warping_ref-1, # 0-based python indexing
+      warping_open_begin  = object@smooth_options$warping_open_begin,
+      warping_open_end    = object@smooth_options$warping_open_end
     )
   }
   
@@ -158,7 +151,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     message(paste0("Warning: Output file ", outfile, " already exists, it will be replaced"))
   
   # Save the model output as an hdf5 file
-  mofa_entrypoint$save(outfile, save_data = save_data, expectations = save_expectations)
+  mofa_entrypoint$save(outfile, save_data = save_data)
   
   # Load the trained mode
   object <- load_model(outfile)

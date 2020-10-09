@@ -4,7 +4,7 @@
 \alias{run_mofa}
 \title{Train a MOFA model}
 \usage{
-run_mofa(object, outfile = NULL, save_data = TRUE, save_expectations = NULL)
+run_mofa(object, outfile = NULL, save_data = TRUE)
 }
 \arguments{
 \item{object}{an untrained \code{\link{MOFA}} object}
@@ -13,8 +13,6 @@ run_mofa(object, outfile = NULL, save_data = TRUE, save_expectations = NULL)
 
 \item{save_data}{logical indicating whether to save the training data in the hdf5 file. 
 This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.}
-
-\item{save_expectations}{vector with capitalized node names. If NA, only W and Z are saved by default.}
 }
 \value{
 a trained \code{\link{MOFA}} object
@@ -29,13 +27,13 @@ If you have several versions of Python installed and R is not detecting the corr
 }
 \examples{
 # Using an existing simulated data with two groups and two views
-file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 
-# Load data (in data.frame format)
-data <- read.table(file, header=TRUE) 
+# Load data dt (in data.frame format)
+load(file) 
 
-# Create MOFA object
-MOFAmodel <- create_mofa(data)
+# Create the MOFA object
+MOFAmodel <- create_mofa(dt)
 
 # Prepare the MOFA object with default options
 MOFAmodel <- prepare_mofa(MOFAmodel)

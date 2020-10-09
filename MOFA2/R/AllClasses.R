@@ -15,9 +15,10 @@
 #' @slot dim_red non-linear dimensionality reduction manifolds.
 #' @slot training_stats model training statistics.
 #' @slot data_options Data processing options.
+#' @slot model_options Model options.
 #' @slot training_options Model training options.
 #' @slot stochastic_options Stochastic variational inference options.
-#' @slot model_options Model options.
+#' @slot smooth_options Covariates options
 #' @slot dimensions Dimensionalities of the model: 
 #'    M for the number of views, 
 #'    G for the number of groups,
@@ -47,10 +48,11 @@ setClass("MOFA",
             features_metadata   = "list",
             expectations        = "list", 
             training_stats      = "list",
-            training_options    = "list",
-            stochastic_options  = "list",
             data_options        = "list",
             model_options       = "list",
+            training_options    = "list",
+            stochastic_options  = "list",
+            smooth_options  = "list",
             dimensions          = "list",
             on_disk             = "logical",
             dim_red             = "list",

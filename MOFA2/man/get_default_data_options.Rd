@@ -22,19 +22,17 @@ The data options are the following: \cr
  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
- \item{\strong{scale_covariates}:}{ logical indicating whether to scale covariates to have the same (unit) variance. 
- This avoids that the prior sample covariance is dominated by covaraites on a larger scale. Default is TRUE}
  }
 }
 \examples{
 # Using an existing simulated data with two groups and two views
-file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 
-# Load data (in data.frame format)
-data <- read.table(file, header=TRUE) 
+# Load data dt (in data.frame format)
+load(file) 
 
-# Create MOFA object
-MOFAmodel <- create_mofa(data)
+# Create the MOFA object
+MOFAmodel <- create_mofa(dt)
 
 # Load default data options
 data_opts <- get_default_data_options(MOFAmodel)

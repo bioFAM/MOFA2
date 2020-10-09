@@ -11,6 +11,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r}
+library(reticulate)
+use_condaenv("smofa", required = TRUE)
+py_config()
+```
 
 ```{r, message=FALSE, warning=FALSE}
 library(MOFA2)
@@ -30,8 +35,7 @@ time <- seq(0,1,length.out = N)
 M <- 4
 
 # generate example data
-dd <- make_example_data(sample_cov = time, n_samples = N, n_factors = 4,
-                        n_features = 200, n_views = M, lscales = c(0.5, 0.2, 0, 0))
+dd <- make_example_data(sample_cov = time, n_samples = N, n_factors = 4, n_features = 200, n_views = M, lscales = c(0.5, 0.2, 0, 0))
 ```
 
 
@@ -52,6 +56,17 @@ To create the MOFA object we need to specify the training data and the covariate
 sm <- create_mofa(data = dd$data, covariate = dd$sample_cov)
 sm
 ```
+
+```{r}
+sm <- create_mofa(data = dd$data)
+sm <- set_covariates(sm, dd$sample_cov)
+model_opts <- get_default_model_options(sm)
+model_opts$num_factors <- 4
+smooth_opts <- get_default_smooth_options(sm)
+sm <- prepare_mofa(sm, model_options = model_opts, smooth_options = smooth_opts)
+sm <- run_mofa(sm)
+```
+
 
 We now successfully created a MOFA object that contains 4 views, 1 group and 1 covariates giving the time points for each sample
 

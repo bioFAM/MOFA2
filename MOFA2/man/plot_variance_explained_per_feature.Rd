@@ -56,3 +56,9 @@ Plot variance explained by the model for a set of features
 
 Returns a tile plot with a group on the X axis and a feature along the Y axis
 }
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_variance_explained_per_feature(model, view = 1)
+}

@@ -52,6 +52,9 @@ See \code{\link{predict}}. Default is FALSE.}
 
 \item{...}{further arguments that can be passed to \code{\link[pheatmap]{pheatmap}}}
 }
+\value{
+A  \code{\link[pheatmap]{pheatmap}} object
+}
 \description{
 Function to plot a heatmap of the data for relevant features, typically the ones with high weights.
 }
@@ -61,4 +64,10 @@ using for example \code{\link{plot_weights}} or \code{\link{plot_top_weights}}. 
 However, one might also be interested in visualising the direct relationship between features and factors, rather than looking at "abstract" weights. \cr
 This function generates a heatmap for selected features, which should reveal the underlying pattern that is captured by the latent factor. \cr
 A similar function for doing scatterplots rather than heatmaps is \code{\link{plot_data_scatter}}.
+}
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_data_heatmap(model, factor = 1, show_rownames = FALSE, show_colnames = FALSE)
 }

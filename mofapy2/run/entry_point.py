@@ -270,8 +270,7 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_train_options(self,
-        iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
+    def set_train_options(self, iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
         startDrop=20, freqDrop=10, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
         schedule=None, gpu_mode=False, save_parameters=False, weight_views = False,
         outfile=None, save_interrupted=False):
@@ -369,8 +368,6 @@ class entry_point(object):
             if self.model_opts['ard_weights']: assert "AlphaW" in schedule
             if self.model_opts['spikeslab_factors']: assert "ThetaZ" in schedule
             if self.model_opts['spikeslab_weights']: assert "ThetaW" in schedule
-            # if self.smooth_opts['GP_factors']: assert "Sigma" in schedule
-            # if self.smooth_opts['sparseGP']: assert "U" in schedule
 
         self.train_opts['schedule'] = schedule
 
@@ -391,69 +388,6 @@ class entry_point(object):
 
         # If to save the partially trained model when the training is interrupted
         self.train_opts['save_interrupted'] = save_interrupted
-
-    def set_smooth_options(self, 
-        scale_cov = False, start_opt=20, n_grid=20, opt_freq=10,
-        warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
-        model_groups = False):
-
-        # Sanity checks
-        assert hasattr(self, 'smooth_opts'), "Please run set_covariates() before set_smooth_options()"
-        assert hasattr(self, 'model_opts'), "Model options not defined. Please run set_model_opts() before set_smooth_options()"
-        assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_opts() before set_smooth_options()"
-        assert self.sample_cov is not None, "Before setting smooth options, you need to define the covariates with set_covariates"
-
-        self.smooth_opts['GP_factors'] = True
-
-        # Define whether to scale covariates to unit variance
-        self.smooth_opts['scale_cov'] = scale_cov
-        # if (scale_cov): print("Scaling covariates to unit variance...\n")
-        if self.smooth_opts['scale_cov']:
-            self.sample_cov = (self.sample_cov - self.sample_cov.mean(axis=0)) / self.sample_cov.std(axis=0)
-
-        # Define at which iteration to start optimizing the lengthscales, at which frequency and how many grid points
-        start_opt = max(0, start_opt)
-        self.smooth_opts['start_opt'] = int(start_opt)
-        self.smooth_opts['n_grid'] = int(n_grid)
-        self.smooth_opts['opt_freq'] = int(opt_freq)
-
-        # inactivate group-wise ARD when using the SMOFA framework
-        if self.model_opts['ard_factors'] is True:
-            print("SMOFA framework is activated (GP_factors = True). This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
-            self.model_opts['ard_factors'] = False
-
-        # inactivate spike-slab on the factors when using the SMOFA framework
-        if self.model_opts['spikeslab_factors'] is True:
-            print("SMOFA framework is activated (GP_factors = True). This is not compatible with Spike-and-Slab prior on factors. Setting spikeslab_factors to False...\n")
-            self.model_opts['spikeslab_factors'] = False
-
-
-        # By default, no sparse GPs are used
-        self.smooth_opts['sparseGP'] = False
-        self.smooth_opts['idx_inducing'] = None
-
-
-        # Define warping
-        self.smooth_opts['warping'] = bool(warping)
-        self.smooth_opts['warping_freq'] = int(warping_freq)
-        self.smooth_opts['warping_ref'] = int(warping_ref)
-        self.smooth_opts['warping_open_begin'] = bool(warping_open_begin)
-        self.smooth_opts['warping_open_end'] = bool(warping_open_end)
-
-        if self.smooth_opts['warping'] is True:
-            if self.dimensionalities["C"] > 1:
-                self.smooth_opts['warping'] = False
-                print("Warping only implemented for one dimensional covariates, setting to False.")
-
-        # Insert Sigma into training schedule if GP prior on Z
-        if self.smooth_opts['GP_factors']:
-            self.train_opts['schedule'].insert(len(self.train_opts['schedule']), "Sigma")
-
-        # Define whether to model a group covariance structure
-        self.smooth_opts['model_groups'] = model_groups
-        self.smooth_opts['use_gpytorch'] = False # experimental, this could be passes as a model_option but to keep options uncluttered set to False
-
-        # print("- Gaussian process prior on the factors: %s \n" % str(GP_factors))
 
     def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
@@ -485,63 +419,105 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_sparseGP_options(self, n_inducing = None, idx_inducing = None, seed_inducing = None):
-        """ Set options for sparse GPs (only when using smooth factors)"""
+    def set_smooth_options(self, scale_cov = False, start_opt=20, n_grid=20, opt_freq=10, sparseGP = False, n_inducing = None, 
+        warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, model_groups = True):
 
-        # Sanity check
-        assert hasattr(self, 'smooth_opts'), "Please run set_covariates() and set_smooth_options() before set_sparseGP_options()"
-        assert len(self.smooth_opts.keys())>5, "Smooth options not defined. Please run set_smooth_options() before set_sparseGP_options()"
-        assert hasattr(self, 'model_opts'), "Model options not defined. Please run set_model_options() before set_sparseGP_options()"
-        assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_options() before set_sparseGP_options()"
-        assert self.sample_cov is not None, "Before setting sparse GP options, you need to define the covariates with set_covariates()"
+        """ TO-DO: ADD DOCUMENTATION""" 
 
-        if not self.smooth_opts['GP_factors']:
-            print("Sparse Gaussian Processes can only be used when having covariates and GP_factors set to True, setting to False")
-            self.smooth_opts['sparseGP'] = False
-            return None
+        # Sanity checks
+        assert hasattr(self, 'smooth_opts'), "Please run set_covariates() before set_smooth_options()"
+        assert hasattr(self, 'model_opts'), "Model options not defined. Please run set_model_opts() before set_smooth_options()"
+        assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_opts() before set_smooth_options()"
+        assert self.sample_cov is not None, "Before setting smooth options, you need to define the covariates with set_covariates"
 
-        # Set the number of inducing points
-        if n_inducing is None:
-            n_inducing = max(0.2 * self.dimensionalities["N"], 100) # note: groups are already concatenated, N is total number of samples
-        else:
-            assert isinstance(n_inducing,int), "n_inducing has to be an integer"
-            if n_inducing > self.dimensionalities["N"]:
-                print("Number of inducing points is higher than original number of samples - using non-sparse GP inference")
-                self.smooth_opts['sparseGP'] = False
-                return None
+        self.smooth_opts['GP_factors'] = True
 
-        self.smooth_opts['sparseGP'] = True
+        # Define whether to scale covariates to unit variance
+        self.smooth_opts['scale_cov'] = scale_cov
+        # if (scale_cov): print("Scaling covariates to unit variance...\n")
+        if self.smooth_opts['scale_cov']:
+            self.sample_cov = (self.sample_cov - self.sample_cov.mean(axis=0)) / self.sample_cov.std(axis=0)
 
-        # Set the identity of the inducing points
-        if idx_inducing is None:
+        # Define at which iteration to start optimizing the lengthscales, at which frequency and how many grid points
+        start_opt = max(0, start_opt)
+        self.smooth_opts['start_opt'] = int(start_opt)
+        self.smooth_opts['n_grid'] = int(n_grid)
+        self.smooth_opts['opt_freq'] = int(opt_freq)
+
+        # inactivate group-wise ARD when using the SMOFA framework
+        if self.model_opts['ard_factors'] is True:
+            print("Smooth covariate framework is activated. This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
+            self.model_opts['ard_factors'] = False
+            self.train_opts['schedule'].remove('AlphaZ')
+
+        # inactivate spike-slab on the factors when using the SMOFA framework
+        if self.model_opts['spikeslab_factors'] is True:
+            print("Smooth covariate framework is activated. This is not compatible with spike-and-slab prior on factors. Setting spikeslab_factors to False...\n")
+            self.model_opts['spikeslab_factors'] = False
+            self.train_opts['schedule'].remove('ThetaZ')
+
+        # Insert Sigma into training schedule if GP prior on Z
+        self.train_opts['schedule'].insert(len(self.train_opts['schedule']), "Sigma")
+
+        # Warping
+        self.smooth_opts['warping'] = bool(warping)
+        self.smooth_opts['warping_freq'] = int(warping_freq)
+        self.smooth_opts['warping_ref'] = int(warping_ref)
+        self.smooth_opts['warping_open_begin'] = bool(warping_open_begin)
+        self.smooth_opts['warping_open_end'] = bool(warping_open_end)
+        if self.smooth_opts['warping'] is True:
+            assert self.dimensionalities["G"] > 1, "The warping functionality is only relevant when having multi-group data"
+            assert self.dimensionalities["C"] == 1, "Warping only implemented for one dimensional covariates"
+            print("##")
+            print("## Warping set to True: aligning the covariates across groups")
+            print("##")
+
+       # Sparse GPs
+        if sparseGP is True: 
+            self.smooth_opts['sparseGP'] = True
+
+            # Sparse GPs: set the number of inducing points
+            if n_inducing is None:
+                n_inducing = max(0.2 * self.dimensionalities["N"], 100) # note: groups are already concatenated, N is total number of samples
+            else:
+                assert isinstance(n_inducing,int), "n_inducing has to be an integer"
+                if n_inducing > self.dimensionalities["N"]:
+                    print("Number of inducing points is higher than original number of samples - using non-sparse GP inference")
+                    self.smooth_opts['sparseGP'] = False
+            self.smooth_opts['n_inducing'] = n_inducing
+
+            # Sparse GPs: Set the identity of the inducing points
             missing_sample_per_view = np.ones((self.dimensionalities["N"], self.dimensionalities["M"]))
             for m in range(len(self.data)):
                 missing_sample_per_view[:,m] = np.isnan(self.data[m]).all(axis = 1)
             nonmissing_samples = np.where(missing_sample_per_view.sum(axis=1) != self.dimensionalities["M"])[0]
             N_nonmissing = len(nonmissing_samples)
             n_inducing = min(n_inducing, N_nonmissing)
-            init_inducing_random = False # not used, could be passed as option
-            if init_inducing_random:
-                if not seed_inducing is None:
-                    s.random.seed(int(seed_inducing))
-                idx_inducing = np.random.choice(self.dimensionalities["N"], n_inducing, replace = False)
-                idx_inducing.sort()
-            else:
-                N = self.dimensionalities["N"]
-                loc = self.sample_cov.sum(axis = 1)
-                groups = self.data_opts['samples_groups']
-                nonmissing_samples_tiesshuffled = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing), loc[nonmissing_samples]))] # shuffle ties randomly (e.g. between groups)
-                grid_ix = np.floor(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
-                if grid_ix[-1] == N_nonmissing: # avoid out of bound
-                    grid_ix = grid_ix[:-1]
-                idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
+            N = self.dimensionalities["N"]
+            loc = self.sample_cov.sum(axis = 1)
+            groups = self.data_opts['samples_groups']
+            nonmissing_samples_tiesshuffled = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing), loc[nonmissing_samples]))] # shuffle ties randomly (e.g. between groups)
+            grid_ix = np.floor(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
+            if grid_ix[-1] == N_nonmissing: # avoid out of bound
+                grid_ix = grid_ix[:-1]
+            idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
 
-        # Insert U in schedule
-        ix = self.train_opts['schedule'].index("Z")
-        self.train_opts['schedule'].insert(ix, 'U')
+            # Sparse GPs: Insert U in schedule
+            ix = self.train_opts['schedule'].index("Z")
+            self.train_opts['schedule'].insert(ix, 'U')
+            self.smooth_opts['n_inducing'] = n_inducing
+            self.smooth_opts['idx_inducing'] = idx_inducing
 
-        self.smooth_opts['n_inducing'] = n_inducing
-        self.smooth_opts['idx_inducing'] = idx_inducing
+            print("##")
+            print("## sparseGP set to True: using sparse Gaussian Process to speed up the training procedure")
+            print("##")
+        else:
+            self.smooth_opts['sparseGP'] = False
+
+
+        # Define whether to model a group covariance structure
+        self.smooth_opts['model_groups'] = model_groups
+        self.smooth_opts['use_gpytorch'] = False # experimental, this could be passes as a model_option but to keep options uncluttered set to False
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
         """ Set model options """

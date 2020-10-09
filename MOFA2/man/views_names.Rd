@@ -26,3 +26,10 @@ character vector with the names for each view
 \description{
 views_names: set and retrieve view names
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(file)
+views_names(model)
+views_names(model) <- c("viewA", "viewB")
+}

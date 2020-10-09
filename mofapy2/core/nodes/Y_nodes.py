@@ -32,7 +32,8 @@ class Y_Node(Constant_Variational_Node):
 
         # Do TauTrick to speed up ELBO computation?
         # Important: this assumes that the Tau update has been done prior to calculating elbo of Y
-        self.TauTrick = options['Y_ELBO_TauTrick'] 
+        # self.TauTrick = options['Y_ELBO_TauTrick'] 
+        self.TauTrick = True
 
         # Constant ELBO terms
         self.likconst = -0.5 * s.sum(self.N) * s.log(2.*s.pi)

@@ -23,23 +23,20 @@ The model options are the following: \cr
  By default, they are guessed internally.}
  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
  \item{\strong{spikeslab_factors}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
- \item{\strong{GP_factors}:}{ logical indicating whether to use a GP prior on the factors (Default is TRUE if covaraites are present)}
  \item{\strong{spikeslab_weights}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
  \item{\strong{ard_factors}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
- \item{\strong{start_opt}:}{ at which iteration to start optimizing hte lengthscales of the GP prior}
- \item{\strong{n_grid}:}{ number of grid point to use for optimizing the lengthscale of the GP prior}
  }
 }
 \examples{
 # Using an existing simulated data with two groups and two views
-file <- system.file("exdata", "test_data.txt.gz", package = "MOFA2")
+file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 
-# Load data (in data.frame format)
-data <- read.table(file, header=TRUE) 
+# Load data dt (in data.frame format)
+load(file) 
 
-# Create MOFA object
-MOFAmodel <- create_mofa(data)
+# Create the MOFA object
+MOFAmodel <- create_mofa(dt)
 
 # Load default model options
 model_opts <- get_default_model_options(MOFAmodel)

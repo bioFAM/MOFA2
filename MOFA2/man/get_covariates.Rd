@@ -4,7 +4,12 @@
 \alias{get_covariates}
 \title{Get sample covariates}
 \usage{
-get_covariates(object, covariates = "all", as.data.frame = FALSE)
+get_covariates(
+  object,
+  covariates = "all",
+  as.data.frame = FALSE,
+  warped = FALSE
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
@@ -12,6 +17,8 @@ get_covariates(object, covariates = "all", as.data.frame = FALSE)
 \item{covariates}{character vector with the covariate name(s), or numeric vector with the covariate index(es).}
 
 \item{as.data.frame}{logical indicating whether to output the result as a long data frame, default is \code{FALSE}.}
+
+\item{warped}{logical indicating whether to extract the aligned covariates}
 }
 \value{
 a matrix with dimensions (samples,covariates). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)

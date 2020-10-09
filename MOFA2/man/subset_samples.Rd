@@ -11,12 +11,15 @@ subset_samples(object, samples)
 
 \item{samples}{character vector with the sample names or numeric vector with the sample indices.}
 }
+\value{
+A \code{\link{MOFA}} object
+}
 \description{
 Method to subset (or sort) samples
 }
 \examples{
 # Using an existing trained model on simulated data
-file <- system.file("exdata", "model.hdf5", package = "MOFA2")
+file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
 # (TO-DO) Remove a specific sample from the model (an outlier)

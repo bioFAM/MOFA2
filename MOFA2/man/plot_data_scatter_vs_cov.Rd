@@ -22,7 +22,8 @@ plot_data_scatter_vs_cov(
   text_size = NULL,
   add_lm = FALSE,
   lm_per_group = FALSE,
-  imputed = FALSE
+  imputed = FALSE,
+  return_data = FALSE
 )
 }
 \arguments{
@@ -75,6 +76,8 @@ plot_data_scatter_vs_cov(
 \item{lm_per_group}{logical indicating whether to add a linear regression line separately for each group}
 
 \item{imputed}{logical indicating whether to include imputed measurements}
+
+\item{return_data}{logical indicating whether to return a data frame instead of a plot}
 }
 \description{
 Function to do a scatterplot of features against sample covariate values.

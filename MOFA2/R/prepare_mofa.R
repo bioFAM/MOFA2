@@ -35,13 +35,14 @@
 #' model_opts <- get_default_model_options(MOFAmodel)
 #' model_opts$num_factors <- 10
 #' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
-prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL) {
+prepare_mofa <- function(object, data_options = NULL, model_options = NULL, 
+  training_options = NULL, stochastic_options = NULL, smooth_options = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (any(object@dimensions$N<15)) warning("Some group(s) have less than 15 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
   if (any(object@dimensions$D<15)) warning("Some view(s) have less than 15 features, MOFA will have little power to to learn meaningful factors for these view(s)....")
-  if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to performa more stringent feature selection before creating the MOFA object....")
+  if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to perform a more stringent feature selection before creating the MOFA object....")
   
   # Get data options
   message("Checking data options...")
@@ -131,6 +132,56 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
     Try to reduce the number of factors to obtain meaningful results. It should not exceed ~%s.",
     object@model_options$num_factors, floor(min(object@dimensions$N/4))))
   }
+  
+  # Get smooth covariates options
+  if (length(object@covariates)>=1) {
+    if (is.null(smooth_options)) {
+        message("Covariates provided but no smooth options specified, using default...")
+        object@smooth_options <- get_default_smooth_options(object)
+    } else {
+        message("Checking inference options for smooth covariates...")
+      # message("Smooth covariates have been provided as prior information.")
+        if (!is(smooth_options,"list") || !setequal(names(smooth_options), names(get_default_smooth_options(object)) ))
+          stop("smooth_options are incorrectly specified, please read the documentation in get_default_smooth_options")
+      
+        if (isTRUE(smooth_options$sparseGP)) {
+          if (object@dimensions[["N"]]) warning("Warning: sparseGPs should only be used when having a large sample size (>1e3)")
+          if (isTRUE(smooth_options$warping)) stop("Warping is not implemented in conjunction with sparseGPs")
+        }
+      
+      # Check warping options
+      if (isTRUE(smooth_options$warping)) {
+        stopifnot(object@dimensions[['G']]==1) # check that multi-group is TRUE
+        
+        if (!is.null(smooth_options$warping_ref)) {
+          stopifnot(length(smooth_options$warping_ref)==1)
+          stopifnot(is.character(smooth_options$warping_ref))
+          stopifnot(smooth_options$warping_ref %in% groups_names(object))
+        }
+      }
+        
+      # Disable spike-slab on the factors
+      if(isTRUE(model_options$spikeslab_factors)) {
+        print("Spike-and-Slab sparsity prior on the factors is not available when using smooth covariates, setting to False")
+        model_options$spikeslab_factors <- FALSE
+      }
+        
+      # Disable stochastic inference
+      if (isTRUE(model_options$stochastic)) {
+        print("Stochastic inference is not available when using smooth covariates, setting to False")
+        model_options$stochastic <- FALSE
+        object@stochastic_options <- list()
+      }
+      
+      # TO-DO: CHECKS ON MODEL_GROUPS
+      
+      object@smooth_options <- smooth_options
+    }
+    
+  } else {
+    object@smooth_options <- list()
+  }
+
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
   # for (m in views_names(object)) {
@@ -208,10 +259,7 @@ get_default_training_options <- function(object) {
     freqELBO = 1,                  # (numeric) Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
-    seed = 42,                      # (numeric) random seed
-    opt_freq = 10,                  # frequency of GP hyperparameters optimization
-    start_opt = 20,                # when to start optimizing lengthsclaes
-    n_grid = 20,                   # number of gridpoints per lenghtscales
+    seed = 42,                     # (numeric) random seed
     outfile = NULL,                # (string)  Output file name
     save_interrupted = FALSE       # (logical) Save partially trained model when training is interrupted?
   )
@@ -234,8 +282,6 @@ get_default_training_options <- function(object) {
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
 #'  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
 #'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
-#'  \item{\strong{scale_covariates}:}{ logical indicating whether to scale covariates to have the same (unit) variance. 
-#'  This avoids that the prior sample covariance is dominated by covaraites on a larger scale. Default is TRUE}
 #'  }
 #' @return Returns a list with the default data options.
 #' @importFrom utils modifyList
@@ -262,9 +308,8 @@ get_default_data_options <- function(object) {
   
   # Define default data options
   data_options <- list(
-    scale_views = FALSE,                 # (logical) Scale views to unit variance
-    scale_groups = FALSE,                 # (logical) Scale groups to unit variance
-    scale_covariates = TRUE
+    scale_views = FALSE,    # (logical) Scale views to unit variance?
+    scale_groups = FALSE    # (logical) Scale groups to unit variance?
   )
   
   # if data_options already exists, replace the default values but keep the additional ones
@@ -285,12 +330,9 @@ get_default_data_options <- function(object) {
 #'  By default, they are guessed internally.}
 #'  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
 #'  \item{\strong{spikeslab_factors}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
-#'  \item{\strong{GP_factors}:}{ logical indicating whether to use a GP prior on the factors (Default is TRUE if covaraites are present)}
 #'  \item{\strong{spikeslab_weights}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
 #'  \item{\strong{ard_factors}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
 #'  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
-#'  \item{\strong{start_opt}:}{ at which iteration to start optimizing hte lengthscales of the GP prior}
-#'  \item{\strong{n_grid}:}{ number of grid point to use for optimizing the lengthscale of the GP prior}
 #'  }
 #' @return Returns a list with the default model options.
 #' @importFrom utils modifyList
@@ -333,36 +375,17 @@ get_default_model_options <- function(object) {
   
   # Define default model options
   model_options <- list(
-    likelihoods = likelihoods,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
+    likelihoods = likelihoods,   # (character vector) likelihood per view [gaussian/bernoulli/poisson]
     num_factors = 10,            # (numeric) initial number of latent factors
-    spikeslab_factors = FALSE,         # Spike and Slab sparsity on the factors
-    spikeslab_weights = TRUE,          # Spike and Slab sparsity on the loadins
-    ard_factors = FALSE,              # Group-wise ARD sparsity on the factors
-    ard_weights = TRUE,                # View-wise ARD sparsity on the loadings
-    GP_factors = TRUE,           # GP-prior on Z
-    sparseGP = FALSE,             # use sparse Gaussian processes
-    idx_inducing = NULL,          # index of points used as inducing points
-    n_inducing = round(max(100, object@dimensions$N * 0.3)), # number of inducing points
-    seed_inducing = NULL, #TODO Move to training opts
-    warping = FALSE,                 # warp the covariates between groups
-    warping_freq = 20,               # warp at each n-th iteration
-    warping_ref = 0,                  # group to use as reference for warping
-    warping_open_begin = TRUE,        # allow open beginning for warping?
-    warping_open_end = TRUE           # allow open end for warping?
+    spikeslab_factors = FALSE,   # (logical) Spike and Slab sparsity on the factors
+    spikeslab_weights = TRUE,    # (logical) Spike and Slab sparsity on the weights
+    ard_factors = FALSE,         # (logical) Group-wise ARD sparsity on the factors
+    ard_weights = TRUE           # (logical) View-wise ARD sparsity on the weights
   )
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups
   if (object@dimensions$G==1)
     model_options$ard_factors <-FALSE
-
-  # GP prior  on the factors only if covariates are present
-  if (is.null(object@covariates))
-    model_options$GP_factors <-FALSE
-  
-  # multivariate variational for Z and sparse GPonly if GP prior on Z
-  if (!model_options$GP_factors) {
-    model_options$sparseGP <- FALSE
-  }
   
   # if model_options already exist, replace the default values but keep the additional ones
   if (length(object@model_options)>0)
@@ -435,4 +458,57 @@ get_default_stochastic_options <- function(object) {
   
   return(stochastic_options)
 }
-
+  
+#' @title Get default options for smooth covariates
+#' @name get_default_smooth_options
+#' @description Function to obtain the default options for the usage of smooth covariates
+#' @param object an untrained \code{\link{MOFA}} object
+#' @details The options are the following: \cr
+#' \itemize{
+#'  \item{\strong{scale_cov}:}
+#'  \item{\strong{start_opt}:}
+#'  \item{\strong{n_grid}:}
+#'  \item{\strong{opt_freq}:}
+#'  \item{\strong{sparseGP}:}
+#'  \item{\strong{n_inducing}:}
+#'  \item{\strong{warping}:}
+#'  \item{\strong{warping_freq}:}
+#'  \item{\strong{warping_ref}:}
+#'  \item{\strong{warping_open_begin}:}
+#'  \item{\strong{warping_open_end}:}
+#'  \item{\strong{model_groups}:}
+#' }
+#' @return Returns a list with default options for the smooth covariate(s) functionality.
+#' @importFrom utils modifyList
+#' @export
+#' @examples
+get_default_smooth_options <- function(object) {
+  
+  smooth_options <- list(
+    
+    # Standard options
+    scale_cov = TRUE,            # (logical) Scale covariates?
+    start_opt = 20,              # (integer) First iteration to start the optimisation of GP hyperparameters
+    n_grid = 20,                 # (integer) Number of points for the grid search in the optimisation of GP hyperparameters
+    opt_freq = 10,               # (integer) Frequency of optimisation of GP hyperparameters
+    model_groups = TRUE,         # (logical) model covariance structure across groups
+    
+    # sparse GP options
+    sparseGP = FALSE,            # (logical) Use sparse GPs to speed up the optimisation of the GP parameters?
+    n_inducing = 20,             # (integer) Number of inducing points
+    
+    # warping
+    warping = FALSE,             # (logical) Activate warping functionality to align covariates between groups (requires a multi-group design)
+    warping_freq = 20,           # (numeric) Warping: frequency of the optimisation
+    warping_ref = groups_names(object)[[1]],          # (character) Warping: reference group
+    warping_open_begin = TRUE,   # (logical) Warping: Allow for open beginning?
+    warping_open_end = TRUE      # (logical) Warping: Allow for open ending?
+    
+  )
+  
+  # if smooth_options already exist, replace the default values but keep the additional ones
+  if (length(object@smooth_options)>0)
+    smooth_options <- modifyList(smooth_options, object@smooth_options)
+  
+  return(smooth_options)
+}
