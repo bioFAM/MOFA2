@@ -421,10 +421,27 @@ class entry_point(object):
 
         self.train_opts['drop']["min_r2"] = None
 
-    def set_smooth_options(self, scale_cov = False, start_opt=20, n_grid=20, opt_freq=10, sparseGP = False, n_inducing = None, 
-        warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True, model_groups = True):
+    def set_smooth_options(self, scale_cov = False, start_opt=20, n_grid=20, opt_freq=10, model_groups = True,
+        warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
+        sparseGP = False, n_inducing = None):
 
-        """ TO-DO: ADD DOCUMENTATION""" 
+        """ 
+        Method to activate and set options for a functional MOFA model (MEFISTO).
+        This requires to specify a covariate using set_covariates.
+
+        PARAMETERS:
+        - scale_cov: Scale covariates to unit variance (relevant if you have multiple covariates on different scales). Default is False.
+        - stat_opt: Iteration where to start the optimization of the hyperparameters for the Gaussian process
+        - n_grid: number of grid points to use for optimization of the lengthscale
+        - opt_freq: Frequency of the optimization of the hyperparameters for the Gaussian process (every opt_freq-th iteration)
+        - model_groups: Boolean  whether to include a group-group covariance into the model. 
+            Default is True, if set to False the same underlying patterns are assumed in all groups. 
+        - warping: Boolean, indicating whether to align covariates between groups (only relevant for more than 1 group and a single covariate)
+        - warping_freq, warping_ref, warping_open_begin, warping_open_end: Warping-specifc parameters deremining the frequency of warping, the refernce group
+            wether to allow open begin or open end for the alginement
+        - sparseGP: Boolean, whether to use sparse Gaussian processes (only recommmended for very large data sets)
+        - n_inducing: Number of inducing points to use when using sparse GPs
+        """ 
 
         # Sanity checks
         assert hasattr(self, 'smooth_opts'), "Please run set_covariates() before set_smooth_options()"
@@ -476,12 +493,13 @@ class entry_point(object):
             print("##")
 
        # Sparse GPs
-        if sparseGP is True: 
+        if sparseGP is True:
+            assert not self.smooth_opts['warping'], "The warping functionality cannot be used in conjunction with the sparseGP option."
             self.smooth_opts['sparseGP'] = True
 
             # Sparse GPs: set the number of inducing points
             if n_inducing is None:
-                n_inducing = max(0.2 * self.dimensionalities["N"], 100) # note: groups are already concatenated, N is total number of samples
+                n_inducing = max(0.5 * self.dimensionalities["N"], 100) # note: groups are already concatenated, N is total number of samples
             else:
                 assert isinstance(n_inducing,int), "n_inducing has to be an integer"
                 if n_inducing > self.dimensionalities["N"]:
@@ -522,7 +540,7 @@ class entry_point(object):
 
         # Define whether to model a group covariance structure
         self.smooth_opts['model_groups'] = model_groups
-        self.smooth_opts['use_gpytorch'] = False # experimental, this could be passes as a model_option but to keep options uncluttered set to False
+        # self.smooth_opts['use_gpytorch'] = False # experimental, this could be passed as a model_option but to keep options uncluttered set to False
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
         """ Set model options """
