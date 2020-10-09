@@ -6,16 +6,10 @@ output:
     toc: true
 package: MOFA
 vignette: >
-  %\VignetteIndexEntry{MOFA: MEFISTO usage on simulated data (time)}
+  %\VignetteIndexEntry{MOFA: MEFISTO usage on simulated data (temporal)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-```{r}
-library(reticulate)
-use_condaenv("smofa", required = TRUE)
-py_config()
-```
 
 ```{r, message=FALSE, warning=FALSE}
 library(MOFA2)
@@ -52,40 +46,41 @@ Using the MEFISTO framework is very similar to using MOFA2. In addition to the o
 ## Create a MOFA object with covariates
 To create the MOFA object we need to specify the training data and the covariates for pattern detection and inference of smooth factors. Here, `sample_cov` is a matrix with samples in columns and one row containing the timepoints. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
 
+First, we start by creating a standard MOFA model and specify model (and training options) such as the number of factors.
+```{r}
+sm <- create_mofa(data = dd$data)
+```
+
+Now, we can add the additional temporal covariate, that we want to use for training and specify that we want to use a smooth modeling framework by specifying `smooth_options` when preparing the object. For this you can just use the default options, unless you want to make use of advanced options such as alignment across groups.
 ```{r, message=FALSE, warning=FALSE}
-sm <- create_mofa(data = dd$data, covariate = dd$sample_cov)
+sm <- set_covariates(sm, dd$sample_cov)
 sm
 ```
-
-```{r}
-# sm <- create_mofa(data = dd$data)
-# sm <- set_covariates(sm, dd$sample_cov)
-# model_opts <- get_default_model_options(sm)
-# model_opts$num_factors <- 4
-# smooth_opts <- get_default_smooth_options(sm)
-# sm <- prepare_mofa(sm, model_options = model_opts, smooth_options = smooth_opts)
-# sm <- run_mofa(sm)
-```
-
-
-We now successfully created a MOFA object that contains 4 views, 1 group and 1 covariates giving the time points for each sample
+We now successfully created a MOFA object that contains 4 views, 1 group and 1 covariates giving the time points for each sample.
 
 ## Prepare a MOFA object
-Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. For illustration purposes, we only use a small number of training iterations.
+Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. For illustration, we only use a small number of iterations.
+
+Importantly, to activate the use of the covariate for a functional decomposition (MEFISTO) we no additionally to the standard MOFA options need to specify `smooth_options`. For this you can just use the default options (`get_default_smooth_options`), unless you want to make use of advanced options such as alignment across groups.
+
 ```{r, message=FALSE, warning=FALSE}
-train_opt <- get_default_training_options(sm)
-train_opt$maxiter <- 100
 model_opts <- get_default_model_options(sm)
 model_opts$num_factors <- 4
-sm <- prepare_mofa(sm, training_options = train_opt,
-                   model_options = model_opts)
+
+train_opts <- get_default_training_options(sm)
+train_opts$maxiter <- 100
+
+smooth_opts <- get_default_smooth_options(sm)
+
+sm <- prepare_mofa(sm, model_options = model_opts, smooth_options = smooth_opts, training_options = train_opts)
 ```
 
 ## Run MOFA
-Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saves in the file specified as `outfile`. If none is specified the output is only saved in a temporary location.
-```{r, message=FALSE, warning=FALSE}
+Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saves in the file specified as `outfile`. If none is specified the output is only saved in a temporary location
+```{r}
 sm <- run_mofa(sm)
 ```
+
 
 ## Down-stream analysis
 ### Variance explained per factor

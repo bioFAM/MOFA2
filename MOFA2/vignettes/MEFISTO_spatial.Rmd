@@ -55,23 +55,35 @@ Using the MEFISTO framework is very similar to using MOFA2. In addition to the o
 ## Create a MOFA object with covariates
 To create the MOFA object we need to specify the training data and the covariates for pattern detection and inference of smooth factors. Here, `sample_cov` is a matrix with samples in columns and covariates in rows. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
 
-```{r, message=FALSE, warning=FALSE}
-sm <- create_mofa(data = dd$data, covariate = dd$sample_cov)
-sm
+First, we start by creating a standard MOFA model and specify model (and training options) such as the number of factors.
+```{r}
+sm <- create_mofa(data = dd$data)
 ```
 
+Now, we can add the spatial covariates, that we want to use for training and specify that we want to use a smooth modeling framework by specifying `smooth_options` when preparing the object. For this you can just use the default options, unless you want to make use of advanced options such as alignment across groups.
+```{r, message=FALSE, warning=FALSE}
+sm <- set_covariates(sm, dd$sample_cov)
+sm
+```
 We now successfully created a MOFA object that contains 4 views, 1 group and 2 covariates giving the spatial coordinates.
 
 ## Prepare a MOFA object
 Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. For illustration pruposes, we only use a small number of training iterations.
+
+Importantly, to activate the use of the covariate for a functional decomposition (MEFISTO) we no additionally to the standard MOFA options need to specify `smooth_options`. For this you can just use the default options (`get_default_smooth_options`), unless you want to make use of advanced options such as alignment across groups.
+
 ```{r, message=FALSE, warning=FALSE}
-train_opt <- get_default_training_options(sm)
-train_opt$maxiter <- 100
 model_opts <- get_default_model_options(sm)
 model_opts$num_factors <- 4
-sm <- prepare_mofa(sm, training_options = train_opt,
-                   model_options = model_opts)
+
+train_opts <- get_default_training_options(sm)
+train_opts$maxiter <- 100
+
+smooth_opts <- get_default_smooth_options(sm)
+
+sm <- prepare_mofa(sm, model_options = model_opts, smooth_options = smooth_opts, training_options = train_opts)
 ```
+
 
 ## Run MOFA
 Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saves in the file specified as `outfile`. If none is specified the output is only saved in a temporary location.
@@ -88,7 +100,7 @@ r <- plot_factor_cor(sm)
 ```
 
 ### Plot the factors on the covariate
-The MOFA model has learnt paramerers for each factor that tell us how smoothly the factor varys along the covariate. A scale of 0 means that the factor captures variation independent of the covariate, a value close to 1 tells us that this factor varys very smoothly along the covariate. In this example, we find two factors that are non-smooth and two smooth factors. Using `plot_factors_on_cov_2d` we can plot the factors along the spatial coordinates, where we can distinguish smooth and non smooth variation across space.
+The MOFA model has learnt parameters for each factor that tell us how smoothly the factor varys along the covariate. A scale of 0 means that the factor captures variation independent of the covariate, a value close to 1 tells us that this factor varys very smoothly along the covariate. In this example, we find two factors that are non-smooth and two smooth factors. Using `plot_factors_on_cov_2d` we can plot the factors along the spatial coordinates, where we can distinguish smooth and non smooth variation across space.
 ```{r}
 get_scales(sm)
 plot_factors_on_cov_2d(sm)
