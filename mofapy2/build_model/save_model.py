@@ -403,7 +403,7 @@ class saveModel():
     def saveModelOptions(self):
 
         # Subset model options
-        options_to_save = ["likelihoods", "spikeslab_factors", "spikeslab_weights", "ard_factors", "ard_weights", "GP_factors"]
+        options_to_save = ["likelihoods", "spikeslab_factors", "spikeslab_weights", "ard_factors", "ard_weights"]
         opts = dict((k, np.asarray(self.model_opts[k]).astype('S')) for k in options_to_save)
 
         # Sort values by alphabetical order of views
@@ -426,7 +426,7 @@ class saveModel():
         # For more information see: https://github.com/h5py/h5py/pull/1032 or https://github.com/h5py/h5py/issues/289
 
         # Subset training options
-        opts = dict((k, self.train_opts[k]) for k in ["maxiter", "freqELBO", "start_elbo", "gpu_mode", "stochastic", "seed", "start_opt", "n_grid"])
+        opts = dict((k, self.train_opts[k]) for k in ["maxiter", "freqELBO", "start_elbo", "gpu_mode", "stochastic", "seed"])
 
         # Replace dictionaries (not supported in hdf5) by lists 
         # opts = self.train_opts
@@ -449,6 +449,26 @@ class saveModel():
         # Create data set: only numeric options 
         self.hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
         self.hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
+
+    def saveSmoothOptions(self, smooth_opts):
+        """ Method to save the smooth options """
+
+        # Subset options
+        options_to_save = ["scale_cov", "start_opt", "n_grid", "opt_freq", "sparseGP", "warping", "warping_freq", "warping_ref", "warping_open_begin", "warping_open_end", "model_groups"]
+
+        opts = dict((k, np.asarray(smooth_opts[k]).astype('S')) for k in options_to_save)
+
+        # Create data set
+        # self.hdf5.create_dataset("smooth_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
+        # self.hdf5['smooth_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
+
+        # Create HDF5 group
+        grp = self.hdf5.create_group('smooth_opts')
+
+        # Create HDF5 data sets
+        for k, v in opts.items():
+            grp.create_dataset(k, data=v)
+        grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
     def saveVarianceExplained(self):
 
@@ -487,7 +507,8 @@ class saveModel():
         stats_grp.create_dataset("elbo", data=stats["elbo"])
         # stats_grp.create_dataset("elbo_terms", data=stats["elbo_terms"].T)
         # stats_grp['elbo_terms'].attrs['colnames'] = [a.encode('utf8') for a in stats["elbo_terms"].columns.values]
-        if self.model_opts['GP_factors']:
+
+        if "length_scales" in stats.keys():
             stats_grp.create_dataset("length_scales", data=stats["length_scales"][self.order_factors])
             stats_grp.create_dataset("scales", data=stats["scales"][self.order_factors])
             stats_grp.create_dataset("Kg", data=stats["Kg"][self.order_factors])

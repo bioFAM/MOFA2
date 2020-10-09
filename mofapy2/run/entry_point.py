@@ -487,7 +487,6 @@ class entry_point(object):
                 if n_inducing > self.dimensionalities["N"]:
                     print("Number of inducing points is higher than original number of samples - using non-sparse GP inference")
                     self.smooth_opts['sparseGP'] = False
-            self.smooth_opts['n_inducing'] = n_inducing
 
             # Sparse GPs: Set the identity of the inducing points
             missing_sample_per_view = np.ones((self.dimensionalities["N"], self.dimensionalities["M"]))
@@ -505,17 +504,20 @@ class entry_point(object):
                 grid_ix = grid_ix[:-1]
             idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
 
+            self.smooth_opts['n_inducing'] = n_inducing
+            self.smooth_opts['idx_inducing'] = idx_inducing
+            
             # Sparse GPs: Insert U in schedule
             ix = self.train_opts['schedule'].index("Z")
             self.train_opts['schedule'].insert(ix, 'U')
-            self.smooth_opts['n_inducing'] = n_inducing
-            self.smooth_opts['idx_inducing'] = idx_inducing
 
             print("##")
             print("## sparseGP set to True: using sparse Gaussian Process to speed up the training procedure")
             print("##")
         else:
+
             self.smooth_opts['sparseGP'] = False
+
 
 
         # Define whether to model a group covariance structure
@@ -839,6 +841,10 @@ class entry_point(object):
 
         # Save training options
         tmp.saveTrainOptions()
+
+        # Smooth options
+        if hasattr(self, 'smooth_opts'):
+            tmp.saveSmoothOptions(self.smooth_opts)
 
         # Save training statistics
         tmp.saveTrainingStats()

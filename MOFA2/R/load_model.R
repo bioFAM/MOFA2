@@ -13,7 +13,6 @@
 #' This should be set to TRUE when the training data is so big that cannot fit into memory. \cr
 #' On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.
 #' @param load_data logical indicating whether to load the training data (default is TRUE, it can be memory expensive)
-#' @param load_imputed_data logical indicating whether to load the imputed data (default is FALSE)
 #' @param remove_outliers logical indicating whether to mask outlier values.
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
 # #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
@@ -30,7 +29,7 @@
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 
-load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
+load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE,
                        remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE,
                        load_interpol_Z = FALSE) {
 
@@ -133,7 +132,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ############################
   ## Load sample covariates ##
   ############################
-  if(any(grepl("cov_samples", h5ls.out$group))){
+  
+  if (any(grepl("cov_samples", h5ls.out$group))){
     covariates <- list()
     for (g in group_names) {
       if (on_disk) {
@@ -147,7 +147,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   } else covariates <- NULL
   object@covariates <- covariates
 
-  if(any(grepl("cov_samples_transformed", h5ls.out$group))){
+  if (any(grepl("cov_samples_transformed", h5ls.out$group))){
     covariates_warped <- list()
     for (g in group_names) {
       if (on_disk) {
@@ -160,33 +160,6 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     }
   } else covariates_warped <- NULL
   object@covariates_warped <- covariates_warped
-  #######################
-  ## Load imputed data ##
-  #######################
-  
-  imputed_data <- list()
-  if (isTRUE(load_imputed_data)) {
-    
-    if (isTRUE(verbose)) message("Loading imputed data...")
-    
-    for (m in view_names) {
-      imputed_data[[m]] <- list()
-      for (g in group_names) {
-        imputed_data[[m]][[g]] <- list()
-        if (on_disk) {
-          # as DelayedArrays
-          # imputed_data[[m]][[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("imputed_data/%s/%s", m, g) ) )
-        } else {
-          # as matrices
-          imputed_data[[m]][[g]][["mean"]] <- h5read(file, sprintf("imputed_data/%s/%s/mean", m, g) )
-          imputed_data[[m]][[g]][["variance"]] <- h5read(file, sprintf("imputed_data/%s/%s/variance", m, g) )
-        }
-        # Replace NaN by NA
-        # imputed_data[[m]][[g]][is.nan(imputed_data[[m]][[g]])] <- NA # this realises into memory, TO FIX
-      }
-    }
-  }
-  object@imputed_data <- imputed_data
   
   #######################
   ## Load interpolated factor values ##
@@ -217,6 +190,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     }
   }
   object@interpolated_Z <- interpolated_Z
+  
   #######################
   ## Load expectations ##
   #######################
@@ -306,6 +280,29 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
   }, error = function(x) { print("Training stats not found, not loading it...") })
 
+  #############################
+  ## Load covariates options ##
+  #############################
+  
+  if (any(grepl("cov_samples", h5ls.out$group))) { 
+    if (isTRUE(verbose)) message("Loading covariates options...")
+    tryCatch( {
+      object@smooth_options <- as.list(h5read(file, 'smooth_opts', read.attributes = TRUE))
+    }, error = function(x) { print("Covariates options not found, not loading it...") })
+    
+    # Convert True/False strings to logical values
+    for (i in names(object@smooth_options)) {
+      if (object@smooth_options[i] == "False" | object@smooth_options[i] == "True") {
+        object@smooth_options[i] <- as.logical(object@smooth_options[i])
+      } else {
+        object@smooth_options[i] <- object@smooth_options[i]
+      }
+    }
+    
+  }
+  
+  
+    
   #######################################
   ## Load variance explained estimates ##
   #######################################

@@ -58,13 +58,13 @@ sm
 ```
 
 ```{r}
-sm <- create_mofa(data = dd$data)
-sm <- set_covariates(sm, dd$sample_cov)
-model_opts <- get_default_model_options(sm)
-model_opts$num_factors <- 4
-smooth_opts <- get_default_smooth_options(sm)
-sm <- prepare_mofa(sm, model_options = model_opts, smooth_options = smooth_opts)
-sm <- run_mofa(sm)
+# sm <- create_mofa(data = dd$data)
+# sm <- set_covariates(sm, dd$sample_cov)
+# model_opts <- get_default_model_options(sm)
+# model_opts$num_factors <- 4
+# smooth_opts <- get_default_smooth_options(sm)
+# sm <- prepare_mofa(sm, model_options = model_opts, smooth_options = smooth_opts)
+# sm <- run_mofa(sm)
 ```
 
 
