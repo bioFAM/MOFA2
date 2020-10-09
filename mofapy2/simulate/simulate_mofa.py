@@ -113,7 +113,7 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
     noise = []
     for m in range(M):
         tau_m = stats.uniform.rvs(loc=0.5, scale=1, size=D[m]) * 1/noise_level # uniform between 0.5 and 1.5 scaled by noise level
-        noise.append(np.random.multivariate_normal(np.zeros(D[m]), np.eye(D[m]) * 1 / np.lib.scimath.sqrt(tau_m), N))
+        noise.append(np.random.multivariate_normal(np.zeros(D[m]), np.eye(D[m]) * 1 / tau_m, N))
 
     # generate data
     data = []
