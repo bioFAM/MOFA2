@@ -1,3 +1,22 @@
+#' @title Add covariates to a MOFA model
+#' @name set_covariates
+#' @description Function to add  continuous covariate to a \code{\link{MOFA}} object for smooth training (MEFISTO) 
+#' @param object an untrained \code{\link{MOFA}}
+#' @param covariates list of data_options (see \code{\link{get_default_data_options}} details). 
+#' @return Returns an untrained \code{\link{MOFA}} with covariates filled in the corresponding slots
+#' @details To activate the functional MEFISTO framework, specify smooth_options when preparing the training using \code{prepare_mofa} 
+#' @export
+#' @examples
+#' #' # Simulate data
+#' dd <- make_example_data(sample_cov = seq(0,1,length.out = 100), n_samples = 100, n_factors = 4)
+#' 
+#' # Create MOFA object
+#' sm <- create_mofa(data = dd$data)
+#' 
+#' Add a covariate
+#' sm <- set_covariates(sm, dd$sample_cov)
+#' sm
+
 set_covariates <- function(object, covariates = NULL) {
 
   # Sanity checks

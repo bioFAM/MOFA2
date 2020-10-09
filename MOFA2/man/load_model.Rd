@@ -9,7 +9,6 @@ load_model(
   sort_factors = TRUE,
   on_disk = FALSE,
   load_data = TRUE,
-  load_imputed_data = FALSE,
   remove_outliers = FALSE,
   remove_inactive_factors = TRUE,
   verbose = FALSE,
@@ -26,8 +25,6 @@ This should be set to TRUE when the training data is so big that cannot fit into
 On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.}
 
 \item{load_data}{logical indicating whether to load the training data (default is TRUE, it can be memory expensive)}
-
-\item{load_imputed_data}{logical indicating whether to load the imputed data (default is FALSE)}
 
 \item{remove_outliers}{logical indicating whether to mask outlier values.}
 
