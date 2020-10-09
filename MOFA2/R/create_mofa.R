@@ -7,7 +7,7 @@
 #'   \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
 #'   The "group" column indicates the condition or the experiment (a label for the samples). 
 #'   The view indicates the data modality (a label for the features).}
-#'   \item{\strong{\code{Seurat} object}:}{}
+#'   \item{\strong{Seurat object}:}{}
 #'   \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
 #'   Samples are stored in columns and features in rows. This option requires the use of the \code{groups} argument.
 #'   Missing values must be filled in prior to creating the MOFA object (see the example)}
@@ -15,31 +15,20 @@
 #' @param groups information about the groups:
 #'   \itemize{
 #'   \item{If data is a data.frame this argument is not used}.
-#'   \item{If data is a \code{Seurat} object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
+#'   \item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
 #'   \item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
-#'   Default is \code{NULL} (no groups)
+#'   Default is \code{NULL} (on groups)
 #'   }
-#' @param covariate covariates for each sample used for smoothing and pattern detection: This can be one of the following:
-#'   \itemize{
-#'   \item{A data-frame with columns sample, covariate, value.}
-#'   \item{If data is a \code{data.frame}, it can be a character (vector) specifying (numeric) column(s) to use as covariate(s)}.
-#'   \item{If data is a \code{Seurat} or \code{MultiAssayExperiment} object, it can be a character (vector) specifying
-#'    one or multiple column name(s) present in the samples metadata to use it as covariate(s) (should be numeric)}
-#'   \item{A matrix with samples in columns and covariates in rows. Sample names must match the names in data.}
-#'   Default is \code{NULL} (no covariates)
-#'   }
-#' @param scale_cov By default all covariates are scaled, if this is not wanted set this to FALSE
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
 #' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 #' 
-#' # Load data (in data.frame format)
-#' data <- read.table(file, header=TRUE) 
-#' MOFAmodel <- create_mofa(data)
-
-create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =FALSE) {
+#' # Load data dt (in data.frame format)
+#' load(file) 
+#' MOFAmodel <- create_mofa(dt)
+create_mofa <- function(data, groups = NULL, ...) {
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
@@ -47,31 +36,13 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     message("Creating MOFA object from a Seurat object...")
     object <- .create_mofa_from_seurat(data, groups, ...)
     
-    # extract covariates as data.frame if provided as name of Seurat metadata column
-    if(is(covariate, "character")){
-      if(!all(covariate %in% colnames(data@meta.data)))
-        stop("Columns specified in covariate do not exist in the provided Seurat objects' meta.data slot.")
-      covariate <- data.frame(data@meta.data[,covariate, drop = FALSE])
-      covariate <- gather(covariate, key = "covariate", value = "value")
-      covariate$sample <- rownames(data@meta.data)
-    }
-    
     # Creating MOFA object from a data.frame object
   } else if (is(data, "data.frame")) {
     
     message("Creating MOFA object from a data.frame...")
-    
-    # extract covariates as data.frame if provided as name of data.frame column
-    if(is(covariate, "character")){
-      if(!all(covariate %in% colnames(data)))
-        stop("Columns specified in covariate do not exist in the provided data.")
-      covariate <- data[,c("sample",covariate), drop = FALSE]
-      covariate <- gather(covariate, key = "covariate", value = "value", - sample)
-    }
-
     object <- .create_mofa_from_df(data)
     
-  # Creating MOFA object from a (sparse) matrix object
+    # Creating MOFA object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
              (all(sapply(data, function(x) is(x, "matrix"))) || 
               all(sapply(data, function(x) is(x, "dgCMatrix"))) || 
@@ -79,29 +50,13 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     
     message("Creating MOFA object from a list of matrices (features as rows, sample as columns)...\n")
     object <- .create_mofa_from_matrix(data, groups)
-
+    
   } else if(is(data, "MultiAssayExperiment")){
-    
-    # extract covariates as data.frame if provided as name of MAE colData columns
-    if(is(covariate, "character")){
-      if(!all(covariate %in% colnames(MultiAssayExperiment::colData(data))))
-        stop("Columns specified in sampl_cov do not exist in the provided MultiAssayExperiment objects' colData.")
-      covariate <- data.frame(colData(data)[,covariate, drop = FALSE])
-      covariate <- gather(covariate, key = "covariate", value = "value")
-      covariate$sample <- rownames(colData(data))
-    }
-    
     object <- .create_mofa_from_mae(data, groups, ...)
   } else {
-    stop("Error: input data has to be provided as a list of matrices, a data frame, a Seurat or MultiAssayExperiment object.
-         Please read the documentation for more details.")
+    stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
   
-  # Add covariates (should here be in a matrix or data.frame format)
-  object <- .add_covariate(object, covariate, scale_cov)
-  
-  # Do quality control
-  object <- quality_control(object)
   
   # Create sample metadata
   foo <- lapply(object@data[[1]], colnames)
@@ -111,25 +66,11 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     stringsAsFactors = FALSE
   )
   if (.hasSlot(object, "samples_metadata") && (length(object@samples_metadata) > 0)) {
-    tmp <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),])
-  } 
-  if(.hasSlot(object, "covariates") && !is.null(object@covariates)){
-    samp_co <- Reduce(cbind, object@covariates)
-    tmp <- cbind(tmp, t(samp_co)[match(tmp$sample, colnames(samp_co)),, drop = FALSE])
+    object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),])
+  } else {
+    object@samples_metadata <- tmp
   }
   
-  object@samples_metadata <- tmp
-  
-  
-  # if(!is.null(object@covariates)){
-  #   for(i in seq_len(nrow(object@covariates))) tmp <- cbind(tmp, object@covariates[i,])
-  #   if(!is.null(rownames(object@covariates))) {
-  #     colnames(tmp) <- c("sample", rownames(object@covariates))
-  #   } else {
-  #     colnames(tmp) <- c("sample", paste0("covariate_", 1:nrow(object@covariates)))
-  #   }
-  # }
-
   # Create features metadata
   tmp <- data.frame(
     feature = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
@@ -141,7 +82,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   } else {
     object@features_metadata <- tmp
   }
-
+  
   # Do quality control
   object <- quality_control(object)
   
@@ -192,7 +133,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     message("No groups provided as argument, we assume that all samples belong to the same group.\n")
     groups <- rep("group1",  length(unique(sampleMap(data)[,"primary"])))
   }
-
+  
   # Initialise MOFA object
   object <- new("MOFA")
   object@status <- "untrained"
@@ -213,7 +154,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   
   # Set samples group names
   groups_names(object) <- groups_nms
-
+  
   # Set metadata
   if (save_metadata) {
     # Samples metadata
@@ -240,7 +181,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     # message('No "view" column found in the data.frame, we will assume a common view for all features')
     df$view <- "single_view"
   }
-  stopifnot(all(c("sample","feature","value") %in% colnames(df)))
+  stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))
   stopifnot(all(is.numeric(df$value)))
   
   # Convert 'sample' and 'feature' columns to factors
@@ -305,7 +246,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
 
 # (Hidden) function to initialise a MOFA object using a Seurat object
 #' @title create a MOFA object
-#' @name .create_mofa_from_seurat
+#' @name create_mofa
 #' @description Method to create a \code{\link{MOFA}} object
 #' @param seurat Seurat object
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample
@@ -322,7 +263,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
   }
-
+  
   # Define assays
   if (is.null(assays)) {
     assays <- Seurat::Assays(seurat)
@@ -340,13 +281,13 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
                   paste0(colnames(seurat@meta.data), sep = ", ")))
     groups <- seurat@meta.data[,groups]
   }
-
+  
   # If features to subset are provided,
   # make sure they are a list with respective views (assays) names.
   # A vector is accepted if there's one assay to be used
   if (is(features, "list")) {
     if (!is.null(features) && !all(names(features) %in% assays)) {
-        stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
+      stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
     }
   } else {
     # By default select highly variable features if present in the Seurat object
@@ -359,10 +300,10 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
       features <- list(features)
       names(features) <- assays
     } else {
-       stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
+      stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
     }
   }
-
+  
   # If no groups provided, treat all samples as coming from one group
   if (is.null(groups)) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
@@ -373,7 +314,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   data_matrices <- lapply(assays, function(i) 
     .split_seurat_into_groups(seurat, groups = groups, assay = i, slot = slot, features = features[[i]]))
   names(data_matrices) <- assays
-
+  
   # Create MOFA object
   object <- new("MOFA")
   object@status <- "untrained"
@@ -385,11 +326,11 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   object@dimensions[["G"]] <- length(data_matrices[[1]])
   object@dimensions[["N"]] <- vapply(data_matrices[[1]], function(g) ncol(g), 1L)
   object@dimensions[["K"]] <- 0
-
+  
   # Set views & groups names
   groups_names(object) <- as.character(names(data_matrices[[1]]))
   views_names(object)  <- assays
-
+  
   # Set metadata
   if (save_metadata) {
     # Samples metadata
@@ -397,7 +338,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
     # Features metadata
     object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
   }
-
+  
   return(object)
 }
 
@@ -419,7 +360,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   # Subset to provided features if provided
   if (!is.null(features))
     data <- data[features, , drop=FALSE]
-
+  
   # Split into groups
   .split_data_into_groups(list(data), groups)[[1]]
 }
@@ -459,7 +400,7 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   #     return(aug_x)
   #   }, USE.NAMES = TRUE, simplify = FALSE)
   # }
-
+  
   # Set groups names
   if (is.null(groups)) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
@@ -528,85 +469,4 @@ create_mofa <- function(data, groups = NULL, ..., covariate = NULL, scale_cov =F
   rownames(aug_mat)<-samp
   colnames(aug_mat)<-colnames(mat)
   return(t(aug_mat))
-}  
-
-
-
-
-
-
-.df_to_matrix <- function(x) {
-  m <- as.matrix(x[,-1])
-  rownames(m) <- x[[1]]
-  m
-}
-
-
-# (Hidden) function to add sample covariates to a MOFA model as a list of matrices (one per group)
-.add_covariate <- function(object, covariate, scale_cov) {
-  
-  # get sample names
-  samples_data <- lapply(object@data[[1]], colnames)
-  samples_data_vec <- unlist(samples_data)
-  # data.frame turned to matrix
-  if(any(class(covariate) %in% c("data.frame", "tibble", "Data.Frame"))) {
-    if(!all(c("sample", "covariate", "value") %in% colnames(covariate)))
-      stop("If covariate is provided as data.frame it needs to contain the columns: sample, covariate, value")
-    samples <- covariate$sample
-    if(!is.numeric(covariate$value)){
-      stop("Values in covariate need to be numeric")
-    }
-    covariate <- covariate[!duplicated(covariate), ]
-    covariate <- reshape2::acast(covariate, covariate ~ sample)
-  }
-  # add matrices to object
-  if(all(is.numeric(covariate)) || class(covariate) %in% c("dgTMatrix", "dgCMatrix")) {
-    samples <- colnames(covariate)
-    if(!is.null(samples) & !is.null(samples_data_vec)) {
-      if(!(all(samples %in% samples_data_vec) & all(samples_data_vec %in% samples)))
-        stop("Sample names of the data and the sample covariates do not match.")
-      covariate <- covariate[ , samples_data_vec, drop = FALSE]
-    } else {
-      # warnings and checks if no matching sample names
-      if(sum(object@dimensions[['N']]) != ncol(covariate))
-        stop("Number of columns in sample covariates does not match the number of samples in data")
-      if(!is.null(samples_data) & length(samples_data_vec) > 0) {
-        warning("No sample names in covariates - we will use the sample names in data. Please ensure that the order matches.")
-        colnames(covariate) <- samples_data_vec
-      } else {
-        stop("DEV Error: No sample names found!")
-      }
-    }
-    
-    object@dimensions[["C"]] <- nrow(covariate)
-    
-  # if no covariates are provided
-  } else if(is.null(covariate)) {
-    object@covariates <- NULL
-    object@dimensions[["C"]] <- 0
-    
-  } else {
-    stop("covariate needs to be a charcter vector, a dataframe, a matrix or NULL.")
-  }
-  
-  # scale covariates to have same weight in SE kernel
-  if(scale_cov & !is.null(covariate)) {
-    covariate <- t(scale((covariate)))
-  }
-  
-  # split covariates by groups
-  if(!is.null(covariate)){
-    if(is.null(rownames(covariate))){
-      message("No covariate names provided - using generic: covariate1,..., covariateC")
-      rownames(covariate) <- paste0("covariate", seq_len(nrow(covariate)))
-    }
-    object@covariates <- lapply(samples_data, function(snms)   covariate[, snms, drop = FALSE])
-    names(object@covariates) <- groups_names(object)
-    
-    # check that we got the right formatting at the end
-    if(!all(sapply(object@covariates, ncol) == object@dimensions[["N"]])){
-      stop("DEV Error in reading in the covariates.")
-    }
-  }
-  return(object)
 }
