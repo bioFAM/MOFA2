@@ -29,11 +29,13 @@ The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA
 
 \item{\code{data_options}}{Data processing options.}
 
+\item{\code{model_options}}{Model options.}
+
 \item{\code{training_options}}{Model training options.}
 
 \item{\code{stochastic_options}}{Stochastic variational inference options.}
 
-\item{\code{model_options}}{Model options.}
+\item{\code{smooth_options}}{Covariates options}
 
 \item{\code{dimensions}}{Dimensionalities of the model: 
 M for the number of views, 
