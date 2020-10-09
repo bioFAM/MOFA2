@@ -14,6 +14,8 @@ from mofapy2.build_model.build_model import *
 from mofapy2.build_model.save_model import *
 from mofapy2.build_model.utils import guess_likelihoods
 from mofapy2.build_model.train_model import train_model
+from mofapy2.core import gp_utils
+
 # import matplotlib.pyplot as plt
 
 
@@ -430,6 +432,7 @@ class entry_point(object):
         assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_opts() before set_smooth_options()"
         assert self.sample_cov is not None, "Before setting smooth options, you need to define the covariates with set_covariates"
 
+        # activate GP prior on factors
         self.smooth_opts['GP_factors'] = True
 
         # Define whether to scale covariates to unit variance
@@ -438,7 +441,7 @@ class entry_point(object):
         if self.smooth_opts['scale_cov']:
             self.sample_cov = (self.sample_cov - self.sample_cov.mean(axis=0)) / self.sample_cov.std(axis=0)
 
-        # Define at which iteration to start optimizing the lengthscales, at which frequency and how many grid points
+        # Define at which iteration to start optimizing the lengthscales, how many grid points to use for the lengthscales and at which frequency to optimize
         start_opt = max(0, start_opt)
         self.smooth_opts['start_opt'] = int(start_opt)
         self.smooth_opts['n_grid'] = int(n_grid)

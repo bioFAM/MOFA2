@@ -120,3 +120,31 @@ def covar_to_corr(C):
     Cdiag = np.diag(C)
     Ccor = np.diag(1/np.sqrt(Cdiag)) @ C @ np.diag(1/np.sqrt(Cdiag))
     return Ccor
+
+
+def set_inducing_points(data, sample_cov, groups, dims, n_inducing, random = False, seed_inducing = 0):
+    """
+    Method to select samples to use as inducing points for the GP
+    """
+
+    missing_sample_per_view = np.ones((dims["N"], dims["M"]))
+    for m in range(len(data)):
+        missing_sample_per_view[:,m] = np.isnan(data[m]).all(axis = 1)
+    nonmissing_samples = np.where(missing_sample_per_view.sum(axis = 1) != dims["M"])[0]
+    N_nonmissing = len(nonmissing_samples)
+    n_inducing = min(n_inducing, N_nonmissing)
+    if random:
+        if not seed_inducing is None:
+            s.random.seed(int(seed_inducing))
+        idx_inducing = np.random.choice(dims["N"], n_inducing, replace = False)
+        idx_inducing.sort()
+    else:
+        N = dims["N"]
+        loc = sample_cov.sum(axis = 1)
+        nonmissing_samples_tiesshuffled = nonmissing_samples[np.lexsort((np.random.random(N_nonmissing), loc[nonmissing_samples]))] # shuffle ties randomly (e.g. between groups)
+        grid_ix = np.floor(np.arange(0, N_nonmissing, step=N_nonmissing / n_inducing)).astype('int')
+        if grid_ix[-1] == N_nonmissing: # avoid out of bound
+            grid_ix = grid_ix[:-1]
+        idx_inducing = nonmissing_samples_tiesshuffled[grid_ix]
+
+    return idx_inducing
