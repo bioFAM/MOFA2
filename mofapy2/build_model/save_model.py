@@ -390,7 +390,7 @@ class saveModel():
         # del opts['quiet']; del opts['start_drop']; del opts['freq_drop']; del opts['forceiter']; del opts['start_sparsity']; del opts['Y_ELBO_TauTrick']
 
         # Create data set: only numeric options 
-        self.hdf5.create_dataset("training_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
+        self.hdf5.create_dataset("training_opts", data=np.array(list(opts.values()), dtype=np.float))
         self.hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
     def saveVarianceExplained(self):
