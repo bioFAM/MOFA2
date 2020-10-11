@@ -32,7 +32,7 @@ import requests # to download the online data
 #           In this case there is no need to have missing values in the data.frame,
 #           they will be automatically filled in when creating the corresponding matrices
 
-file = "ftp://ftp.ebi.ac.uk/pub/databases/scnmt_gastrulation/mofa2/getting_started/data.txt.gz"
+file = "ftp://ftp.ebi.ac.uk/pub/databases/mofa/getting_started/data.txt.gz"
 data = pd.read_csv(file, sep="\t")
 
 ###########################
