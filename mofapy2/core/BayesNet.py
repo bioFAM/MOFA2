@@ -114,6 +114,9 @@ class BayesNet(object):
 
         # Get groups
         groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
+        # to maintain correct ordering of groups in R2
+        unique_groups, idx = np.unique(groups, return_index=True)
+        unique_groups = unique_groups[np.argsort(idx)]
 
         if total:
             r2 = [ s.zeros(self.dim['M']) for g in range(self.dim['G'])]
@@ -123,7 +126,8 @@ class BayesNet(object):
         for m in range(self.dim['M']):
             mask = self.nodes["Y"].getNodes()[m].getMask(full=True)
             for g in range(self.dim['G']):
-                gg = groups==g
+                gidx = unique_groups[g]
+                gg = groups==gidx
                 SS = s.square(Y[m][gg,:]).sum()
 
                 # Total variance explained (using all factors)

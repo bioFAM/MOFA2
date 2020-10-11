@@ -134,7 +134,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
     }
     
     # Convert character columns to factors
-    foo <- sapply(annotation_samples, function(x) is.logical(x)|is.character(x))
+    foo <- sapply(annotation_samples, function(x) is.logical(x) || is.character(x))
     if (any(foo)) annotation_samples[,which(foo)] <- lapply(annotation_samples[,which(foo),drop=FALSE], as.factor)
   }
 
@@ -460,9 +460,9 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
 plot_ascii_data <- function(object, nonzero = FALSE) {
   stopifnot(is(object, "MOFA"))
 
-  if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
+  if (!.hasSlot(object, "dimensions") || length(object@dimensions) == 0)
     stop("Error: dimensions not defined")
-  if (!.hasSlot(object, "status") | length(object@status) == 0)
+  if (!.hasSlot(object, "status") || length(object@status) == 0)
     stop("Error: status not defined")
 
   vis_lines <- ""

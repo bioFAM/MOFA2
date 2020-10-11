@@ -421,7 +421,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color=FALSE) + scale_color_manual(values="black") }
   if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
   if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = FALSE) }
-  if (length(unique(df$color))>1 | length(unique(df$shape))>1) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
+  if (length(unique(df$color))>1 || length(unique(df$shape))>1) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
   
   
   # Generate plot

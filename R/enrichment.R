@@ -474,7 +474,7 @@ plot_enrichment_detailed <- function(enrichment.results, factor,
   }
   
   # Compute the set statistics.
-  if (set.test == "parametric" | set.test == "cor.adj.parametric") {
+  if (set.test == "parametric" || set.test == "cor.adj.parametric") {
     if (set.statistic == "mean.diff") {
       results = .pcgse_ttest(
         data = data, 
