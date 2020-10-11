@@ -108,6 +108,27 @@ plot_weights(sm, factors = 4, view = 1)
 plot_top_weights(sm, factors = 3, view = 2)
 ```
 
+```{r}
+plot_group_kernel(sm)
+```
+```{r}
+plot_data_scatter_vs_cov(sm, factor=3, features = 2, lineplot = TRUE)
+```
+
+plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
+                              color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL, lineplot = TRUE,
+                              dot_size = 2.5, text_size = NULL, add_lm = FALSE, lm_per_group = FALSE, imputed = FALSE, return_data = FALSE) {
+```{r}
+plot_data_scatter_vs_cov(sm, factor=3, features = 2, color_by="" lineplot = TRUE)
+```
+
+```{r}
+```
+
+```{r}
+plot_factors_on_cov_2d(sm)
+```
+
 
 # SessionInfo
 ```{r}

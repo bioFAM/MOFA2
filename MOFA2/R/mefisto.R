@@ -403,7 +403,6 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' @param dot_size numeric indicating dot size (default is 5).
 #' @param text_size numeric indicating text size (default is 5).
 #' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
-#' @param lineplot boolean whether to add geom_line
 #' @param alpha numeric indicating dot transparency (default is 1).
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
 #' @param lm_per_group logical indicating whether to add a linear regression line separately for each group
@@ -420,7 +419,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' @importFrom stats quantile
 #' @export
 plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
-                              color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL, lineplot = TRUE,
+                              color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
                               dot_size = 2.5, text_size = NULL, add_lm = FALSE, lm_per_group = FALSE, imputed = FALSE, return_data = FALSE) {
   
   # Sanity checks
@@ -539,11 +538,6 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   
   # Add legend
   p <- .add_legend(p, df, legend, color_name, shape_name)
-  
-  # if(lineplot){
-  #   # p <- p + geom_line(aes_string(col = "color_by")) + guides(col = FALSE)
-  #   p <- p + stat_summary(aes_string(col = "color_by"), fun = mean, geom = "line") + guides(col = FALSE)
-  # }
   
   return(p)
 }
