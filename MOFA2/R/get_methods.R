@@ -435,44 +435,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
 }
 
 
-#' @title Get sample covariates
-#' @name get_covariates
-#' @description Function to extract the covariates from a \code{\link{MOFA}} object.
-#' @param object a \code{\link{MOFA}} object.
-#' @param covariates character vector with the covariate name(s), or numeric vector with the covariate index(es). 
-#' @param as.data.frame logical indicating whether to output the result as a long data frame, default is \code{FALSE}.
-#' @param warped logical indicating whether to extract the aligned covariates
-#' @return a matrix with dimensions (samples,covariates). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)
-#' @export
-
-get_covariates <- function(object, covariates ="all", as.data.frame = FALSE, warped = FALSE) {
-  # Sanity checks
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  
-  # Get and check covariate names
-  covariates <- .check_and_get_covariates(object, covariates)
-  
-  # Get covariates
-  if(warped){
-    sample_cov <- lapply(object@covariates_warped, function(cmat) cmat[covariates,,drop=FALSE])
-  } else {
-    sample_cov <- lapply(object@covariates, function(cmat) cmat[covariates,,drop=FALSE])
-    
-  }
-  
-  if (isTRUE(as.data.frame)) {
-    if(!is.null(rownames(sample_cov[[1]]))){
-      nms <- rownames(sample_cov[[1]]) 
-    } else {
-      nms <- paste0("covariate_", seq_along(covariates))
-    }
-    sample_cov <- Reduce(cbind, sample_cov) # remove group info
-    sample_cov <- melt(sample_cov, varnames = c("covariate", "sample"))
-  }
-  
-  return(sample_cov)
-}
-
 #' @title Get expectations
 #' @name get_expectations
 #' @description Function to extract the expectations from the (variational) posterior distributions of a trained \code{\link{MOFA}} object.
