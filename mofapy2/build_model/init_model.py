@@ -12,7 +12,7 @@ from sklearn.impute import SimpleImputer
 from mofapy2.core.nodes import *
 
 class initModel(object):
-    def __init__(self, dim, data, lik, seed):
+    def __init__(self, dim, data, lik, groups, seed):
         """
         PARAMETERS
         dim: dictionary with keyworded dimensionalities:
@@ -25,14 +25,28 @@ class initModel(object):
             likelihood for each view, choose from ('gaussian','poisson','bernoulli')
         """
 
+        # Set seed
         s.random.seed(seed)
 
+        # Set groups
+        assert len(groups) == dim["N"], 'sample groups labels do not match number of samples'
+        self.groups = groups
+        self.groups_ix = np.unique(groups, return_inverse=True)[1] # convert groups into integers from 0 to n_groups
+
+
+        # Set data
         self.data = data
+
+        # Set likelihoods
         self.lik = lik
+
+        # Set dimensionalities
         self.N = dim["N"]
         self.K = dim["K"]
         self.M = dim["M"]
         self.D = dim["D"]
+        self.G = dim["G"]
+        # self.G = len(np.unique(groups))
 
         self.nodes = {}
 
@@ -307,13 +321,13 @@ class initModel(object):
             weight_views = weight_views
         )
 
-    def initSigma(self, sample_cov, groups, start_opt = 20, n_grid = 10,
+    def initSigma(self, sample_cov, start_opt = 20, n_grid = 10,
         opt_freq = 10, model_groups = False, use_gpytorch = False):
 
         self.Sigma = Sigma_Node(
             dim=(self.K,), 
             sample_cov=sample_cov, 
-            groups=groups,
+            groups=self.groups,
             start_opt=start_opt, 
             n_grid=n_grid, 
             opt_freq=opt_freq, 
@@ -321,13 +335,13 @@ class initModel(object):
         )
         self.nodes["Sigma"] = self.Sigma
 
-    def initSigma_sparse(self, sample_cov, groups, start_opt = 20, n_grid = 10, idx_inducing = None, 
+    def initSigma_sparse(self, sample_cov, start_opt = 20, n_grid = 10, idx_inducing = None, 
         opt_freq = 10, model_groups = False, use_gpytorch = False):
 
         self.Sigma = Sigma_Node_sparse(
             dim=(self.K,), 
             sample_cov=sample_cov, 
-            groups=groups,
+            groups=self.groups,
             start_opt=start_opt, 
             n_grid=n_grid, 
             idx_inducing=idx_inducing, 
@@ -336,14 +350,13 @@ class initModel(object):
         )
         self.nodes["Sigma"] = self.Sigma
 
-    def initSigma_warping(self, sample_cov, groups, start_opt = 20, n_grid = 10, 
+    def initSigma_warping(self, sample_cov, start_opt = 20, n_grid = 10, 
         warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True,
         opt_freq = 10, model_groups = False, use_gpytorch = False):
 
         self.Sigma = Sigma_Node_warping(
             dim=(self.K,), 
             sample_cov=sample_cov, 
-            groups=groups,
             start_opt=start_opt, 
             n_grid=n_grid, 
             warping_freq=warping_freq, 
@@ -550,7 +563,7 @@ class initModel(object):
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
-    def initAlphaZ(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+    def initAlphaZ(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
         """Method to initialise the ARD prior on Z per sample group
 
         PARAMETERS
@@ -569,20 +582,11 @@ class initModel(object):
             initial log expectation of the variational distribution
         """
 
-        # Sanity checks
-        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
-
-        # convert groups into integers from 0 to n_groups
-        tmp = np.unique(groups, return_inverse=True)
-        groups_ix = tmp[1]
-
-        n_group = len(np.unique(groups_ix))
-
         self.nodes["AlphaZ"] = AlphaZ_Node(
-            dim=(n_group, self.K),
+            dim=(self.G, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
-            groups=groups_ix,
+            groups=self.groups_ix,
             qE=qE, qlnE=qlnE
         )
 
@@ -611,7 +615,7 @@ class initModel(object):
             alpha_list[m] = AlphaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initTau(self, groups, pa=1e-3, pb=1e-3, qa=1., qb=1., qE=None):
+    def initTau(self, pa=1e-3, pb=1e-3, qa=1., qb=1., qE=None):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -626,16 +630,7 @@ class initModel(object):
             initial expectation of the variational distribution
         """
 
-        # Sanity checks
-        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
-
         tau_list = [None]*self.M
-
-        # convert groups into integers from 0 to n_groups 
-        tmp = np.unique(groups, return_inverse=True)
-        groups_ix = tmp[1]
-
-        n_group = len(np.unique(groups_ix))
 
         for m in range(self.M):
 
@@ -653,20 +648,21 @@ class initModel(object):
 
             elif self.lik[m] == "zero_inflated":
                 # contains parameters to initialise both normal and jaakola tau
-                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((n_group, self.D[m])), value=1., pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
+                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((self.G, self.D[m])), value=1., pa=pa, pb=pb, qa=qa, qb=qb, groups=self.groups_ix, qE=qE)
 
             # Gaussian noise model for continuous data
             elif self.lik[m] == "gaussian":
-                tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
+                tau_list[m] = TauD_Node(dim=(self.G, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=self.groups_ix, qE=qE)
 
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
     def initY(self):
         """Method to initialise the observations"""
+
         Y_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m]=="gaussian":
-                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m])
+                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], groups=self.groups_ix)
             elif self.lik[m]=="poisson":
                 Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
             elif self.lik[m]=="bernoulli":
@@ -676,13 +672,11 @@ class initModel(object):
         self.Y = Multiview_Mixed_Node(self.M, *Y_list)
         self.nodes["Y"] = self.Y
 
-    def initThetaZ(self, groups, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaZ(self, pa=1., pb=1., qa=1., qb=1., qE=None):
         """Method to initialise the ARD prior on Z per sample group
 
         PARAMETERS
         ----------
-        groups: dictionary
-            a dictionariy with mapping between sample names (keys) and samples_groups (values)
         pa: float
             'a' parameter of the prior distribution
         pb :float
@@ -696,20 +690,12 @@ class initModel(object):
         K: number of factors for which we learn theta. If no argument is given, we'll just use the
             total number of factors
         """
-        # Sanity checks
-        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
-
-        # convert groups into integers from 0 to n_groups
-        tmp = np.unique(groups, return_inverse=True)
-        groups_ix = tmp[1]
-
-        n_group = len(np.unique(groups_ix))
 
         self.nodes["ThetaZ"] = ThetaZ_Node(
-            dim=(n_group, self.K),
+            dim=(self.G, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
-            groups=groups_ix,
+            groups=self.groups_ix,
             qE=qE)
 
     def initThetaW(self, pa=1., pb=1., qa=1., qb=1., qE=None):

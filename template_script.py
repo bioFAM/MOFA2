@@ -114,15 +114,8 @@ ent.set_model_options(
 	factors = 5,
 	spikeslab_weights = True,
 	ard_factors = True,
-	ard_weights = True,
-    GP_factors = False
+	ard_weights = True
 )
-
-## (Optional) If using the SMOFA framework we can (optionally) set sparse GP inference options ##
-# - n_inducing: number of inducing points
-# - idx_inducing: optional argument to specify with points to use as inducing points (as index of original variables)
-#
-# ent.set_sparseGP_options(n_inducing=100, idx_inducing = None)
 
 ## (5) Set training options ##
 # - iter: number of iterations
@@ -152,7 +145,7 @@ ent.set_train_options(
 )
 
 
-## (6, optional) Set stochastic inference options##
+## (6, optional) Set stochastic inference options ##
 # Only recommended with very large sample size (>1e6) and when having access to GPUs
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)

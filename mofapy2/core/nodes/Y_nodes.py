@@ -11,8 +11,13 @@ from mofapy2.core import gpu_utils
 from .variational_nodes import Constant_Variational_Node
 
 class Y_Node(Constant_Variational_Node):
-    def __init__(self, dim, value):
+    def __init__(self, dim, value, groups):
         Constant_Variational_Node.__init__(self, dim, value)
+
+        # Define groups
+        assert len(groups) == dim[0]
+        self.groups = groups
+        self.n_groups = len(np.unique(groups))
 
         # Mask missing values
         self.mask = self.mask()

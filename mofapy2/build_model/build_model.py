@@ -44,7 +44,12 @@ class buildBiofam(buildModel):
 
     def main(self):
         # create an instance of initModel
-        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed=self.train_opts['seed'])
+        self.init_model = initModel(
+            dim = self.dim, 
+            data = self.data, 
+            lik = self.model_opts["likelihoods"], 
+            seed = self.train_opts['seed']
+        )
 
         # Build all nodes
         self.build_nodes()
@@ -112,14 +117,14 @@ class buildBiofam(buildModel):
         # TODO sort out how to choose where to use Tau
         # initTau_qE = 100.
         initTau_qE = None
-        
-        self.init_model.initTau(groups= self.data_opts['samples_groups'], qE=initTau_qE)
+            
+        self.init_model.initTau(qE=initTau_qE)
 
     def build_AlphaZ(self):
         """ Build node AlphaZ for the ARD prior on the factors """
 
         # ARD prior per sample group
-        self.init_model.initAlphaZ(self.data_opts['samples_groups'])
+        self.init_model.initAlphaZ()
 
     def build_AlphaW(self):
         """ Build node AlphaW for the ARD prior on the weights"""
@@ -191,7 +196,13 @@ class build_mofa_smooth(buildBiofam):
 
     def main(self):
         # create an instance of initModel
-        self.init_model = initModel(self.dim, self.data, self.model_opts["likelihoods"], seed=self.train_opts['seed'])
+        self.init_model = initModel(
+            dim = self.dim, 
+            data = self.data, 
+            lik = self.model_opts["likelihoods"], 
+            groups = self.data_opts['samples_groups'],
+            seed = self.train_opts['seed']
+        )
 
         # Build all nodes
         self.build_nodes()
@@ -243,7 +254,6 @@ class build_mofa_smooth(buildBiofam):
             else:
                 self.init_model.initSigma_sparse(
                     self.sample_cov,
-                    self.data_opts['samples_groups'],
                     start_opt = self.smooth_opts['start_opt'],
                     n_grid = self.smooth_opts['n_grid'],
                     idx_inducing = self.smooth_opts['idx_inducing'],
@@ -257,7 +267,6 @@ class build_mofa_smooth(buildBiofam):
             if self.smooth_opts['warping'] is True:
                 self.init_model.initSigma_warping(
                     sample_cov = self.sample_cov,
-                    groups = self.data_opts['samples_groups'],
                     start_opt = self.smooth_opts['start_opt'],
                     n_grid = self.smooth_opts['n_grid'],
                     warping_freq = self.smooth_opts['warping_freq'],
@@ -272,7 +281,6 @@ class build_mofa_smooth(buildBiofam):
             else:
                 self.init_model.initSigma(
                     self.sample_cov,
-                    self.data_opts['samples_groups'],
                     start_opt = self.smooth_opts['start_opt'],
                     n_grid = self.smooth_opts['n_grid'],
                     # idx_inducing = self.smooth_opts['idx_inducing'],
