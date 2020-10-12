@@ -43,7 +43,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
   
   # install Anaconda and the required environments if not present
-  proc <- basiliskStart(mofa)
+  proc <- basiliskStart(mofa_env)
   on.exit(basiliskStop(proc))
   
   run_mofa_in_python <- basiliskRun(proc, function(object) {
