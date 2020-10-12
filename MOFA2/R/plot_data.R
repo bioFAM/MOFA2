@@ -281,7 +281,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
   # Create data frame 
   foo <- list(features); names(foo) <- view
   if (isTRUE(imputed)) {
-    df2 <- get_imputed_data(object, groups = groups, views = view, features = foo, as.data.frame = TRUE, only_mean = TRUE)
+    df2 <- get_imputed_data(object, groups = groups, views = view, features = foo, as.data.frame = TRUE)
   } else {
     df2 <- get_data(object, groups = groups, features = foo, as.data.frame = TRUE)
   }

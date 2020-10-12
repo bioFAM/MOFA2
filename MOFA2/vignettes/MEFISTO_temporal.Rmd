@@ -94,8 +94,11 @@ r <- plot_factor_cor(sm)
 ### Relate factors to the covariate
 The MOFA model has learnt paramerers for each factor that tell us how smoothly the factor varys along the covariate. A scale of 0 means that the factor captures variation independent of time, a value close to 1 tells us that this factor varys very smoothly along time. In this example, we find two factors that are non-smooth and two smooth factor. Using `plot_factors_vs_cov` we can plot the factors along time, where we can distinguish smooth and non smooth variation along time.
 ```{r}
+plot_factors_vs_cov(sm, color_by = "covariate_1_warped", show_variance=TRUE)
+```
+
+```{r}
 get_scales(sm)
-plot_factors_vs_cov(sm)
 ```
 
 We can compare this to the factors that were simulated above and find that the model recaptured the two smooth as well as two stochastic patterns in time. Note that factors are invariant to the sign, e.g. factor 4 is the negative of the simulated factor but we can simply multiply the factors and its weights by -1 to obtain exactly the simulated factor.
@@ -112,21 +115,15 @@ plot_top_weights(sm, factors = 3, view = 2)
 plot_group_kernel(sm)
 ```
 ```{r}
-plot_data_scatter_vs_cov(sm, factor=3, features = 2, lineplot = TRUE)
-```
-
-plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
-                              color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL, lineplot = TRUE,
-                              dot_size = 2.5, text_size = NULL, add_lm = FALSE, lm_per_group = FALSE, imputed = FALSE, return_data = FALSE) {
-```{r}
-plot_data_scatter_vs_cov(sm, factor=3, features = 2, color_by="" lineplot = TRUE)
+plot_data_scatter_vs_cov(sm, factor=3, features = 2)
 ```
 
 ```{r}
 ```
 
 ```{r}
-plot_factors_on_cov_2d(sm)
+plot_factors_vs_cov(sm, dot_size = 3, stroke = 0.1, color_by = "covariate_1", legend = F, return_data = T)
+
 ```
 
 
@@ -136,4 +133,22 @@ sessionInfo()
 ```
 
 
+
+```{r}
+object <- sm
+factors = "all"
+covariates = NULL
+show_missing = TRUE
+scale = FALSE
+color_by = NULL
+shape_by = NULL
+color_name = NULL
+shape_name = NULL
+dot_size = 1.5
+alpha = 1
+legend = TRUE
+original = FALSE
+return_data = FALSE
+show_variance = FALSE
+```
 
