@@ -14,7 +14,6 @@ run_enrichment(
   sign = c("all", "positive", "negative"),
   min.size = 10,
   nperm = 1000,
-  cores = 1,
   p.adj.method = "BH",
   alpha = 0.1,
   verbose = TRUE
@@ -40,8 +39,6 @@ Must be one of the following: "parametric" (default), "cor.adj.parametric", "per
 \item{min.size}{Minimum size of a feature set (default is 10).}
 
 \item{nperm}{number of permutations. Only relevant if statistical.test is set to "permutation". Default is 1000}
-
-\item{cores}{number of cores to run the permutation analysis in parallel. Only relevant if statistical.test is set to "permutation". Default is 1}
 
 \item{p.adj.method}{Method to adjust p-values factor-wise for multiple testing. Can be any method in p.adjust.methods(). Default uses Benjamini-Hochberg procedure.}
 
