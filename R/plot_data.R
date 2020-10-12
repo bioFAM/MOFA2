@@ -65,10 +65,10 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   
 
   # Get data
-  if (isTRUE(denoise)) {
+  if (denoise) {
     data <- predict(object, views=view, groups=groups)[[1]]
   } else {
-    if (isTRUE(imputed)) {
+    if (imputed) {
       data <- get_imputed_data(object, view, groups)[[1]]
     } else {
       data <- get_data(object, views=view, groups=groups)[[1]]
@@ -145,7 +145,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   }
   
   # Transpose the data
-  if (isTRUE(transpose)) {
+  if (transpose) {
     data <- t(data)
     if (!is.null(annotation_samples)) {
       annotation_features <- annotation_samples
@@ -229,7 +229,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(factor)==1)
   stopifnot(length(view)==1)
-  if (isTRUE(lm_per_group)) add_lm = TRUE
+  if (lm_per_group) add_lm = TRUE
   
   # Define views, factors and groups
   groups <- .check_and_get_groups(object, groups)
@@ -240,7 +240,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
   N <- get_dimensions(object)[["N"]]
   W <- get_weights(object)[[view]][,factor]
   
-  if (isTRUE(imputed)) {
+  if (imputed) {
     Y <- do.call(cbind, object@imputed_data[[view]][groups])
   } else {
     Y <- do.call(cbind, object@data[[view]][groups])
@@ -300,7 +300,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
   }
   
   # Set Pearson text size
-  if (isTRUE(add_lm) & is.null(text_size)) {
+  if (add_lm && is.null(text_size)) {
     text_size <- .select_pearson_text_size(N=length(unique(df$feature)))
   }
   
@@ -319,8 +319,8 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
     )
 
   # Add linear regression line
-  if (isTRUE(add_lm)) {
-    if (isTRUE(lm_per_group) & length(groups)>1) {
+  if (add_lm) {
+    if (lm_per_group && length(groups)>1) {
       p <- p +
         stat_smooth(formula=y~x, aes_string(color="group"), method="lm", alpha=0.4) +
         ggpubr::stat_cor(aes_string(color="group", label = "..r.label.."), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
@@ -409,7 +409,7 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
   
   # Add number of samples and features per view/group
   to.plot$combi  <- ifelse(to.plot$value, as.character(to.plot$view), "missing")
-  if (isTRUE(show_dimensions)) {
+  if (show_dimensions) {
     to.plot$ntotal <- paste("N=", sapply(data[[1]], function(e) ncol(e))[ as.character(to.plot$group) ], sep="")
     to.plot$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(to.plot$view) ], sep="")
     if (length(unique(to.plot$group))==1) { 
@@ -481,7 +481,7 @@ plot_ascii_data <- function(object, nonzero = FALSE) {
   vis_lines      <- c(vis_lines, groups_line, nsamples_line) 
 
   # Calculate percentage of missing values in every view and every group
-  if (isTRUE(nonzero)) {
+  if (nonzero) {
     content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(group == 0)))
   } else {
     content_pct <- lapply(object@data, function(view) sapply(view, function(group) sum(is.na(group))))

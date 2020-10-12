@@ -214,7 +214,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
   
   # Return data if requested instead of plotting
-  if (isTRUE(return_data)) return(df)
+  if (return_data) return(df)
 
   # Set stroke
   if (is.null(stroke)) if (length(unique(df$sample))<1000) { stroke <- 0.5 } else { stroke <- 0 }
@@ -231,7 +231,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
     )
   
   # Add dots  
-  if (isTRUE(rasterize)) {
+  if (rasterize) {
     message("for rasterizing the plot we use ggrastr::geom_point_rast()")
     p <- p + ggrastr::geom_point_rast(aes_string(fill = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size, stroke = stroke)
   } else {
@@ -248,7 +248,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   p <- p + guides(alpha=FALSE)
     
   # Label clusters
-  if (isTRUE(label) & length(unique(df$color_by))>1 & length(unique(df$color_by))<50) {
+  if (label && length(unique(df$color_by)) > 1 && length(unique(df$color_by))<50) {
     groups <- unique(df$color_by)
     labels.loc <- lapply(
       X = groups,
@@ -256,7 +256,6 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
         data.use <- df[df[,"color_by"] == i, , drop = FALSE]
         data.medians <- as.data.frame(x = t(x = apply(X = data.use[, c("x","y"), drop = FALSE], MARGIN = 2, FUN = median, na.rm = TRUE)))
         data.medians[, "color_by"] <- i
-        # data.medians$color <- data.use$color[1]
         return(data.medians)
       }
     ) %>% do.call("rbind",.)

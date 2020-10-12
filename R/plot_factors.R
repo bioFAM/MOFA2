@@ -110,7 +110,9 @@ plot_factor <- function(object, factors = 1, groups = "all",
   
   # QC
   if (length(unique(df$color_by))>10 & is.numeric(df$color_by)) {
-    add_violin <- FALSE; add_boxplot <- FALSE; dodge <- FALSE
+    add_violin <- FALSE 
+    add_boxplot <- FALSE
+    dodge <- FALSE
   }
   
   if (length(unique(df$shape_by))>5) {
@@ -128,7 +130,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
     df$shape_by <- forcats::fct_explicit_na(df$shape_by)
   
   # Scale values
-  if (isTRUE(scale)) df$value <- df$value/max(abs(df$value))
+  if (scale) df$value <- df$value/max(abs(df$value))
   
   # Generate plot
   p <- ggplot(df, aes_string(x="group_by", y="value", fill="color_by", shape="shape_by")) +
@@ -146,20 +148,20 @@ plot_factor <- function(object, factors = 1, groups = "all",
   }
 
   # Add dots
-  if (isTRUE(add_dots)) {
+  if (add_dots) {
     
     # Set stroke
     if (is.null(stroke)) stroke <- .select_stroke(N=length(unique(df$sample)))
     
-    if (isTRUE(rasterize)) {
+    if (rasterize) {
       warning("geom_jitter is not available with rasterize==TRUE. We use instead ggrastr::geom_quasirandom_rast()")
-      if (isTRUE(dodge)) {
+      if (dodge) {
         p <- p + ggrastr::geom_quasirandom_rast(size = dot_size, position = "dodge", stroke = stroke,  alpha = dot_alpha, dodge.width = 1)
       } else {
         p <- p + ggrastr::geom_quasirandom_rast(size = dot_size, stroke = stroke,  alpha = dot_alpha)
       }
     } else {
-      if (isTRUE(dodge)) {
+      if (dodge) {
         p <- p + geom_jitter(colour = "black", size = dot_size, stroke = stroke, alpha = dot_alpha, 
                   position = position_jitterdodge(dodge.width=1, jitter.width=0.2))
       } else {
@@ -169,8 +171,8 @@ plot_factor <- function(object, factors = 1, groups = "all",
   }
   
   # Add violin plot
-  if (isTRUE(add_violin)) {
-    if (isTRUE(color_violin) & isTRUE(dodge)) {
+  if (add_violin) {
+    if (color_violin && dodge) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       if (min(tmp$n)==1) {
         warning("Warning: some 'color_by' groups have only one observation, violin plots cannot be added. Adding boxplots instead...")
@@ -187,8 +189,8 @@ plot_factor <- function(object, factors = 1, groups = "all",
   }
   
   # Add boxplot plot
-  if (isTRUE(add_boxplot)) {
-    if (isTRUE(color_boxplot) & isTRUE(dodge)) {
+  if (add_boxplot) {
+    if (color_boxplot && dodge) {
       tmp <- summarise(group_by(df, factor, color_by), n=n())
       # if (min(tmp$n)==1) {
       #   warning("Warning: some 'color_by' groups have only one observation, boxplot plots cannot be coloured")
@@ -338,13 +340,13 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   df <- set_colnames(df, c(colnames(df)[seq_len(4)], "x", "y"))
 
   # Scale values from 0 to 1
-  if (isTRUE(scale)) {
+  if (scale) {
     df$x <- df$x/max(abs(df$x))
     df$y <- df$y/max(abs(df$y))
   }
   
   # Return data if requested instead of plotting
-  if (isTRUE(return_data)) return(df)
+  if (return_data) return(df)
   
   # Set stroke
   if (is.null(stroke)) {

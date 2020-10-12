@@ -1,16 +1,21 @@
 Package: MOFA2
 Type: Package
 Title: Multi-Omics Factor Analysis v2
-Version: 0.99.2
+Version: 0.99.3
 Maintainer: Britta Velten <britta.velten@gmail.com>
 Authors@R: c(person("Ricard", "Argelaguet", role = "aut",
-                     email = "ricard@ebi.ac.uk"),
+                     email = "ricard@ebi.ac.uk",
+                     comment = c(ORCID = "http://orcid.org/0000-0003-3199-3722")),
               person("Damien", "Arnol", role = "aut",
-                     email = "damien.arnol@gmail.com"),
+                     email = "damien.arnol@gmail.com",
+                     comment = c(ORCID = "http://orcid.org/0000-0003-2462-534X")),
               person("Danila", "Bredikhin", role = "aut",
-                     email = "danila.bredikhin@embl.de"),                     
+                     email = "danila.bredikhin@embl.de",
+                     comment = c(ORCID = "https://orcid.org/0000-0001-8089-6983")),                     
               person("Britta", "Velten", role = c("aut", "cre"),
-              		email = "britta.velten@gmail.com"))
+              		email = "britta.velten@gmail.com",
+              		comment = c(ORCID = "http://orcid.org/0000-0002-8397-3515"))
+              )
 Date: 2018-09-03
 License: GPL (>= 2)
 Description: The MOFA2 package contains a collection of tools for running and analysing MOFA models.

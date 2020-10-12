@@ -16,7 +16,8 @@ run_enrichment(
   nperm = 1000,
   cores = 1,
   p.adj.method = "BH",
-  alpha = 0.1
+  alpha = 0.1,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -45,6 +46,8 @@ Must be one of the following: "parametric" (default), "cor.adj.parametric", "per
 \item{p.adj.method}{Method to adjust p-values factor-wise for multiple testing. Can be any method in p.adjust.methods(). Default uses Benjamini-Hochberg procedure.}
 
 \item{alpha}{FDR threshold to generate lists of significant pathways. Default is 0.1}
+
+\item{verbose}{boolean indicating whether to print messages on progress}
 }
 \value{
 a list with five elements: 

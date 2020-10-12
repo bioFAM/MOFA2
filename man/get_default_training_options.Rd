@@ -16,6 +16,9 @@ Returns a list with default training options
 Function to obtain the default training options.
 }
 \details{
+This function provides a default set of training options that can be modified and passed to the \code{\link{MOFA}} object
+in the \code{\link{prepare_mofa}} step (see example), i.e. after creating a \code{\link{MOFA}} object
+ (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
 The training options are the following: \cr
 \itemize{
  \item{\strong{maxiter}:}{ numeric value indicating the maximum number of iterations. 

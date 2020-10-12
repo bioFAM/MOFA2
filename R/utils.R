@@ -222,9 +222,17 @@ setMethod("nrow", "matrix_placeholder", function(x) { x@nrow })
 setMethod("ncol", "matrix_placeholder", function(x) { x@ncol })
 
 setReplaceMethod("rownames", signature(x = "matrix_placeholder"),
-  function(x, value) { x@rownames <- value; x@nrow <- length(value); x })
+  function(x, value) { 
+    x@rownames <- value 
+    x@nrow <- length(value)
+    x 
+    })
 setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
-  function(x, value) { x@colnames <- value; x@ncol <- length(value); x })
+  function(x, value) { 
+    x@colnames <- value 
+    x@ncol <- length(value)
+    x 
+    })
 
 .create_matrix_placeholder <- function(rownames, colnames) {
   mx <- new("matrix_placeholder")
@@ -446,7 +454,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   }
   
   # Add legend theme
-  if (isTRUE(legend)) {
+  if (legend) {
     
     p <- p + 
       guides(color=guide_legend(override.aes = list(fill="white"))) +

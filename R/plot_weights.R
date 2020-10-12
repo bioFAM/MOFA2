@@ -118,8 +118,7 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   W <- as.data.frame(W); colnames(W) <- c("x","y")
   W$view <- view
   W$feature <- features_names(object)[[view]]
-  # W <- W[complete.cases(W),]
-  
+
   # Set color and shape
   if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
   if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
@@ -139,13 +138,13 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   if(length(unique(df$color_by)) < 5) df$color_by <- as.factor(df$color_by)
  
   # Calculate absolute value
-  if (isTRUE(abs)) {
+  if (abs) {
     df$x <- abs(df$x)
     df$y <- abs(df$y)
   }
   
   # Scale values
-  if (isTRUE(scale)) {
+  if (scale) {
     df$x <- df$x/max(abs(df$x))
     df$y <- df$y/max(abs(df$y))
   }
@@ -154,7 +153,6 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   p <- ggplot(df, aes_string(x="x", y="y")) + 
     geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size) + 
     labs(x=factors[1], y=factors[2]) +
-    # scale_shape_manual(values=c(19,1,2:18)[1:length(unique(shape_by))]) +
     geom_segment(x=min(df$x,na.rm=TRUE), xend=max(df$x,na.rm=TRUE), y=0, yend=0, size=0.25, color="orange") +
     geom_segment(y=min(df$y,na.rm=TRUE), yend=max(df$y,na.rm=TRUE), x=0, xend=0, size=0.25, color="orange") +
     theme_classic() +
@@ -266,30 +264,19 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   # Collect expectations  
   W <- get_weights(object, views = view, factors = factors, as.data.frame = TRUE)
   
-  # Remove factors with all-zero weights
-  # to.remove <- sapply(factors, function(i) sum(W[W$factor==i,"value"]==0)>nfeatures)
-  # if (any(to.remove)) {
-  #   print(sprintf("Removing %s, weights are all zero",paste0(names(which(to.remove)),collapse=" ")))
-  #   W <- W[!W$factor %in% names(which(to.remove)),]
-  #   if (nrow(W)==0) stop("No factors to display...")
-  # }
-  
   # Convert factor names to a factor to preserve order
   W$factor <- factor(W$factor, levels = unique(factors))
 
-  # if (sum(W$value==0)>nfeatures) {
-  #   nfeatures <- sum(W$value>0)
-  # }
-  
+
   ################
   ## Parse data ##
   ################
   
   # Scale values
-  if (isTRUE(scale) & sum(W$value>0)>0) W$value <- W$value / max(abs(W$value))
+  if (scale && sum(W$value>0)>0) W$value <- W$value / max(abs(W$value))
   
   # Take the absolute value
-  if (isTRUE(abs)) W$value <- abs(W$value)
+  if (abs) W$value <- abs(W$value)
     
   # Define groups for labelling
   W$labelling_group <- "0"
@@ -340,13 +327,6 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   W <- merge(W, obj_color_by, by=c("feature", "view"))
   W <- merge(W, obj_shape_by, by=c("feature", "view"))
 
-  # If no feature metadata to colour by is provided, highlight the labelled features
-  # TO-DO: FIX THIS LINE, IT IS WEIRD
-  # color_by is "1" for 
-  # if (is.null(color_by)) {
-  #   W$color_by <- factor(as.character(as.integer(as.logical(W$labelling_indicator))), levels = c("1", "0"))
-  # }
-
   # Sort features by weight
   W <- by(W, list(W$factor), function(x) x[order(x$value),])
   W <- do.call(rbind, W)
@@ -374,8 +354,8 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   }
   
   # Configure axis 
-  if (isTRUE(scale)) {
-    if (isTRUE(abs)) {
+  if (scale) {
+    if (abs) {
       p <- p + 
         coord_cartesian(xlim=c(0,1)) +
         scale_x_continuous(breaks=c(0,1)) +
@@ -494,7 +474,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   W <- get_weights(object, factors = factors, views = view, as.data.frame=TRUE)
 
   # Scale values by weight with highest (absolute) value
-  if (isTRUE(scale)) W$value <- W$value/max(abs(W$value))
+  if (scale) W$value <- W$value/max(abs(W$value))
 
   # Store sign
   W <- W[W$value!=0,]
@@ -504,7 +484,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   if (sign=="positive") { W <- W[W$value>0,] } else if (sign=="negative") { W <- W[W$value<0,] }
 
   # Absolute value
-  if (isTRUE(abs)) W$value <- abs(W$value)
+  if (abs) W$value <- abs(W$value)
   
   # Extract relevant features
   W <- W[with(W, order(-abs(value))), ]
@@ -558,7 +538,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   if (sign=="negative") p <- p + scale_x_discrete(position = "top")
 
   # If absolute values are used, add the corresponding signs to the plot
-  if (isTRUE(abs)) {
+  if (abs) {
     p <- p + 
       ylim(0,max(W$value)+0.1) + 
       geom_text(label=W$sign,y=max(W$value)+0.1, size=10)

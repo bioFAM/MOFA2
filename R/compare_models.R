@@ -106,7 +106,7 @@ compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
   
   
   # take the log
-  if (isTRUE(log)) {
+  if (log) {
     message("Plotting the log2 of the negative of the ELBO (the higher the better)")
     df$ELBO <- log2(-df$ELBO)
   }
@@ -119,7 +119,7 @@ compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
   }
   
   # return data
-  if (isTRUE(return_data)) return(df)
+  if (return_data) return(df)
   
   gg <- ggplot(df, aes_string(x="model", y="ELBO")) + 
     geom_bar(stat="identity", color="black", fill="grey70") +

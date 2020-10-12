@@ -19,6 +19,7 @@
 #' @param cores number of cores to run the permutation analysis in parallel. Only relevant if statistical.test is set to "permutation". Default is 1
 #' @param p.adj.method Method to adjust p-values factor-wise for multiple testing. Can be any method in p.adjust.methods(). Default uses Benjamini-Hochberg procedure.
 #' @param alpha FDR threshold to generate lists of significant pathways. Default is 0.1
+#' @param verbose boolean indicating whether to print messages on progress 
 #' @details 
 #'  The aim of this function is to relate each factor to pre-defined biological pathways by performing a gene set enrichment analysis on the feature weights. \cr
 #'  This function is particularly useful when a factor is difficult to characterise based only on the genes with the highest weight. \cr
@@ -38,7 +39,7 @@
 run_enrichment <- function(object, view, feature.sets, factors = "all",
                            set.statistic = c("mean.diff", "rank.sum"),
                            statistical.test = c("parametric", "cor.adj.parametric", "permutation"), sign = c("all","positive","negative"),
-                           min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH", alpha = 0.1) {
+                           min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH", alpha = 0.1, verbose = TRUE) {
   
   # Quality control
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -66,11 +67,6 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(is(Z, "list")) Z <- Reduce(rbind, Z)
   stopifnot(rownames(data) == rownames(Z))
   
-  # Remove empty factors
-  # factors <- apply(Z,2,var, na.rm=TRUE)>0
-  # Z <- Z[,factors,drop=FALSE]
-  # W <- W[,factors,drop=FALSE]
-  
   # Remove features with no variance
   # if (statistical.test %in% c("cor.adj.parametric")) {
   idx <- apply(data,2, function(x) var(x,na.rm=TRUE))==0
@@ -83,7 +79,9 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   # Check if some features do not intersect between the feature sets and the observed data and remove them
   features <- intersect(colnames(data),colnames(feature.sets))
   if(length(features)== 0) stop("Feature names in feature.sets do not match feature names in model.")
-  message(sprintf("Intersecting features names in the model and the gene set annotation results in a total of %d features.",length(features)))
+  if(verbose) {
+    message(sprintf("Intersecting features names in the model and the gene set annotation results in a total of %d features.",length(features)))
+  }
   data <- data[,features]
   W <- W[features,,drop=FALSE]
   feature.sets <- feature.sets[,features]
@@ -93,27 +91,28 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Subset weights by sign
   if (sign=="positive") {
-    # W[W<0] <- 0
     W[W<0] <- NA
   } else if (sign=="negative") {
-    # W[W>0] <- 0
     W[W>0] <- NA
     W <- abs(W)
   }
   
   # Print options
-  message("\nRunning feature set Enrichment Analysis with the following options...")
-  message(sprintf("View: %s", view))
-  message(sprintf("Number of feature sets: %d", nrow(feature.sets)))
-  message(sprintf("Set statistic: %s", set.statistic))
-  message(sprintf("Statistical test: %s", statistical.test))
-  if (sign%in%c("positive","negative"))
-    message(sprintf("Subsetting weights with %s sign",sign))
-  if (statistical.test=="permutation") {
-    message(sprintf("Cores: %d", cores))
-    message(sprintf("Number of permutations: %d", nperm))
+  if(verbose) {
+    message("\nRunning feature set Enrichment Analysis with the following options...\n",
+            sprintf("View: %s \n", view),
+            sprintf("Number of feature sets: %d \n", nrow(feature.sets)),
+            sprintf("Set statistic: %s \n", set.statistic),
+            sprintf("Statistical test: %s \n", statistical.test)
+    )
+    if (sign%in%c("positive","negative"))
+      message(sprintf("Subsetting weights with %s sign",sign))
+    if (statistical.test=="permutation") {
+      message(sprintf("Cores: %d", cores))
+      message(sprintf("Number of permutations: %d", nperm))
+    }
+    message("\n")
   }
-  message("\n")
   
   if (nperm<100) 
     warning("A large number of permutations (at least 1000) is required for the permutation approach!\n")
@@ -161,15 +160,11 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
       set.statistic = set.statistic,
       set.test = "parametric")
     s.foreground <- results$statistic
-    # colnames(s.foreground) <- factors
-    # rownames(s.foreground) <- rownames(feature.sets)
     
     # Calculate p-values based on fraction true statistic per factor and feature set is larger than permuted
     xx <- array(unlist(null_dist_tmp), dim = c(nrow(null_dist_tmp[[1]]), ncol(null_dist_tmp[[1]]), length(null_dist_tmp)))
     ll <- lapply(seq_len(nperm), function(i) xx[,,i] > abs(s.foreground))
     results$p.values <- Reduce("+",ll)/nperm
-    # rownames(results$p.values) <- rownames(s.foreground)
-    # colnames(results$p.values) <- factors
     
     # Parametric test
   } else {
@@ -193,7 +188,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   if(!p.adj.method %in%  p.adjust.methods) 
     stop("p.adj.method needs to be an element of p.adjust.methods")
   adj.p.values <- apply(results$p.values, 2,function(lfw) p.adjust(lfw, method = p.adj.method))
-
+  
   # If we specify a direction, we are only interested in overrepresented pathawys in the selected direction
   if (sign%in%c("positive","negative")) {
     results$p.values[results$statistics<0] <- 1.0
@@ -264,11 +259,7 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
   if (nrow(tmp)>max.pathways) tmp <- head(tmp[order(tmp$pvalue),],n=max.pathways)
   
   # Convert pvalues to log scale
-  # tmp$logp <- -log10(tmp$pvalue+1e-50)
   tmp$logp <- -log10(tmp$pvalue+1e-100)
-  
-  # Annotate significant pathways
-  # tmp$sig <- factor(tmp$pvalue<alpha)
   
   #order according to significance
   tmp$pathway <- factor(tmp$pathway <- rownames(tmp), levels = tmp$pathway[order(tmp$pvalue, decreasing = TRUE)])
@@ -314,14 +305,11 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
   # remove factors that are full of NAs
   p.values <- p.values[,colMeans(is.na(p.values))<1]
   
-  # remove factors that do not have any significant enrichment
-  # p.values <- p.values[!apply(p.values, 1, function(x) sum(x>=alpha,na.rm=TRUE)) == ncol(p.values),, drop=FALSE]
-  
   # cap p-values 
   p.values[p.values<cap] <- cap
   
   # Apply Log transform
-  if (isTRUE(log_scale)) {
+  if (log_scale) {
     p.values <- -log10(p.values+1e-50)
     alpha <- -log10(alpha)
     col <- colorRampPalette(c("lightgrey","red"))(n=100)
@@ -451,22 +439,18 @@ plot_enrichment_detailed <- function(enrichment.results, factor,
     stop("set.statistic must be 'mean.diff' or 'rank.sum'")
   if (!(set.test %in% c("parametric", "cor.adj.parametric", "permutation")))
     stop("set.test must be one of 'parametric', 'cor.adj.parametric', 'permutation'")
-  # if (set.test == "parametric") {
-  # warning("The 'parametric' test option ignores the correlation between feature-level
-  #         test statistics and therefore has an inflated type I error rate.\n ",
-  #         "This option should only be used for evaluation purposes.")
-  # }
+  
   
   # Turn the feature set matrix into list form
-  set.indexes = feature.sets  
+  set.indexes <- feature.sets  
   if (is.matrix(feature.sets)) {
-    set.indexes = .createVarGroupList(var.groups=feature.sets)  
+    set.indexes <- .createVarGroupList(var.groups=feature.sets)  
   }
   
   # Compute the feature statistics.
-  feature.statistics = matrix(0, nrow=ncol(data), ncol=length(pc.indexes))
+  feature.statistics <- matrix(0, nrow=ncol(data), ncol=length(pc.indexes))
   for (i in seq_along(pc.indexes)) {
-    feature.statistics[,i] = .compute_feature_statistics(
+    feature.statistics[,i] <- .compute_feature_statistics(
       data = data,
       prcomp.output = prcomp.output,
       pc.index = pc.indexes[i]
@@ -476,7 +460,7 @@ plot_enrichment_detailed <- function(enrichment.results, factor,
   # Compute the set statistics.
   if (set.test == "parametric" || set.test == "cor.adj.parametric") {
     if (set.statistic == "mean.diff") {
-      results = .pcgse_ttest(
+      results <- .pcgse_ttest(
         data = data, 
         prcomp.output = prcomp.output,
         pc.indexes = pc.indexes,
@@ -485,7 +469,7 @@ plot_enrichment_detailed <- function(enrichment.results, factor,
         cor.adjustment = (set.test == "cor.adj.parametric")
       )
     } else if (set.statistic == "rank.sum") {
-      results = .pcgse_wmw(
+      results <- .pcgse_wmw(
         data = data, 
         prcomp.output = prcomp.output,
         pc.indexes = pc.indexes,
@@ -506,141 +490,141 @@ plot_enrichment_detailed <- function(enrichment.results, factor,
 
 
 # Turn the annotation matrix into a list of var group indexes for the valid sized var groups
-.createVarGroupList = function(var.groups) {
-  var.group.indexes = list()  
+.createVarGroupList <- function(var.groups) {
+  var.group.indexes <- list()  
   for (i in seq_len(nrow(var.groups))) {
-    member.indexes = which(var.groups[i,]==1)
-    var.group.indexes[[i]] = member.indexes    
+    member.indexes <- which(var.groups[i,]==1)
+    var.group.indexes[[i]] <- member.indexes    
   }
-  names(var.group.indexes) = rownames(var.groups)    
+  names(var.group.indexes) <- rownames(var.groups)    
   return (var.group.indexes)
 }
 
 # Computes the feature-level statistics
-.compute_feature_statistics = function(data, prcomp.output, pc.index) {
-  feature.statistics = prcomp.output$rotation[,pc.index]
-  feature.statistics = vapply(feature.statistics, abs, numeric(1))
+.compute_feature_statistics <- function(data, prcomp.output, pc.index) {
+  feature.statistics <- prcomp.output$rotation[,pc.index]
+  feature.statistics <- vapply(feature.statistics, abs, numeric(1))
   return (feature.statistics)
 }
 
 # Compute enrichment via t-test
 #' @importFrom stats pt var
-.pcgse_ttest = function(data, prcomp.output, pc.indexes,
-                        set.indexes, feature.statistics, cor.adjustment) {
+.pcgse_ttest <- function(data, prcomp.output, pc.indexes,
+                         set.indexes, feature.statistics, cor.adjustment) {
   
-  num.feature.sets = length(set.indexes)
+  num.feature.sets <- length(set.indexes)
   
   # Create matrix for p-values
-  p.values = matrix(0, nrow=num.feature.sets, ncol=length(pc.indexes))  
-  rownames(p.values) = names(set.indexes)
+  p.values <- matrix(0, nrow=num.feature.sets, ncol=length(pc.indexes))  
+  rownames(p.values) <- names(set.indexes)
   
   # Create matrix for set statistics
-  set.statistics = matrix(TRUE, nrow=num.feature.sets, ncol=length(pc.indexes))    
-  rownames(set.statistics) = names(set.indexes)    
+  set.statistics <- matrix(TRUE, nrow=num.feature.sets, ncol=length(pc.indexes))    
+  rownames(set.statistics) <- names(set.indexes)    
   
   for (i in seq_len(num.feature.sets)) {
-    indexes.for.feature.set = set.indexes[[i]]
-    m1 = length(indexes.for.feature.set)
-    not.set.indexes = which(!(seq_len(ncol(data)) %in% indexes.for.feature.set))
-    m2 = length(not.set.indexes)
+    indexes.for.feature.set <- set.indexes[[i]]
+    m1 <- length(indexes.for.feature.set)
+    not.set.indexes <- which(!(seq_len(ncol(data)) %in% indexes.for.feature.set))
+    m2 <- length(not.set.indexes)
     
-    if (isTRUE(cor.adjustment)) {      
+    if (cor.adjustment) {      
       # compute sample correlation matrix for members of feature set
-      cor.mat = cor(data[,indexes.for.feature.set], use = "complete.obs")
+      cor.mat <- cor(data[,indexes.for.feature.set], use = "complete.obs")
       # compute the mean pair-wise correlation 
-      mean.cor = (sum(cor.mat) - m1)/(m1*(m1-1))    
+      mean.cor <- (sum(cor.mat) - m1)/(m1*(m1-1))    
       # compute the VIF, using CAMERA formula from Wu et al., based on Barry et al.
-      vif = 1 + (m1 -1)*mean.cor
+      vif <- 1 + (m1 -1)*mean.cor
     }
     
     for (j in seq_along(pc.indexes)) {
       # get the feature statistics for this PC
-      pc.feature.stats = feature.statistics[,j]
+      pc.feature.stats <- feature.statistics[,j]
       # compute the mean difference of the feature-level statistics
-      mean.diff = mean(pc.feature.stats[indexes.for.feature.set],na.rm=TRUE) - mean(pc.feature.stats[not.set.indexes], na.rm=TRUE)
+      mean.diff <- mean(pc.feature.stats[indexes.for.feature.set],na.rm=TRUE) - mean(pc.feature.stats[not.set.indexes], na.rm=TRUE)
       # compute the pooled standard deviation
-      pooled.sd = sqrt(((m1-1)*var(pc.feature.stats[indexes.for.feature.set], na.rm=TRUE) + (m2-1)*var(pc.feature.stats[not.set.indexes], na.rm=TRUE))/(m1+m2-2))
+      pooled.sd <- sqrt(((m1-1)*var(pc.feature.stats[indexes.for.feature.set], na.rm=TRUE) + (m2-1)*var(pc.feature.stats[not.set.indexes], na.rm=TRUE))/(m1+m2-2))
       # compute the t-statistic
-      if (isTRUE(cor.adjustment)) {
-        t.stat = mean.diff/(pooled.sd*sqrt(vif/m1 + 1/m2))
-        df = nrow(data)-2
+      if (cor.adjustment) {
+        t.stat <- mean.diff/(pooled.sd*sqrt(vif/m1 + 1/m2))
+        df <- nrow(data)-2
       } else {
-        t.stat = mean.diff/(pooled.sd*sqrt(1/m1 + 1/m2))
-        df = m1+m2-2
+        t.stat <- mean.diff/(pooled.sd*sqrt(1/m1 + 1/m2))
+        df <- m1+m2-2
       }
-      set.statistics[i,j] = t.stat      
+      set.statistics[i,j] <- t.stat      
       # compute the p-value via a two-sided test
-      lower.p = pt(t.stat, df=df, lower.tail=TRUE)
-      upper.p = pt(t.stat, df=df, lower.tail=FALSE)        
-      p.values[i,j] = 2*min(lower.p, upper.p)      
+      lower.p <- pt(t.stat, df=df, lower.tail=TRUE)
+      upper.p <- pt(t.stat, df=df, lower.tail=FALSE)        
+      p.values[i,j] <- 2*min(lower.p, upper.p)      
     }
   } 
   
   # Build the result list
-  results = list()
-  results$p.values = p.values
-  results$statistics = set.statistics  
+  results <- list()
+  results$p.values <- p.values
+  results$statistics <- set.statistics  
   
   return (results)
 }
 
 # Compute enrichment via Wilcoxon Mann Whitney 
 #' @importFrom stats wilcox.test pnorm
-.pcgse_wmw = function(data, prcomp.output, pc.indexes,
-                      set.indexes, feature.statistics, cor.adjustment) {
+.pcgse_wmw <- function(data, prcomp.output, pc.indexes,
+                       set.indexes, feature.statistics, cor.adjustment) {
   
-  num.feature.sets = length(set.indexes)
+  num.feature.sets <- length(set.indexes)
   
   # Create matrix for p-values
-  p.values = matrix(0, nrow=num.feature.sets, ncol=length(pc.indexes))  
-  rownames(p.values) = names(set.indexes)
+  p.values <- matrix(0, nrow=num.feature.sets, ncol=length(pc.indexes))  
+  rownames(p.values) <- names(set.indexes)
   
   # Create matrix for set statistics
-  set.statistics = matrix(TRUE, nrow=num.feature.sets, ncol=length(pc.indexes))    
-  rownames(set.statistics) = names(set.indexes)    
+  set.statistics <- matrix(TRUE, nrow=num.feature.sets, ncol=length(pc.indexes))    
+  rownames(set.statistics) <- names(set.indexes)    
   
   for (i in seq_len(num.feature.sets)) {
-    indexes.for.feature.set = set.indexes[[i]]
-    m1 = length(indexes.for.feature.set)
-    not.set.indexes = which(!(seq_len(ncol(data)) %in% indexes.for.feature.set))
-    m2 = length(not.set.indexes)
+    indexes.for.feature.set <- set.indexes[[i]]
+    m1 <- length(indexes.for.feature.set)
+    not.set.indexes <- which(!(seq_len(ncol(data)) %in% indexes.for.feature.set))
+    m2 <- length(not.set.indexes)
     
-    if (isTRUE(cor.adjustment)) {            
+    if (cor.adjustment) {            
       # compute sample correlation matrix for members of feature set
-      cor.mat = cor(data[,indexes.for.feature.set], use="complete.obs")
+      cor.mat <- cor(data[,indexes.for.feature.set], use="complete.obs")
       # compute the mean pair-wise correlation 
-      mean.cor = (sum(cor.mat) - m1)/(m1*(m1-1))    
+      mean.cor <- (sum(cor.mat) - m1)/(m1*(m1-1))    
     }
     
     for (j in seq_along(pc.indexes)) {
       # get the feature-level statistics for this PC
-      pc.feature.stats = feature.statistics[,j]
+      pc.feature.stats <- feature.statistics[,j]
       # compute the rank sum statistic feature-level statistics
-      wilcox.results = wilcox.test(x=pc.feature.stats[indexes.for.feature.set],
-                                   y=pc.feature.stats[not.set.indexes],
-                                   alternative="two.sided", exact=FALSE, correct=FALSE)
+      wilcox.results <- wilcox.test(x=pc.feature.stats[indexes.for.feature.set],
+                                    y=pc.feature.stats[not.set.indexes],
+                                    alternative="two.sided", exact=FALSE, correct=FALSE)
       rank.sum = wilcox.results$statistic                
       if (cor.adjustment) {
         # Using correlation-adjusted formula from Wu et al.
-        var.rank.sum = ((m1*m2)/(2*pi))*
+        var.rank.sum <- ((m1*m2)/(2*pi))*
           (asin(1) + (m2 - 1)*asin(.5) + (m1-1)*(m2-1)*asin(mean.cor/2) +(m1-1)*asin((mean.cor+1)/2))
       } else {        
-        var.rank.sum = m1*m2*(m1+m2+1)/12
+        var.rank.sum <- m1*m2*(m1+m2+1)/12
       }
-      z.stat = (rank.sum - (m1*m2)/2)/sqrt(var.rank.sum)
-      set.statistics[i,j] = z.stat
+      z.stat <- (rank.sum - (m1*m2)/2)/sqrt(var.rank.sum)
+      set.statistics[i,j] <- z.stat
       
       # compute the p-value via a two-sided z-test
-      lower.p = pnorm(z.stat, lower.tail=TRUE)
-      upper.p = pnorm(z.stat, lower.tail=FALSE)        
-      p.values[i,j] = 2*min(lower.p, upper.p)
+      lower.p <- pnorm(z.stat, lower.tail=TRUE)
+      upper.p <- pnorm(z.stat, lower.tail=FALSE)        
+      p.values[i,j] <- 2*min(lower.p, upper.p)
     }
   } 
   
   # Build the result list
-  results = list()
-  results$p.values = p.values
-  results$statistics = set.statistics  
+  results <- list()
+  results$p.values <- p.values
+  results$statistics <- set.statistics  
   
   return (results)
 }

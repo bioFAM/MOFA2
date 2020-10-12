@@ -63,10 +63,10 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
 
   # Load training data (as nested list of matrices)
   data <- list(); intercepts <- list()
-  if (isTRUE(load_data) & ("data"%in%h5ls.out$name) ) {
+  if (load_data && "data"%in%h5ls.out$name) {
     
     object@data_options[["loaded"]] <- TRUE
-    if (isTRUE(verbose)) message("Loading data...")
+    if (verbose) message("Loading data...")
     
     for (m in view_names) {
       data[[m]] <- list()
@@ -98,18 +98,6 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     }
   }
 
-  # Give corresponding names for rows (features) and columns (samples)
-  # RICARD: I THINK THIS REALISES EVERYTHING INTO MEMORY, TO CHECK
-  # tryCatch( {
-  #   for (m in 1:length(data)) {
-  #     for (p in 1:length(data[[m]])) {
-  #       rownames(data[[m]][[p]]) <- feature_names[[m]]
-  #       colnames(data[[m]][[p]]) <- sample_names[[p]]
-  #     }
-  #   }
-  #   object@data <- data
-  # }, error = function(x) { cat("Error defining feature and sample names\n") })
-  
   object@data <- data
   object@intercepts <- intercepts
 
@@ -127,9 +115,9 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   #######################
   
   imputed_data <- list()
-  if (isTRUE(load_imputed_data)) {
+  if (load_imputed_data) {
     
-    if (isTRUE(verbose)) message("Loading imputed data...")
+    if (verbose) message("Loading imputed data...")
     
     for (m in view_names) {
       imputed_data[[m]] <- list()
@@ -157,7 +145,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   expectations <- list()
   node_names <- h5ls.out[h5ls.out$group=="/expectations","name"]
 
-  if (isTRUE(verbose)) message(paste0("Loading expectations for ", length(node_names), " nodes..."))
+  if (verbose) message(paste0("Loading expectations for ", length(node_names), " nodes..."))
 
   if ("AlphaW" %in% node_names)
     expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")[view_names]
@@ -174,28 +162,6 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   # if ("Tau" %in% node_names)
   #   expectations[["Tau"]] <- h5read(file, "expectations/Tau")
   
-  # Load expectations of Y
-  # tmp <- as.list(h5read(file, 'model_options', read.attributes = TRUE))[["likelihoods"]]
-  # names(tmp) <- view_names
-  # expectations[["Y"]] <- list()
-  # for (m in view_names) {
-  #   expectations[["Y"]][[m]] <- list()
-  #   for (p in group_names) {
-  #     if (on_disk) {
-  #       if (tmp[[m]]=="gaussian") {
-  #         expectations[["Y"]][[m]][[p]] <- data[[m]][[p]]
-  #       } else {
-  #         expectations[["Y"]][[m]][[p]] <- DelayedArray( HDF5ArraySeed(file, name=sprintf("expectations/Y/%s/%s", m, p)) )
-  #       }
-  #     } else {
-  #       if (tmp[[m]]=="gaussian") {
-  #         expectations[["Y"]][[m]][[p]] <- data[[m]][[p]]
-  #       } else {
-  #         expectations[["Y"]][[m]][[p]] <- h5read(file, sprintf("expectations/Y/%s/%s", m, p))
-  #       }
-  #     }
-  #   }
-  # }
   object@expectations <- expectations
 
   
@@ -203,7 +169,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Load model options ##
   ########################
 
-  if (isTRUE(verbose)) message("Loading model options...")
+  if (verbose) message("Loading model options...")
 
   tryCatch( {
     object@model_options <- as.list(h5read(file, 'model_options', read.attributes = TRUE))
@@ -222,7 +188,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Load training options and statistics ##
   ##########################################
 
-  if (isTRUE(verbose)) message("Loading training options and statistics...")
+  if (verbose) message("Loading training options and statistics...")
 
   # Load training options
   if (length(object@training_options) == 0) {
@@ -271,7 +237,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])        # number of factors
   
   # Assign sample and feature names (slow for large matrices)
-  if (isTRUE(verbose)) message("Assigning names to the different dimensions...")
+  if (verbose) message("Assigning names to the different dimensions...")
 
   # Create default features names if they are null
   if (is.null(feature_names)) {
@@ -326,7 +292,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   } 
   
   # Remove inactive factors
-  if (isTRUE(remove_inactive_factors)) {
+  if (remove_inactive_factors) {
     r2 <- rowSums(do.call('cbind', lapply(object@cache[["variance_explained"]]$r2_per_factor, rowSums, na.rm=TRUE)))
     var.threshold <- 0.0001
     if (all(r2 < var.threshold)) {
@@ -337,22 +303,11 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     }
   }
   
-  # Remove inactive factors
-  # if (isTRUE(remove_intercept_factors) & any(object@model_options$likelihoods!="gaussian")) {
-  #   non_gaussian_views <- names(which(object@model_options$likelihoods!="gaussian"))
-  #   for (m in non_gaussian_views) {
-  #     W <- get_weights(object, views=m)[[1]]
-  #     intercept_factor <- which.max(abs(colMeans(W)))
-  #     object <- subset_factors(object, factors_names(object)[-intercept_factor])
-  #     message(sprintf("%s is determined to be an intercept Factor for the %s non-gaussian view and it has been removed from the model. To disable this behaviour set remove_intercept_factors=FALSE",names(intercept_factor),m))
-  #   }
-  # }
-  
   # [Done in mofapy2] Sort factors by total variance explained
-  if (isTRUE(sort_factors) && object@dimensions$K>1) {
+  if (sort_factors && object@dimensions$K>1) {
 
     # Sanity checks
-    if (isTRUE(verbose)) message("Re-ordering factors by their variance explained...")
+    if (verbose) message("Re-ordering factors by their variance explained...")
 
     # Calculate variance explained per factor across all views
     r2 <- rowSums(sapply(object@cache[["variance_explained"]]$r2_per_factor, function(e) rowSums(e, na.rm = TRUE)))
@@ -363,8 +318,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   }
 
   # Mask outliers
-  if (isTRUE(remove_outliers)) {
-    if (isTRUE(verbose)) message("Removing outliers...")
+  if (remove_outliers) {
+    if (verbose) message("Removing outliers...")
     object <- .detect_outliers(object)
   }
   
@@ -381,7 +336,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ## Quality controls ##
   ######################
 
-  if (isTRUE(verbose)) message("Doing quality control...")
+  if (verbose) message("Doing quality control...")
   object <- quality_control(object, verbose = verbose)
   
   return(object)

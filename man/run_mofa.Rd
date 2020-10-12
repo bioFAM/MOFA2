@@ -23,6 +23,8 @@ a trained \code{\link{MOFA}} object
 Function to train an untrained \code{\link{MOFA}} object.
 }
 \details{
+This function is called once a MOFA object has been created (using \code{\link{create_mofa}})
+and possible options for training have been specified with  \code{\link{prepare_mofa}}.
 In this step the R package is calling the \code{mofapy2} Python package, where the model the training is performed. \cr
 The interface with Python is done with the \code{\link{reticulate}} package. 
 If you have several versions of Python installed and R is not detecting the correct one, you can change it using \code{reticulate::use_python}.

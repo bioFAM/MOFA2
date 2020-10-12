@@ -16,6 +16,9 @@ Returns a list with the default data options.
 Function to obtain the default data options.
 }
 \details{
+This function provides a default set of data options that can be modified and passed to the \code{\link{MOFA}} object
+in the \code{\link{prepare_mofa}} step (see example), i.e. after creating a \code{\link{MOFA}} object
+ (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
 The data options are the following: \cr
 \itemize{
  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 

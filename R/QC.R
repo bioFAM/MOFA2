@@ -55,17 +55,17 @@ quality_control <- function(object, verbose = FALSE) {
     }
   }
   
-  # Check that there are no features with complete missing values (across all views)
-  if (isTRUE(object@data_options[["loaded"]])) {
-    if (verbose == TRUE) message("Checking there are no features with complete missing values...")
-    for (i in views_names(object)) {
-      if (!(is(object@data[[i]][[1]], "dgCMatrix") || is(object@data[[i]][[1]], "dgTMatrix"))) {
-        tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = TRUE))
-        if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))
-          warning("You have features which do not contain a single observation in any group, consider removing them...")
+  # Check that there are no features with complete missing values (across all groups)
+  if (object@status == "untrained" || object@data_options[["loaded"]]) {
+      if (verbose == TRUE) message("Checking there are no features with complete missing values...")
+      for (i in views_names(object)) {
+        if (!(is(object@data[[i]][[1]], "dgCMatrix") || is(object@data[[i]][[1]], "dgTMatrix"))) {
+          tmp <- as.data.frame(sapply(object@data[[i]], function(x) rowMeans(is.na(x)), simplify = TRUE))
+          if (any(unlist(apply(tmp, 1, function(x) mean(x==1)))==1))
+            warning("You have features which do not contain a single observation in any group, consider removing them...")
+        }
       }
     }
-  }
     
   # Sanity checks that are exclusive for an untrained model  
   if (object@status == "untrained") {
@@ -99,7 +99,7 @@ quality_control <- function(object, verbose = FALSE) {
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
     
     # Check for intercept factors
-    if (isTRUE(object@data_options[["loaded"]])) { 
+    if (object@data_options[["loaded"]]) { 
       if (verbose == TRUE) message("Checking for intercept factors...")
       if (!is.null(object@data)) {
         factors <- do.call("rbind",get_factors(object))

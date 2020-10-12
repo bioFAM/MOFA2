@@ -16,7 +16,11 @@ Returns a list with default options
 Function to obtain the default options for stochastic variational inference.
 }
 \details{
-The training options are the following: \cr
+This function provides a default set of stochastic inference options that can be modified and passed to the \code{\link{MOFA}} object
+in the \code{\link{prepare_mofa}} step), i.e. after creating a \code{\link{MOFA}} object
+ (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
+These options are only relevant when activating stochastic inference in training_options (see example).
+The stochastic inference options are the following: \cr
 \itemize{
  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
  Default is 0.5 (half of the data set).
