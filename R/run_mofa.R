@@ -17,6 +17,7 @@
 #' @param save_expectations vector with capitalized node names. If NA, only W and Z are saved by default.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
+#' @import basilisk
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
@@ -41,6 +42,12 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
   
+  # install Anaconda and the required environments if not present
+  proc <- basiliskStart(mofa)
+  on.exit(basiliskStop(proc))
+  
+  run_mofa_in_python <- basiliskRun(proc, function(object) {
+    
   # Initiate reticulate
   mofa <- import("mofapy2")
   
@@ -124,6 +131,10 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   
   # Save the model output as an hdf5 file
   mofa_entrypoint$save(outfile, save_data = save_data, expectations = save_expectations)
+  
+  }, object=object)
+  
+  run_mofa_in_python
   
   # Load the trained mode
   object <- load_model(outfile)

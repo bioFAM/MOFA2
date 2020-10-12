@@ -1,0 +1,3 @@
+#!/bin/sh
+
+${R_HOME}/bin/Rscript -e "if (basilisk.utils::useSystemDir()) basilisk.utils::installMiniconda(installed=FALSE)"
