@@ -53,7 +53,7 @@ In preparation...
 
 ## Template scripts
 
-We provide two template scripts to train your model in [R](https://github.com/bioFAM/MOFA2/blob/master/template_script.R) and [Python](https://github.com/bioFAM/MOFA2/blob/master/template_script.py). Please see the tutorials for more details regarding the input data format, etc.
+We provide two template scripts to train your model in [R](https://github.com/bioFAM/MOFA2/blob/master/inst/scripts/template_script.R) and [Python](https://github.com/bioFAM/MOFA2/blob/master/inst/scripts/template_script.py). Please see the tutorials for more details regarding the input data format, etc.
 
 ## Documentation
 
