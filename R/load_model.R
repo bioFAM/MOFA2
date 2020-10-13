@@ -36,8 +36,10 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   object@status <- "trained"
   
   # Set on_disk option
-  if (.hasSlot(object, "on_disk")) {
-    if (on_disk) { object@on_disk <- TRUE } else { object@on_disk <- FALSE }
+  if (on_disk) { 
+    object@on_disk <- TRUE 
+  } else { 
+      object@on_disk <- FALSE 
   }
   
   # Get groups and data set names from the hdf5 file object

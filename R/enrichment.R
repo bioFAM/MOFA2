@@ -16,7 +16,6 @@
 #' @param sign use only "positive" or "negative" weights. Default is "all".
 #' @param min.size Minimum size of a feature set (default is 10).
 #' @param nperm number of permutations. Only relevant if statistical.test is set to "permutation". Default is 1000
-#' @param cores number of cores to run the permutation analysis in parallel. Only relevant if statistical.test is set to "permutation". Default is 1
 #' @param p.adj.method Method to adjust p-values factor-wise for multiple testing. Can be any method in p.adjust.methods(). Default uses Benjamini-Hochberg procedure.
 #' @param alpha FDR threshold to generate lists of significant pathways. Default is 0.1
 #' @param verbose boolean indicating whether to print messages on progress 
@@ -32,14 +31,13 @@
 #' \item{\strong{feature.statistics}:}{ matrices with the local (feature-wise) statistics.  }
 #' \item{\strong{set.statistics}:}{ matrices with the global (gene set-wise) statistics.  }
 #' \item{\strong{sigPathways}}{ list with significant pathways per factor. }
-# #' @import foreach doParallel
 #' @importFrom stats p.adjust var p.adjust.methods
 #' @export
 
 run_enrichment <- function(object, view, feature.sets, factors = "all",
                            set.statistic = c("mean.diff", "rank.sum"),
                            statistical.test = c("parametric", "cor.adj.parametric", "permutation"), sign = c("all","positive","negative"),
-                           min.size = 10, nperm = 1000, cores = 1, p.adj.method = "BH", alpha = 0.1, verbose = TRUE) {
+                           min.size = 10, nperm = 1000, p.adj.method = "BH", alpha = 0.1, verbose = TRUE) {
   
   # Quality control
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -108,7 +106,6 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
     if (sign%in%c("positive","negative"))
       message(sprintf("Subsetting weights with %s sign",sign))
     if (statistical.test=="permutation") {
-      message(sprintf("Cores: %d", cores))
       message(sprintf("Number of permutations: %d", nperm))
     }
     message("\n")
@@ -119,13 +116,8 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Non-parametric permutation test
   if (statistical.test == "permutation") {
-    
-    # Parallel
-    doParallel::registerDoParallel(cores=cores)
-    `%dopar%` <- foreach::`%dopar%`
-    
-    # null_dist_tmp <- foreach::foreach(rnd=seq_len(nperm)) %dopar% {
-    null_dist_tmp <- lapply(seq_len(nperm), function(i) {
+
+        null_dist_tmp <- lapply(seq_len(nperm), function(i) {
       print(sprintf("Running permutation %d/%d...",i,nperm))
       perm <- sample(ncol(data))
       
