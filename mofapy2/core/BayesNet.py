@@ -113,8 +113,8 @@ class BayesNet(object):
         Y = self.nodes["Y"].getExpectation()
 
         # Get groups
-        # groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
         groups = self.nodes["Y"].nodes[0].groups
+
 
         # to maintain correct ordering of groups in R2
         unique_groups, idx = np.unique(groups, return_index=True)
