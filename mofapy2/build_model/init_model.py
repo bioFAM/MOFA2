@@ -210,6 +210,13 @@ class initModel(object):
             qE=qE, 
             weight_views = weight_views
         )
+        # self.nodes["Z"] = Z_GP_Node(
+        #     dim=(self.N, self.K),
+        #     pmean=pmean, pcov=pvar,
+        #     qmean=qmean, qvar=qvar,
+        #     qE=qE, 
+        #     weight_views = weight_views
+        # )
 
     def initU(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None, Y = None, impute=True, idx_inducing = None, weight_views = False): # prior has diagonal covariance here, ls optimiation in Sigma node
         """Method to initialise the inducing points
@@ -357,6 +364,7 @@ class initModel(object):
         self.Sigma = Sigma_Node_warping(
             dim=(self.K,), 
             sample_cov=sample_cov, 
+            groups=self.groups,
             start_opt=start_opt, 
             n_grid=n_grid, 
             warping_freq=warping_freq, 
