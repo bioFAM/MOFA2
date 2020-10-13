@@ -796,6 +796,13 @@ class entry_point(object):
         print("Saving model in %s..." % outfile)
         sys.stdout.flush()
 
+        if not hasattr(self, 'smooth_opts') or not hasattr(self, 'sample_cov'):
+            sample_cov = None
+            covariates_names = None
+        else:
+            sample_cov = self.sample_cov
+            covariates_names = self.smooth_opts['covariates_names']
+
         # Save the model
         tmp = saveModel(
           model = self.model,
@@ -803,14 +810,14 @@ class entry_point(object):
           data = self.data,
           intercepts = self.intercepts,
           samples_groups = self.data_opts['samples_groups'],
-          sample_cov = self.sample_cov,
+          sample_cov = sample_cov,
           train_opts = self.train_opts,
           model_opts = self.model_opts,
           samples_names = self.data_opts['samples_names'],
           features_names = self.data_opts['features_names'],
           views_names = self.data_opts['views_names'],
           groups_names = self.data_opts['groups_names'],
-          covariates_names=self.smooth_opts['covariates_names'],
+          covariates_names=covariates_names,
           samples_metadata = self.data_opts["samples_metadata"] if "samples_metadata" in self.data_opts else None,
           features_metadata = self.data_opts["features_metadata"] if "features_metadata" in self.data_opts else None,
           compression_level = 9
