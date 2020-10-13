@@ -684,7 +684,7 @@ class entry_point(object):
             groups = np.arange(G)
         else:
             G = len(groups)
-        if not self.model_opts['model_groups']:
+        if not self.smooth_opts['model_groups']:
             Kg = np.ones([K, G, G])
         else:
             Kg = self.model.nodes['Sigma'].getParameters()['Kg']
