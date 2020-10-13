@@ -48,6 +48,7 @@ class buildBiofam(buildModel):
             dim = self.dim, 
             data = self.data, 
             lik = self.model_opts["likelihoods"], 
+            groups = self.data_opts['samples_groups'],
             seed = self.train_opts['seed']
         )
 
