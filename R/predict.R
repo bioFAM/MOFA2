@@ -51,9 +51,6 @@ predict <- function(object, views = "all", groups = "all", factors = "all", add_
     stopifnot(all(factors %in% factors_names(object)))
   }
 
-  # Get type of predictions wanted
-  # type = match.arg(type)
-
   # Collect weights
   W <- get_weights(object, views = views, factors = factors)
 
@@ -73,23 +70,8 @@ predict <- function(object, views = "all", groups = "all", factors = "all", add_
           intercepts <- object@intercepts[[m]][[g]]
           intercepts[is.na(intercepts)] <- 0
           pred <- pred + object@intercepts[[m]][[g]]
-          # pred <- sweep(pred, MARGIN=1, STATS=object@intercepts[[m]][[g]], FUN="+")
         } }, error = function(e) { NULL })
-      
-      # make predicitons based on underlying likelihood
-      # lks <- object@model_options$likelihoods
-      # if (type != "link") {
-      #   lk <- lks[m]
-      #   if (lk == "gaussian") {
-      #     pred <- pred
-      #   } else if (lk == "bernoulli") {
-      #     pred <- (exp(pred)/(1 + exp(pred)))
-      #     if (type == "inRange") pred <- round(pred)
-      #   } else if (lk == "poisson") {
-      #     pred <- log(1 + exp(pred))
-      #     if (type == "inRange") pred <- round(pred)
-      #   }
-      # }
+
       return(pred)
     })
   })

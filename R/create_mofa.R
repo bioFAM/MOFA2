@@ -36,13 +36,13 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("Creating MOFA object from a Seurat object...")
     object <- .create_mofa_from_seurat(data, groups, ...)
     
-  # Creating MOFA object from a data.frame object
+    # Creating MOFA object from a data.frame object
   } else if (is(data, "data.frame")) {
     
     message("Creating MOFA object from a data.frame...")
     object <- .create_mofa_from_df(data)
     
-  # Creating MOFA object from a (sparse) matrix object
+    # Creating MOFA object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
              (all(sapply(data, function(x) is(x, "matrix"))) || 
               all(sapply(data, function(x) is(x, "dgCMatrix"))) || 
@@ -50,8 +50,12 @@ create_mofa <- function(data, groups = NULL, ...) {
     
     message("Creating MOFA object from a list of matrices (features as rows, sample as columns)...\n")
     object <- .create_mofa_from_matrix(data, groups)
-
+    
   } else if(is(data, "MultiAssayExperiment")){
+    if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
+      stop("Error: Data provided as MultiAssayExperiment but pacakge MultiAssayExperiment not found.
+           Please install the pacakge using BiocManager::install('MultiAssayExperiment').")
+    }
     object <- .create_mofa_from_mae(data, groups, ...)
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
@@ -70,7 +74,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   } else {
     object@samples_metadata <- tmp
   }
-
+  
   # Create features metadata
   tmp <- data.frame(
     feature = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
@@ -82,7 +86,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   } else {
     object@features_metadata <- tmp
   }
-
+  
   # Do quality control
   object <- quality_control(object)
   
@@ -133,7 +137,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     message("No groups provided as argument, we assume that all samples belong to the same group.\n")
     groups <- rep("group1",  length(unique(sampleMap(data)[,"primary"])))
   }
-
+  
   # Initialise MOFA object
   object <- new("MOFA")
   object@status <- "untrained"
@@ -154,7 +158,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   
   # Set samples group names
   groups_names(object) <- groups_nms
-
+  
   # Set metadata
   if (save_metadata) {
     # Samples metadata
@@ -263,7 +267,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
   }
-
+  
   # Define assays
   if (is.null(assays)) {
     assays <- Seurat::Assays(seurat)
@@ -281,13 +285,13 @@ create_mofa <- function(data, groups = NULL, ...) {
                   paste0(colnames(seurat@meta.data), sep = ", ")))
     groups <- seurat@meta.data[,groups]
   }
-
+  
   # If features to subset are provided,
   # make sure they are a list with respective views (assays) names.
   # A vector is accepted if there's one assay to be used
   if (is(features, "list")) {
     if (!is.null(features) && !all(names(features) %in% assays)) {
-        stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
+      stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
     }
   } else {
     # By default select highly variable features if present in the Seurat object
@@ -300,10 +304,10 @@ create_mofa <- function(data, groups = NULL, ...) {
       features <- list(features)
       names(features) <- assays
     } else {
-       stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
+      stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
     }
   }
-
+  
   # If no groups provided, treat all samples as coming from one group
   if (is.null(groups)) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
@@ -314,7 +318,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   data_matrices <- lapply(assays, function(i) 
     .split_seurat_into_groups(seurat, groups = groups, assay = i, slot = slot, features = features[[i]]))
   names(data_matrices) <- assays
-
+  
   # Create MOFA object
   object <- new("MOFA")
   object@status <- "untrained"
@@ -326,11 +330,11 @@ create_mofa <- function(data, groups = NULL, ...) {
   object@dimensions[["G"]] <- length(data_matrices[[1]])
   object@dimensions[["N"]] <- vapply(data_matrices[[1]], function(g) ncol(g), 1L)
   object@dimensions[["K"]] <- 0
-
+  
   # Set views & groups names
   groups_names(object) <- as.character(names(data_matrices[[1]]))
   views_names(object)  <- assays
-
+  
   # Set metadata
   if (save_metadata) {
     # Samples metadata
@@ -338,7 +342,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     # Features metadata
     object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
   }
-
+  
   return(object)
 }
 
@@ -360,7 +364,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   # Subset to provided features if provided
   if (!is.null(features))
     data <- data[features, , drop=FALSE]
-
+  
   # Split into groups
   .split_data_into_groups(list(data), groups)[[1]]
 }
@@ -389,18 +393,6 @@ create_mofa <- function(data, groups = NULL, ...) {
     data <- lapply(data, function(m) as(m, "dgCMatrix"))
   }
   
-  # if (!all(sapply(data, function(x) is(x, "dgCMatrix")))) {
-  #   # If number of rows are not identical, fill missing values
-  #   samples <- Reduce("union",sapply(data,colnames))
-  #   data <- sapply(data, function(x) {
-  #     aug_x <- matrix(NA, nrow=nrow(x), ncol=length(samples))
-  #     aug_x <- x[,match(samples,colnames(x)),drop=FALSE]
-  #     rownames(aug_x) <- rownames(x)
-  #     colnames(aug_x) <- samples
-  #     return(aug_x)
-  #   }, USE.NAMES = TRUE, simplify = FALSE)
-  # }
-
   # Set groups names
   if (is.null(groups)) {
     message("No groups provided as argument... we assume that all samples are coming from the same group.\n")

@@ -44,7 +44,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   }
   
   # convert character columns to factors
-  cols <- which(sapply(covariates,class)=="character")
+  cols <- which(sapply(covariates, is.character))
   if (length(cols>=1)) {
     covariates[cols] <- lapply(covariates[cols], as.factor)
   }
@@ -72,9 +72,9 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
   
   if (plot=="r") {
     stat <- cor$r
-    if (isTRUE(abs)) stat <- abs(stat)
-    if (isTRUE(transpose)) stat <- t(stat)
-    if (isTRUE(return_data)) return(stat)
+    if (abs) stat <- abs(stat)
+    if (transpose) stat <- t(stat)
+    if (return_data) return(stat)
     corrplot::corrplot(stat, tl.col = "black", title="Pearson correlation coefficient", ...)
     
   } else if (plot=="log_pval") {
@@ -83,8 +83,8 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     if (all(stat==1.0)) stop("All p-values are 1.0, cannot plot the histogram")
     stat <- -log10(stat)
     stat[is.infinite(stat)] <- 1000
-    if (isTRUE(transpose)) stat <- t(stat)
-    if (isTRUE(return_data)) return(stat)
+    if (transpose) stat <- t(stat)
+    if (return_data) return(stat)
     col <- colorRampPalette(c("lightgrey", "red"))(n=100)
     pheatmap::pheatmap(stat, main="log10 adjusted p-values", cluster_rows = FALSE, color=col, ...)
     
@@ -132,7 +132,7 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
     group_by(level,factor,group) %>%
     summarise(value=median(value,na.rm=TRUE))
   
-  if (isTRUE(abs)) {
+  if (abs) {
     to.plot$value <- abs(to.plot$value)
   }
   
@@ -155,7 +155,7 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
       axis.text.y = element_text(color="black")
     )
 
-  if (isTRUE(abs)) {
+  if (abs) {
     p <- p + scale_fill_gradient2(low = "white", high = "red")
   } else {
     # center the color scheme at 0
@@ -163,7 +163,7 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
   } 
   
   # Return data or plot
-  if (isTRUE(return_data)) {
+  if (return_data) {
     return(to.plot)
   } else {
     return(p)

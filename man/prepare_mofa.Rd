@@ -34,6 +34,12 @@ Returns an untrained \code{\link{MOFA}} with specified options filled in the cor
 Function to prepare a \code{\link{MOFA}} object for training. 
 It requires defining data, model and training options.
 }
+\details{
+This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
+and before starting the training (using \code{\link{run_mofa}}). Here, we can specify different options for
+the data (data_options), the model (model_options) and the trainig (training_options, stochastic_options). Take a look at the
+individual default options for an overview using the get_default_XXX_options functions above.
+}
 \examples{
 # Using an existing simulated data with two groups and two views
 file <- system.file("extdata", "test_data.RData", package = "MOFA2")

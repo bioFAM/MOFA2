@@ -79,12 +79,12 @@ get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, 
 
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
-  if (isTRUE(as.data.frame)) {
+  if (as.data.frame) {
     Z <- Z[Z$factor%in%factors & Z$group%in%groups,]
-    if (isTRUE(scale)) Z$value <- Z$value/max(abs(Z$value),na.rm=TRUE)
+    if (scale) Z$value <- Z$value/max(abs(Z$value),na.rm=TRUE)
   } else {
     Z <- lapply(Z[groups], function(z) z[,factors, drop=FALSE])
-    if (isTRUE(scale)) Z <- lapply(Z, function(x) x/max(abs(x)) )
+    if (scale) Z <- lapply(Z, function(x) x/max(abs(x)) )
     names(Z) <- groups
   }
 
@@ -134,14 +134,14 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
   # Fetch weights
   weights <- get_expectations(object, "W", as.data.frame)
   
-  if (isTRUE(as.data.frame)) {
+  if (as.data.frame) {
     weights <- weights[weights$view %in% views & weights$factor %in% factors, ]
-    if (isTRUE(abs)) weights$value <- abs(weights$value)
-    if (isTRUE(scale)) weights$value <- weights$value/max(abs(weights$value))
+    if (abs) weights$value <- abs(weights$value)
+    if (scale) weights$value <- weights$value/max(abs(weights$value))
   } else {
     weights <- lapply(weights[views], function(x) x[,factors,drop=FALSE])
-    if (isTRUE(abs)) weights <- lapply(weights, abs)
-    if (isTRUE(scale)) weights <- lapply(weights, function(x) x/max(abs(x)) )
+    if (abs) weights <- lapply(weights, abs)
+    if (scale) weights <- lapply(weights, function(x) x/max(abs(x)) )
     names(weights) <- views
   }
   
@@ -214,7 +214,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   }
 
   # Fetch data
-  if (isTRUE(denoise)) {
+  if (denoise) {
     data <- predict(object, views=views, groups=groups)
   } else {
     data <- lapply(object@data[views], function(x) x[groups])
@@ -240,7 +240,7 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
     } }, error = function(e) { NULL })
 
   # Convert to long data frame
-  if (isTRUE(as.data.frame)) {
+  if (as.data.frame) {
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
         tmp <- reshape2::melt(data[[m]][[p]], na.rm=na.rm)
@@ -309,22 +309,9 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   imputed_data <- lapply(seq_len(length(imputed_data)), function(m) lapply(seq_len(length(imputed_data[[1]])), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   imputed_data <- .name_views_and_groups(imputed_data, views, groups)
   
-  # Add feature intercepts
-  # tryCatch( {
-  #   
-  #   if (add_intercept & length(object@intercepts[[1]])>0) {
-  #     intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
-  #     intercepts <- .name_views_and_groups(intercepts, views, groups)
-  #     
-  #     for (m in names(imputed_data)) {
-  #       for (g in names(imputed_data[[m]])) {
-  #         imputed_data[[m]][[g]] <- imputed_data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
-  #       }
-  #     }
-  #   } }, error = function(e) { NULL })
   
   # Convert to long data frame
-  if (isTRUE(as.data.frame)) {
+  if (as.data.frame) {
     
     imputed_data <- lapply(views, function(m) { 
       lapply(groups, function(g) { 
@@ -393,7 +380,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   }
   
   # Convert to long data frame
-  if (isTRUE(as.data.frame)) {
+  if (as.data.frame) {
     
     # Z node
     if (variable=="Z") {
@@ -484,7 +471,7 @@ get_variance_explained <- function(object, groups = "all", views = "all", factor
   }
   
   # Convert to data.frame format
-  if (isTRUE(as.data.frame)) {
+  if (as.data.frame) {
     
     # total R2
     r2_total <- reshape2::melt( do.call("rbind",r2_list[["r2_total"]]) )

@@ -56,9 +56,9 @@ setClass("MOFA",
 # Printing method
 setMethod("show", "MOFA", function(object) {
   
-  if (!.hasSlot(object, "dimensions") | length(object@dimensions) == 0)
+  if (!.hasSlot(object, "dimensions") || length(object@dimensions) == 0)
     stop("Error: dimensions not defined")
-  if (!.hasSlot(object, "status") | length(object@status) == 0)
+  if (!.hasSlot(object, "status") || length(object@status) == 0)
     stop("Error: status not defined")
   
   if (object@status == "trained") {

@@ -17,6 +17,10 @@
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
+#' @details This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
+#' and before starting the training (using \code{\link{run_mofa}}). Here, we can specify different options for
+#' the data (data_options), the model (model_options) and the trainig (training_options, stochastic_options). Take a look at the
+#' individual default options for an overview using the get_default_XXX_options functions above.
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
@@ -66,10 +70,6 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
       stop("training_options are incorrectly specified, please read the documentation in get_default_training_options")
     object@training_options <- training_options
     
-    # if (is.na(object@training_options$drop_factor_threshold))
-    #   object@training_options$drop_factor_threshold <- -1
-    # if (object@training_options$drop_factor_threshold>0.1)
-    #   warning("Fraction of variance explained to drop factors is very high...")
     if (object@training_options$maxiter<=100)
       warning("Maximum number of iterations is very small\n")
     if (object@training_options$startELBO<1) object@training_options$startELBO <- 1
@@ -87,7 +87,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
     # object@training_options$stochastic <- TRUE
   }
   
-  if (isTRUE(object@training_options$stochastic)) {
+  if (object@training_options$stochastic) {
     message("Stochastic inference activated. Note that this is only recommended if you have a very large sample size (>1e4) and access to a GPU")
       
     if (is.null(stochastic_options)) {
@@ -131,16 +131,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
     Try to reduce the number of factors to obtain meaningful results. It should not exceed ~%s.",
     object@model_options$num_factors, floor(min(object@dimensions$N/4))))
   }
-  # Center the data
-  # message("Centering the features (per group, this is a mandatory requirement)...")
-  # for (m in views_names(object)) {
-  #   if (model_options$likelihoods[[m]] == "gaussian") {
-  #     for (g in groups_names(object)) {
-  #       object@data[[m]][[g]] <- scale(object@data[[m]][[g]], center=T, scale=F)
-  #     }
-  #   }
-  # }
-  
+
   # Transform sparse matrices into dense ones
   # See https://github.com/rstudio/reticulate/issues/72
   for (m in views_names(object)) {
@@ -159,7 +150,10 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
 #' @name get_default_training_options
 #' @description Function to obtain the default training options.
 #' @param object an untrained \code{\link{MOFA}}
-#' @details The training options are the following: \cr
+#' @details This function provides a default set of training options that can be modified and passed to the \code{\link{MOFA}} object
+#' in the \code{\link{prepare_mofa}} step (see example), i.e. after creating a \code{\link{MOFA}} object
+#'  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
+#' The training options are the following: \cr
 #' \itemize{
 #'  \item{\strong{maxiter}:}{ numeric value indicating the maximum number of iterations. 
 #'  Default is 1000. Convergence is assessed using the ELBO statistic.}
@@ -225,7 +219,10 @@ get_default_training_options <- function(object) {
 #' @name get_default_data_options
 #' @description Function to obtain the default data options.
 #' @param object an untrained \code{\link{MOFA}} object
-#' @details The data options are the following: \cr
+#' @details This function provides a default set of data options that can be modified and passed to the \code{\link{MOFA}} object
+#' in the \code{\link{prepare_mofa}} step (see example), i.e. after creating a \code{\link{MOFA}} object
+#'  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
+#' The data options are the following: \cr
 #' \itemize{
 #'  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
@@ -272,7 +269,10 @@ get_default_data_options <- function(object) {
 #' @name get_default_model_options
 #' @description Function to obtain the default model options.
 #' @param object an untrained \code{\link{MOFA}} object
-#' @details The model options are the following: \cr
+#' @details This function provides a default set of model options that can be modified and passed to the \code{\link{MOFA}} object
+#' in the \code{\link{prepare_mofa}} step (see example), i.e. after creating a \code{\link{MOFA}} object
+#'  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
+#' The model options are the following: \cr
 #' \itemize{
 #'  \item{\strong{likelihoods}:}{ character vector with data likelihoods per view: 
 #'  'gaussian' for continuous data, 'bernoulli' for binary data and 'poisson' for count data.
@@ -350,7 +350,11 @@ get_default_model_options <- function(object) {
 #' @name get_default_stochastic_options
 #' @description Function to obtain the default options for stochastic variational inference.
 #' @param object an untrained \code{\link{MOFA}}
-#' @details The training options are the following: \cr
+#' @details This function provides a default set of stochastic inference options that can be modified and passed to the \code{\link{MOFA}} object
+#' in the \code{\link{prepare_mofa}} step), i.e. after creating a \code{\link{MOFA}} object
+#'  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
+#' These options are only relevant when activating stochastic inference in training_options (see example).
+#' The stochastic inference options are the following: \cr
 #' \itemize{
 #'  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
 #'  Default is 0.5 (half of the data set).
