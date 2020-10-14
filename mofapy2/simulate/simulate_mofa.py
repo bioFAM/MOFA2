@@ -6,10 +6,11 @@ import scipy.spatial as SS
 import math
 import seaborn as sns
 import matplotlib.pyplot as plt
+from mofapy2.core.gp_utils import covar_to_corr
 
 def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 200, 500, 200], noise_level = 1,
                   K = 4, G = 1, lscales = [0.2, 0.8, 0.0, 0.0], sample_cov = "equidistant", scales = [1, 0.8, 0, 0],
-                  model_groups = False, plot = False):
+                  shared = True, plot = False):
     """
     Function to simulate test data for MOFA (without ARD or spike-and-slab on factors)
 
@@ -23,7 +24,9 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
                  per feature it is multiplied by a uniform random number in [0.5, 1.5] to model differences in features' noise
     scales, lscales: hyperparameters of the GP per factor (length as given by K)
     sample_cov: sample_covariates to use (can be of shape N X C) or "equidistant" or None
-    model_groups: If False group covariance is assumed to be 1 across all groups, else it is filled with 0,1s at random
+    shared: A list or single boolean indicating for each factor whether it is perfectly shared across groups or not.
+    For non-shared ones pairwise group-group correlations are simulated by a Bernoulli distribution.
+    Only relevant for factors with lengthscale and scale > 0.
     plot: If True, simulation results are plotted
     """
 
@@ -31,46 +34,49 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
     np.random.seed(seed)
     M = len(views)
     N = int(N)
-    groupidx = np.repeat(range(G), N)
+    if type(shared) == bool:
+        shared = [shared]
+    if len(shared) == 1:
+        shared = [shared] * K
+
+    groupidx = np.repeat(range(G), N) # kronecker structure
     if not sample_cov is None:
         if sample_cov == "equidistant":
             sample_cov = np.linspace(0,1,N)
             sample_cov = sample_cov.reshape(N, 1)
         else:
-            assert sample_cov.shape[0] == N, "sample_cov and N does not match"
+            assert sample_cov.shape[0] == N, "Number of rows of sample_cov and N does not match"
             if len(np.repeat(np.arange(0,100,1),2).shape) == 1:
                 sample_cov = sample_cov.reshape(N, 1)
-
-        # expand across groups
-        if not model_groups:
-            sample_cov = np.tile(sample_cov, (G,1))
         distC = SS.distance.pdist(sample_cov, 'euclidean')**2.
         distC = SS.distance.squareform(distC)
 
     else:
         lscales = [0]* K
 
-    if model_groups:
-        Gmat = np.random.binomial(1, 0.5, G * K * G).reshape(K, G ,G)
-        for k in range(K):
-            if scales[k] == 0 or lscales[k] == 0: #(group structure not modelled)
-                Gmat[k, :, :] = np.eye(G)
+    Gmats = []
+    for k in range(K):
+        if scales[k] == 0 or lscales[k] == 0: # group structure not modelled
+            Gmat = np.eye(G)
+        else:
+            if shared[k]:
+                Gmat = np.ones([G,G])
             else:
-                Gmat[k, :, :] = np.tril(Gmat[k, :, :]) + np.triu(Gmat[k, :, :].T, 1)  # symmetrize
-                np.fill_diagonal(Gmat[k, :, :], 1)
+                x = np.random.uniform(-1,1, G)
+                Gmat = np.outer(x,x) + 0.5 * np.eye(G)
+                Gmat = covar_to_corr(Gmat)
+        Gmats.append(Gmat)
 
     # simulate Sigma
     Sigma =[]
     for k in range(K):
         if lscales[k] > 0:
             Kmat = scales[k] * np.exp(-distC / (2 * lscales[k] ** 2))
-            if model_groups:
-                Kmat = np.kron(Gmat[k,:,:], Kmat)
+            Kmat = np.kron(Gmats[k], Kmat)
             Sigma.append( Kmat + (1-scales[k]) * np.eye(N*G))
         elif lscales[k] == 0:
             Kmat = scales[k] * (distC == 0).astype(float)
-            if model_groups:
-                Kmat = np.kron(Gmat[k,:,:], Kmat)
+            Kmat = np.kron(Gmats[k], Kmat)
             Sigma.append(Kmat + (1-scales[k]) * np.eye(N*G))
             # Sigma.append(np.eye(N*G))
         else:
@@ -125,17 +131,10 @@ def simulate_data(N=200, seed=1234567, views = ["0", "1", "2", "3"], D = [500, 2
 
     # store as list of groups
     if not sample_cov is None:
-        if not model_groups:
-            sample_cov = [sample_cov[groupidx == g] for g in range(G)]
-        else:
-            sample_cov = [sample_cov] * G
+        sample_cov = [sample_cov] * G
 
-    if not model_groups:
-        return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
-                'views': views, 'lscales': lscales, 'N': N}
-    else:
-        return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
-                'views': views, 'lscales': lscales, 'N': N, 'Gmat' : Gmat }
+    return {'data': data, 'W': W, 'Z': Z, 'noise': noise, 'sample_cov': sample_cov, 'Sigma': Sigma,
+            'views': views, 'lscales': lscales, 'N': N, 'Gmats' : Gmats }
 
 
 
