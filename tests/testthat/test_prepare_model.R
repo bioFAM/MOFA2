@@ -37,12 +37,11 @@ test_that("a model can be created from a Seurat object", {
 
 	# Create a Seurat object from demo data
 	library(Seurat)
-	m <- readMM(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/matrix.mtx?raw=true'))
-	genes <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/genes.tsv?raw=true'), sep='\t', header=FALSE)[,2]
-	cells <- read.delim(url('https://github.com/satijalab/seurat/blob/master/tests/testdata/barcodes.tsv?raw=true'), sep='\t', header=FALSE)[,1]
+	library(Matrix)
+	m <- readMM('matrix.mtx')
+	genes <- read.delim('genes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,2]
+	cells <- read.delim('barcodes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,1]
 	colnames(m) <- cells
-	m <- m[!duplicated(genes),]
-	genes <- genes[!duplicated(genes)]
 	rownames(m) <- genes
 	srt <- Seurat::CreateSeuratObject(m)
 

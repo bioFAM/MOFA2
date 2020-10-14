@@ -22,6 +22,7 @@
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
 #' @importFrom DelayedArray DelayedArray
+#' @importFrom dplyr bind_rows
 #' @export
 #' @examples
 #' #' # Using an existing trained model on simulated data
@@ -106,10 +107,10 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
 
   # Load metadata if any
   if ("samples_metadata" %in% h5ls.out$name) {
-    object@samples_metadata <- do.call(rbind, lapply(group_names, function(g) as.data.frame(h5read(file, sprintf("samples_metadata/%s", g)))))
+    object@samples_metadata <- bind_rows(lapply(group_names, function(g) as.data.frame(h5read(file, sprintf("samples_metadata/%s", g)))))
   }
   if ("features_metadata" %in% h5ls.out$name) {
-    object@features_metadata <- do.call(rbind, lapply(view_names, function(m) as.data.frame(h5read(file, sprintf("features_metadata/%s", m)))))
+    object@features_metadata <- bind_rows(lapply(view_names, function(m) as.data.frame(h5read(file, sprintf("features_metadata/%s", m)))))
   }
   
   #######################
