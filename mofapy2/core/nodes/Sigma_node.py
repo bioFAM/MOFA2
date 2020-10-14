@@ -606,7 +606,7 @@ class Sigma_Node_sparse(Sigma_Node_base):
                     spectral_decomp=self.kronecker)  # use all point to determine grid limits
 
         # exclude cases not covered
-        assert self.model_groups is False, "The option model_groups is not yet implemented in conjunction with sparse GPs"
+        # assert self.model_groups is False, "The option model_groups is not yet implemented in conjunction with sparse GPs"
 
 
     def calc_sigma_terms_k(self, k, only_inverse = False):
