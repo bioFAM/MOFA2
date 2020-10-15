@@ -2,22 +2,25 @@
 #' @title create a MOFA object
 #' @name create_mofa
 #' @description Method to create a \code{\link{MOFA}} object
-#' @param data Input data can be in several formats:
+#' @param data Input data can be provided in several formats:
 #' \itemize{
-#'   \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
-#'   The "group" column indicates the condition or the experiment (a label for the samples). 
-#'   The view indicates the data modality (a label for the features).}
-#'   \item{\strong{Seurat object}:}{}
+#'   \item{\strong{data.frame}:}{ it requires 5 columns: \code{sample}, \code{group}, \code{feature}, \code{view}, \code{value}. 
+#'   The \code{group} column is optional. It indicates the group of each sample when using the multi-group framework.
+#'   The \code{view} column is optional. It indicates the data modality of each feature when having multi-modal data.}
 #'   \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
 #'   Samples are stored in columns and features in rows. This option requires the use of the \code{groups} argument.
 #'   Missing values must be filled in prior to creating the MOFA object (see the example)}
+#'   \item{\strong{MultiAssayExperiment} object:}{}
+#'   \item{\strong{Seurat} object:}{for single-cell genomics users}
+#'   \item{\strong{SingleCellExperiment} object:}{for single-cell genomics users}
 #'   }
 #' @param groups information about the groups:
 #'   \itemize{
-#'   \item{If data is a data.frame this argument is not used}.
-#'   \item{If data is a Seurat object then a string specifying a column name present in the samples metadata to use it as a group variable, or a character vector with group assignment for every sample}
-#'   \item{If data is a list of matrices then a character vector specifying the group assignment for every sample.}
-#'   Default is \code{NULL} (on groups)
+#'   \item{If data is provided as a data.frame this argument is not used.}
+#'   present in the samples metadata. Alternatively, a character vector with the group assignment for every sample.}
+#'   \item{If data is provided as a list of matrices then a character vector specifying the group assignment for every sample.}
+#'   \item{If data is provided as a Seurat object or a SingleCellExperiment object then a string specifying a column name.}
+#'   Default is \code{NULL} (no groups)
 #'   }
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
@@ -25,7 +28,7 @@
 #' # Using an existing simulated data with two groups and two views
 #' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 #' 
-#' # Load data dt (in data.frame format)
+#' # Load data (in data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa(dt)
 create_mofa <- function(data, groups = NULL, ...) {
@@ -35,7 +38,14 @@ create_mofa <- function(data, groups = NULL, ...) {
     
     message("Creating MOFA object from a Seurat object...")
     object <- .create_mofa_from_seurat(data, groups, ...)
+
+  # Creating MOFA object from a SingleCellExperiment object
+  } else if (is(data, "SingleCellExperiment")) {
     
+    message("Creating MOFA object from a SingleCellExperiment object...")
+    object <- .create_mofa_from_SingleCellExperiment(data, groups, ...)
+    
+
     # Creating MOFA object from a data.frame object
   } else if (is(data, "data.frame")) {
     
@@ -52,11 +62,9 @@ create_mofa <- function(data, groups = NULL, ...) {
     object <- .create_mofa_from_matrix(data, groups)
     
   } else if(is(data, "MultiAssayExperiment")){
-    if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
-      stop("Error: Data provided as MultiAssayExperiment but pacakge MultiAssayExperiment not found.
-           Please install the pacakge using BiocManager::install('MultiAssayExperiment').")
-    }
+
     object <- .create_mofa_from_mae(data, groups, ...)
+
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
@@ -94,7 +102,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   if (length(unique(object@samples_metadata$group))>1) {
     message("\n# Multi-group mode requested.")
     message("\nThis is an advanced option, if this is the first time that you are running MOFA, we suggest that you try do some exploration first without specifying groups. Two important remarks:")
-    message("\n - The aim of the multi-group framework is to identify the sources of variability *within* the groups. If your aim is to find a factor that 'separates' the groups, you DO NOT want to use the multi-group framework. Please see the FAQ (https://github.com/bioFAM/MOFA2#2-faq-on-the-multi-group-functionality)") 
+    message("\n - The aim of the multi-group framework is to identify the sources of variability *within* the groups. If your aim is to find a factor that 'separates' the groups, you DO NOT want to use the multi-group framework. Please see the FAQ in (https://biofam.github.io/MOFA2)") 
     message("\n - It is important to account for the group effect before selecting highly variable features (HVFs). We suggest that either you calculate HVFs per group and then take the union, or regress out the group effect before HVF selection")
   }
   return(object)
@@ -104,6 +112,12 @@ create_mofa <- function(data, groups = NULL, ...) {
 # #' @import MultiAssayExperiment
 .create_mofa_from_mae <- function(data, groups = NULL, save_metadata = FALSE) {
   
+  # Sanity check
+  if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
+    stop("Error: Data provided as MultiAssayExperiment but pacakge MultiAssayExperiment not found.
+         Please install the pacakge using BiocManager::install('MultiAssayExperiment').")
+  }
+
   # Re-arrange data for training in MOFA to matrices, fill in NAs
   data_list <- lapply(names(data), function(m) {
     
@@ -160,7 +174,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   groups_names(object) <- groups_nms
   
   # Set metadata
-  if (save_metadata) {
+  if (isTRUE(save_metadata)) {
     # Samples metadata
     if (ncol(colData(data)) > 0) {
       object@samples_metadata <- data.frame(colData(data))
@@ -248,20 +262,79 @@ create_mofa <- function(data, groups = NULL, ...) {
   return(object)
 }
 
+# (Hidden) function to initialise a MOFA object using a SingleCellExperiment object
+#' @name create_mofa
+#' @param sce a SingleCellExperiment object
+#' @param groups a string specifying column name in the ColData to use it as a group variable. Alternatively, a character vector with group assignment for every sample
+#' @param assay assay from the SingleCellExperiment to use for the MOFA model, default is \code{logcounts}.
+#' @return Returns an untrained \code{\link{MOFA}} object
+#' @keywords internal
+.create_mofa_from_SingleCellExperiment <- function(sce, groups, assay = "logcounts", save_metadata = FALSE) {
+  
+  # Check is SingleCellExperiment is installed
+  if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+    stop("Package \"SingleCellExperiment\" is required but is not installed.", call. = FALSE)
+  }
+  stopifnot(assay%in%names(SummarizedExperiment::assays(sce)))
+  
+  # Define groups of cells
+  if (is.null(groups)) {
+    message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
+    groups <- rep("group1", dim(sce)[2])
+  } else {
+    if (is(groups,'character')) {
+      if (length(groups) == 1) {
+        stopifnot(groups %in% colnames(colData(sce)))
+        groups <- colData(sce)[,groups]
+      } else {
+        stopifnot(length(groups) == ncol(sce))
+      }
+    } else {
+      stop("groups wrongly specified. Please see the documentation and the examples")
+    }
+  }
+ 
+  # Extract data matrices
+  data_matrices <- list( .split_sce_into_groups(sce, groups, assay) )
+  names(data_matrices) <- assay
+  
+  # Create MOFA object
+  object <- new("MOFA")
+  object@status <- "untrained"
+  object@data <- data_matrices
+  
+  # Define dimensions
+  object@dimensions[["M"]] <- length(assay)
+  object@dimensions[["D"]] <- vapply(data_matrices, function(m) nrow(m[[1]]), 1L)
+  object@dimensions[["G"]] <- length(data_matrices[[1]])
+  object@dimensions[["N"]] <- vapply(data_matrices[[1]], function(g) ncol(g), 1L)
+  object@dimensions[["K"]] <- 0
+  
+  # Set views & groups names
+  groups_names(object) <- as.character(names(data_matrices[[1]]))
+  views_names(object)  <- assay
+  
+  # Set metadata
+  if (isTRUE(save_metadata)) {
+    object@samples_metadata <- as.data.frame(colData(sce))
+    object@features_metadata <- as.data.frame(rowData(sce))
+  }
+  
+  return(object)
+}
+
 # (Hidden) function to initialise a MOFA object using a Seurat object
 #' @title create a MOFA object
 #' @name create_mofa
 #' @description Method to create a \code{\link{MOFA}} object
 #' @param seurat Seurat object
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample
-#' @param assays assays to use for the MOFA model, default is NULL, it fetched all assays available
+#' @param assays assays to use, default is \code{NULL}, it fetched all assays available
 #' @param slot assay slot to be used such as scale.data or data
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @keywords internal
 .create_mofa_from_seurat <- function(seurat, groups, assays = NULL, slot = "data", features = NULL, save_metadata = FALSE) {
-  
-  
   
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
@@ -280,7 +353,6 @@ create_mofa <- function(data, groups = NULL, ...) {
   if (is(groups, 'character') && (length(groups) == 1)) {
     if (!(groups %in% colnames(seurat@meta.data)))
       stop(paste0(groups, " is not found in the Seurat@meta.data.\n",
-                  "If you want to use groups information from Seurat@meta.data,\n",
                   "please ensure to provide a column name that exists. The columns of meta data are:\n",
                   paste0(colnames(seurat@meta.data), sep = ", ")))
     groups <- seurat@meta.data[,groups]
@@ -336,10 +408,8 @@ create_mofa <- function(data, groups = NULL, ...) {
   views_names(object)  <- assays
   
   # Set metadata
-  if (save_metadata) {
-    # Samples metadata
+  if (isTRUE(save_metadata)) {
     object@samples_metadata <- seurat@meta.data
-    # Features metadata
     object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
   }
   
@@ -358,21 +428,15 @@ create_mofa <- function(data, groups = NULL, ...) {
 
 # (Hidden) function to split data in Seurat object into a list of matrices
 .split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "data", features = NULL) {
-  # Fetch assay data 
-  data <- GetAssayData(object = seurat, assay = assay, slot = slot)
-  
-  # Subset to provided features if provided
-  if (!is.null(features))
-    data <- data[features, , drop=FALSE]
-  
-  # Split into groups
+  data <- Seurat::GetAssayData(object = seurat, assay = assay, slot = slot)
+  if (!is.null(features)) data <- data[features, , drop=FALSE]
   .split_data_into_groups(list(data), groups)[[1]]
 }
 
-.df_to_matrix <- function(x) {
-  m <- as.matrix(x[,-1])
-  rownames(m) <- x[[1]]
-  m
+# (Hidden) function to split data in a SingleCellExperiment object into a list of matrices
+.split_sce_into_groups <- function(sce, groups, assay) {
+  data <- SummarizedExperiment::assay(sce, assay = assay)
+  .split_data_into_groups(list(data), groups)[[1]]
 }
 
 # (Hidden) function to create MOFA object from a matrix
@@ -461,4 +525,10 @@ create_mofa <- function(data, groups = NULL, ...) {
   rownames(aug_mat)<-samp
   colnames(aug_mat)<-colnames(mat)
   return(t(aug_mat))
+}
+
+.df_to_matrix <- function(x) {
+  m <- as.matrix(x[,-1])
+  rownames(m) <- x[[1]]
+  m
 }
