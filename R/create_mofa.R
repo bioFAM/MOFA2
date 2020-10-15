@@ -85,7 +85,7 @@ create_mofa <- function(data, groups = NULL, ...) {
   }
   
   # Do quality control
-  object <- quality_control(object)
+  object <- .quality_control(object)
   
   # print verbose messages
   if (length(unique(object@samples_metadata$group))>1) {

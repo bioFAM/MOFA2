@@ -271,8 +271,7 @@ subset_samples <- function(object, samples) {
     # Subset imputed data
     if (length(object@imputed_data)>0) { 
       for (m in views_names(object)) {
-        object@imputed_data[[m]][[g]]$mean <- object@imputed_data[[m]][[g]]$mean[,samples_g,drop=FALSE]
-        object@imputed_data[[m]][[g]]$variance <- object@imputed_data[[m]][[g]]$variance[,samples_g,drop=FALSE]
+        object@imputed_data[[m]][[g]] <- object@imputed_data[[m]][[g]][,samples_g,drop=FALSE]
       }
     }
     

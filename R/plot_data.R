@@ -65,10 +65,10 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
   
 
   # Get data
-  if (denoise) {
+  if (isTRUE(denoise)) {
     data <- predict(object, views=view, groups=groups)[[1]]
   } else {
-    if (imputed) {
+    if (isTRUE(imputed)) {
       data <- get_imputed_data(object, view, groups)[[1]]
     } else {
       data <- get_data(object, views=view, groups=groups)[[1]]
