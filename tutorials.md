@@ -3,9 +3,11 @@ layout: default
 title: Tutorials
 ---
 
-All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2_tutorials/R_tutorials)
+## Raw files
 
-All jupyter notebook files can be found ...
+All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2_tutorials/tree/master/R_tutorials)
+
+<!-- All jupyter notebook files can be found ... -->
 
 ## Getting started using R
 

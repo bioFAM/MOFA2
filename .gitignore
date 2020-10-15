@@ -6,6 +6,7 @@
 *.DS_Store
 
 *_site/*
+*mofapy2/*
 
 # R stuff
 *.Rhistory
