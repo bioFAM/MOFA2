@@ -3,11 +3,10 @@ layout: default
 title: Tutorials
 ---
 
-## Raw files
+## Documentation
 
-All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2_tutorials/tree/master/R_tutorials)
-
-<!-- All jupyter notebook files can be found ... -->
+* [MOFA2 R package](https://github.com/bioFAM/MOFA2_tutorials/blob/master/documentation/documentation.pdf)  
+* [mofapy2 Python package](): to-do...  
 
 ## Getting started using R
 
@@ -45,19 +44,19 @@ All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2_tutorials/tre
 
 <!-- * [**Analysis of single-cell DNA methylation data (in R)**](https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/scMethylation_cortex.html): Figure 3 of the paper, in preparation... -->
 
-* **Analysis of CITE-seq data**: still in preparation, reach us if you have questions... 
+<!-- * **Analysis of CITE-seq data**: still in preparation, reach us if you have questions...  -->
  
 
 ## Case examples (in Python)
 
 In preparation...
 
+## Raw files
+
+All .Rmd files can be found [here](https://github.com/bioFAM/MOFA2_tutorials/tree/master/R_tutorials)
+
+<!-- All jupyter notebook files can be found ... -->
 
 ## Template scripts
 
 We provide two template scripts to train your model in [R](https://github.com/bioFAM/MOFA2/blob/master/inst/scripts/template_script.R) and [Python](https://github.com/bioFAM/MOFA2/blob/master/inst/scripts/template_script.py). Please see the tutorials for more details regarding the input data format, etc.
-
-## Documentation
-
-* [R package](https://github.com/bioFAM/MOFA2_tutorials/blob/master/documentation/documentation.pdf)  
-* [Python package]()  
