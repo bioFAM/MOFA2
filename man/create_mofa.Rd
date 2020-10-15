@@ -2,58 +2,32 @@
 % Please edit documentation in R/create_mofa.R
 \name{create_mofa}
 \alias{create_mofa}
-\alias{.create_mofa_from_seurat}
 \title{create a MOFA object}
 \usage{
 create_mofa(data, groups = NULL, ...)
-
-.create_mofa_from_seurat(
-  seurat,
-  groups,
-  assays = NULL,
-  slot = "data",
-  features = NULL,
-  save_metadata = FALSE
-)
 }
 \arguments{
-\item{data}{Input data can be in several formats:
-\itemize{
-  \item{\strong{data.frame}:}{ it requires 5 columns: sample, group, feature, view, value. 
-  The "group" column indicates the condition or the experiment (a label for the samples). 
-  The view indicates the data modality (a label for the features).}
-  \item{\strong{Seurat object}:}{}
-  \item{\strong{List of matrices}:}{ A list of matrices, where each entry corresponds to one view.
-  Samples are stored in columns and features in rows. This option requires the use of the \code{groups} argument.
-  Missing values must be filled in prior to creating the MOFA object (see the example)}
-  }}
-
-\item{groups}{a string specifying column name of the samples metadata to use it as a group variable or character vector with group assignment for every sample}
-
-\item{seurat}{Seurat object}
-
-\item{assays}{assays to use for the MOFA model, default is NULL, it fetched all assays available}
-
-\item{slot}{assay slot to be used such as scale.data or data}
-
-\item{features}{a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used}
+\item{data}{group information, only relevant when using the multi-group framework.}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object
-
-Returns an untrained \code{\link{MOFA}} object
 }
 \description{
-Method to create a \code{\link{MOFA}} object
-
-Method to create a \code{\link{MOFA}} object
+Method to create a \code{\link{MOFA}} object. Depending on the input data format, this method calls one of the following functions:
+\itemize{
+  \item{\strong{long data.frame}: }{\code{\link{create_mofa_from_df}}}
+  \item{\strong{List of matrices}: }{\code{\link{create_mofa_from_matrix}}}
+  \item{\strong{MultiAssayExperiment}: }{\code{\link{create_mofa_from_MultiAssayExperiment}}}
+  \item{\strong{Seurat}: }{\code{\link{create_mofa_from_Seurat}}}
+  \item{\strong{SingleCellExperiment}: }{\code{\link{create_mofa_from_SingleCellExperiment}}}
+  }
+ Please read the documentation of the corresponding function for more details on your specific data format.
 }
 \examples{
 # Using an existing simulated data with two groups and two views
 file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 
-# Load data dt (in data.frame format)
+# Load data (in long data.frame format)
 load(file) 
 MOFAmodel <- create_mofa(dt)
 }
-\keyword{internal}
