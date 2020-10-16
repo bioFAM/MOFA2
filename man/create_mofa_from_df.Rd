@@ -17,3 +17,11 @@ Returns an untrained \code{\link{MOFA}} object
 \description{
 Method to create a \code{\link{MOFA}} object from a data.frame object
 }
+\examples{
+# Using an existing simulated data with two groups and two views
+file <- system.file("extdata", "test_data.RData", package = "MOFA2")
+
+# Load data (in long data.frame format)
+load(file) 
+MOFAmodel <- create_mofa_from_df(dt)
+}
