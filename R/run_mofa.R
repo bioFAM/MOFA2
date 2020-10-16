@@ -47,7 +47,21 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   on.exit(basiliskStop(proc))
   
   run_mofa_in_python <- basiliskRun(proc, function(object) {
-    
+
+  
+  }, object=object)
+  
+  run_mofa_in_python
+  
+  # Load the trained mode
+  object <- load_model(outfile)
+  
+  return(object)
+}
+
+
+
+.run_mofa_reticulate <- function(object) {
   # Initiate reticulate
   mofa <- import("mofapy2")
   
@@ -131,13 +145,4 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   
   # Save the model output as an hdf5 file
   mofa_entrypoint$save(outfile, save_data = save_data, expectations = save_expectations)
-  
-  }, object=object)
-  
-  run_mofa_in_python
-  
-  # Load the trained mode
-  object <- load_model(outfile)
-  
-  return(object)
 }
