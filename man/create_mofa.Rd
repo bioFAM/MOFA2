@@ -7,7 +7,12 @@
 create_mofa(data, groups = NULL, ...)
 }
 \arguments{
-\item{data}{group information, only relevant when using the multi-group framework.}
+\item{data}{one of the formats above}
+
+\item{groups}{group information, only relevant when using the multi-group framework.}
+
+\item{...}{further arguments that can be passed to the function depending on the inout data format.
+See the dpcumentation of above functions for details.}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object

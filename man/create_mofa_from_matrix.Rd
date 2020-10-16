@@ -19,3 +19,7 @@ Returns an untrained \code{\link{MOFA}} object
 \description{
 Method to create a \code{\link{MOFA}} object from a list of matrices
 }
+\examples{
+m <- make_example_data()
+create_mofa_from_matrix(m$data)
+}
