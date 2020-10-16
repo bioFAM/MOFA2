@@ -178,7 +178,7 @@ class Sigma_Node_base(Node):
                 else:
                     Sigma = (1 - self.zeta[k]) * self.Kc.Kmat[self.Kc.get_best_lidx(k), :, :] + self.zeta[k] * np.eye(self.N)
                 self.Sigma_inv[k, :, :] = np.linalg.inv(Sigma)
-                self.Sigma_inv_logdet[k] = np.linalg.slogdet(Sigma)[1]
+                self.Sigma_inv_logdet[k] = np.linalg.slogdet(self.Sigma_inv[k, :, :])[1]
                 if not only_inverse:
                     self.Sigma[k, :, :] = Sigma
 
