@@ -45,8 +45,8 @@ set_covariates <- function(object, covariates = NULL) {
     # object <- .add_covariate(object, covariate)
   
   # covariates passed in data.frame format
-  } else if (all(class(covariates) %in% c("data.frame", "tibble", "Data.Frame"))) { # TO-DO: USE is()
-      if (!all(c("sample", "covariates", "value") %in% colnames(covariates)))
+  } else if (any(class(covariates) %in% c("data.frame", "tibble", "Data.Frame"))) { # TO-DO: USE is()
+      if (!all(c("sample", "covariate", "value") %in% colnames(covariates)))
         stop("If covariates is provided as data.frame it needs to contain the columns: sample, covariate, value")
       if (!is.numeric(covariates$value)) {
         stop("Values in covariates need to be numeric")
