@@ -1,5 +1,3 @@
-library(basilisk)
-
 .mofapy2_dependencies <- c(
     # "python==3.9",
     "h5py==2.10.0",
@@ -12,7 +10,7 @@ library(basilisk)
 	"scikit-learn==0.23.2",
     "scipy==1.5.2",
     # "argparse==1.4.0", (in Python by default)
-	"numpy==1.19.1",
+	"numpy==1.19.2",
 	"nomkl==3.0"
 )
 
