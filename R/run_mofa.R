@@ -14,7 +14,6 @@
 #' @param save_data logical indicating whether to save the training data in the hdf5 file. 
 #'  This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.
 #' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
-#' @param save_expectations vector with capitalized node names. If NA, only W and Z are saved by default.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @import basilisk
@@ -34,7 +33,7 @@
 #' 
 #' # Run the MOFA model
 #' \dontrun{ MOFAmodel <- run_mofa(MOFAmodel, outfile = "~/model.hdf5") }
-run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations = NULL) {
+run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_reticulate = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) 
@@ -42,18 +41,35 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
   
-  # install Anaconda and the required environments if not present
-  proc <- basiliskStart(mofa_env)
-  on.exit(basiliskStop(proc))
+  # Connect to mofapy2 using reticulate
+  if (isTRUE(use_reticulate)) {
+    
+    message("'use_reticulate' has been set to TRUE. 
+    Please make sure to manually specify the python binary with reticulate::use_python(..., force=TRUE) or the conda environment with reticulate::use_conda(..., force=TRUE). 
+    For details see https://rstudio.github.io/reticulate/index.html")
+    
+    # Sanity checks
+    have_mofa2 <- py_module_available("mofapy2")
+    if(isFALSE(have_mofa2)) {
+      stop("mofapy2 is not installed in the selected python binary. Check reticulate::py_config() for details.")
+    } else {
+      .run_mofa_reticulate(object, outfile, save_data)
+    }
+    
+  # Connect to mofapy2 using basilisk
+  } else {
+    
+    message("Connecting to the mofapy2 package using basilisk. 
+    Check the argument 'use_reticulate' if you prefer to manually set the python binary using reticulate.")
+    
+    proc <- basiliskStart(mofa_env)
+    on.exit(basiliskStop(proc))
+    tmp <- basiliskRun(proc, function(object, outfile, save_data) {
+      .run_mofa_reticulate(object, outfile, save_data)
+    }, object=object, outfile=outfile, save_data=save_data)
+  }
   
-  run_mofa_in_python <- basiliskRun(proc, function(object) {
-
-  
-  }, object=object)
-  
-  run_mofa_in_python
-  
-  # Load the trained mode
+  # Load the trained model
   object <- load_model(outfile)
   
   return(object)
@@ -61,7 +77,14 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
 
 
 
-.run_mofa_reticulate <- function(object) {
+.run_mofa_reticulate <- function(object, outfile, save_data) {
+  
+  # sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
+    stop("Package \"reticulate\" is required but is not installed.", call. = FALSE)
+  }
+  
   # Initiate reticulate
   mofa <- import("mofapy2")
   
@@ -144,5 +167,5 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, save_expectations
     message(paste0("Warning: Output file ", outfile, " already exists, it will be replaced"))
   
   # Save the model output as an hdf5 file
-  mofa_entrypoint$save(outfile, save_data = save_data, expectations = save_expectations)
+  mofa_entrypoint$save(outfile, save_data = save_data)
 }

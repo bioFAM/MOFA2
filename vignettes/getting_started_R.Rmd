@@ -237,7 +237,7 @@ Saving model in `/Users/ricard/data/mofa2/hdf5/model.hdf5...`r outfile`.
 # Downstream analysis
 
 This finishes the tutorial on how to train a MOFA object from R. 
-To continue with the downstream analysis, follow [this tutorial](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/downstream_analysis.html)
+To continue with the downstream analysis, follow [this tutorial](https://raw.githack.com/bioFAM/MOFA2_tutorials/master/R_tutorials/downstream_analysis.html)
 
 <details>
   <summary>**Session Info**</summary>
