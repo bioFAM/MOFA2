@@ -11,9 +11,10 @@
     "scipy==1.5.2",
     # "argparse==1.4.0", (in Python by default)
 	"numpy==1.19.2",
-	"nomkl==3.0"
+	"nomkl==1.0"
 )
 
 
-#' @importFrom basilisk BasiliskEnvironment
-mofa_env <- BasiliskEnvironment("mofa_env", pkgname="MOFA2", packages=.mofapy2_dependencies, pip = "mofapy2==0.5.6")
+# #' @importFrom basilisk BasiliskEnvironment
+mofa_env <- basilisk::BasiliskEnvironment("mofa_env", pkgname="MOFA2", packages=.mofapy2_dependencies, pip = "mofapy2==0.5.6")
+# proc <- basilisk::basiliskStart(mofa_env)

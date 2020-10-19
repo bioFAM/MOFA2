@@ -4,7 +4,7 @@
 \alias{run_mofa}
 \title{Train a MOFA model}
 \usage{
-run_mofa(object, outfile = NULL, save_data = TRUE, save_expectations = NULL)
+run_mofa(object, outfile = NULL, save_data = TRUE, use_basilik = FALSE)
 }
 \arguments{
 \item{object}{an untrained \code{\link{MOFA}} object}
@@ -13,8 +13,6 @@ run_mofa(object, outfile = NULL, save_data = TRUE, save_expectations = NULL)
 
 \item{save_data}{logical indicating whether to save the training data in the hdf5 file. 
 This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.}
-
-\item{save_expectations}{vector with capitalized node names. If NA, only W and Z are saved by default.}
 }
 \value{
 a trained \code{\link{MOFA}} object
