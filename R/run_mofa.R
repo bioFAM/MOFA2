@@ -16,7 +16,7 @@
 #' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
-# #' @import basilisk
+#' @import basilisk
 #' @export
 #' @examples
 #' # Using an existing simulated data with two groups and two views
@@ -62,9 +62,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     message("Connecting to the mofapy2 package using basilisk. 
     Set 'use_basilik' to FALSE if you prefer to manually set the python binary using 'reticulate'.")
     
-    proc <- basilisk::basiliskStart(mofa_env)
-    on.exit(basilisk::basiliskStop(proc))
-    tmp <- basilisk::basiliskRun(proc, function(object, outfile, save_data) {
+    proc <- basiliskStart(mofa_env)
+    on.exit(basiliskStop(proc))
+    tmp <- basiliskRun(proc, function(object, outfile, save_data) {
       .run_mofa_reticulate(object, outfile, save_data)
     }, object=object, outfile=outfile, save_data=save_data)
   }

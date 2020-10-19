@@ -4,7 +4,7 @@
 \alias{run_mofa}
 \title{Train a MOFA model}
 \usage{
-run_mofa(object, outfile = NULL, save_data = TRUE, use_basilik = FALSE)
+run_mofa(object, outfile = NULL, save_data = TRUE, use_basilisk = FALSE)
 }
 \arguments{
 \item{object}{an untrained \code{\link{MOFA}} object}
