@@ -60,14 +60,14 @@ set_covariates <- function(object, covariates = NULL) {
   } else if (all(is.numeric(covariates)) || class(covariates) %in% c("dgTMatrix", "dgCMatrix")) {
     samples <- colnames(covariates)
     if (!is.null(samples)) {
-      if(!(all(samples %in% samples_data_vec) & all(samples_data_vec %in% samples)))
+      if(!(all(samples %in% samples_data_vec) && all(samples_data_vec %in% samples)))
         stop("Sample names of the data and the sample covariates do not match.")
       covariates <- covariates[ , samples_data_vec, drop = FALSE]
     } else {
       # warnings and checks if no matching sample names
       if(sum(object@dimensions[['N']]) != ncol(covariates))
         stop("Number of columns in sample covariates does not match the number of samples")
-      if(!is.null(samples_data) & length(samples_data_vec) > 0) {
+      if(!is.null(samples_data) && length(samples_data_vec) > 0) {
         warning("No sample names in covariates - we will use the sample names in data. Please ensure that the order matches.")
         colnames(covariates) <- samples
       } else {
@@ -128,7 +128,7 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
     
   }
   
-  if (isTRUE(as.data.frame)) {
+  if (as.data.frame) {
     if(!is.null(rownames(sample_cov[[1]]))){
       nms <- rownames(sample_cov[[1]]) 
     } else {
@@ -427,7 +427,7 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   stopifnot(length(factor)==1)
   stopifnot(length(covariate)==1)
   stopifnot(length(view)==1)
-  if (isTRUE(lm_per_group)) add_lm = TRUE
+  if (lm_per_group) add_lm = TRUE
   
   # Define views, factors and groups
   groups <- .check_and_get_groups(object, groups)
@@ -471,8 +471,8 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   }
 
   # Set group/color/shape
-  if (length(color_by)==1 & is.character(color_by)) color_name <- color_by
-  if (length(shape_by)==1 & is.character(shape_by)) shape_name <- shape_by
+  if (length(color_by)==1 && is.character(color_by)) color_name <- color_by
+  if (length(shape_by)==1 && is.character(shape_by)) shape_name <- shape_by
   color_by <- .set_colorby(object, color_by)
   shape_by <- .set_shapeby(object, shape_by)
   
@@ -482,7 +482,7 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   
   # Create data frame 
   foo <- list(features); names(foo) <- view
-  if (isTRUE(imputed)) {
+  if (imputed) {
     df2 <- get_imputed_data(object, groups = groups, views = view, features = foo, as.data.frame = TRUE)
   } else {
     df2 <- get_data(object, groups = groups, features = foo, as.data.frame = TRUE)
@@ -504,7 +504,7 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   }
   
   # Set Pearson text size
-  if (isTRUE(add_lm) & is.null(text_size)) {
+  if (add_lm && is.null(text_size)) {
     text_size <- .select_pearson_text_size(N=length(unique(df$feature)))
   }
   
@@ -523,8 +523,8 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
     )
   
   # Add linear regression line
-  if (isTRUE(add_lm)) {
-    if (isTRUE(lm_per_group) & length(groups)>1) {
+  if (add_lm) {
+    if (lm_per_group && length(groups)>1) {
       p <- p +
         stat_smooth(formula=y~x, aes_string(color="group"), method="lm", alpha=0.4) +
         ggpubr::stat_cor(aes_string(color="group", label = "..r.label.."), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
@@ -570,7 +570,8 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' @param legend logical indicating whether to add legend.
 #' @param original logical indicating whether to use unscaled covariates (only if used with GP prior)
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
-#' @param show_variance logical indicating whether to show the marginal variance of inferred factor values
+#' @param show_variance logical indicating whether to show the marginal variance of inferred factor values 
+#' (only relevant for 1-dimensional covariates)
 #' @details To investigate the factors pattern along the covariates (such as time or a spatial coordinate) 
 #' this function an be used to plot a scatterplot of the factor againt the values of each covariate
 #' @return Returns a \code{ggplot2} object
@@ -623,29 +624,49 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
     mutate(shape_by = as.character(shape_by))
   
   # Remove missing values
-  if (isFALSE(show_missing)) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
+  if (!show_missing) df <- filter(df, !is.na(color_by) && !is.na(shape_by))
   
   # Return data if requested instead of plotting
-  if (isTRUE(return_data)) return(df)
+  if (return_data) return(df)
   
   # Set stroke
   if (is.null(stroke)) stroke <- .select_stroke(N=length(unique(df$sample)))
   
   # Select 1D or 2D plots
   if (length(covariates) == 1) {
-    p <- .plot_factors_vs_cov_1d(df, 
+    
+    # Include marginal variance
+    if (show_variance) {
+      if("E2" %in% names(object@expectations$Z)){
+        ZZ = object@expectations$Z$E2
+        ZZ <- reshape2::melt(ZZ, na.rm=T)
+        colnames(ZZ) <- c("sample", "factor", "E2")
+        df <- left_join(df, ZZ, by = c("sample", "factor"))
+        df <- mutate(df, var = E2 - value^2)
+      } else {
+        show_variance <- FALSE
+        warning("No second moments saved in the trained model - variance can not be shown.")
+      }
+    }
+    p <- .plot_factors_vs_cov_1d(df,
+            color_name = color_name,
+            shape_name = shape_name,
             scale = scale, 
             dot_size = dot_size, 
             alpha = alpha, 
             stroke = stroke,
-            show_variance = show_variance
+            show_variance = show_variance,
+            legend = legend
           ) 
   } else if (length(covariates) == 2) {
     p <- .plot_factors_vs_cov_2d(df,
+           color_name = color_name,
+           shape_name = shape_name,
            scale = scale, 
            dot_size = dot_size, 
            alpha = alpha, 
-           stroke = stroke
+           stroke = stroke,
+           legend = legend
           )
   } else {
     stop("too many covariates provided")
@@ -655,29 +676,14 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
 }
 
 
-.plot_factors_vs_cov_1d <- function(df, scale = FALSE, dot_size = 1.5, alpha = 1, stroke = 1, show_variance = FALSE) {
+.plot_factors_vs_cov_1d <- function(df, color_name = "", shape_name = "", scale = FALSE, dot_size = 1.5, alpha = 1, stroke = 1, show_variance = FALSE, legend = TRUE) {
   
   # Sanity checks
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(length(unique(df$covariate))==1)
-  
-  # Include marginal variance
-  if (isTRUE(show_variance)) {
-    if("E2" %in% names(object@expectations$Z)){
-      ZZ = object@expectations$Z$E2
-      ZZ <- reshape2::melt(ZZ, na.rm=T)
-      colnames(ZZ) <- c("sample", "factor", "E2")
-      df <- left_join(df, ZZ, by = c("sample", "factor"))
-      df <- mutate(df, var = E2 - value^2)
-    } else {
-      show_variance <- FALSE
-      warning("No second moments saved in the trained model - variance can not be shown.")
-    }
-  }
   
   
   # Scale values from 0 to 1
-  if (isTRUE(scale)) {
+  if (scale) {
     df <- df %>% 
       group_by(factor) %>%
       mutate(value_scaled = value.factor/max(abs(value.factor)))
@@ -710,7 +716,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
   return(p)
 }
 
-.plot_factors_vs_cov_2d <- function(df, scale = FALSE, dot_size = 1.5, alpha = 1, stroke = 1) {
+.plot_factors_vs_cov_2d <- function(df, color_name = "", shape_name = "", scale = FALSE, dot_size = 1.5, alpha = 1, stroke = 1, legend = TRUE) {
   
   # Sanity checks
   stopifnot(length(unique(df$covariate))==2)
@@ -723,7 +729,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
   covariates.names <- c(colnames(covariates_dt)[ncol(covariates_dt)-1], colnames(covariates_dt)[ncol(covariates_dt)])
   
   # Scale factor values from 0 to 1
-  if (isTRUE(scale)) {
+  if (scale) {
     covariates_dt <- covariates_dt %>%
       group_by(factor) %>%
       mutate(value.factor = value.factor/max(abs(value.factor))) %>%
