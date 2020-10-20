@@ -83,56 +83,6 @@ Returns a \code{ggplot2} object or the underlying dataframe if return_data is se
 Function to do a scatterplot of features against sample covariate values.
 }
 \details{
-#' @title Plot interpolated factors versus covariate (1-dimensional)
-#' @name plot_sharedness
-#' @description Barplot indicating a sharedness score (between 0 (non-shared) and 1 (shared)) per factor
-#' @param object a trained \code{\link{MOFA}} object.
-#' @param covariate covariate to use for plotting
-#' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
-#' @param only_mean show onyl mean or include uncertainties?
-#' @param show_observed include observed factor values as dots on the plot
-#' @details to be filled
-#' @return Returns a \code{ggplot2} object
-#' @import ggplot2
-#' @export
-
-plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "all", only_mean = FALSE, show_observed = TRUE){
-  
-  # Sanity checks
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  
-  # get and check covariate
-  covariate <- .check_and_get_covariates(object, covariate)
-  
-  # get interpolated factors
-  df <- get_interpolated_factors(object, as.data.frame = TRUE)
-  
-  # calculate ribbon borders
-  if(!only_mean) {
-    df %<>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
-  }
-
-  if(show_observed) {
-    # add the factor values of the observed time point  to the plot
-    df_observed <- plot_factors_vs_cov(object, covariate = covariate, return_data = TRUE)
-  }
-  
-  gg_interpol <- ggplot(df, aes_string(x="covariate", y = "mean", col = "group")) +
-    geom_line(aes(y=mean,  col = group)) +
-    facet_wrap(~ factor) + theme_classic()
-  
-  if(show_observed) {
-    gg_interpol <- gg_interpol + geom_point(data = df_observed, aes(x= covariate_value,
-                                                                  y = value, col = group), size = 1) 
-  }
-  if(!only_mean) {
-    gg_interpol <- gg_interpol + geom_ribbon(aes(ymin=ymin, ymax = ymax, fill = group),
-                                             alpha = .2, col = "gray", size = 0.1)   
-  }
-  
-  gg_interpol
-}
-
 One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}
 and inspect the relationshio of the factor to the covariate(s) using  \code{\link{plot_factors_vs_cov}}.
 However, one might also be interested in visualising the direct relationship between features and covariate(s), rather than looking at "abstract" weights and

@@ -158,18 +158,18 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 #' @param object an untrained \code{\link{MOFA}} object
 #' @details The options are the following: \cr
 #' \itemize{
-#'  \item{\strong{scale_cov}:}
-#'  \item{\strong{start_opt}:}
-#'  \item{\strong{n_grid}:}
-#'  \item{\strong{opt_freq}:}
-#'  \item{\strong{sparseGP}:}
-#'  \item{\strong{n_inducing}:}
-#'  \item{\strong{warping}:}
-#'  \item{\strong{warping_freq}:}
-#'  \item{\strong{warping_ref}:}
-#'  \item{\strong{warping_open_begin}:}
-#'  \item{\strong{warping_open_end}:}
-#'  \item{\strong{model_groups}:}
+#'  \item{\strong{scale_cov}:}  logical: Scale covariates?
+#'  \item{\strong{start_opt}:} integer: First iteration to start the optimisation of GP hyperparameters
+#'  \item{\strong{n_grid}:} integer: Number of points for the grid search in the optimisation of GP hyperparameters
+#'  \item{\strong{opt_freq}:} integer: Frequency of optimisation of GP hyperparameters
+#'  \item{\strong{sparseGP}:} logical: Use sparse GPs to speed up the optimisation of the GP parameters?
+#'  \item{\strong{n_inducing}:} integer: Number of inducing points (only relevant sparseGP is \code{TRUE})
+#'  \item{\strong{warping}:}   logical: Activate warping functionality to align covariates between groups (requires a multi-group design)
+#'  \item{\strong{warping_freq}:} numeric: frequency of the warping (only relevant warping is \code{TRUE})
+#'  \item{\strong{warping_ref}:} A character specifying the reference group for warping (only relevant warping is \code{TRUE})
+#'  \item{\strong{warping_open_begin}:} logical: Warping: Allow for open beginning? (only relevant warping is \code{TRUE})
+#'  \item{\strong{warping_open_end}:} logical: Warping: Allow for open end? (only relevant warping is \code{TRUE})
+#'  \item{\strong{model_groups}:} logical: Model covariance structure across groups? If FALSE, we assume the same patterns in all groups.
 #' }
 #' @return Returns a list with default options for the smooth covariate(s) functionality.
 #' @importFrom utils modifyList
