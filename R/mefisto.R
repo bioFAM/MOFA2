@@ -34,28 +34,32 @@ set_covariates <- function(object, covariates) {
   # samples <- unlist(samples_data)
   samples_data_vec <- unlist(samples_names(object))
   
-  # covariates passed as characters: extract from the metadata
+  # covariates passed as characters: extract from the metadata as dataframe
   if (is(covariates, "character")) {
     if (!all(covariates %in% colnames(samples_metadata(object)))) {
       stop("Columns specified in covariates do not exist in the MOFA object metadata slot.")
     }
     covariates <- samples_metadata(object)[,c("sample",covariates),drop=F]
 
-    # TO-DO: Check that they are numeric and continuous
-    # Add covariates to the MOFA object
-    # object <- .add_covariate(object, covariate)
+    covariates <- gather(covariates, key = "covariate", value = "value", -sample)
+    if(!is.numeric(covariates$value)){
+      stop("Covariates need to be numeric")
+    }
+    # TO-DO: Check that they continuous
   
   # covariates passed in data.frame format
-  } else if (any(class(covariates) %in% c("data.frame", "tibble", "Data.Frame"))) { # TO-DO: USE is()
-      if (!all(c("sample", "covariate", "value") %in% colnames(covariates)))
-        stop("If covariates is provided as data.frame it needs to contain the columns: sample, covariate, value")
-      if (!is.numeric(covariates$value)) {
-        stop("Values in covariates need to be numeric")
-      }
-      samples <- covariates$sample
-      # covariates <- covariates[!duplicated(covariates), ]
-      covariates <- reshape2::acast(covariates, covariate ~ sample)
-      
+  }
+  
+  if (any(class(covariates) %in% c("data.frame", "tibble", "Data.Frame"))) { # TO-DO: USE is()
+    if (!all(c("sample", "covariate", "value") %in% colnames(covariates)))
+      stop("If covariates is provided as data.frame it needs to contain the columns: sample, covariate, value")
+    if (!is.numeric(covariates$value)) {
+      stop("Values in covariates need to be numeric")
+    }
+    samples <- covariates$sample
+    # covariates <- covariates[!duplicated(covariates), ]
+    covariates <- reshape2::acast(covariates, covariate ~ sample)
+    
   # covariates passed in matrix format
   # TO-DO: CHECK THIS
   } else if (all(is.numeric(covariates)) || class(covariates) %in% c("dgTMatrix", "dgCMatrix")) {
