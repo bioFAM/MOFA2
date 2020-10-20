@@ -558,6 +558,8 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' (2) a character giving the name of a feature present in the training data.
 #' (3) a vector of the same length as the number of samples specifying continuous numeric values per sample.
 #' Default is the first sample covariates in covariates slot
+#' @param warped logical indicating whether to show the aligned covariate (default: TRUE), 
+#' only relevant if warping has been used to align multiple sample groups
 #' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @param scale logical indicating whether to scale factor values.
 #' @param color_by specifies groups or values used to color the samples. This can be either:
@@ -586,7 +588,7 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' @importFrom magrittr %>% set_colnames
 #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
-plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show_missing = TRUE, scale = FALSE,
+plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warped = TRUE, show_missing = TRUE, scale = FALSE,
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                                 dot_size = 1.5, alpha = 1, stroke = NULL, legend = TRUE, return_data = FALSE, show_variance = FALSE) {
   
@@ -608,8 +610,8 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
   # Remove samples with missing values
   Z <- Z[complete.cases(Z),]
   
-  # Get covariates (TO-DO: AD DWARP OPTIONS)
-  df <- get_covariates(object, covariates, as.data.frame = TRUE) %>%
+  # Get covariates
+  df <- get_covariates(object, covariates, as.data.frame = TRUE, warped = warped) %>%
     merge(Z, by="sample", suffixes = c(".covariate",".factor"))
   
   # Remember color_name and shape_name if not provided
