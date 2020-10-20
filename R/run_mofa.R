@@ -5,24 +5,26 @@
 #' @title Train a MOFA model
 #' @name run_mofa
 #' @description Function to train an untrained \code{\link{MOFA}} object.
-#' @details This function is called once a MOFA object has been created (using \code{\link{create_mofa}})
-#' and possible options for training have been specified with  \code{\link{prepare_mofa}}.
-#' In this step the R package is calling the \code{mofapy2} Python package, where the model the training is performed. \cr
+#' @details This function is called once a MOFA object has been prepared (using \code{\link{prepare_mofa}})
+#' In this step the R package calls the \code{mofapy2} Python package, where model training is performed. \cr
 #' The interface with Python is done with the \code{\link{reticulate}} package. 
-#' If you have several versions of Python installed and R is not detecting the correct one, you can change it using \code{reticulate::use_python}.
+#' If you have several versions of Python installed and R is not detecting the correct one, 
+#' you can change it using \code{reticulate::use_python} when loading the R session. 
+#' Alternatively, you can let us install mofapy2 for you using \code{\link{basilisk}} if you set use_basilisk to \code{TRUE}
 #' @param object an untrained \code{\link{MOFA}} object
 #' @param save_data logical indicating whether to save the training data in the hdf5 file. 
 #'  This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.
 #' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
+#' @param use_basilisk use \code{basilisk} to automatically install a conda environment with mofapy2 and all dependencies? 
+#' If \code{FALSE} (default), you should specify the right python binary when loading R with \code{reticulate::use_python(..., force=TRUE)}
+#' or the right conda environment with \code{reticulate::use_conda(..., force=TRUE)}.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @import basilisk
 #' @export
 #' @examples
-#' # Using an existing simulated data with two groups and two views
+#' # Load data (in data.frame format)
 #' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
-#' 
-#' # Load data dt (in data.frame format)
 #' load(file) 
 #' 
 #' # Create the MOFA object
@@ -32,7 +34,7 @@
 #' MOFAmodel <- prepare_mofa(MOFAmodel)
 #' 
 #' # Run the MOFA model
-#' \dontrun{ MOFAmodel <- run_mofa(MOFAmodel, outfile = "~/model.hdf5") }
+#' \dontrun{ MOFAmodel <- run_mofa(MOFAmodel, use_basilisk = TRUE) }
 run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FALSE) {
   
   # Sanity checks
