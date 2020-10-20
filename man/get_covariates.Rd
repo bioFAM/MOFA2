@@ -26,3 +26,9 @@ a matrix with dimensions (samples,covariates). If \code{as.data.frame} is \code{
 \description{
 Function to extract the covariates from a \code{\link{MOFA}} object.
 }
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+model <- load_model(file)
+covariates <- get_covariates(model)
+}

@@ -32,3 +32,19 @@ The options are the following: \cr
  \item{\strong{model_groups}:}
 }
 }
+\examples{
+# generate example data
+dd <- make_example_data(sample_cov = seq(0,1,length.out = 200), n_samples = 200,
+n_factors = 4, n_features = 200, n_views = 4, lscales = c(0.5, 0.2, 0, 0))
+# input data
+data <- dd$data
+# covariate matrix with samples in columns
+time <- dd$sample_cov
+rownames(time) <- "time"
+
+# create mofa and set covariates
+sm <- create_mofa(data = dd$data)
+sm <- set_covariates(sm, covariates = time)
+
+smooth_opt <- get_default_smooth_options(sm)
+}

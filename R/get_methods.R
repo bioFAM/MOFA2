@@ -45,7 +45,13 @@ get_elbo <- function(object) {
 #' @description Extract the inferred lengthscale for each factor after model training. 
 #' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
 #' @param object a \code{\link{MOFA}} object.
+#' @return A numeric vector containing the lengthscale for each factor.
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' ls <- get_lengthscales(model)
 get_lengthscales <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(is.null(object@covariates)) stop("No covariates specified in 'object'")
@@ -60,7 +66,13 @@ get_lengthscales <- function(object) {
 #' @description Extract the inferred scale for each factor after model training. 
 #' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
 #' @param object a \code{\link{MOFA}} object.
+#' @return A numeric vector containing the scale for each factor.
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' s <- get_scales(model)
 get_scales <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(is.null(object@covariates)) stop("No covariates specified in 'object'")
@@ -74,6 +86,7 @@ get_scales <- function(object) {
 #' @description Extract the inferred group-group covariance matrix per factor
 #' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
 #' @param object a \code{\link{MOFA}} object.
+#' @return A list of group-group correlation matrices per factor
 #' @export
 get_group_kernel <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -95,6 +108,10 @@ get_group_kernel <- function(object) {
 #' @details This can be used only if covariates are passed to the object upon creation, GP_factors is set to True and new covariates were passed for interpolation.
 #' @param object a \code{\link{MOFA}} object
 #' @param as.data.frame logical indicating whether to return data as a data.frame
+#' @return By default, a nested list containing for each group a list with a matrix with the interpolated factor values ("mean"),
+#'  their variance ("variance") and the values of the covariate at which interpolation took place ("new_values"). 
+#' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns containing the covariates 
+#' and (factor, group, mean and variance).
 #' @export
 get_interpolated_factors <- function(object, as.data.frame = FALSE) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -103,12 +120,12 @@ get_interpolated_factors <- function(object, as.data.frame = FALSE) {
     return(object@interpolated_Z)
   } else {
     preds <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) != "new_values"]])
-    df_interpol <- melt(preds, varnames = c("factor", "sample_id"))
+    df_interpol <- reshape2::melt(preds, varnames = c("factor", "sample_id"))
     df_interpol <- rename(df_interpol, group = L1, type = L2)
     
     if("new_values" %in% names(object@interpolated_Z[[1]])) {
       new_vals <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) == "new_values"]])
-      new_vals <- melt(new_vals, varnames = c("covariate","sample_id"))
+      new_vals <- reshape2::melt(new_vals, varnames = c("covariate","sample_id"))
       new_vals <- mutate(new_vals, covariate = covariates_names(object)[covariate])
       new_vals <- rename(new_vals, group = L1, covariate_value = value)
       new_vals <- spread(new_vals, key = covariate, value = covariate_value)

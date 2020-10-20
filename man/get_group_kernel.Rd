@@ -9,6 +9,9 @@ get_group_kernel(object)
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 }
+\value{
+A list of group-group correlation matrices per factor
+}
 \description{
 Extract the inferred group-group covariance matrix per factor
 }

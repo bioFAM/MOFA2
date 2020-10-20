@@ -76,6 +76,9 @@ plot_data_scatter_vs_cov(
 
 \item{return_data}{logical indicating whether to return a data frame instead of a plot}
 }
+\value{
+Returns a \code{ggplot2} object or the underlying dataframe if return_data is set to \code{TRUE}.
+}
 \description{
 Function to do a scatterplot of features against sample covariate values.
 }
@@ -134,4 +137,10 @@ One of the first steps for the annotation of factors is to visualise the weights
 and inspect the relationshio of the factor to the covariate(s) using  \code{\link{plot_factors_vs_cov}}.
 However, one might also be interested in visualising the direct relationship between features and covariate(s), rather than looking at "abstract" weights and
 possibly look at the interpolated and extrapolated values by setting imputed to True.
+}
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_data_scatter_vs_cov(model, factor = 3, features = 2)
 }

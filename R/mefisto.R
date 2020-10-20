@@ -39,7 +39,7 @@ set_covariates <- function(object, covariates) {
     if (!all(covariates %in% colnames(samples_metadata(object)))) {
       stop("Columns specified in covariates do not exist in the MOFA object metadata slot.")
     }
-    covariates <- samples_metadata(object)[,c("sample",covariates),drop=F]
+    covariates <- samples_metadata(object)[,c("sample",covariates),drop=FALSE]
 
     covariates <- gather(covariates, key = "covariate", value = "value", -sample)
     if(!is.numeric(covariates$value)){
@@ -117,6 +117,11 @@ set_covariates <- function(object, covariates) {
 #' @param warped logical indicating whether to extract the aligned covariates
 #' @return a matrix with dimensions (samples,covariates). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' covariates <- get_covariates(model)
 
 get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, warped = FALSE) {
   # Sanity checks
@@ -169,6 +174,22 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 #' @return Returns a list with default options for the smooth covariate(s) functionality.
 #' @importFrom utils modifyList
 #' @export
+#' @examples 
+#' # generate example data
+#' dd <- make_example_data(sample_cov = seq(0,1,length.out = 200), n_samples = 200,
+#' n_factors = 4, n_features = 200, n_views = 4, lscales = c(0.5, 0.2, 0, 0))
+#' # input data
+#' data <- dd$data
+#' # covariate matrix with samples in columns
+#' time <- dd$sample_cov
+#' rownames(time) <- "time"
+#' 
+#' # create mofa and set covariates
+#' sm <- create_mofa(data = dd$data)
+#' sm <- set_covariates(sm, covariates = time)
+#' 
+#' smooth_opt <- get_default_smooth_options(sm)
+
 get_default_smooth_options <- function(object) {
   
   smooth_options <- list(
@@ -260,6 +281,11 @@ plot_group_kernel <- function(object, factors = "all", groups = "all", ...) {
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' smoothness_bars <- plot_smoothness(model)
 
 plot_smoothness <- function(object, factors = "all", color = "cadetblue") {
   
@@ -421,7 +447,14 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' @importFrom dplyr left_join
 #' @importFrom utils tail
 #' @importFrom stats quantile
+#' @return Returns a \code{ggplot2} object or the underlying dataframe if return_data is set to \code{TRUE}.
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_data_scatter_vs_cov(model, factor = 3, features = 2)
+
 plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
                               color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
                               dot_size = 2.5, text_size = NULL, add_lm = FALSE, lm_per_group = FALSE, imputed = FALSE, return_data = FALSE) {
@@ -586,6 +619,12 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_factors_vs_cov(model)
+
 plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warped = TRUE, show_missing = TRUE, scale = FALSE,
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                                 dot_size = 1.5, alpha = 1, stroke = NULL, legend = TRUE, return_data = FALSE, show_variance = FALSE) {
@@ -643,7 +682,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
     if (show_variance) {
       if("E2" %in% names(object@expectations$Z)){
         ZZ = object@expectations$Z$E2
-        ZZ <- reshape2::melt(ZZ, na.rm=T)
+        ZZ <- reshape2::melt(ZZ, na.rm=TRUE)
         colnames(ZZ) <- c("sample", "factor", "E2")
         df <- left_join(df, ZZ, by = c("sample", "factor"))
         df <- mutate(df, var = E2 - value^2)

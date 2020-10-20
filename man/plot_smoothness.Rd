@@ -22,3 +22,9 @@ Barplot indicating a smoothness score (between 0 (non-smooth) and 1 (smooth)) pe
 \details{
 The smoothness score is given by the scale parameter for the underlying Gaussian process of each factor.
 }
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+model <- load_model(file)
+smoothness_bars <- plot_smoothness(model)
+}

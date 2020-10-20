@@ -78,3 +78,9 @@ Scatterplots of a factor's values againt the sample covariates
 To investigate the factors pattern along the covariates (such as time or a spatial coordinate) 
 this function an be used to plot a scatterplot of the factor againt the values of each covariate
 }
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_factors_vs_cov(model)
+}

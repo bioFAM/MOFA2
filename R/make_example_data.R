@@ -17,6 +17,7 @@
 #' @importFrom stats rnorm rbinom rpois
 #' @importFrom dplyr left_join
 #' @importFrom mvtnorm rmvnorm
+#' @importFrom stats dist
 #' @export
 #' @examples
 #' # Generate a simulated data set
@@ -55,8 +56,8 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
     # Simulate covariance for factors
     Sigma = lapply(lscales, function(ls) {
       if(ls == 0) diag(1, n_samples)
-      else (1) * exp(-as.matrix(dist(t(sample_cov)))^2/(2*ls^2))
-      # else (1-0.001) * exp(-as.matrix(dist(t(sample_cov)))^2/(2*ls^2)) + diag(0.001, n_samples)
+      else (1) * exp(-as.matrix(stats::dist(t(sample_cov)))^2/(2*ls^2))
+      # else (1-0.001) * exp(-as.matrix(stats::dist(t(sample_cov)))^2/(2*ls^2)) + diag(0.001, n_samples)
     })
   
     # simulate factors

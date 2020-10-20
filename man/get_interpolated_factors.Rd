@@ -11,6 +11,12 @@ get_interpolated_factors(object, as.data.frame = FALSE)
 
 \item{as.data.frame}{logical indicating whether to return data as a data.frame}
 }
+\value{
+By default, a nested list containing for each group a list with a matrix with the interpolated factor values ("mean"),
+ their variance ("variance") and the values of the covariate at which interpolation took place ("new_values"). 
+Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns containing the covariates 
+and (factor, group, mean and variance).
+}
 \description{
 Extract the interpolated factor values
 }
