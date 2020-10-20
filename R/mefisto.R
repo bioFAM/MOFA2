@@ -195,7 +195,7 @@ get_default_smooth_options <- function(object) {
   smooth_options <- list(
     
     # Standard options
-    scale_cov = TRUE,            # (logical) Scale covariates?
+    scale_cov = FALSE,            # (logical) Scale covariates?
     start_opt = 20,              # (integer) First iteration to start the optimisation of GP hyperparameters
     n_grid = 20,                 # (integer) Number of points for the grid search in the optimisation of GP hyperparameters
     opt_freq = 10,               # (integer) Frequency of optimisation of GP hyperparameters
@@ -349,56 +349,56 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
   
   return(gg_bar)
 }
-#' 
-#' #' @title Plot interpolated factors versus covariate (1-dimensional)
-#' #' @name plot_sharedness
-#' #' @description Barplot indicating a sharedness score (between 0 (non-shared) and 1 (shared)) per factor
-#' #' @param object a trained \code{\link{MOFA}} object.
-#' #' @param covariate covariate to use for plotting
-#' #' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
-#' #' @param only_mean show onyl mean or include uncertainties?
-#' #' @param show_observed include observed factor values as dots on the plot
-#' #' @details to be filled
-#' #' @return Returns a \code{ggplot2} object
-#' #' @import ggplot2
-#' #' @export
-#' 
-#' plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "all", only_mean = FALSE, show_observed = TRUE){
-#'   
-#'   # Sanity checks
-#'   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-#'   
-#'   # get and check covariate
-#'   covariate <- .check_and_get_covariates(object, covariate)
-#'   
-#'   # get interpolated factors
-#'   df <- get_interpolated_factors(object, as.data.frame = TRUE)
-#'   
-#'   # calculate ribbon borders
-#'   if(!only_mean) {
-#'     df %<>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
-#'   }
-#' 
-#'   if(show_observed) {
-#'     # add the factor values of the observed time point  to the plot
-#'     df_observed <- plot_factors_vs_cov(object, covariate = covariate, return_data = TRUE)
-#'   }
-#'   
-#'   gg_interpol <- ggplot(df, aes_string(x="covariate", y = "mean", col = "group")) +
-#'     geom_line(aes(y=mean,  col = group)) +
-#'     facet_wrap(~ factor) + theme_classic()
-#'   
-#'   if(show_observed) {
-#'     gg_interpol <- gg_interpol + geom_point(data = df_observed, aes(x= covariate_value,
-#'                                                                   y = value, col = group), size = 1) 
-#'   }
-#'   if(!only_mean) {
-#'     gg_interpol <- gg_interpol + geom_ribbon(aes(ymin=ymin, ymax = ymax, fill = group),
-#'                                              alpha = .2, col = "gray", size = 0.1)   
-#'   }
-#'   
-#'   gg_interpol
-#' }
+
+#' @title Plot interpolated factors versus covariate (1-dimensional)
+#' @name plot_interpolation_vs_covariate
+#' @description make a plot of interpolated covariates versus covariate
+#' @param object a trained \code{\link{MOFA}} object.
+#' @param covariate covariate to use for plotting
+#' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
+#' @param only_mean show only mean or include uncertainties?
+#' @param show_observed include observed factor values as dots on the plot
+#' @details to be filled
+#' @return Returns a \code{ggplot2} object
+#' @import ggplot2
+#' @export
+
+plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "all", only_mean = TRUE, show_observed = TRUE){
+
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+
+  # get and check covariate
+  covariate <- .check_and_get_covariates(object, covariate)
+
+  # get interpolated factors
+  df <- get_interpolated_factors(object, as.data.frame = TRUE)
+
+  # calculate ribbon borders
+  if(!only_mean) {
+    df %<>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
+  }
+
+  if(show_observed) {
+    # add the factor values of the observed time point  to the plot
+    df_observed <- plot_factors_vs_cov(object, covariate = covariate, return_data = TRUE)
+  }
+
+  gg_interpol <- ggplot(df, aes_string(x=covariate, y = "mean", col = "group")) +
+    geom_line(aes(y=mean,  col = group)) +
+    facet_wrap(~ factor) + theme_classic()
+
+  if(show_observed) {
+    gg_interpol <- gg_interpol + geom_point(data = df_observed, aes(x= value.covariate,
+                                                                  y = value.factor, col = group), size = 1)
+  }
+  if(!only_mean) {
+    gg_interpol <- gg_interpol + geom_ribbon(aes(ymin=ymin, ymax = ymax, fill = group),
+                                             alpha = .2, col = "gray", size = 0.1)
+  }
+
+  gg_interpol
+}
 
 
 
@@ -806,5 +806,76 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   p <- .add_legend(p, covariates_dt, legend, color_name, shape_name)
   
   return(p)
+}
+
+
+#' @title Interpolate factors in MEFISTO based on new covariate values
+#' @name interpolate_factors
+#' @description Function to interpolate factors in MEFISTO based on new covariate values.
+#' @param object a \code{\link{MOFA}} object trained with smooth options and a covariate
+#' @param new_values a matrix containing the new covariate values to inter/extrapolate to. Should be
+#'  in the same format as the covariated used for training.
+#' @return Returns the \code{\link{MOFA}} with interpolated factor values filled in the corresponding slot (interpolatedZ)
+#' @details This function requires the functional MEFISTO framework to be used in training. 
+#' Use \code{set_covariates} and specify smooth_options when preparing the training using \code{prepare_mofa}. 
+#' Currenlty, only the mean of the interpolation is provided from R.
+#' @export
+#' @examples
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' new_times <- matrix(seq(0,1.5, 0.1), nrow = 1)
+#' plot_factors_vs_cov(model)
+#' 
+interpolate_factors <- function(object, new_values) {
+  
+  # TODO check this function
+  warning("This function is stil experimental. We recommend doing interpolation from python.")
+  
+  # sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (is.null(object@covariates)) stop("'object' does not contain any covariates.")
+  if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
+  if (is.null(object@expectations$Sigma)) stop("'object' does not have any expectations of Sigma.")
+  
+  # get kernel parameters
+  ls <-  get_lengthscales(object)
+  Kgs <- get_group_kernel(object)
+  s <- get_scales(object)
+  Sigma <- object@expectations$Sigma$E
+  Sigma_inv <- lapply(seq_along(factors_names(object)), function(k) solve(Sigma[k,,]))
+  
+  # all covariates
+  if (!all(sapply(nrow(object@covariates), function(c) nrow(c) == nrow(new_values)))) {
+    stop("Number of covariates in new_values does not match covariates in model")
+  } 
+  
+  # get covariates of old and new values
+  old_covariates <- Reduce(cbind, object@covariates)
+  all_covariates <- cbind(old_covariates, new_values)
+  oldidx <- seq_len(ncol(old_covariates))
+  newidx <- ncol(old_covariates) + seq_len(ncol(new_values))
+  
+  # get factor values
+  Z <- get_factors(object) %>% Reduce(rbind,.)
+  
+  res <- lapply(groups_names(object), function(g){
+    means <- sapply(seq_along(factors_names(object)), function(k) {
+      if(ls[k] == 0 || s[k] == 0){
+        means <- rep(NA, length(new_values))
+      } else {
+        Kc_new <- exp(- 2* as.matrix(dist(t(all_covariates))) ^ 2 / (2 * ls[k]^2))
+        K_new_k <- s[k] * Kgs[[k]] %x% Kc_new
+        mean <- K_new_k[newidx, ][, oldidx] %*% Sigma_inv[[k]] %*% Z[,k]
+      }
+    })
+    list(mean = t(means), new_values = new_values, variance = rep(NA, nrow = object@dimensions$K, ncol = length(new_values))) # variances only provided from python
+  })
+  
+  names(res) <- groups_names(object)
+  
+  object@interpolated_Z <- res
+  
+  return(object)
 }
 

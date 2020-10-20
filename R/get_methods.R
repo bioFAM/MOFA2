@@ -91,13 +91,22 @@ get_scales <- function(object) {
 get_group_kernel <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(is.null(object@covariates)) stop("No covariates specified in 'object'")
-  if(object@dimensions$G < 2) stop("No groups specified in 'object'")
-  if(is.null(object@training_stats$Kg)) stop("No group kernel saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' as well as 'model_groups' to TRUE.")
+  if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
+  
+  if(!object@smooth_options$model_groups || object@dimensions$G == 1) {
+    tmp <- lapply(seq_len(dim(object@training_stats$Kg)[3]), function(x) {
+      mat <- matrix(1, nrow = object@dimensions$G, ncol = object@dimensions$G)
+      rownames(mat) <- colnames(mat) <- groups_names(object)
+      mat
+    })
+  } else {
+  if(is.null(object@training_stats$Kg)) stop("No group kernel saved in 'object' \n Make sure you specify the covariates and train setting the option 'model_groups' to TRUE.")
   tmp <- lapply(seq_len(dim(object@training_stats$Kg)[3]), function(x) {
     mat <- object@training_stats$Kg[ , , x]
     rownames(mat) <- colnames(mat) <- groups_names(object)
     mat
     })
+  }
   names(tmp) <- factors_names(object)
   return(tmp)
 }
@@ -126,7 +135,7 @@ get_interpolated_factors <- function(object, as.data.frame = FALSE) {
     if("new_values" %in% names(object@interpolated_Z[[1]])) {
       new_vals <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) == "new_values"]])
       new_vals <- reshape2::melt(new_vals, varnames = c("covariate","sample_id"))
-      new_vals <- mutate(new_vals, covariate = covariates_names(object)[covariate])
+      new_vals <- mutate(new_vals, covariate = covariates_names(object))
       new_vals <- rename(new_vals, group = L1, covariate_value = value)
       new_vals <- spread(new_vals, key = covariate, value = covariate_value)
       new_vals <- select(new_vals, -L2)
