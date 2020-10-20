@@ -18,10 +18,10 @@
 #' sm <- create_mofa(data = dd$data)
 #' 
 #' Add a covariate
-#' sm <- set_covariates(sm, dd$sample_cov)
+#' sm <- set_covariates(sm, covariates = dd$sample_cov)
 #' sm
 
-set_covariates <- function(object, covariates = NULL) {
+set_covariates <- function(object, covariates) {
 
   # Sanity checks
   if (!is(object, "MOFA")) 
@@ -40,6 +40,7 @@ set_covariates <- function(object, covariates = NULL) {
       stop("Columns specified in covariates do not exist in the MOFA object metadata slot.")
     }
     covariates <- samples_metadata(object)[,c("sample",covariates),drop=F]
+
     # TO-DO: Check that they are numeric and continuous
     # Add covariates to the MOFA object
     # object <- .add_covariate(object, covariate)
@@ -98,7 +99,7 @@ set_covariates <- function(object, covariates = NULL) {
   
   # add covariates to the MOFA object
   object@covariates <- covariates
-    
+  
   return(object)
 }
 
@@ -723,8 +724,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
   
   # pivot covariate values
   covariates_dt <- df %>%
-    tidyr::pivot_wider(names_from="covariate", values_from="value.covariate") %>%
-    mutate(color_by=value.factor)
+    tidyr::pivot_wider(names_from="covariate", values_from="value.covariate") 
   
   covariates.names <- c(colnames(covariates_dt)[ncol(covariates_dt)-1], colnames(covariates_dt)[ncol(covariates_dt)])
   
@@ -736,22 +736,30 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, show
       ungroup
   }
   
-  # Return data if requested instead of plotting
-  if (return_data) return(covariates_dt)
-  
-  
+  covariates_dt <- mutate(covariates_dt, color_by = value.factor) # for compatibility with .add_legend
   # Generate plot
-  p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2])) + 
-    geom_point(aes_string(fill = "color_by"), shape=21, colour = "black", size = dot_size, stroke = stroke, alpha = alpha) + 
-    # geom_point( col = "grey", alpha =0.05)+
+  p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2], fill = "color_by")) + 
+    geom_tile() + 
     facet_grid( ~ factor) + 
     theme_bw() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 
-      axis.title = element_text(size = rel(1.0), color = "black"), 
+      axis.title = element_text(size = rel(1.2), color = "black"), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5)
-    )
+    ) + coord_fixed()
+  
+  # p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2])) + 
+  #   geom_point(aes_string(fill = "value.factor"), shape=21, colour = "black", size = dot_size, stroke = stroke, alpha = alpha) + 
+  #   # geom_point( col = "grey", alpha =0.05)+
+  #   facet_grid( ~ factor) + 
+  #   theme_bw() +
+  #   theme(
+  #     axis.text = element_text(size = rel(0.9), color = "black"), 
+  #     axis.title = element_text(size = rel(1.0), color = "black"), 
+  #     axis.line = element_line(color = "black", size = 0.5), 
+  #     axis.ticks = element_line(color = "black", size = 0.5)
+  #   )
   
   p <- .add_legend(p, covariates_dt, legend, color_name, shape_name)
   

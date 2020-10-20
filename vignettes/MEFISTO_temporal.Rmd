@@ -1,12 +1,15 @@
 ---
 title: "Illustration of MEFISTO on simulated data with a temporal covariate"
-author: "Britta Velten"
+author:
+- name: "Britta Velten"
+  affiliation: "German Cancer Research Center, Heidelberg, Germany"
+  email: "b.velten@dkfz-heidelberg.de"
+date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:
-    toc: true
-package: MOFA
+    toc_float: true
 vignette: >
-  %\VignetteIndexEntry{MOFA: MEFISTO usage on simulated data (temporal)}
+  %\VignetteIndexEntry{MEFISTO on simulated data (temporal)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -26,18 +29,25 @@ set.seed(2020)
 # set number of views and samples
 N <- 200
 time <- seq(0,1,length.out = N)
-M <- 4
 
 # generate example data
-dd <- make_example_data(sample_cov = time, n_samples = N, n_factors = 4, n_features = 200, n_views = M, lscales = c(0.5, 0.2, 0, 0))
+dd <- make_example_data(sample_cov = time, n_samples = N,
+                        n_factors = 4, n_features = 200, n_views = 4,
+                        lscales = c(0.5, 0.2, 0, 0))
+# input data
+data <- dd$data
+
+# covariate matrix with samples in columns
+time <- dd$sample_cov
+rownames(time) <- "time"
 ```
 
 
 Let's have a look at the simulated latent temporal processes, which we want to recover:
 ```{r}
-df <- data.frame(dd$Z, t(dd$sample_cov))
+df <- data.frame(dd$Z, t(time))
 df <- gather(df, key = "factor", value = "value", starts_with("simulated_factor"))
-ggplot(df, aes(x =covariate_1, y = value)) + geom_point() + facet_grid(~factor)
+ggplot(df, aes(x = time, y = value)) + geom_point() + facet_grid(~factor)
 ```
 
 # MEFISTO framework
@@ -53,7 +63,7 @@ sm <- create_mofa(data = dd$data)
 
 Now, we can add the additional temporal covariate, that we want to use for training and specify that we want to use a smooth modeling framework by specifying `smooth_options` when preparing the object. For this you can just use the default options, unless you want to make use of advanced options such as alignment across groups.
 ```{r, message=FALSE, warning=FALSE}
-sm <- set_covariates(sm, dd$sample_cov)
+sm <- set_covariates(sm, covariates = time)
 sm
 ```
 We now successfully created a MOFA object that contains 4 views, 1 group and 1 covariates giving the time points for each sample.
@@ -94,14 +104,21 @@ r <- plot_factor_cor(sm)
 ### Relate factors to the covariate
 The MOFA model has learnt paramerers for each factor that tell us how smoothly the factor varys along the covariate. A scale of 0 means that the factor captures variation independent of time, a value close to 1 tells us that this factor varys very smoothly along time. In this example, we find two factors that are non-smooth and two smooth factor. Using `plot_factors_vs_cov` we can plot the factors along time, where we can distinguish smooth and non smooth variation along time.
 ```{r}
-plot_factors_vs_cov(sm, color_by = "covariate_1_warped", show_variance=TRUE)
+plot_factors_vs_cov(sm, color_by = "time", show_variance=TRUE)
+```
+For more customized plots, we can extract the underlying data containing the factor and covariate values for each sample.
+```{r}
+df <- plot_factors_vs_cov(sm, color_by = "time",
+                    legend = FALSE, return_data = TRUE)
+head(df)
 ```
 
+The scale parameter give us an indication of the smoothness per factor (between 0 and 1): A high value indicates a factor that varies smoothly along time, a low value a factor capturing stochastic variation.
 ```{r}
 get_scales(sm)
 ```
 
-We can compare this to the factors that were simulated above and find that the model recaptured the two smooth as well as two stochastic patterns in time. Note that factors are invariant to the sign, e.g. factor 4 is the negative of the simulated factor but we can simply multiply the factors and its weights by -1 to obtain exactly the simulated factor.
+We can compare the above plots to the factors that were simulated above and find that the model recaptured the two smooth as well as two stochastic patterns in time. Note that factors are invariant to the sign, e.g. factor 4 is the negative of the simulated factor but we can simply multiply the factors and its weights by -1 to obtain exactly the simulated factor.
 
 
 ### Exploration of weights
@@ -110,45 +127,19 @@ As with MOFA+ we can now look deeper into the meaning of these factors by explor
 plot_weights(sm, factors = 4, view = 1)
 plot_top_weights(sm, factors = 3, view = 2)
 ```
-
+In addition, we can take a look at the feature values along the time covariate.
 ```{r}
-plot_group_kernel(sm)
-```
-```{r}
-plot_data_scatter_vs_cov(sm, factor=3, features = 2)
-```
-
-```{r}
+plot_data_scatter_vs_cov(sm, factor=3,
+                         features = 2,
+                         color_by = "time",
+                         dot_size = 1)
 ```
 
-```{r}
-plot_factors_vs_cov(sm, dot_size = 3, stroke = 0.1, color_by = "covariate_1", legend = F, return_data = T)
-
-```
-
-
-# SessionInfo
+<details>
+  <summary>**Session Info**</summary>
+  
 ```{r}
 sessionInfo()
 ```
 
-
-
-```{r}
-object <- sm
-factors = "all"
-covariates = NULL
-show_missing = TRUE
-scale = FALSE
-color_by = NULL
-shape_by = NULL
-color_name = NULL
-shape_name = NULL
-dot_size = 1.5
-alpha = 1
-legend = TRUE
-original = FALSE
-return_data = FALSE
-show_variance = FALSE
-```
-
+</details>

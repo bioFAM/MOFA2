@@ -16,6 +16,7 @@ vignette: >
 library(MOFA2)
 library(tidyverse)
 library(pheatmap)
+library(RColorBrewer)
 ```
 
 # Spatial data: Simulate an example data set
@@ -26,18 +27,26 @@ set.seed(2020)
 # generate spatial grid and set number of views and samples
 sample_cov <- expand_grid(x = 1:10, y =1:10) %>% t()
 N <- ncol(sample_cov)
-M <- 4
 
 # generate example data
-dd <- make_example_data(sample_cov = sample_cov, n_samples = N, n_factors = 4,
-                        n_features = 200, n_views = M, lscales = c(5, 2, 0, 0))
+dd <- make_example_data(sample_cov = sample_cov, n_samples = N,
+                        n_factors = 4, n_features = 200,
+                        n_views = 4, lscales = c(3, 2, 0, 0))
+
+# input data
+data <- dd$data
+
+# covariate matrix with samples in columns and 
+# spatial coordinates in rows
+coords <- dd$sample_cov
+rownames(coords) <- c("coord_1", "coord_2")
 ```
 
 Let's have a look at the simulated latent processes, which we want to recover:
 ```{r}
-df <- data.frame(dd$Z, t(dd$sample_cov))
+df <- data.frame(dd$Z, t(coords))
 df <- gather(df, key = "factor", value = "value", starts_with("simulated_factor"))
-ggplot(df, aes(x=covariate_1, y=covariate_2, fill = value)) + 
+ggplot(df, aes(x=coord_1, y=coord_2, fill = value)) + 
     geom_tile() + 
     facet_grid( ~ factor) + 
     theme_bw() +
@@ -46,7 +55,8 @@ ggplot(df, aes(x=covariate_1, y=covariate_2, fill = value)) +
       axis.title = element_text(size = rel(1.2), color = "black"), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5)
-    )
+    ) +
+  scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) + coord_fixed()
 ```
 
 # MEFISTO framework
@@ -57,12 +67,12 @@ To create the MOFA object we need to specify the training data and the covariate
 
 First, we start by creating a standard MOFA model and specify model (and training options) such as the number of factors.
 ```{r}
-sm <- create_mofa(data = dd$data)
+sm <- create_mofa(data = data)
 ```
 
 Now, we can add the spatial covariates, that we want to use for training and specify that we want to use a smooth modeling framework by specifying `smooth_options` when preparing the object. For this you can just use the default options, unless you want to make use of advanced options such as alignment across groups.
 ```{r, message=FALSE, warning=FALSE}
-sm <- set_covariates(sm, dd$sample_cov)
+sm <- set_covariates(sm, covariates = coords)
 sm
 ```
 We now successfully created a MOFA object that contains 4 views, 1 group and 2 covariates giving the spatial coordinates.
@@ -102,11 +112,15 @@ r <- plot_factor_cor(sm)
 ### Plot the factors on the covariate
 The MOFA model has learnt parameters for each factor that tell us how smoothly the factor varys along the covariate. A scale of 0 means that the factor captures variation independent of the covariate, a value close to 1 tells us that this factor varys very smoothly along the covariate. In this example, we find two factors that are non-smooth and two smooth factors. Using `plot_factors_on_cov_2d` we can plot the factors along the spatial coordinates, where we can distinguish smooth and non smooth variation across space.
 ```{r}
-get_scales(sm)
-plot_factors_on_cov_2d(sm)
+plot_factors_vs_cov(sm)
 ```
 
-We can compare this to the factors that were simulated above and find that the model recaptured the two smooth as well as two stochstic patterns in space.
+The scale parameter give us an indication of the smoothness per factor (between 0 and 1): A high value indicates a factor that varies smoothly along time, a low value a factor capturing stochastic variation.
+```{r}
+get_scales(sm)
+```
+
+We can compare the above plot to the factors that were simulated above and find that the model recaptured the two smooth as well as two stochstic patterns in space.
 
 ### Exploration of weights
 As with MOFA+ we can now look deeper into the meaning of these factors by exploring the weights or performing feature set enrichment analysis.
