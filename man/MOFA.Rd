@@ -50,5 +50,9 @@ K for the number of factors.}
 \item{\code{cache}}{Cache.}
 
 \item{\code{status}}{Auxiliary variable indicating whether the model has been trained.}
+
+\item{\code{covariates}}{optional slot to store sample covariate for training in MEFISTO}
+
+\item{\code{covariates_warped}}{optional slot to store warped sample covariate for training in MEFISTO}
 }}
 

@@ -16,6 +16,7 @@
 #' @return Returns a list containing the simulated data and simulation parameters.
 #' @importFrom stats rnorm rbinom rpois
 #' @importFrom dplyr left_join
+#' @importFrom mvtnorm rmvnorm
 #' @export
 #' @examples
 #' # Generate a simulated data set

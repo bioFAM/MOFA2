@@ -4,7 +4,7 @@
 \alias{set_covariates}
 \title{Add covariates to a MOFA model}
 \usage{
-set_covariates(object, covariates = NULL)
+set_covariates(object, covariates)
 }
 \arguments{
 \item{object}{an untrained \code{\link{MOFA}}}
@@ -27,7 +27,7 @@ dd <- make_example_data(sample_cov = seq(0,1,length.out = 100), n_samples = 100,
 # Create MOFA object
 sm <- create_mofa(data = dd$data)
 
-Add a covariate
-sm <- set_covariates(sm, dd$sample_cov)
+# Add a covariate
+sm <- set_covariates(sm, covariates = dd$sample_cov)
 sm
 }

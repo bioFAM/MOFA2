@@ -8,6 +8,7 @@ plot_factors_vs_cov(
   object,
   factors = "all",
   covariates = NULL,
+  warped = TRUE,
   show_missing = TRUE,
   scale = FALSE,
   color_by = NULL,
@@ -26,6 +27,9 @@ plot_factors_vs_cov(
 \item{object}{a trained \code{\link{MOFA}} object.}
 
 \item{factors}{character or numeric specifying the factor(s) to plot, default is "all"}
+
+\item{warped}{logical indicating whether to show the aligned covariate (default: TRUE), 
+only relevant if warping has been used to align multiple sample groups}
 
 \item{show_missing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
 
@@ -53,7 +57,8 @@ plot_factors_vs_cov(
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 
-\item{show_variance}{logical indicating whether to show the marginal variance of inferred factor values}
+\item{show_variance}{logical indicating whether to show the marginal variance of inferred factor values 
+(only relevant for 1-dimensional covariates)}
 
 \item{covariate}{specifies sample covariate to plot against:
 (1) a character giving the name of a column present in the sample covariates or sample metadata.

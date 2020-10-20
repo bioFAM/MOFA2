@@ -17,7 +17,7 @@
 #' # Create MOFA object
 #' sm <- create_mofa(data = dd$data)
 #' 
-#' Add a covariate
+#' # Add a covariate
 #' sm <- set_covariates(sm, covariates = dd$sample_cov)
 #' sm
 
@@ -169,7 +169,6 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 #' @return Returns a list with default options for the smooth covariate(s) functionality.
 #' @importFrom utils modifyList
 #' @export
-#' @examples
 get_default_smooth_options <- function(object) {
   
   smooth_options <- list(
@@ -586,7 +585,6 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' @importFrom stats complete.cases
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
-#' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warped = TRUE, show_missing = TRUE, scale = FALSE,
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,

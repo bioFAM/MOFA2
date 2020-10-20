@@ -272,7 +272,6 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @importFrom stats complete.cases
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
-# #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data

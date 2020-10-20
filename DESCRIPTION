@@ -21,7 +21,7 @@ License: GPL (>= 2)
 Description: The MOFA2 package contains a collection of tools for running and analysing MOFA models.
 Encoding: UTF-8
 Depends: R (>= 4.0)
-Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot, ggrastr, DelayedArray, Rtsne, uwot
+Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot, ggrastr, DelayedArray, Rtsne, uwot, mvtnorm
 Suggests: knitr, testthat, Seurat, ggpubr, foreach, psych, MultiAssayExperiment, SummarizedExperiment, SingleCellExperiment
 biocViews: DimensionReduction, Bayesian, Visualization
 URL: https://biofam.github.io/MOFA2/index.html
