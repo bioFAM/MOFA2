@@ -44,7 +44,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (any(object@dimensions$N<15)) warning("Some group(s) have less than 15 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
+  if (any(object@dimensions$N<10)) warning("Some group(s) have less than 10 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
   if (any(object@dimensions$D<15)) warning("Some view(s) have less than 15 features, MOFA will have little power to to learn meaningful factors for these view(s)....")
   if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to perform a more stringent feature selection before creating the MOFA object....")
   
@@ -127,8 +127,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   }
   if (object@model_options$num_factors > 50) warning("The number of factors is very large, training will be slow...")
   # if (!object@model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
-  if (min(object@dimensions$N) < 4 * object@model_options$num_factors) {
-    warning(sprintf("The number of samples in at least one group is very small for learning %s factors.  
+  if (sum(object@dimensions$N) < 4 * object@model_options$num_factors) {
+    warning(sprintf("The total number of samples is very small for learning %s factors.  
     Try to reduce the number of factors to obtain meaningful results. It should not exceed ~%s.",
     object@model_options$num_factors, floor(min(object@dimensions$N/4))))
   }
