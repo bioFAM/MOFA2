@@ -151,7 +151,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
       
       # Check warping options
       if (isTRUE(smooth_options$warping)) {
-        stopifnot(object@dimensions[['G']]==1) # check that multi-group is TRUE
+        stopifnot(object@dimensions[['G']] > 1) # check that multi-group is TRUE
         
         if (!is.null(smooth_options$warping_ref)) {
           stopifnot(length(smooth_options$warping_ref)==1)
