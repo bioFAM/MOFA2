@@ -9,6 +9,7 @@
 *.Rproj
 .Rhistory
 
+*_site/
 # Pycharm
 .idea
 
@@ -38,6 +39,9 @@ var/
 *.egg
 .Rproj.user
 *.Rcheck
+.Rproj.user
+.Rhistory
+.RData
 *.ipynb_checkpoints
 
 *_cache/

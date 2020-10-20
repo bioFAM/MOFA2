@@ -1,0 +1,33 @@
+Package: MOFA2
+Type: Package
+Title: Multi-Omics Factor Analysis v2
+Version: 0.99.10
+Maintainer: Britta Velten <britta.velten@gmail.com>
+Authors@R: c(person("Ricard", "Argelaguet", role = "aut",
+                     email = "ricard@ebi.ac.uk",
+                     comment = c(ORCID = "http://orcid.org/0000-0003-3199-3722")),
+              person("Damien", "Arnol", role = "aut",
+                     email = "damien.arnol@gmail.com",
+                     comment = c(ORCID = "http://orcid.org/0000-0003-2462-534X")),
+              person("Danila", "Bredikhin", role = "aut",
+                     email = "danila.bredikhin@embl.de",
+                     comment = c(ORCID = "https://orcid.org/0000-0001-8089-6983")),                     
+              person("Britta", "Velten", role = c("aut", "cre"),
+              		email = "britta.velten@gmail.com",
+              		comment = c(ORCID = "http://orcid.org/0000-0002-8397-3515"))
+              )
+Date: 2018-09-03
+License: GPL (>= 2)
+Description: The MOFA2 package contains a collection of tools for running and analysing MOFA models.
+Encoding: UTF-8
+Depends: R (>= 4.0)
+Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot, ggrastr, DelayedArray, Rtsne, uwot
+Suggests: knitr, testthat, Seurat, ggpubr, foreach, psych, MultiAssayExperiment, SummarizedExperiment, SingleCellExperiment
+biocViews: DimensionReduction, Bayesian, Visualization
+URL: https://biofam.github.io/MOFA2/index.html
+BugReports: https://github.com/bioFAM/MOFA2
+VignetteBuilder: knitr
+LazyData: false
+NeedsCompilation: yes
+RoxygenNote: 7.1.1
+SystemRequirements: Python (>=3), numpy, pandas, h5py, scipy, argparse, sklearn, mofapy2

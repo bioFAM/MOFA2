@@ -42,6 +42,29 @@ def keyboardinterrupt_saver(func):
             sys.exit()
     return saver
 
+
+def keyboardinterrupt_saver(func):
+    @wraps(func)
+    def saver(self, *args, **kwargs):
+        try:
+            func(self, *args, **kwargs)
+        # Internal methods will raise TypeError when interrupted
+        except (KeyboardInterrupt, TypeError):
+            if self.train_opts["save_interrupted"]:
+                print("Attempting to save the model at the current iteration...")
+                if self.train_opts["outfile"] is not None and self.train_opts != "":
+                    tmp_file = self.train_opts["outfile"]
+                    tmp_file = tmp_file.rstrip(".hdf5") + "_interrupted.hdf5"
+                else:
+                    tmp_file = os.path.join('/tmp', "mofa_{}_interrupted.hdf5".format(strftime('%Y%m%d-%H%M%S')))
+                self.save(outfile=tmp_file)
+                print("Saved partially trained model in {}. Exiting now.".format(tmp_file))
+            else:
+                print("Exiting now without saving the partially trained model. To save a partially trained model, set save_interrupted in the training options to true.")
+            sys.stdout.flush()
+            sys.exit()
+    return saver
+
 class entry_point(object):
     def __init__(self):
         self.print_banner()
@@ -272,9 +295,328 @@ class entry_point(object):
         # Process the data (center, scaling, etc.)
         self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
 
-    def set_train_options(self, iter=1000, startELBO=1, freqELBO=1, startSparsity=100, tolerance=None, convergence_mode="medium",
-        startDrop=20, freqDrop=10, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
-        schedule=None, gpu_mode=False, save_parameters=False, weight_views = False,
+    def set_data_df(self, data, likelihoods=None):
+        """Method to input the data in a long data.frame format
+
+        PARAMETERS
+        ----------
+        data: pd.DataFrame
+            a pandas DataFrame with columns (sample,feature,view,group,value)
+            the order is irrelevant
+        """
+
+        # TO-DO: 
+        # - CHECK FOR DUPLICATED GROUPS NAMES, VIEWS, NAMES, SAMPLES NAMES, FEATURES NAMES
+        
+        # Sanity checks
+        if not hasattr(self, 'data_opts'): 
+            # print("Data options not defined before setting the data, using default values...")
+            self.set_data_options()
+
+        assert isinstance(data, pd.DataFrame), "'data' has to be an instance of pd.DataFrame"
+
+        if 'group' not in data.columns:
+            print('\nNo "group" column found in the data frame, we will assume a common group for all samples...')
+            data["group"] = "single_group"
+
+        if 'view' not in data.columns:
+            print('\nNo "view" column found in the data frame, we will assume a common view for all features...')
+            data["view"] = "single_view"
+
+        assert 'sample' in data.columns, "'data' has to contain the column 'sample'"
+        assert 'feature' in data.columns, "'data' has to contain the column 'feature'"
+        assert 'value' in data.columns, "'data' has to contain the column 'value'"
+
+        # Check for duplicated entries
+        assert data.duplicated(subset=["group","view","feature","sample"]).sum() == 0, "Duplicated entries found in the data"
+
+        # Define feature group names and sample group names
+        self.data_opts['views_names'] = np.sort(data["view"].unique()).tolist()
+        self.data_opts['groups_names'] = np.sort(data["group"].unique()).tolist()
+        self.data_opts['features_names'] = data.groupby(["view"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        self.data_opts['samples_names'] = data.groupby(["group"])["sample"].unique()[self.data_opts['groups_names']].tolist()
+
+        # Convert data frame to list of matrices
+        data['feature'] = data['feature'].astype(str) + data['view'].astype(str) # make sure there are no duplicated feature names before pivoting
+        data_matrix = data.pivot(index='sample', columns='feature', values='value')
+
+        # Sort rows and columns of the matrix according to the sample and feature names
+        features_names_tmp = data.groupby(["view"])["feature"].unique()[self.data_opts['views_names']].tolist()
+        data_matrix = data_matrix.loc[np.concatenate(self.data_opts['samples_names'])]
+        data_matrix = data_matrix[[y for x in features_names_tmp for y in x]]
+
+        # Split into a list of views, each view being a matrix
+        tmp_features = data[["feature","view"]].drop_duplicates().groupby("view")["feature"].nunique()
+        nfeatures = tmp_features.loc[self.data_opts['views_names']]
+        data_matrix = np.split(data_matrix, np.cumsum(nfeatures)[:-1], axis=1)
+
+        # Define sample groups
+        self.data_opts['samples_groups'] = data[['sample', 'group']].drop_duplicates() \
+                                            .set_index('sample').loc[np.concatenate(self.data_opts['samples_names'])] \
+                                            .group.tolist()
+
+        # Define dimensionalities
+        self.dimensionalities = {}
+        self.dimensionalities["M"] = M = len(self.data_opts['views_names'])
+        # self.dimensionalities["N"] = len(self.data_opts['samples_names'])
+        self.dimensionalities["N"] = N = len(np.concatenate(self.data_opts['samples_names']))
+        self.dimensionalities["G"] = G = len(self.data_opts['groups_names'])
+        self.dimensionalities["D"] = D = [len(x) for x in self.data_opts['features_names']]
+
+        # Count the number of features per view and the number of samples per group
+        tmp_samples = data[["sample","group","view"]].drop_duplicates().groupby(["group","view"])["sample"].nunique()
+        tmp_features = data[["feature","group","view"]].drop_duplicates().groupby(["group","view"])["feature"].nunique()
+
+        # If everything successful, print verbose message
+        print("\n")
+        for g in self.data_opts['groups_names']:
+            for m in self.data_opts['views_names']:
+                try:
+                    print("Loaded group='%s' view='%s' with N=%d samples and D=%d features..." % (g, m, tmp_samples[g][m], tmp_features[g][m]) )
+                except:
+                    print("No data found for group='%s' and view='%s'..." % (g, m))
+        print("\n")
+
+        # Convert from pandas dataframe to numpy array
+        for m in range(M):
+            if isinstance(data_matrix[m], pd.DataFrame): data_matrix[m] = data_matrix[m].values
+
+        # Store intercepts
+        self.intercepts = [None for m in range(M)]
+        tmp = [ len(x) for x in self.data_opts['samples_names'] ]
+        for m in range(M):
+            self.intercepts[m] = [np.nanmean(x,axis=0) for x in np.split(data_matrix[m], np.cumsum(tmp)[:-1], axis=0)]
+
+        # Define likelihoods
+        if likelihoods is None:
+            likelihoods = guess_likelihoods(data_matrix)
+        elif isinstance(likelihoods, str):
+            likelihoods = [likelihoods]
+        assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli', 'poisson'"
+        self.likelihoods = likelihoods
+
+        # Process the data (i.e center, scale, etc.)
+        self.data = process_data(data_matrix, likelihoods, self.data_opts, self.data_opts['samples_groups'])
+
+    def set_data_from_anndata(self, adata, groups_label=None, use_raw=False, use_layer=None, likelihoods=None, features_subset=None, save_metadata=None):
+        """ Method to input the data in AnnData format
+
+        PARAMETERS
+        ----------
+        adata: an AnnotationData object
+        groups_label (optional): a column name in adata.obs for grouping the samples
+        use_raw (optional): use raw slot of AnnData as input values
+        use_layer (optional): use a specific layer of AnnData as input values (supersedes use_raw option)
+        likelihoods (optional): likelihoods to use (guessed from the data if not provided)
+        features_subset (optional): .var column with a boolean value to select genes (e.g. "highly_variable"), None by default
+        """
+
+        # TO-DO: 
+        # - CHECK FOR DUPLICATED NAMES.
+        # - IF NAMES NOT PROVIDED, USE DEFAULTS
+        # - 
+
+        # Sanity checks
+        if not hasattr(self, 'data_opts'): 
+            # print("Data options not defined before setting the data, using default values...")
+            self.set_data_options()
+
+        # Check groups_label is defined properly
+        n_groups = 1  # no grouping by default
+        if groups_label is not None:
+            if not isinstance(groups_label, str):
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); sys.exit()
+            if groups_label not in adata.obs.columns:
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); sys.exit()
+            n_groups = adata.obs[groups_label].unique().shape[0]
+
+
+        # Get the respective data slot
+        if use_layer:
+            if use_layer in adata.layers.keys():
+                if callable(getattr(adata.layers[use_layer], "todense", None)):
+                    data = [np.array(adata.layers[use_layer].todense())]    
+                else:
+                    data = [adata.layers[use_layer]]
+                # Subset features if required
+                if features_subset is not None:
+                    data[0] = data[0][:,adata.var[features_subset].values]
+            else:
+                print("Error: Layer {} does not exist".format(use_layer)); sys.stdout.flush(); sys.exit()
+        elif use_raw:
+            adata_raw_dense = np.array(adata.raw[:,adata.var_names].X.todense())
+            data = [adata_raw_dense]
+            # Subset features if required
+            if features_subset is not None:
+                data[0] = data[0][:,adata.var[features_subset].values]
+        else:
+            if callable(getattr(adata.X, "todense", None)):
+                data = [np.array(adata.X.todense())]
+            else:
+                data = [adata.X]
+            # Subset features if required
+            if features_subset is not None:
+                data[0] = data[0][:,adata.var[features_subset].values]
+
+        # Save dimensionalities
+        M = self.dimensionalities["M"] = 1
+        G = self.dimensionalities["G"] = n_groups
+        N = self.dimensionalities["N"] = adata.shape[0]
+        D = self.dimensionalities["D"] = [data[0].shape[1]]  # Feature may have been filtered
+        n_grouped = [adata.shape[0]] if n_groups == 1 else adata.obs.groupby(groups_label).size().values
+
+        # Define views names and features names and metadata
+        self.data_opts['views_names'] = ["rna"]
+        
+        if features_subset is not None:
+            self.data_opts['features_names'] = [adata.var_names[adata.var[features_subset]]]
+        else:
+            self.data_opts['features_names'] = [adata.var_names]
+
+        if save_metadata:
+            if features_subset is not None:
+                self.data_opts['features_metadata'] = [adata.var[adata.var[features_subset]]]
+            else:
+                self.data_opts['features_metadata'] = [adata.var]
+
+        # Define groups and samples names and metadata
+        if groups_label is None:
+            self.data_opts['groups_names'] = ["group1"]
+            self.data_opts['samples_names'] = [adata.obs.index.values.tolist()]
+            self.data_opts['samples_groups'] = ["group1"] * N
+            if save_metadata:
+                self.data_opts['samples_metadata'] = [adata.obs]
+        else:
+            # While grouping the pandas.DataFrame, the group_label would be sorted.
+            # Hence the naive implementation `adata.obs[groups_label].unique()` to get group names
+            # wouldn't match samples_names if the samples are not ordered according to their group beforehand.
+
+            # List of names of groups, i.e. [group1, group2, ...]
+            self.data_opts['groups_names'] = [str(g) for g in adata.obs.reset_index(drop=False).groupby(groups_label)[groups_label].apply(list).index.values]
+            # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
+            self.data_opts['samples_names'] = adata.obs.reset_index(drop=False).rename(columns={adata.obs.index.name:'index'}).groupby(groups_label)["index"].apply(list).tolist()
+            # List of names of groups for samples ordered as they are in the original data, i.e. [group2, group1, group1, ...]
+            self.data_opts['samples_groups'] = adata.obs[groups_label].values.astype(str)
+            if save_metadata:
+                # List of metadata tables for each group of samples
+                self.data_opts['samples_metadata'] = [g for _, g in adata.obs.groupby(groups_label)]
+
+
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
+        print("\n")
+
+
+        # Store intercepts (it is for one view only)
+        self.intercepts = [[]]
+
+        # Define likelihoods
+        if likelihoods is None:
+            likelihoods = guess_likelihoods(data)
+        elif isinstance(likelihoods, str):
+            likelihoods = [likelihoods]
+        assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli', 'poisson'"
+        self.likelihoods = likelihoods
+
+        # Process the data (center, scaling, etc.)
+        for g in self.data_opts['groups_names']:
+            samples_idx = np.where(np.array(self.data_opts['samples_groups']) == g)[0]
+            self.intercepts[0].append(np.nanmean(data[0][samples_idx,:], axis=0))
+        self.data = process_data(data, likelihoods, self.data_opts, self.data_opts['samples_groups'])
+
+    def set_data_from_loom(self, loom, groups_label=None, layer=None, cell_id="CellID"):
+        """ Method to input the data in Loom format
+
+        PARAMETERS
+        ----------
+        loom: connection to loom file (loompy.loompy.LoomConnection)
+        groups_label (optional): a key in loom.ca for grouping the samples
+        layer (optional): a layer to be used instead of the main matrix
+        cell_id (optional): the name of the cell ID attribute (default is CellID)
+        """
+
+        # TO-DO: 
+        # - CHECK FOR DUPLICATED NAMES.
+        # - IF NAMES NOT PROVIDED, USE DEFAULTS
+        # - 
+
+        # Sanity checks
+        if not hasattr(self, 'data_opts'): 
+            # print("Data options not defined before setting the data, using default values...")
+            self.set_data_options()
+
+        # Check groups_label is defined properly
+        n_groups = 1  # no grouping by default
+        if groups_label is not None:
+            if not isinstance(groups_label, str):
+                print("Error: groups_label should be a string present in the observations column names"); sys.stdout.flush(); sys.exit()
+            if groups_label not in loom.ca.keys():
+                print("Error: {} is not in observations names".format(groups_label)); sys.stdout.flush(); sys.exit()
+            n_groups = pd.unique(loom.ca[groups_label]).shape[0]
+
+        # Save dimensionalities
+        M = self.dimensionalities["M"] = 1
+        G = self.dimensionalities["G"] = n_groups
+        N = self.dimensionalities["N"] = loom.shape[1]
+        D = self.dimensionalities["D"] = [loom.shape[0]]
+        n_grouped = [loom.shape[1]] if n_groups == 1 else pd.DataFrame({'label': loom.ca[groups_label]}).groupby('label').size().values
+
+        # Define views names and features names
+        self.data_opts['views_names'] = ["rna"]
+        self.data_opts['features_names'] = [loom.ra.Accession] if 'Accession' in loom.ra.keys() else [loom.ra.Gene]
+
+        # Define groups and samples names
+        if groups_label is None:
+            self.data_opts['groups_names'] = ["group1"]
+            self.data_opts['samples_names'] = [loom.ca[cell_id]]
+            self.data_opts['samples_groups'] = ["group1"] * N
+        else:
+            loom_metadata = pd.DataFrame(loom.ca[cell_id, groups_label])
+            loom_metadata.columns = [cell_id, groups_label]
+            # List of names of groups, i.e. [group1, group2, ...]
+            self.data_opts['groups_names'] = loom_metadata.groupby(groups_label)[groups_label].apply(list).index.values
+            # Nested list of names of samples, one inner list per group, i.e. [[group1_sample1, group1_sample2, ...], ...]
+            self.data_opts['samples_names'] = loom_metadata.groupby(groups_label)[cell_id].apply(list).tolist()
+            # List of names of groups for samples ordered as they are in the oridinal data, i.e. [group2, group1, group1, ...]
+            self.data_opts['samples_groups'] = loom_metadata[groups_label].values
+
+        # If everything successful, print verbose message
+        for m in range(M):
+            for g in range(G):
+                print("Loaded view='%s' group='%s' with N=%d samples and D=%d features..." % (self.data_opts['views_names'][m], self.data_opts['groups_names'][g], n_grouped[g], D[m]))
+        print("\n")
+
+        # Store intercepts
+        self.intercepts = [None]
+        tmp = [ len(x) for x in self.data_opts['samples_names'] ]
+
+        # Get the respective data slot
+        if layer is not None:
+            data = [loom.layers[layer][:,:].T]
+        else:
+            data = [loom[:,:].T]
+
+        # Define likelihoods
+        if likelihoods is None:
+            likelihoods = guess_likelihoods(data)
+        elif isinstance(likelihoods, str):
+            likelihoods = [likelihoods]
+        assert len(likelihoods)==self.dimensionalities["M"], "Please specify one likelihood for each view"
+        assert set(likelihoods).issubset(set(["gaussian","bernoulli","poisson"])), "Available likelihoods are 'gaussian','bernoulli', 'poisson'"
+        self.likelihoods = likelihoods
+
+        # Process the data (center, scaling, etc.)
+        self.intercepts[0] = [np.nanmean(x, axis=0) for x in [data[0][np.where(np.array(self.data_opts['samples_groups']) == g)[0],:] for g in self.data_opts['groups_names']]]
+        self.data = process_data(data, self.data_opts, self.data_opts['samples_groups'])
+
+    def set_train_options(self,
+        iter=1000, startELBO=1, freqELBO=1, startSparsity=50, tolerance=None, convergence_mode="fast",
+        startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
+        schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, weight_views = False, 
         outfile=None, save_interrupted=False):
         """ Set training options """
 
@@ -379,8 +721,8 @@ class entry_point(object):
         self.train_opts['seed'] = int(seed)
         # s.random.seed(self.train_opts['seed'])
 
-        # Save variational parameters?
-        self.train_opts['save_parameters'] = save_parameters
+        # Use TauTrick to speed up ELBO computation?
+        self.train_opts['Y_ELBO_TauTrick'] = Y_ELBO_TauTrick
 
         # Weight the views to avoid imbalance problems?
         self.train_opts['weight_views'] = weight_views
@@ -876,7 +1218,6 @@ class entry_point(object):
         if self.Zcompleted:
             tmp.saveZpredictions(self.Zpredictions["mean"], self.Zpredictions["variance"], self.Zpredictions['values'], self.Zpredictions['groups'])
 
-
 def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: bool = None, 
          features_subset: Optional[str] = None,
          likelihood: Optional[Union[str, List[str]]] = None, n_factors: int = 10,
@@ -937,7 +1278,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
                           spikeslab_weights=spikeslab_weights, spikeslab_factors=spikeslab_factors, 
                           factors=n_factors)
     ent.set_train_options(iter=n_iterations, convergence_mode=convergence_mode, 
-                          gpu_mode=gpu_mode,
+                          gpu_mode=gpu_mode, Y_ELBO_TauTrick=Y_ELBO_TauTrick,
                           seed=seed, verbose=verbose, quiet=quiet, outfile=outfile, save_interrupted=save_interrupted)
 
     ent.build()

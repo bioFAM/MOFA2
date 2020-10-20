@@ -1,8 +1,9 @@
 import sys
+import os
 from setuptools import setup
 from setuptools import find_packages
 
-exec(open('mofapy2/version.py').read())
+exec(open(os.path.join(os.path.dirname(__file__), 'mofapy2', 'version.py')).read())
 
 def setup_package():
   install_requires = ['pandas', 'scipy', 'numpy', 'sklearn', 'argparse', 'h5py']

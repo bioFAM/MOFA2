@@ -115,7 +115,6 @@ class BayesNet(object):
         # Get groups
         groups = self.nodes["Y"].nodes[0].groups
 
-
         # to maintain correct ordering of groups in R2
         unique_groups, idx = np.unique(groups, return_index=True)
         unique_groups = unique_groups[np.argsort(idx)]
@@ -284,10 +283,12 @@ class BayesNet(object):
                 if self.options['verbose']:
                     self.print_verbose_message()
 
+
                 iter_time[i] = time()-t
                 
                 # Flush (we need this to print when running on the cluster)
                 sys.stdout.flush()
+
             
             self.trained = True
 

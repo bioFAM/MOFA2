@@ -1,0 +1,316 @@
+---
+title: "MOFA+: downstream analysis in R"
+author:
+- name: "Ricard Argelaguet"
+  affiliation: "European Bioinformatics Institute, Cambridge, UK"
+  email: "ricard@ebi.ac.uk"
+- name: "Britta Velten"
+  affiliation: "German Cancer Research Center, Heidelberg, Germany"
+  email: "b.velten@dkfz-heidelberg.de"
+date: "`r Sys.Date()`"
+
+output:
+  BiocStyle::html_document:
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Downstream analysis: Overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+In the MOFA2 R package we provide a wide range of downstream analysis
+to visualise and interpret the model output.
+Here we provide a brief description of the main functionalities.
+This vignette is made of simulated data and
+we do not highlight biologically relevant results.
+Please see our [tutorials](https://biofam.github.io/MOFA2/tutorials.html) for real use cases.
+
+# Load libraries
+```{r, message=FALSE}
+library(ggplot2)
+library(MOFA2)
+```
+
+# Load trained model
+
+```{r }
+filepath <- system.file("extdata", "model.hdf5", package = "MOFA2")
+model <- load_model(filepath)
+```
+
+## Overview of data
+The function `plot_data_overview` can be used to obtain an overview of the input data. 
+It shows how many views (rows) and how many groups (columns) exist, what are
+their corresponding dimensionalities and how many missing information they have (grey bars). 
+```{r}
+plot_data_overview(model)
+```
+
+# Add metadata to the model
+
+The metadata is stored as a data.frame object in `model@samples_metadata`,
+and it requires at least the column `sample`.
+The column `group` is required only if you are doing multi-group inference.  
+The number of rows must match the total number of samples
+in the model (`sum(model@dimensions$N)`).
+
+Let's add some artificial metadata...
+```{r }
+Nsamples = sum(get_dimensions(model)[["N"]])
+
+sample_metadata <- data.frame(
+  sample = samples_names(model)[[1]],
+  condition = sample(c("A","B"), size = Nsamples, replace = TRUE),
+  age = sample(1:100, size = Nsamples, replace = TRUE)
+)
+
+samples_metadata(model) <- sample_metadata
+head(samples_metadata(model), n=3)
+```
+
+# Variance decomposition
+
+The first step in the MOFA analysis is to quantify the amount
+of variance explained ($R^2$) by each factor in each data modality.  
+The variance explained estimates are stored in the hdf5 file and
+loaded in `model@cache[["variance_explained"]]`:
+```{r }
+# Total variance explained per view
+head(get_variance_explained(model)$r2_total[[1]])
+
+# Variance explained for every factor in per view
+head(get_variance_explained(model)$r2_per_factor[[1]])
+```
+
+Variance explained estimates can be plotted using `plot_variance_explained(model, ...)`. Options:  
+
+* **factors**: character vector with a factor name(s), or numeric vector with
+  the index(es) of the factor(s). Default is "all".
+* **x**: character specifying the dimension for the x-axis ("view", "factor", or "group").
+* **y**: character specifying the dimension for the y-axis ("view", "factor", or "group").
+* **split_by**: character specifying the dimension to be faceted ("view", "factor", or "group").
+* **plot_total**: logical value to indicate if to plot the total variance explained 
+  (for the variable in the x-axis)
+
+In this case we have 5 active factors that explain a large amount of variation in
+both data modalities.
+```{r}
+plot_variance_explained(model, x="view", y="factor")
+```
+
+The model explains ~70% of the variance in both data modalities.
+```{r}
+plot_variance_explained(model, x="view", y="factor", plot_total = TRUE)[[2]]
+```
+
+
+# Visualisation of Factors
+
+The MOFA factors capture the global sources of variability in the data.
+Mathematically, each factor ordinates cells along a one-dimensional axis centered at zero.
+The value per se is not important, only the relative positioning of samples matters.
+Samples with different signs manifest opposite “effects”
+along the inferred axis of variation,
+with higher absolute value indicating a stronger effect.
+Note that the interpretation of factors is analogous to the interpretation of the principal components in PCA.
+
+## Visualisation of factors one at a time
+
+Factors can be plotted using `plot_factor` (for beeswarm plots of individual factors) or
+`plot_factors` (for scatter plots of factor combinations).
+```{r }
+plot_factor(model, 
+  factor = 1:3,
+  color_by = "age",
+  shape_by = "condition"
+)
+```
+
+Adding more options
+```{r}
+p <- plot_factor(model, 
+  factors = c(1,2,3),
+  color_by = "condition",
+  dot_size = 3,        # change dot size
+  dodge = TRUE,           # dodge points with different colors
+  legend = FALSE,          # remove legend
+  add_violin = TRUE,      # add violin plots,
+  violin_alpha = 0.25  # transparency of violin plots
+)
+
+# The output of plot_factor is a ggplot2 object that we can edit
+p <- p + 
+  scale_color_manual(values=c("A"="black", "B"="red")) +
+  scale_fill_manual(values=c("A"="black", "B"="red"))
+
+print(p)
+```
+
+## Visualisation of combinations of factors
+
+Scatter plots
+```{r, message=FALSE}
+plot_factors(model, 
+  factors = 1:3,
+  color_by = "condition"
+)
+```
+
+
+# Visualisation of feature weights
+
+The weights provide a score for how strong each feature relates to each factor.
+Features with no association with the factor have values close to zero,
+while features with strong association with the factor have large absolute values.
+The sign of the weight indicates the direction of the effect:
+a positive weight indicates that the feature has higher levels in the cells with
+positive factor values, and vice versa. 
+
+Weights can be plotted using `plot_weights` or `plot_top_weights`
+
+```{r }
+plot_weights(model,
+  view = "view_0",
+  factor = 1,
+  nfeatures = 10,     # Number of features to highlight
+  scale = TRUE,          # Scale weights from -1 to 1
+  abs = FALSE             # Take the absolute value?
+)
+```
+
+```{r }
+plot_top_weights(model,
+  view = "view_0",
+  factor = 1,
+  nfeatures = 10
+)
+```
+
+# Visualisation of covariation patterns in the input data
+
+Instead of looking at weights, it is useful to observe the coordinated heterogeneity
+that MOFA captures in the original data.
+This can be done using the `plot_data_heatmap` and `plot_data_scatter` function.   
+
+## Heatmaps
+
+Heatmap of observations.
+Top features are selected by its weight in the selected factor.
+By default, samples are ordered according to their corresponding factor value.
+```{r}
+plot_data_heatmap(model,
+  view = "view_1",         # view of interest
+  factor = 1,             # factor of interest
+  features = 20,          # number of features to plot (they are selected by weight)
+  
+  # extra arguments that are passed to the `pheatmap` function
+  cluster_rows = TRUE, cluster_cols = FALSE,
+  show_rownames = TRUE, show_colnames = FALSE
+)
+```
+
+## Scatter plots
+
+Scatter plots of observations vs factor values. 
+It is useful to add a linear regression estimate to visualise
+if the relationship between (top) features and factor values is linear.
+```{r}
+plot_data_scatter(model,
+  view = "view_1",         # view of interest
+  factor = 1,             # factor of interest
+  features = 5,           # number of features to plot (they are selected by weight)
+  add_lm = TRUE,          # add linear regression
+  color_by = "condition"
+)
+```
+
+## Non-linear dimensionality reduction
+
+The MOFA factors are linear (as in Principal Component analysis),
+so each one captures limited amount of information,
+but they can be used as input to other methods that learn compact nonlinear manifolds, 
+e.g. t-SNE or UMAP.
+
+Run UMAP or t-SNE
+```{r }
+set.seed(42)
+model <- run_umap(model)
+model <- run_tsne(model)
+```
+
+Plot (nothing too interesting in this simulated data set)
+```{r }
+plot_dimred(model,
+  method = "TSNE",  # method can be either "TSNE" or "UMAP"
+  color_by = "condition",
+  dot_size = 5
+)
+```
+
+# Other functionalities
+
+## Renaming dimensions
+
+The user can rename the dimensions of the model
+```{r}
+views_names(model) <- c("Transcriptomics", "Proteomics")
+factors_names(model) <- paste("Factor", 1:get_dimensions(model)$K, sep=" ")
+```
+
+```{r}
+views_names(model)
+```
+
+## Extracting data for downstream analysis
+
+The user can extract the feature weights, the data and the factors to
+generate their own plots.  
+
+Extract factors
+```{r}
+# "factors" is a list of matrices, one matrix per group with dimensions (nsamples, nfactors)
+factors <- get_factors(model, factors = "all")
+lapply(factors,dim)
+```
+
+Extract weights
+```{r}
+# "weights" is a list of matrices, one matrix per view with dimensions (nfeatures, nfactors)
+weights <- get_weights(model, views = "all", factors = "all")
+lapply(weights,dim)
+```
+
+Extract data
+```{r}
+# "data" is a nested list of matrices, one matrix per view and group with dimensions (nfeatures, nsamples)
+data <- get_data(model)
+lapply(data, function(x) lapply(x, dim))[[1]]
+```
+
+For convenience, the user can extract the data in long data.frame format:
+
+```{r}
+factors <- get_factors(model, as.data.frame = TRUE)
+head(factors, n=3)
+```
+
+```{r}
+weights <- get_weights(model, as.data.frame = TRUE)
+head(weights, n=3)
+```
+
+```{r}
+data <- get_data(model, as.data.frame = TRUE)
+head(data, n=3)
+```
+
+<details>
+  <summary>**Session Info**</summary>
+  
+```{r}
+sessionInfo()
+```
+
+</details>
