@@ -191,7 +191,7 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, save_metad
 #' @param df \code{data.frame} object with at most 5 columns: \code{sample}, \code{group}, \code{feature}, \code{view}, \code{value}. 
 #'   The \code{group} column (optional) indicates the group of each sample when using the multi-group framework.
 #'   The \code{view} column (optional) indicates the view of each feature when having multi-view data.
-#'   @param save_metadata Boolean indicating whether to store sample level columns in the data frame as samples metadata
+#' @param save_metadata Boolean indicating whether to store sample level columns in the data frame as samples metadata
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples

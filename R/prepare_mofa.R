@@ -16,6 +16,8 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
+#' @param smooth_options list of options for smooth inference (see \code{\link{get_default_smooth_options}} for details). 
+#' If NULL, default options are used.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @details This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
 #' and before starting the training (using \code{\link{run_mofa}}). Here, we can specify different options for

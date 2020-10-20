@@ -28,6 +28,12 @@ plot_factors_vs_cov(
 
 \item{factors}{character or numeric specifying the factor(s) to plot, default is "all"}
 
+\item{covariates}{specifies sample covariate(s) to plot against:
+(1) a character giving the name of a column present in the sample covariates or sample metadata.
+(2) a character giving the name of a feature present in the training data.
+(3) a vector of the same length as the number of samples specifying continuous numeric values per sample.
+Default is the first sample covariates in covariates slot}
+
 \item{warped}{logical indicating whether to show the aligned covariate (default: TRUE), 
 only relevant if warping has been used to align multiple sample groups}
 
@@ -53,20 +59,14 @@ only relevant if warping has been used to align multiple sample groups}
 
 \item{alpha}{numeric indicating dot transparency.}
 
+\item{stroke}{numeric indicating the stroke size}
+
 \item{legend}{logical indicating whether to add legend.}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 
 \item{show_variance}{logical indicating whether to show the marginal variance of inferred factor values 
 (only relevant for 1-dimensional covariates)}
-
-\item{covariate}{specifies sample covariate to plot against:
-(1) a character giving the name of a column present in the sample covariates or sample metadata.
-(2) a character giving the name of a feature present in the training data.
-(3) a vector of the same length as the number of samples specifying continuous numeric values per sample.
-Default is the first sample covariates in covariates slot}
-
-\item{original}{logical indicating whether to use unscaled covariates (only if used with GP prior)}
 }
 \value{
 Returns a \code{ggplot2} object

@@ -27,6 +27,9 @@ If NULL, default options are used.}
 
 \item{stochastic_options}{list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 If NULL, default options are used.}
+
+\item{smooth_options}{list of options for smooth inference (see \code{\link{get_default_smooth_options}} for details). 
+If NULL, default options are used.}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots

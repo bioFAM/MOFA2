@@ -552,7 +552,7 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' @description  Scatterplots of a factor's values againt the sample covariates
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character or numeric specifying the factor(s) to plot, default is "all"
-#' @param covariate specifies sample covariate to plot against:
+#' @param covariates specifies sample covariate(s) to plot against:
 #' (1) a character giving the name of a column present in the sample covariates or sample metadata.
 #' (2) a character giving the name of a feature present in the training data.
 #' (3) a vector of the same length as the number of samples specifying continuous numeric values per sample.
@@ -573,8 +573,8 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
 #' @param shape_name name for shape legend.
 #' @param dot_size numeric indicating dot size.
 #' @param alpha numeric indicating dot transparency.
+#' @param stroke numeric indicating the stroke size
 #' @param legend logical indicating whether to add legend.
-#' @param original logical indicating whether to use unscaled covariates (only if used with GP prior)
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
 #' @param show_variance logical indicating whether to show the marginal variance of inferred factor values 
 #' (only relevant for 1-dimensional covariates)
@@ -590,7 +590,6 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
                                 dot_size = 1.5, alpha = 1, stroke = NULL, legend = TRUE, return_data = FALSE, show_variance = FALSE) {
   
-  # TO-DO: ORIGINAL = FALSE
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   

@@ -31,6 +31,7 @@
 #' @slot status Auxiliary variable indicating whether the model has been trained.
 #' @slot covariates optional slot to store sample covariate for training in MEFISTO
 #' @slot covariates_warped optional slot to store warped sample covariate for training in MEFISTO
+#' @slot interpolated_Z optional slot to store interpolated factor values (used only with MEFISTO)
 #' @name MOFA
 #' @rdname MOFA
 #' @aliases MOFA-class

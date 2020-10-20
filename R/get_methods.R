@@ -93,7 +93,8 @@ get_group_kernel <- function(object) {
 #' @name get_interpolated_factors
 #' @description Extract the interpolated factor values
 #' @details This can be used only if covariates are passed to the object upon creation, GP_factors is set to True and new covariates were passed for interpolation.
-#' @param object a \code{\link{MOFA}} object.
+#' @param object a \code{\link{MOFA}} object
+#' @param as.data.frame logical indicating whether to return data as a data.frame
 #' @export
 get_interpolated_factors <- function(object, as.data.frame = FALSE) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")

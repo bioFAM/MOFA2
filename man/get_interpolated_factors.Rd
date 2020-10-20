@@ -7,7 +7,9 @@
 get_interpolated_factors(object, as.data.frame = FALSE)
 }
 \arguments{
-\item{object}{a \code{\link{MOFA}} object.}
+\item{object}{a \code{\link{MOFA}} object}
+
+\item{as.data.frame}{logical indicating whether to return data as a data.frame}
 }
 \description{
 Extract the interpolated factor values
