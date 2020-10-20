@@ -17,7 +17,7 @@
 #' @param outfile output file for the model (.hdf5 format). If \code{NULL}, a temporary file is created.
 #' @param use_basilisk use \code{basilisk} to automatically install a conda environment with mofapy2 and all dependencies? 
 #' If \code{FALSE} (default), you should specify the right python binary when loading R with \code{reticulate::use_python(..., force=TRUE)}
-#' or the right conda environment with \code{reticulate::use_conda(..., force=TRUE)}.
+#' or the right conda environment with \code{reticulate::use_condaenv(..., force=TRUE)}.
 #' @return a trained \code{\link{MOFA}} object
 #' @import reticulate
 #' @import basilisk
@@ -58,7 +58,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   if (!use_basilisk) {
 
     message("Connecting to the mofapy2 python package using reticulate (use_basilisk = FALSE)... 
-    Please make sure to manually specify the right python binary when loading R with reticulate::use_python(..., force=TRUE) or the right conda environment with reticulate::use_conda(..., force=TRUE)
+    Please make sure to manually specify the right python binary when loading R with reticulate::use_python(..., force=TRUE) or the right conda environment with reticulate::use_condaenv(..., force=TRUE)
     If you prefer to let us automatically install a conda environment with 'mofapy2' installed using the 'basilisk' package, please use the argument 'use_basilisk = TRUE'\n")
     
     # Sanity checks

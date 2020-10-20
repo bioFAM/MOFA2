@@ -16,7 +16,7 @@ This is useful for some downstream analysis (mainly functions with the prefix \c
 
 \item{use_basilisk}{use \code{basilisk} to automatically install a conda environment with mofapy2 and all dependencies? 
 If \code{FALSE} (default), you should specify the right python binary when loading R with \code{reticulate::use_python(..., force=TRUE)}
-or the right conda environment with \code{reticulate::use_conda(..., force=TRUE)}.}
+or the right conda environment with \code{reticulate::use_condaenv(..., force=TRUE)}.}
 }
 \value{
 a trained \code{\link{MOFA}} object
