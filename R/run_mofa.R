@@ -42,22 +42,24 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
   
   # Connect to mofapy2 using reticulate (default)
-  if (isFALSE(use_basilisk)) {
+  if (!use_basilisk) {
 
-    message("Connecting to the mofapy2 package using reticulate (use_basilisk = FALSE)... 
+    message("Connecting to the mofapy2 python package using reticulate (use_basilisk = FALSE)... 
     Please make sure to manually specify the right python binary when loading R with reticulate::use_python(..., force=TRUE) or the right conda environment with reticulate::use_conda(..., force=TRUE)
     If you prefer to let us automatically install a conda environment with 'mofapy2' installed using the 'basilisk' package, please use the argument 'use_basilisk = TRUE'\n")
     
     # Sanity checks
     have_mofa2 <- py_module_available("mofapy2")
-    if(isFALSE(have_mofa2)) {
-      stop("mofapy2 is not detected in the specified python binary, see reticulate::py_config()")
-    } else {
+    if (have_mofa2) {
       .run_mofa_reticulate(object, outfile, save_data)
+    } else {
+      warning("mofapy2 is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...")
+      use_basilisk <- TRUE
     }
+  }
     
   # Connect to mofapy2 using basilisk (optional)
-  } else {
+  if (use_basilisk) {
     
     message("Connecting to the mofapy2 package using basilisk. 
     Set 'use_basilik' to FALSE if you prefer to manually set the python binary using 'reticulate'.")
