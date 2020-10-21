@@ -832,7 +832,7 @@ interpolate_factors <- function(object, new_values) {
   # TODO check this function
   message("We recommend doing interpolation from python where additionally uncertainties are provided for the interpolation.")
   
-  if(length(MOFAobject_untrained@interpolated_Z) != 0){
+  if(length(object@interpolated_Z) != 0){
     warning("Object already contains interpolated factor values, overwriting it.")
   }
   # sanity checks
