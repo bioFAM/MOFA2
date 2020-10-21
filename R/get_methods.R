@@ -122,7 +122,7 @@ get_group_kernel <- function(object) {
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns containing the covariates 
 #' and (factor, group, mean and variance).
 #' @export
-get_interpolated_factors <- function(object, as.data.frame = FALSE) {
+get_interpolated_factors <- function(object, as.data.frame = FALSE, only_mean = FALSE) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(is.null(object@interpolated_Z)) stop("No interpolated factors present in 'object'")
   if(!as.data.frame){
@@ -131,6 +131,9 @@ get_interpolated_factors <- function(object, as.data.frame = FALSE) {
     preds <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) != "new_values"]])
     df_interpol <- reshape2::melt(preds, varnames = c("factor", "sample_id"))
     df_interpol <- rename(df_interpol, group = L1, type = L2)
+    if(only_mean){
+      df_interpol <- filter(df_interpol, type == "mean")
+    }
     
     if("new_values" %in% names(object@interpolated_Z[[1]])) {
       new_vals <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) == "new_values"]])

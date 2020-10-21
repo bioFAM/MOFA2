@@ -372,7 +372,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
   covariate <- .check_and_get_covariates(object, covariate)
 
   # get interpolated factors
-  df <- get_interpolated_factors(object, as.data.frame = TRUE)
+  df <- get_interpolated_factors(object, as.data.frame = TRUE, only_mean = only_mean)
 
   # calculate ribbon borders
   if(!only_mean) {
@@ -830,14 +830,22 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
 interpolate_factors <- function(object, new_values) {
   
   # TODO check this function
-  warning("This function is stil experimental. We recommend doing interpolation from python.")
+  message("We recommend doing interpolation from python where additionally uncertainties are provided for the interpolation.")
   
+  if(length(MOFAobject_untrained@interpolated_Z) != 0){
+    warning("Object already contains interpolated factor values, overwriting it.")
+  }
   # sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (is.null(object@covariates)) stop("'object' does not contain any covariates.")
   if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
   if (is.null(object@expectations$Sigma)) stop("'object' does not have any expectations of Sigma.")
+  if (!is.numeric(new_values)) stop("'new_values' should be numeric.")
   
+  # restrutcutre 1d covariate
+  if(is.null(dim(new_values))){
+    new_values <- matrix(new_values, nrow = 1)
+  }
   # get kernel parameters
   ls <-  get_lengthscales(object)
   Kgs <- get_group_kernel(object)
@@ -846,31 +854,48 @@ interpolate_factors <- function(object, new_values) {
   Sigma_inv <- lapply(seq_along(factors_names(object)), function(k) solve(Sigma[k,,]))
   
   # all covariates
-  if (!all(sapply(nrow(object@covariates), function(c) nrow(c) == nrow(new_values)))) {
+  if (!all(sapply(nrow(object@covariates_warped), function(c) nrow(c) == nrow(new_values)))) {
     stop("Number of covariates in new_values does not match covariates in model")
   } 
   
   # get covariates of old and new values
-  old_covariates <- Reduce(cbind, object@covariates)
-  all_covariates <- cbind(old_covariates, new_values)
-  oldidx <- seq_len(ncol(old_covariates))
-  newidx <- ncol(old_covariates) + seq_len(ncol(new_values))
+  if(object@smooth_options$warping){
+    old_covariates <- samples_metadata(object)[, paste(covariates_names(object), "warped", sep = "_"), drop = F] %>% t()
+  } else{
+    old_covariates <- samples_metadata(object)[, covariates_names(object), drop = F] %>% t()
+    
+  }
+  all_covariates <- cbind(new_values, old_covariates)  %>% unique.matrix(., MARGIN = 2) 
+
+  old_groups <-  as.character(samples_metadata(object)$group)
+  old <- rbind(old_groups, old_covariates)
+  all <- rbind(rep(groups_names(object), each = ncol(all_covariates)),
+               t(apply(all_covariates, 1,function(x) rep(x, object@dimensions$G))))
+  new <- rbind(rep(groups_names(object), each = ncol(new_values)),
+               t(apply(new_values, 1,function(x) rep(x, object@dimensions$G))))
   
-  # get factor values
+  oldidx <- match(data.frame(old), data.frame(all))
+  newidx <- match(data.frame(new), data.frame(all))
+
+    # get factor values
   Z <- get_factors(object) %>% Reduce(rbind,.)
   
-  res <- lapply(groups_names(object), function(g){
-    means <- sapply(seq_along(factors_names(object)), function(k) {
+  means <- sapply(seq_along(factors_names(object)), function(k) {
       if(ls[k] == 0 || s[k] == 0){
         means <- rep(NA, length(new_values))
       } else {
-        Kc_new <- exp(- 2* as.matrix(dist(t(all_covariates))) ^ 2 / (2 * ls[k]^2))
+        Kc_new <- exp(- as.matrix(dist(t(all_covariates))) ^ 2 / (2 * ls[k]^2))
         K_new_k <- s[k] * Kgs[[k]] %x% Kc_new
-        mean <- K_new_k[newidx, ][, oldidx] %*% Sigma_inv[[k]] %*% Z[,k]
+        mean <- K_new_k[newidx, oldidx] %*% Sigma_inv[[k]] %*% Z[,k]
       }
+  }) %>% t()
+  
+  res <- lapply(groups_names(object), function(g){
+    list(mean = means[,new[1,] == g], new_values = new_values,
+         variance = rep(NA, nrow = object@dimensions$K,  # variances only provided from python
+                        ncol = length(new_values)))  
     })
-    list(mean = t(means), new_values = new_values, variance = rep(NA, nrow = object@dimensions$K, ncol = length(new_values))) # variances only provided from python
-  })
+
   
   names(res) <- groups_names(object)
   

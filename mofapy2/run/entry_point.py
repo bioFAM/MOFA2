@@ -1017,9 +1017,17 @@ class entry_point(object):
         # get the necessary expectations
         Z = self.model.nodes['Z'].getExpectations()['E']
         K = Z.shape[1]
+
         Sigma_terms = self.model.nodes['Sigma'].getExpectations()
         Sigma = Sigma_terms['cov']
-        Sigma_inv = Sigma_terms['inv']
+        if not self.smooth_opts['sparseGP']:
+            Sigma_inv = Sigma_terms['inv']
+        else:
+            N = Z.shape[0]
+            Sigma_inv = np.zeros([K, N, N])
+            for k in range(K):
+                Sigma_inv[k,:,:] = np.linalg.inv(Sigma[k,:,:])
+                
         GP_param = self.model.nodes['Sigma'].getParameters()
         if groups == "all":
             G = len(self.model.nodes['Sigma'].groups)
