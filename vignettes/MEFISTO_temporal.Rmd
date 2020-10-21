@@ -135,6 +135,15 @@ plot_data_scatter_vs_cov(sm, factor=3,
                          dot_size = 1)
 ```
 
+
+## Interpolation
+Furthermore, we can inter- or extrapolate the factor. To obtain the uncertainties of these predictions, this needs to be specified before training. The means, however, can be obtained post-hoc:
+```{r}
+sm <- interpolate_factors(sm, new_values = seq(0, 1.2, 0.01))
+plot_interpolation_vs_covariate(sm)
+```
+
+
 <details>
   <summary>**Session Info**</summary>
   
