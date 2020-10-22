@@ -9,7 +9,14 @@ set_covariates(object, covariates)
 \arguments{
 \item{object}{an untrained \code{\link{MOFA}}}
 
-\item{covariates}{list of data_options (see \code{\link{get_default_data_options}} details).}
+\item{covariates}{Sample-covariates to be passed to the model.
+This can be either:
+\itemize{
+  \item{a character, specifying columns already present in the samples_metadata of the object}
+  \item{a data.frame with columns "sample", "covariate", "value". Sample names need to match those present in the data}
+  \item{a matrix with smaples in columns and covariate(s) in row(s)}
+ }
+Note that the covariate should be numeric and continuous.}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} with covariates filled in the corresponding slots

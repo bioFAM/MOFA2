@@ -6,7 +6,14 @@
 #' @name set_covariates
 #' @description Function to add  continuous covariate to a \code{\link{MOFA}} object for smooth training (MEFISTO) 
 #' @param object an untrained \code{\link{MOFA}}
-#' @param covariates list of data_options (see \code{\link{get_default_data_options}} details). 
+#' @param covariates Sample-covariates to be passed to the model.
+#' This can be either:
+#' \itemize{
+#'   \item{a character, specifying columns already present in the samples_metadata of the object}
+#'   \item{a data.frame with columns "sample", "covariate", "value". Sample names need to match those present in the data}
+#'   \item{a matrix with smaples in columns and covariate(s) in row(s)}
+#'  }
+#' Note that the covariate should be numeric and continuous.
 #' @return Returns an untrained \code{\link{MOFA}} with covariates filled in the corresponding slots
 #' @details To activate the functional MEFISTO framework, specify smooth_options when preparing the training using \code{prepare_mofa} 
 #' @export
@@ -386,7 +393,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 
   gg_interpol <- ggplot(df, aes_string(x=covariate, y = "mean", col = "group")) +
     geom_line(aes(y=mean,  col = group)) +
-    facet_wrap(~ factor) + theme_classic()
+    facet_wrap(~ factor) + theme_classic() + ylab("factor value")
 
   if(show_observed) {
     gg_interpol <- gg_interpol + geom_point(data = df_observed, aes(x= value.covariate,
@@ -404,10 +411,12 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 
 
 #' @title Scatterplots of feature values against sample covariates
-#' @name plot_data_scatter_vs_cov
+#' @name plot_data_vs_cov
 #' @description Function to do a scatterplot of features against sample covariate values.
 #' @param object a \code{\link{MOFA}} object.
 #' @param covariate string with the covariate name or a samples_metadata column, or an integer with the index of the covariate
+#' @param warped logical indicating whether to show the aligned covariate (default: TRUE), 
+#' only relevant if warping has been used to align multiple sample groups
 #' @param factor string with the factor name, or an integer with the index of the factor to take top features from
 #' @param view string with the view name, or an integer with the index of the view. Default is the first view.
 #' @param groups groups to plot. Default is "all".
@@ -453,9 +462,9 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 #' # Using an existing trained model
 #' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' plot_data_scatter_vs_cov(model, factor = 3, features = 2)
+#' plot_data_vs_cov(model, factor = 3, features = 2)
 
-plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
+plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, view = 1, groups = "all", features = 10, sign = "all",
                               color_by = "group", legend = TRUE, alpha = 1, shape_by = NULL, stroke = NULL,
                               dot_size = 2.5, text_size = NULL, add_lm = FALSE, lm_per_group = FALSE, imputed = FALSE, return_data = FALSE) {
   
@@ -472,14 +481,11 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   view <- .check_and_get_views(object, view)
   
   # Check and fetch covariates
-  if(covariate %in% colnames(samples_metadata(object))){
-    covari <- samples_metadata(object)[,c("sample", covariate)]
-  } else {
-    covariate <- .check_and_get_covariates(object, covariates = covariate)
-    covari <- get_covariates(object, covariates = covariate, as.data.frame = TRUE)
-    covari <- covari[,c("sample","value")]
+  df1 <- get_covariates(object, covariate, as.data.frame = TRUE, warped = warped) 
+  covariate_name <- unique(df1$covariate)
+  if(!warped){
+    covariate_name <- paste(covariate_name, "(unaligned)")
   }
-  colnames(covari) <- c("sample","x")
   
   # Collect relevant data
   N <- get_dimensions(object)[["N"]]
@@ -514,7 +520,7 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   shape_by <- .set_shapeby(object, shape_by)
   
   # Merge factor values with color and shape information
-  df1 <- merge(covari, color_by, by="sample")
+  df1 <- merge(df1, color_by, by="sample")
   df1 <- merge(df1, shape_by, by="sample")
   
   # Create data frame 
@@ -526,10 +532,10 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   }
   
   df2$sample <- as.character(df2$sample)
-  df <- left_join(df1, df2, by = "sample")
+  df <- left_join(df1, df2, by = "sample", suffix = c(".covariate",".data"))
   
   # (Q) Remove samples with missing values in Factor values
-  df <- df[!is.na(df$value),]
+  df <- df[!is.na(df$value.covariate) & !is.na(df$value.data) ,]
   
   if(return_data){
     return(df)
@@ -549,9 +555,9 @@ plot_data_scatter_vs_cov <- function(object, covariate = 1, factor = 1, view = 1
   axis.text.size <- .select_axis.text.size(N=length(unique(df$feature)))
   
   # Generate plot
-  p <- ggplot(df, aes_string(x = "x", y = "value")) + 
+  p <- ggplot(df, aes_string(x = "value.covariate", y = "value.data")) + 
     geom_point(aes_string(fill = "color_by", shape = "shape_by"), colour = "black", size = dot_size, stroke = stroke, alpha = alpha) +
-    labs(x=covariate, y="") +
+    labs(x=covariate_name, y="") +
     facet_wrap(~feature, scales="free_y") +
     theme_classic() + 
     theme(
@@ -699,7 +705,8 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
             alpha = alpha, 
             stroke = stroke,
             show_variance = show_variance,
-            legend = legend
+            legend = legend,
+            warped = warped
           ) 
   } else if (length(covariates) == 2) {
     p <- .plot_factors_vs_cov_2d(df,
@@ -719,10 +726,15 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
 }
 
 
-.plot_factors_vs_cov_1d <- function(df, color_name = "", shape_name = "", scale = FALSE, dot_size = 1.5, alpha = 1, stroke = 1, show_variance = FALSE, legend = TRUE) {
+.plot_factors_vs_cov_1d <- function(df, color_name = "", shape_name = "", scale = FALSE, dot_size = 1.5, alpha = 1, stroke = 1, show_variance = FALSE, legend = TRUE, warped = TRUE) {
   
   # Sanity checks
   stopifnot(length(unique(df$covariate))==1)
+  
+  covariate_name <- unique(df$covariate)
+  if(!warped){
+    covariate_name <- paste(covariate_name, "(unaligned)")
+  }
   
   
   # Scale values from 0 to 1
@@ -748,7 +760,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
       axis.title = element_text(size = rel(1.2), color = "black"), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5)
-    )
+    ) + xlab(covariate_name) + ylab("factor value")
   
   if (show_variance){
     p <- p + geom_errorbar(aes(ymin = value - sqrt(var)*1.96, ymax =value + sqrt(var)*1.96), col = "red", alpha = 0.7)
@@ -789,7 +801,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
       axis.title = element_text(size = rel(1.2), color = "black"), 
       axis.line = element_line(color = "black", size = 0.5), 
       axis.ticks = element_line(color = "black", size = 0.5)
-    ) + coord_fixed()
+    ) + coord_fixed() + xlab(covariates.names[1]) + ylab(covariates.names[2])
   
   # p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2])) + 
   #   geom_point(aes_string(fill = "value.factor"), shape=21, colour = "black", size = dot_size, stroke = stroke, alpha = alpha) + 
@@ -904,3 +916,34 @@ interpolate_factors <- function(object, new_values) {
   return(object)
 }
 
+
+#' @title Plot covariate alignment acorss groups
+#' @name plot_alignment
+#' @description Function to plot the alignment learnt by MEFISTO for the 
+#' covariate values between different groups
+#' @param object a \code{\link{MOFA}} object trained with smooth options, warping and a covariate
+#' @return ggplot object showing the alignment
+#' @details This function requires the functional MEFISTO framework to be used in training. 
+#' Use \code{set_covariates} and specify smooth_options when preparing the training using \code{prepare_mofa}. 
+#' @export
+#' 
+plot_alignment <- function(object){
+  # sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (is.null(object@covariates)) stop("'object' does not contain any covariates.")
+  if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
+  if (!object@smooth_options$warping) stop("No warping applied in this MOFA object")
+  df_w <- get_covariates(object, 1, as.data.frame = TRUE, warped = TRUE)
+  df_nw <- get_covariates(object, 1, as.data.frame = TRUE, warped = FALSE)
+  
+  df <- left_join(df_w, df_nw, by = c("sample"), suffix = c(".warped", ".unaligned"))
+  df <- left_join(df, select(samples_metadata(object), group, sample), by = "sample")
+  
+  yname <- object@smooth_options$warping_ref
+  if(!yname %in% groups_names(object)){
+      yname <- "reference_value"
+  }
+
+  ggplot(df, aes(y = value.warped, x = value.unaligned)) +
+    geom_point() + facet_wrap(~group) + theme_bw() + ylab(yname)
+}

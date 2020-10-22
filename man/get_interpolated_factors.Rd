@@ -4,7 +4,7 @@
 \alias{get_interpolated_factors}
 \title{Get interpolated factor values}
 \usage{
-get_interpolated_factors(object, as.data.frame = FALSE)
+get_interpolated_factors(object, as.data.frame = FALSE, only_mean = FALSE)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object}
