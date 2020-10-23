@@ -869,6 +869,8 @@ class entry_point(object):
 
         # Define whether to model a group covariance structure
         self.smooth_opts['model_groups'] = model_groups
+        if self.dimensionalities["G"] < 2:
+            self.smooth_opts['model_groups'] = False
         # self.smooth_opts['use_gpytorch'] = False # experimental, this could be passed as a model_option but to keep options uncluttered set to False
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
