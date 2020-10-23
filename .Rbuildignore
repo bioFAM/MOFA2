@@ -1,2 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+mofapy2
+Dockerfile
+setup.py

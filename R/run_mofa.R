@@ -10,7 +10,7 @@
 #' The interface with Python is done with the \code{\link{reticulate}} package. 
 #' If you have several versions of Python installed and R is not detecting the correct one, 
 #' you can change it using \code{reticulate::use_python} when loading the R session. 
-#' Alternatively, you can let us install mofapy2 for you using \code{\link{basilisk}} if you set use_basilisk to \code{TRUE}
+#' Alternatively, you can let us install mofapy2 for you using \code{basilisk} if you set use_basilisk to \code{TRUE}
 #' @param object an untrained \code{\link{MOFA}} object
 #' @param save_data logical indicating whether to save the training data in the hdf5 file. 
 #'  This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.

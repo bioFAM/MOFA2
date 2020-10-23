@@ -30,7 +30,7 @@ In this step the R package calls the \code{mofapy2} Python package, where model 
 The interface with Python is done with the \code{\link{reticulate}} package. 
 If you have several versions of Python installed and R is not detecting the correct one, 
 you can change it using \code{reticulate::use_python} when loading the R session. 
-Alternatively, you can let us install mofapy2 for you using \code{\link{basilisk}} if you set use_basilisk to \code{TRUE}
+Alternatively, you can let us install mofapy2 for you using \code{basilisk} if you set use_basilisk to \code{TRUE}
 }
 \examples{
 # Load data (in data.frame format)
