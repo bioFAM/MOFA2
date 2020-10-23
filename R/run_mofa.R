@@ -141,6 +141,17 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE) {
   # Run the model
   mofa_entrypoint$run()
 
+  # Interpolate
+  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
+    if(!is.null(object@smooth_options$new_values)) {
+      new_values <- object@smooth_options$new_values
+      if(is.null(dim(new_values))){
+        new_values <- matrix(new_values, nrow = 1)
+      }
+      mofa_entrypoint$predict_factor(new_covariates = r_to_py(t(new_values)))
+    }
+  }
+  
   # If no outfile is provided, store a file in the /temp folder with the respective timestamp
   if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
     outfile <- object@training_options$outfile
