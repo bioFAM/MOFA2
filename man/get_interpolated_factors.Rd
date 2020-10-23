@@ -10,6 +10,8 @@ get_interpolated_factors(object, as.data.frame = FALSE, only_mean = FALSE)
 \item{object}{a \code{\link{MOFA}} object}
 
 \item{as.data.frame}{logical indicating whether to return data as a data.frame}
+
+\item{only_mean}{logical indicating whether include only mean or also uncertainties}
 }
 \value{
 By default, a nested list containing for each group a list with a matrix with the interpolated factor values ("mean"),

@@ -117,10 +117,13 @@ get_group_kernel <- function(object) {
 #' @details This can be used only if covariates are passed to the object upon creation, GP_factors is set to True and new covariates were passed for interpolation.
 #' @param object a \code{\link{MOFA}} object
 #' @param as.data.frame logical indicating whether to return data as a data.frame
+#' @param only_mean logical indicating whether include only mean or also uncertainties
 #' @return By default, a nested list containing for each group a list with a matrix with the interpolated factor values ("mean"),
 #'  their variance ("variance") and the values of the covariate at which interpolation took place ("new_values"). 
 #' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns containing the covariates 
 #' and (factor, group, mean and variance).
+#' @import dplyr
+#' @import reshape2
 #' @export
 get_interpolated_factors <- function(object, as.data.frame = FALSE, only_mean = FALSE) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -128,9 +131,10 @@ get_interpolated_factors <- function(object, as.data.frame = FALSE, only_mean = 
   if(!as.data.frame){
     return(object@interpolated_Z)
   } else {
+    type <- NULL
     preds <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) != "new_values"]])
     df_interpol <- reshape2::melt(preds, varnames = c("factor", "sample_id"))
-    df_interpol <- rename(df_interpol, group = L1, type = L2)
+    df_interpol <- dplyr::rename(df_interpol, group = L1, type = L2)
     if(only_mean){
       df_interpol <- filter(df_interpol, type == "mean")
     }

@@ -388,7 +388,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 
   # calculate ribbon borders
   if(!only_mean) {
-    df %<>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
+    df <- df %>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
   }
 
   if(show_observed) {
@@ -877,9 +877,9 @@ interpolate_factors <- function(object, new_values) {
   
   # get covariates of old and new values
   if(object@smooth_options$warping){
-    old_covariates <- samples_metadata(object)[, paste(covariates_names(object), "warped", sep = "_"), drop = F] %>% t()
+    old_covariates <- samples_metadata(object)[, paste(covariates_names(object), "warped", sep = "_"), drop = FALSE] %>% t()
   } else{
-    old_covariates <- samples_metadata(object)[, covariates_names(object), drop = F] %>% t()
+    old_covariates <- samples_metadata(object)[, covariates_names(object), drop = FALSE] %>% t()
     
   }
   all_covariates <- cbind(new_values, old_covariates)  %>% unique.matrix(., MARGIN = 2) 
