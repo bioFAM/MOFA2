@@ -147,7 +147,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
           stop("smooth_options are incorrectly specified, please read the documentation in get_default_smooth_options")
       
         if (isTRUE(smooth_options$sparseGP)) {
-          if (object@dimensions[["N"]]) warning("Warning: sparseGPs should only be used when having a large sample size (>1e3)")
+          if (object@dimensions[["N"]] < 1000) warning("Warning: sparseGPs should only be used when having a large sample size (>1e3)")
           if (isTRUE(smooth_options$warping)) stop("Warping is not implemented in conjunction with sparseGPs")
         }
       
