@@ -7,11 +7,10 @@ from mofapy2.run.entry_point import entry_point
 import pandas as pd
 import io
 import requests # to download the online data
-from mofapy2.simulate import simulate_mofa as simmofa
 
-###########################
-## Simulate or load data ##
-###########################
+###############
+## Load data ##
+###############
 
 # Two formats are allowed for the input data:
 
@@ -19,17 +18,15 @@ from mofapy2.simulate import simulate_mofa as simmofa
 #           samples are stored in the rows and features are stored in the columns.
 # 			Missing values must be filled with NAs, including samples missing an entire view
 
-# sim = simmofa.simulate_data(N = 200, seed=23, views=["0", "1"], D=[500] * 2, K= 3)
-# data = sim['data']
-
-# Optional: If the SMOFA framework is to be used additional sample covariates can be specified
-# simulate test data for the SMOFA framework (using continuous sample covariates)
-
-# sim = simmofa.simulate_data(N = 200, seed=42, views=["0", "1"], D=[500] * 2,
-#                             K = 2, lscales = [0.1, 0.3])
-# data = sim['data']
-# sample_cov = sim['sample_cov']
-
+# datadir = "/Users/ricard/data/mofaplus/test"
+# views = ["0","1"]
+# groups = ["0","1"]
+# data = [None]*len(views)
+# for m in range(len(views)):
+#     data[m] = [None]*len(groups)
+#     for g in range(len(groups)):
+#         datafile = "%s/%s_%s.txt.gz" % (datadir, views[m], groups[g])
+#         data[m][g] = pd.read_csv(datafile, header=None, sep=' ')
 
 # Option 2: a data.frame with columns ["sample","feature","view","group","value"]
 #           In this case there is no need to have missing values in the data.frame,
@@ -37,9 +34,6 @@ from mofapy2.simulate import simulate_mofa as simmofa
 
 file = "ftp://ftp.ebi.ac.uk/pub/databases/mofa/getting_started/data.txt.gz"
 data = pd.read_csv(file, sep="\t")
-
-# Optional: If the SMOFA framework is to be used additional columns can be added to the dataframe and
-# can be specified to be used as sample covariates
 
 ###########################
 ## Initialise MOFA model ##
@@ -53,16 +47,15 @@ ent = entry_point()
 ## (2) Set data options ##
 # - scale_groups: if groups have significantly different ranges, it is good practice to scale each group to unit variance
 # - scale_views: if views have significantly different ranges, it is good practice to scale each view to unit variance
-# - scale_cov: if sample covariates have different ranges,  it is good practice to scale each covariate to unit variance (SMOFA-specific)
 ent.set_data_options(
-	scale_groups = False,
+	scale_groups = False, 
 	scale_views = False
 )
 
 
 ## (3, option 1) Set data using the nested list of matrices format ##
 views_names = ["view1","view2"]
-groups_names = ["groupA"]
+groups_names = ["groupA","groupB"]
 
 # samples_names nested list with length NGROUPS. Each entry g is a list with the sample names for the g-th group
 # - if not provided, MOFA will fill it with default samples names
@@ -72,54 +65,40 @@ groups_names = ["groupA"]
 # - if not provided, MOFA will fill it with default features names
 # features_names = (...)
 
-# ent.set_data_matrix(data,
-# 	views_names = views_names,
-# 	groups_names = groups_names,
-# 	samples_names = samples_names,
-# 	features_names = features_names
-# )
-
-# SMOFA framework: additionally specify the sample_cov argument for the continuous sample covariate
-# ent.set_data_matrix(data, sample_cov = sample_cov,
-# 	views_names = views_names,
-# 	groups_names = groups_names,
-# 	samples_names = samples_names,
+# ent.set_data_matrix(data, 
+# 	views_names = views_names, 
+# 	groups_names = groups_names, 
+# 	samples_names = samples_names,   
 # 	features_names = features_names
 # )
 
 # (3, option 2) Set data using a long data frame
 ent.set_data_df(data)
-# SMOFA framework:
-# ent.set_data_df(data, sample_cov = 'cov1') # to specify a column in data to use as sample covariate
-# ent.set_data_df(data, sample_cov = ['cov1', 'cov2']) # to specify multiple columns in data to use as sample covariate
-# ent.set_data_df(data, sample_cov = df_cov) # to specify a dataframe containing sample covariates
+
 
 ## (4) Set model options ##
 # - factors: number of factors. Default is K=10
-# - likelihods: likelihoods per view (options are "gaussian","poisson","bernoulli").
+# - likelihods: likelihoods per view (options are "gaussian","poisson","bernoulli"). 
 # 		Default is None, and they are infered automatically
 # - spikeslab_weights: use spike-slab sparsity prior in the weights? (recommended TRUE)
 # - ard_factors: use ARD prior in the factors? (TRUE if using multiple groups)
 # - ard_weights: use ARD prior in the weights? (TRUE if using multiple views)
-# SMOFA-specific options:
-# - GP_factors: use a GP prior on the factors (set to True for the SMOFA-framework) (default False)
-# - start_opt: at which iteration to start optimizing the lengthscales of the GP priors
-# - n_grid: how many grid points for lengthscale optimization
 
 # Simple (using default values)
 ent.set_model_options()
 
 # Advanced (using personalised values)
 ent.set_model_options(
-	factors = 5,
-	spikeslab_weights = True,
-	ard_factors = True,
+	factors = 5, 
+	spikeslab_weights = True, 
+	ard_factors = True, 
 	ard_weights = True
 )
 
+
 ## (5) Set training options ##
 # - iter: number of iterations
-# - convergence_mode: "fast", "medium", "slow".
+# - convergence_mode: "fast", "medium", "slow". 
 #		For exploration, the fast mode is good enough.
 # - startELBO: initial iteration to compute the ELBO (the objective function used to assess convergence)
 # - freqELBO: frequency of computations of the ELBO (the objective function used to assess convergence)
@@ -134,18 +113,18 @@ ent.set_train_options()
 
 # Advanced (using personalised values)
 ent.set_train_options(
-	iter = 100,
-	convergence_mode = "fast",
-	startELBO = 1,
-	freqELBO = 1,
-	dropR2 = None,
-	gpu_mode = False,
-	verbose = False,
+	iter = 100, 
+	convergence_mode = "fast", 
+	startELBO = 1, 
+	freqELBO = 1, 
+	dropR2 = None, 
+	gpu_mode = False, 
+	verbose = False, 
 	seed = 42
 )
 
 
-## (6, optional) Set stochastic inference options ##
+## (6, optional) Set stochastic inference options##
 # Only recommended with very large sample size (>1e6) and when having access to GPUs
 # - batch_size: float value indicating the batch size (as a fraction of the total data set: 0.10, 0.25 or 0.50)
 # - learning_rate: learning rate (we recommend values from 0.25 to 0.75)
@@ -163,7 +142,7 @@ ent.set_train_options(
 ## Build and train the MOFA model ##
 ####################################
 
-# Build the model
+# Build the model 
 ent.build()
 
 # Run the model
@@ -180,9 +159,10 @@ ent.run()
 ## Save the model ##
 ####################
 
+outfile = "/Users/ricard/data/mofaplus/hdf5/test.hdf5"
+
 # - save_data: logical indicating whether to save the training data in the hdf5 file.
 # this is useful for some downstream analysis in R, but it can take a lot of disk space.
-outfile="test.hdf5"
 ent.save(outfile, save_data=True)
 
 ######################################################

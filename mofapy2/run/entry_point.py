@@ -806,13 +806,13 @@ class entry_point(object):
         self.smooth_opts['n_grid'] = int(n_grid)
         self.smooth_opts['opt_freq'] = int(opt_freq)
 
-        # inactivate group-wise ARD when using the SMOFA framework
+        # inactivate group-wise ARD when using the MEFISTO framework
         if self.model_opts['ard_factors'] is True:
             print("Smooth covariate framework is activated. This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
             self.model_opts['ard_factors'] = False
             self.train_opts['schedule'].remove('AlphaZ')
 
-        # inactivate spike-slab on the factors when using the SMOFA framework
+        # inactivate spike-slab on the factors when using the MEFISTO framework
         if self.model_opts['spikeslab_factors'] is True:
             print("Smooth covariate framework is activated. This is not compatible with spike-and-slab prior on factors. Setting spikeslab_factors to False...\n")
             self.model_opts['spikeslab_factors'] = False

@@ -21,12 +21,12 @@ library(pheatmap)
 ```
 
 # Temporal data: Simulate an example data set
-To illustrate the SMOFA functionality of MOFA2 we simulate a small example data set with 4 different views and one covariates defining a timeline using `make_example_data`. The simulation is based on 4 factors, two of which vary smoothly along the covariate (with different lengthscales) and two are independent of the covariate. To mimic a situation where we only have incomplete data on the samples we mask 50% of the samples on average per view.
+To illustrate the MEFISTO method in MOFA2 we simulate a small example data set with 4 different views and one covariates defining a timeline using `make_example_data`. The simulation is based on 4 factors, two of which vary smoothly along the covariate (with different lengthscales) and two are independent of the covariate.
 
 ```{r}
 set.seed(2020)
 
-# set number of views and samples
+# set number of samples and time points
 N <- 200
 time <- seq(0,1,length.out = N)
 
@@ -51,22 +51,22 @@ ggplot(df, aes(x = time, y = value)) + geom_point() + facet_grid(~factor)
 ```
 
 # MEFISTO framework
-Using the MEFISTO framework is very similar to using MOFA2. In addition to the omics data, however, we now additionally specify the time points for each sample. If you are not familiar with the MOFA2 framework, it might be helpful to have a look at MOFA2 tutorials first.
+Using the MEFISTO framework is very similar to using MOFA2. In addition to the omics data, however, we now additionally specify the time points for each sample. If you are not familiar with the MOFA2 framework, it might be helpful to have a look at [MOFA2 tutorials](https://biofam.github.io/MOFA2/tutorials.html) first.
 
 ## Create a MOFA object with covariates
-To create the MOFA object we need to specify the training data and the covariates for pattern detection and inference of smooth factors. Here, `sample_cov` is a matrix with samples in columns and one row containing the timepoints. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
+To create the MOFA object we need to specify the training data and the covariates for pattern detection and inference of smooth factors. Here, `sample_cov` is a matrix with samples in columns and one row containing the time points. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
 
-First, we start by creating a standard MOFA model and specify model (and training options) such as the number of factors.
+First, we start by creating a standard MOFA model.
 ```{r}
 sm <- create_mofa(data = dd$data)
 ```
 
-Now, we can add the additional temporal covariate, that we want to use for training and specify that we want to use a smooth modeling framework by specifying `smooth_options` when preparing the object. For this you can just use the default options, unless you want to make use of advanced options such as alignment across groups.
+Now, we can add the additional temporal covariate, that we want to use for training.
 ```{r, message=FALSE, warning=FALSE}
 sm <- set_covariates(sm, covariates = time)
 sm
 ```
-We now successfully created a MOFA object that contains 4 views, 1 group and 1 covariates giving the time points for each sample.
+We now successfully created a MOFA object that contains 4 views, 1 group and 1 covariate giving the time point for each sample.
 
 ## Prepare a MOFA object
 Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. For illustration, we only use a small number of iterations.
@@ -86,7 +86,7 @@ sm <- prepare_mofa(sm, model_options = model_opts, smooth_options = smooth_opts,
 ```
 
 ## Run MOFA
-Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saves in the file specified as `outfile`. If none is specified the output is only saved in a temporary location
+Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saves in the file specified as `outfile`. If none is specified the output is only saved in a temporary location.
 ```{r}
 sm <- run_mofa(sm)
 ```
@@ -95,17 +95,23 @@ sm <- run_mofa(sm)
 ## Down-stream analysis
 ### Variance explained per factor
 Using `plot_variance_explained` we can explore which factor is active in which view. `plot_factor_cor` shows us whether the factors are correlated.
-```{r}
+```{r, fig.width=5, fig.height=4}
 plot_variance_explained(sm)
 r <- plot_factor_cor(sm)
 ```
 
 
 ### Relate factors to the covariate
-The MOFA model has learnt paramerers for each factor that tell us how smoothly the factor varys along the covariate. A scale of 0 means that the factor captures variation independent of time, a value close to 1 tells us that this factor varys very smoothly along time. In this example, we find two factors that are non-smooth and two smooth factor. Using `plot_factors_vs_cov` we can plot the factors along time, where we can distinguish smooth and non smooth variation along time.
+The MOFA model has learnt scale parameters for each factor, which give us an indication of the smoothness per factor along the covariate (here time) and are between 0 and 1. A scale of 0 means that the factor captures variation independent of time, a value close to 1 tells us that this factor varys very smoothly along time. 
 ```{r}
-plot_factors_vs_cov(sm, color_by = "time", show_variance=TRUE)
+get_scales(sm)
 ```
+
+In this example, we find two factors that are non-smooth and two smooth factors. Using `plot_factors_vs_cov` we can plot the factors along the time line, where we can distinguish smooth and non smooth variation along time.
+```{r}
+plot_factors_vs_cov(sm, color_by = "time")
+```
+
 For more customized plots, we can extract the underlying data containing the factor and covariate values for each sample.
 ```{r}
 df <- plot_factors_vs_cov(sm, color_by = "time",
@@ -113,21 +119,17 @@ df <- plot_factors_vs_cov(sm, color_by = "time",
 head(df)
 ```
 
-The scale parameter give us an indication of the smoothness per factor (between 0 and 1): A high value indicates a factor that varies smoothly along time, a low value a factor capturing stochastic variation.
-```{r}
-get_scales(sm)
-```
-
-We can compare the above plots to the factors that were simulated above and find that the model recaptured the two smooth as well as two stochastic patterns in time. Note that factors are invariant to the sign, e.g. factor 4 is the negative of the simulated factor but we can simply multiply the factors and its weights by -1 to obtain exactly the simulated factor.
+We can compare the above plots to the factors that were simulated above and find that the model recaptured the two smooth as well as two non-smooth patterns in time. Note that factors are invariant to the sign, e.g. Factor 4 is the negative of the simulated factor but we can simply multiply the factors and its weights by -1 to obtain exactly the simulated factor.
 
 
 ### Exploration of weights
-As with MOFA+ we can now look deeper into the meaning of these factors by exploring the weights or performing feature set enrichment analysis.
-```{r}
+As with standard MOFA, we can now look deeper into the meaning of these factors by exploring the weights or performing feature set enrichment analysis.
+```{r, fig.width=5, fig.height=4}
 plot_weights(sm, factors = 4, view = 1)
 plot_top_weights(sm, factors = 3, view = 2)
 ```
-In addition, we can take a look at the feature values along the time covariate.
+
+In addition, we can take a look at the top feature values per factor along time and see that their patterns are in line with the pattern of the corresponding Factor (here Factor 3).
 ```{r}
 plot_data_vs_cov(sm, factor=3,
                          features = 2,
