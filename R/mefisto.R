@@ -382,10 +382,13 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 
   # get and check covariate
   covariate <- .check_and_get_covariates(object, covariate)
-
+  
+  # get and check factor
+  factors <- .check_and_get_factors(object, factors)
+  
   # get interpolated factors
   df <- get_interpolated_factors(object, as.data.frame = TRUE, only_mean = only_mean)
-
+  df <- filter(df, factor %in% factors)
   # calculate ribbon borders
   if(!only_mean) {
     df <- df %>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
@@ -394,6 +397,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
   if(show_observed) {
     # add the factor values of the observed time point  to the plot
     df_observed <- plot_factors_vs_cov(object, covariate = covariate, return_data = TRUE)
+    df_observed <- filter(df_observed, factor %in% factors)
   }
 
   gg_interpol <- ggplot(df, aes_string(x=covariate, y = "mean", col = "group")) +
