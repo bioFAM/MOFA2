@@ -28,6 +28,23 @@
   if (verbose == TRUE) message("Checking samples names...")
   stopifnot(!is.null(samples_names(object)))
   stopifnot(!duplicated(unlist(samples_names(object))))
+  enc <- stringi::stri_enc_mark(unlist(samples_names(object)))
+  if (any(enc!="ASCII")) {
+    tmp <- unname(unlist(samples_names(object))[enc!="ASCII"])
+    stop(sprintf("non-ascii characters detected in the following samples names, please rename them and run again create_mofa():\n- %s ", paste(tmp, collapse="\n- ")))
+    print()
+  }
+  
+  # Check features names
+  if (verbose == TRUE) message("Checking features names...")
+  stopifnot(!is.null(features_names(object)))
+  stopifnot(!duplicated(unlist(features_names(object))))
+  enc <- stringi::stri_enc_mark(unlist(features_names(object)))
+  if (any(enc!="ASCII")) {
+    tmp <- unname(unlist(features_names(object))[enc!="ASCII"])
+    stop(sprintf("non-ascii characters detected in the following features names, please rename them and run again create_mofa():\n- %s ", paste(tmp, collapse="\n- ")))
+    print()
+  }
   
   # Check dimensionalities in the input data
   if (verbose == TRUE) message("Checking dimensions...")
