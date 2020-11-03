@@ -420,7 +420,10 @@ plot_data_overview <- function(object, colors = NULL, show_dimensions = TRUE) {
   } else {
     to.plot <- mutate(to.plot, view_label = view, group_label = group)
   }
-    
+  
+  # Order groups  
+  to.plot$group_label <- factor(to.plot$group_label, levels=unique(to.plot$group_label))
+  
   # Plot
   p <- ggplot(to.plot, aes_string(x="sample", y="view_label", fill="combi")) +
     geom_tile() +
