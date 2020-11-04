@@ -1,18 +1,5 @@
-#' @title Quality control
-#' @name quality_control
-#' @description Function to do quality control on a \code{\link{MOFA}} object.
-#' @param object a trained \code{\link{MOFA}} object.
-#' @param verbose logical indicating whether to generate a verbose output.
-#' @export
-#' @return a \code{\link{MOFA}} object
-#' @examples
-#' # Using an existing trained model on simulated data
-#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
-#' model <- load_model(file)
-#' 
-#' # Do quality control
-#' model <- quality_control(model, verbose = TRUE)
-quality_control <- function(object, verbose = FALSE) {
+
+.quality_control <- function(object, verbose = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -41,6 +28,23 @@ quality_control <- function(object, verbose = FALSE) {
   if (verbose == TRUE) message("Checking samples names...")
   stopifnot(!is.null(samples_names(object)))
   stopifnot(!duplicated(unlist(samples_names(object))))
+  enc <- stringi::stri_enc_mark(unlist(samples_names(object)))
+  if (any(enc!="ASCII")) {
+    tmp <- unname(unlist(samples_names(object))[enc!="ASCII"])
+    stop(sprintf("non-ascii characters detected in the following samples names, please rename them and run again create_mofa():\n- %s ", paste(tmp, collapse="\n- ")))
+    print()
+  }
+  
+  # Check features names
+  if (verbose == TRUE) message("Checking features names...")
+  stopifnot(!is.null(features_names(object)))
+  stopifnot(!duplicated(unlist(features_names(object))))
+  enc <- stringi::stri_enc_mark(unlist(features_names(object)))
+  if (any(enc!="ASCII")) {
+    tmp <- unname(unlist(features_names(object))[enc!="ASCII"])
+    stop(sprintf("non-ascii characters detected in the following features names, please rename them and run again create_mofa():\n- %s ", paste(tmp, collapse="\n- ")))
+    print()
+  }
   
   # Check dimensionalities in the input data
   if (verbose == TRUE) message("Checking dimensions...")

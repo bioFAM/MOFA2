@@ -311,7 +311,7 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   
   
   # Convert to long data frame
-  if (as.data.frame) {
+  if (isTRUE(as.data.frame)) {
     
     imputed_data <- lapply(views, function(m) { 
       lapply(groups, function(g) { 
@@ -326,12 +326,7 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
 
     factor.cols <- c("view","group","feature","sample")
     imputed_data[factor.cols] <- lapply(imputed_data[factor.cols], factor)
-    
-  } else {
-    
-    imputed_data <- mean
   }
-  
   return(imputed_data)
 }
 

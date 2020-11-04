@@ -1,0 +1,38 @@
+citEntry(entry="article",
+         title = "Multi‐Omics Factor Analysis—a framework for unsupervised integration of multi‐omics data sets",
+         author = personList( as.person("Ricard Argelaguet"),
+                              as.person("Britta Velten"),
+                              as.person("Damien Arnol"),
+                              as.person("Sascha Dietrich"),
+                              as.person("Thorsten Zenz"),
+                              as.person("John C Marioni"),
+                              as.person("Florian Buettner"),
+                              as.person("Wolfgang Huber"),
+                              as.person("Oliver Stegle")),
+         year = 2018,
+         journal = "Molecular Systems Biology",
+         doi = "10.15252/msb.20178124",
+         volume = 14,
+         textVersion = 
+         paste("Argelaguet, Velten, Arnol, Dietrich, Zenz, Marioni, Buettner, Huber and Stegle:", 
+               "Multi‐Omics Factor Analysis — a framework for unsupervised integration of multi‐omics data sets.",
+                "Mol Syst Biol (2018)14:e8124"))
+
+
+citEntry(entry="article",
+         title = "MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data.",
+         author = personList( as.person("Ricard Argelaguet"),
+                              as.person("Damien Arnol"),
+                              as.person("Danila Bredikhin"),
+                              as.person("Yonatan Deloro"),
+                              as.person("Britta Velten"),
+                              as.person("John C Marioni"),
+                              as.person("Oliver Stegle")),
+         year = 2020,
+         journal = "Genome Biology",
+         doi = "10.1186/s13059-020- 02015-1",
+         volume = 21,
+         textVersion = 
+         paste("Argelaguet, Arnol, Bredikhin, Deloro, Velten, Marioni,and Stegle:", 
+               "MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data",
+               "Genome Biology, 21(1), 1-17"))

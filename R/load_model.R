@@ -13,7 +13,6 @@
 #' This should be set to TRUE when the training data is so big that cannot fit into memory. \cr
 #' On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\link{DelayedArray}} framework.
 #' @param load_data logical indicating whether to load the training data (default is TRUE, it can be memory expensive)
-#' @param load_imputed_data logical indicating whether to load the imputed data (default is FALSE)
 #' @param remove_outliers logical indicating whether to mask outlier values.
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
 # #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
@@ -29,7 +28,7 @@
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 
-load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE, load_imputed_data = FALSE, 
+load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE,
                        remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
 
   # Create new MOFAodel object
@@ -112,34 +111,6 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if ("features_metadata" %in% h5ls.out$name) {
     object@features_metadata <- bind_rows(lapply(view_names, function(m) as.data.frame(h5read(file, sprintf("features_metadata/%s", m)))))
   }
-  
-  #######################
-  ## Load imputed data ##
-  #######################
-  
-  imputed_data <- list()
-  if (load_imputed_data) {
-    
-    if (verbose) message("Loading imputed data...")
-    
-    for (m in view_names) {
-      imputed_data[[m]] <- list()
-      for (g in group_names) {
-        imputed_data[[m]][[g]] <- list()
-        if (on_disk) {
-          # as DelayedArrays
-          # imputed_data[[m]][[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("imputed_data/%s/%s", m, g) ) )
-        } else {
-          # as matrices
-          imputed_data[[m]][[g]][["mean"]] <- h5read(file, sprintf("imputed_data/%s/%s/mean", m, g) )
-          imputed_data[[m]][[g]][["variance"]] <- h5read(file, sprintf("imputed_data/%s/%s/variance", m, g) )
-        }
-        # Replace NaN by NA
-        # imputed_data[[m]][[g]][is.nan(imputed_data[[m]][[g]])] <- NA # this realises into memory, TO FIX
-      }
-    }
-  }
-  object@imputed_data <- imputed_data
   
   #######################
   ## Load expectations ##
@@ -340,7 +311,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   ######################
 
   if (verbose) message("Doing quality control...")
-  object <- quality_control(object, verbose = verbose)
+  object <- .quality_control(object, verbose = verbose)
   
   return(object)
 }
