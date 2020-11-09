@@ -21,6 +21,13 @@ title: Citation
         volume = {21},
         number = {1},
         pages = {111}
+    } 
+    
+    MEFISTO:
+    @article{Velten2020,
+        author = {Velten, B. and Braunger, J.M. and Arnol, D. and Argelaguet, R. and Stegle, O.},
+        title = {Identifying temporal and spatial patterns of variation from multi-modal data using MEFISTO},
+        journal = {bioRxiv},
+        year = {2020},
+        url = {https://www.biorxiv.org/content/10.1101/2020.11.03.366674v1}
     }
-
-
