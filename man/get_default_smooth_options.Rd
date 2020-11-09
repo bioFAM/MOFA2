@@ -23,10 +23,10 @@ The options are the following: \cr
  \item{\strong{n_grid}:} integer: Number of points for the grid search in the optimisation of GP hyperparameters
  \item{\strong{opt_freq}:} integer: Frequency of optimisation of GP hyperparameters
  \item{\strong{sparseGP}:} logical: Use sparse GPs to speed up the optimisation of the GP parameters?
- \item{\strong{n_inducing}:} integer: Number of inducing points (only relevant sparseGP is \code{TRUE})
+ \item{\strong{frac_inducing}:} numeric between 0 and 1: Fraction of samples to use as inducing points (only relevant if sparseGP is \code{TRUE})
  \item{\strong{warping}:}   logical: Activate warping functionality to align covariates between groups (requires a multi-group design)
- \item{\strong{warping_freq}:} numeric: frequency of the warping (only relevant warping is \code{TRUE})
- \item{\strong{warping_ref}:} A character specifying the reference group for warping (only relevant warping is \code{TRUE})
+ \item{\strong{warping_freq}:} numeric: frequency of the warping (only relevant if warping is \code{TRUE})
+ \item{\strong{warping_ref}:} A character specifying the reference group for warping (only relevant if warping is \code{TRUE})
  \item{\strong{warping_open_begin}:} logical: Warping: Allow for open beginning? (only relevant warping is \code{TRUE})
  \item{\strong{warping_open_end}:} logical: Warping: Allow for open end? (only relevant warping is \code{TRUE})
  \item{\strong{model_groups}:} logical: Model covariance structure across groups? If FALSE, we assume the same patterns in all groups.

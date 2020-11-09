@@ -765,7 +765,7 @@ class entry_point(object):
 
     def set_smooth_options(self, scale_cov = False, start_opt=20, n_grid=20, opt_freq=10, model_groups = True,
         warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
-        sparseGP = False, n_inducing = None):
+        sparseGP = False, frac_inducing = None):
 
         """ 
         Method to activate and set options for a functional MOFA model (MEFISTO).
@@ -782,7 +782,7 @@ class entry_point(object):
         - warping_freq, warping_ref, warping_open_begin, warping_open_end: Warping-specifc parameters deremining the frequency of warping, the refernce group
             wether to allow open begin or open end for the alginement
         - sparseGP: Boolean, whether to use sparse Gaussian processes (only recommmended for very large data sets)
-        - n_inducing: Number of inducing points to use when using sparse GPs
+        - frac_inducing: Fraction of original samples to use as inducing points when using sparse GPs (between 0 and 1)
         """ 
 
         # Sanity checks
@@ -842,17 +842,15 @@ class entry_point(object):
                 print("Warning: sparseGP should only be used when having a large sample size (>1e3)\n")
 
             # Sparse GPs: set the number of inducing points
-            if n_inducing is None:
-                n_inducing = max(0.5 * self.dimensionalities["N"], 100) # note: groups are already concatenated, N is total number of samples
-            else:
-                assert isinstance(n_inducing,int), "n_inducing has to be an integer"
-                if n_inducing > self.dimensionalities["N"]:
-                    print("Number of inducing points is higher than original number of samples - using non-sparse GP inference")
-                    self.smooth_opts['sparseGP'] = False
+            if frac_inducing is None:
+                frac_inducing = 0.75
+            assert frac_inducing > 0 and frac_inducing < 1, "Fraction of inducing points should be in (0,1)."
+            n_inducing = int(max(frac_inducing * self.dimensionalities["N"], 100)) # note: groups are already concatenated, N is total number of samples
 
             # Sparse GPs: Set the identity of the inducing points
             idx_inducing = set_inducing_points(self.data, self.sample_cov, self.data_opts['samples_groups'], self.dimensionalities, n_inducing, random = False, seed_inducing = 0)
 
+            self.smooth_opts['frac_inducing'] = frac_inducing
             self.smooth_opts['n_inducing'] = n_inducing
             self.smooth_opts['idx_inducing'] = idx_inducing
 

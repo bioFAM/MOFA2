@@ -126,7 +126,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE) {
       opt_freq            = as.integer(object@smooth_options$opt_freq),
       model_groups        = object@smooth_options$model_groups,
       sparseGP            = object@smooth_options$sparseGP,
-      n_inducing          = as.integer(object@smooth_options$n_inducing),
+      frac_inducing       = object@smooth_options$frac_inducing,
       warping             = object@smooth_options$warping,
       warping_freq        = as.integer(object@smooth_options$warping_freq),
       warping_ref         = warping_ref-1, # 0-based python indexing
