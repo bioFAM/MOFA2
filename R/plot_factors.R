@@ -51,7 +51,7 @@
 #' This function generates a Beeswarm plot of the sample values in a given latent factor. \cr
 #' Similar functions are \code{\link{plot_factors}} for doing scatter plots.
 #' @return Returns a \code{ggplot2} 
-#' @import ggplot2 grDevices ggrastr
+#' @import ggplot2 grDevices
 #' @importFrom stats complete.cases
 #' @importFrom forcats fct_explicit_na
 #' @importFrom RColorBrewer brewer.pal

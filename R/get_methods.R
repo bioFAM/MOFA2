@@ -461,7 +461,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
 
     factor.cols <- c("view","group","feature","sample")
     imputed_data[factor.cols] <- lapply(imputed_data[factor.cols], factor)
-    
   }
   return(imputed_data)
 }

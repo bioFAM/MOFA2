@@ -22,8 +22,7 @@ in the \code{\link{prepare_mofa}} step (see example), i.e. after creating a \cod
 The model options are the following: \cr
 \itemize{
  \item{\strong{likelihoods}:}{ character vector with data likelihoods per view: 
- 'gaussian' for continuous data, 'bernoulli' for binary data and 'poisson' for count data.
- By default, they are guessed internally.}
+ 'gaussian' for continuous data (Default for all views), 'bernoulli' for binary data and 'poisson' for count data.}
  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
  \item{\strong{spikeslab_factors}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
  \item{\strong{spikeslab_weights}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
