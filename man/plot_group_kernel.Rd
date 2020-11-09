@@ -26,3 +26,9 @@ The heatmap gives insight into the clustering of the patterns that factors displ
 A correlation of 1 indicates that the module caputred by a factor shows identical patterns across groups, a correlation of zero that it shows distinct patterns,
 a negative correlation that the patterns go in opposite directions.
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+model <- load_model(file)
+plot_group_kernel(model)
+}

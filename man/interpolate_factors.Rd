@@ -27,7 +27,5 @@ Currenlty, only the mean of the interpolation is provided from R.
 # Using an existing trained model
 file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 model <- load_model(file)
-new_times <- matrix(seq(0,1.5, 0.1), nrow = 1)
-plot_factors_vs_cov(model)
-
+model <- interpolate_factors(model, new_values = seq(0,1.1,0.01))
 }

@@ -27,3 +27,9 @@ character vector with the covariate names
 \description{
 covariates_names: set and retrieve covariate names
 }
+\examples{
+# Using an existing trained model on simulated data
+file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+model <- load_model(file)
+covariates_names(model)
+}

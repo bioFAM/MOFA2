@@ -66,6 +66,12 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
 #' @aliases covariates,MOFA-method
 #' @return character vector with the covariate names
 #' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' covariates_names(model)
+
 setMethod("covariates_names", signature(object="MOFA"),
           function(object) {
             if(is.null(object@covariates))

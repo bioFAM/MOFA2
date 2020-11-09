@@ -32,3 +32,10 @@ make a plot of interpolated covariates versus covariate
 \details{
 to be filled
 }
+\examples{
+# Using an existing trained model
+file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+model <- load_model(file)
+model <- interpolate_factors(model, new_values = seq(0,1.1,0.1))
+plot_interpolation_vs_covariate(model, covariate = "time", factors = "all")
+}

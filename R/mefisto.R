@@ -249,7 +249,11 @@ get_default_smooth_options <- function(object) {
 #' @import pheatmap 
 #' @import cowplot
 #' @export
-
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_group_kernel(model)
 plot_group_kernel <- function(object, factors = "all", groups = "all", ...) {
   
   # Sanity checks
@@ -374,6 +378,12 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
 #' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' model <- interpolate_factors(model, new_values = seq(0,1.1,0.1))
+#' plot_interpolation_vs_covariate(model, covariate = "time", factors = "all")
 
 plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "all", only_mean = TRUE, show_observed = TRUE){
 
@@ -845,9 +855,8 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
 #' # Using an existing trained model
 #' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' new_times <- matrix(seq(0,1.5, 0.1), nrow = 1)
-#' plot_factors_vs_cov(model)
-#' 
+#' model <- interpolate_factors(model, new_values = seq(0,1.1,0.01))
+
 interpolate_factors <- function(object, new_values) {
   
   # TODO check this function
@@ -903,7 +912,7 @@ interpolate_factors <- function(object, new_values) {
   
   means <- sapply(seq_along(factors_names(object)), function(k) {
       if(ls[k] == 0 || s[k] == 0){
-        means <- rep(NA, length(new_values))
+        means <- matrix( rep(NA, length(new_values) * object@dimensions$G), ncol = 1)
       } else {
         Kc_new <- exp(- as.matrix(dist(t(all_covariates))) ^ 2 / (2 * ls[k]^2))
         K_new_k <- s[k] * Kgs[[k]] %x% Kc_new
