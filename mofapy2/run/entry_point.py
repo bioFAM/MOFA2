@@ -962,8 +962,9 @@ class entry_point(object):
         if np.any(np.array(self.dimensionalities["D"])<15):
             print("\nWarning: some view(s) have less than 15 features, MOFA won't be able to learn meaningful factors for these view(s)...\n")
         _, counts = np.unique(self.data_opts["samples_groups"], axis=0, return_counts=True)
-        if np.any(counts<15):
-            print("\nWarning: some group(s) have less than 15 samples, MOFA won't be able to learn meaningful factors for these group(s)...\n")
+        if not hasattr(self, 'smooth_opts'):
+            if np.any(counts<15):
+                print("\nWarning: some group(s) have less than 15 samples, MOFA won't be able to learn meaningful factors for these group(s)...\n")
 
         # Build the nodes
         if hasattr(self, 'smooth_opts'):
