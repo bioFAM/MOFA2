@@ -94,24 +94,39 @@ class entry_point(object):
 
     def set_covariates(self, sample_cov, covariates_names=None):
         """"
-        sample_cov: a list of matrices per group
+        sample_cov: This can be either
+        		- 	a list of matrices per group
                     The dimensions of each matrix must be (samples, covariates)
         			The order of list elements and rows in each matrix must match the structure of data
-        covariates_names: XXXXX
+        		- 	a character specifying a column present in the samples' metadata
+        covariates_names: String or list of strings containing the name(s) of the covariate(s) (optional)
         """
 
         assert self.data is not None, "the data must be specified with set_data before specifying covariates"
 
-        self.smooth_opts = {}    
+        self.smooth_opts = {}
         self.smooth_opts["GP_factors"] = True
 
         # Define covariates
         # Define smooth options
-        # if not hasattr(self, 'smooth_opts'): 
+        # if not hasattr(self, 'smooth_opts'):
         #     print("Options for the usage of smooth factors not defined, using default values...\n")
         #     self.set_smooth_options()
 
         # Sanity check
+        if isinstance(sample_cov, str):
+            sample_cov = [sample_cov]
+
+        if isinstance(sample_cov, list) and all([isinstance(c, str) for c in sample_cov]):
+            assert all([c in self.data_opts["samples_metadata"][0].columns for c in
+                        sample_cov]), "sample_cov provided as string but not found in samples_metadata"
+            sample_cov_list = []
+            for g in range(self.dimensionalities['G']):
+                samples4group = self.data_opts['samples_names'][g]
+                df = self.data_opts["samples_metadata"][g]
+                sample_cov_list.append(np.vstack([df[c][samples4group] for c in sample_cov]).transpose())
+            sample_cov = sample_cov_list
+
         if not isinstance(sample_cov, list):
             if isinstance(sample_cov, dict):
                 sample_cov = list(sample_cov.values())
@@ -125,23 +140,30 @@ class entry_point(object):
                 sys.stdout.flush();
                 sys.exit()
 
-        assert len(sample_cov) == self.dimensionalities["G"], "sample_cov needs to be a list of same length as data (same number of groups)"
+        assert len(sample_cov) == self.dimensionalities[
+            "G"], "sample_cov needs to be a list of same length as data (same number of groups)"
 
         for g in range(self.dimensionalities["G"]):
             if not isinstance(sample_cov[g], np.ndarray):
                 if isinstance(sample_cov[g], pd.DataFrame):
                     sample_cov[g] = sample_cov[g].values
                 else:
-                    print("Error, sample_cov is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); sys.exit()
+                    print("Error, sample_cov is not a numpy.ndarray or a pandas dataframe");
+                    sys.stdout.flush();
+                    sys.exit()
             sample_cov[g] = sample_cov[g].astype(np.float64)
 
         N = [len(x) for x in self.data_opts['samples_names']]
         if not all([sample_cov[g].shape[0] == N[g] for g in range(self.dimensionalities["G"])]):
-            print("Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % ([sample_cov[g].shape[0] for g in range(G)], N))
-            sys.stdout.flush(); sys.exit()
+            for g in range(self.dimensionalities["G"]):
+                print(
+                    "Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % (
+                        sample_cov[g].shape[0], N[g]))
+            sys.stdout.flush();
+            sys.exit()
 
         # concatenate groups in sample_cov and standardize sample_cov to avoid scale differences
-        sample_cov = np.concatenate(sample_cov, axis = 0)
+        sample_cov = np.concatenate(sample_cov, axis=0)
 
         # Define dimensionality
         self.dimensionalities["C"] = sample_cov.shape[1]
@@ -157,10 +179,10 @@ class entry_point(object):
             print("- covariate1, ..., covariateC\n")
             self.smooth_opts['covariates_names'] = ["covariate%d" % (c) for c in range(self.dimensionalities["C"])]
         else:
-            if isinstance(covariates_names,str):
+            if isinstance(covariates_names, str):
                 covariates_names = [covariates_names]
             assert isinstance(covariates_names, list), "covariates_names must be a string or a list"
-            assert len(covariates_names)==self.dimensionalities["C"], "covariates_names must be of length equivalent to the number of covariates"
+            assert len(covariates_names) == self.dimensionalities["C"], "covariates_names must be of length equivalent to the number of covariates"
             self.smooth_opts['covariates_names'] = covariates_names
 
         self.sample_cov = sample_cov
