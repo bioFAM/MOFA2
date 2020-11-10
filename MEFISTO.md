@@ -40,6 +40,11 @@ If you want work with it before the merge is concluded, please clone the reposit
 ### Python dependencies 
 
 Python dependencies can be installed using pip (from the Unix terminal)
+```r
+pip install git+https://github.com/bioFAM/MOFA2@mefisto
+```
+
+or using
 
 ```r
 git clone https://github.com/bioFAM/MOFA2
