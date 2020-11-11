@@ -95,10 +95,11 @@ class entry_point(object):
     def set_covariates(self, sample_cov, covariates_names=None):
         """"
         sample_cov: This can be either
-        		- 	a list of matrices per group
+                - 	a list of matrices per group
                     The dimensions of each matrix must be (samples, covariates)
-        			The order of list elements and rows in each matrix must match the structure of data
-        		- 	a character specifying a column present in the samples' metadata
+                    The order of list elements and rows in each matrix must match the structure of data
+                - 	a character specifying a column present in the samples' metadata. Note that this requires the metadata
+                    to have the specified column present as well as the samples names as index.
         covariates_names: String or list of strings containing the name(s) of the covariate(s) (optional)
         """
 
