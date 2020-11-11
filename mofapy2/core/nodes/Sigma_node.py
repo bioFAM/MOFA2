@@ -8,7 +8,6 @@ import scipy as s
 from mofapy2.core import gpu_utils
 import pandas as pd
 # from fastdtw import fastdtw
-from dtw import dtw # note this is dtw-python not dtw
 import copy
 # import gpytorch
 # import torch
@@ -716,6 +715,12 @@ class Sigma_Node_warping(Sigma_Node_base):
         """
         Method to perform DTW between groups in the factor space.
         """
+        try:
+            from dtw import dtw # note this is dtw-python not dtw
+        except ImportError:
+            print("dtw-python module not found. This is required for alignment.")
+            pass
+
         paths = []
         for g in range(self.G4warping):
             if g is not self.reference_group:
