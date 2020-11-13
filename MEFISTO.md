@@ -49,8 +49,8 @@ remotes::install_github("bioFAM/MOFA2/MOFA2", ref= "mefisto", build_opts = c("--
 * [**MEFISTO with temporal data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_temporal.html): illustration of the method with a temporal covariate
 * [**MEFISTO with spatial data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_spatial.html): illustration of the method with a spatial covariate
 * [**Application to an evodevo gene expression atlas**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/evodevo_tutorial.html): gene expression data from 5 species and 5 organs across development
-* **Application to a longitudinal microbiome data set** in preparation... (preliminary code can be found in https://github.com/bioFAM/MEFISTO_analyses/evodevo/ECAM_analysis.Rmd)
-* **Application to spatial transcritptomics data** in preparation... (preliminary code can be found in https://github.com/bioFAM/MEFISTO_analyses/evodevo/spatial_transcriptomics.Rmd)
+* **Application to a longitudinal microbiome data set** *in preparation... (preliminary code can be found [here](https://github.com/bioFAM/MEFISTO_analyses/blob/master/microbiome/ECAM_analysis.Rmd))*
+* **Application to spatial transcritptomics data** *in preparation... (preliminary code can be found [here](https://github.com/bioFAM/MEFISTO_analyses/blob/master/spatial/spatial_transcriptomics.Rmd))*
 
 ## FAQ
 
