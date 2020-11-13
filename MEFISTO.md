@@ -50,7 +50,7 @@ remotes::install_github("bioFAM/MOFA2/MOFA2", ref= "mefisto", build_opts = c("--
 * [**MEFISTO with spatial data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_spatial.html): illustration of the method with a spatial covariate
 * [**Application to an evodevo gene expression atlas**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/evodevo_tutorial.html): gene expression data from 5 species and 5 organs across development
 * **Application to a longitudinal microbiome data set** *in preparation... (preliminary code can be found [here](https://github.com/bioFAM/MEFISTO_analyses/blob/master/microbiome/ECAM_analysis.Rmd))*
-* **Application to spatial transcritptomics data** *in preparation... (preliminary code can be found [here](https://github.com/bioFAM/MEFISTO_analyses/blob/master/spatial/spatial_transcriptomics.Rmd))*
+* [**Application to spatial transcritptomics data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_ST.html): spatial transcriptome data of a mouse brain tissue generated using 10x visium
 
 ## FAQ
 
