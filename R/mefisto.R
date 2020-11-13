@@ -460,7 +460,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 #' @param legend logical indicating whether to add a legend
 #' @param dot_size numeric indicating dot size (default is 5).
 #' @param text_size numeric indicating text size (default is 5).
-#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).
 #' @param alpha numeric indicating dot transparency (default is 1).
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
 #' @param lm_per_group logical indicating whether to add a linear regression line separately for each group
@@ -617,24 +617,26 @@ plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, v
 #' Default is the first sample covariates in covariates slot
 #' @param warped logical indicating whether to show the aligned covariate (default: TRUE), 
 #' only relevant if warping has been used to align multiple sample groups
-#' @param show_missing logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
 #' @param scale logical indicating whether to scale factor values.
-#' @param color_by specifies groups or values used to color the samples. This can be either:
+#' @param show_missing  (for 1-dim covariates) logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing
+#' @param color_by (for 1-dim covariates) specifies groups or values used to color the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data.
 #' (2) a character giving the same of a column present in the sample metadata.
 #' (3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
-#' @param shape_by specifies groups or values used to shape the samples. This can be either:
+#' @param shape_by  (for 1-dim covariates) specifies groups or values used to shape the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data, 
 #' (2) a character giving the same of a column present in the sample metadata.
 #' (3) a vector of the same length as the number of samples specifying discrete groups.
-#' @param color_name name for color legend.
-#' @param shape_name name for shape legend.
-#' @param dot_size numeric indicating dot size.
-#' @param alpha numeric indicating dot transparency.
-#' @param stroke numeric indicating the stroke size
-#' @param legend logical indicating whether to add legend.
+#' @param color_name  (for 1-dim covariates) name for color legend.
+#' @param shape_name  (for 1-dim covariates) name for shape legend.
+#' @param dot_size  (for 1-dim covariates) numeric indicating dot size.
+#' @param alpha  (for 1-dim covariates) numeric indicating dot transparency.
+#' @param stroke  (for 1-dim covariates) numeric indicating the stroke size
+#' @param legend  (for 1-dim covariates) logical indicating whether to add legend.
+#' @param rotate_x (for spatial, 2-dim covariates) Rotate covariate on x-axis 
+#' @param rotate_y (for spatial, 2-dim covariates) Rotate covariate on y-axis
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
-#' @param show_variance logical indicating whether to show the marginal variance of inferred factor values 
+#' @param show_variance  (for 1-dim covariates) logical indicating whether to show the marginal variance of inferred factor values 
 #' (only relevant for 1-dimensional covariates)
 #' @details To investigate the factors pattern along the covariates (such as time or a spatial coordinate) 
 #' this function an be used to plot a scatterplot of the factor againt the values of each covariate
@@ -652,7 +654,8 @@ plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, v
 
 plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warped = TRUE, show_missing = TRUE, scale = FALSE,
                                 color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                                dot_size = 1.5, alpha = 1, stroke = NULL, legend = TRUE, return_data = FALSE, show_variance = FALSE) {
+                                dot_size = 1.5, alpha = 1, stroke = NULL, legend = TRUE,
+                                rotate_x = FALSE, rotate_y = FALSE, return_data = FALSE, show_variance = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -729,13 +732,9 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
           ) 
   } else if (length(covariates) == 2) {
     p <- .plot_factors_vs_cov_2d(df,
-           color_name = color_name,
-           shape_name = shape_name,
            scale = scale, 
-           dot_size = dot_size, 
-           alpha = alpha, 
-           stroke = stroke,
-           legend = legend
+           rotate_x = rotate_x,
+           rotate_y = rotate_y
           )
   } else {
     stop("too many covariates provided")
@@ -790,7 +789,8 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   return(p)
 }
 
-.plot_factors_vs_cov_2d <- function(df, color_name = "", shape_name = "", scale = FALSE, dot_size = 1.5, alpha = 1, stroke = 1, legend = TRUE) {
+.plot_factors_vs_cov_2d <- function(df, scale = FALSE,
+                                    rotate_x = FALSE, rotate_y= FALSE) {
   
   # Sanity checks
   stopifnot(length(unique(df$covariate))==2)
@@ -810,32 +810,40 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   }
   
   covariates_dt <- mutate(covariates_dt, color_by = value.factor) # for compatibility with .add_legend
-  # Generate plot
-  p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2], fill = "color_by")) + 
-    geom_tile() + 
-    facet_grid( ~ factor) + 
+
+  p <- ggplot(covariates_dt, aes_string(x=covariates.names[1],
+                                        y=covariates.names[2],
+                                        col = "color_by")) +
+    geom_point() +
+    scale_color_gradient2() + 
+    geom_point(col = "gray", alpha =0.05) +
+    facet_grid( ~ factor) + coord_fixed() + 
     theme_bw() +
     theme(
-      axis.text = element_text(size = rel(0.9), color = "black"), 
-      axis.title = element_text(size = rel(1.2), color = "black"), 
-      axis.line = element_line(color = "black", size = 0.5), 
+      axis.text = element_text(size = rel(0.9), color = "black"),
+      axis.title = element_text(size = rel(1.0), color = "black"),
+      axis.line = element_line(color = "black", size = 0.5),
       axis.ticks = element_line(color = "black", size = 0.5)
-    ) + coord_fixed() + xlab(covariates.names[1]) + ylab(covariates.names[2])
+    ) + guides(col = guide_colorbar(title = "Factor vaue"))
   
-  # p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2])) + 
-  #   geom_point(aes_string(fill = "value.factor"), shape=21, colour = "black", size = dot_size, stroke = stroke, alpha = alpha) + 
-  #   # geom_point( col = "grey", alpha =0.05)+
+  # Generate plot
+  # p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2], fill = "color_by")) + 
+  #   geom_tile() + 
   #   facet_grid( ~ factor) + 
   #   theme_bw() +
   #   theme(
   #     axis.text = element_text(size = rel(0.9), color = "black"), 
-  #     axis.title = element_text(size = rel(1.0), color = "black"), 
+  #     axis.title = element_text(size = rel(1.2), color = "black"), 
   #     axis.line = element_line(color = "black", size = 0.5), 
   #     axis.ticks = element_line(color = "black", size = 0.5)
-  #   )
+  #   ) + coord_fixed() + xlab(covariates.names[1]) + ylab(covariates.names[2])
   
-  p <- .add_legend(p, covariates_dt, legend, color_name, shape_name)
-  
+  if(rotate_x){
+    p <- p + scale_x_reverse()
+  }
+  if(rotate_y){
+    p <- p + scale_y_reverse()
+  }
   return(p)
 }
 

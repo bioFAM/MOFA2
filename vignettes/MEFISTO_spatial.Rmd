@@ -53,12 +53,6 @@ ggplot(df, aes(x=coord_1, y=coord_2, fill = value)) +
     geom_tile() + 
     facet_grid( ~ factor) + 
     theme_bw() +
-    theme(
-      axis.text = element_text(size = rel(0.9), color = "black"), 
-      axis.title = element_text(size = rel(1.2), color = "black"), 
-      axis.line = element_line(color = "black", size = 0.5), 
-      axis.ticks = element_line(color = "black", size = 0.5)
-    ) +
   scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) + coord_fixed()
 ```
 
@@ -109,7 +103,7 @@ sm <- run_mofa(sm)
 ## Down-stream analysis
 ### Variance explained per factor
 Using `plot_variance_explained` we can explore which factor is active in which view. `plot_factor_cor` shows us whether the factors are correlated.
-```{r, fig.width=5, fig.height=4}
+```{r, fig.width=3.5, fig.height=3}
 plot_variance_explained(sm)
 r <- plot_factor_cor(sm)
 ```
@@ -122,7 +116,26 @@ get_scales(sm)
 
 In this example, we find two factors that are non-smooth and two smooth factors. Using `plot_factors_on_cov_2d` we can plot the factors along the spatial coordinates, where we can distinguish smooth and non smooth variation across space.
 ```{r}
-plot_factors_vs_cov(sm)
+plot_factors_vs_cov(sm) 
+```
+For an easier comparison let's use the same color scheme and plot as above for the simulated patterns.
+```{r}
+covariates_dt <- plot_factors_vs_cov(sm, return_data = TRUE) %>%
+  spread(key = covariate, value = value.covariate)
+covariates.names <- covariates_names(sm)
+ggplot(covariates_dt,
+       aes_string(x=covariates.names[1],
+                  y=covariates.names[2],
+                  fill = "value.factor")) + 
+    geom_tile() +
+    facet_grid( ~ factor) +
+    theme_bw() +
+    coord_fixed() +
+  xlab(covariates.names[1]) +
+  ylab(covariates.names[2]) +
+  scale_fill_gradientn(
+    colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)
+    ) 
 ```
 
 We can compare the above plot to the factors that were simulated above and find that the model recaptured the two smooth as well as two non-smooth patterns in space.

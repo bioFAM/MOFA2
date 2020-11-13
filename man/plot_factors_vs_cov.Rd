@@ -19,6 +19,8 @@ plot_factors_vs_cov(
   alpha = 1,
   stroke = NULL,
   legend = TRUE,
+  rotate_x = FALSE,
+  rotate_y = FALSE,
   return_data = FALSE,
   show_variance = FALSE
 )
@@ -37,35 +39,39 @@ Default is the first sample covariates in covariates slot}
 \item{warped}{logical indicating whether to show the aligned covariate (default: TRUE), 
 only relevant if warping has been used to align multiple sample groups}
 
-\item{show_missing}{logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
+\item{show_missing}{(for 1-dim covariates) logical indicating whether to include samples for which \code{shape_by} or \code{color_by} is missing}
 
 \item{scale}{logical indicating whether to scale factor values.}
 
-\item{color_by}{specifies groups or values used to color the samples. This can be either:
+\item{color_by}{(for 1-dim covariates) specifies groups or values used to color the samples. This can be either:
 (1) a character giving the name of a feature present in the training data.
 (2) a character giving the same of a column present in the sample metadata.
 (3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
 
-\item{shape_by}{specifies groups or values used to shape the samples. This can be either:
+\item{shape_by}{(for 1-dim covariates) specifies groups or values used to shape the samples. This can be either:
 (1) a character giving the name of a feature present in the training data, 
 (2) a character giving the same of a column present in the sample metadata.
 (3) a vector of the same length as the number of samples specifying discrete groups.}
 
-\item{color_name}{name for color legend.}
+\item{color_name}{(for 1-dim covariates) name for color legend.}
 
-\item{shape_name}{name for shape legend.}
+\item{shape_name}{(for 1-dim covariates) name for shape legend.}
 
-\item{dot_size}{numeric indicating dot size.}
+\item{dot_size}{(for 1-dim covariates) numeric indicating dot size.}
 
-\item{alpha}{numeric indicating dot transparency.}
+\item{alpha}{(for 1-dim covariates) numeric indicating dot transparency.}
 
-\item{stroke}{numeric indicating the stroke size}
+\item{stroke}{(for 1-dim covariates) numeric indicating the stroke size}
 
-\item{legend}{logical indicating whether to add legend.}
+\item{legend}{(for 1-dim covariates) logical indicating whether to add legend.}
+
+\item{rotate_x}{(for spatial, 2-dim covariates) Rotate covariate on x-axis}
+
+\item{rotate_y}{(for spatial, 2-dim covariates) Rotate covariate on y-axis}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 
-\item{show_variance}{logical indicating whether to show the marginal variance of inferred factor values 
+\item{show_variance}{(for 1-dim covariates) logical indicating whether to show the marginal variance of inferred factor values 
 (only relevant for 1-dimensional covariates)}
 }
 \value{
