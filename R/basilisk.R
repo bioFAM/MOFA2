@@ -11,6 +11,7 @@
     "scipy==1.5.2",
     # "argparse==1.4.0", (in Python by default)
 	"numpy==1.19.2",
+    "dtw-python==1.1.5",
     if (basilisk.utils::isMacOSX()) "nomkl==3.0"
 )
 
