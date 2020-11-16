@@ -258,7 +258,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' (3) a vector of the same length as the number of samples specifying discrete groups.
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
-#' @param dot_size numeric indicating dot size (default is 1.5).
+#' @param dot_size numeric indicating dot size (default is 2).
 #' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
 #' @param alpha numeric indicating dot transparency (default is 1).
 #' @param legend logical indicating whether to add legend.
@@ -291,7 +291,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 plot_factors <- function(object, factors = c(1, 2), groups = "all",
                          show_missing = TRUE, scale = FALSE,
                          color_by = NULL, shape_by = NULL, color_name = NULL, shape_name = NULL,
-                         dot_size = 1.5, alpha = 1, legend = TRUE, stroke = NULL, return_data = FALSE) {
+                         dot_size = 2, alpha = 1, legend = TRUE, stroke = NULL, return_data = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
