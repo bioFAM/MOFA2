@@ -4,7 +4,7 @@
 
 #' @title Add covariates to a MOFA model
 #' @name set_covariates
-#' @description Function to add  continuous covariate to a \code{\link{MOFA}} object for smooth training (MEFISTO) 
+#' @description Function to add continuous covariate(s) to a \code{\link{MOFA}} object for smooth training (MEFISTO) 
 #' @param object an untrained \code{\link{MOFA}}
 #' @param covariates Sample-covariates to be passed to the model.
 #' This can be either:
@@ -117,7 +117,7 @@ set_covariates <- function(object, covariates) {
 
 #' @title Get sample covariates
 #' @name get_covariates
-#' @description Function to extract the covariates from a \code{\link{MOFA}} object.
+#' @description Function to extract the covariates from a \code{\link{MOFA}} object using MEFISTO.
 #' @param object a \code{\link{MOFA}} object.
 #' @param covariates character vector with the covariate name(s), or numeric vector with the covariate index(es). 
 #' @param as.data.frame logical indicating whether to output the result as a long data frame, default is \code{FALSE}.
@@ -161,7 +161,7 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 
 #' @title Get default options for smooth covariates
 #' @name get_default_smooth_options
-#' @description Function to obtain the default options for the usage of smooth covariates
+#' @description Function to obtain the default options for the usage of smooth covariates with MEFISTO
 #' @param object an untrained \code{\link{MOFA}} object
 #' @details The options are the following: \cr
 #' \itemize{
@@ -238,7 +238,7 @@ get_default_smooth_options <- function(object) {
 #' @title Heatmap plot showing the group-group correlations per factor
 #' @name plot_group_kernel
 #' @description Heatmap plot showing the group-group correlations inferred by the model per factor
-#' @param object a trained \code{\link{MOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
 #' @param ... additional parameters that can be passed to  \code{pheatmap} 
@@ -290,7 +290,7 @@ plot_group_kernel <- function(object, factors = "all", groups = "all", ...) {
 #' @title Barplot showing the smoothness per factor
 #' @name plot_smoothness
 #' @description Barplot indicating a smoothness score (between 0 (non-smooth) and 1 (smooth)) per factor
-#' @param object a trained \code{\link{MOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
 #' @param color for the smooth part of the bar
 #' @details The smoothness score is given by the scale parameter for the underlying Gaussian process of each factor.
@@ -329,7 +329,7 @@ plot_smoothness <- function(object, factors = "all", color = "cadetblue") {
 #' @title Barplot showing the sharedness per factor
 #' @name plot_sharedness
 #' @description Barplot indicating a sharedness score (between 0 (non-shared) and 1 (shared)) per factor
-#' @param object a trained \code{\link{MOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
 #' @param color for the shared part of the bar
 #' @details The sharedness score is calculated as the distance of the learnt group correlation matrix to the identity matrix
@@ -369,7 +369,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' @title Plot interpolated factors versus covariate (1-dimensional)
 #' @name plot_interpolation_vs_covariate
 #' @description make a plot of interpolated covariates versus covariate
-#' @param object a trained \code{\link{MOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param covariate covariate to use for plotting
 #' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
 #' @param only_mean show only mean or include uncertainties?
@@ -432,7 +432,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 #' @title Scatterplots of feature values against sample covariates
 #' @name plot_data_vs_cov
 #' @description Function to do a scatterplot of features against sample covariate values.
-#' @param object a \code{\link{MOFA}} object.
+#' @param object a \code{\link{MOFA}} object using MEFISTO.
 #' @param covariate string with the covariate name or a samples_metadata column, or an integer with the index of the covariate
 #' @param warped logical indicating whether to show the aligned covariate (default: TRUE), 
 #' only relevant if warping has been used to align multiple sample groups
@@ -608,7 +608,7 @@ plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, v
 #' @title Scatterplots of a factor's values againt the sample covariates
 #' @name plot_factors_vs_cov
 #' @description  Scatterplots of a factor's values againt the sample covariates
-#' @param object a trained \code{\link{MOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param factors character or numeric specifying the factor(s) to plot, default is "all"
 #' @param covariates specifies sample covariate(s) to plot against:
 #' (1) a character giving the name of a column present in the sample covariates or sample metadata.
@@ -947,7 +947,7 @@ interpolate_factors <- function(object, new_values) {
 #' @name plot_alignment
 #' @description Function to plot the alignment learnt by MEFISTO for the 
 #' covariate values between different groups
-#' @param object a \code{\link{MOFA}} object trained with smooth options, warping and a covariate
+#' @param object a \code{\link{MOFA}} object using MEFISTO with warping
 #' @return ggplot object showing the alignment
 #' @details This function requires the functional MEFISTO framework to be used in training. 
 #' Use \code{set_covariates} and specify smooth_options when preparing the training using \code{prepare_mofa}. 

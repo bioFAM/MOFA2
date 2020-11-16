@@ -26,7 +26,7 @@ plot_factors_vs_cov(
 )
 }
 \arguments{
-\item{object}{a trained \code{\link{MOFA}} object.}
+\item{object}{a trained \code{\link{MOFA}} object using MEFISTO.}
 
 \item{factors}{character or numeric specifying the factor(s) to plot, default is "all"}
 

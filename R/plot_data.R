@@ -345,11 +345,11 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
 #' @name plot_data_overview
 #' @description Function to do a tile plot showing the missing value structure of the input data
 #' @param object a \code{\link{MOFA}} object.
-#' @param covariate specifies sample covariate to order samples by in the plot. This should be
-#' a character or  a numeric index giving the name orposition of a column present in the covariates slot of the object.
+#' @param covariate (only for MEFISTO) specifies sample covariate to order samples by in the plot. This should be
+#' a character or  a numeric index giving the name or position of a column present in the covariates slot of the object.
 #' Default is the first sample covariate in covariates slot. \code{NULL} does not order by covariate
 #' @param colors a vector specifying the colors per view (see example for details).
-#' @param show_covariate boolean specifying whether to include the covariate in the plot
+#' @param show_covariate (only for MEFISTO) boolean specifying whether to include the covariate in the plot
 #' @param show_dimensions logical indicating whether to plot the dimensions of the data (default is TRUE).
 #' @details This function is helpful to get an overview of the structure of the data. 
 #' It shows the model dimensionalities (number of samples, groups, views and features) 

@@ -10,7 +10,7 @@
 #' @param likelihood likelihood for each view, one of "gaussian" (default), "bernoulli", "poisson",
 #'  or a character vector of length n_views
 #' @param lscales vector of lengthscales, needs to be of length n_factors (default is 0 - no smooth factors)
-#' @param sample_cov matrix of sample covariates for one group with covariates in rows and samples in columns 
+#' @param sample_cov (only for use with MEFISTO) matrix of sample covariates for one group with covariates in rows and samples in columns 
 #' or "equidistant" for sequential ordering, default is NULL (no smooth factors)
 #' @param as.data.frame return data and covariates as long dataframe 
 #' @return Returns a list containing the simulated data and simulation parameters.

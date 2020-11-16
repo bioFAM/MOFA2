@@ -7,7 +7,7 @@
 plot_group_kernel(object, factors = "all", groups = "all", ...)
 }
 \arguments{
-\item{object}{a trained \code{\link{MOFA}} object.}
+\item{object}{a trained \code{\link{MOFA}} object using MEFISTO.}
 
 \item{factors}{character vector with the factors names, or numeric vector indicating the indices of the factors to use}
 

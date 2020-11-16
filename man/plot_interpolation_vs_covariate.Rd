@@ -13,7 +13,7 @@ plot_interpolation_vs_covariate(
 )
 }
 \arguments{
-\item{object}{a trained \code{\link{MOFA}} object.}
+\item{object}{a trained \code{\link{MOFA}} object using MEFISTO.}
 
 \item{covariate}{covariate to use for plotting}
 

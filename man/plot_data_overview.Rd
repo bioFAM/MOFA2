@@ -15,13 +15,13 @@ plot_data_overview(
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
-\item{covariate}{specifies sample covariate to order samples by in the plot. This should be
-a character or  a numeric index giving the name orposition of a column present in the covariates slot of the object.
+\item{covariate}{(only for MEFISTO) specifies sample covariate to order samples by in the plot. This should be
+a character or  a numeric index giving the name or position of a column present in the covariates slot of the object.
 Default is the first sample covariate in covariates slot. \code{NULL} does not order by covariate}
 
 \item{colors}{a vector specifying the colors per view (see example for details).}
 
-\item{show_covariate}{boolean specifying whether to include the covariate in the plot}
+\item{show_covariate}{(only for MEFISTO) boolean specifying whether to include the covariate in the plot}
 
 \item{show_dimensions}{logical indicating whether to plot the dimensions of the data (default is TRUE).}
 }

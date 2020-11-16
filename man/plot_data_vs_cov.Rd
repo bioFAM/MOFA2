@@ -27,7 +27,7 @@ plot_data_vs_cov(
 )
 }
 \arguments{
-\item{object}{a \code{\link{MOFA}} object.}
+\item{object}{a \code{\link{MOFA}} object using MEFISTO.}
 
 \item{covariate}{string with the covariate name or a samples_metadata column, or an integer with the index of the covariate}
 

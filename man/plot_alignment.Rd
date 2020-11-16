@@ -7,7 +7,7 @@
 plot_alignment(object)
 }
 \arguments{
-\item{object}{a \code{\link{MOFA}} object trained with smooth options, warping and a covariate}
+\item{object}{a \code{\link{MOFA}} object using MEFISTO with warping}
 }
 \value{
 ggplot object showing the alignment

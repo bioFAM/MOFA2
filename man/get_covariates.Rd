@@ -24,7 +24,7 @@ get_covariates(
 a matrix with dimensions (samples,covariates). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)
 }
 \description{
-Function to extract the covariates from a \code{\link{MOFA}} object.
+Function to extract the covariates from a \code{\link{MOFA}} object using MEFISTO.
 }
 \examples{
 # Using an existing trained model

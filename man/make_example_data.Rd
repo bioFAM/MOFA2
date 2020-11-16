@@ -32,7 +32,7 @@ or a character vector of length n_views}
 
 \item{lscales}{vector of lengthscales, needs to be of length n_factors (default is 0 - no smooth factors)}
 
-\item{sample_cov}{matrix of sample covariates for one group with covariates in rows and samples in columns 
+\item{sample_cov}{(only for use with MEFISTO) matrix of sample covariates for one group with covariates in rows and samples in columns 
 or "equidistant" for sequential ordering, default is NULL (no smooth factors)}
 
 \item{as.data.frame}{return data and covariates as long dataframe}

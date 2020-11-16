@@ -13,7 +13,7 @@ get_default_smooth_options(object)
 Returns a list with default options for the smooth covariate(s) functionality.
 }
 \description{
-Function to obtain the default options for the usage of smooth covariates
+Function to obtain the default options for the usage of smooth covariates with MEFISTO
 }
 \details{
 The options are the following: \cr
