@@ -12,7 +12,7 @@ Intuitively, MOFA can be viewed as a versatile and statistically rigorous genera
 
 For more details you can read our two papers: 
 - [MOFA v1, published in in Molecular Systems Biology](http://msb.embopress.org/cgi/doi/10.15252/msb.20178124)  
-- [MOFA v2, published in Genome Biology](http://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1])
+- [MOFA v2, published in Genome Biology](http://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1)
 
 ## What changed from MOFA to MOFA2?
 
