@@ -113,7 +113,8 @@ class BayesNet(object):
         Y = self.nodes["Y"].getExpectation()
 
         # Get groups
-        groups = self.nodes["AlphaZ"].groups if "AlphaZ" in self.nodes else s.array([0]*self.dim['N'])
+        groups = self.nodes["Y"].nodes[0].groups
+
         # to maintain correct ordering of groups in R2
         unique_groups, idx = np.unique(groups, return_index=True)
         unique_groups = unique_groups[np.argsort(idx)]
@@ -146,7 +147,7 @@ class BayesNet(object):
                         r2[g][m,k] = 1. - Res/SS
         return r2
 
-    def removeInactiveFactors(self, min_r2=None):
+    def removeInactiveFactors(self, min_r2=None, return_idx = False):
         """Method to remove inactive factors
 
         PARAMETERS
@@ -171,9 +172,18 @@ class BayesNet(object):
                 self.nodes[node].removeFactors(drop)
         self.dim['K'] -= len(drop)
 
+        # Remove factor-wise training stats
+        # if len(drop) > 0:
+            # if 'Sigma' in self.nodes.keys():
+            #     self.lscales = self.lscales.drop(columns = drop)
+            #     self.lscales.columns = range(0, len(self.lscales.columns))
+            #     self.scales = self.scales.drop(columns = drop)
+            #     self.scales.columns = range(0, len(self.scales.columns))
         if self.dim['K']==0:
             print("All factors shut down, no structure found in the data.")
             exit()
+
+        if return_idx: return drop
 
         pass
 
@@ -185,7 +195,8 @@ class BayesNet(object):
         # Precompute ELBO
         for node in self.nodes["Y"].getNodes(): node.TauTrick = False # important to do this for ELBO computation
         elbo = self.calculateELBO()
-        for node in self.nodes["Y"].getNodes(): node.TauTrick = self.options["Y_ELBO_TauTrick"]
+        # for node in self.nodes["Y"].getNodes(): node.TauTrick = self.options["Y_ELBO_TauTrick"]
+        for node in self.nodes["Y"].getNodes(): node.TauTrick = True
 
         if self.options['verbose']:
             print("ELBO before training:")
@@ -204,6 +215,10 @@ class BayesNet(object):
         elbo = pd.DataFrame(data = nans((self.options['maxiter']+1, len(nodes)+1 )), columns = nodes+["total"] )
         number_factors = nans((self.options['maxiter']+1))
         iter_time = nans((self.options['maxiter']+1))
+        # keep track of factor-wise training statistics (attribute as needs to be accounted for in factor dropping)
+        # if 'Sigma' in self.nodes.keys():
+        #     self.lscales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
+        #     self.scales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
@@ -268,6 +283,7 @@ class BayesNet(object):
                 if self.options['verbose']:
                     self.print_verbose_message()
 
+
                 iter_time[i] = time()-t
                 
                 # Flush (we need this to print when running on the cluster)
@@ -281,9 +297,15 @@ class BayesNet(object):
 
         finally:
             # Finish by collecting the training statistics
-            # If training is interrupted, remember current training stats
-            self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total", 1) }
+            self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
+            if 'Sigma' in self.nodes.keys():
+                tmp = self.nodes['Sigma'].getParameters() # save only last iteration
+                self.train_stats['length_scales'] = tmp['l']
+                self.train_stats['scales'] = tmp['scale']
+                self.train_stats['Kg'] = tmp['Kg']
 
+                # self.train_stats['length_scales'] = self.lscales
+                # self.train_stats['scales'] = self.scales
 
     def print_verbose_message(self):
         """Method to print training statistics if Verbose is TRUE"""
@@ -442,6 +464,9 @@ class StochasticBayesNet(BayesNet):
             self.nodes['AlphaZ'].define_mini_batch(ix)
         if 'ThetaZ' in self.nodes:
             self.nodes['ThetaZ'].define_mini_batch(ix)  
+        if 'Sigma' in self.nodes:
+            self.nodes['Sigma'].define_mini_batch(ix)
+  
 
     def iterate(self):
         """Method to start iterating and updating the variables using the VB algorithm"""
@@ -451,6 +476,9 @@ class StochasticBayesNet(BayesNet):
         elbo = pd.DataFrame(data = nans((self.options['maxiter']+1, len(nodes)+1 )), columns = nodes+["total"] )
         number_factors = nans((self.options['maxiter']+1))
         iter_time = nans((self.options['maxiter']+1))
+        # if 'Sigma' in self.nodes.keys():
+        #     self.lscales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
+        #     self.scales = pd.DataFrame(data = nans((self.options['maxiter'], self.dim['K'])), columns = range(self.dim['K']))
 
         # Precompute
         converged = False; convergence_token = 1
@@ -493,6 +521,13 @@ class StochasticBayesNet(BayesNet):
                     continue
                 self.nodes[node].update(ix, ro)
             t_updates = time() - t_updates
+
+            # # Save lengthscales from Sigma node
+            # if 'Sigma' in self.nodes.keys():
+            #     tmp = self.nodes['Sigma'].getParameters()
+            #     self.lscales.iloc[i] = tmp['l']
+            #     self.scales.iloc[i] = tmp['scale']
+            #     self.Kg.iloc[i] = tmp['Kg']
 
             # Calculate Evidence Lower Bound
             if (i>=self.options["start_elbo"]) and ((i-self.options["start_elbo"])%self.options['freqELBO']==0):
@@ -547,4 +582,13 @@ class StochasticBayesNet(BayesNet):
 
         # Finish by collecting the training statistics
         self.train_stats = { 'time':iter_time, 'number_factors':number_factors, 'elbo':elbo["total"].values, 'elbo_terms':elbo.drop("total",1) }
+        if 'Sigma' in self.nodes.keys():
+            tmp = self.nodes['Sigma'].getParameters() # save only last iteration
+            self.train_stats['length_scales'] = tmp['l']
+            self.train_stats['scales'] = tmp['scale']
+            self.train_stats['Kg'] = tmp['Kg']
+
+            # self.train_stats['length_scales'] = self.lscales
+            # self.train_stats['scales'] = self.scales
+
         self.trained = True

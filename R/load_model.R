@@ -17,6 +17,8 @@
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
 # #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
 #' @param verbose logical indicating whether to print verbose output (default is FALSE)
+#' @param load_interpol_Z logical indicating whether to load predictions for factor values based on latent processed (only
+#'  relevant for models trained with covariates and Gaussian processes, where prediction was enabled)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
 #' @importFrom HDF5Array HDF5ArraySeed
@@ -29,7 +31,8 @@
 #' model <- load_model(file)
 
 load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = TRUE,
-                       remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE) {
+                       remove_outliers = FALSE, remove_inactive_factors = TRUE, verbose = FALSE,
+                       load_interpol_Z = FALSE) {
 
   # Create new MOFAodel object
   object <- new("MOFA")
@@ -61,6 +64,11 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     view_names <- names(feature_names)
     group_names <- names(sample_names)
     h5ls.out <- h5ls.out[grep("variance_explained", h5ls.out$name, invert = TRUE),]
+  }
+  if("covariates" %in%  h5ls.out$name){
+    covariate_names <- as.character( h5read(file, "covariates")[[1]])
+  } else {
+    covariate_names <- NULL
   }
 
   # Load training data (as nested list of matrices)
@@ -112,6 +120,68 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     object@features_metadata <- bind_rows(lapply(view_names, function(m) as.data.frame(h5read(file, sprintf("features_metadata/%s", m)))))
   }
   
+  ############################
+  ## Load sample covariates ##
+  ############################
+  
+  if (any(grepl("cov_samples", h5ls.out$group))){
+    covariates <- list()
+    for (g in group_names) {
+      if (on_disk) {
+        # as DelayedArrays
+        covariates[[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("cov_samples/%s", g) ) )
+      } else {
+        # as matrices
+        covariates[[g]] <- h5read(file, sprintf("cov_samples/%s", g) )
+      }    
+    }
+  } else covariates <- NULL
+  object@covariates <- covariates
+
+  if (any(grepl("cov_samples_transformed", h5ls.out$group))){
+    covariates_warped <- list()
+    for (g in group_names) {
+      if (on_disk) {
+        # as DelayedArrays
+        covariates_warped[[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("cov_samples_transformed/%s", g) ) )
+      } else {
+        # as matrices
+        covariates_warped[[g]] <- h5read(file, sprintf("cov_samples_transformed/%s", g) )
+      }    
+    }
+  } else covariates_warped <- NULL
+  object@covariates_warped <- covariates_warped
+  
+  #######################
+  ## Load interpolated factor values ##
+  #######################
+  
+  interpolated_Z <- list()
+  if (isTRUE(load_interpol_Z)) {
+    
+    if (isTRUE(verbose)) message("Loading interpolated factor values...")
+    
+    for (g in group_names) {
+      interpolated_Z[[g]] <- list()
+      if (on_disk) {
+        # as DelayedArrays
+        # interpolated_Z[[g]] <- DelayedArray::DelayedArray( HDF5ArraySeed(file, name = sprintf("Z_predictions/%s", g) ) )
+      } else {
+        # as matrices
+        tryCatch( {
+          interpolated_Z[[g]][["mean"]] <- h5read(file, sprintf("Z_predictions/%s/mean", g) )
+        }, error = function(x) { print("Predicitions of Z not found, not loading it...") })
+        tryCatch( {
+          interpolated_Z[[g]][["variance"]] <- h5read(file, sprintf("Z_predictions/%s/variance", g) )
+        }, error = function(x) { print("Variance of predictions of Z not found, not loading it...") })
+        tryCatch( {
+          interpolated_Z[[g]][["new_values"]] <- h5read(file, "Z_predictions/new_values")
+        }, error = function(x) { print("New values of Z not found, not loading it...") })
+      }
+    }
+  }
+  object@interpolated_Z <- interpolated_Z
+  
   #######################
   ## Load expectations ##
   #######################
@@ -125,6 +195,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     expectations[["AlphaW"]] <- h5read(file, "expectations/AlphaW")[view_names]
   if ("AlphaZ" %in% node_names)
     expectations[["AlphaZ"]] <- h5read(file, "expectations/AlphaZ")[group_names]
+  if ("Sigma" %in% node_names)
+    expectations[["Sigma"]] <- h5read(file, "expectations/Sigma")
   if ("Z" %in% node_names)
     expectations[["Z"]] <- h5read(file, "expectations/Z")[group_names]
   if ("W" %in% node_names)
@@ -177,6 +249,29 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     object@training_stats <- h5read(file, 'training_stats', read.attributes = TRUE)
   }, error = function(x) { print("Training stats not found, not loading it...") })
 
+  #############################
+  ## Load covariates options ##
+  #############################
+  
+  if (any(grepl("cov_samples", h5ls.out$group))) { 
+    if (isTRUE(verbose)) message("Loading covariates options...")
+    tryCatch( {
+      object@smooth_options <- as.list(h5read(file, 'smooth_opts', read.attributes = TRUE))
+    }, error = function(x) { print("Covariates options not found, not loading it...") })
+    
+    # Convert True/False strings to logical values
+    for (i in names(object@smooth_options)) {
+      if (object@smooth_options[i] == "False" | object@smooth_options[i] == "True") {
+        object@smooth_options[i] <- as.logical(object@smooth_options[i])
+      } else {
+        object@smooth_options[i] <- object@smooth_options[i]
+      }
+    }
+    
+  }
+  
+  
+    
   #######################################
   ## Load variance explained estimates ##
   #######################################
@@ -208,6 +303,7 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   object@dimensions[["G"]] <- length(data[[1]])                       # number of groups
   object@dimensions[["N"]] <- sapply(data[[1]], ncol)                 # number of samples (per group)
   object@dimensions[["D"]] <- sapply(data, function(e) nrow(e[[1]]))  # number of features (per view)
+  object@dimensions[["C"]] <- nrow(covariates[[1]])                        # number of covariates
   object@dimensions[["K"]] <- ncol(object@expectations$Z[[1]])        # number of factors
   
   # Assign sample and feature names (slow for large matrices)
@@ -238,6 +334,16 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     sample_names <- lapply(object@dimensions[["N"]], function(n) paste0("sample", as.character(seq_len(n))))
   }
   samples_names(object) <- sample_names
+
+  # Add covariates names
+  if(!is.null(object@covariates)){
+    # Create default covariates names if they are null
+    if (is.null(covariate_names)) {
+      print("Covariate names not found, generating default: covariate1, ..., covariateC")
+      covariate_names <- paste0("sample", as.character(seq_len(object@dimensions[["C"]])))
+    }
+    covariates_names(object) <- covariate_names
+  }
   
   # Set views names
   if (is.null(names(object@data))) {

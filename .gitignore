@@ -7,7 +7,7 @@
 
 # Rstudio projects
 *.Rproj
-
+.Rhistory
 
 *_site/
 # Pycharm
@@ -16,6 +16,8 @@
 # HTML
 # *.html
 
+# Models outputs
+*.hdf5
 
 # Distribution / packaging
 .Python

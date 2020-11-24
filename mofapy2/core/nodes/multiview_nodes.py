@@ -131,7 +131,7 @@ class Multiview_Variational_Node(Multiview_Node, Variational_Node):
         for m in self.activeM: self.nodes[m].updateParameters(ix, ro)
     def calculateELBO(self, weights):
         """Method to calculate variational evidence lower bound"""
-        lb = [ self.nodes[m].calculateELBO() * weights[m] for m in self.activeM ] 
+        lb = [ self.nodes[m].calculateELBO() * weights[m] for m in self.activeM ]
         return sum(lb)
 
 class Multiview_Constant_Node(Multiview_Node):

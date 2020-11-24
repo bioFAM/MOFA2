@@ -4,12 +4,24 @@
 \alias{plot_data_overview}
 \title{Overview of the input data}
 \usage{
-plot_data_overview(object, colors = NULL, show_dimensions = TRUE)
+plot_data_overview(
+  object,
+  covariate = 1,
+  colors = NULL,
+  show_covariate = FALSE,
+  show_dimensions = TRUE
+)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
+\item{covariate}{(only for MEFISTO) specifies sample covariate to order samples by in the plot. This should be
+a character or  a numeric index giving the name or position of a column present in the covariates slot of the object.
+Default is the first sample covariate in covariates slot. \code{NULL} does not order by covariate}
+
 \item{colors}{a vector specifying the colors per view (see example for details).}
+
+\item{show_covariate}{(only for MEFISTO) boolean specifying whether to include the covariate in the plot}
 
 \item{show_dimensions}{logical indicating whether to plot the dimensions of the data (default is TRUE).}
 }

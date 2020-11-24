@@ -35,10 +35,13 @@ The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA
 
 \item{\code{model_options}}{Model options.}
 
+\item{\code{smooth_options}}{Covariates options}
+
 \item{\code{dimensions}}{Dimensionalities of the model: 
 M for the number of views, 
-G for the number of groups, 
-N for the number of samples (per group), 
+G for the number of groups,
+N for the number of samples (per group),
+C for the number of covariates per sample,
 D for the number of features (per view),
 K for the number of factors.}
 
@@ -47,5 +50,11 @@ K for the number of factors.}
 \item{\code{cache}}{Cache.}
 
 \item{\code{status}}{Auxiliary variable indicating whether the model has been trained.}
+
+\item{\code{covariates}}{optional slot to store sample covariate for training in MEFISTO}
+
+\item{\code{covariates_warped}}{optional slot to store warped sample covariate for training in MEFISTO}
+
+\item{\code{interpolated_Z}}{optional slot to store interpolated factor values (used only with MEFISTO)}
 }}
 

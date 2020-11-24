@@ -7,7 +7,7 @@
 #' @name get_dimensions
 #' @description Extract dimensionalities from the model. 
 #' @details K indicates the number of factors, D indicates the number of features, 
-#' N indicates the (total) number of samples and M indicates the number of views.
+#' N indicates the (total) number of samples, M indicates the number of views and C indicates the number of covariates.
 #' @param object a \code{\link{MOFA}} object.
 #' @return list containing the dimensionalities of the model
 #' @export
@@ -40,6 +40,125 @@ get_elbo <- function(object) {
   return(max(object@training_stats$elbo, na.rm=TRUE))
 }
 
+#' @title Get lengthscales
+#' @name get_lengthscales
+#' @description Extract the inferred lengthscale for each factor after model training. 
+#' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
+#' @param object a \code{\link{MOFA}} object.
+#' @return A numeric vector containing the lengthscale for each factor.
+#' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' ls <- get_lengthscales(model)
+get_lengthscales <- function(object) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if(is.null(object@training_stats$length_scales)) stop("No lenghtscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
+  tmp <- object@training_stats$length_scales
+  return(tmp)
+}
+
+
+#' @title Get scales
+#' @name get_scales
+#' @description Extract the inferred scale for each factor after model training. 
+#' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
+#' @param object a \code{\link{MOFA}} object.
+#' @return A numeric vector containing the scale for each factor.
+#' @export
+#' @examples 
+#' # Using an existing trained model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' s <- get_scales(model)
+get_scales <- function(object) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if(is.null(object@training_stats$scales)) stop("No scales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
+  tmp <- object@training_stats$scales
+  return(tmp)
+}
+
+#' @title Get group covariance matrix
+#' @name get_group_kernel
+#' @description Extract the inferred group-group covariance matrix per factor
+#' @details This can be used only if covariates are passed to the MOFAobject upon creation and GP_factors is set to True.
+#' @param object a \code{\link{MOFA}} object.
+#' @return A list of group-group correlation matrices per factor
+#' @export
+get_group_kernel <- function(object) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
+  
+  if(!object@smooth_options$model_groups || object@dimensions$G == 1) {
+    tmp <- lapply(seq_len(dim(object@training_stats$Kg)[3]), function(x) {
+      mat <- matrix(1, nrow = object@dimensions$G, ncol = object@dimensions$G)
+      rownames(mat) <- colnames(mat) <- groups_names(object)
+      mat
+    })
+  } else {
+  if(is.null(object@training_stats$Kg)) stop("No group kernel saved in 'object' \n Make sure you specify the covariates and train setting the option 'model_groups' to TRUE.")
+  tmp <- lapply(seq_len(dim(object@training_stats$Kg)[3]), function(x) {
+    mat <- object@training_stats$Kg[ , , x]
+    rownames(mat) <- colnames(mat) <- groups_names(object)
+    mat
+    })
+  }
+  names(tmp) <- factors_names(object)
+  return(tmp)
+}
+
+#' @title Get interpolated factor values
+#' @name get_interpolated_factors
+#' @description Extract the interpolated factor values
+#' @details This can be used only if covariates are passed to the object upon creation, GP_factors is set to True and new covariates were passed for interpolation.
+#' @param object a \code{\link{MOFA}} object
+#' @param as.data.frame logical indicating whether to return data as a data.frame
+#' @param only_mean logical indicating whether include only mean or also uncertainties
+#' @return By default, a nested list containing for each group a list with a matrix with the interpolated factor values ("mean"),
+#'  their variance ("variance") and the values of the covariate at which interpolation took place ("new_values"). 
+#' Alternatively, if \code{as.data.frame} is \code{TRUE}, returns a long-formatted data frame with columns containing the covariates 
+#' and (factor, group, mean and variance).
+#' @import dplyr
+#' @import reshape2
+#' @export
+get_interpolated_factors <- function(object, as.data.frame = FALSE, only_mean = FALSE) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if(is.null(object@interpolated_Z)) stop("No interpolated factors present in 'object'")
+  if(!as.data.frame){
+    return(object@interpolated_Z)
+  } else {
+    type <- NULL
+    preds <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) != "new_values"]])
+    df_interpol <- reshape2::melt(preds, varnames = c("factor", "sample_id"))
+    df_interpol <- dplyr::rename(df_interpol, group = L1, type = L2)
+    if(only_mean){
+      df_interpol <- filter(df_interpol, type == "mean")
+    }
+    
+    if("new_values" %in% names(object@interpolated_Z[[1]])) {
+      new_vals <- lapply(object@interpolated_Z, function(l) l[names(l)[names(l) == "new_values"]])
+      new_vals <- reshape2::melt(new_vals, varnames = c("covariate","sample_id"))
+      new_vals <- mutate(new_vals, covariate = covariates_names(object))
+      new_vals <- rename(new_vals, group = L1, covariate_value = value)
+      new_vals <- spread(new_vals, key = covariate, value = covariate_value)
+      new_vals <- select(new_vals, -L2)
+      df_interpol <- left_join(df_interpol, new_vals, by = c("group", "sample_id"))
+      df_interpol <- select(df_interpol, -sample_id)
+    } else { # compatibility to older objects
+      df_interpol <- rename(df_interpol, covariate_value = sample_id)
+      df_interpol <- mutate(df_interpol, covariate = covariates_names(object))
+    }
+    df_interpol <- mutate(df_interpol, factor = factors_names(object)[factor])
+    df_interpol <- spread(df_interpol, key = type, value = value)
+    return(df_interpol)
+  }
+}
+
+
 #' @title Get factors
 #' @name get_factors
 #' @description Extract the latent factors from the model.
@@ -59,24 +178,25 @@ get_elbo <- function(object) {
 #' # Using an existing trained model on simulated data
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' 
+#'
 #' # Fetch factors in matrix format (a list, one matrix per group)
 #' factors <- get_factors(model)
-#' 
+#'
 #' # Concatenate groups
 #' factors <- do.call("rbind",factors)
-#' 
+#'
 #' # Fetch factors in data.frame format instead of matrix format
 #' factors <- get_factors(model, as.data.frame = TRUE)
 get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, as.data.frame = FALSE) {
-  
+
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
-  # Get factors and groups
+  # Get groups
   groups <- .check_and_get_groups(object, groups)
+  # Get factors
   factors <- .check_and_get_factors(object, factors)
-
+  
   # Collect factors
   Z <- get_expectations(object, "Z", as.data.frame)
   if (as.data.frame) {
@@ -113,17 +233,18 @@ get_factors <- function(object, groups = "all", factors = "all", scale = FALSE, 
 #' # Using an existing trained model on simulated data
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' 
+#'
 #' # Fetch weights in matrix format (a list, one matrix per view)
 #' weights <- get_weights(model)
-#' 
+#'
 #' # Fetch weights for factor 1 and 2 and view 1
 #' weights <- get_weights(model, views = 1, factors = c(1,2))
-#' 
+#'
 #' # Fetch weights in data.frame format
 #' weights <- get_weights(model, as.data.frame = TRUE)
+
 get_weights <- function(object, views = "all", factors = "all", abs = FALSE, scale = FALSE, as.data.frame = FALSE) {
-  
+
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
@@ -169,28 +290,27 @@ get_weights <- function(object, views = "all", factors = "all", abs = FALSE, sca
 #' Missing values are not included in the the long data.frame format by default. To include them use the argument \code{na.rm=FALSE}.
 #' @return A  list of data matrices with dimensionality (D,N) or a \code{data.frame} (if \code{as.data.frame} is TRUE)
 #' @export
-#' 
 #' @examples
 #' # Using an existing trained model on simulated data
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' 
+#'
 #' # Fetch data
 #' data <- get_data(model)
-#' 
+#'
 #' # Fetch a specific view
 #' data <- get_data(model, views = "view_0")
-#' 
+#'
 #' # Fetch data in data.frame format instead of matrix format
 #' data <- get_data(model, as.data.frame = TRUE)
-#' 
+#'
 #' # Fetch centered data (do not add the feature intercepts)
 #' data <- get_data(model, as.data.frame = FALSE)
 #' 
 #' # Fetch denoised data (do not add the feature intercepts)
 #' data <- get_data(model, denoise = TRUE)
 get_data <- function(object, views = "all", groups = "all", features = "all", as.data.frame = FALSE, add_intercept = TRUE, denoise = FALSE, na.rm = TRUE) {
-  
+
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   
@@ -226,14 +346,14 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
   tryCatch( {
     
     if (add_intercept & length(object@intercepts[[1]])>0) {
-      intercepts <- lapply(object@intercepts[views], function(x) x[groups]) 
+      intercepts <- lapply(object@intercepts[views], function(x) x[groups])
       intercepts <- lapply(seq_len(length(intercepts)), function(m) lapply(seq_len(length(intercepts[[1]])), function(p) intercepts[[m]][[p]][as.character(features[[m]])]))
       intercepts <- .name_views_and_groups(intercepts, views, groups)
       
       for (m in names(data)) {
         if (object@model_options$likelihoods[[m]]=="gaussian") {
           for (g in names(data[[m]])) {
-              data[[m]][[g]] <- data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
+            data[[m]][[g]] <- data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
           }
         }
       }
@@ -244,9 +364,11 @@ get_data <- function(object, views = "all", groups = "all", features = "all", as
     tmp <- lapply(views, function(m) { 
       lapply(groups, function(p) { 
         tmp <- reshape2::melt(data[[m]][[p]], na.rm=na.rm)
+        if(nrow(tmp) >0 & !is.null(tmp)) {
         colnames(tmp) <- c("feature", "sample", "value")
         tmp <- cbind(view = m, group = p, tmp)
         return(tmp) 
+        } 
       })
     })
     data <- do.call(rbind, do.call(rbind, tmp))
@@ -290,7 +412,7 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   # Get views and groups
   views <- .check_and_get_views(object, views)
   groups <- .check_and_get_groups(object, groups)
-  
+
   # Get features
   if (is(features, "list")) {
     stopifnot(all(sapply(seq_len(length(features)), function(i) all(features[[i]] %in% features_names(object)[[views[i]]]))))
@@ -309,7 +431,20 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   imputed_data <- lapply(seq_len(length(imputed_data)), function(m) lapply(seq_len(length(imputed_data[[1]])), function(p) imputed_data[[m]][[p]][as.character(features[[m]]),,drop=FALSE]))
   imputed_data <- .name_views_and_groups(imputed_data, views, groups)
   
-  
+# Add feature intercepts
+# tryCatch( {
+#
+#   if (add_intercept & length(object@intercepts[[1]])>0) {
+#     intercepts <- lapply(object@intercepts[views], function(x) x[groups])
+#     intercepts <- .name_views_and_groups(intercepts, views, groups)
+#
+#     for (m in names(imputed_data)) {
+#       for (g in names(imputed_data[[m]])) {
+#         imputed_data[[m]][[g]] <- imputed_data[[m]][[g]] + intercepts[[m]][[g]][as.character(features[[m]])]
+#       }
+#     }
+#   } }, error = function(e) { NULL })
+
   # Convert to long data frame
   if (isTRUE(as.data.frame)) {
     
@@ -329,9 +464,6 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
   }
   return(imputed_data)
 }
-
-
-
 
 
 #' @title Get expectations
@@ -366,6 +498,10 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
   # Get expectations in single matrix or list of matrices (for multi-view nodes)
   exp <- object@expectations[[variable]]
 
+  # unlist single view nodes - single Sigma node across all groups using time warping
+  if(variable == "Sigma")
+    exp <- exp[[1]]
+  
   # For memory and space efficiency, Y expectations are not saved to the model file when using only gaussian likelihoods.
   if (variable == "Y") {
     if ((length(object@expectations$Y) == 0) && all(object@model_options$likelihood == "gaussian")) {
@@ -409,7 +545,7 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
           tmp$group <- g
           factor.cols <- c("view", "group", "feature", "factor")
           tmp[factor.cols] <- lapply(tmp[factor.cols], factor)
-          return(tmp) 
+          return(tmp)
         })
       })
       tmp <- do.call(rbind, tmp)
@@ -435,15 +571,15 @@ get_expectations <- function(object, variable, as.data.frame = FALSE) {
 #' Default is \code{FALSE}.
 #' @return A list of data matrices with variance explained per group or a \code{data.frame} (if \code{as.data.frame} is TRUE)
 #' @export
-#' 
+#'
 #' @examples
 #' # Using an existing trained model
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' 
+#'
 #' # Fetch variance explained values (in matrix format)
 #' r2 <- get_variance_explained(model)
-#' 
+#'
 #' # Fetch variance explained values (in data.frame format)
 #' r2 <- get_variance_explained(model, as.data.frame = TRUE)
 #'
@@ -471,7 +607,7 @@ get_variance_explained <- function(object, groups = "all", views = "all", factor
     # total R2
     r2_total <- reshape2::melt( do.call("rbind",r2_list[["r2_total"]]) )
     colnames(r2_total) <- c("group", "view", "value")
-                   
+    
     # R2 per factor
     r2_per_factor <- lapply(names(r2_list[["r2_per_factor"]]), function(g) {
       x <- reshape2::melt( r2_list[["r2_per_factor"]][[g]] )
@@ -488,5 +624,5 @@ get_variance_explained <- function(object, groups = "all", views = "all", factor
   }
   
   return(r2)
-
+  
 }

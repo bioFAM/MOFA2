@@ -14,6 +14,33 @@ from mofapy2.build_model.build_model import *
 from mofapy2.build_model.save_model import *
 from mofapy2.build_model.utils import guess_likelihoods
 from mofapy2.build_model.train_model import train_model
+from mofapy2.core import gp_utils
+
+# import matplotlib.pyplot as plt
+
+
+
+def keyboardinterrupt_saver(func):
+    @wraps(func)
+    def saver(self, *args, **kwargs):
+        try:
+            func(self, *args, **kwargs)
+        # Internal methods will raise TypeError when interrupted
+        except (KeyboardInterrupt, TypeError):
+            if self.train_opts["save_interrupted"]:
+                print("Attempting to save the model at the current iteration...")
+                if self.train_opts["outfile"] is not None and self.train_opts != "":
+                    tmp_file = self.train_opts["outfile"]
+                    tmp_file = tmp_file.rstrip(".hdf5") + "_interrupted.hdf5"
+                else:
+                    tmp_file = os.path.join('/tmp', "mofa_{}_interrupted.hdf5".format(strftime('%Y%m%d-%H%M%S')))
+                self.save(outfile=tmp_file)
+                print("Saved partially trained model in {}. Exiting now.".format(tmp_file))
+            else:
+                print("Exiting now without saving the partially trained model. To save a partially trained model, set save_interrupted in the training options to true.")
+            sys.stdout.flush()
+            sys.exit()
+    return saver
 
 
 def keyboardinterrupt_saver(func):
@@ -41,9 +68,10 @@ def keyboardinterrupt_saver(func):
 class entry_point(object):
     def __init__(self):
         self.print_banner()
-        self.dimensionalities = {}
+        self.dimensionalities = {"C":0}
         self.model = None
         self.imputed = False # flag
+        self.Zcompleted = False # flag
 
     def print_banner(self):
         """ Method to print the mofapy2 banner """
@@ -62,9 +90,105 @@ class entry_point(object):
         """
 
         print(banner)
-
-        # print(banner)
         sys.stdout.flush()
+
+    def set_covariates(self, sample_cov, covariates_names=None):
+        """"
+        sample_cov: This can be either
+                - 	a list of matrices per group
+                    The dimensions of each matrix must be (samples, covariates)
+                    The order of list elements and rows in each matrix must match the structure of data
+                - 	a character specifying a column present in the samples' metadata. Note that this requires the metadata
+                    to have the specified column present as well as the samples names as index.
+        covariates_names: String or list of strings containing the name(s) of the covariate(s) (optional)
+        """
+
+        assert self.data is not None, "the data must be specified with set_data before specifying covariates"
+
+        self.smooth_opts = {}
+        self.smooth_opts["GP_factors"] = True
+
+        # Define covariates
+        # Define smooth options
+        # if not hasattr(self, 'smooth_opts'):
+        #     print("Options for the usage of smooth factors not defined, using default values...\n")
+        #     self.set_smooth_options()
+
+        # Sanity check
+        if isinstance(sample_cov, str):
+            sample_cov = [sample_cov]
+
+        if isinstance(sample_cov, list) and all([isinstance(c, str) for c in sample_cov]):
+            assert all([c in self.data_opts["samples_metadata"][0].columns for c in
+                        sample_cov]), "sample_cov provided as string but not found in samples_metadata"
+            sample_cov_list = []
+            for g in range(self.dimensionalities['G']):
+                samples4group = self.data_opts['samples_names'][g]
+                df = self.data_opts["samples_metadata"][g]
+                sample_cov_list.append(np.vstack([df[c][samples4group] for c in sample_cov]).transpose())
+            sample_cov = sample_cov_list
+
+        if not isinstance(sample_cov, list):
+            if isinstance(sample_cov, dict):
+                sample_cov = list(sample_cov.values())
+            # if providing a single matrix, treat it as G=1
+            elif isinstance(sample_cov, pd.DataFrame):
+                sample_cov = [sample_cov.values]
+            elif isinstance(sample_cov, np.ndarray):
+                sample_cov = [sample_cov]
+            else:
+                print("Error: sample_cov not recognised");
+                sys.stdout.flush();
+                sys.exit()
+
+        assert len(sample_cov) == self.dimensionalities[
+            "G"], "sample_cov needs to be a list of same length as data (same number of groups)"
+
+        for g in range(self.dimensionalities["G"]):
+            if not isinstance(sample_cov[g], np.ndarray):
+                if isinstance(sample_cov[g], pd.DataFrame):
+                    sample_cov[g] = sample_cov[g].values
+                else:
+                    print("Error, sample_cov is not a numpy.ndarray or a pandas dataframe");
+                    sys.stdout.flush();
+                    sys.exit()
+            sample_cov[g] = sample_cov[g].astype(np.float64)
+
+        N = [len(x) for x in self.data_opts['samples_names']]
+        if not all([sample_cov[g].shape[0] == N[g] for g in range(self.dimensionalities["G"])]):
+            for g in range(self.dimensionalities["G"]):
+                print(
+                    "Error, number of rows in sample covariates does not match number of samples in input data (N=%d vs. N=%d)" % (
+                        sample_cov[g].shape[0], N[g]))
+            sys.stdout.flush();
+            sys.exit()
+
+        # concatenate groups in sample_cov and standardize sample_cov to avoid scale differences
+        sample_cov = np.concatenate(sample_cov, axis=0)
+
+        # Define dimensionality
+        self.dimensionalities["C"] = sample_cov.shape[1]
+
+        # If sample_cov loaded successfully, print verbose message
+        if not sample_cov is None:
+            print("Loaded %d covariate(s) for each sample..." % (sample_cov.shape[1]))
+            print("\n")
+
+        # Define covariate names
+        if covariates_names is None:
+            print("Covariates names not provided, using default naming convention:")
+            print("- covariate1, ..., covariateC\n")
+            self.smooth_opts['covariates_names'] = ["covariate%d" % (c) for c in range(self.dimensionalities["C"])]
+        else:
+            if isinstance(covariates_names, str):
+                covariates_names = [covariates_names]
+            assert isinstance(covariates_names, list), "covariates_names must be a string or a list"
+            assert len(covariates_names) == self.dimensionalities["C"], "covariates_names must be of length equivalent to the number of covariates"
+            self.smooth_opts['covariates_names'] = covariates_names
+
+        self.sample_cov = sample_cov
+
+        return None
 
     def set_data_matrix(self, data, likelihoods=None, views_names=None, groups_names=None, samples_names=None, features_names=None):
         """ Method to input the data in a wide matrix
@@ -129,7 +253,6 @@ class entry_point(object):
             assert len(features_names)==self.dimensionalities["M"], "views_names must a nested list with length equivalent to the number of views"
             self.data_opts['features_names'] = features_names
 
-
         # Define groups names
         if groups_names is None:
             print("Groups names not provided, using default naming convention:")
@@ -167,7 +290,6 @@ class entry_point(object):
             self.data_opts['samples_groups'].append( [self.data_opts['groups_names'][g]]*N[g] )
         self.data_opts['samples_groups'] = np.concatenate(self.data_opts['samples_groups'])
 
-
         # If everything successful, print verbose message
         for m in range(M):
             for g in range(G):
@@ -177,12 +299,9 @@ class entry_point(object):
         # Store intercepts
         self.intercepts = [ [ np.nanmean(data[m][g],axis=0) for g in range(G)] for m in range(M) ]
 
-        # Concatenate groups
+        # Concatenate groups in data
         for m in range(len(data)):
             data[m] = np.concatenate(data[m])
-            # Convert data to numpy.ndarray.
-            # This is required since some matrix operations
-            # are not defined e.g. for numpy.matrixlib.defmatrix.matrix
             if type(data[m]) != np.ndarray:
                 data[m] = np.array(data[m])
         self.dimensionalities["N"] = np.sum(self.dimensionalities["N"])
@@ -521,8 +640,7 @@ class entry_point(object):
         iter=1000, startELBO=1, freqELBO=1, startSparsity=50, tolerance=None, convergence_mode="fast",
         startDrop=1, freqDrop=1, dropR2=None, nostop=False, verbose=False, quiet=False, seed=None,
         schedule=None, gpu_mode=False, Y_ELBO_TauTrick=True, weight_views = False, 
-        outfile=None, save_interrupted=False,
-        ):
+        outfile=None, save_interrupted=False):
         """ Set training options """
 
         # Sanity checks
@@ -546,8 +664,6 @@ class entry_point(object):
 
         # GPU mode
         if gpu_mode:
-            # first see if cupy is installed and give instructions if not
-            # if installed import to check that everything goes well
             try:
                 import cupy as cp
                 print("\nGPU mode is activated\n")
@@ -643,6 +759,10 @@ class entry_point(object):
     def set_stochastic_options(self, learning_rate=1., forgetting_rate=0., batch_size=1., start_stochastic=1):
 
         # Sanity checks
+        if self.smooth_opts['GP_factors']:
+            print("Stochastic inference is not possible when using covariates - train_opts['stochastic'] is set to False - consider using the option 'sparseGP' instead.")
+            self.train_opts['stochastic'] = False
+            return None
         assert hasattr(self, 'train_opts'), "Train options not defined"
         assert 0 < learning_rate <= 1, 'Learning rate must range from 0 and 1'
         # assert 0 < forgetting_rate <= 1, 'Forgetting rate must range from 0 and 1'
@@ -659,13 +779,122 @@ class entry_point(object):
         # self.train_opts['schedule'].insert(1,"Z")
 
         self.train_opts['stochastic'] = True
-        # self.train_opts['Y_ELBO_TauTrick'] = False # TauTrick speed up only works in non-stochastic mode
         self.train_opts['learning_rate'] = learning_rate
         self.train_opts['forgetting_rate'] = forgetting_rate
         self.train_opts['start_stochastic'] = start_stochastic
         self.train_opts['batch_size'] = batch_size
 
         self.train_opts['drop']["min_r2"] = None
+
+    def set_smooth_options(self, scale_cov = False, start_opt=20, n_grid=20, opt_freq=10, model_groups = True,
+        warping = False, warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end = True,
+        sparseGP = False, frac_inducing = None):
+
+        """ 
+        Method to activate and set options for a functional MOFA model (MEFISTO).
+        This requires to specify a covariate using set_covariates.
+
+        PARAMETERS:
+        - scale_cov: Scale covariates to unit variance (relevant if you have multiple covariates on different scales). Default is False.
+        - stat_opt: Iteration where to start the optimization of the hyperparameters for the Gaussian process
+        - n_grid: number of grid points to use for optimization of the lengthscale
+        - opt_freq: Frequency of the optimization of the hyperparameters for the Gaussian process (every opt_freq-th iteration)
+        - model_groups: Boolean  whether to include a group-group covariance into the model. 
+            Default is True, if set to False the same underlying patterns are assumed in all groups. 
+        - warping: Boolean, indicating whether to align covariates between groups (only relevant for more than 1 group and a single covariate)
+        - warping_freq, warping_ref, warping_open_begin, warping_open_end: Warping-specifc parameters deremining the frequency of warping, the refernce group
+            wether to allow open begin or open end for the alginement
+        - sparseGP: Boolean, whether to use sparse Gaussian processes (only recommmended for very large data sets)
+        - frac_inducing: Fraction of original samples to use as inducing points when using sparse GPs (between 0 and 1)
+        """ 
+
+        # Sanity checks
+        assert hasattr(self, 'smooth_opts'), "Please run set_covariates() before set_smooth_options()"
+        assert hasattr(self, 'model_opts'), "Model options not defined. Please run set_model_opts() before set_smooth_options()"
+        assert hasattr(self, 'train_opts'), "Training options not defined. Please run set_train_opts() before set_smooth_options()"
+        assert self.sample_cov is not None, "Before setting smooth options, you need to define the covariates with set_covariates"
+
+        # activate GP prior on factors
+        self.smooth_opts['GP_factors'] = True
+
+        # Define whether to scale covariates to unit variance
+        self.smooth_opts['scale_cov'] = scale_cov
+        # if (scale_cov): print("Scaling covariates to unit variance...\n")
+        if self.smooth_opts['scale_cov']:
+            self.sample_cov = (self.sample_cov - self.sample_cov.mean(axis=0)) / self.sample_cov.std(axis=0)
+
+        # Define at which iteration to start optimizing the lengthscales, how many grid points to use for the lengthscales and at which frequency to optimize
+        start_opt = max(0, start_opt)
+        self.smooth_opts['start_opt'] = int(start_opt)
+        self.smooth_opts['n_grid'] = int(n_grid)
+        self.smooth_opts['opt_freq'] = int(opt_freq)
+
+        # inactivate group-wise ARD when using the MEFISTO framework
+        if self.model_opts['ard_factors'] is True:
+            print("Smooth covariate framework is activated. This is not compatible with ARD prior on factors. Setting ard_factors to False...\n")
+            self.model_opts['ard_factors'] = False
+            self.train_opts['schedule'].remove('AlphaZ')
+
+        # inactivate spike-slab on the factors when using the MEFISTO framework
+        if self.model_opts['spikeslab_factors'] is True:
+            print("Smooth covariate framework is activated. This is not compatible with spike-and-slab prior on factors. Setting spikeslab_factors to False...\n")
+            self.model_opts['spikeslab_factors'] = False
+            self.train_opts['schedule'].remove('ThetaZ')
+
+        # Insert Sigma into training schedule if GP prior on Z
+        self.train_opts['schedule'].insert(len(self.train_opts['schedule']), "Sigma")
+
+        # Warping
+        self.smooth_opts['warping'] = bool(warping)
+        self.smooth_opts['warping_freq'] = int(warping_freq)
+        self.smooth_opts['warping_ref'] = int(warping_ref)
+        self.smooth_opts['warping_open_begin'] = bool(warping_open_begin)
+        self.smooth_opts['warping_open_end'] = bool(warping_open_end)
+        if self.smooth_opts['warping'] is True:
+            assert self.dimensionalities["G"] > 1, "The warping functionality is only relevant when having multi-group data"
+            assert self.dimensionalities["C"] == 1, "Warping only implemented for one dimensional covariates"
+            print("##")
+            print("## Warping set to True: aligning the covariates across groups")
+            print("##")
+
+       # Sparse GPs
+        if sparseGP is True:
+            assert not self.smooth_opts['warping'], "The warping functionality cannot be used in conjunction with the sparseGP option."
+            self.smooth_opts['sparseGP'] = True
+            if self.dimensionalities["N"] < 1000:
+                print("Warning: sparseGP should only be used when having a large sample size (>1e3)\n")
+
+            # Sparse GPs: set the number of inducing points
+            if frac_inducing is None:
+                frac_inducing = 0.75
+            assert frac_inducing > 0 and frac_inducing < 1, "Fraction of inducing points should be in (0,1)."
+            n_inducing = int(max(frac_inducing * self.dimensionalities["N"], 100)) # note: groups are already concatenated, N is total number of samples
+
+            # Sparse GPs: Set the identity of the inducing points
+            idx_inducing = set_inducing_points(self.data, self.sample_cov, self.data_opts['samples_groups'], self.dimensionalities, n_inducing, random = False, seed_inducing = 0)
+
+            self.smooth_opts['frac_inducing'] = frac_inducing
+            self.smooth_opts['n_inducing'] = n_inducing
+            self.smooth_opts['idx_inducing'] = idx_inducing
+
+            # Sparse GPs: Insert U in schedule
+            ix = self.train_opts['schedule'].index("Z")
+            self.train_opts['schedule'].insert(ix, 'U')
+
+            print("##")
+            print("## sparseGP set to True: using sparse Gaussian Process to speed up the training procedure")
+            print("##")
+        else:
+
+            self.smooth_opts['sparseGP'] = False
+
+
+
+        # Define whether to model a group covariance structure
+        self.smooth_opts['model_groups'] = model_groups
+        if self.dimensionalities["G"] < 2:
+            self.smooth_opts['model_groups'] = False
+        # self.smooth_opts['use_gpytorch'] = False # experimental, this could be passed as a model_option but to keep options uncluttered set to False
 
     def set_model_options(self, factors=10, spikeslab_factors=False, spikeslab_weights=True, ard_factors=False, ard_weights=True):
         """ Set model options """
@@ -681,6 +910,7 @@ class entry_point(object):
         # Define whether to use group and factor-wise ARD prior for Z
         # if ((self.dimensionalities["G"]>1) & (ard_factors==False)): 
         #     print("WARNING: 'ard_factors' should be set to True in model_options if using multiple groups\n")
+        # always use the ARD prior on Z with more than one group except when using GPs
         if self.dimensionalities["G"]>1: ard_factors = True
         self.model_opts['ard_factors'] = ard_factors
 
@@ -693,6 +923,7 @@ class entry_point(object):
         # Define initial number of latent factors
         self.dimensionalities["K"] = self.model_opts['factors'] = int(factors)
 
+
         # Define likelihoods
         self.model_opts['likelihoods'] = self.likelihoods
 
@@ -700,21 +931,22 @@ class entry_point(object):
         print("- Automatic Relevance Determination prior on the factors: %s" % str(ard_factors))
         print("- Automatic Relevance Determination prior on the weights: %s" % str(ard_weights))
         print("- Spike-and-slab prior on the factors: %s" % str(spikeslab_factors))
-        print("- Spike-and-slab prior on the weights: %s \n" % str(spikeslab_weights))
-
+        print("- Spike-and-slab prior on the weights: %s" % str(spikeslab_weights))
         print("Likelihoods:")
         for m in range(self.dimensionalities["M"]):
           print("- View %d (%s): %s" % (m,self.data_opts["views_names"][m],self.likelihoods[m]) )
+        print("\n")
 
-    def set_data_options(self, scale_views=False, scale_groups=False):
+    def set_data_options(self, scale_views=False, scale_groups = False, center_groups = True):
         """ Set data processing options """
 
-        self.data_opts = {}
+        if not hasattr(self, 'data_opts'): self.data_opts = {}
+        self.data_opts['center_groups'] = center_groups
 
         # Scale views to unit variance
         self.data_opts['scale_views'] = scale_views
         if (scale_views): print("Scaling views to unit variance...\n")
-
+        
         # Scale groups to unit variance
         self.data_opts['scale_groups'] = scale_groups
         if (scale_groups): print("Scaling groups to unit variance...\n")
@@ -726,16 +958,21 @@ class entry_point(object):
         assert hasattr(self, 'train_opts'), "Training options not defined"
         assert hasattr(self, 'model_opts'), "Model options not defined"
         assert hasattr(self, 'dimensionalities'), "Dimensionalities are not defined"
-
+        if hasattr(self, 'smooth_opts'):
+            assert len(self.smooth_opts)>2, "Smooth covariates applied but smooth options not defined. Please define set_smooth_options() before build()"
         if np.any(np.array(self.dimensionalities["D"])<15):
             print("\nWarning: some view(s) have less than 15 features, MOFA won't be able to learn meaningful factors for these view(s)...\n")
-        
         _, counts = np.unique(self.data_opts["samples_groups"], axis=0, return_counts=True)
-        if np.any(counts<15):
-            print("\nWarning: some group(s) have less than 15 samples, MOFA won't be able to learn meaningful factors for these group(s)...\n")
+        if not hasattr(self, 'smooth_opts'):
+            if np.any(counts<15):
+                print("\nWarning: some group(s) have less than 15 samples, MOFA won't be able to learn meaningful factors for these group(s)...\n")
 
         # Build the nodes
-        tmp = buildBiofam(self.data, self.data_opts, self.model_opts, self.dimensionalities, self.train_opts['seed'],  self.train_opts['weight_views'])
+        if hasattr(self, 'smooth_opts'):
+            tmp = build_mofa_smooth(self.data, self.sample_cov, self.dimensionalities, self.data_opts, self.model_opts, self.train_opts, self.smooth_opts)
+        else:
+            tmp = buildBiofam(self.data, self.dimensionalities, self.data_opts, self.model_opts, self.train_opts)
+        tmp.main()
 
         # Create BayesNet class
         if self.train_opts['stochastic']:
@@ -781,11 +1018,100 @@ class entry_point(object):
             Ztmp[(z_score>zscore_cutoff) & (np.absolute(Z[idx,:])>value_cutoff)] = np.nan
             Z[idx,:] = Ztmp
 
-    def impute(self, uncertainty=True):
-        """impute missing values with or without uncertainty estimates"""
+    def predict_factor(self, new_covariates = None, uncertainty=True, groups = "all"):
+        """
+        Predict factor values at new covariate values or in missing groups
+        new_covariates: new covariate values to predict at, should be of same format as covariates.
+                        If None all present covariate values are used
+        uncertainty: provide uncertainty measures for the prediction
+        groups: Groups for which to predict, default is "all"
+        """
+
+        assert self.smooth_opts['GP_factors'], "Using predict_factors requires the use of GP_factors," \
+                                              " maybe you want to use impute instead?"
+
+        if new_covariates is None:
+            new_covariates = self.sample_cov
+
+        # get group-covariate combinations included in the model
+        old_groups = self.model.nodes['Sigma'].groupsidx
+        old_covariates = self.model.nodes['Sigma'].sample_cov_transformed
+        all_covariates = np.unique(np.vstack([new_covariates, old_covariates]), axis =0)
+        N = all_covariates.shape[0]
+        M = new_covariates.shape[0]
+
+        # get the necessary expectations
+        Z = self.model.nodes['Z'].getExpectations()['E']
+        K = Z.shape[1]
+
+        Sigma_terms = self.model.nodes['Sigma'].getExpectations()
+        Sigma = Sigma_terms['cov']
+        if not self.smooth_opts['sparseGP']:
+            Sigma_inv = Sigma_terms['inv']
+        else:
+            N = Z.shape[0]
+            Sigma_inv = np.zeros([K, N, N])
+            for k in range(K):
+                Sigma_inv[k,:,:] = np.linalg.inv(Sigma[k,:,:])
+                
+        GP_param = self.model.nodes['Sigma'].getParameters()
+        if groups == "all":
+            G = len(self.model.nodes['Sigma'].groups)
+            groups = np.arange(G)
+        else:
+            G = len(groups)
+        if not self.smooth_opts['model_groups']:
+            Kg = np.ones([K, G, G])
+        else:
+            Kg = self.model.nodes['Sigma'].getParameters()['Kg']
+            Kg = Kg[:, groups, :][:, :, groups]
+
+        # which rows/columns in Sigma_new correspond to original Sigma and which to new test covariates?
+        old = np.hstack([old_groups[:,None], old_covariates])
+        all = np.hstack([np.repeat(groups, all_covariates.shape[0])[:,None], np.tile(all_covariates.transpose(), G).transpose()])
+        new = np.hstack([np.repeat(groups, new_covariates.shape[0])[:,None], np.tile(new_covariates.transpose(), G).transpose()])
+        oldix = np.concatenate([np.where(np.all(np.equal(old[j,:], all), axis = 1))[0] for j in range(old.shape[0])])
+        newidx = np.concatenate([np.where(np.all(np.equal(new[j,:], all), axis = 1))[0] for j in range(new.shape[0])])
+
+        Z_new_mean = np.zeros([M*G, K])
+        if uncertainty:
+            Z_new_var = np.zeros([M*G, K])
+        for k in range(K):
+            Kc_new = self.model.nodes['Sigma'].Kc.eval_at_newpoints_k(all_covariates,k)
+            K_new_k = GP_param['scale'][k] * np.kron(Kg[k,:,:], Kc_new)
+            Sigma_new_k = K_new_k + (1 - GP_param['scale'][k]) * np.eye(N * G)
+            Z_new_mean[:,k] = gpu_utils.dot(K_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k,:,:], Z[:,k]))
+            if uncertainty:
+                # marginal variances p(z, z*|c, c*, y) =  p(z*|z, y,c,c*) *p(z|y,c,c*)  = p(z*|z, c*) * p(z|y,c)
+                # Var[z*] = Var([E(z*|z)]) + Var(E(z*|z))
+                # if not self.model_opts['mv_Znode']:
+                #     Z2 = np.diag(self.model.nodes['Z'].getExpectations()['E2'][:,k] - self.model.nodes['Z'].getExpectations()['E'][:,k]**2)
+                # else:
+                Z2 = self.model.nodes['Z'].getExpectations()['cov'][k,:,:]
+                # TODO: avoid calculating full matrix, only require diagonal
+                Z_new_var[:, k] = np.diag(Sigma_new_k[newidx, :][:, newidx] - \
+                                          gpu_utils.dot(K_new_k[newidx, :][:, oldix],
+                                                        gpu_utils.dot(Sigma_inv[k, :, :],
+                                                                      K_new_k[oldix, :][:, newidx])) + \
+                                                            gpu_utils.dot(K_new_k[newidx, :][:, oldix], gpu_utils.dot(Sigma_inv[k, :, :],
+                                                                           gpu_utils.dot(Z2,gpu_utils.dot(Sigma_inv[k, :, :],K_new_k[oldix,:][:,newidx])))))
+
+        if uncertainty:
+            assert np.all(Z_new_var >= 0), "Something went wrong in the prediction: variances of the predictive distribution are negative"
+            self.Zpredictions = {"mean": Z_new_mean, "variance": Z_new_var, 'values' : new_covariates, 'groups' : groups}
+        else:
+            self.Zpredictions = {"mean": Z_new_mean, "variance": None, 'values' : new_covariates, 'groups' : groups}
+
+        self.Zcompleted = True
+
+    def impute(self, uncertainty=True, mask_outliers = True):
+        """
+        impute missing values with or without uncertainty estimates
+        """
 
         # detect and mask outliers that could skew the results
-        self.mask_outliers()
+        if mask_outliers:
+            self.mask_outliers()
 
         # get the necessary expectations
         W = [w['E'] for w in self.model.nodes['W'].getExpectations()]
@@ -846,6 +1172,13 @@ class entry_point(object):
         print("Saving model in %s..." % outfile)
         sys.stdout.flush()
 
+        if not hasattr(self, 'smooth_opts') or not hasattr(self, 'sample_cov'):
+            sample_cov = None
+            covariates_names = None
+        else:
+            sample_cov = self.sample_cov
+            covariates_names = self.smooth_opts['covariates_names']
+
         # Save the model
         tmp = saveModel(
           model = self.model,
@@ -853,12 +1186,14 @@ class entry_point(object):
           data = self.data,
           intercepts = self.intercepts,
           samples_groups = self.data_opts['samples_groups'],
+          sample_cov = sample_cov,
           train_opts = self.train_opts,
           model_opts = self.model_opts,
           samples_names = self.data_opts['samples_names'],
           features_names = self.data_opts['features_names'],
           views_names = self.data_opts['views_names'],
           groups_names = self.data_opts['groups_names'],
+          covariates_names=covariates_names,
           samples_metadata = self.data_opts["samples_metadata"] if "samples_metadata" in self.data_opts else None,
           features_metadata = self.data_opts["features_metadata"] if "features_metadata" in self.data_opts else None,
           compression_level = 9
@@ -881,7 +1216,7 @@ class entry_point(object):
 
         if expectations is None:
             # Default is to save only W and Z nodes
-            expectations = ["W", "Z"]
+            expectations = ["W", "Z", "Sigma"]
         
         tmp.saveExpectations(nodes=expectations)
 
@@ -894,6 +1229,10 @@ class entry_point(object):
 
         # Save training options
         tmp.saveTrainOptions()
+
+        # Smooth options
+        if hasattr(self, 'smooth_opts'):
+            tmp.saveSmoothOptions(self.smooth_opts)
 
         # Save training statistics
         tmp.saveTrainingStats()
@@ -909,6 +1248,9 @@ class entry_point(object):
         if self.imputed:
             tmp.saveImputedData(self.imputed_data["mean"], self.imputed_data["variance"])
 
+        # Save predictions
+        if self.Zcompleted:
+            tmp.saveZpredictions(self.Zpredictions["mean"], self.Zpredictions["variance"], self.Zpredictions['values'], self.Zpredictions['groups'])
 
 def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: bool = None, 
          features_subset: Optional[str] = None,
@@ -917,7 +1259,7 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
          ard_weights: bool = True, ard_factors: bool = True,
          spikeslab_weights: bool = True, spikeslab_factors: bool = False,
          n_iterations: int = 1000, convergence_mode: str = "fast",
-         gpu_mode: bool = False, Y_ELBO_TauTrick: bool = True, 
+         gpu_mode: bool = False, 
          save_parameters: bool = False, save_data: bool = True, save_metadata: bool = True,
          seed: int = 1, outfile: Optional[str] = None,
          expectations: Optional[List[str]] = None,
@@ -945,7 +1287,6 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
     n_iterations (optional): upper limit on the number of iterations
     convergence_mode (optional): fast, medium, or slow convergence mode
     gpu_mode (optional): if to use GPU mode
-    Y_ELBO_TauTrick (optional): if to use ELBO Tau trick to speed up computations
     save_parameters (optional): if to save training parameters
     save_data (optional): if to save training data
     save_metadata (optional): if to load metadata from the AnnData object (.obs and .var tables) and save it, False by default

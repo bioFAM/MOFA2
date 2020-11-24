@@ -42,11 +42,87 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
                        rownames(object@cache$variance_explained$r2_per_factor[[i]]) <- value
                      }
                    }
-                     
+
+                   # Modify training stats per factor
+                   if (!is.null(object@training_stats$structural_sig)) {
+                     rownames(object@training_stats$structural_sig) <- value
+                   }
+                   if (!is.null(object@training_stats$length_scales)) {
+                     rownames(object@training_stats$length_scales) <- value
+                   }
+                   if (!is.null(object@training_stats$scales)) {
+                     rownames(object@training_stats$scales) <- value
+                   }
+
                    object
                  })
 
+####################################
+## Set and retrieve covariate names ##
+####################################
 
+#' @rdname covariates_names
+#' @param object a \code{\link{MOFA}} object.
+#' @aliases covariates,MOFA-method
+#' @return character vector with the covariate names
+#' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' covariates_names(model)
+
+setMethod("covariates_names", signature(object="MOFA"),
+          function(object) {
+            if(is.null(object@covariates))
+              stop("No covariates present in the given MOFA object.")
+            rownames(object@covariates[[1]])
+          }
+)
+
+#' @rdname covariates_names
+#' @param value a character vector of covariate names
+#' @import methods
+#' @importFrom dplyr left_join
+#' @export
+setReplaceMethod("covariates_names", signature(object="MOFA", value="vector"),
+                 function(object, value) {
+                   if(is.null(object@covariates))
+                     stop("No covariates present in the given MOFA object.")
+                   if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
+                     if (length(value) != object@dimensions["C"])
+                       stop("Length of covariate names does not match the dimensionality of the covariate matrix")
+                   
+                   # Modify covariate names
+                   old_names <- rownames(object@covariates[[1]])
+                   for(c in seq_along(object@covariates)) {
+                     rownames(object@covariates[[c]]) <- value
+                     if(!is.null(object@covariates_warped)) 
+                        rownames(object@covariates_warped[[c]]) <- value
+                   }
+                   # Modify meta.data
+                   if (methods::.hasSlot(object, "samples_metadata")) {
+                     if(!is.null(old_names)) {
+                       if(! all(old_names %in% colnames(object@samples_metadata)))
+                         stop("Mismatch of covariate names in sample meta data and covariate slot")
+                       object@samples_metadata <- object@samples_metadata[,-old_names]
+                     }
+                     df <- as.data.frame(Reduce(rbind, unname(lapply(object@covariates,t))))
+                     colnames(df) <- value
+                     df$sample <- rownames(df)
+                     object@samples_metadata <- dplyr::left_join(object@samples_metadata, df, by = "sample",
+                                                                 suffix = c("", "_scaled"))
+                     if(!is.null(object@covariates_warped)) {
+                       df <- as.data.frame(Reduce(rbind, unname(lapply(object@covariates_warped,t))))
+                       colnames(df) <- value
+                       df$sample <- rownames(df)
+                       object@samples_metadata <- dplyr::left_join(object@samples_metadata, df, by = "sample",
+                                                                   suffix = c("", "_warped"))
+                     }
+                   }
+                   
+                   object
+                 })
 
 ####################################
 ## Set and retrieve samples names ##
@@ -111,6 +187,16 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    # Add samples names to the data
                    if (length(object@data)>0)
                     object <- .set_data_names(object, entity = 'samples', value)
+                   
+                   # Add sample names to covariates
+                   if (!is.null(object@covariates)) {
+                     for (m in seq_along(object@covariates))
+                       colnames(object@covariates[[m]]) <- value[[m]]
+                   }
+                   if (!is.null(object@covariates_warped)) {
+                     for (m in seq_along(object@covariates_warped))
+                       colnames(object@covariates_warped[[m]]) <- value[[m]]
+                   }
                    
                    # Add samples names to the imputed data
                    if (length(object@imputed_data)>0) 
@@ -468,6 +554,11 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
                 names(object@data[[m]]) <- value
             }
             
+            # Set sample group names in covariates
+            if (!is.null(object@covariates)) {
+                names(object@covariates) <- value
+            }
+            
             # Set sample group names in the intercepts
             if (length(object@intercepts)>0) {
               for (m in names(object@intercepts)) {
@@ -500,12 +591,14 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
   nodes_types <- .get_nodes_types()
   
   # Define what entities should be updated for which nodes
-  #   Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors
+  #   Notation for axes: 2 is for columns, 1 is for rows, 0 is for vectors, 3 for 3-rd dim in tensors
   stopifnot(entity %in% c("features", "samples", "factors"))
   node_lists_options <- list(
-    features = list(nodes = c("Y", "Tau", "W"), axes = c(1, 1, 1, 1)),
-    samples  = list(nodes = c("Y", "Tau", "Z"), axes = c(2, 2, 1, 1)),
-    factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW"), axes = c(2, 2, 0, 0, 0, 0))
+    # features = list(nodes = c("Y", "Tau", "W"), axes = c(1, 1, 1, 1)),
+    # samples  = list(nodes = c("Y", "Tau", "Z"), axes = c(2, 2, 1, 1)),
+    features = list(nodes = c("Y", "Tau", "W"), axes = c(1, 2, 1)),
+    samples  = list(nodes = c("Y", "Tau", "Z", "Sigma", "Sigma"), axes = c(2, 1, 1, 2, 3)),
+    factors  = list(nodes = c("Z", "W", "AlphaZ", "AlphaW", "ThetaZ", "ThetaW", "Sigma"), axes = c(2, 2, 0, 0, 0, 0, 1))
   )
   
   if (paste0(views, collapse = "") == "all") { 
@@ -580,6 +673,14 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             }
           }
         }
+        # Update nodes with multivariate components (e.g. Sigma)
+          } else if (node %in% nodes_types$multivariate_singleview_node) {
+            # Set names for rows
+            if (axis != 0) {
+              dimnames(object@expectations[[node]][[1]])[[axis]] <- unlist(values)
+            } else {
+              # names(object@expectations[[node]][[1]]) <- values # no group structure in Sigma (full covariance across all samples)
+            }
       } else {
         print(paste0("DEV :: NOTE: There are no expectations for the node ", node))
       }

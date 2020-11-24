@@ -16,6 +16,8 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
+#' @param smooth_options list of options for smooth inference (see \code{\link{get_default_smooth_options}} for details). 
+#' If NULL, default options are used.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @details This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
 #' and before starting the training (using \code{\link{run_mofa}}). Here, we can specify different options for
@@ -39,13 +41,14 @@
 #' model_opts <- get_default_model_options(MOFAmodel)
 #' model_opts$num_factors <- 10
 #' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
-prepare_mofa <- function(object, data_options = NULL, model_options = NULL, training_options = NULL, stochastic_options = NULL) {
+prepare_mofa <- function(object, data_options = NULL, model_options = NULL, 
+  training_options = NULL, stochastic_options = NULL, smooth_options = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (any(object@dimensions$N<15)) warning("Some group(s) have less than 15 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
+  if (any(object@dimensions$N<10) & !length(object@covariates)>=1) warning("Some group(s) have less than 10 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
   if (any(object@dimensions$D<15)) warning("Some view(s) have less than 15 features, MOFA will have little power to to learn meaningful factors for these view(s)....")
-  if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to performa more stringent feature selection before creating the MOFA object....")
+  if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to perform a more stringent feature selection before creating the MOFA object....")
   
   # Get data options
   message("Checking data options...")
@@ -126,12 +129,71 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL, trai
   }
   if (object@model_options$num_factors > 50) warning("The number of factors is very large, training will be slow...")
   # if (!object@model_options$ard_weights) warning("model_options$ard_weights should always be set to TRUE")
-  if (min(object@dimensions$N) < 4 * object@model_options$num_factors) {
-    warning(sprintf("The number of samples in at least one group is very small for learning %s factors.  
+  if (sum(object@dimensions$N) < 4 * object@model_options$num_factors) {
+    warning(sprintf("The total number of samples is very small for learning %s factors.  
     Try to reduce the number of factors to obtain meaningful results. It should not exceed ~%s.",
     object@model_options$num_factors, floor(min(object@dimensions$N/4))))
   }
 
+  # Get smooth covariates options
+  if (length(object@covariates)>=1) {
+    if (is.null(smooth_options)) {
+        message("Covariates provided but no smooth options specified, using default...")
+        object@smooth_options <- get_default_smooth_options(object)
+    } else {
+        message("Checking inference options for smooth covariates...")
+      # message("Smooth covariates have been provided as prior information.")
+        if (!is(smooth_options,"list") || !setequal(names(smooth_options), names(get_default_smooth_options(object)) ))
+          stop("smooth_options are incorrectly specified, please read the documentation in get_default_smooth_options")
+      
+        if (isTRUE(smooth_options$sparseGP)) {
+          if (object@dimensions[["N"]] < 1000) warning("Warning: sparseGPs should only be used when having a large sample size (>1e3)")
+          if (isTRUE(smooth_options$warping)) stop("Warping is not implemented in conjunction with sparseGPs")
+        }
+      
+      # Check warping options
+      if (isTRUE(smooth_options$warping)) {
+        stopifnot(object@dimensions[['G']] > 1) # check that multi-group is TRUE
+        
+        if (!is.null(smooth_options$warping_ref)) {
+          stopifnot(length(smooth_options$warping_ref)==1)
+          stopifnot(is.character(smooth_options$warping_ref))
+          stopifnot(smooth_options$warping_ref %in% groups_names(object))
+        }
+      }
+        
+      # Disable spike-slab on the factors
+      if(isTRUE(model_options$spikeslab_factors)) {
+        print("Spike-and-Slab sparsity prior on the factors is not available when using smooth covariates, setting to False")
+        model_options$spikeslab_factors <- FALSE
+      }
+        
+      # Disable stochastic inference
+      if (isTRUE(model_options$stochastic)) {
+        print("Stochastic inference is not available when using smooth covariates, setting to False")
+        model_options$stochastic <- FALSE
+        object@stochastic_options <- list()
+      }
+      
+      # TO-DO: CHECKS ON MODEL_GROUPS
+      
+      object@smooth_options <- smooth_options
+    }
+    
+  } else {
+    object@smooth_options <- list()
+  }
+
+  # Center the data
+  # message("Centering the features (per group, this is a mandatory requirement)...")
+  # for (m in views_names(object)) {
+  #   if (model_options$likelihoods[[m]] == "gaussian") {
+  #     for (g in groups_names(object)) {
+  #       object@data[[m]][[g]] <- scale(object@data[[m]][[g]], center=T, scale=F)
+  #     }
+  #   }
+  # }
+  
   # Transform sparse matrices into dense ones
   # See https://github.com/rstudio/reticulate/issues/72
   for (m in views_names(object)) {
@@ -202,7 +264,7 @@ get_default_training_options <- function(object) {
     freqELBO = 1,                  # (numeric) Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
-    seed = 42,                     # (numeric) Random seed
+    seed = 42,                     # (numeric) random seed
     outfile = NULL,                # (string)  Output file name
     save_interrupted = FALSE       # (logical) Save partially trained model when training is interrupted?
   )
@@ -228,7 +290,7 @@ get_default_training_options <- function(object) {
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
 #'  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
 #'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
-#' }
+#'  }
 #' @return Returns a list with the default data options.
 #' @importFrom utils modifyList
 #' @export
@@ -254,8 +316,8 @@ get_default_data_options <- function(object) {
   
   # Define default data options
   data_options <- list(
-    scale_views = FALSE,                 # (logical) Scale views to unit variance
-    scale_groups = FALSE                 # (logical) Scale groups to unit variance
+    scale_views = FALSE,    # (logical) Scale views to unit variance?
+    scale_groups = FALSE    # (logical) Scale groups to unit variance?
   )
   
   # if data_options already exists, replace the default values but keep the additional ones
@@ -323,18 +385,18 @@ get_default_model_options <- function(object) {
   
   # Define default model options
   model_options <- list(
-    likelihoods = likelihoods,    # (character vector) likelihood per view [gaussian/bernoulli/poisson]
-    num_factors = 15,            # (numeric) initial number of latent factors
-    spikeslab_factors = FALSE,         # Spike and Slab sparsity on the factors
-    spikeslab_weights = TRUE,          # Spike and Slab sparsity on the loadins
-    ard_factors = TRUE,              # Group-wise ARD sparsity on the factors
-    ard_weights = TRUE                # Group-wise ARD sparsity on the loadings
+    likelihoods = likelihoods,   # (character vector) likelihood per view [gaussian/bernoulli/poisson]
+    num_factors = 10,            # (numeric) initial number of latent factors
+    spikeslab_factors = FALSE,   # (logical) Spike and Slab sparsity on the factors
+    spikeslab_weights = TRUE,    # (logical) Spike and Slab sparsity on the weights
+    ard_factors = FALSE,         # (logical) Group-wise ARD sparsity on the factors
+    ard_weights = TRUE           # (logical) View-wise ARD sparsity on the weights
   )
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups
   if (object@dimensions$G==1)
     model_options$ard_factors <-FALSE
-
+  
   # if model_options already exist, replace the default values but keep the additional ones
   if (length(object@model_options)>0)
     model_options <- modifyList(model_options, object@model_options)
@@ -410,4 +472,4 @@ get_default_stochastic_options <- function(object) {
   
   return(stochastic_options)
 }
-
+  

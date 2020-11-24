@@ -69,7 +69,7 @@ create_mofa <- function(data, groups = NULL, ...) {
     stringsAsFactors = FALSE
   )
   if (.hasSlot(object, "samples_metadata") && (length(object@samples_metadata) > 0)) {
-    object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),])
+    object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),, drop = FALSE])
   } else {
     object@samples_metadata <- tmp
   }
@@ -191,6 +191,7 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, save_metad
 #' @param df \code{data.frame} object with at most 5 columns: \code{sample}, \code{group}, \code{feature}, \code{view}, \code{value}. 
 #'   The \code{group} column (optional) indicates the group of each sample when using the multi-group framework.
 #'   The \code{view} column (optional) indicates the view of each feature when having multi-view data.
+#' @param save_metadata Boolean indicating whether to store sample level columns in the data frame as samples metadata
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples
@@ -200,7 +201,7 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, save_metad
 #' # Load data (in long data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa_from_df(dt)
-create_mofa_from_df <- function(df) {
+create_mofa_from_df <- function(df, save_metadata = TRUE) {
   
   # Quality controls
   df <- as.data.frame(df)
@@ -212,7 +213,8 @@ create_mofa_from_df <- function(df) {
     # message('No "view" column found in the data.frame, we will assume a common view for all features')
     df$view <- "single_view"
   }
-  stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))
+  stopifnot(all(c("sample","feature","value") %in% colnames(df)))
+  # stopifnot(all(colnames(df) %in% (c("sample","feature","value","group","view"))))
   stopifnot(all(is.numeric(df$value)))
   
   # Convert 'sample' and 'feature' columns to factors
@@ -272,6 +274,18 @@ create_mofa_from_df <- function(df) {
   # Set group names
   groups_names(object) <- levels(df$group)
   
+  # save other sample-level columns to samples metadata (e.g. covariates)
+  if(save_metadata && !all(colnames(df) %in% (c("sample","feature","value","group","view")))) {
+    cols2keep <- df %>% group_by(sample) %>% select(-c("view", "feature", "value", "group", "value")) %>%
+      summarise(across(!starts_with("sample"), function(x) length(unique(x)),
+                .names = "{col}")) 
+    cols2keep <- colnames(cols2keep)[apply(cols2keep, 2, function(x) all(x  == 1))]
+    if (length(cols2keep) > 0){
+      df_meta <- df[, c("sample",cols2keep)] %>% distinct()
+      object@samples_metadata <- df_meta %>% select(-sample)
+      rownames(object@samples_metadata) <- df_meta$sample
+    }
+  }
   return(object)
 }
 

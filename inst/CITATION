@@ -36,3 +36,19 @@ citEntry(entry="article",
          paste("Argelaguet, Arnol, Bredikhin, Deloro, Velten, Marioni,and Stegle:", 
                "MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data",
                "Genome Biology, 21(1), 1-17"))
+
+
+citEntry(entry="article",
+         title = "Identifying temporal and spatial patterns of variation from multi-modal data using MEFISTO.",
+         author = personList( as.person("Britta Velten"),
+                              as.person("Jana M. Braunger"),
+                              as.person("Damien Arnol"),
+                              as.person("Ricard Argelaguet"),
+                              as.person("Oliver Stegle")),
+         year = 2020,
+         journal = "bioRxiv",
+         doi = "10.1101/2020.11.03.366674",
+         textVersion = 
+         paste("Velten, Braunger, Arnol, Argelaguet and Stegle:", 
+               "Identifying temporal and spatial patterns of variation from multi-modal data using MEFISTO",
+               "bioRxiv 2020"))

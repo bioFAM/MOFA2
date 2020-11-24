@@ -6,14 +6,13 @@ import numpy.ma as ma
 import os
 import h5py
 from mofapy2.core.nodes import *
-from mofapy2.core.nodes import *
 
 # To keep same order of views and groups in the hdf5 file
 # h5py.get_config().track_order = True
 
 class saveModel():
-    def __init__(self, model, outfile, data, intercepts, samples_groups, 
-        train_opts, model_opts, features_names, views_names, samples_names, groups_names,
+    def __init__(self, model, outfile, data, sample_cov, intercepts, samples_groups,
+        train_opts, model_opts, features_names, views_names, samples_names, groups_names, covariates_names,
         samples_metadata, features_metadata, 
         sort_factors=True, compression_level=9):
 
@@ -37,6 +36,11 @@ class saveModel():
         # Initialise samples groups
         assert len(samples_groups) == data[0].shape[0], "length of samples groups does not match the number of samples in the data"
         self.samples_groups = samples_groups
+        
+        # Initialise GP prior (note groups are concatenated here)
+        if not sample_cov is None:
+            assert sample_cov.shape[0] == data[0].shape[0], "length of samples covariates does not match the number of samples in the data"
+        self.sample_cov = sample_cov
 
         # Initialise intercepts
         self.intercepts = intercepts
@@ -50,6 +54,10 @@ class saveModel():
         self.samples_names = samples_names
         self.features_names = features_names
         self.groups_names = groups_names
+        if not self.sample_cov is None:
+            self.covariates_names = covariates_names
+        else:
+            self.covariates_names = None
 
         # Initialise metadata
         self.samples_metadata = samples_metadata
@@ -61,11 +69,11 @@ class saveModel():
         self.order_factors = self.sort_factors(sort_factors)
 
     def sort_factors(self, sort_factors):
-        if sort_factors: 
-            order_factors = np.argsort( np.array(self.r2).sum(axis=(0,1)) )[::-1]
+        if sort_factors:
+            order_factors = np.argsort( np.array(self.r2).sum(axis=(0,1), where= ~np.isnan(np.array(self.r2))) )[::-1]
             self.r2 = [x[:,order_factors] for x in self.r2]
         else:
-            order_factors = self.r2[0].shape[1]
+            order_factors = np.arange(self.r2[0].shape[1])
         return order_factors
 
     def saveNames(self):
@@ -88,6 +96,11 @@ class saveModel():
         features_grp = self.hdf5.create_group("features")
         for m in range(len(self.data)):
             features_grp.create_dataset(self.views_names[m], data=np.array(self.features_names[m], dtype='S50'))
+
+        # Save covariate names
+        if not self.covariates_names is None:
+            covariates_grp = self.hdf5.create_group("covariates")
+            covariates_grp.create_dataset("covariates", data=np.array(self.covariates_names, dtype='S50'))
 
     def saveMetaData(self):
         """ Method to save samples and features metadata """
@@ -167,6 +180,26 @@ class saveModel():
                 
                 # Create hdf5 data set for intercepts
                 intercept_subgrp.create_dataset(self.groups_names[g], data=self.intercepts[m][g])
+        
+        # Save sample covariates for GP prior
+        if not self.sample_cov is None:
+            cov_samples_grp = self.hdf5.create_group("cov_samples")
+            cov_samples_transformed_grp = self.hdf5.create_group("cov_samples_transformed")
+            if 'Sigma' in self.model.getNodes():
+                sample_cov_transformed = self.model.getNodes()['Sigma'].sample_cov_transformed
+            else:
+                sample_cov_transformed = None
+
+            for g in range(len(self.groups_names)):
+                samples_idx = np.where(np.array(self.samples_groups) == self.groups_names[g])[0]
+                tmp = self.sample_cov[samples_idx, :]
+                # Create hdf5 data set for data
+                cov_samples_grp.create_dataset(self.groups_names[g], data=tmp, compression="gzip",
+                                           compression_opts=self.compression_level)
+                if not sample_cov_transformed is None:
+                    tmp_transformed = sample_cov_transformed[samples_idx, :]
+                    cov_samples_transformed_grp.create_dataset(self.groups_names[g], data=tmp_transformed, compression="gzip",
+                                           compression_opts=self.compression_level)
 
     def saveImputedData(self, mean, variance):
         """ Method to save the training data"""
@@ -189,7 +222,30 @@ class saveModel():
                 group_subgrp.create_dataset("mean", data=mean[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
                 if variance is not None:
                     group_subgrp.create_dataset("variance", data=variance[m][samples_idx,:], compression="gzip", compression_opts=self.compression_level)
-                
+
+    def saveZpredictions(self, mean, variance, values, groups):
+        """ Method to save the training data"""
+
+        # Create HDF5 groups
+        data_grp = self.hdf5.create_group("Z_predictions")
+        # save values
+        data_grp.create_dataset("new_values", data=values, compression="gzip",
+                                    compression_opts=self.compression_level)
+        for g in groups:
+            # Create HDF5 subgroup
+            group_subgrp = data_grp.create_group(self.groups_names[g])
+            sampleidx = np.arange(values.shape[0]) + values.shape[0] * g
+
+            # Save mean
+            group_subgrp.create_dataset("mean", data=mean[sampleidx,:][:, self.order_factors], compression="gzip",
+                                        compression_opts=self.compression_level)
+
+
+            # Save variance
+            if variance is not None:
+                group_subgrp.create_dataset("variance", data=variance[sampleidx,:][:, self.order_factors], compression="gzip",
+                                            compression_opts=self.compression_level)
+
     def saveExpectations(self, nodes="all"):
 
         # Get nodes from the model
@@ -197,7 +253,7 @@ class saveModel():
         if type(nodes) is str:
             nodes = list(nodes_dic.keys()) if nodes=="all" else [nodes]
         elif type(nodes) is list or type(nodes) is tuple:
-            assert set(nodes).issubset(["Z","W","Y","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW"]), "Unrecognised nodes"
+            assert set(nodes).issubset(["Z","W","Y","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW", "Sigma", "U"]), "Unrecognised nodes"
         nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
 
         # Define nodes with special characteristics 
@@ -216,6 +272,8 @@ class saveModel():
 
             # Collect node expectation
             exp = nodes_dic[n].getExpectation()
+            # for saving of higher moments:
+            # exp = nodes_dic[n].getExpectations()
 
             # Multi-view nodes
             if isinstance(nodes_dic[n], Multiview_Node):
@@ -264,10 +322,9 @@ class saveModel():
                         foo = exp[gi].T
                         node_subgrp.create_dataset(g, data=foo[self.order_factors], compression="gzip", compression_opts=self.compression_level)
 
-                # Single-group nodes (???)
+                # Single-group nodes (Sigma)
                 else:
-                    node_subgrp.create_dataset("E", data=exp.T, compression="gzip", compression_opts=self.compression_level)
-
+                    node_subgrp.create_dataset("E", data=exp.T[:,:,self.order_factors], compression="gzip", compression_opts=self.compression_level)
         pass
 
     def saveParameters(self, nodes="all"):
@@ -278,7 +335,7 @@ class saveModel():
         if type(nodes) is str:
             nodes = list(nodes_dic.keys()) if nodes=="all" else [nodes]
         elif type(nodes) is list or type(nodes) is tuple:
-            assert set(nodes).issubset(["Z","W","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW"]), "Unrecognised nodes"
+            assert set(nodes).issubset(["Z","W","Tau","AlphaW","AlphaZ","ThetaZ","ThetaW", "Sigma", "U"]), "Unrecognised nodes"
         nodes_dic = {x: nodes_dic[x] for x in nodes if x in nodes_dic}
 
         # Define nodes which special characteristics 
@@ -393,6 +450,26 @@ class saveModel():
         self.hdf5.create_dataset("training_opts", data=np.array(list(opts.values()), dtype=np.float))
         self.hdf5['training_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
 
+    def saveSmoothOptions(self, smooth_opts):
+        """ Method to save the smooth options """
+
+        # Subset options
+        options_to_save = ["scale_cov", "start_opt", "n_grid", "opt_freq", "sparseGP", "warping", "warping_freq", "warping_ref", "warping_open_begin", "warping_open_end", "model_groups"]
+
+        opts = dict((k, np.asarray(smooth_opts[k]).astype('S')) for k in options_to_save)
+
+        # Create data set
+        # self.hdf5.create_dataset("smooth_opts".encode('utf8'), data=np.array(list(opts.values()), dtype=np.float))
+        # self.hdf5['smooth_opts'].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
+
+        # Create HDF5 group
+        grp = self.hdf5.create_group('smooth_opts')
+
+        # Create HDF5 data sets
+        for k, v in opts.items():
+            grp.create_dataset(k, data=v)
+        grp[k].attrs['names'] = np.asarray(list(opts.keys())).astype('S')
+
     def saveVarianceExplained(self):
 
         # Sort values by alphabetical order of views
@@ -430,3 +507,8 @@ class saveModel():
         stats_grp.create_dataset("elbo", data=stats["elbo"])
         # stats_grp.create_dataset("elbo_terms", data=stats["elbo_terms"].T)
         # stats_grp['elbo_terms'].attrs['colnames'] = [a.encode('utf8') for a in stats["elbo_terms"].columns.values]
+
+        if "length_scales" in stats.keys():
+            stats_grp.create_dataset("length_scales", data=stats["length_scales"][self.order_factors])
+            stats_grp.create_dataset("scales", data=stats["scales"][self.order_factors])
+            stats_grp.create_dataset("Kg", data=stats["Kg"][self.order_factors])

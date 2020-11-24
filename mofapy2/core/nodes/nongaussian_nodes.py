@@ -31,7 +31,7 @@ from mofapy2.core.utils import sigmoid, lambdafn
 
 class PseudoY(Unobserved_Variational_Node):
     """ General class for pseudodata nodes """
-    def __init__(self, dim, obs, params=None, E=None):
+    def __init__(self, dim, obs, groups, params=None, E=None):
         """
         PARAMETERS
         ----------
@@ -45,6 +45,9 @@ class PseudoY(Unobserved_Variational_Node):
         # Initialise observed data
         assert obs.shape == dim, "Problems with the dimensionalities"
         self.obs = obs
+
+        # Set groups
+        self.groups = groups
 
         # Initialise parameters
         if params is not None:
@@ -113,12 +116,12 @@ class PseudoY(Unobserved_Variational_Node):
 
 class PseudoY_Seeger(PseudoY):
     """ General class for pseudodata nodes using the seeger approach """
-    def __init__(self, dim, obs, params=None, E=None):
+    def __init__(self, dim, obs, groups, params=None, E=None):
         # Inputs:
         #  dim (2d tuple): dimensionality of each view
         #  obs (ndarray): observed data
         #  E (ndarray): initial expected value of pseudodata
-        PseudoY.__init__(self, dim=dim, obs=obs, params=params, E=E)
+        PseudoY.__init__(self, dim=dim, obs=obs, groups=groups, params=params, E=E)
 
     def updateParameters(self, ix=None, ro=None):
         Z = self.markov_blanket["Z"].getExpectation()
@@ -171,11 +174,11 @@ class Poisson_PseudoY(PseudoY_Seeger):
     The bound degrades with the presence of entries with large y_ij, so one should consider
     clipping overly large counts
     """
-    def __init__(self, dim, obs, params=None, E=None):
+    def __init__(self, dim, obs, groups, params=None, E=None):
         # - dim (2d tuple): dimensionality of each view
         # - obs (ndarray): observed data
         # - E (ndarray): initial expected value of pseudodata
-        PseudoY_Seeger.__init__(self, dim=dim, obs=obs, params=params, E=E)
+        PseudoY_Seeger.__init__(self, dim=dim, obs=obs, groups=groups, params=params, E=E)
 
         # Initialise the observed data
         assert s.all(s.mod(self.obs, 1) == 0), "Data must not contain float numbers, only integers"
@@ -246,11 +249,11 @@ class Bernoulli_PseudoY(PseudoY_Seeger):
         yhat_ij = zeta_ij - f'(zeta_ij)/tau
                 = zeta_ij - 4*(sigmoid(zeta_ij) - y_ij)
     """
-    def __init__(self, dim, obs, params=None, E=None):
+    def __init__(self, dim, obs, groups, params=None, E=None):
         # - dim (2d tuple): dimensionality of each view
         # - obs (ndarray): observed data
         # - E (ndarray): initial expected value of pseudodata
-        PseudoY_Seeger.__init__(self, dim=dim, obs=obs, params=params, E=E)
+        PseudoY_Seeger.__init__(self, dim=dim, obs=obs, groups=groups, params=params, E=E)
 
         # Initialise the observed data
         assert s.all( (self.obs==0) | (self.obs==1) ), "Data must be binary"
@@ -337,8 +340,8 @@ class Bernoulli_PseudoY_Jaakkola(PseudoY):
     NOTE: For this class to work the noise variance tau needs to be updated according to
         tau_ij <- 2*lambadfn(xi_ij)
     """
-    def __init__(self, dim, obs, params=None, E=None):
-        PseudoY.__init__(self, dim=dim, obs=obs, params=params, E=E)
+    def __init__(self, dim, obs, groups, params=None, E=None):
+        PseudoY.__init__(self, dim=dim, obs=obs, groups=groups, params=params, E=E)
 
         # Initialise the observed data
         assert s.all( (self.obs==0) | (self.obs==1) ), "Data must be binary"

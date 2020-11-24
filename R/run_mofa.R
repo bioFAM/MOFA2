@@ -112,13 +112,16 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     scale_groups = object@data_options$scale_groups
   )
 
-  # Set metadata
+  # Set samples metadata
   if (.hasSlot(object, "samples_metadata")) {
-    mofa_entrypoint$data_opts$samples_metadata <- r_to_py(lapply(object@data_options$groups, function(g) object@samples_metadata[object@samples_metadata$group == g,]))
+    mofa_entrypoint$data_opts$samples_metadata <- r_to_py(lapply(object@data_options$groups,
+                                                                 function(g) object@samples_metadata[object@samples_metadata$group == g,]))
   }
 
+  # Set features metadata
   if (.hasSlot(object, "features_metadata")) {
-    mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views, function(m) object@features_metadata[object@features_metadata$view == m,])))
+    mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views,
+                                                                         function(m) object@features_metadata[object@features_metadata$view == m,])))
   }
   
   # Set the data
@@ -130,6 +133,13 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
     features_names = r_to_py(unname(lapply(object@data, function(x) rownames(x[[1]]))))
   )
+  
+  # Set covariates
+  if (!is.null(object@covariates)) {
+    sample_cov_to_py <- r_to_py(unname(lapply(object@covariates, function(x) unname(r_to_py(t(x))))))
+    cov_names_2_py <- r_to_py(covariates_names(object))
+    mofa_entrypoint$set_covariates(sample_cov_to_py, cov_names_2_py)
+  }
   
   # Set model options 
   mofa_entrypoint$set_model_options(
@@ -154,6 +164,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     save_interrupted = object@training_options$save_interrupted
   )
   
+  
   # Set stochastic options
   if (object@training_options$stochastic) {
     mofa_entrypoint$set_stochastic_options(
@@ -164,12 +175,43 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     )
   }
   
+  # Set smooth covariate options  
+  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
+    warping_ref <- which(groups_names(object) == object@smooth_options$warping_ref)
+    mofa_entrypoint$set_smooth_options(
+      scale_cov           = object@smooth_options$scale_cov,
+      start_opt           = as.integer(object@smooth_options$start_opt),
+      n_grid              = as.integer(object@smooth_options$n_grid),
+      opt_freq            = as.integer(object@smooth_options$opt_freq),
+      model_groups        = object@smooth_options$model_groups,
+      sparseGP            = object@smooth_options$sparseGP,
+      frac_inducing       = object@smooth_options$frac_inducing,
+      warping             = object@smooth_options$warping,
+      warping_freq        = as.integer(object@smooth_options$warping_freq),
+      warping_ref         = warping_ref-1, # 0-based python indexing
+      warping_open_begin  = object@smooth_options$warping_open_begin,
+      warping_open_end    = object@smooth_options$warping_open_end
+    )
+  }
+  
   # Build the model
   mofa_entrypoint$build()
   
   # Run the model
   mofa_entrypoint$run()
 
+  # Interpolate
+  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
+    if(!is.null(object@smooth_options$new_values)) {
+      new_values <- object@smooth_options$new_values
+      if(is.null(dim(new_values))){
+        new_values <- matrix(new_values, nrow = 1)
+      }
+      mofa_entrypoint$predict_factor(new_covariates = r_to_py(t(new_values)))
+    }
+  }
+  
   # Save the model output as an hdf5 file
   mofa_entrypoint$save(outfile, save_data = save_data)
+
 }

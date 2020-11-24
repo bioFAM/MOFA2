@@ -272,7 +272,6 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @importFrom stats complete.cases
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>% set_colnames
-# #' @importFrom ggbeeswarm geom_quasirandom
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
@@ -484,4 +483,5 @@ plot_factor_cor <- function(object, method = "pearson", ...) {
   r <- abs(cor(x=do.call(rbind, Z), y=do.call(rbind, Z), method=method, use = "complete.obs"))
   corrplot(r, tl.col = "black", ...)
 }
+
 

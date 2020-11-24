@@ -17,7 +17,7 @@ Extract dimensionalities from the model.
 }
 \details{
 K indicates the number of factors, D indicates the number of features, 
-N indicates the (total) number of samples and M indicates the number of views.
+N indicates the (total) number of samples, M indicates the number of views and C indicates the number of covariates.
 }
 \examples{
 # Using an existing trained model

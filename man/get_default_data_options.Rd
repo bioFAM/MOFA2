@@ -25,7 +25,7 @@ The data options are the following: \cr
  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
-}
+ }
 }
 \examples{
 # Using an existing simulated data with two groups and two views

@@ -1,0 +1,157 @@
+---
+title: "Illustration of MEFISTO on simulated data with a temporal covariate"
+author:
+- name: "Britta Velten"
+  affiliation: "German Cancer Research Center, Heidelberg, Germany"
+  email: "b.velten@dkfz-heidelberg.de"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{MEFISTO on simulated data (temporal)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(MOFA2)
+library(tidyverse)
+library(pheatmap)
+```
+
+# Temporal data: Simulate an example data set
+To illustrate the MEFISTO method in MOFA2 we simulate a small example data set with 4 different views and one covariates defining a timeline using `make_example_data`. The simulation is based on 4 factors, two of which vary smoothly along the covariate (with different lengthscales) and two are independent of the covariate.
+
+```{r}
+set.seed(2020)
+
+# set number of samples and time points
+N <- 200
+time <- seq(0,1,length.out = N)
+
+# generate example data
+dd <- make_example_data(sample_cov = time, n_samples = N,
+                        n_factors = 4, n_features = 200, n_views = 4,
+                        lscales = c(0.5, 0.2, 0, 0))
+# input data
+data <- dd$data
+
+# covariate matrix with samples in columns
+time <- dd$sample_cov
+rownames(time) <- "time"
+```
+
+
+Let's have a look at the simulated latent temporal processes, which we want to recover:
+```{r}
+df <- data.frame(dd$Z, t(time))
+df <- gather(df, key = "factor", value = "value", starts_with("simulated_factor"))
+ggplot(df, aes(x = time, y = value)) + geom_point() + facet_grid(~factor)
+```
+
+# MEFISTO framework
+Using the MEFISTO framework is very similar to using MOFA2. In addition to the omics data, however, we now additionally specify the time points for each sample. If you are not familiar with the MOFA2 framework, it might be helpful to have a look at [MOFA2 tutorials](https://biofam.github.io/MOFA2/tutorials.html) first.
+
+## Create a MOFA object with covariates
+To create the MOFA object we need to specify the training data and the covariates for pattern detection and inference of smooth factors. Here, `sample_cov` is a matrix with samples in columns and one row containing the time points. The sample order must match the order in data columns. Alternatively, a data frame can be provided containing one `sample` columns with samples names matching the sample names in the data.
+
+First, we start by creating a standard MOFA model.
+```{r}
+sm <- create_mofa(data = dd$data)
+```
+
+Now, we can add the additional temporal covariate, that we want to use for training.
+```{r, message=FALSE, warning=FALSE}
+sm <- set_covariates(sm, covariates = time)
+sm
+```
+We now successfully created a MOFA object that contains 4 views, 1 group and 1 covariate giving the time point for each sample.
+
+## Prepare a MOFA object
+Before training, we can specify various options for the model, the training and the data preprocessing. If no options are specified, the model will use the default options. See also `get_default_data_options`, `get_default_model_options` and `get_default_training_options` to have a look at the defaults and change them where required. For illustration, we only use a small number of iterations.
+
+Importantly, to activate the use of the covariate for a functional decomposition (MEFISTO) we now additionally to the standard MOFA options need to specify `smooth_options`. For this you can just use the default options (`get_default_smooth_options`), unless you want to make use of advanced options such as alignment across groups.
+
+```{r, message=FALSE, warning=FALSE}
+model_opts <- get_default_model_options(sm)
+model_opts$num_factors <- 4
+
+train_opts <- get_default_training_options(sm)
+train_opts$maxiter <- 100
+
+smooth_opts <- get_default_smooth_options(sm)
+
+sm <- prepare_mofa(sm, model_options = model_opts,
+                   smooth_options = smooth_opts,
+                   training_options = train_opts)
+```
+
+## Run MOFA
+Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saved in the file specified as `outfile`. If none is specified the output is only saved in a temporary location.
+```{r, warning=FALSE, message=FALSE}
+sm <- run_mofa(sm)
+```
+
+
+## Down-stream analysis
+### Variance explained per factor
+Using `plot_variance_explained` we can explore which factor is active in which view. `plot_factor_cor` shows us whether the factors are correlated.
+```{r, fig.width=5, fig.height=4}
+plot_variance_explained(sm)
+r <- plot_factor_cor(sm)
+```
+
+
+### Relate factors to the covariate
+The MOFA model has learnt scale parameters for each factor, which give us an indication of the smoothness per factor along the covariate (here time) and are between 0 and 1. A scale of 0 means that the factor captures variation independent of time, a value close to 1 tells us that this factor varys very smoothly along time. 
+```{r}
+get_scales(sm)
+```
+
+In this example, we find two factors that are non-smooth and two smooth factors. Using `plot_factors_vs_cov` we can plot the factors along the time line, where we can distinguish smooth and non smooth variation along time.
+```{r}
+plot_factors_vs_cov(sm, color_by = "time")
+```
+
+For more customized plots, we can extract the underlying data containing the factor and covariate values for each sample.
+```{r}
+df <- plot_factors_vs_cov(sm, color_by = "time",
+                    legend = FALSE, return_data = TRUE)
+head(df)
+```
+
+We can compare the above plots to the factors that were simulated above and find that the model recaptured the two smooth as well as two non-smooth patterns in time. Note that factors are invariant to the sign, e.g. Factor 4 is the negative of the simulated factor but we can simply multiply the factors and its weights by -1 to obtain exactly the simulated factor.
+
+
+### Exploration of weights
+As with standard MOFA, we can now look deeper into the meaning of these factors by exploring the weights or performing feature set enrichment analysis.
+```{r, fig.width=5, fig.height=4}
+plot_weights(sm, factors = 4, view = 1)
+plot_top_weights(sm, factors = 3, view = 2)
+```
+
+In addition, we can take a look at the top feature values per factor along time and see that their patterns are in line with the pattern of the corresponding Factor (here Factor 3).
+```{r}
+plot_data_vs_cov(sm, factor=3,
+                         features = 2,
+                         color_by = "time",
+                         dot_size = 1)
+```
+
+### Interpolation
+Furthermore, we can interpolate or extrapolate a factor to new values. Here, we only show the mean of the prediction, to obtain uncertainties you need to specify the new values before training in `get_default_smooth_options(sm)$new_values`.
+```{r}
+sm <- interpolate_factors(sm, new_values = seq(0,1.1,0.01))
+plot_interpolation_vs_covariate(sm, covariate = "time",
+                                factors = "Factor3")
+```
+
+<details>
+  <summary>**Session Info**</summary>
+  
+```{r}
+sessionInfo()
+```
+
+</details>

@@ -18,9 +18,9 @@
   if (verbose == TRUE) message("Checking groups names...")
   if (any(grepl("/", groups_names(object)))) {
     stop("Some of the groups names contain `/` symbol, which is not supported.
-  This can be fixed e.g. with:
+    This can be fixed e.g. with:
     groups_names(object) <- gsub(\"/\", \"-\", groups_names(object))")
-  } 
+  }
   stopifnot(!is.null(groups_names(object)))
   stopifnot(!duplicated(groups_names(object)))
   
@@ -71,6 +71,14 @@
       }
     }
     
+  # check dimensionalities of sample_covariates 
+  if (verbose == TRUE) message("Checking sample covariates...")
+  if(!is.null(object@covariates)){
+    stopifnot(ncol(object@covariates) == sum(object@dimensions$N))
+    stopifnot(nrow(object@covariates) == object@dimensions$C)
+    stopifnot(all(unlist(samples_names(object)) == colnames(object@covariates)))
+  }
+  
   # Sanity checks that are exclusive for an untrained model  
   if (object@status == "untrained") {
     
@@ -95,10 +103,10 @@
     
   # Sanity checks that are exclusive for a trained model  
   } else if (object@status == "trained") {
-    
     # Check expectations
-    stopifnot(all(c("W", "Z") %in% names(object@expectations)))
     if (verbose == TRUE) message("Checking expectations...")
+    stopifnot(all(c("W", "Z") %in% names(object@expectations)))
+    # if(!is.null(object@covariates)) stopifnot("Sigma" %in% names(object@expectations))
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
     
@@ -128,7 +136,7 @@
     if (max(tmp,na.rm=TRUE)>0.5) {
       warning("The model contains highly correlated factors (see `plot_factor_cor(MOFAobject)`). \nWe recommend that you train the model with less factors and that you let it train for a longer time.\n")
     }
-
+  
   }
   
   return(object)  

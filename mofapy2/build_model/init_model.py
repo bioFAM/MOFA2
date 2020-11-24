@@ -12,7 +12,7 @@ from sklearn.impute import SimpleImputer
 from mofapy2.core.nodes import *
 
 class initModel(object):
-    def __init__(self, dim, data, lik, seed):
+    def __init__(self, dim, data, lik, groups, seed):
         """
         PARAMETERS
         dim: dictionary with keyworded dimensionalities:
@@ -20,41 +20,252 @@ class initModel(object):
             M for the number of views
             K for the number of factors or latent variables,
             D for the number of features per view
-            G for the number of features per group
         data: list of length M with numpy arrays of dimensionality (N,Dm)
         lik: list of strings with length M
             likelihood for each view, choose from ('gaussian','poisson','bernoulli')
         """
 
+        # Set seed
         s.random.seed(seed)
 
+        # Set groups
+        assert len(groups) == dim["N"], 'sample groups labels do not match number of samples'
+        self.groups = groups
+        self.groups_ix = np.unique(groups, return_inverse=True)[1] # convert groups into integers from 0 to n_groups
+
+
+        # Set data
         self.data = data
+
+        # Set likelihoods
         self.lik = lik
+
+        # Set dimensionalities
         self.N = dim["N"]
         self.K = dim["K"]
         self.M = dim["M"]
         self.D = dim["D"]
+        self.G = dim["G"]
+        # self.G = len(np.unique(groups))
 
         self.nodes = {}
 
-    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views=False):
+    def initZ(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views = False):
         """Method to initialise the latent variables
 
         PARAMETERS
         ----------
         pmean: mean of the prior distribution
-        pvar: variance of the prior distribution
+        pvar: (co)variance of the prior distribution
         qmean: initialisation of the mean of the variational distribution
             "random" for a random initialisation sampled from a standard normal distribution
             "pca" for an initialisation based on PCA
             "orthogonal" for a random initialisation with orthogonal factors
-        qvar: initial value of the variance of the variational distribution
+        qvar: initial value of the (co)variance of the variational distribution
         qE: initial value of the expectation of the variational distribution
         qE2: initial value of the second moment of the variational distribution
         Y: matrix to run PCA on (when qmean="pca")
         impute: logical value if to perform imputation before running PCA,
             this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
+        weight_views: logical whether to weight the ELBO
         """
+
+        ## Initialise prior distribution (P)
+
+        # mean
+        pmean = s.ones((self.N, self.K)) * pmean
+
+        ## Initialise variational distribution (Q)
+
+        # variance
+        qvar = s.ones((self.N, self.K)) * qvar
+
+        # mean
+        if qmean is not None:
+            if isinstance(qmean, str):
+
+                # Random initialisation
+                if qmean == "random":
+                    qmean = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
+
+                # Random initialisation with orthogonal factors
+                elif qmean == "orthogonal":
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                    pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.N, 9999)).T)
+                    qmean = pca.components_.T
+
+                # PCA initialisation
+                elif qmean == "pca":
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                    Ytmp = s.concatenate(Y, axis=1)
+
+                    if impute == True:
+                        if np.any(np.isnan(Ytmp)):
+                            imp = SimpleImputer(missing_values=np.NaN, strategy="mean")
+                            imp.fit(Ytmp)
+                            Ytmp = imp.transform(Ytmp)
+
+                    pca.fit(Ytmp)
+                    qmean = pca.transform(Ytmp)
+
+                # scale factor values from -1 to 1 (per factor)
+                qmean = 2.*(qmean - np.min(qmean,axis=0))/np.ptp(qmean,axis=0)-1
+
+            elif isinstance(qmean, s.ndarray):
+                assert qmean.shape == (self.N, self.K), "Wrong shape for the expectation of the Q distribution of Z"
+
+            elif isinstance(qmean, (int, float)):
+                qmean = s.ones((self.N, self.K)) * qmean
+
+            else:
+                print("Wrong initialisation for Z")
+                exit()
+
+        # Initialise the node
+        self.nodes["Z"] = Z_Node(
+            dim=(self.N, self.K),
+            pmean=pmean, pvar=pvar,
+            qmean=qmean, qvar=qvar,
+            qE=qE, qE2=qE2, weight_views = weight_views
+        )
+
+    def initZ_smooth(self, pmean=0., pvar=1., qmean="random", qvar=1., qE=None, qE2=None, Y=None, impute=False, weight_views = False):
+        """Method to initialise the latent variables
+
+        PARAMETERS
+        ----------
+        pmean: mean of the prior distribution
+        pvar: (co)variance of the prior distribution
+        qmean: initialisation of the mean of the variational distribution
+            "random" for a random initialisation sampled from a standard normal distribution
+            "pca" for an initialisation based on PCA
+            "orthogonal" for a random initialisation with orthogonal factors
+        qvar: initial value of the (co)variance of the variational distribution
+        qE: initial value of the expectation of the variational distribution
+        qE2: initial value of the second moment of the variational distribution
+        Y: matrix to run PCA on (when qmean="pca")
+        impute: logical value if to perform imputation before running PCA,
+            this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
+        weight_views: logical whether to weight the ELBO
+        """
+
+        ## Initialise prior distribution (P)
+
+        # mean
+        pmean = s.ones((self.N, self.K)) * pmean
+        if isinstance(pvar, (int,float)):
+            pvar = s.array([s.eye(self.N)*pvar for k in range(self.K)])
+
+        ## Initialise variational distribution (Q)
+
+        # variance
+        qvar = s.array([s.eye(self.N)*qvar for k in range(self.K)])
+
+        # mean
+        if qmean is not None:
+            if isinstance(qmean, str):
+
+                # Random initialisation
+                if qmean == "random":
+                    qmean = stats.norm.rvs(loc=0, scale=1, size=(self.N, self.K))
+
+                # Random initialisation with orthogonal factors
+                elif qmean == "orthogonal":
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                    pca.fit(stats.norm.rvs(loc=0, scale=1, size=(self.N, 9999)).T)
+                    qmean = pca.components_.T
+
+                # PCA initialisation
+                elif qmean == "pca":
+                    pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+                    Ytmp = s.concatenate(Y, axis=1)
+
+                    if impute == True:
+                        if np.any(np.isnan(Ytmp)):
+                            imp = SimpleImputer(missing_values=np.NaN, strategy="mean")
+                            imp.fit(Ytmp)
+                            Ytmp = imp.transform(Ytmp)
+
+                    pca.fit(Ytmp)
+                    qmean = pca.transform(Ytmp)
+
+                # scale factor values from -1 to 1 (per factor)
+                qmean = 2.*(qmean - np.min(qmean,axis=0))/np.ptp(qmean,axis=0)-1
+
+            elif isinstance(qmean, s.ndarray):
+                assert qmean.shape == (self.N, self.K), "Wrong shape for the expectation of the Q distribution of Z"
+
+            elif isinstance(qmean, (int, float)):
+                qmean = s.ones((self.N, self.K)) * qmean
+
+            else:
+                print("Wrong initialisation for Z")
+                exit()
+
+        # Initialise the node
+        self.nodes["Z"] = Z_GP_Node_mv(
+            dim=(self.N, self.K),
+            pmean=pmean, pcov=pvar,
+            qmean=qmean, qcov=qvar,
+            qE=qE, 
+            weight_views = weight_views
+        )
+        # self.nodes["Z"] = Z_GP_Node(
+        #     dim=(self.N, self.K),
+        #     pmean=pmean, pcov=pvar,
+        #     qmean=qmean, qvar=qvar,
+        #     qE=qE, 
+        #     weight_views = weight_views
+        # )
+
+    def initU(self, pmean=0., pvar=1., qmean=0, qvar=1., qE=None, qE2=None, Y = None, impute=True, idx_inducing = None, weight_views = False): # prior has diagonal covariance here, ls optimiation in Sigma node
+        """Method to initialise the inducing points
+
+         PARAMETERS
+         ----------
+        pmean: mean of the prior distribution
+        pvar: (co)variance of the prior distribution
+         qmean: initialisation of the mean of the variational distribution
+             "random" for a random initialisation sampled from a standard normal distribution
+             "pca" for an initialisation based on PCA
+             "orthogonal" for a random initialisation with orthogonal factors
+         qvar: initial value of the variance of the variational distribution
+         qE: initial value of the expectation of the variational distribution
+         qE2: initial value of the second moment of the variational distribution
+         Y: matrix to run PCA on (when qmean="pca")
+         impute: logical value if to perform imputation before running PCA,
+             this is only applicable when qmean="pca" and missing values (np.NaN) are present in the data
+         GP_factors: logical whether to use a Z node with GP prior or not
+         """
+
+        assert idx_inducing is not  None, "Stop: U nodes is used without inducing points"
+
+        Nu = len(idx_inducing)
+
+        ## Initialise prior distribution (P)
+        # mean
+        pmean = s.ones((Nu, self.K)) * pmean
+        if isinstance(pvar, (int, float)):
+            pvar = s.array([s.eye(Nu) * pvar for k in range(self.K)])
+
+        ## Initialise variational distribution (Q)
+        qmean = s.ones((Nu, self.K)) * qmean
+
+        # variance
+        qvar = s.array([s.eye(Nu) * qvar for k in range(self.K)])
+
+        # Initialise the node
+        self.nodes["U"] = U_GP_Node_mv(
+            dim=(Nu, self.K),
+            pmean=pmean, pcov=pvar,
+            qmean=qmean, qcov=qvar,
+            qE=qE, idx_inducing = idx_inducing,
+            weight_views = weight_views
+        )
+
+    def initZgU(self, pmean = 0, pvar =1., qmean = "random", qvar = 1., qE = None, qE2 = None, Y = None,
+                impute = True, idx_inducing = None, weight_views = False):
+        assert idx_inducing is not None, "Stop: ZgU nodes is used without inducing points"
 
         ## Initialise prior distribution (P)
 
@@ -94,7 +305,7 @@ class initModel(object):
 
                     pca.fit(Ytmp)
                     qmean = pca.transform(Ytmp)
-                    
+
                 # scale factor values from -1 to 1 (per factor)
                 qmean = 2.*(qmean - np.min(qmean,axis=0))/np.ptp(qmean,axis=0)-1
 
@@ -108,14 +319,62 @@ class initModel(object):
                 print("Wrong initialisation for Z")
                 exit()
 
-
-        # Initialise the node
-        self.nodes["Z"] = Z_Node(
+        self.nodes["Z"] = ZgU_node(
             dim=(self.N, self.K),
             pmean=pmean, pvar=pvar,
             qmean=qmean, qvar=qvar,
-            qE=qE, qE2=qE2, weight_views = weight_views
+            qE=qE, qE2=qE2,
+            idx_inducing = idx_inducing,
+            weight_views = weight_views
         )
+
+    def initSigma(self, sample_cov, start_opt = 20, n_grid = 10,
+        opt_freq = 10, model_groups = False, use_gpytorch = False):
+
+        self.Sigma = Sigma_Node(
+            dim=(self.K,), 
+            sample_cov=sample_cov, 
+            groups=self.groups,
+            start_opt=start_opt, 
+            n_grid=n_grid, 
+            opt_freq=opt_freq, 
+            model_groups = model_groups
+        )
+        self.nodes["Sigma"] = self.Sigma
+
+    def initSigma_sparse(self, sample_cov, start_opt = 20, n_grid = 10, idx_inducing = None, 
+        opt_freq = 10, model_groups = False, use_gpytorch = False):
+
+        self.Sigma = Sigma_Node_sparse(
+            dim=(self.K,), 
+            sample_cov=sample_cov, 
+            groups=self.groups,
+            start_opt=start_opt, 
+            n_grid=n_grid, 
+            idx_inducing=idx_inducing, 
+            opt_freq=opt_freq, 
+            model_groups = model_groups
+        )
+        self.nodes["Sigma"] = self.Sigma
+
+    def initSigma_warping(self, sample_cov, start_opt = 20, n_grid = 10, 
+        warping_freq = 20, warping_ref = 0, warping_open_begin = True, warping_open_end =True,
+        opt_freq = 10, model_groups = False, use_gpytorch = False):
+
+        self.Sigma = Sigma_Node_warping(
+            dim=(self.K,), 
+            sample_cov=sample_cov, 
+            groups=self.groups,
+            start_opt=start_opt, 
+            n_grid=n_grid, 
+            warping_freq=warping_freq, 
+            warping_ref=warping_ref,
+            warping_open_begin=warping_open_begin, 
+            warping_open_end=warping_open_end,
+            opt_freq=opt_freq, 
+            model_groups = model_groups
+        )
+        self.nodes["Sigma"] = self.Sigma
 
     def initSZ(self, pmean_T0=0., pmean_T1=0., pvar_T0=1., pvar_T1=1., ptheta=1., qmean_T0=0., qmean_T1="random", qvar_T0=1.,
         qvar_T1=1., qtheta=1., qEZ_T0=None, qEZ_T1=None, qET=None, Y=None, impute=False, weight_views = False):
@@ -312,7 +571,7 @@ class initModel(object):
 
         self.nodes["W"] = Multiview_Variational_Node(self.M, *W_list)
 
-    def initAlphaZ(self, groups, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
+    def initAlphaZ(self, pa=1e-14, pb=1e-14, qa=1., qb=1., qE=None, qlnE=None):
         """Method to initialise the ARD prior on Z per sample group
 
         PARAMETERS
@@ -331,20 +590,11 @@ class initModel(object):
             initial log expectation of the variational distribution
         """
 
-        # Sanity checks
-        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
-
-        # convert groups into integers from 0 to n_groups
-        tmp = np.unique(groups, return_inverse=True)
-        groups_ix = tmp[1]
-
-        n_group = len(np.unique(groups_ix))
-
         self.nodes["AlphaZ"] = AlphaZ_Node(
-            dim=(n_group, self.K),
+            dim=(self.G, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
-            groups=groups_ix,
+            groups=self.groups_ix,
             qE=qE, qlnE=qlnE
         )
 
@@ -373,7 +623,7 @@ class initModel(object):
             alpha_list[m] = AlphaW_Node(dim=(self.K,), pa=pa, pb=pb, qa=qa, qb=qb, qE=qE, qlnE=qlnE)
         self.nodes["AlphaW"] = Multiview_Variational_Node(self.M, *alpha_list)
 
-    def initTau(self, groups, pa=1e-3, pb=1e-3, qa=1., qb=1., qE=None):
+    def initTau(self, pa=1e-3, pb=1e-3, qa=1., qb=1., qE=None):
         """Method to initialise the precision of the noise
 
         PARAMETERS
@@ -388,16 +638,7 @@ class initModel(object):
             initial expectation of the variational distribution
         """
 
-        # Sanity checks
-        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
-
         tau_list = [None]*self.M
-
-        # convert groups into integers from 0 to n_groups 
-        tmp = np.unique(groups, return_inverse=True)
-        groups_ix = tmp[1]
-
-        n_group = len(np.unique(groups_ix))
 
         for m in range(self.M):
 
@@ -415,20 +656,21 @@ class initModel(object):
 
             elif self.lik[m] == "zero_inflated":
                 # contains parameters to initialise both normal and jaakola tau
-                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((n_group, self.D[m])), value=1., pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
+                tau_list[m] = Zero_Inflated_Tau_Jaakkola(dim=((self.G, self.D[m])), value=1., pa=pa, pb=pb, qa=qa, qb=qb, groups=self.groups_ix, qE=qE)
 
             # Gaussian noise model for continuous data
             elif self.lik[m] == "gaussian":
-                tau_list[m] = TauD_Node(dim=(n_group, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=groups_ix, qE=qE)
+                tau_list[m] = TauD_Node(dim=(self.G, self.D[m]), pa=pa, pb=pb, qa=qa, qb=qb, groups=self.groups_ix, qE=qE)
 
         self.nodes["Tau"] = Multiview_Mixed_Node(self.M, *tau_list)
 
     def initY(self):
         """Method to initialise the observations"""
+
         Y_list = [None]*self.M
         for m in range(self.M):
             if self.lik[m]=="gaussian":
-                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m])
+                Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], groups=self.groups_ix)
             elif self.lik[m]=="poisson":
                 Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
             elif self.lik[m]=="bernoulli":
@@ -438,13 +680,11 @@ class initModel(object):
         self.Y = Multiview_Mixed_Node(self.M, *Y_list)
         self.nodes["Y"] = self.Y
 
-    def initThetaZ(self, groups, pa=1., pb=1., qa=1., qb=1., qE=None):
+    def initThetaZ(self, pa=1., pb=1., qa=1., qb=1., qE=None):
         """Method to initialise the ARD prior on Z per sample group
 
         PARAMETERS
         ----------
-        groups: dictionary
-            a dictionariy with mapping between sample names (keys) and samples_groups (values)
         pa: float
             'a' parameter of the prior distribution
         pb :float
@@ -458,20 +698,12 @@ class initModel(object):
         K: number of factors for which we learn theta. If no argument is given, we'll just use the
             total number of factors
         """
-        # Sanity checks
-        assert len(groups) == self.N, 'sample groups labels do not match number of samples'
-
-        # convert groups into integers from 0 to n_groups
-        tmp = np.unique(groups, return_inverse=True)
-        groups_ix = tmp[1]
-
-        n_group = len(np.unique(groups_ix))
 
         self.nodes["ThetaZ"] = ThetaZ_Node(
-            dim=(n_group, self.K),
+            dim=(self.G, self.K),
             pa=pa, pb=pb,
             qa=qa, qb=qb,
-            groups=groups_ix,
+            groups=self.groups_ix,
             qE=qE)
 
     def initThetaW(self, pa=1., pb=1., qa=1., qb=1., qE=None):

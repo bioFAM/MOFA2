@@ -18,33 +18,43 @@
 #' @slot training_options Model training options.
 #' @slot stochastic_options Stochastic variational inference options.
 #' @slot model_options Model options.
+#' @slot smooth_options Covariates options
 #' @slot dimensions Dimensionalities of the model: 
 #'    M for the number of views, 
-#'    G for the number of groups, 
-#'    N for the number of samples (per group), 
+#'    G for the number of groups,
+#'    N for the number of samples (per group),
+#'    C for the number of covariates per sample,
 #'    D for the number of features (per view),
 #'    K for the number of factors.
 #' @slot on_disk Logical indicating whether data is loaded from disk.
 #' @slot cache Cache.
 #' @slot status Auxiliary variable indicating whether the model has been trained.
-#' 
+#' @slot covariates optional slot to store sample covariate for training in MEFISTO
+#' @slot covariates_warped optional slot to store warped sample covariate for training in MEFISTO
+#' @slot interpolated_Z optional slot to store interpolated factor values (used only with MEFISTO)
 #' @name MOFA
 #' @rdname MOFA
 #' @aliases MOFA-class
 #' @exportClass MOFA
+
+setClassUnion("listOrNULL",members = c("list","NULL"))
 setClass("MOFA", 
         slots=c(
             data                = "list",
+            covariates          = "listOrNULL",
+            covariates_warped   = "listOrNULL",
             intercepts          = "list",
             imputed_data        = "list",
+            interpolated_Z      = "list",
             samples_metadata    = "list",
             features_metadata   = "list",
             expectations        = "list", 
             training_stats      = "list",
-            training_options    = "list",
-            stochastic_options  = "list",
             data_options        = "list",
             model_options       = "list",
+            training_options    = "list",
+            stochastic_options  = "list",
+            smooth_options      = "list",
             dimensions          = "list",
             on_disk             = "logical",
             dim_red             = "list",
@@ -63,14 +73,28 @@ setMethod("show", "MOFA", function(object) {
   
   if (object@status == "trained") {
     nfactors <- object@dimensions[["K"]]
-    cat(sprintf("Trained MOFA with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of factors: %d \n",
-                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "), 
-                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "), 
-                nfactors))
+    if(is.null(object@covariates)) {
+      cat(sprintf("Trained MOFA with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of factors: %d \n",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "),
+                  nfactors))
+    } else {
+      cat(sprintf("Trained MEFISTO with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of covariates per sample: %d \n Number of factors: %d \n",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "),
+                  object@dimensions[["C"]], nfactors))
+    }
   } else {
-    cat(sprintf("Untrained MOFA model with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n",
-                object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
-                object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+    if(is.null(object@covariates)) {
+      cat(sprintf("Untrained MOFA model with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n ",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" ")))
+    } else {
+      cat(sprintf("Untrained MEFISTO model with the following characteristics: \n Number of views: %d \n Views names: %s \n Number of features (per view): %s \n Number of groups: %d \n Groups names: %s \n Number of samples (per group): %s \n Number of covariates per sample: %d \n ",
+                  object@dimensions[["M"]], paste(views_names(object),  collapse=" "), paste(as.character(object@dimensions[["D"]]), collapse=" "),
+                  object@dimensions[["G"]], paste(groups_names(object), collapse=" "), paste(as.character(object@dimensions[["N"]]), collapse=" "),
+                  object@dimensions[["C"]]))
+    }
   }
   cat("\n")
 })

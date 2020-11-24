@@ -10,7 +10,10 @@ make_example_data(
   n_samples = 50,
   n_groups = 1,
   n_factors = 5,
-  likelihood = "gaussian"
+  likelihood = "gaussian",
+  lscales = 1,
+  sample_cov = NULL,
+  as.data.frame = FALSE
 )
 }
 \arguments{
@@ -26,9 +29,16 @@ make_example_data(
 
 \item{likelihood}{likelihood for each view, one of "gaussian" (default), "bernoulli", "poisson",
 or a character vector of length n_views}
+
+\item{lscales}{vector of lengthscales, needs to be of length n_factors (default is 0 - no smooth factors)}
+
+\item{sample_cov}{(only for use with MEFISTO) matrix of sample covariates for one group with covariates in rows and samples in columns 
+or "equidistant" for sequential ordering, default is NULL (no smooth factors)}
+
+\item{as.data.frame}{return data and covariates as long dataframe}
 }
 \value{
-Returns an untrained \code{\link{MOFA}} object containing simulated data as training data.
+Returns a list containing the simulated data and simulation parameters.
 }
 \description{
 Function to simulate an example multi-view multi-group data set according to the generative model of MOFA2.
