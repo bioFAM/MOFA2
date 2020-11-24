@@ -57,16 +57,16 @@ remotes::install_github("bioFAM/MOFA2/MOFA2", ref= "mefisto", build_opts = c("--
 **(1) When should I use MEFISTO instead of MOFA?**  
 MEFISTO can be used if you have metadata on your samples that give information on how samples relate to one another such as temporal or spatial positions. Using such known similarities can improve the inferred factors, provides the ability to interpolate and enables to separate factors that vary smoothly along these known covariates and those that capture variation independent of them. In particular with many missing samples, MOFA(+) can have difficulties to detect such smooth sources of variation. By exploiting known relationships between samples, MEFISTO can better infer such smooth variation.
 
-**(2) What is the input to MEFISTO?**
+**(2) What is the input to MEFISTO?**  
 Along with the omics data for one or multiple omics and one or multiple groups of samples (as in MOFA) you now additionally need to provide covariate values for each sample. This can for instance be a single covariate such as a time point per sample or multiple covariates such as x-,y- coordinate of spatial postions. In R this is done by the function `set_covariates` which is called on an untrained `MOFAobject` prior to model training.
 
-**(3) How does the smooth factor inference work in MEFISTO?**
+**(3) How does the smooth factor inference work in MEFISTO?**  
 Like in MOFA, factors are inferred to represent the driving sources of variation across data modalities. By specifying sample covariates the model can learn factors that vary smoothly along the covariates. Technically, this is implemented using a Gaussian process prior for the factors with a squared exponential kernel in the covariates. For each factor the model learns a different scale parameter: For factors that vary smoothly with the covariate this will be close to 1, factors that capture variation independent of the covariate will have a scale close to 0.
 
-**(4) Can I use multiple groups in MEFISTO?**
+**(4) Can I use multiple groups in MEFISTO?**  
 Yes you can. This can be very useful, if you have multiple repeated measurement on spatial or temporal data, e.g. time course data from multiple individuals. You can specify the groups as described for MOFA+ by providing the group label for each sample when creating the `MOFAobject`. MEFISTO will then infer latent factors for each group and (if `model_groups` is set to True) infer a group-group correlation matrix that indicates for each factor how the groups relate to one another. See also our evodevo tutorial for an example. Note that setting `model_groups` to True can be slow for large number of groups - in this case, we recommend setting it to False for initial analysis. 
 
-**(5) What if my covariates are not aligned across groups?**
+**(5) What if my covariates are not aligned across groups?**  
 If you have muliple groups where the covariate is not aligned, e.g. time course data across development from different species, MEFISTO provides an option to learn an optimal alignment. For this, you can use the `warping` option. See also our evodevo tutorial for an example of the alignment functionality of MEFISTO.
 
 
