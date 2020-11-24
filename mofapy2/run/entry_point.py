@@ -1330,10 +1330,23 @@ def mofa(adata, groups_label: bool = None, use_raw: bool = False, use_layer: boo
             f = h5py.File(outfile)
             if copy:
                 adata = adata.copy()
-            adata.obsm['X_mofa'] = np.concatenate([v[:,:] for k, v in f['expectations']['Z'].items()], axis=1).T
+
+            z = np.concatenate([v[:,:] for k, v in f['expectations']['Z'].items()], axis=1).T
+            if groups_label:
+                # Samples are grouped in sample groups
+                # so the rows of the Z matrix have to be re-ordered
+                zs = np.concatenate([v[:] for k, v in f["samples"].items()], axis=0).astype(str)
+                z = pd.DataFrame(z, index=zs).loc[adata.obs_names.values].to_numpy()
+            adata.obsm['X_mofa'] = z
+
+            w = np.concatenate([v[:,:] for k, v in f['expectations']['W'].items()], axis=1).T
             if features_subset is None:
-                # Loadings can be saved only if all the features were used in training
-                adata.varm['LFs'] = np.concatenate([v[:,:] for k, v in f['expectations']['W'].items()], axis=1).T
+                # If all the features were used in training
+                adata.varm['LFs'] = w
+            else:
+                # Set the weights of features that were not used to zero
+                adata.varm["LFs"] = np.zeros(shape=(adata.n_vars, w.shape[1]))
+                adata.varm["LFs"][adata.var[features_subset]] = w
             if copy:
                 return adata
             else:

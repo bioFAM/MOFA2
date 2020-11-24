@@ -119,12 +119,11 @@ class saveModel():
                 for col in cols:
                     ctype = self.samples_metadata[g][col].dtype
                     
-                    # import ipdb; ipdb.set_trace()
                     if ctype == "object":
                         try:
                             # Try to encode as ASCII strings
                             group_meta.create_dataset(col, data=np.array(self.samples_metadata[g][col], dtype="|S"))
-                        except UnicodeEncodeError:
+                        except (UnicodeEncodeError, SystemError):
                             # Encode strings as Unicode
                             group_meta.create_dataset(col, data=np.char.encode(self.samples_metadata[g][col].values.astype("U"), encoding='utf8'))
                     else:
