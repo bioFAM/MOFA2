@@ -443,7 +443,10 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   } else {
     to.plot <- mutate(to.plot, view_label = view, group_label = group)
   }
-    
+  
+  # Order groups  
+  to.plot$group_label <- factor(to.plot$group_label, levels=unique(to.plot$group_label))
+  
   # Plot
   p <- ggplot(to.plot, aes_string(x="sample", y="view_label", fill="combi")) +
     geom_tile() +
