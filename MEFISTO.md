@@ -17,33 +17,16 @@ For more details you can read our preprint:
 
 ## Installation
 
-Currently, MEFISTO still lives on a separate branch and will be merged in the coming days.
-If you want work with it before the merge is concluded, please clone the repository and switch to the mefisto branch. Installation can be done as detailed below.
+MEFISTO was integrated into the MOFA framework and you can follow our [installation instructions for MOFA](https://biofam.github.io/MOFA2/installation.html). 
 
-### Python dependencies 
-
-Python dependencies can be installed using pip (from the Unix terminal)
+Please make sure you have the latest version of MOFA2 (>=1.1.4) and mofapy2 (>=0.5.8) for MEFISTO to work. If you already using MOFA, you might need to update the R and python package, e.g. using
 ```r
-pip install git+https://github.com/bioFAM/MOFA2@mefisto
+pip install --upgrade mofapy2
 ```
-
-or using
-
+and
 ```r
-git clone https://github.com/bioFAM/MOFA2
-git checkout mefisto
-pyton setup.py install
+devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data --no-build-vignettes"))
 ```
-
-### R package
-
-The R package can be installed using R:
-
-```r
-remotes::install_github("bioFAM/MOFA2/MOFA2", ref= "mefisto", build_opts = c("--no-resave-data --no-build-vignettes"))
-# or use the devtools::install_github() equivalent
-```
-
 
 ## Tutorials/Vignettes
 * [**MEFISTO with temporal data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_temporal.html): illustration of the method with a temporal covariate
