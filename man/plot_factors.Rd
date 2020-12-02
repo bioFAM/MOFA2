@@ -14,7 +14,7 @@ plot_factors(
   shape_by = NULL,
   color_name = NULL,
   shape_name = NULL,
-  dot_size = 1.5,
+  dot_size = 2,
   alpha = 1,
   legend = TRUE,
   stroke = NULL,
@@ -46,7 +46,7 @@ plot_factors(
 
 \item{shape_name}{name for shape legend.}
 
-\item{dot_size}{numeric indicating dot size (default is 1.5).}
+\item{dot_size}{numeric indicating dot size (default is 2).}
 
 \item{alpha}{numeric indicating dot transparency (default is 1).}
 
