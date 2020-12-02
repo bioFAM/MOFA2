@@ -28,6 +28,12 @@ and
 devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data --no-build-vignettes"))
 ```
 
+You can also install the R package MOFA2 from [Bioconductor](https://bioconductor.org/packages/devel/bioc/html/MOFA2.html). Note that MEFISTO requires the use of the development version. If you have no installation of the python package mofapy2 yet, this will also take care to install these dependencies when training your first MOFA object. Otherwise make sure to have the latest version of mofapy2 (>=0.5.8).
+```
+BiocManager::install(version='devel')
+BiocManager::install("MOFA2")
+```
+
 ## Tutorials/Vignettes
 * [**MEFISTO with temporal data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_temporal.html): illustration of the method with a temporal covariate
 * [**MEFISTO with spatial data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_spatial.html): illustration of the method with a spatial covariate
