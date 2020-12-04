@@ -14,9 +14,7 @@ run_mofa(object, outfile = NULL, save_data = TRUE, use_basilisk = FALSE)
 \item{save_data}{logical indicating whether to save the training data in the hdf5 file. 
 This is useful for some downstream analysis (mainly functions with the prefix \code{plot_data}), but it can take a lot of disk space.}
 
-\item{use_basilisk}{use \code{basilisk} to automatically install a conda environment with mofapy2 and all dependencies? 
-If \code{FALSE} (default), you should specify the right python binary when loading R with \code{reticulate::use_python(..., force=TRUE)}
-or the right conda environment with \code{reticulate::use_condaenv(..., force=TRUE)}.}
+\item{use_basilisk}{Not available for R3.6}
 }
 \value{
 a trained \code{\link{MOFA}} object
@@ -29,8 +27,7 @@ This function is called once a MOFA object has been prepared (using \code{\link{
 In this step the R package calls the \code{mofapy2} Python package, where model training is performed. \cr
 The interface with Python is done with the \code{\link{reticulate}} package. 
 If you have several versions of Python installed and R is not detecting the correct one, 
-you can change it using \code{reticulate::use_python} when loading the R session. 
-Alternatively, you can let us install mofapy2 for you using \code{basilisk} if you set use_basilisk to \code{TRUE}
+you can change it using \code{reticulate::use_python} when loading the R session.
 }
 \examples{
 # Load data (in data.frame format)
@@ -44,5 +41,5 @@ MOFAmodel <- create_mofa(dt)
 MOFAmodel <- prepare_mofa(MOFAmodel)
 
 # Run the MOFA model
-\dontrun{ MOFAmodel <- run_mofa(MOFAmodel, use_basilisk = TRUE) }
+\dontrun{ MOFAmodel <- run_mofa(MOFAmodel) }
 }
