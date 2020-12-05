@@ -15,7 +15,7 @@ RUN R --vanilla -e "\
            'ggplot2', 'ggbeeswarm', 'scales', 'GGally', 'doParallel', 'RColorBrewer', \
            'cowplot', 'ggrepel', 'foreach', 'reticulate', 'HDF5Array', 'DelayedArray', \
            'ggpubr', 'forcats', 'Rtsne', 'uwot', \
-           'systemfonts', 'ragg', 'Cairo', 'ggrastr', 'basilisk'), \ 
+           'systemfonts', 'ragg', 'Cairo', 'ggrastr', 'basilisk', 'mvtnorm'), \ 
          BiocManager::install)"
 RUN R CMD INSTALL --build .
 
