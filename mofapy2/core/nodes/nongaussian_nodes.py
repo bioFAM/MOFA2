@@ -322,6 +322,7 @@ class Tau_Jaakkola(Node):
 
     def removeFactors(self, idx, axis=None):
         pass
+
 class Bernoulli_PseudoY_Jaakkola(PseudoY):
     """
     Class for a Bernoulli pseudodata node using the Jaakkola approach:

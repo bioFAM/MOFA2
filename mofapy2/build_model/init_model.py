@@ -672,11 +672,11 @@ class initModel(object):
             if self.lik[m]=="gaussian":
                 Y_list[m] = Y_Node(dim=(self.N,self.D[m]), value=self.data[m], groups=self.groups_ix)
             elif self.lik[m]=="poisson":
-                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
+                Y_list[m] = Poisson_PseudoY(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m], groups=self.groups_ix)
             elif self.lik[m]=="bernoulli":
-                Y_list[m] =  Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
+                Y_list[m] = Bernoulli_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m], groups=self.groups_ix)
             elif self.lik[m]=="zero_inflated":
-                Y_list[m] =  Zero_Inflated_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
+                Y_list[m] = Zero_Inflated_PseudoY_Jaakkola(dim=(self.N,self.D[m]), obs=self.data[m], E=self.data[m])
         self.Y = Multiview_Mixed_Node(self.M, *Y_list)
         self.nodes["Y"] = self.Y
 
