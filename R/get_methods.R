@@ -624,5 +624,4 @@ get_variance_explained <- function(object, groups = "all", views = "all", factor
   }
   
   return(r2)
-  
 }

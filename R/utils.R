@@ -23,6 +23,24 @@
 #     message("Such (strong) factors usually appear when count-based assays are not properly normalised by library size.")
 # }
 
+# x: a named vector, where names correspond to sample names
+.add_column_to_metadata <- function(object, x, name) {
+  
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  stopifnot(!is.null(names(x)))
+  stopifnot(names(x) %in% unlist(samples_names(object)))
+  
+  # sort vector to match samples names (fill with NA where applicable)
+  vec <- rep(NA,sum(get_dimensions(object)[["N"]]))
+  names(vec) <- object@samples_metadata$sample
+  vec[names(x)] <- x
+  
+  # add to metadata
+  object@samples_metadata[[name]] <- x
+  
+  return(object)  
+}
 
 .infer_likelihoods <- function(object) {
   
