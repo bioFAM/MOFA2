@@ -290,6 +290,7 @@ get_default_training_options <- function(object) {
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
 #'  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
 #'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
+#'  \item{\strong{use_float32}:}{ logical indicating whether use float32 instead of float64 arrays to increase speed and memory usage. Default is FALSE.}
 #'  }
 #' @return Returns a list with the default data options.
 #' @importFrom utils modifyList
@@ -316,8 +317,9 @@ get_default_data_options <- function(object) {
   
   # Define default data options
   data_options <- list(
-    scale_views = FALSE,    # (logical) Scale views to unit variance?
-    scale_groups = FALSE    # (logical) Scale groups to unit variance?
+    scale_views = FALSE,     # (logical) Scale views to unit variance?
+    scale_groups = FALSE,    # (logical) Scale groups to unit variance?
+    use_float32 = FALSE       # (logical) Use float32 instead of float64 arrays to increase speed and memory usage
   )
   
   # if data_options already exists, replace the default values but keep the additional ones
