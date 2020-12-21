@@ -14,8 +14,10 @@ TO-DO:
 """
 
 import scipy as s
+import numpy as np
 
-from mofapy2.core.utils import *  # TODO prob not necessary ?
+# from mofapy2.config import settings
+# from mofapy2.core.utils import *  # TODO prob not necessary ?
 
 # General class for probability distributions
 class Distribution(object):
@@ -62,6 +64,11 @@ class Distribution(object):
         # assert len(p_dim) == 1, "Parameters have different dimensionalities"
         assert len(e_dim) == 1, "Expectations have different dimensionalities"
         # assert e_dim == p_dim, "Parameters and Expectations have different dimensionality"
+
+    def to_float32(self):
+        """ Convert numpy arrays from float64 to float32 """
+        for i in self.params.keys(): self.params[i] = self.params[i].astype(np.float32)
+        for i in self.expectations.keys(): self.expectations[i] = self.expectations[i].astype(np.float32)
 
     def removeDimensions(self, axis, idx):
         """ General method to remove undesired dimensions

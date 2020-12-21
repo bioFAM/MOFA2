@@ -1,7 +1,9 @@
 import scipy as s
 from .basic_distributions import Distribution
 
-from mofapy2.core.utils import *
+# from mofapy2.core.utils import *
+from mofapy2 import config
+
 
 class Bernoulli(Distribution):
     """
@@ -22,6 +24,9 @@ class Bernoulli(Distribution):
             self.updateExpectations()
         else:
             self.expectations = { 'E':s.ones(dim)*E }
+
+        # float64 -> float32
+        if config["use_float32"]: self.to_float32()
 
         # Check that dimensionalities match
         self.CheckDimensionalities()

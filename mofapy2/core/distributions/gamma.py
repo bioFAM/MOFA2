@@ -2,8 +2,8 @@ import scipy as s
 import scipy.special as special
 from .basic_distributions import Distribution
 
-from mofapy2.core.utils import *
-
+# from mofapy2.core.utils import *
+from mofapy2 import config
 
 class Gamma(Distribution):
     """
@@ -33,6 +33,9 @@ class Gamma(Distribution):
             self.updateExpectations()
         else:
             self.expectations = { 'E':s.ones(dim)*E, 'lnE':s.ones(dim)*lnE }
+
+        # float64 -> float32
+        if config["use_float32"]: self.to_float32()
 
         # Check that dimensionalities match
         self.CheckDimensionalities()

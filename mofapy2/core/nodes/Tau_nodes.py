@@ -105,7 +105,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         Z_gpu = gpu_utils.array(Z)
         W_gpu = gpu_utils.array(W).T
 
-        # Calculate terms for the update (SPEED EFFICIENT, MEMORY INEFFICIENT)
+        # Calculate terms for the update (SPEED EFFICIENT, MEMORY INEFFICIENT FOR GPU)
         # ZW = Z_gpu.dot(W_gpu)
         # tmp = gpu_utils.asnumpy( gpu_utils.square(Y_gpu) \
         #     + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
@@ -113,7 +113,7 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
         #     - 2*ZW*Y_gpu )
         # tmp[mask] = 0.
 
-        # Calculate terms for the update (SPEED INEFFICIENT, MEMORY EFFICIENT)
+        # Calculate terms for the update (SPEED INEFFICIENT, MEMORY EFFICIENT FOR GPU)
         tmp = gpu_utils.asnumpy( gpu_utils.square(Y_gpu) \
             + gpu_utils.array(ZZ).dot(gpu_utils.array(WW.T)) \
             - gpu_utils.dot(gpu_utils.square(Z_gpu),gpu_utils.square(W_gpu)) + gpu_utils.square(Z_gpu.dot(W_gpu)) \

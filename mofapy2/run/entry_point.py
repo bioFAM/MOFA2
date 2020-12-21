@@ -16,9 +16,7 @@ from mofapy2.build_model.utils import guess_likelihoods
 from mofapy2.build_model.train_model import train_model
 from mofapy2.core import gp_utils
 
-# import matplotlib.pyplot as plt
-
-
+from mofapy2 import config
 
 def keyboardinterrupt_saver(func):
     @wraps(func)
@@ -70,8 +68,10 @@ class entry_point(object):
         self.print_banner()
         self.dimensionalities = {"C":0}
         self.model = None
-        self.imputed = False # flag
-        self.Zcompleted = False # flag
+
+        # flags 
+        self.imputed = False     # probabilistic imputation
+        self.Zcompleted = False  # mefisto
 
     def print_banner(self):
         """ Method to print the mofapy2 banner """
@@ -198,7 +198,6 @@ class entry_point(object):
         data: a nested list, first dimension for views, second dimension for groups.
               The dimensions of each matrix must be (samples,features)
         """
-
         if not hasattr(self, 'data_opts'): 
             # print("Data options not defined, using default values...\n")
             self.set_data_options()
@@ -227,7 +226,11 @@ class entry_point(object):
                         data[m][p] = data[m][p].values
                     else:
                         print("Error, input data is not a numpy.ndarray or a pandas dataframe"); sys.stdout.flush(); sys.exit()
-                data[m][p] = data[m][p].astype(np.float64)
+
+                if config["use_float32"]:
+                    data[m][p] = data[m][p].astype(np.float32)
+                else:
+                    data[m][p] = data[m][p].astype(np.float64)
 
         # Save dimensionalities
         M = self.dimensionalities["M"] = len(data)
@@ -937,11 +940,14 @@ class entry_point(object):
           print("- View %d (%s): %s" % (m,self.data_opts["views_names"][m],self.likelihoods[m]) )
         print("\n")
 
-    def set_data_options(self, scale_views=False, scale_groups = False, center_groups = True):
+    def set_data_options(self, scale_views=False, scale_groups = False, center_groups = True, use_float32 = False):
         """ Set data processing options """
 
         if not hasattr(self, 'data_opts'): self.data_opts = {}
         self.data_opts['center_groups'] = center_groups
+
+        # change from float64 to float32 (to decrease memory usage and improve speed)
+        config["use_float32"] = use_float32
 
         # Scale views to unit variance
         self.data_opts['scale_views'] = scale_views

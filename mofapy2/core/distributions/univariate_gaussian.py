@@ -2,7 +2,8 @@ import scipy as s
 import scipy.stats as stats
 from .basic_distributions import Distribution
 
-from mofapy2.core.utils import *
+# from mofapy2.core.utils import *
+from mofapy2 import config
 
 class UnivariateGaussian(Distribution):
     """
@@ -34,6 +35,9 @@ class UnivariateGaussian(Distribution):
 
         if E2 is not None:
             self.expectations['E2'] = s.ones(dim)*E2
+
+        # float64 -> float32
+        if config["use_float32"]: self.to_float32()
 
         # Check that dimensionalities match
         self.CheckDimensionalities()
