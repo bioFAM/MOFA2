@@ -42,6 +42,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     stop("'object' has to be an instance of MOFA")
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
+  if (length(object@model_options)==0 | length(object@training_options)==0) {
+    stop("The model is not prepared for training, you have to run `prepare_mofa` before `run_mofa`")
+  }
   
   # If no outfile is provided, store a file in the /tmp folder with the respective timestamp
   if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
