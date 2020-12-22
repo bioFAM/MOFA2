@@ -374,7 +374,7 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   data <- object@data
   
   # Collect covariate
-  if(any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
+  if(!.hasSlot(object, "covariates") || any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
     covariate <- NULL
   if(!is.null(covariate)){
     if(is.numeric(covariate)){

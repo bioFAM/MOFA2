@@ -135,7 +135,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   )
   
   # Set covariates
-  if (!is.null(object@covariates)) {
+  if (.hasSlot(object, "covariates") && !is.null(object@covariates)) {
     sample_cov_to_py <- r_to_py(unname(lapply(object@covariates, function(x) unname(r_to_py(t(x))))))
     cov_names_2_py <- r_to_py(covariates_names(object))
     mofa_entrypoint$set_covariates(sample_cov_to_py, cov_names_2_py)
@@ -176,7 +176,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   }
   
   # Set smooth covariate options  
-  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
+  if (.hasSlot(object, "covariates") && !is.null(object@covariates) & length(object@smooth_options)>1) {
     warping_ref <- which(groups_names(object) == object@smooth_options$warping_ref)
     mofa_entrypoint$set_smooth_options(
       scale_cov           = object@smooth_options$scale_cov,
@@ -201,7 +201,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   mofa_entrypoint$run()
 
   # Interpolate
-  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
+  if (.hasSlot(object, "covariates") && !is.null(object@covariates) & length(object@smooth_options)>1) {
     if(!is.null(object@smooth_options$new_values)) {
       new_values <- object@smooth_options$new_values
       if(is.null(dim(new_values))){

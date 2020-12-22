@@ -54,7 +54,7 @@ get_elbo <- function(object) {
 #' ls <- get_lengthscales(model)
 get_lengthscales <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if(!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("No covariates specified in 'object'")
   if(is.null(object@training_stats$length_scales)) stop("No lenghtscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
   tmp <- object@training_stats$length_scales
   return(tmp)
@@ -75,7 +75,7 @@ get_lengthscales <- function(object) {
 #' s <- get_scales(model)
 get_scales <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if(!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("No covariates specified in 'object'")
   if(is.null(object@training_stats$scales)) stop("No scales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
   tmp <- object@training_stats$scales
   return(tmp)
@@ -90,7 +90,7 @@ get_scales <- function(object) {
 #' @export
 get_group_kernel <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if(!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("No covariates specified in 'object'")
   if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
   
   if(!object@smooth_options$model_groups || object@dimensions$G == 1) {

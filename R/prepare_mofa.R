@@ -46,11 +46,11 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (any(object@dimensions$N<10) & !length(object@covariates)>=1) warning("Some group(s) have less than 10 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
+  if (any(object@dimensions$N<10) & !(.hasSlot(object, "covariates") && length(object@covariates)>=1)) warning("Some group(s) have less than 10 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
   if (any(object@dimensions$D<15)) warning("Some view(s) have less than 15 features, MOFA will have little power to to learn meaningful factors for these view(s)....")
   if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to perform a more stringent feature selection before creating the MOFA object....")
-  
-  # Get data options
+
+    # Get data options
   message("Checking data options...")
   if (is.null(data_options)) {
     message("No data options specified, using default...")
@@ -136,7 +136,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   }
 
   # Get smooth covariates options
-  if (length(object@covariates)>=1) {
+  if (.hasSlot(object, "covariates") && length(object@covariates)>=1) {
     if (is.null(smooth_options)) {
         message("Covariates provided but no smooth options specified, using default...")
         object@smooth_options <- get_default_smooth_options(object)
