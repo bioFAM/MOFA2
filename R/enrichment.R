@@ -89,9 +89,11 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   
   # Subset weights by sign
   if (sign=="positive") {
-    W[W<0] <- NA
+    W[W<0] <- 0
+    # W[W<0] <- NA
   } else if (sign=="negative") {
-    W[W>0] <- NA
+    W[W>0] <- 0
+    # W[W>0] <- NA
     W <- abs(W)
   }
   
