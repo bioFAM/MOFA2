@@ -1,4 +1,4 @@
-calculate_contribution_scores_per_sample <- function(object, views = "all", groups = "all", factors = "all", scale = TRUE) {
+calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all", scale = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -14,6 +14,9 @@ calculate_contribution_scores_per_sample <- function(object, views = "all", grou
   r2.per.factor <- get_variance_explained(object, factors=factors, views = views, groups = groups)[["r2_per_factor"]]
   r2.per.view <- get_variance_explained(object, factors=factors, views = views, groups = groups)[["r2_total"]]
   
+  # calculate relative variance explained values (each view goes from 0 to 1)
+  r2.per.factor <- lapply(1:length(groups), function(g) sweep(r2_per_factor[[1]], 2, r2.per.view,"/"))
+  
   # fetch factors
   Z <- get_factors(object, groups=groups, factors=factors)
   
@@ -21,22 +24,16 @@ calculate_contribution_scores_per_sample <- function(object, views = "all", grou
   Z <- lapply(Z, function(z) apply(z, 2, function(x) abs(x)/max(abs(x)) ))
   
   # compute contribution scores per sample
-  unscaled.scores <- lapply(1:length(groups), function(g) Z[[g]] %*% r2.per.factor[[g]])
-  
-  # scale data-modality scores to the total variance explained
-  if (scale) {
-    scaled.scores <- lapply(1:length(groups), function(g) sweep(unscaled.scores[[g]], 2, r2.per.view[[g]],"/"))
-    names(scaled.scores) <- groups
-  }
+  contribution_scores <- lapply(1:length(groups), function(g) Z[[g]] %*% r2.per.factor[[g]])
   
   # Add contributions to the sample metadata
-  foo <- do.call("rbind",scaled.scores)
-  for (i in colnames(foo)) {
-    object <- .add_column_to_metadata(object, foo[,i], paste0(i,"_contribution"))
+  contribution_scores <- do.call("rbind",contribution_scores)
+  for (i in colnames(contribution_scores)) {
+    object <- .add_column_to_metadata(object, contribution_scores[,i], paste0(i,"_contribution"))
   }
   
   # Store in cache
-  object@cache[["contribution_scores"]] <- scaled.scores
+  object@cache[["contribution_scores"]] <- contribution_scores
 
   return(object)
   
@@ -58,7 +55,7 @@ get_contribution_scores <- function(object, groups = "all", views = "all", facto
   if (.hasSlot(object, "cache") && ("contribution_scores" %in% names(object@cache))) {
     scores_list <- object@cache[["contribution_scores"]]
   } else {
-    scores_list <- calculate_contribution_scores_per_sample(object, factors = factors, views = views, groups = groups)
+    scores_list <- calculate_contribution_scores(object, factors = factors, views = views, groups = groups)
   }
   
   # Convert to data.frame format
@@ -83,8 +80,9 @@ plot_contribution_scores <- function(object, samples = "all", group_by = NULL, r
   # get contribution scores
   scores <- get_contribution_scores(object, as.data.frame = TRUE, ...)
   
+  # TO-DO: CHECK THAT GROUP IS A CHARACTER/FACTOR
   # individual samples
-  if (is.null(group)) {
+  if (is.null(group_by)) {
     
     to.plot <- scores
     if (return_data) return(to.plot)
