@@ -1,0 +1,7 @@
+pandas
+scipy>=1.5.1
+numpy
+sklearn
+argparse
+h5py
+dtw-python>=1.1.5

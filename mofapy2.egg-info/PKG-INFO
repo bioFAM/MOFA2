@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: mofapy2
+Version: 0.5.8
+Summary: Multi-Omics Factor Analysis v2, a statistical framework for the integration of multi-group and multi-omics data
+Home-page: http://github.com/bioFAM/MOFA2
+Author: Ricard Argelaguet <ricard.argelaguet@gmail.com>, Damien Arnol, Danila Bredikhin, Britta Velten <britta.velten@gmail.com>
+Author-email: UNKNOWN
+License: LGPL-3.0
+Description: UNKNOWN
+Platform: UNKNOWN
