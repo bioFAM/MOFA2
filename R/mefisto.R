@@ -296,6 +296,7 @@ plot_group_kernel <- function(object, factors = "all", groups = "all", ...) {
 #' @details The smoothness score is given by the scale parameter for the underlying Gaussian process of each factor.
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2
+#' @importFrom tidyr gather
 #' @export
 #' @examples 
 #' # Using an existing trained model
