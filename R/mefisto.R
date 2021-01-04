@@ -106,7 +106,7 @@ set_covariates <- function(object, covariates) {
   names(covariates) <- groups_names(object)
   
   # Sanity checks
-  stopifnot(all(sapply(object@covariates, ncol) == object@dimensions[["N"]]))
+  stopifnot(all(sapply(covariates, ncol) == object@dimensions[["N"]]))
   
   # add covariates to the MOFA object
   object@covariates <- covariates
@@ -662,7 +662,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   
   # Define covariates
   if (is.null(covariates)) {
-    if (any(object@dimensions[["C"]] < 1, is.null(object@covariates)))  
+    if (!.hasSlot(object, "covariates") || any(object@dimensions[["C"]] < 1, is.null(object@covariates)))  
       stop("No covariates found in object. Please specify one.")
     covariates <- covariates_names(object)
   }
@@ -875,7 +875,7 @@ interpolate_factors <- function(object, new_values) {
   }
   # sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (is.null(object@covariates)) stop("'object' does not contain any covariates.")
+  if (!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("'object' does not contain any covariates.")
   if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
   if (is.null(object@expectations$Sigma)) stop("'object' does not have any expectations of Sigma.")
   if (!is.numeric(new_values)) stop("'new_values' should be numeric.")
@@ -956,7 +956,7 @@ interpolate_factors <- function(object, new_values) {
 plot_alignment <- function(object){
   # sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (is.null(object@covariates)) stop("'object' does not contain any covariates.")
+  if (!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("'object' does not contain any covariates.")
   if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
   if (!object@smooth_options$warping) stop("No warping applied in this MOFA object")
   df_w <- get_covariates(object, 1, as.data.frame = TRUE, warped = TRUE)
