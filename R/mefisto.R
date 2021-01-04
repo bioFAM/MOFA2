@@ -342,6 +342,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (object@dimensions$G == 1) stop("'object' has only one group, more than one group are required to determine sharedness.")
   
   # Define factors
   factors <- .check_and_get_factors(object, factors)
