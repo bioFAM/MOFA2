@@ -37,7 +37,7 @@ devtools::install_github("bioFAM/MOFA2", build_opts = c("--no-resave-data --no-b
 ```
 
 #### Notes on the connection of R to Python
-The connection between R and Python is dona via [reticulate](ttps://rstudio.github.io/reticulate). Latest version of MOFA2 use [basilisk](https://bioconductor.org/packages/release/bioc/html/basilisk.html) to automatically set up a Python environment and install all required dependcies. Alternatively, you can install the python pacakge `mofapy2` manually as described above and specify to use this installation when running mofa. Note that this sometimes this needs [configuration]((https://rstudio.github.io/reticulate/reference/use_python.html)) and it is the source of most problems in the MOFA R package, specially when you have multiple versions of Python installed. See our FAQ section or reach us if you have issues.
+The connection between R and Python is dona via [reticulate](ttps://rstudio.github.io/reticulate). Latest version of MOFA2 use [basilisk](https://bioconductor.org/packages/release/bioc/html/basilisk.html) to automatically set up a Python environment and install all required dependencies. Alternatively, you can install the python pacakge `mofapy2` manually as described above and specify to use this installation when running mofa. Note that this sometimes this needs [configuration]((https://rstudio.github.io/reticulate/reference/use_python.html)) and it is the source of most problems in the MOFA R package, specially when you have multiple versions of Python installed. See our FAQ section or reach us if you have issues.
 
 #### Using MOFA2 with older R versions
 
