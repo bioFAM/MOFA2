@@ -527,8 +527,8 @@ class Sigma_Node_base(Node):
             self.zeta[k] = best_zeta
 
         self.calc_sigma_terms(only_inverse=False)
-        print('Sigma node has been optimised:\n- Lengthscales = %s \n- Scale = %s' % \
-            (np.array2string(self.get_ls(), precision=2, separator=", "), np.array2string(1-self.get_zeta(), precision=2, separator=", ")))
+        # print('Sigma node has been optimised:\n- Lengthscales = %s \n- Scale = %s' % \
+        #     (np.array2string(self.get_ls(), precision=2, separator=", "), np.array2string(1-self.get_zeta(), precision=2, separator=", ")))
 
     def updateParameters(self, ix, ro):
         """

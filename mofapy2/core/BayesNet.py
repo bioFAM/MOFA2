@@ -281,7 +281,7 @@ class BayesNet(object):
 
                 # Print other statistics
                 if self.options['verbose']:
-                    self.print_verbose_message()
+                    self.print_verbose_message(i)
 
 
                 iter_time[i] = time()-t
@@ -307,7 +307,7 @@ class BayesNet(object):
                 # self.train_stats['length_scales'] = self.lscales
                 # self.train_stats['scales'] = self.scales
 
-    def print_verbose_message(self):
+    def print_verbose_message(self, i):
         """Method to print training statistics if Verbose is TRUE"""
 
         # Memory usage (does not work in Windows)
@@ -336,6 +336,13 @@ class BayesNet(object):
         # Tau
         tau = self.nodes["Tau"].getExpectation()
         print("- Tau per view (average):  " + "   ".join([ "View %s: %.2f" % (m,tau[m].mean()) for m in range(self.dim["M"])]))
+
+        #Sigma:
+        if 'Sigma' in self.nodes.keys():
+            sigma = self.nodes["Sigma"]
+            if i >= sigma.start_opt and i % sigma.opt_freq == 0:
+                print('Sigma node has been optimised:\n- Lengthscales = %s \n- Scale = %s' % \
+                (np.array2string(sigma.get_ls(), precision=2, separator=", "), np.array2string(1-sigma.get_zeta(), precision=2, separator=", ")))
 
         print("\n")
 
@@ -568,7 +575,7 @@ class StochasticBayesNet(BayesNet):
                 print("- Step size: %.3f" % ro )
 
             if self.options['verbose']:
-                self.print_verbose_message()
+                self.print_verbose_message(i)
             # print("")
 
             iter_time[i] = time()-t
