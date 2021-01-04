@@ -1,10 +1,10 @@
 ##########################################################################
-## Functions to use smooth covariates, as part of the MEFISTO framework ##
+## Functions to use continuous covariates, as part of the MEFISTO framework ##
 ##########################################################################
 
 #' @title Add covariates to a MOFA model
 #' @name set_covariates
-#' @description Function to add continuous covariate(s) to a \code{\link{MOFA}} object for smooth training (MEFISTO) 
+#' @description Function to add continuous covariate(s) to a \code{\link{MOFA}} object for training with MEFISTO
 #' @param object an untrained \code{\link{MOFA}}
 #' @param covariates Sample-covariates to be passed to the model.
 #' This can be either:
@@ -15,7 +15,7 @@
 #'  }
 #' Note that the covariate should be numeric and continuous.
 #' @return Returns an untrained \code{\link{MOFA}} with covariates filled in the corresponding slots
-#' @details To activate the functional MEFISTO framework, specify smooth_options when preparing the training using \code{prepare_mofa} 
+#' @details To activate the functional MEFISTO framework, specify mefisto_options when preparing the training using \code{prepare_mofa} 
 #' @export
 #' @examples
 #' #' # Simulate data
@@ -159,9 +159,9 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 }
 
 
-#' @title Get default options for smooth covariates
-#' @name get_default_smooth_options
-#' @description Function to obtain the default options for the usage of smooth covariates with MEFISTO
+#' @title Get default options for MEFISTO covariates
+#' @name get_default_mefisto_options
+#' @description Function to obtain the default options for the usage of MEFISTO covariates with MEFISTO
 #' @param object an untrained \code{\link{MOFA}} object
 #' @details The options are the following: \cr
 #' \itemize{
@@ -181,7 +181,7 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 #'  This should be numeric matrix in the same format with covariate(s) in rows and new values in columns.
 #'  Default is NULL, leading to no interpolation.
 #' }
-#' @return Returns a list with default options for the smooth covariate(s) functionality.
+#' @return Returns a list with default options for the MEFISTO covariate(s) functionality.
 #' @importFrom utils modifyList
 #' @export
 #' @examples 
@@ -198,11 +198,11 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 #' sm <- create_mofa(data = dd$data)
 #' sm <- set_covariates(sm, covariates = time)
 #' 
-#' smooth_opt <- get_default_smooth_options(sm)
+#' MEFISTO_opt <- get_default_mefisto_options(sm)
 
-get_default_smooth_options <- function(object) {
+get_default_mefisto_options <- function(object) {
   
-  smooth_options <- list(
+  mefisto_options <- list(
     
     # Standard options
     scale_cov = FALSE,            # (logical) Scale covariates?
@@ -226,11 +226,11 @@ get_default_smooth_options <- function(object) {
     
   )
   
-  # if smooth_options already exist, replace the default values but keep the additional ones
-  if (length(object@smooth_options)>0)
-    smooth_options <- modifyList(smooth_options, object@smooth_options)
+  # if mefisto_options already exist, replace the default values but keep the additional ones
+  if (length(object@mefisto_options)>0)
+    mefisto_options <- modifyList(mefisto_options, object@mefisto_options)
   
-  return(smooth_options)
+  return(mefisto_options)
 }
 
 
@@ -851,12 +851,12 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
 #' @title Interpolate factors in MEFISTO based on new covariate values
 #' @name interpolate_factors
 #' @description Function to interpolate factors in MEFISTO based on new covariate values.
-#' @param object a \code{\link{MOFA}} object trained with smooth options and a covariate
+#' @param object a \code{\link{MOFA}} object trained with MEFISTO options and a covariate
 #' @param new_values a matrix containing the new covariate values to inter/extrapolate to. Should be
 #'  in the same format as the covariated used for training.
 #' @return Returns the \code{\link{MOFA}} with interpolated factor values filled in the corresponding slot (interpolatedZ)
 #' @details This function requires the functional MEFISTO framework to be used in training. 
-#' Use \code{set_covariates} and specify smooth_options when preparing the training using \code{prepare_mofa}. 
+#' Use \code{set_covariates} and specify mefisto_options when preparing the training using \code{prepare_mofa}. 
 #' Currenlty, only the mean of the interpolation is provided from R.
 #' @export
 #' @examples
@@ -876,7 +876,7 @@ interpolate_factors <- function(object, new_values) {
   # sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (is.null(object@covariates)) stop("'object' does not contain any covariates.")
-  if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
+  if (is.null(object@mefisto_options)) stop("'object' does have MEFISTO training options.")
   if (is.null(object@expectations$Sigma)) stop("'object' does not have any expectations of Sigma.")
   if (!is.numeric(new_values)) stop("'new_values' should be numeric.")
   
@@ -897,7 +897,7 @@ interpolate_factors <- function(object, new_values) {
   } 
   
   # get covariates of old and new values
-  if(object@smooth_options$warping){
+  if(object@mefisto_options$warping){
     old_covariates <- samples_metadata(object)[, paste(covariates_names(object), "warped", sep = "_"), drop = FALSE] %>% t()
   } else{
     old_covariates <- samples_metadata(object)[, covariates_names(object), drop = FALSE] %>% t()
@@ -950,22 +950,22 @@ interpolate_factors <- function(object, new_values) {
 #' @param object a \code{\link{MOFA}} object using MEFISTO with warping
 #' @return ggplot object showing the alignment
 #' @details This function requires the functional MEFISTO framework to be used in training. 
-#' Use \code{set_covariates} and specify smooth_options when preparing the training using \code{prepare_mofa}. 
+#' Use \code{set_covariates} and specify mefisto_options when preparing the training using \code{prepare_mofa}. 
 #' @export
 #' 
 plot_alignment <- function(object){
   # sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (is.null(object@covariates)) stop("'object' does not contain any covariates.")
-  if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
-  if (!object@smooth_options$warping) stop("No warping applied in this MOFA object")
+  if (is.null(object@mefisto_options)) stop("'object' does have MEFISTO training options.")
+  if (!object@mefisto_options$warping) stop("No warping applied in this MOFA object")
   df_w <- get_covariates(object, 1, as.data.frame = TRUE, warped = TRUE)
   df_nw <- get_covariates(object, 1, as.data.frame = TRUE, warped = FALSE)
   
   df <- left_join(df_w, df_nw, by = c("sample"), suffix = c(".warped", ".unaligned"))
   df <- left_join(df, select(samples_metadata(object), group, sample), by = "sample")
   
-  yname <- object@smooth_options$warping_ref
+  yname <- object@mefisto_options$warping_ref
   if(!yname %in% groups_names(object)){
       yname <- "reference_value"
   }

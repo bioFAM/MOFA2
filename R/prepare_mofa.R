@@ -16,7 +16,7 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
-#' @param smooth_options list of options for smooth inference (see \code{\link{get_default_smooth_options}} for details). 
+#' @param mefisto_options list of options for MEFISTO (see \code{\link{get_default_mefisto_options}} for details). 
 #' If NULL, default options are used.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @details This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
@@ -42,7 +42,7 @@
 #' model_opts$num_factors <- 10
 #' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
 prepare_mofa <- function(object, data_options = NULL, model_options = NULL, 
-  training_options = NULL, stochastic_options = NULL, smooth_options = NULL) {
+  training_options = NULL, stochastic_options = NULL, mefisto_options = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -135,53 +135,53 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
     object@model_options$num_factors, floor(min(object@dimensions$N/4))))
   }
 
-  # Get smooth covariates options
+  # Get MEFISTO covariates options
   if (length(object@covariates)>=1) {
-    if (is.null(smooth_options)) {
-        message("Covariates provided but no smooth options specified, using default...")
-        object@smooth_options <- get_default_smooth_options(object)
+    if (is.null(mefisto_options)) {
+        message("Covariates provided but no MEFISTO options specified, using default...")
+        object@mefisto_options <- get_default_mefisto_options(object)
     } else {
-        message("Checking inference options for smooth covariates...")
-      # message("Smooth covariates have been provided as prior information.")
-        if (!is(smooth_options,"list") || !setequal(names(smooth_options), names(get_default_smooth_options(object)) ))
-          stop("smooth_options are incorrectly specified, please read the documentation in get_default_smooth_options")
+        message("Checking inference options for MEFISTO covariates...")
+      # message("MEFISTO covariates have been provided as prior information.")
+        if (!is(mefisto_options,"list") || !setequal(names(mefisto_options), names(get_default_mefisto_options(object)) ))
+          stop("mefisto_options are incorrectly specified, please read the documentation in get_default_mefisto_options")
       
-        if (isTRUE(smooth_options$sparseGP)) {
+        if (isTRUE(mefisto_options$sparseGP)) {
           if (object@dimensions[["N"]] < 1000) warning("Warning: sparseGPs should only be used when having a large sample size (>1e3)")
-          if (isTRUE(smooth_options$warping)) stop("Warping is not implemented in conjunction with sparseGPs")
+          if (isTRUE(mefisto_options$warping)) stop("Warping is not implemented in conjunction with sparseGPs")
         }
       
       # Check warping options
-      if (isTRUE(smooth_options$warping)) {
+      if (isTRUE(mefisto_options$warping)) {
         stopifnot(object@dimensions[['G']] > 1) # check that multi-group is TRUE
         
-        if (!is.null(smooth_options$warping_ref)) {
-          stopifnot(length(smooth_options$warping_ref)==1)
-          stopifnot(is.character(smooth_options$warping_ref))
-          stopifnot(smooth_options$warping_ref %in% groups_names(object))
+        if (!is.null(mefisto_options$warping_ref)) {
+          stopifnot(length(mefisto_options$warping_ref)==1)
+          stopifnot(is.character(mefisto_options$warping_ref))
+          stopifnot(mefisto_options$warping_ref %in% groups_names(object))
         }
       }
         
       # Disable spike-slab on the factors
       if(isTRUE(model_options$spikeslab_factors)) {
-        print("Spike-and-Slab sparsity prior on the factors is not available when using smooth covariates, setting to False")
+        print("Spike-and-Slab sparsity prior on the factors is not available when using MEFISTO covariates, setting to False")
         model_options$spikeslab_factors <- FALSE
       }
         
       # Disable stochastic inference
       if (isTRUE(model_options$stochastic)) {
-        print("Stochastic inference is not available when using smooth covariates, setting to False")
+        print("Stochastic inference is not available when using MEFISTO covariates, setting to False")
         model_options$stochastic <- FALSE
         object@stochastic_options <- list()
       }
       
       # TO-DO: CHECKS ON MODEL_GROUPS
       
-      object@smooth_options <- smooth_options
+      object@mefisto_options <- mefisto_options
     }
     
   } else {
-    object@smooth_options <- list()
+    object@mefisto_options <- list()
   }
 
   # Center the data

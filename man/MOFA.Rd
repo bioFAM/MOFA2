@@ -35,7 +35,7 @@ The \code{MOFA} is an S4 class used to store all relevant data to analyse a MOFA
 
 \item{\code{model_options}}{Model options.}
 
-\item{\code{smooth_options}}{Covariates options}
+\item{\code{mefisto_options}}{Options for the use of MEFISO}
 
 \item{\code{dimensions}}{Dimensionalities of the model: 
 M for the number of views, 

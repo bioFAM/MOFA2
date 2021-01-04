@@ -256,15 +256,15 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if (any(grepl("cov_samples", h5ls.out$group))) { 
     if (isTRUE(verbose)) message("Loading covariates options...")
     tryCatch( {
-      object@smooth_options <- as.list(h5read(file, 'smooth_opts', read.attributes = TRUE))
+      object@mefisto_options <- as.list(h5read(file, 'smooth_opts', read.attributes = TRUE))
     }, error = function(x) { print("Covariates options not found, not loading it...") })
     
     # Convert True/False strings to logical values
-    for (i in names(object@smooth_options)) {
-      if (object@smooth_options[i] == "False" | object@smooth_options[i] == "True") {
-        object@smooth_options[i] <- as.logical(object@smooth_options[i])
+    for (i in names(object@mefisto_options)) {
+      if (object@mefisto_options[i] == "False" | object@mefisto_options[i] == "True") {
+        object@mefisto_options[i] <- as.logical(object@mefisto_options[i])
       } else {
-        object@smooth_options[i] <- object@smooth_options[i]
+        object@mefisto_options[i] <- object@mefisto_options[i]
       }
     }
     

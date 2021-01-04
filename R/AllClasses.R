@@ -18,7 +18,7 @@
 #' @slot training_options Model training options.
 #' @slot stochastic_options Stochastic variational inference options.
 #' @slot model_options Model options.
-#' @slot smooth_options Covariates options
+#' @slot mefisto_options  Options for the use of MEFISO
 #' @slot dimensions Dimensionalities of the model: 
 #'    M for the number of views, 
 #'    G for the number of groups,
@@ -54,7 +54,7 @@ setClass("MOFA",
             model_options       = "list",
             training_options    = "list",
             stochastic_options  = "list",
-            smooth_options      = "list",
+            mefisto_options      = "list",
             dimensions          = "list",
             on_disk             = "logical",
             dim_red             = "list",

@@ -179,22 +179,22 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     )
   }
   
-  # Set smooth covariate options  
-  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
-    warping_ref <- which(groups_names(object) == object@smooth_options$warping_ref)
+  # Set MEFISTO covariate options  
+  if (!is.null(object@covariates) & length(object@mefisto_options)>1) {
+    warping_ref <- which(groups_names(object) == object@mefisto_options$warping_ref)
     mofa_entrypoint$set_smooth_options(
-      scale_cov           = object@smooth_options$scale_cov,
-      start_opt           = as.integer(object@smooth_options$start_opt),
-      n_grid              = as.integer(object@smooth_options$n_grid),
-      opt_freq            = as.integer(object@smooth_options$opt_freq),
-      model_groups        = object@smooth_options$model_groups,
-      sparseGP            = object@smooth_options$sparseGP,
-      frac_inducing       = object@smooth_options$frac_inducing,
-      warping             = object@smooth_options$warping,
-      warping_freq        = as.integer(object@smooth_options$warping_freq),
+      scale_cov           = object@mefisto_options$scale_cov,
+      start_opt           = as.integer(object@mefisto_options$start_opt),
+      n_grid              = as.integer(object@mefisto_options$n_grid),
+      opt_freq            = as.integer(object@mefisto_options$opt_freq),
+      model_groups        = object@mefisto_options$model_groups,
+      sparseGP            = object@mefisto_options$sparseGP,
+      frac_inducing       = object@mefisto_options$frac_inducing,
+      warping             = object@mefisto_options$warping,
+      warping_freq        = as.integer(object@mefisto_options$warping_freq),
       warping_ref         = warping_ref-1, # 0-based python indexing
-      warping_open_begin  = object@smooth_options$warping_open_begin,
-      warping_open_end    = object@smooth_options$warping_open_end
+      warping_open_begin  = object@mefisto_options$warping_open_begin,
+      warping_open_end    = object@mefisto_options$warping_open_end
     )
   }
   
@@ -205,9 +205,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   mofa_entrypoint$run()
 
   # Interpolate
-  if (!is.null(object@covariates) & length(object@smooth_options)>1) {
-    if(!is.null(object@smooth_options$new_values)) {
-      new_values <- object@smooth_options$new_values
+  if (!is.null(object@covariates) & length(object@mefisto_options)>1) {
+    if(!is.null(object@mefisto_options$new_values)) {
+      new_values <- object@mefisto_options$new_values
       if(is.null(dim(new_values))){
         new_values <- matrix(new_values, nrow = 1)
       }

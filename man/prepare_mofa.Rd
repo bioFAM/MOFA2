@@ -10,7 +10,7 @@ prepare_mofa(
   model_options = NULL,
   training_options = NULL,
   stochastic_options = NULL,
-  smooth_options = NULL
+  mefisto_options = NULL
 )
 }
 \arguments{
@@ -28,7 +28,7 @@ If NULL, default options are used.}
 \item{stochastic_options}{list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 If NULL, default options are used.}
 
-\item{smooth_options}{list of options for smooth inference (see \code{\link{get_default_smooth_options}} for details). 
+\item{mefisto_options}{list of options for MEFISTO (see \code{\link{get_default_mefisto_options}} for details). 
 If NULL, default options are used.}
 }
 \value{
