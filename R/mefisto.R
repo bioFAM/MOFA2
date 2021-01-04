@@ -176,7 +176,7 @@ get_covariates <- function(object, covariates = "all", as.data.frame = FALSE, wa
 #'  \item{\strong{warping_ref}:} A character specifying the reference group for warping (only relevant if warping is \code{TRUE})
 #'  \item{\strong{warping_open_begin}:} logical: Warping: Allow for open beginning? (only relevant warping is \code{TRUE})
 #'  \item{\strong{warping_open_end}:} logical: Warping: Allow for open end? (only relevant warping is \code{TRUE})
-#'  \item{\strong{model_groups}:} logical: Model covariance structure across groups? If FALSE, we assume the same patterns in all groups.
+#'  \item{\strong{model_groups}:} logical: Model covariance structure across groups (for more than one group, otherwise FALSE)? If FALSE, we assume the same patterns in all groups. 
 #'  \item{\strong{new_values}:} Values for which to predict the factor values (for interpolation / extrapolation). 
 #'  This should be numeric matrix in the same format with covariate(s) in rows and new values in columns.
 #'  Default is NULL, leading to no interpolation.
@@ -226,6 +226,10 @@ get_default_mefisto_options <- function(object) {
     
   )
   
+  # model_groups is set to FALSE if only one group present
+  if (object@dimensions$G == 1)
+    mefisto_options$model_groups <- FALSE
+    
   # if mefisto_options already exist, replace the default values but keep the additional ones
   if (length(object@mefisto_options)>0)
     mefisto_options <- modifyList(mefisto_options, object@mefisto_options)
