@@ -1,0 +1,3 @@
+[submodule "mofapy2"]
+	path = mofapy2
+	url = git@github.com:bioFAM/mofapy2
