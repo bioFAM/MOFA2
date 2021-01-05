@@ -6,7 +6,9 @@ ADD . /mofa2
 RUN apt-get update && apt-get install -f && apt-get install -y python3 python3-setuptools python3-dev
 RUN apt-get install -y libcurl4-openssl-dev 
 RUN apt-get install -y libcairo2-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libxt-dev libharfbuzz-dev libfribidi-dev
-RUN python3 setup.py install
+
+# Install mofapy2
+RUN python3 -m pip install 'https://github.com/bioFAM/mofapy2/tarball/master'
 
 # Install bioconductor dependencies
 RUN R --vanilla -e "\
