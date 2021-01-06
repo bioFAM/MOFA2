@@ -12,6 +12,8 @@
 #'  Please read the documentation of the corresponding function for more details on your specific data format.
 #' @param data one of the formats above
 #' @param groups group information, only relevant when using the multi-group framework. 
+#' @param extract_metadata logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
+#' not relevant when the input is a list of matrices). Default is \code{TRUE}.
 #' @param ... further arguments that can be passed to the function depending on the inout data format.
 #' See the dpcumentation of above functions for details.
 #' @return Returns an untrained \code{\link{MOFA}} object
@@ -23,26 +25,26 @@
 #' # Load data (in long data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa(dt)
-create_mofa <- function(data, groups = NULL, ...) {
+create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
     
     message("Creating MOFA object from a Seurat object...")
-    object <- create_mofa_from_Seurat(data, groups, ...)
-
-  # Creating MOFA object from a SingleCellExperiment object
+    object <- create_mofa_from_Seurat(data, groups, extract_metadata = extract_metadata, ...)
+    
+    # Creating MOFA object from a SingleCellExperiment object
   } else if (is(data, "SingleCellExperiment")) {
     
     message("Creating MOFA object from a SingleCellExperiment object...")
-    object <- create_mofa_from_SingleCellExperiment(data, groups, ...)
+    object <- create_mofa_from_SingleCellExperiment(data, groups, extract_metadata = extract_metadata, ...)
     
-
+    
     # Creating MOFA object from a data.frame object
   } else if (is(data, "data.frame")) {
     
     message("Creating MOFA object from a data.frame...")
-    object <- create_mofa_from_df(data)
+    object <- create_mofa_from_df(data, extract_metadata = extract_metadata)
     
     # Creating MOFA object from a (sparse) matrix object
   } else if (is(data, "list") && (length(data) > 0) && 
@@ -54,9 +56,9 @@ create_mofa <- function(data, groups = NULL, ...) {
     object <- create_mofa_from_matrix(data, groups)
     
   } else if(is(data, "MultiAssayExperiment")){
-
-    object <- create_mofa_from_MultiAssayExperiment(data, groups, ...)
-
+    
+    object <- create_mofa_from_MultiAssayExperiment(data, groups, extract_metadata = extract_metadata, ...)
+    
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
@@ -106,16 +108,16 @@ create_mofa <- function(data, groups = NULL, ...) {
 #' @param groups a string specifying column name of the colData to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
-#' @param save_metadata logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object
+#' @param extract_metadata logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, save_metadata = FALSE) {
+create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, extract_metadata = FALSE) {
   
   # Sanity check
   if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
     stop("Package \"MultiAssayExperiment\" is required but is not installed.", call. = FALSE)
   } else {
-
+    
     # Re-arrange data for training in MOFA to matrices, fill in NAs
     data_list <- lapply(names(mae), function(m) {
       
@@ -172,7 +174,7 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, save_metad
     groups_names(object) <- groups_nms
     
     # Set metadata
-    if (isTRUE(save_metadata)) {
+    if (isTRUE(extract_metadata)) {
       # Samples metadata
       if (ncol(MultiAssayExperiment::colData(mae)) > 0) {
         object@samples_metadata <- data.frame(MultiAssayExperiment::colData(mae))
@@ -191,7 +193,7 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, save_metad
 #' @param df \code{data.frame} object with at most 5 columns: \code{sample}, \code{group}, \code{feature}, \code{view}, \code{value}. 
 #'   The \code{group} column (optional) indicates the group of each sample when using the multi-group framework.
 #'   The \code{view} column (optional) indicates the view of each feature when having multi-view data.
-#' @param save_metadata Boolean indicating whether to store sample level columns in the data frame as samples metadata
+#' @param extract_metadata  logical indicating whether to incorporate the extra columns as sample metadata into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples
@@ -201,7 +203,7 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, save_metad
 #' # Load data (in long data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa_from_df(dt)
-create_mofa_from_df <- function(df, save_metadata = TRUE) {
+create_mofa_from_df <- function(df, extract_metadata = TRUE) {
   
   # Quality controls
   df <- as.data.frame(df)
@@ -275,10 +277,10 @@ create_mofa_from_df <- function(df, save_metadata = TRUE) {
   groups_names(object) <- levels(df$group)
   
   # save other sample-level columns to samples metadata (e.g. covariates)
-  if(save_metadata && !all(colnames(df) %in% (c("sample","feature","value","group","view")))) {
+  if(extract_metadata && !all(colnames(df) %in% (c("sample","feature","value","group","view")))) {
     cols2keep <- df %>% group_by(sample) %>% select(-c("view", "feature", "value", "group", "value")) %>%
       summarise(across(!starts_with("sample"), function(x) length(unique(x)),
-                .names = "{col}")) 
+                       .names = "{col}")) 
     cols2keep <- colnames(cols2keep)[apply(cols2keep, 2, function(x) all(x  == 1))]
     if (length(cols2keep) > 0){
       df_meta <- df[, c("sample",cols2keep)] %>% distinct()
@@ -298,10 +300,10 @@ create_mofa_from_df <- function(df, save_metadata = TRUE) {
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
 #' @param assay assay to use, default is \code{logcounts}.
-#' @param save_metadata logical indicating whether to incorporate the metadata from the SingleCellExperiment object into the MOFA object
+#' @param extract_metadata logical indicating whether to incorporate the metadata from the SingleCellExperiment object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "logcounts", save_metadata = FALSE) {
+create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "logcounts", extract_metadata = FALSE) {
   
   # Check is SingleCellExperiment is installed
   if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
@@ -328,7 +330,7 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
         stop("groups wrongly specified. Please see the documentation and the examples")
       }
     }
-   
+    
     # Extract data matrices
     data_matrices <- list( .split_sce_into_groups(sce, groups, assay) )
     names(data_matrices) <- assay
@@ -350,7 +352,7 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
     views_names(object)  <- assay
     
     # Set metadata
-    if (isTRUE(save_metadata)) {
+    if (isTRUE(extract_metadata)) {
       object@samples_metadata <- as.data.frame(colData(sce))
       object@features_metadata <- as.data.frame(rowData(sce))
     }
@@ -369,16 +371,16 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
 #' @param assays assays to use, default is \code{NULL}, it fetched all assays available
 #' @param slot assay slot to be used such as scale.data or data (default).
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
-#' @param save_metadata logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object
+#' @param extract_metadata logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot = "data", features = NULL, save_metadata = FALSE) {
+create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot = "data", features = NULL, extract_metadata = FALSE) {
   
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
   } else {
-  
+    
     # Define assays
     if (is.null(assays)) {
       assays <- Seurat::Assays(seurat)
@@ -446,7 +448,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot =
     views_names(object)  <- assays
     
     # Set metadata
-    if (isTRUE(save_metadata)) {
+    if (isTRUE(extract_metadata)) {
       object@samples_metadata <- seurat@meta.data
       object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
     }
@@ -567,7 +569,7 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   if(!requireNamespace("SummarizedExperiment", quietly = TRUE)){
     stop("Package \"SummarizedExperiment\" is required but is not installed.", call. = FALSE)
   } else {
-  
+    
     data <- SummarizedExperiment::assay(sce, assay = assay)
     .split_data_into_groups(list(data), groups)[[1]]
   }
