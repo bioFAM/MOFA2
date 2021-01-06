@@ -16,7 +16,7 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
-#' @param mefisto_options list of options for MEFISTO (see \code{\link{get_default_mefisto_options}} for details). 
+#' @param smooth_options list of options for smooth inference (see \code{\link{get_default_smooth_options}} for details). 
 #' If NULL, default options are used.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @details This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
@@ -42,7 +42,7 @@
 #' model_opts$num_factors <- 10
 #' MOFAmodel <- prepare_mofa(MOFAmodel, model_options = model_opts)
 prepare_mofa <- function(object, data_options = NULL, model_options = NULL, 
-  training_options = NULL, stochastic_options = NULL, mefisto_options = NULL) {
+                         training_options = NULL, stochastic_options = NULL, smooth_options = NULL) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -92,7 +92,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   
   if (object@training_options$stochastic) {
     message("Stochastic inference activated. Note that this is only recommended if you have a very large sample size (>1e4) and access to a GPU")
-      
+    
     if (is.null(stochastic_options)) {
       message("No stochastic options specified, using default...")
       object@stochastic_options <- get_default_stochastic_options(object)
@@ -110,7 +110,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
         stop("The learning rate has to be a value between 0 and 1")
       if (stochastic_options$forgetting_rate<=0 || stochastic_options$forgetting_rate>1)
         stop("The forgetting rate has to be a value between 0 and 1")
-  
+      
       if (sum(object@dimensions$N)<1e4) warning("Stochastic inference is only recommended when you have a lot of samples (at least N>10,000))\n")
       
       object@stochastic_options <- stochastic_options
@@ -132,58 +132,58 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   if (sum(object@dimensions$N) < 4 * object@model_options$num_factors) {
     warning(sprintf("The total number of samples is very small for learning %s factors.  
     Try to reduce the number of factors to obtain meaningful results. It should not exceed ~%s.",
-    object@model_options$num_factors, floor(min(object@dimensions$N/4))))
+                    object@model_options$num_factors, floor(min(object@dimensions$N/4))))
   }
-
-  # Get MEFISTO covariates options
+  
+  # Get smooth covariates options
   if (length(object@covariates)>=1) {
-    if (is.null(mefisto_options)) {
-        message("Covariates provided but no MEFISTO options specified, using default...")
-        object@mefisto_options <- get_default_mefisto_options(object)
+    if (is.null(smooth_options)) {
+      message("Covariates provided but no smooth options specified, using default...")
+      object@smooth_options <- get_default_smooth_options(object)
     } else {
-        message("Checking inference options for MEFISTO covariates...")
-      # message("MEFISTO covariates have been provided as prior information.")
-        if (!is(mefisto_options,"list") || !setequal(names(mefisto_options), names(get_default_mefisto_options(object)) ))
-          stop("mefisto_options are incorrectly specified, please read the documentation in get_default_mefisto_options")
+      message("Checking inference options for smooth covariates...")
+      # message("Smooth covariates have been provided as prior information.")
+      if (!is(smooth_options,"list") || !setequal(names(smooth_options), names(get_default_smooth_options(object)) ))
+        stop("smooth_options are incorrectly specified, please read the documentation in get_default_smooth_options")
       
-        if (isTRUE(mefisto_options$sparseGP)) {
-          if (object@dimensions[["N"]] < 1000) warning("Warning: sparseGPs should only be used when having a large sample size (>1e3)")
-          if (isTRUE(mefisto_options$warping)) stop("Warping is not implemented in conjunction with sparseGPs")
-        }
+      if (isTRUE(smooth_options$sparseGP)) {
+        if (object@dimensions[["N"]] < 1000) warning("Warning: sparseGPs should only be used when having a large sample size (>1e3)")
+        if (isTRUE(smooth_options$warping)) stop("Warping is not implemented in conjunction with sparseGPs")
+      }
       
       # Check warping options
-      if (isTRUE(mefisto_options$warping)) {
+      if (isTRUE(smooth_options$warping)) {
         stopifnot(object@dimensions[['G']] > 1) # check that multi-group is TRUE
         
-        if (!is.null(mefisto_options$warping_ref)) {
-          stopifnot(length(mefisto_options$warping_ref)==1)
-          stopifnot(is.character(mefisto_options$warping_ref))
-          stopifnot(mefisto_options$warping_ref %in% groups_names(object))
+        if (!is.null(smooth_options$warping_ref)) {
+          stopifnot(length(smooth_options$warping_ref)==1)
+          stopifnot(is.character(smooth_options$warping_ref))
+          stopifnot(smooth_options$warping_ref %in% groups_names(object))
         }
       }
-        
+      
       # Disable spike-slab on the factors
       if(isTRUE(model_options$spikeslab_factors)) {
-        print("Spike-and-Slab sparsity prior on the factors is not available when using MEFISTO covariates, setting to False")
+        print("Spike-and-Slab sparsity prior on the factors is not available when using smooth covariates, setting to False")
         model_options$spikeslab_factors <- FALSE
       }
-        
+      
       # Disable stochastic inference
       if (isTRUE(model_options$stochastic)) {
-        print("Stochastic inference is not available when using MEFISTO covariates, setting to False")
+        print("Stochastic inference is not available when using smooth covariates, setting to False")
         model_options$stochastic <- FALSE
         object@stochastic_options <- list()
       }
       
       # TO-DO: CHECKS ON MODEL_GROUPS
       
-      object@mefisto_options <- mefisto_options
+      object@smooth_options <- smooth_options
     }
     
   } else {
-    object@mefisto_options <- list()
+    object@smooth_options <- list()
   }
-
+  
   # Center the data
   # message("Centering the features (per group, this is a mandatory requirement)...")
   # for (m in views_names(object)) {
@@ -261,7 +261,7 @@ get_default_training_options <- function(object) {
     drop_factor_threshold = -1,    # (numeric) Threshold on fraction of variance explained to drop a factor
     verbose = FALSE,               # (logical) Verbosity
     startELBO = 1,                 # (numeric) First iteration to compute the ELBO
-    freqELBO = 1,                  # (numeric) Frequency of ELBO calculation
+    freqELBO = 5,                  # (numeric) Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
     seed = 42,                     # (numeric) random seed
@@ -321,6 +321,13 @@ get_default_data_options <- function(object) {
     scale_groups = FALSE,    # (logical) Scale groups to unit variance?
     use_float32 = FALSE       # (logical) Use float32 instead of float64 arrays to increase speed and memory usage
   )
+  
+  # Activate float32 arrays for large sample sizes  
+  if (sum(object@dimensions$N)>1e4) {
+    message("A lot of samples detected, using float32 arrays instead of float64 arrays to increase speed and memory usage. 
+    You can modify this using the `data_options` argument of the `prepare_mofa` function.")
+    data_options$use_float32 <- TRUE
+  }
   
   # if data_options already exists, replace the default values but keep the additional ones
   if (length(object@data_options)>0)
@@ -394,6 +401,18 @@ get_default_model_options <- function(object) {
     ard_factors = FALSE,         # (logical) Group-wise ARD sparsity on the factors
     ard_weights = TRUE           # (logical) View-wise ARD sparsity on the weights
   )
+  
+  # (Heuristic) set the number of factors depending on the sample size
+  N <- sum(object@dimensions$N)
+  if (N<=25) {
+    model_options$num_factors <- 5
+  } else if (N>25 & N<=1e3) {
+    model_options$num_factors <- 15
+  } else if (N>1e3 & N<=1e4) {
+    model_options$num_factors <- 25
+  } else if (N>1e4) {
+    model_options$num_factors <- 50
+  }
   
   # Group-wise ARD sparsity on the factors only if there are multiple groups
   if (object@dimensions$G==1)
@@ -474,4 +493,4 @@ get_default_stochastic_options <- function(object) {
   
   return(stochastic_options)
 }
-  
+
