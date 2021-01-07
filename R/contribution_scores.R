@@ -1,4 +1,4 @@
-calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all", scale = TRUE) {
+calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all") {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -15,7 +15,7 @@ calculate_contribution_scores <- function(object, views = "all", groups = "all",
   r2.per.view <- get_variance_explained(object, factors=factors, views = views, groups = groups)[["r2_total"]]
   
   # calculate relative variance explained values (each view goes from 0 to 1)
-  r2.per.factor <- lapply(1:length(groups), function(g) sweep(r2_per_factor[[1]], 2, r2.per.view,"/"))
+  r2.per.factor.scaled <- lapply(1:length(groups), function(g) sweep(r2.per.factor[[g]], 2, r2.per.view[[g]],"/"))
   
   # fetch factors
   Z <- get_factors(object, groups=groups, factors=factors)
@@ -24,7 +24,7 @@ calculate_contribution_scores <- function(object, views = "all", groups = "all",
   Z <- lapply(Z, function(z) apply(z, 2, function(x) abs(x)/max(abs(x)) ))
   
   # compute contribution scores per sample
-  contribution_scores <- lapply(1:length(groups), function(g) Z[[g]] %*% r2.per.factor[[g]])
+  contribution_scores <- lapply(1:length(groups), function(g) Z[[g]] %*% r2.per.factor.scaled[[g]])
   
   # Add contributions to the sample metadata
   contribution_scores <- do.call("rbind",contribution_scores)

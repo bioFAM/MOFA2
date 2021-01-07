@@ -323,7 +323,7 @@ get_default_data_options <- function(object) {
   )
   
   # Activate float32 arrays for large sample sizes  
-  if (sum(object@dimensions$N)>1e4) {
+  if (sum(object@dimensions$N)>1e5) {
     message("A lot of samples detected, using float32 arrays instead of float64 arrays to increase speed and memory usage. 
     You can modify this using the `data_options` argument of the `prepare_mofa` function.")
     data_options$use_float32 <- TRUE
