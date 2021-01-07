@@ -777,7 +777,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   p <- ggplot(df, aes(x=value.covariate, y=value.factor)) + 
     # geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
     geom_point(aes_string(fill = "color_by", shape = "shape_by"), colour="black", stroke = stroke, size=dot_size, alpha=alpha) +
-    facet_grid(~ factor) +
+    facet_wrap(~ factor) +
     theme_classic() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 
@@ -823,14 +823,14 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
     geom_point() +
     scale_color_gradient2() + 
     geom_point(col = "gray", alpha =0.05) +
-    facet_grid( ~ factor) + coord_fixed() + 
+    facet_wrap( ~ factor) + coord_fixed() + 
     theme_bw() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"),
       axis.title = element_text(size = rel(1.0), color = "black"),
       axis.line = element_line(color = "black", size = 0.5),
       axis.ticks = element_line(color = "black", size = 0.5)
-    ) + guides(col = guide_colorbar(title = "Factor vaue"))
+    ) + guides(col = guide_colorbar(title = "Factor value"))
   
   # Generate plot
   # p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2], fill = "color_by")) + 
