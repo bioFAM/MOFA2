@@ -1,4 +1,25 @@
-calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all") {
+#' @title Calculate contribution scores for each data modality in each sample
+#' @description  This function takes a trained MOFA model as input and calculates, **for each sample** a contribution score
+#' that quantifies how much each data modality is by the latent space. In other words, how much each data modality "contributes to the latent space.
+#' @name calculate_contribution_scores
+#' @param object a \code{\link{MOFA}} object.
+#' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
+#' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
+#' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
+#' @param scale logical indicating whether to scale the sample-wise variance explained values by the total amount of variance explained per view. 
+#' This is useful when the collection of all factors explain different amounts of variance for each data modality (check with `plot_variance_explained(..., plot_total=T)`)
+#' @details TO-FILL
+#' @return adds the contribution scores to the metadata slot (see `samples_metadata(MOFAobject)`) and it also returns a data.frame with the contribution score for each sample and data modality
+#' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' r2 <- calculate_contribution_scores(model, scale = FALSE)
+#' r2 <- calculate_contribution_scores(model, scale = TRUE)
+#'
+calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all", scale = FALSE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -11,29 +32,27 @@ calculate_contribution_scores <- function(object, views = "all", groups = "all",
   factors <- .check_and_get_factors(object, factors)
   
   # fetch variance explained values
-  r2.per.factor <- get_variance_explained(object, factors=factors, views = views, groups = groups)[["r2_per_factor"]]
-  r2.per.view <- get_variance_explained(object, factors=factors, views = views, groups = groups)[["r2_total"]]
+  r2.per.sample <- calculate_variance_explained_per_sample(object, factors=factors, views = views, groups = groups)
   
-  # calculate relative variance explained values (each view goes from 0 to 1)
-  r2.per.factor.scaled <- lapply(1:length(groups), function(g) sweep(r2.per.factor[[g]], 2, r2.per.view[[g]],"/"))
+  # scale the variance explained values to the total amount of variance explained per view
+  if (scale) {
+    r2.per.view <- get_variance_explained(object, factors=factors, views = views, groups = groups)[["r2_total"]]
+    r2.per.sample <- lapply(1:length(groups), function(g) sweep(r2.per.sample[[g]], 2, r2.per.view[[g]],"/"))
+  }
   
-  # fetch factors
-  Z <- get_factors(object, groups=groups, factors=factors)
+  # concatenate groups
+  r2.per.sample <- do.call("rbind",r2.per.sample)
   
-  # scale factors
-  Z <- lapply(Z, function(z) apply(z, 2, function(x) abs(x)/max(abs(x)) ))
+  # Calculate the fraction of (relative) variance explained for each data modality in each cell -> the contribution score
+  contribution_scores <- r2.per.sample / rowSums(r2.per.sample)
   
-  # compute contribution scores per sample
-  contribution_scores <- lapply(1:length(groups), function(g) Z[[g]] %*% r2.per.factor.scaled[[g]])
-  
-  # Add contributions to the sample metadata
-  contribution_scores <- do.call("rbind",contribution_scores)
+  # Add contribution scores to the sample metadata
   for (i in colnames(contribution_scores)) {
     object <- .add_column_to_metadata(object, contribution_scores[,i], paste0(i,"_contribution"))
   }
   
   # Store in cache
-  object@cache[["contribution_scores"]] <- contribution_scores
+  return(contribution_scores)
 
   return(object)
   
