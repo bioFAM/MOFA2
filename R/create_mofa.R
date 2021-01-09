@@ -63,6 +63,19 @@ create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
   
+  # Rename duplicated features names
+  feature_names <- unname(unlist(lapply(object@data, function(x) rownames(x[[1]]))))
+  duplicated_names <- unique(feature_names[duplicated(feature_names)])
+  if (length(duplicated_names)>0) 
+    warning("There are duplicated features names across different views. We will add the suffix *_view* only for those features 
+            Example: if you have both TP53 in mRNA and mutation data it will be renamed to TP53_mRNA, TP53_mutation")
+  for (m in names(object@data)) {
+    for (g in names(object@data[[m]])) {
+      tmp <- which(rownames(object@data[[m]][[g]]) %in% duplicated_names)
+      if (length(tmp)>0) rownames(object@data[[m]][[g]])[tmp] <- paste(rownames(object@data[[m]][[g]])[tmp], m, sep="_")
+    }
+  }
+  
   # Create sample metadata
   foo <- lapply(object@data[[1]], colnames)
   tmp <- data.frame(
