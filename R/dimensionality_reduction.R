@@ -56,8 +56,11 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
-#' @param ... arguments passed to \code{\link{umap}}
-#' @details use set.seed before the function call to get reproducible results.
+#' @param n_neighbors number of neighboring points used in local approximations of manifold structure. Larger values will result in more global structure being preserved at the loss of detailed local structure. In general this parameter should often be in the range 5 to 50.
+#' @param min_dist  This controls how tightly the embedding is allowed compress points together. Larger values ensure embedded points are moreevenly distributed, while smaller values allow the algorithm to optimise more accurately with regard to local structure. Sensible values are in the range 0.01 to 0.5
+#' @param metric choice of metric used to measure distance in the input space
+#' @param ... arguments passed to \code{\link{uwot::umap}}
+#' @details For details on the hyperparameters of UMAP see the documentation of \code{\link{uwot::umap}}. Use set.seed before the function call to get reproducible results.
 #' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
 #' @importFrom uwot umap
 #' @export
@@ -72,7 +75,7 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' # Change hyperparameters passed to umap
 #' \dontrun{ model <- run_umap(model, min_dist = 0.01, n_neighbors = 10) }
 #' 
-run_umap <- function(object, factors = "all", groups = "all", ...) {
+run_umap <- function(object, factors = "all", groups = "all", n_neighbors = 30, min_dist = 0.3, metric = "cosine", ...) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -87,7 +90,7 @@ run_umap <- function(object, factors = "all", groups = "all", ...) {
   Z[is.na(Z)] <- 0
   
   # Run UMAP
-  umap_embedding <- uwot::umap(Z, ...)
+  umap_embedding <- uwot::umap(Z, n_neighbors=n_neighbors, min_dist=min_dist, metric=metric, ...)
 
   # Add sample names and enumerate latent dimensions (e.g. UMAP1 and UMAP2)
   object@dim_red$UMAP <- data.frame(rownames(Z), umap_embedding)
