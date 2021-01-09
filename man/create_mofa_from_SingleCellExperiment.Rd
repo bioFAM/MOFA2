@@ -8,7 +8,7 @@ create_mofa_from_SingleCellExperiment(
   sce,
   groups = NULL,
   assay = "logcounts",
-  save_metadata = FALSE
+  extract_metadata = FALSE
 )
 }
 \arguments{
@@ -20,7 +20,7 @@ Default is \code{NULL} (no group structure).}
 
 \item{assay}{assay to use, default is \code{logcounts}.}
 
-\item{save_metadata}{logical indicating whether to incorporate the metadata from the SingleCellExperiment object into the MOFA object}
+\item{extract_metadata}{logical indicating whether to incorporate the metadata from the SingleCellExperiment object into the MOFA object}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object

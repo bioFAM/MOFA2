@@ -4,14 +4,14 @@
 \alias{create_mofa_from_df}
 \title{create a MOFA object from a data.frame object}
 \usage{
-create_mofa_from_df(df, save_metadata = TRUE)
+create_mofa_from_df(df, extract_metadata = TRUE)
 }
 \arguments{
 \item{df}{\code{data.frame} object with at most 5 columns: \code{sample}, \code{group}, \code{feature}, \code{view}, \code{value}. 
 The \code{group} column (optional) indicates the group of each sample when using the multi-group framework.
 The \code{view} column (optional) indicates the view of each feature when having multi-view data.}
 
-\item{save_metadata}{Boolean indicating whether to store sample level columns in the data frame as samples metadata}
+\item{extract_metadata}{logical indicating whether to incorporate the extra columns as sample metadata into the MOFA object}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object

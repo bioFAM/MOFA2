@@ -50,10 +50,10 @@ calculate_contribution_scores <- function(object, views = "all", groups = "all",
   for (i in colnames(contribution_scores)) {
     object <- .add_column_to_metadata(object, contribution_scores[,i], paste0(i,"_contribution"))
   }
+  # Add contribution scores to the cache
+  object@cache[["contribution_scores"]] <- contribution_scores
   
-  # Store in cache
-  return(contribution_scores)
-
+  
   return(object)
   
 }

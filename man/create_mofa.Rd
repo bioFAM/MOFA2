@@ -4,12 +4,15 @@
 \alias{create_mofa}
 \title{create a MOFA object}
 \usage{
-create_mofa(data, groups = NULL, ...)
+create_mofa(data, groups = NULL, extract_metadata = TRUE, ...)
 }
 \arguments{
 \item{data}{one of the formats above}
 
 \item{groups}{group information, only relevant when using the multi-group framework.}
+
+\item{extract_metadata}{logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
+not relevant when the input is a list of matrices). Default is \code{TRUE}.}
 
 \item{...}{further arguments that can be passed to the function depending on the inout data format.
 See the dpcumentation of above functions for details.}

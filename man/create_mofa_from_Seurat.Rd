@@ -10,7 +10,7 @@ create_mofa_from_Seurat(
   assays = NULL,
   slot = "data",
   features = NULL,
-  save_metadata = FALSE
+  extract_metadata = FALSE
 )
 }
 \arguments{
@@ -26,7 +26,7 @@ Default is \code{NULL} (no group structure).}
 
 \item{features}{a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used}
 
-\item{save_metadata}{logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object}
+\item{extract_metadata}{logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object
