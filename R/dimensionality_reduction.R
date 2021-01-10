@@ -6,11 +6,13 @@
 #' @title Run t-SNE on the MOFA factors
 #' @name run_tsne
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
-#' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
+#' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to use all factors (default).
+#' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use all groups (default).
 #' @param ... arguments passed to \code{\link{Rtsne}}
-#' @details use set.seed before the function call to get reproducible results.
-#' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the t-SNE output
+#' @details This function calls \code{\link{Rtsne::Rtsne}} to calculate a TSNE representation from the MOFA factors.
+#' Subsequently, you can plot the TSNE representation with \code{\link{plot_dimred}} or fetch the coordinates using \code{plot_dimred(..., method="TSNE", return_data=TRUE)}. 
+#' Remember to use set.seed before the function call to get reproducible results. 
+#' @return Returns a \code{\link{MOFA}} object with the \code{MOFAobject@dim_red} slot filled with the t-SNE output
 #' @importFrom Rtsne Rtsne
 #' @export
 #' @examples
@@ -18,11 +20,14 @@
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
-#' # Run t-SNE
-#' \dontrun{ model <- run_tsne(model) }
-#' 
-#' # Change hyperparameters passed to Rtsne
+#' # Run
 #' \dontrun{ model <- run_tsne(model, perplexity = 15) }
+#' 
+#' # Plot
+#' \dontrun{ model <- plot_dimred(model, method="TSNE") }
+#' 
+#' # Fetch data
+#' \dontrun{ tsne.df <- plot_dimred(model, method="TSNE", return_data=TRUE) }
 #' 
 run_tsne <- function(object, factors = "all", groups = "all", ...) {
   
@@ -54,14 +59,17 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @title Run UMAP on the MOFA factors
 #' @name run_umap
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.
-#' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
+#' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to use all factors (default).
+#' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use all groups (default).
 #' @param n_neighbors number of neighboring points used in local approximations of manifold structure. Larger values will result in more global structure being preserved at the loss of detailed local structure. In general this parameter should often be in the range 5 to 50.
 #' @param min_dist  This controls how tightly the embedding is allowed compress points together. Larger values ensure embedded points are moreevenly distributed, while smaller values allow the algorithm to optimise more accurately with regard to local structure. Sensible values are in the range 0.01 to 0.5
 #' @param metric choice of metric used to measure distance in the input space
 #' @param ... arguments passed to \code{\link{uwot::umap}}
-#' @details For details on the hyperparameters of UMAP see the documentation of \code{\link{uwot::umap}}. Use set.seed before the function call to get reproducible results.
-#' @return Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
+#' @details This function calls \code{\link{uwot::umap}} to calculate a UMAP representation from the MOFA factors
+#' For details on the hyperparameters of UMAP see the documentation of \code{\link{uwot::umap}}.
+#' Subsequently, you can plot the UMAP representation with \code{\link{plot_dimred}} or fetch the coordinates using \code{plot_dimred(..., method="UMAP", return_data=TRUE)}. 
+#' Remember to use set.seed before the function call to get reproducible results. 
+#' @return Returns a \code{\link{MOFA}} object with the \code{MOFAobject@dim_red} slot filled with the UMAP output
 #' @importFrom uwot umap
 #' @export
 #' @examples
@@ -69,11 +77,14 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' 
-#' # Run UMAP
-#' \dontrun{ model <- run_umap(model) }
-#' 
 #' # Change hyperparameters passed to umap
 #' \dontrun{ model <- run_umap(model, min_dist = 0.01, n_neighbors = 10) }
+
+#' # Plot
+#' \dontrun{ model <- plot_dimred(model, method="UMAP") }
+#' 
+#' # Fetch data
+#' \dontrun{ umap.df <- plot_dimred(model, method="UMAP", return_data=TRUE) }
 #' 
 run_umap <- function(object, factors = "all", groups = "all", n_neighbors = 30, min_dist = 0.3, metric = "cosine", ...) {
   
@@ -124,7 +135,7 @@ run_umap <- function(object, factors = "all", groups = "all", n_neighbors = 30, 
 #' @param alpha_missing numeric indicating dot transparency of missing data.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting
-#' @param rasterize logical indicating whether to rasterize plot
+#' @param rasterize logical indicating whether to rasterize plot using \code{\link{ggrastr::geom_point_rast}}
 #' @param ... extra arguments passed to \code{\link{run_umap}} or \code{\link{run_tsne}}.
 #' @details This function plots dimensionality reduction projections that are stored in the \code{dim_red} slot.
 #' Typically this contains UMAP or t-SNE projections computed using \code{\link{run_tsne}} or \code{\link{run_umap}}, respectively.
