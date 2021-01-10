@@ -165,6 +165,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     gpu_mode         = object@training_options$gpu_mode,
     verbose          = object@training_options$verbose,
     outfile          = object@training_options$outfile,
+    weight_views     = object@training_options$weight_views,
     save_interrupted = object@training_options$save_interrupted
   )
   

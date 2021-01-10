@@ -266,6 +266,7 @@ get_default_training_options <- function(object) {
     gpu_mode = FALSE,              # (logical) Use GPU?
     seed = 42,                     # (numeric) random seed
     outfile = NULL,                # (string)  Output file name
+    weight_views = FALSE,          # (logical) Weight the ELBO based on the number of features per view?
     save_interrupted = FALSE       # (logical) Save partially trained model when training is interrupted?
   )
   
