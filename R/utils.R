@@ -650,8 +650,8 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
 #' @param seurat_object a Seurat object
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
-#' @details This function is essentially calling the \code{CreateDimReducObject} function from Seurat
-#' @return Returns a Seurat object with the
+#' @details This function calls the \code{CreateDimReducObject} function from Seurat to store the MOFA factors.
+#' @return Returns a Seurat object with the 'reductions' slot filled with the MOFA factors. Also adds, if calculated, the UMAP/TSNE obtained with the MOFA factors.
 #' @export
 #' @examples
 #' # Generate a simulated data set
@@ -659,9 +659,12 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
 add_mofa_factors_to_seurat <- function(mofa_object, seurat_object, views = "all", factors = "all") {
   
   # Sanity checks
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (!is(mofa_object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
+  }
+  if (!all(colnames(seurat)==unlist(samples_names(mofa_object)))) {
+    stop("Samples do not match between the MOFA object and the Seurat object")
   }
   
   # Get factors
@@ -683,27 +686,41 @@ add_mofa_factors_to_seurat <- function(mofa_object, seurat_object, views = "all"
   
   # Sanity checks
   stopifnot(rownames(Z) %in% colnames(seurat_object))
-  stopifnot(views_names(mofa_object) %in% colnames(seurat_object))
+  stopifnot(views_names(mofa_object) %in% names(seurat_object@assays))
   
   # Add to seurat
   # Add "MOFA" with no view-specific weights to the default assay 
-  message("(1) Adding the MOFA factors to the 'reductions' slot of the default assay (no feature weights/loadings provided)...")
+  message("(1) Adding the MOFA factors to the 'reductions' slot of the default Seurat assay with the 'MOFA' key (no feature weights/loadings provided)...")
   seurat_object@reductions[["MOFA"]] <- CreateDimReducObject(
     embeddings = Z, 
-    key = "MOFA", 
+    key = "MOFA_", 
     misc = mofa_options
   )
   
   # Add a view-specific "MOFA_" that includes the weights
-  message("(2) Adding the MOFA representation to the 'reductions' slot of each assay, including the feature weights/loadings...")
-  for (m in views_names(MOFAobject)) {
-    seurat_object@reductions[[sprintf("MOFA%s_",m)]] <- CreateDimReducObject(
-      embeddings = Z, 
-      loadings = W[[m]], 
-      assay = m,
-      key = sprintf("MOFA%s_",m), 
-      misc = mofa_options
-    )
+  # message("(2) Adding the MOFA representation to the 'reductions' slot of each assay, including the feature weights/loadings...")
+  # for (m in views_names(mofa_object)) {
+  #   seurat_object@reductions[[sprintf("MOFA%s_",m)]] <- CreateDimReducObject(
+  #     embeddings = Z, 
+  #     loadings = W[[m]], 
+  #     assay = m,
+  #     key = sprintf("MOFA%s_",m), 
+  #     misc = mofa_options
+  #   )
+  # }
+  
+  if (length(mofa_object@dim_red)>0) {
+    if ("UMAP" %in% names(mofa_object@dim_red)) {
+      message("(2) Adding the UMAP representation obtained with the MOFA factors to the 'reductions' slot of the default Seurat assay using the key 'MOFAUMAP'...")
+      df <- mofa_object@dim_red$UMAP; mtx <- as.matrix(df[,-1]); rownames(mtx) <- df$sample
+      colnames(df) <- paste0("MOFA_UMAP",1:ncol(df))
+      seurat_object@reductions[["MOFAUMAP"]] <- CreateDimReducObject(embeddings = mtx, key = "MOFAUMAP_")
+    }
+    if ("TSNE" %in% names(mofa_object@dim_red)) {
+      message("(2) Adding the UMAP representation obtained with the MOFA factors to the 'reductions' slot of the default Seurat assay using the key 'MOFATSNE'...")
+      df <- mofa_object@dim_red$UMAP; mtx <- as.matrix(df[,-1]); rownames(mtx) <- df$sample
+      seurat_object@reductions[["MOFATSNE"]] <- CreateDimReducObject(embeddings = mtx, key = "MOFATSNE_")
+    }
   }
   
   return(seurat_object)
