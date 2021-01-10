@@ -19,17 +19,19 @@
 #' r2 <- calculate_contribution_scores(model, scale = FALSE)
 #' r2 <- calculate_contribution_scores(model, scale = TRUE)
 #'
-calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all", scale = FALSE) {
+calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all", scale = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if (any(object@model_options$likelihoods!="gaussian"))
     stop("Not possible to compute contribution scores when using non-gaussian likelihoods.")
-  
+
   # Define factors, views and groups
   views  <- .check_and_get_views(object, views)
+  if (length(views)<2) stop("contribution_scores only make sense when having at least 2 views")
   groups <- .check_and_get_groups(object, groups)
   factors <- .check_and_get_factors(object, factors)
+  if (length(factors)<5) stop("contribution_scores only make sense when having at least 5 factors")
   
   # fetch variance explained values
   r2.per.sample <- calculate_variance_explained_per_sample(object, factors=factors, views = views, groups = groups)
