@@ -382,12 +382,12 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
 #' @param assays assays to use, default is \code{NULL}, it fetched all assays available
-#' @param slot assay slot to be used such as scale.data or data (default).
+#' @param slot assay slot to be used (default is scale.data).
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @param extract_metadata logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot = "data", features = NULL, extract_metadata = FALSE) {
+create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot = "scale.data", features = NULL, extract_metadata = FALSE) {
   
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
