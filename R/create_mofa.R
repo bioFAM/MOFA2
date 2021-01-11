@@ -255,9 +255,9 @@ create_mofa_from_df <- function(df, extract_metadata = TRUE) {
   data_matrix <- list()
   for (m in levels(df$view)) {
     data_matrix[[m]] <- list()
-    features <- as.character( unique( df[df$view==m,"feature"] ) )
+    features <- as.character( unique( df[df$view==m,"feature",drop=TRUE] ) )
     for (g in levels(df$group)) {
-      samples <- as.character( unique( df[df$group==g,"sample"] ) )
+      samples <- as.character( unique( df[df$group==g,"sample",drop=TRUE] ) )
       Y <- df[df$view==m & df$group==g,]
       Y$sample <- factor(Y$sample, levels=samples)
       Y$feature <- factor(Y$feature, levels=features)
