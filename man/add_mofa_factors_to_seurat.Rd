@@ -21,13 +21,13 @@ add_mofa_factors_to_seurat(
 \item{factors}{character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'}
 }
 \value{
-Returns a Seurat object with the
+Returns a Seurat object with the 'reductions' slot filled with the MOFA factors. Also adds, if calculated, the UMAP/TSNE obtained with the MOFA factors.
 }
 \description{
 Function to add the MOFA latent representation to a Seurat object
 }
 \details{
-This function is essentially calling the \code{CreateDimReducObject} function from Seurat
+This function calls the \code{CreateDimReducObject} function from Seurat to store the MOFA factors.
 }
 \examples{
 # Generate a simulated data set

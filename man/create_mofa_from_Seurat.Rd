@@ -8,7 +8,7 @@ create_mofa_from_Seurat(
   seurat,
   groups = NULL,
   assays = NULL,
-  slot = "data",
+  slot = "scale.data",
   features = NULL,
   extract_metadata = FALSE
 )
@@ -22,7 +22,7 @@ Default is \code{NULL} (no group structure).}
 
 \item{assays}{assays to use, default is \code{NULL}, it fetched all assays available}
 
-\item{slot}{assay slot to be used such as scale.data or data (default).}
+\item{slot}{assay slot to be used (default is scale.data).}
 
 \item{features}{a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used}
 

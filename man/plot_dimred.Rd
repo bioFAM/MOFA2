@@ -56,7 +56,7 @@ plot_dimred(
 
 \item{legend}{logical indicating whether to add legend.}
 
-\item{rasterize}{logical indicating whether to rasterize plot}
+\item{rasterize}{logical indicating whether to rasterize plot using \code{\link{ggrastr::geom_point_rast}}}
 
 \item{return_data}{logical indicating whether to return the long data frame to plot instead of plotting}
 

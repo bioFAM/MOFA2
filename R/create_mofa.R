@@ -424,7 +424,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot =
         message("No features specified, using variable features from the Seurat object...")
         features <- lapply(assays, function(i) seurat@assays[[i]]@var.features)
         names(features) <- assays
-        if (any(sapply(features,length)==0)) stop("No list of features provided and variable features are detected in the Seurat object")
+        if (any(sapply(features,length)==0)) stop("No list of features provided and variable features not detected in the Seurat object")
       } else if (all(is(features, "character"))) {
         features <- list(features)
         names(features) <- assays

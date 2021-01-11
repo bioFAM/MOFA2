@@ -4,35 +4,54 @@
 \alias{run_umap}
 \title{Run UMAP on the MOFA factors}
 \usage{
-run_umap(object, factors = "all", groups = "all", ...)
+run_umap(
+  object,
+  factors = "all",
+  groups = "all",
+  n_neighbors = 30,
+  min_dist = 0.3,
+  metric = "cosine",
+  ...
+)
 }
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{factors}{character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.}
+\item{factors}{character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to use all factors (default).}
 
-\item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
+\item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use all groups (default).}
 
-\item{...}{arguments passed to \code{\link{umap}}}
+\item{n_neighbors}{number of neighboring points used in local approximations of manifold structure. Larger values will result in more global structure being preserved at the loss of detailed local structure. In general this parameter should often be in the range 5 to 50.}
+
+\item{min_dist}{This controls how tightly the embedding is allowed compress points together. Larger values ensure embedded points are moreevenly distributed, while smaller values allow the algorithm to optimise more accurately with regard to local structure. Sensible values are in the range 0.01 to 0.5}
+
+\item{metric}{choice of metric used to measure distance in the input space}
+
+\item{...}{arguments passed to \code{\link{uwot::umap}}}
 }
 \value{
-Returns a \code{\link{MOFA}} object with the dim_red slot filled with the UMAP output
+Returns a \code{\link{MOFA}} object with the \code{MOFAobject@dim_red} slot filled with the UMAP output
 }
 \description{
 Run UMAP on the MOFA factors
 }
 \details{
-use set.seed before the function call to get reproducible results.
+This function calls \code{\link{uwot::umap}} to calculate a UMAP representation from the MOFA factors
+For details on the hyperparameters of UMAP see the documentation of \code{\link{uwot::umap}}.
+Subsequently, you can plot the UMAP representation with \code{\link{plot_dimred}} or fetch the coordinates using \code{plot_dimred(..., method="UMAP", return_data=TRUE)}. 
+Remember to use set.seed before the function call to get reproducible results.
 }
 \examples{
 # Using an existing trained model on simulated data
 file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
-# Run UMAP
-\dontrun{ model <- run_umap(model) }
-
 # Change hyperparameters passed to umap
 \dontrun{ model <- run_umap(model, min_dist = 0.01, n_neighbors = 10) }
+# Plot
+\dontrun{ model <- plot_dimred(model, method="UMAP") }
+
+# Fetch data
+\dontrun{ umap.df <- plot_dimred(model, method="UMAP", return_data=TRUE) }
 
 }

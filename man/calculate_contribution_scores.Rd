@@ -9,7 +9,7 @@ calculate_contribution_scores(
   views = "all",
   groups = "all",
   factors = "all",
-  scale = FALSE
+  scale = TRUE
 )
 }
 \arguments{
