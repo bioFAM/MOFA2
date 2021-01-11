@@ -78,7 +78,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   if (use_basilisk) {
     
     message("Connecting to the mofapy2 package using basilisk. 
-    Set 'use_basilik' to FALSE if you prefer to manually set the python binary using 'reticulate'.")
+    Set 'use_basilisk' to FALSE if you prefer to manually set the python binary using 'reticulate'.")
     
     proc <- basiliskStart(mofa_env)
     on.exit(basiliskStop(proc))
