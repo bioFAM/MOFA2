@@ -28,10 +28,10 @@ calculate_contribution_scores <- function(object, views = "all", groups = "all",
 
   # Define factors, views and groups
   views  <- .check_and_get_views(object, views)
-  if (length(views)<2) stop("contribution_scores only make sense when having at least 2 views")
+  if (length(views)<2) stop("contribution scores only make sense when having at least 2 views")
   groups <- .check_and_get_groups(object, groups)
   factors <- .check_and_get_factors(object, factors)
-  if (length(factors)<5) stop("contribution_scores only make sense when having at least 5 factors")
+  if (length(factors)<2) stop("contribution scores only make sense when having at least 2 factors")
   
   # fetch variance explained values
   r2.per.sample <- calculate_variance_explained_per_sample(object, factors=factors, views = views, groups = groups)

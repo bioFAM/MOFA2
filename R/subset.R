@@ -207,8 +207,8 @@ subset_factors <- function(object, factors) {
   # Remove total variance explained estimates  
   if (length(factors) < object@dimensions[["K"]]) {
     object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_per_factor, colSums)
-    warning("After subsetting the factors the total variance explained estimates are not valid anymore, removing them...")
-    object@cache[["variance_explained"]]$r2_total <- NULL
+    warning("After subsetting the factors the total variance explained estimates are not valid anymore, recalculating...")
+    object@cache[["variance_explained"]]$r2_total <- calculate_variance_explained(object)[["r2_total"]]
   }
   
   # # Relalculate total variance explained estimates (not valid for non-orthogonal factors)
