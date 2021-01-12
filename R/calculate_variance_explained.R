@@ -157,7 +157,7 @@ calculate_variance_explained_per_sample <- function(object, views = "all", group
     tmp <- sapply(views, function(m) {
       a <- rowSums((Y[[m]][[g]] - tcrossprod(Z[[g]],W[[m]]))**2, na.rm=T)
       b <- rowSums(Y[[m]][[g]]**2, na.rm = TRUE)
-      return(1-a/b)
+      return(100*(1-a/b))
     })
     tmp <- matrix(tmp, ncol = length(views), nrow = length(samples[[g]]))
     tmp[tmp<0] <- 0
