@@ -663,7 +663,7 @@ add_mofa_factors_to_seurat <- function(mofa_object, seurat_object, views = "all"
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
   }
-  if (!all(colnames(seurat)==unlist(samples_names(mofa_object)))) {
+  if (!all(colnames(seurat_object)==unlist(samples_names(mofa_object)))) {
     stop("Samples do not match between the MOFA object and the Seurat object")
   }
   
