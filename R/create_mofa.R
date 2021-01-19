@@ -463,7 +463,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot =
     # Set metadata
     if (isTRUE(extract_metadata)) {
       object@samples_metadata <- seurat@meta.data
-      object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
+      # object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
     }
     
     return(object)
