@@ -55,6 +55,7 @@ create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
     message("Creating MOFA object from a list of matrices (features as rows, sample as columns)...\n")
     object <- create_mofa_from_matrix(data, groups)
     
+    # Creating MOFA object from MultiAssayExperiment object
   } else if(is(data, "MultiAssayExperiment")){
     
     object <- create_mofa_from_MultiAssayExperiment(data, groups, extract_metadata = extract_metadata, ...)
@@ -63,54 +64,6 @@ create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
   
-  # Rename duplicated features names
-  feature_names <- unname(unlist(lapply(object@data, function(x) rownames(x[[1]]))))
-  duplicated_names <- unique(feature_names[duplicated(feature_names)])
-  if (length(duplicated_names)>0) 
-    warning("There are duplicated features names across different views. We will add the suffix *_view* only for those features 
-            Example: if you have both TP53 in mRNA and mutation data it will be renamed to TP53_mRNA, TP53_mutation")
-  for (m in names(object@data)) {
-    for (g in names(object@data[[m]])) {
-      tmp <- which(rownames(object@data[[m]][[g]]) %in% duplicated_names)
-      if (length(tmp)>0) rownames(object@data[[m]][[g]])[tmp] <- paste(rownames(object@data[[m]][[g]])[tmp], m, sep="_")
-    }
-  }
-  
-  # Create sample metadata
-  foo <- lapply(object@data[[1]], colnames)
-  tmp <- data.frame(
-    sample = unname(unlist(foo)),
-    group = unlist(lapply(names(foo), function(x) rep(x, length(foo[[x]])) )),
-    stringsAsFactors = FALSE
-  )
-  if (.hasSlot(object, "samples_metadata") && (length(object@samples_metadata) > 0)) {
-    object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),, drop = FALSE])
-  } else {
-    object@samples_metadata <- tmp
-  }
-  
-  # Create features metadata
-  tmp <- data.frame(
-    feature = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
-    view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
-    stringsAsFactors = FALSE
-  )
-  if (.hasSlot(object, "features_metadata") && (length(object@features_metadata) > 0)) {
-    object@features_metadata <- cbind(tmp, object@features_metadata[match(tmp$feature, rownames(object@features_metadata)),])
-  } else {
-    object@features_metadata <- tmp
-  }
-  
-  # Do quality control
-  object <- .quality_control(object)
-  
-  # print verbose messages
-  if (length(unique(object@samples_metadata$group))>1) {
-    message("\n# Multi-group mode requested.")
-    message("\nThis is an advanced option, if this is the first time that you are running MOFA, we suggest that you try do some exploration first without specifying groups. Two important remarks:")
-    message("\n - The aim of the multi-group framework is to identify the sources of variability *within* the groups. If your aim is to find a factor that 'separates' the groups, you DO NOT want to use the multi-group framework. Please see the FAQ in (https://biofam.github.io/MOFA2)") 
-    message("\n - It is important to account for the group effect before selecting highly variable features (HVFs). We suggest that either you calculate HVFs per group and then take the union, or regress out the group effect before HVF selection")
-  }
   return(object)
 }
 
@@ -186,14 +139,24 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, extract_me
     # Set samples group names
     groups_names(object) <- groups_nms
     
-    # Set metadata
-    if (isTRUE(extract_metadata)) {
-      # Samples metadata
+    # Extract metadata
+    if (extract_metadata) {
       if (ncol(MultiAssayExperiment::colData(mae)) > 0) {
         object@samples_metadata <- data.frame(MultiAssayExperiment::colData(mae))
       }
-      # No features metadata is typically contained
     }
+
+    # Create sample metadata
+    object <- .create_samples_metadata(object)
+
+    # Create features metadata
+    object <- .create_features_metadata(object)
+
+    # Rename duplicated features
+    object <- .rename_duplicated_features(object)
+
+    # Do quality control
+    object <- .quality_control(object)
     
     return(object)
   }
@@ -301,6 +264,19 @@ create_mofa_from_df <- function(df, extract_metadata = TRUE) {
       rownames(object@samples_metadata) <- df_meta$sample
     }
   }
+
+    # Create sample metadata
+    object <- .create_samples_metadata(object)
+
+    # Create features metadata
+    object <- .create_features_metadata(object)
+
+    # Rename duplicated features
+    object <- .rename_duplicated_features(object)
+
+    # Do quality control
+    object <- .quality_control(object)
+
   return(object)
 }
 
@@ -365,11 +341,23 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
     views_names(object)  <- assay
     
     # Set metadata
-    if (isTRUE(extract_metadata)) {
+    if (extract_metadata) {
       object@samples_metadata <- as.data.frame(colData(sce))
-      object@features_metadata <- as.data.frame(rowData(sce))
+      # object@features_metadata <- as.data.frame(rowData(sce))
     }
     
+    # Create sample metadata
+    object <- .create_samples_metadata(object)
+
+    # Create features metadata
+    object <- .create_features_metadata(object)
+
+    # Rename duplicated features
+    object <- .rename_duplicated_features(object)
+
+    # Do quality control
+    object <- .quality_control(object)
+
     return(object)
   }
 }
@@ -461,10 +449,22 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot =
     views_names(object)  <- assays
     
     # Set metadata
-    if (isTRUE(extract_metadata)) {
+    if (extract_metadata) {
       object@samples_metadata <- seurat@meta.data
       # object@features_metadata <- do.call(rbind, lapply(assays, function(a) seurat@assays[[a]]@meta.features))
     }
+
+    # Create sample metadata
+    object <- .create_samples_metadata(object)
+
+    # Create features metadata
+    object <- .create_features_metadata(object)
+
+    # Rename duplicated features
+    object <- .rename_duplicated_features(object)
+
+    # Do quality control
+    object <- .quality_control(object)
     
     return(object)
   }
@@ -555,9 +555,22 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   
   # Set samples group names
   groups_names(object) <- groups_names
-  
+
+  # Create sample metadata
+  object <- .create_samples_metadata(object)
+
+  # Create features metadata
+  object <- .create_features_metadata(object)
+
+  # Rename duplicated features
+  object <- .rename_duplicated_features(object)
+
+  # Do quality control
+  object <- .quality_control(object)
+
   return(object)
 }
+
 
 # (Hidden) function to split a list of matrices into a nested list of matrices
 .split_data_into_groups <- function(data, groups) {
@@ -603,4 +616,49 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   m <- as.matrix(x[,-1])
   rownames(m) <- x[[1]]
   m
+}
+
+.create_samples_metadata <- function(object) {
+  # TO-DO: CHECK SAMPLE AND GROUP COLUMN IN PROVIDED METADATA
+  foo <- lapply(object@data[[1]], colnames)
+  tmp <- data.frame(
+    sample = unname(unlist(foo)),
+    group = unlist(lapply(names(foo), function(x) rep(x, length(foo[[x]])) )),
+    stringsAsFactors = FALSE
+  )
+  if (.hasSlot(object, "samples_metadata") && (length(object@samples_metadata) > 0)) {
+    object@samples_metadata <- cbind(tmp, object@samples_metadata[match(tmp$sample, rownames(object@samples_metadata)),, drop = FALSE])
+  } else {
+    object@samples_metadata <- tmp
+  }
+  return(object)
+}
+
+.create_features_metadata <- function(object) {
+  tmp <- data.frame(
+    feature = unname(unlist(lapply(object@data, function(x) rownames(x[[1]])))),
+    view = unlist(lapply(seq_len(object@dimensions$M), function(x) rep(views_names(object)[[x]], object@dimensions$D[[x]]) )),
+    stringsAsFactors = FALSE
+  )
+  if (.hasSlot(object, "features_metadata") && (length(object@features_metadata) > 0)) {
+    object@features_metadata <- cbind(tmp, object@features_metadata[match(tmp$feature, rownames(object@features_metadata)),])
+  } else {
+    object@features_metadata <- tmp
+  }
+  return(object)
+}
+
+.rename_duplicated_features <- function(object) {
+  feature_names <- unname(unlist(lapply(object@data, function(x) rownames(x[[1]]))))
+  duplicated_names <- unique(feature_names[duplicated(feature_names)])
+  if (length(duplicated_names)>0) 
+    warning("There are duplicated features names across different views. We will add the suffix *_view* only for those features 
+            Example: if you have both TP53 in mRNA and mutation data it will be renamed to TP53_mRNA, TP53_mutation")
+  for (m in names(object@data)) {
+    for (g in names(object@data[[m]])) {
+      tmp <- which(rownames(object@data[[m]][[g]]) %in% duplicated_names)
+      if (length(tmp)>0) rownames(object@data[[m]][[g]])[tmp] <- paste(rownames(object@data[[m]][[g]])[tmp], m, sep="_")
+    }
+  }
+  return(object)
 }
