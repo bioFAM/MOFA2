@@ -1,12 +1,7 @@
----
-layout: default
-title: Tutorials
----
 
-## Documentation
+## Videotutorials
 
-* [MOFA2 R package](https://github.com/bioFAM/MOFA2_tutorials/blob/master/documentation/documentation.pdf)  
-* [mofapy2 Python package](): to-do...  
+* [overview on single-cell multi-omics data integration using MOFA+](https://www.youtube.com/watch?v=4Nt4oz0cfIk&feature=youtu.be&ab_channel=RicardArgelaguet)  
 
 ## Getting started using R
 
