@@ -155,6 +155,7 @@ subset_views <- function(object, views) {
 #' @description Method to subset (or sort) factors
 #' @param object a \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors.
+#' @param recalculate_variance_explained logical indicating whether to recalculate variance explained values. Default is \code{TRUE}.
 #' @export
 #' @return A \code{\link{MOFA}} object
 #' @examples
@@ -164,7 +165,7 @@ subset_views <- function(object, views) {
 #' 
 #' # Subset factors 1 to 3
 #' model <- subset_factors(model, factors = 1:3)
-subset_factors <- function(object, factors) {
+subset_factors <- function(object, factors, recalculate_variance_explained = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -205,10 +206,12 @@ subset_factors <- function(object, factors) {
   
   
   # Remove total variance explained estimates  
-  if (length(factors) < object@dimensions[["K"]]) {
+  if (length(factors)<object@dimensions[["K"]]) {
     object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_per_factor, colSums)
-    warning("After subsetting the factors the total variance explained estimates are not valid anymore, recalculating...")
-    object@cache[["variance_explained"]]$r2_total <- calculate_variance_explained(object)[["r2_total"]]
+    if (recalculate_variance_explained) {
+      message("Recalculating total variance explained values (r2_total)...")
+      object@cache[["variance_explained"]]$r2_total <- calculate_variance_explained(object)[["r2_total"]]
+    }
   }
   
   # # Relalculate total variance explained estimates (not valid for non-orthogonal factors)
