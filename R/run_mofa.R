@@ -112,8 +112,8 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   # Set data options
   mofa_entrypoint$set_data_options(
     scale_views = object@data_options$scale_views,
-    scale_groups = object@data_options$scale_groups
-    # use_float32 = object@data_options$use_float32
+    scale_groups = object@data_options$scale_groups,
+    use_float32 = object@data_options$use_float32
   )
 
   # Set samples metadata

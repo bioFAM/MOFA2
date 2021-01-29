@@ -32,7 +32,7 @@ On-disk operations are performed using the \code{\link{HDF5Array}} and \code{\li
 
 \item{verbose}{logical indicating whether to print verbose output (default is FALSE)}
 
-\item{load_interpol_Z}{logical indicating whether to load predictions for factor values based on latent processed (only
+\item{load_interpol_Z}{(MEFISTO) logical indicating whether to load predictions for factor values based on latent processed (only
 relevant for models trained with covariates and Gaussian processes, where prediction was enabled)}
 }
 \value{

@@ -1,23 +1,27 @@
-#' @title Calculate contribution scores for each data modality in each sample
-#' @description  This function takes a trained MOFA model as input and calculates, **for each sample** a contribution score
-#' that quantifies how much each data modality is by the latent space. In other words, how much each data modality "contributes to the latent space.
+#' @title Calculate contribution scores for each view in each sample
+#' @description This function calculates, *for each sample* how much each view contributes to its location in the latent manifold, what we call \emph{contribution scores}
 #' @name calculate_contribution_scores
-#' @param object a \code{\link{MOFA}} object.
+#' @param object a trained \code{\link{MOFA}} object.
 #' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
 #' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
 #' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
 #' @param scale logical indicating whether to scale the sample-wise variance explained values by the total amount of variance explained per view. 
-#' This is useful when the collection of all factors explain different amounts of variance for each data modality (check with `plot_variance_explained(..., plot_total=T)`)
-#' @details TO-FILL
-#' @return adds the contribution scores to the metadata slot (see `samples_metadata(MOFAobject)`) and it also returns a data.frame with the contribution score for each sample and data modality
+#' This effectively normalises each view by its total variance explained. It is important when different amounts of variance is explained for each view (check with \code{plot_variance_explained(..., plot_total=TRUE)})
+#' @details Contribution scores are calculated in three steps:
+#' \itemize{
+#'  \item{Step 1}{calculate variance explained for each cell i and each view m (\eqn{R_{im}}), using all factors}
+#'  \item{Step 2}{(optional) scale values by the total variance explained for each view}
+#'  \item{Step 3}{calculate contribution score (\eqn{C_{im}}) for cell i and view m as: \deqn{C_{im} = \frac{R2_{im}}{\sum_{m} R2_{im}} } }
+#' }
+#' Note that contribution scores can be calculated using any number of data modalities, but it is easier to interpret when you specify two. \cr
+#' Please note that this functionality is still experimental, contact the authors if you have questions.
+#' @return adds the contribution scores to the metadata slot (\code{samples_metadata(MOFAobject)}) and to the \code{MOFAobject@cache} slot
 #' @export
 #' @examples
 #' # Using an existing trained model on simulated data
 #' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' 
-#' r2 <- calculate_contribution_scores(model, scale = FALSE)
-#' r2 <- calculate_contribution_scores(model, scale = TRUE)
+#' model <- calculate_contribution_scores(model)
 #'
 calculate_contribution_scores <- function(object, views = "all", groups = "all", factors = "all", scale = TRUE) {
   
@@ -45,7 +49,7 @@ calculate_contribution_scores <- function(object, views = "all", groups = "all",
   # concatenate groups
   r2.per.sample <- do.call("rbind",r2.per.sample)
   
-  # Calculate the fraction of (relative) variance explained for each data modality in each cell -> the contribution score
+  # Calculate the fraction of (relative) variance explained for each view in each cell -> the contribution score
   contribution_scores <- r2.per.sample / rowSums(r2.per.sample)
   
   # Add contribution scores to the sample metadata
