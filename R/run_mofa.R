@@ -42,6 +42,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     stop("'object' has to be an instance of MOFA")
   if (object@status=="trained") 
     stop("The model is already trained! If you want to retrain, create a new untrained MOFA")
+  if (length(object@model_options)==0 | length(object@training_options)==0) {
+    stop("The model is not prepared for training, you have to run `prepare_mofa` before `run_mofa`")
+  }
   
   # If no outfile is provided, store a file in the /tmp folder with the respective timestamp
   if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
@@ -75,7 +78,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   if (use_basilisk) {
     
     message("Connecting to the mofapy2 package using basilisk. 
-    Set 'use_basilik' to FALSE if you prefer to manually set the python binary using 'reticulate'.")
+    Set 'use_basilisk' to FALSE if you prefer to manually set the python binary using 'reticulate'.")
     
     proc <- basiliskStart(mofa_env)
     on.exit(basiliskStop(proc))
@@ -109,7 +112,8 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   # Set data options
   mofa_entrypoint$set_data_options(
     scale_views = object@data_options$scale_views,
-    scale_groups = object@data_options$scale_groups
+    scale_groups = object@data_options$scale_groups,
+    use_float32 = object@data_options$use_float32
   )
 
   # Set samples metadata
@@ -161,6 +165,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     gpu_mode         = object@training_options$gpu_mode,
     verbose          = object@training_options$verbose,
     outfile          = object@training_options$outfile,
+    weight_views     = object@training_options$weight_views,
     save_interrupted = object@training_options$save_interrupted
   )
   
@@ -179,18 +184,18 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   if (.hasSlot(object, "covariates") && !is.null(object@covariates) & length(object@smooth_options)>1) {
     warping_ref <- which(groups_names(object) == object@smooth_options$warping_ref)
     mofa_entrypoint$set_smooth_options(
-      scale_cov           = object@smooth_options$scale_cov,
-      start_opt           = as.integer(object@smooth_options$start_opt),
-      n_grid              = as.integer(object@smooth_options$n_grid),
-      opt_freq            = as.integer(object@smooth_options$opt_freq),
-      model_groups        = object@smooth_options$model_groups,
-      sparseGP            = object@smooth_options$sparseGP,
-      frac_inducing       = object@smooth_options$frac_inducing,
-      warping             = object@smooth_options$warping,
-      warping_freq        = as.integer(object@smooth_options$warping_freq),
+      scale_cov           = object@mefisto_options$scale_cov,
+      start_opt           = as.integer(object@mefisto_options$start_opt),
+      n_grid              = as.integer(object@mefisto_options$n_grid),
+      opt_freq            = as.integer(object@mefisto_options$opt_freq),
+      model_groups        = object@mefisto_options$model_groups,
+      sparseGP            = object@mefisto_options$sparseGP,
+      frac_inducing       = object@mefisto_options$frac_inducing,
+      warping             = object@mefisto_options$warping,
+      warping_freq        = as.integer(object@mefisto_options$warping_freq),
       warping_ref         = warping_ref-1, # 0-based python indexing
-      warping_open_begin  = object@smooth_options$warping_open_begin,
-      warping_open_end    = object@smooth_options$warping_open_end
+      warping_open_begin  = object@mefisto_options$warping_open_begin,
+      warping_open_end    = object@mefisto_options$warping_open_end
     )
   }
   
@@ -201,9 +206,15 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   mofa_entrypoint$run()
 
   # Interpolate
+<<<<<<< HEAD
   if (.hasSlot(object, "covariates") && !is.null(object@covariates) & length(object@smooth_options)>1) {
     if(!is.null(object@smooth_options$new_values)) {
       new_values <- object@smooth_options$new_values
+=======
+  if (!is.null(object@covariates) & length(object@mefisto_options)>1) {
+    if(!is.null(object@mefisto_options$new_values)) {
+      new_values <- object@mefisto_options$new_values
+>>>>>>> main-dev
       if(is.null(dim(new_values))){
         new_values <- matrix(new_values, nrow = 1)
       }

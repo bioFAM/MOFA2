@@ -18,5 +18,5 @@ covariate values between different groups
 }
 \details{
 This function requires the functional MEFISTO framework to be used in training. 
-Use \code{set_covariates} and specify smooth_options when preparing the training using \code{prepare_mofa}.
+Use \code{set_covariates} and specify mefisto_options when preparing the training using \code{prepare_mofa}.
 }

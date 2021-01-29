@@ -9,30 +9,35 @@ run_tsne(object, factors = "all", groups = "all", ...)
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{factors}{character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to plot all factors.}
+\item{factors}{character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to use all factors (default).}
 
-\item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.}
+\item{groups}{character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use all groups (default).}
 
 \item{...}{arguments passed to \code{\link{Rtsne}}}
 }
 \value{
-Returns a \code{\link{MOFA}} object with the dim_red slot filled with the t-SNE output
+Returns a \code{\link{MOFA}} object with the \code{MOFAobject@dim_red} slot filled with the t-SNE output
 }
 \description{
 Run t-SNE on the MOFA factors
 }
 \details{
-use set.seed before the function call to get reproducible results.
+This function calls \code{\link{Rtsne::Rtsne}} to calculate a TSNE representation from the MOFA factors.
+Subsequently, you can plot the TSNE representation with \code{\link{plot_dimred}} or fetch the coordinates using \code{plot_dimred(..., method="TSNE", return_data=TRUE)}. 
+Remember to use set.seed before the function call to get reproducible results.
 }
 \examples{
 # Using an existing trained model on simulated data
 file <- system.file("extdata", "model.hdf5", package = "MOFA2")
 model <- load_model(file)
 
-# Run t-SNE
-\dontrun{ model <- run_tsne(model) }
-
-# Change hyperparameters passed to Rtsne
+# Run
 \dontrun{ model <- run_tsne(model, perplexity = 15) }
+
+# Plot
+\dontrun{ model <- plot_dimred(model, method="TSNE") }
+
+# Fetch data
+\dontrun{ tsne.df <- plot_dimred(model, method="TSNE", return_data=TRUE) }
 
 }

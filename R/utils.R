@@ -23,6 +23,24 @@
 #     message("Such (strong) factors usually appear when count-based assays are not properly normalised by library size.")
 # }
 
+# x: a named vector, where names correspond to sample names
+.add_column_to_metadata <- function(object, x, name) {
+  
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  stopifnot(!is.null(names(x)))
+  stopifnot(names(x) %in% unlist(samples_names(object)))
+  
+  # sort vector to match samples names (fill with NA where applicable)
+  vec <- rep(NA,sum(get_dimensions(object)[["N"]]))
+  names(vec) <- object@samples_metadata$sample
+  vec[names(x)] <- x
+  
+  # add to metadata
+  object@samples_metadata[[name]] <- x
+  
+  return(object)  
+}
 
 .infer_likelihoods <- function(object) {
   
@@ -104,6 +122,7 @@ return(model)
 
 
 .check_and_get_factors <- function(object, factors) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(!any(duplicated(factors)))
   if (is.numeric(factors)) {
     stopifnot(all(factors <= object@dimensions$K))
@@ -137,6 +156,7 @@ return(model)
 }
 
 .check_and_get_views <- function(object, views, non_gaussian=TRUE) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(!any(duplicated(views)))
   if (is.numeric(views)) {
     stopifnot(all(views <= object@dimensions$M))
@@ -160,6 +180,7 @@ return(model)
 
 
 .check_and_get_groups <- function(object, groups) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(!any(duplicated(groups)))
   if (is.numeric(groups)) {
     stopifnot(all(groups <= object@dimensions$G))
@@ -176,6 +197,7 @@ return(model)
 
 
 .check_and_get_samples <- function(object, samples) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(!any(duplicated(samples)))
   if (is.numeric(samples)) {
     stopifnot(all(samples <= sum(object@dimensions$N)))
@@ -191,6 +213,7 @@ return(model)
 }
 
 .check_and_get_features_from_view <- function(object, view, features) {
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   stopifnot(!any(duplicated(features)))
   if (is.numeric(features)) {
     stopifnot(all(features <= sum(object@dimensions$D[view])))
@@ -206,7 +229,9 @@ return(model)
 }
 
 .get_top_features_by_loading <- function(object, view, factors, nfeatures = 10) {
-
+  
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  
   # Collect expectations  
   W <- get_weights(object, factors = factors, views = view, as.data.frame=TRUE)
   # Work with absolute values to sort them
@@ -617,3 +642,87 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
 #   return(df)
 # }
 
+
+
+#' @title Function to add the MOFA representation onto a Seurat object
+#' @name add_mofa_factors_to_seurat
+#' @description Function to add the MOFA latent representation to a Seurat object
+#' @param mofa_object a trained \code{\link{MOFA}} object.
+#' @param seurat_object a Seurat object
+#' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
+#' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
+#' @details This function calls the \code{CreateDimReducObject} function from Seurat to store the MOFA factors.
+#' @return Returns a Seurat object with the 'reductions' slot filled with the MOFA factors. Also adds, if calculated, the UMAP/TSNE obtained with the MOFA factors.
+#' @export
+#' @examples
+#' # Generate a simulated data set
+#' MOFAexample <- make_example_data()
+add_mofa_factors_to_seurat <- function(mofa_object, seurat_object, views = "all", factors = "all") {
+  
+  # Sanity checks
+  if (!is(mofa_object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
+  }
+  if (!all(colnames(seurat_object)==unlist(samples_names(mofa_object)))) {
+    stop("Samples do not match between the MOFA object and the Seurat object")
+  }
+  
+  # Get factors
+  factors <- .check_and_get_factors(mofa_object, factors)
+  Z <- get_factors(mofa_object, factors=factors)
+  Z <- do.call("rbind",Z)
+  
+  # Get weights (currently not exported)
+  views <- .check_and_get_views(mofa_object, views=views)
+  W <- get_weights(mofa_object, views=views, factors=factors)
+  
+  # Collect MOFA options
+  mofa_options <- list(
+    "data_options" = mofa_object@data_options,
+    "model_options" = mofa_object@model_options,
+    "training_options" = mofa_object@training_options,
+    "dimensions" = mofa_object@dimensions
+  )
+  
+  # Sanity checks
+  stopifnot(rownames(Z) %in% colnames(seurat_object))
+  stopifnot(views_names(mofa_object) %in% names(seurat_object@assays))
+  
+  # Add to seurat
+  # Add "MOFA" with no view-specific weights to the default assay 
+  message("(1) Adding the MOFA factors to the 'reductions' slot of the default Seurat assay with the 'MOFA' key (no feature weights/loadings provided)...")
+  seurat_object@reductions[["MOFA"]] <- CreateDimReducObject(
+    embeddings = Z, 
+    key = "MOFA_", 
+    misc = mofa_options
+  )
+  
+  # Add a view-specific "MOFA_" that includes the weights
+  # message("(2) Adding the MOFA representation to the 'reductions' slot of each assay, including the feature weights/loadings...")
+  # for (m in views_names(mofa_object)) {
+  #   seurat_object@reductions[[sprintf("MOFA%s_",m)]] <- CreateDimReducObject(
+  #     embeddings = Z, 
+  #     loadings = W[[m]], 
+  #     assay = m,
+  #     key = sprintf("MOFA%s_",m), 
+  #     misc = mofa_options
+  #   )
+  # }
+  
+  if (length(mofa_object@dim_red)>0) {
+    if ("UMAP" %in% names(mofa_object@dim_red)) {
+      message("(2) Adding the UMAP representation obtained with the MOFA factors to the 'reductions' slot of the default Seurat assay using the key 'MOFAUMAP'...")
+      df <- mofa_object@dim_red$UMAP; mtx <- as.matrix(df[,-1]); rownames(mtx) <- df$sample
+      colnames(df) <- paste0("MOFA_UMAP",1:ncol(df))
+      seurat_object@reductions[["MOFAUMAP"]] <- CreateDimReducObject(embeddings = mtx, key = "MOFAUMAP_")
+    }
+    if ("TSNE" %in% names(mofa_object@dim_red)) {
+      message("(2) Adding the UMAP representation obtained with the MOFA factors to the 'reductions' slot of the default Seurat assay using the key 'MOFATSNE'...")
+      df <- mofa_object@dim_red$UMAP; mtx <- as.matrix(df[,-1]); rownames(mtx) <- df$sample
+      seurat_object@reductions[["MOFATSNE"]] <- CreateDimReducObject(embeddings = mtx, key = "MOFATSNE_")
+    }
+  }
+  
+  return(seurat_object)
+}

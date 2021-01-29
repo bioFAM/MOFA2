@@ -25,6 +25,7 @@ The data options are the following: \cr
  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
+ \item{\strong{use_float32}:}{ logical indicating whether use float32 instead of float64 arrays to increase speed and memory usage. Default is FALSE.}
  }
 }
 \examples{

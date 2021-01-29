@@ -75,12 +75,12 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
     if (abs) stat <- abs(stat)
     if (transpose) stat <- t(stat)
     if (return_data) return(stat)
-    corrplot::corrplot(stat, tl.col = "black", title="Pearson correlation coefficient", ...)
+    corrplot(stat, tl.col = "black", title="Pearson correlation coefficient", ...)
     
   } else if (plot=="log_pval") {
     stat <- cor$p
     stat[stat>alpha] <- 1.0
-    if (all(stat==1.0)) stop("All p-values are 1.0, cannot plot the histogram")
+    if (all(stat==1.0)) stop("All p-values are 1.0, nothing to plot")
     stat <- -log10(stat)
     stat[is.infinite(stat)] <- 1000
     if (transpose) stat <- t(stat)

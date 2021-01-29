@@ -22,10 +22,10 @@ Note that the covariate should be numeric and continuous.}
 Returns an untrained \code{\link{MOFA}} with covariates filled in the corresponding slots
 }
 \description{
-Function to add continuous covariate(s) to a \code{\link{MOFA}} object for smooth training (MEFISTO)
+Function to add continuous covariate(s) to a \code{\link{MOFA}} object for training with MEFISTO
 }
 \details{
-To activate the functional MEFISTO framework, specify smooth_options when preparing the training using \code{prepare_mofa}
+To activate the functional MEFISTO framework, specify mefisto_options when preparing the training using \code{prepare_mofa}
 }
 \examples{
 #' # Simulate data

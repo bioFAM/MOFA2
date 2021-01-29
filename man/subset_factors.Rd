@@ -4,12 +4,14 @@
 \alias{subset_factors}
 \title{Subset factors}
 \usage{
-subset_factors(object, factors)
+subset_factors(object, factors, recalculate_variance_explained = TRUE)
 }
 \arguments{
 \item{object}{a \code{\link{MOFA}} object.}
 
 \item{factors}{character vector with the factor names, or numeric vector with the index of the factors.}
+
+\item{recalculate_variance_explained}{logical indicating whether to recalculate variance explained values. Default is \code{TRUE}.}
 }
 \value{
 A \code{\link{MOFA}} object

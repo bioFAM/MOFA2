@@ -108,6 +108,68 @@ calculate_variance_explained <- function(object, views = "all", groups = "all", 
 
 
 
+#' @title Calculate variance explained by the MOFA factors for each sample
+#' @description  This function takes a trained MOFA model as input and calculates, **for each sample** the proportion of variance explained 
+#' (i.e. the coefficient of determinations (R^2)) by the MOFA factors across the different views.
+#' @name calculate_variance_explained_per_sample
+#' @param object a \code{\link{MOFA}} object.
+#' @param views character vector with the view names, or numeric vector with view indexes. Default is 'all'
+#' @param groups character vector with the group names, or numeric vector with group indexes. Default is 'all'
+#' @param factors character vector with the factor names, or numeric vector with the factor indexes. Default is 'all'
+#' @return a list with matrices with the amount of variation explained per sample and view.
+#' @export
+#' @examples
+#' # Using an existing trained model on simulated data
+#' file <- system.file("extdata", "model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' 
+#' # Calculate variance explained (R2)
+#' r2 <- calculate_variance_explained_per_sample(model)
+#'
+calculate_variance_explained_per_sample <- function(object, views = "all", groups = "all", factors = "all") {
+  
+  # Sanity checks
+  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (any(object@model_options$likelihoods!="gaussian"))
+    stop("Not possible to recompute the variance explained estimates when using non-gaussian likelihoods.")
+  if (any(object@model_options$likelihoods!="gaussian"))
+    if (isFALSE(object@data_options$loaded)) stop("Data is not loaded, cannot compute variance explained.")
+  
+  # Define factors, views and groups
+  views  <- .check_and_get_views(object, views)
+  groups <- .check_and_get_groups(object, groups)
+  factors <- .check_and_get_factors(object, factors)
+  
+  # Collect relevant expectations
+  W <- get_weights(object, views=views, factors=factors)
+  Z <- get_factors(object, groups=groups, factors=factors)
+  Y <- lapply(get_data(object, add_intercept = FALSE)[views], function(view) view[groups])
+  Y <- lapply(Y, function(x) lapply(x,t))
+  
+  # Replace masked values on Z by 0 (so that they do not contribute to predictions)
+  for (g in groups) { Z[[g]][is.na(Z[[g]])] <- 0 }
+  
+  # samples <- unlist(samples_names(object)[groups])
+  samples <- samples_names(object)[groups]
+  
+  # Calculate coefficient of determination per sample and view
+  r2 <- lapply(groups, function(g) {
+    tmp <- sapply(views, function(m) {
+      a <- rowSums((Y[[m]][[g]] - tcrossprod(Z[[g]],W[[m]]))**2, na.rm=T)
+      b <- rowSums(Y[[m]][[g]]**2, na.rm = TRUE)
+      return(100*(1-a/b))
+    })
+    tmp <- matrix(tmp, ncol = length(views), nrow = length(samples[[g]]))
+    tmp[tmp<0] <- 0
+    colnames(tmp) <- views
+    rownames(tmp) <- samples[[g]]
+    return(tmp)
+  }); names(r2) <- groups
+  
+  return(r2)
+}
+
+
 
 
 

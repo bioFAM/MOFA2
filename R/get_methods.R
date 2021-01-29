@@ -6,8 +6,8 @@
 #' @title Get dimensions
 #' @name get_dimensions
 #' @description Extract dimensionalities from the model. 
-#' @details K indicates the number of factors, D indicates the number of features, 
-#' N indicates the (total) number of samples, M indicates the number of views and C indicates the number of covariates.
+#' @details K indicates the number of factors, M indicates the number of views, D indicates the number of features (per view), 
+#' N indicates the number of samples (per group) and C indicates the number of covariates.
 #' @param object a \code{\link{MOFA}} object.
 #' @return list containing the dimensionalities of the model
 #' @export
@@ -90,10 +90,10 @@ get_scales <- function(object) {
 #' @export
 get_group_kernel <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if(!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("No covariates specified in 'object'")
-  if (is.null(object@smooth_options)) stop("'object' does have smooth training options.")
+  if(is.null(object@covariates)) stop("No covariates specified in 'object'")
+  if (is.null(object@mefisto_options)) stop("'object' does have MEFISTO training options.")
   
-  if(!object@smooth_options$model_groups || object@dimensions$G == 1) {
+  if(!object@mefisto_options$model_groups || object@dimensions$G == 1) {
     tmp <- lapply(seq_len(dim(object@training_stats$Kg)[3]), function(x) {
       mat <- matrix(1, nrow = object@dimensions$G, ncol = object@dimensions$G)
       rownames(mat) <- colnames(mat) <- groups_names(object)
@@ -624,5 +624,4 @@ get_variance_explained <- function(object, groups = "all", views = "all", factor
   }
   
   return(r2)
-  
 }

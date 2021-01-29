@@ -369,14 +369,16 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  
-  # Collect relevant data
-  data <- object@data
-  
-  # Collect covariate
+  if(sum(get_dimensions(object)[["N"]]) > 1e4) warning("This function is inefficient with large number of cells...")
+  if (length(object@data)==0) stop("Data not found")
+  M <- get_dimensions(object)[["M"]]
+  G <- get_dimensions(object)[["G"]]
+  if (M==1 & G==1) warning("This function is not useful when there is just one view and one group")
+    
+  # Collect MEFISTO covariates
   if(!.hasSlot(object, "covariates") || any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
     covariate <- NULL
-  if(!is.null(covariate)){
+  if (!is.null(covariate)) {
     if(is.numeric(covariate)){
       if(covariate > object@dimensions[["C"]]) stop("Covariate index out of range")
       covariate <- covariates_names(object)[covariate]
@@ -386,14 +388,9 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
     covari <- .set_xax(object, covariate)
   }
   
-  M <- get_dimensions(object)[["M"]]
-  G <- get_dimensions(object)[["G"]]
-  if (M==1 & G==1) warning("This function is not useful when there is just one view and one group")
-  if (is.null(dim(data[[1]][[1]]))) stop("Data not found")
   
   # Define colors  
   if (is.null(colors)) {
-    # colors <- rep("#5CACEE", M)
     palette <- c("#FF7F50", "#D95F02", "#377EB8", "#E6AB02", "#31A354", "#7570B3", "#E7298A", 
                  "#66A61E", "#A6761D", "#666666", "#E41A1C", "#4DAF4A", "#984EA3", "#FF7F00", 
                  "#FFFF33", "#A65628", "#F781BF", "#1B9E77")
@@ -409,7 +406,7 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   }
 
   # Define availability binary matrix to indicate whether assay j is profiled in sample i
-  tmp <- lapply(data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
+  tmp <- lapply(object@data, function(m) sapply(m, function(g) apply(g, 2, function(x) !all(is.na(x)))))
   ovw <- do.call(cbind, lapply(seq_len(M), function(m) {
     do.call(rbind, lapply(tmp[[m]], as.data.frame))
   }))
@@ -433,8 +430,8 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   # Add number of samples and features per view/group
   to.plot$combi  <- ifelse(to.plot$value, as.character(to.plot$view), "missing")
   if (show_dimensions) {
-    to.plot$ntotal <- paste("N=", sapply(data[[1]], function(e) ncol(e))[ as.character(to.plot$group) ], sep="")
-    to.plot$ptotal <- paste("D=", sapply(data, function(e) nrow(e[[1]]))[ as.character(to.plot$view) ], sep="")
+    to.plot$ntotal <- paste("N=", sapply(object@data[[1]], function(e) ncol(e))[ as.character(to.plot$group) ], sep="")
+    to.plot$ptotal <- paste("D=", sapply(object@data, function(e) nrow(e[[1]]))[ as.character(to.plot$view) ], sep="")
     if (length(unique(to.plot$group))==1) { 
       to.plot <- mutate(to.plot, view_label = paste(view, ptotal, sep="\n"), group_label = ntotal)
     } else {

@@ -17,7 +17,7 @@
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
 # #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
 #' @param verbose logical indicating whether to print verbose output (default is FALSE)
-#' @param load_interpol_Z logical indicating whether to load predictions for factor values based on latent processed (only
+#' @param load_interpol_Z (MEFISTO) logical indicating whether to load predictions for factor values based on latent processed (only
 #'  relevant for models trained with covariates and Gaussian processes, where prediction was enabled)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
@@ -256,15 +256,15 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
   if (any(grepl("cov_samples", h5ls.out$group))) { 
     if (isTRUE(verbose)) message("Loading covariates options...")
     tryCatch( {
-      object@smooth_options <- as.list(h5read(file, 'smooth_opts', read.attributes = TRUE))
+      object@mefisto_options <- as.list(h5read(file, 'smooth_opts', read.attributes = TRUE))
     }, error = function(x) { print("Covariates options not found, not loading it...") })
     
     # Convert True/False strings to logical values
-    for (i in names(object@smooth_options)) {
-      if (object@smooth_options[i] == "False" | object@smooth_options[i] == "True") {
-        object@smooth_options[i] <- as.logical(object@smooth_options[i])
+    for (i in names(object@mefisto_options)) {
+      if (object@mefisto_options[i] == "False" | object@mefisto_options[i] == "True") {
+        object@mefisto_options[i] <- as.logical(object@mefisto_options[i])
       } else {
-        object@smooth_options[i] <- object@smooth_options[i]
+        object@mefisto_options[i] <- object@mefisto_options[i]
       }
     }
     
@@ -378,8 +378,8 @@ load_model <- function(file, sort_factors = TRUE, on_disk = FALSE, load_data = T
     if (all(r2 < var.threshold)) {
       warning(sprintf("All %s factors were found to explain little or no variance so remove_inactive_factors option has been disabled.", length(r2)))
     } else if (any(r2 < var.threshold)) {
-      object <- subset_factors(object, which(r2>=var.threshold))
-      message(sprintf("%s factors were found to explain little or no variance and they were removed for downstream analysis. You can disable this option by setting load_model(..., remove_inactive_factors = F)", sum(r2 < var.threshold)))
+      object <- subset_factors(object, which(r2>=var.threshold), recalculate_variance_explained=FALSE)
+      message(sprintf("%s factors were found to explain no variance and they were removed for downstream analysis. You can disable this option by setting load_model(..., remove_inactive_factors = FALSE)", sum(r2 < var.threshold)))
     }
   }
   

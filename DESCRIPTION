@@ -1,7 +1,7 @@
 Package: MOFA2
 Type: Package
 Title: Multi-Omics Factor Analysis v2
-Version: 1.1.7
+Version: 1.2.0
 Maintainer: Britta Velten <britta.velten@gmail.com>
 Authors@R: c(person("Ricard", "Argelaguet", role = "aut",
                      email = "ricard@ebi.ac.uk",
@@ -21,8 +21,8 @@ License: GPL (>= 2)
 Description: The MOFA2 package contains a collection of tools for running and analysing MOFA models.
 Encoding: UTF-8
 Depends: R (>= 4.0)
-Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot, DelayedArray, Rtsne, uwot, basilisk, mvtnorm
-Suggests: knitr, testthat, Seurat, ggpubr, foreach, psych, MultiAssayExperiment, SummarizedExperiment, SingleCellExperiment, ggrastr
+Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot, DelayedArray, Rtsne, uwot, basilisk
+Suggests: knitr, testthat, Seurat, ggpubr, foreach, psych, MultiAssayExperiment, SummarizedExperiment, SingleCellExperiment, ggrastr, mvtnorm, GGally
 biocViews: DimensionReduction, Bayesian, Visualization
 URL: https://biofam.github.io/MOFA2/index.html
 BugReports: https://github.com/bioFAM/MOFA2

@@ -7,7 +7,7 @@
 create_mofa_from_MultiAssayExperiment(
   mae,
   groups = NULL,
-  save_metadata = FALSE
+  extract_metadata = FALSE
 )
 }
 \arguments{
@@ -17,7 +17,7 @@ create_mofa_from_MultiAssayExperiment(
 Alternatively, a character vector with group assignment for every sample.
 Default is \code{NULL} (no group structure).}
 
-\item{save_metadata}{logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object}
+\item{extract_metadata}{logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object}
 }
 \value{
 Returns an untrained \code{\link{MOFA}} object
