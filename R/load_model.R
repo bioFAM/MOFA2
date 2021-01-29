@@ -17,7 +17,7 @@
 #' @param remove_inactive_factors logical indicating whether to remove inactive factors from the model.
 # #' @param remove_intercept_factors logical indicating whether to remove intercept factors for non-Gaussian views.
 #' @param verbose logical indicating whether to print verbose output (default is FALSE)
-#' @param load_interpol_Z logical indicating whether to load predictions for factor values based on latent processed (only
+#' @param load_interpol_Z (MEFISTO) logical indicating whether to load predictions for factor values based on latent processed (only
 #'  relevant for models trained with covariates and Gaussian processes, where prediction was enabled)
 #' @return a \code{\link{MOFA}} model
 #' @importFrom rhdf5 h5read h5ls
