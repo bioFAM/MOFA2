@@ -44,7 +44,7 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
   Z[is.na(Z)] <- 0
   
   # Run t-SNE
-  tsne_embedding <- Rtsne::Rtsne(Z, check_duplicates = FALSE, pca = FALSE, ...)
+  tsne_embedding <- Rtsne(Z, check_duplicates = FALSE, pca = FALSE, ...)
 
   # Add sample names and enumerate latent dimensions (e.g. TSNE1 and TSNE2)
   object@dim_red$TSNE <- data.frame(rownames(Z), tsne_embedding$Y)
@@ -101,7 +101,7 @@ run_umap <- function(object, factors = "all", groups = "all", n_neighbors = 30, 
   Z[is.na(Z)] <- 0
   
   # Run UMAP
-  umap_embedding <- uwot::umap(Z, n_neighbors=n_neighbors, min_dist=min_dist, metric=metric, ...)
+  umap_embedding <- umap(Z, n_neighbors=n_neighbors, min_dist=min_dist, metric=metric, ...)
 
   # Add sample names and enumerate latent dimensions (e.g. UMAP1 and UMAP2)
   object@dim_red$UMAP <- data.frame(rownames(Z), umap_embedding)
