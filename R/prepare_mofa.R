@@ -237,7 +237,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
 #'  Default is 1000. Convergence is assessed using the ELBO statistic.}
 #'  \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped. Default is -1 (no dropping of factors)}
-#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast", corresponding to 5e-7\%, 5e-6\% or 5e-5\% deltaELBO change w.r.t. to the ELBO at the first iteration. }
+#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "slow", "medium" or "fast", corresponding to 1e-5\%, 1e-4\% or 1e-3\% deltaELBO change. }
 #'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
 #'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
 #'  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
