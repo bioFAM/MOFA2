@@ -1,7 +1,7 @@
 
 ## Videotutorials
 
-* [overview on single-cell multi-omics data integration using MOFA+](https://www.youtube.com/watch?v=4Nt4oz0cfIk&feature=youtu.be&ab_channel=RicardArgelaguet)  
+* [**Overview on single-cell multi-omics data integration using MOFA+**](https://www.youtube.com/watch?v=4Nt4oz0cfIk&feature=youtu.be&ab_channel=RicardArgelaguet): precorded talk for a webinar, includes brief CITE-seq and Multiome 10x applications.
 
 ## Getting started using R
 
@@ -42,9 +42,8 @@
 <!-- * **Analysis of CITE-seq data**: still in preparation, reach us if you have questions...  -->
  
 
-## Case examples (in Python)
-
-In preparation...
+<!-- ## Case examples (in Python) -->
+<!-- In preparation... -->
 
 ## Raw files
 
