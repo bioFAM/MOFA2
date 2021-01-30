@@ -49,10 +49,6 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   if (any(object@dimensions$N<10) & !(.hasSlot(object, "covariates") && length(object@covariates)>=1)) warning("Some group(s) have less than 10 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
   if (any(object@dimensions$D<15)) warning("Some view(s) have less than 15 features, MOFA will have little power to to learn meaningful factors for these view(s)....")
   if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to perform a more stringent feature selection before creating the MOFA object....")
-<<<<<<< HEAD
-
-    # Get data options
-=======
   if (length(object@samples_metadata)>0) { 
     stopifnot(c("sample","group") %in% colnames(object@samples_metadata))
   } else {
@@ -71,7 +67,6 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   }
 
   # Get data options
->>>>>>> main-dev
   message("Checking data options...")
   if (is.null(data_options)) {
     message("No data options specified, using default...")
