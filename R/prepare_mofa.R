@@ -152,17 +152,10 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   }
   
   # Get smooth covariates options
-<<<<<<< HEAD
   if (.hasSlot(object, "covariates") && length(object@covariates)>=1) {
     if (is.null(smooth_options)) {
         message("Covariates provided but no smooth options specified, using default...")
         object@smooth_options <- get_default_smooth_options(object)
-=======
-  if (length(object@covariates)>=1) {
-    if (is.null(mefisto_options)) {
-      message("Covariates provided but no smooth options specified, using default...")
-      object@mefisto_options <- get_default_mefisto_options(object)
->>>>>>> main-dev
     } else {
       message("Checking inference options for smooth covariates...")
       # message("Smooth covariates have been provided as prior information.")
