@@ -73,7 +73,7 @@
     
   # check dimensionalities of sample_covariates 
   if (verbose == TRUE) message("Checking sample covariates...")
-  if(!is.null(object@covariates)){
+  if(.hasSlot(object, "covariates") && !is.null(object@covariates)){
     stopifnot(ncol(object@covariates) == sum(object@dimensions$N))
     stopifnot(nrow(object@covariates) == object@dimensions$C)
     stopifnot(all(unlist(samples_names(object)) == colnames(object@covariates)))
@@ -106,7 +106,7 @@
     # Check expectations
     if (verbose == TRUE) message("Checking expectations...")
     stopifnot(all(c("W", "Z") %in% names(object@expectations)))
-    # if(!is.null(object@covariates)) stopifnot("Sigma" %in% names(object@expectations))
+    # if(.hasSlot(object, "covariates") && !is.null(object@covariates)) stopifnot("Sigma" %in% names(object@expectations))
     stopifnot(all(sapply(object@expectations$W, is.matrix)))
     stopifnot(all(sapply(object@expectations$Z, is.matrix)))
     

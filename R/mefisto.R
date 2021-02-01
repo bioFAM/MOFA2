@@ -106,7 +106,7 @@ set_covariates <- function(object, covariates) {
   names(covariates) <- groups_names(object)
   
   # Sanity checks
-  stopifnot(all(sapply(object@covariates, ncol) == object@dimensions[["N"]]))
+  stopifnot(all(sapply(covariates, ncol) == object@dimensions[["N"]]))
   
   # add covariates to the MOFA object
   object@covariates <- covariates
@@ -668,7 +668,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   
   # Define covariates
   if (is.null(covariates)) {
-    if (any(object@dimensions[["C"]] < 1, is.null(object@covariates)))  
+    if (!.hasSlot(object, "covariates") || any(object@dimensions[["C"]] < 1, is.null(object@covariates)))  
       stop("No covariates found in object. Please specify one.")
     covariates <- covariates_names(object)
   }

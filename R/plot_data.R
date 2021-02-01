@@ -374,9 +374,9 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   M <- get_dimensions(object)[["M"]]
   G <- get_dimensions(object)[["G"]]
   if (M==1 & G==1) warning("This function is not useful when there is just one view and one group")
-  
+    
   # Collect MEFISTO covariates
-  if (any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
+  if(!.hasSlot(object, "covariates") || any(object@dimensions[["C"]] < 1, is.null(object@covariates))) 
     covariate <- NULL
   if (!is.null(covariate)) {
     if(is.numeric(covariate)){

@@ -74,7 +74,7 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
 
 setMethod("covariates_names", signature(object="MOFA"),
           function(object) {
-            if(is.null(object@covariates))
+            if(!.hasSlot(object, "covariates") || is.null(object@covariates))
               stop("No covariates present in the given MOFA object.")
             rownames(object@covariates[[1]])
           }
@@ -87,7 +87,7 @@ setMethod("covariates_names", signature(object="MOFA"),
 #' @export
 setReplaceMethod("covariates_names", signature(object="MOFA", value="vector"),
                  function(object, value) {
-                   if(is.null(object@covariates))
+                   if(!.hasSlot(object, "covariates") || is.null(object@covariates))
                      stop("No covariates present in the given MOFA object.")
                    if (methods::.hasSlot(object, "dimensions") && length(object@dimensions) != 0)
                      if (length(value) != object@dimensions["C"])
@@ -189,11 +189,11 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                     object <- .set_data_names(object, entity = 'samples', value)
                    
                    # Add sample names to covariates
-                   if (!is.null(object@covariates)) {
+                   if (.hasSlot(object, "covariates") && !is.null(object@covariates)) {
                      for (m in seq_along(object@covariates))
                        colnames(object@covariates[[m]]) <- value[[m]]
                    }
-                   if (!is.null(object@covariates_warped)) {
+                   if (.hasSlot(object, "covariates_warped") && !is.null(object@covariates_warped)) {
                      for (m in seq_along(object@covariates_warped))
                        colnames(object@covariates_warped[[m]]) <- value[[m]]
                    }
@@ -555,7 +555,7 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
             }
             
             # Set sample group names in covariates
-            if (!is.null(object@covariates)) {
+            if (.hasSlot(object, "covariates") && !is.null(object@covariates)) {
                 names(object@covariates) <- value
             }
             

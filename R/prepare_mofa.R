@@ -16,7 +16,7 @@
 #' If NULL, default options are used.
 #' @param stochastic_options list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 #' If NULL, default options are used.
-#' @param mefisto_options list of options for smooth inference (see \code{\link{get_default_mefisto_options}} for details). 
+#' @param mefisto_options list of options for mefisto (see \code{\link{get_default_mefisto_options}} for details). 
 #' If NULL, default options are used.
 #' @return Returns an untrained \code{\link{MOFA}} with specified options filled in the corresponding slots
 #' @details This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
@@ -46,7 +46,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
-  if (any(object@dimensions$N<10) & !length(object@covariates)>=1) warning("Some group(s) have less than 10 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
+  if (any(object@dimensions$N<10) & !(.hasSlot(object, "covariates") && length(object@covariates)>=1)) warning("Some group(s) have less than 10 samples, MOFA will have little power to learn meaningful factors for these group(s)...")
   if (any(object@dimensions$D<15)) warning("Some view(s) have less than 15 features, MOFA will have little power to to learn meaningful factors for these view(s)....")
   if (any(object@dimensions$D>1e4)) warning("Some view(s) have a lot of features, it is recommended to perform a more stringent feature selection before creating the MOFA object....")
   if (length(object@samples_metadata)>0) { 
@@ -151,14 +151,14 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
                     object@model_options$num_factors, floor(min(object@dimensions$N/4))))
   }
   
-  # Get smooth covariates options
-  if (length(object@covariates)>=1) {
+  # Get mefisto covariates options
+  if (.hasSlot(object, "covariates") && length(object@covariates)>=1) {
     if (is.null(mefisto_options)) {
-      message("Covariates provided but no smooth options specified, using default...")
-      object@mefisto_options <- get_default_mefisto_options(object)
+        message("Covariates provided but no mefisto options specified, using default...")
+        object@mefisto_options <- get_default_mefisto_options(object)
     } else {
-      message("Checking inference options for smooth covariates...")
-      # message("Smooth covariates have been provided as prior information.")
+      message("Checking inference options for mefisto covariates...")
+      # message("mefisto covariates have been provided as prior information.")
       if (!is(mefisto_options,"list") || !setequal(names(mefisto_options), names(get_default_mefisto_options(object)) ))
         stop("mefisto_options are incorrectly specified, please read the documentation in get_default_mefisto_options")
       
@@ -180,13 +180,13 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
       
       # Disable spike-slab on the factors
       if(isTRUE(model_options$spikeslab_factors)) {
-        print("Spike-and-Slab sparsity prior on the factors is not available when using smooth covariates, setting to False")
+        print("Spike-and-Slab sparsity prior on the factors is not available when using MEFISTO, setting to False")
         model_options$spikeslab_factors <- FALSE
       }
       
       # Disable stochastic inference
       if (isTRUE(model_options$stochastic)) {
-        print("Stochastic inference is not available when using smooth covariates, setting to False")
+        print("Stochastic inference is not available when using MEFISTO, setting to False")
         model_options$stochastic <- FALSE
         object@stochastic_options <- list()
       }

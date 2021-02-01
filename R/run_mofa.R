@@ -139,7 +139,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   )
   
   # Set covariates
-  if (!is.null(object@covariates)) {
+  if (.hasSlot(object, "covariates") && !is.null(object@covariates)) {
     sample_cov_to_py <- r_to_py(unname(lapply(object@covariates, function(x) unname(r_to_py(t(x))))))
     cov_names_2_py <- r_to_py(covariates_names(object))
     mofa_entrypoint$set_covariates(sample_cov_to_py, cov_names_2_py)
@@ -180,10 +180,10 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     )
   }
   
-  # Set MEFISTO covariate options  
-  if (!is.null(object@covariates) & length(object@mefisto_options)>1) {
+  # Set mefisto options  
+  if (.hasSlot(object, "covariates") && !is.null(object@covariates) & length(object@mefisto_options)>1) {
     warping_ref <- which(groups_names(object) == object@mefisto_options$warping_ref)
-    mofa_entrypoint$set_smooth_options(
+    mofa_entrypoint$set_mefisto_options(
       scale_cov           = object@mefisto_options$scale_cov,
       start_opt           = as.integer(object@mefisto_options$start_opt),
       n_grid              = as.integer(object@mefisto_options$n_grid),
@@ -206,7 +206,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   mofa_entrypoint$run()
 
   # Interpolate
-  if (!is.null(object@covariates) & length(object@mefisto_options)>1) {
+  if (.hasSlot(object, "covariates") && !is.null(object@covariates) & length(object@mefisto_options)>1) {
     if(!is.null(object@mefisto_options$new_values)) {
       new_values <- object@mefisto_options$new_values
       if(is.null(dim(new_values))){

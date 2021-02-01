@@ -139,7 +139,8 @@ return(model)
 }
 
 .check_and_get_covariates <- function(object, covariates) {
-  if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
+  if (!.hasSlot(object, "covariates") || is.null(object@covariates))
+    stop("No covariates found in object.")
   stopifnot(!any(duplicated(covariates)))
   if (is.numeric(covariates)) {
     stopifnot(all(covariates <= object@dimensions$C))
