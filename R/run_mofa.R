@@ -183,7 +183,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   # Set mefisto options  
   if (.hasSlot(object, "covariates") && !is.null(object@covariates) & length(object@mefisto_options)>1) {
     warping_ref <- which(groups_names(object) == object@mefisto_options$warping_ref)
-    mofa_entrypoint$set_mefisto_options(
+    mofa_entrypoint$set_smooth_options(
       scale_cov           = object@mefisto_options$scale_cov,
       start_opt           = as.integer(object@mefisto_options$start_opt),
       n_grid              = as.integer(object@mefisto_options$n_grid),
