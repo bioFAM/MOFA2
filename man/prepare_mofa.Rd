@@ -28,7 +28,7 @@ If NULL, default options are used.}
 \item{stochastic_options}{list of options for stochastic variational inference (see \code{\link{get_default_stochastic_options}} for details). 
 If NULL, default options are used.}
 
-\item{mefisto_options}{list of options for smooth inference (see \code{\link{get_default_mefisto_options}} for details). 
+\item{mefisto_options}{list of options for mefisto (see \code{\link{get_default_mefisto_options}} for details). 
 If NULL, default options are used.}
 }
 \value{
