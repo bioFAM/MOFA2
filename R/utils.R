@@ -90,7 +90,7 @@
       Z <- get_factors(object, groups=g, factors=k)[[1]][,1]
       Z <- Z[!is.na(Z)]
       
-      warning("Outlier detection is independent of the inferred lengthscale currently - might lead to unwanted results")
+      # warning("Outlier detection is independent of the inferred lengthscale currently - might lead to unwanted results")
       cutoff <- 2.5 * 1.96
       tmp <- abs(Z - mean(Z)) / sd(Z)
 

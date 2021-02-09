@@ -106,6 +106,11 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   # Initiate reticulate
   mofa <- import("mofapy2")
   
+  # Check version
+  if (mofa$version$`__version__` != "0.6.1") {
+    warning(sprintf("The latest mofapy2 version is 0.6.1, you are using %s. Please upgrade with 'pip install mofapy2'",mofa$version$`__version__`))
+  }
+  
   # Call entry point
   mofa_entrypoint <- mofa$run.entry_point$entry_point()
   
