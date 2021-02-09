@@ -583,8 +583,11 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
 }
 
 # (Hidden) function to split data in Seurat object into a list of matrices
-.split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "data", features = NULL) {
+.split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "scale.data", features = NULL) {
   data <- Seurat::GetAssayData(object = seurat, assay = assay, slot = slot)
+  if(is.null(data) | any(dim(data) == 0)){
+    stop(paste("No data present in the slot",slot, "of the assay",assay ,"in the Seurat object."))
+  }
   if (!is.null(features)) data <- data[features, , drop=FALSE]
   .split_data_into_groups(list(data), groups)[[1]]
 }
