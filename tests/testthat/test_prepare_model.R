@@ -46,7 +46,7 @@ test_that("a model can be created from a Seurat object", {
 	srt <- Seurat::CreateSeuratObject(m)
 
 	# Prepare a model before training
-	factor_model <- create_mofa(srt, features = genes)
+	factor_model <- create_mofa(srt, features = genes, slot = "data")
 
 	# Test if a Seurat object can be used to prepare the MOFA model for training
 	expect_is(prepare_mofa(factor_model), "MOFA")

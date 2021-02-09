@@ -34,7 +34,8 @@ test_that("a model can be created from a Seurat object", {
 	colnames(m) <- cells
 	rownames(m) <- genes
 	srt <- Seurat::CreateSeuratObject(m)
-	expect_is(create_mofa(srt, features = genes), "MOFA")
+	# only for testing purpose, should use scale.data
+	expect_is(create_mofa(srt, features = genes, slot = "data"), "MOFA")
 })
 
 test_that("a list of matrices per view is split correctly into a nested list of matrices according to samples groups", {

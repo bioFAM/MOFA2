@@ -25,7 +25,7 @@ calculate_contribution_scores(
 This effectively normalises each view by its total variance explained. It is important when different amounts of variance is explained for each view (check with \code{plot_variance_explained(..., plot_total=TRUE)})}
 }
 \value{
-adds the contribution scores to the metadata slot (\code{samples_metadata(MOFAobject)}) and to the cache slot
+adds the contribution scores to the metadata slot (\code{samples_metadata(MOFAobject)}) and to the \code{MOFAobject@cache} slot
 }
 \description{
 This function calculates, *for each sample* how much each view contributes to its location in the latent manifold, what we call \emph{contribution scores}
@@ -35,7 +35,7 @@ Contribution scores are calculated in three steps:
 \itemize{
  \item{Step 1}{calculate variance explained for each cell i and each view m (\eqn{R_{im}}), using all factors}
  \item{Step 2}{(optional) scale values by the total variance explained for each view}
- \item{Step 3}{calculate contribution score (\eqn{C_{im}}) for cell i and view m as: \deqn{C_{im} = \frac{R2_{im}}{\sum_{m}^{M} R2_{im}} } }
+ \item{Step 3}{calculate contribution score (\eqn{C_{im}}) for cell i and view m as: \deqn{C_{im} = \frac{R2_{im}}{\sum_{m} R2_{im}} } }
 }
 Note that contribution scores can be calculated using any number of data modalities, but it is easier to interpret when you specify two. \cr
 Please note that this functionality is still experimental, contact the authors if you have questions.
