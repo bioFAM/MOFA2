@@ -155,7 +155,7 @@ calculate_variance_explained_per_sample <- function(object, views = "all", group
   # Calculate coefficient of determination per sample and view
   r2 <- lapply(groups, function(g) {
     tmp <- sapply(views, function(m) {
-      a <- rowSums((Y[[m]][[g]] - tcrossprod(Z[[g]],W[[m]]))**2, na.rm=T)
+      a <- rowSums((Y[[m]][[g]] - tcrossprod(Z[[g]],W[[m]]))**2, na.rm=TRUE)
       b <- rowSums(Y[[m]][[g]]**2, na.rm = TRUE)
       return(100*(1-a/b))
     })
