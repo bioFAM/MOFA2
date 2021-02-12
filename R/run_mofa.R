@@ -66,10 +66,17 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     
     # Sanity checks
     have_mofa2 <- py_module_available("mofapy2")
+    if(have_mofa2) {
+      mofa <- import("mofapy2")
+      if (mofa$version$`__version__` != "0.6.1") {
+        warning(sprintf("The latest mofapy2 version is 0.6.1, you are using %s. Please upgrade with 'pip install mofapy2'",mofa$version$`__version__`))
+        have_mofa2 <- FALSE
+      }
+    }
     if (have_mofa2) {
       .run_mofa_reticulate(object, outfile, save_data)
     } else {
-      warning("mofapy2 is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...")
+      warning("mofapy2_0.6.1 is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...")
       use_basilisk <- TRUE
     }
   }
@@ -105,11 +112,6 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
   
   # Initiate reticulate
   mofa <- import("mofapy2")
-  
-  # Check version
-  if (mofa$version$`__version__` != "0.6.1") {
-    warning(sprintf("The latest mofapy2 version is 0.6.1, you are using %s. Please upgrade with 'pip install mofapy2'",mofa$version$`__version__`))
-  }
   
   # Call entry point
   mofa_entrypoint <- mofa$run.entry_point$entry_point()
