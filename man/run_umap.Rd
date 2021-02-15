@@ -27,7 +27,7 @@ run_umap(
 
 \item{metric}{choice of metric used to measure distance in the input space}
 
-\item{...}{arguments passed to \code{\link{uwot::umap}}}
+\item{...}{arguments passed to \code{\link[uwot]{umap}}}
 }
 \value{
 Returns a \code{\link{MOFA}} object with the \code{MOFAobject@dim_red} slot filled with the UMAP output
@@ -36,8 +36,8 @@ Returns a \code{\link{MOFA}} object with the \code{MOFAobject@dim_red} slot fill
 Run UMAP on the MOFA factors
 }
 \details{
-This function calls \code{\link{uwot::umap}} to calculate a UMAP representation from the MOFA factors
-For details on the hyperparameters of UMAP see the documentation of \code{\link{uwot::umap}}.
+This function calls \code{\link[uwot]{umap}} to calculate a UMAP representation from the MOFA factors
+For details on the hyperparameters of UMAP see the documentation of \code{\link[uwot]{umap}}.
 Subsequently, you can plot the UMAP representation with \code{\link{plot_dimred}} or fetch the coordinates using \code{plot_dimred(..., method="UMAP", return_data=TRUE)}. 
 Remember to use set.seed before the function call to get reproducible results.
 }

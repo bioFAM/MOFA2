@@ -4,7 +4,7 @@
 
 #' @title Run feature set Enrichment Analysis
 #' @name run_enrichment 
-#' @description Method to perform feature set enrichment analysis. Here we use a slightly modified version of the \link[PCGSE]{pcgse} function.
+#' @description Method to perform feature set enrichment analysis. Here we use a slightly modified version of the \code{\link[PCGSE]{pcgse}} function.
 #' @param object a \code{\link{MOFA}} object.
 #' @param view a character with the view name, or a numeric vector with the index of the view to use.
 #' @param feature.sets data structure that holds feature set membership information. 

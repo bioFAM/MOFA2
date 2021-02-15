@@ -1,4 +1,4 @@
-
+#' @importFrom stringi stri_enc_mark
 .quality_control <- function(object, verbose = FALSE) {
   
   # Sanity checks

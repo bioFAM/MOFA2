@@ -25,7 +25,7 @@ The training options are the following: \cr
  Default is 1000. Convergence is assessed using the ELBO statistic.}
  \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped. Default is -1 (no dropping of factors)}
- \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "fast", "medium" or "slow", corresponding to 0.0005\%, 0.001\% or 0.005\% deltaELBO change. }
+ \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "fast", "medium" or "slow", corresponding to 0.0005\%, 0.00005\% or 0.000005\% deltaELBO change. }
  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }

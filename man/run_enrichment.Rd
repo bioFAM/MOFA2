@@ -55,7 +55,7 @@ a list with five elements:
 \item{\strong{sigPathways}}{ list with significant pathways per factor. }
 }
 \description{
-Method to perform feature set enrichment analysis. Here we use a slightly modified version of the \link[PCGSE]{pcgse} function.
+Method to perform feature set enrichment analysis. Here we use a slightly modified version of the \code{\link[PCGSE]{pcgse}} function.
 }
 \details{
 The aim of this function is to relate each factor to pre-defined biological pathways by performing a gene set enrichment analysis on the feature weights. \cr

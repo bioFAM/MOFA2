@@ -412,7 +412,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 
   if(show_observed) {
     # add the factor values of the observed time point  to the plot
-    df_observed <- plot_factors_vs_cov(object, covariate = covariate, return_data = TRUE)
+    df_observed <- plot_factors_vs_cov(object, covariates = covariate, return_data = TRUE)
     df_observed <- filter(df_observed, factor %in% factors)
   }
 

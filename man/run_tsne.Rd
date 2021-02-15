@@ -22,7 +22,7 @@ Returns a \code{\link{MOFA}} object with the \code{MOFAobject@dim_red} slot fill
 Run t-SNE on the MOFA factors
 }
 \details{
-This function calls \code{\link{Rtsne::Rtsne}} to calculate a TSNE representation from the MOFA factors.
+This function calls \code{\link[Rtsne]{Rtsne}} to calculate a TSNE representation from the MOFA factors.
 Subsequently, you can plot the TSNE representation with \code{\link{plot_dimred}} or fetch the coordinates using \code{plot_dimred(..., method="TSNE", return_data=TRUE)}. 
 Remember to use set.seed before the function call to get reproducible results.
 }
