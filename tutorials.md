@@ -16,7 +16,7 @@
 
 ## Getting started using Python
 
-* [**Training a model in Python**](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a jupyter notebook demonstrating how to train a MOFA model using simple simulated data  
+* [**Training a model in Python**](https://github.com/bioFAM/mofapy2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a jupyter notebook demonstrating how to train a MOFA model using simple simulated data  
 
 * **Downstream analysis in Python**: in preparation...
 
