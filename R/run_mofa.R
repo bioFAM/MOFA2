@@ -68,15 +68,15 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     have_mofa2 <- py_module_available("mofapy2")
     if(have_mofa2) {
       mofa <- import("mofapy2")
-      if (mofa$version$`__version__` != "0.6.1") {
-        warning(sprintf("The latest mofapy2 version is 0.6.1, you are using %s. Please upgrade with 'pip install mofapy2'",mofa$version$`__version__`))
+      if (mofa$version$`__version__` != "0.6.2") {
+        warning(sprintf("The latest mofapy2 version is 0.6.2, you are using %s. Please upgrade with 'pip install mofapy2'",mofa$version$`__version__`))
         have_mofa2 <- FALSE
       }
     }
     if (have_mofa2) {
       .run_mofa_reticulate(object, outfile, save_data)
     } else {
-      warning("mofapy2_0.6.1 is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...")
+      warning("mofapy2_0.6.2 is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...")
       use_basilisk <- TRUE
     }
   }
