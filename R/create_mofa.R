@@ -599,7 +599,7 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
     stop("Package \"SummarizedExperiment\" is required but is not installed.", call. = FALSE)
   } else {
     
-    data <- SummarizedExperiment::assay(sce, assay = assay)
+    data <- SummarizedExperiment::assay(sce, i = assay)
     .split_data_into_groups(list(data), groups)[[1]]
   }
 }
