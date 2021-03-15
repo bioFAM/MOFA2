@@ -336,6 +336,7 @@ get_default_data_options <- function(object) {
   data_options <- list(
     scale_views = FALSE,     # (logical) Scale views to unit variance?
     scale_groups = FALSE,    # (logical) Scale groups to unit variance?
+    center_groups = TRUE,   # (logical) Center groups?
     use_float32 = FALSE       # (logical) Use float32 instead of float64 arrays to increase speed and memory usage
   )
   
