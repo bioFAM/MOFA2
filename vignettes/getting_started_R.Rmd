@@ -208,9 +208,9 @@ MOFAobject <- prepare_mofa(
 Train the MOFA model. Remember that in this step the `MOFA2` R package connets with the
 `mofapy2` Python package using `reticulate`. This is the source of most problems when
 running MOFA. See our [FAQ section](https://biofam.github.io/MOFA2/faq.html) 
-if you have issues.
+if you have issues. The output is saved in the file specified as `outfile`. If none is specified, the output is saved in a temporary location.
 ```{r}
-outfile = file.path(getwd(),"model.hdf5")
+outfile = file.path(tempdir(),"model.hdf5")
 MOFAobject.trained <- run_mofa(MOFAobject, outfile)
 ```
 
@@ -231,7 +231,7 @@ Iteration 9: time=0.04, ELBO=-50114.43, deltaELBO=23.907 (0.002686924%), Factors
 ## Training finished ##
 #######################
 
-Saving model in `/Users/ricard/data/mofa2/hdf5/model.hdf5...`r outfile`.
+Saving model in `/var/folders/.../model.hdf5...`r outfile`.
 ```
 
 # Downstream analysis
