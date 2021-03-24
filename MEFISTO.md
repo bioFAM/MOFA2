@@ -38,7 +38,7 @@ BiocManager::install("MOFA2")
 * [**MEFISTO with temporal data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_temporal.html): illustration of the method with a temporal covariate
 * [**MEFISTO with spatial data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_spatial.html): illustration of the method with a spatial covariate
 * [**Application to an evodevo gene expression atlas**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/evodevo_tutorial.html): gene expression data from 5 species and 5 organs across development
-* **Application to a longitudinal microbiome data set** *in preparation... (preliminary code can be found [here](https://github.com/bioFAM/MEFISTO_analyses/blob/master/microbiome/ECAM_analysis.Rmd))*
+* [**Application to a longitudinal microbiome data set**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/microbiome_tutorial.html)
 * [**Application to spatial transcritptomics data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_ST.html): spatial transcriptome data of a mouse brain tissue generated using 10x visium
 
 ## FAQ
