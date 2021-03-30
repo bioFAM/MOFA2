@@ -319,6 +319,7 @@ plot_smoothness <- function(object, factors = "all", color = "cadetblue") {
   # Get scale parameters
   ss <- get_scales(object)[factors]
   df <- data.frame(factor = names(ss), smooth = ss, non_smooth = 1- ss)
+  df$factor <- factor(df$factor, levels=factors)
   df <- gather(df, -factor, key = "smoothness", value = "value")
   gg_bar <- ggplot(df, aes(x= 1, y = value, fill = smoothness)) +
     geom_bar(stat="identity") +
@@ -361,6 +362,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
   
   # make plot
   df <- data.frame(factor = names(gr), group = gr, non_group = 1-gr)
+  df$factor <- factor(df$factor, levels=factors)
   df <- gather(df, -factor, key = "sharedness", value = "value")
   df <- mutate(df, sharedness = factor(sharedness, levels = rev(c("group", "non_group"))))
   gg_bar <- ggplot(df, aes(x= 1, y=value, fill = sharedness)) + geom_bar(stat="identity") +
