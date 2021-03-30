@@ -379,7 +379,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' @description make a plot of interpolated covariates versus covariate
 #' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param covariate covariate to use for plotting
-#' @param factor character the factors name, or numeric  indicating the index of the factor to plot
+#' @param factors character or numeric specifying the factor(s) to plot, default is "all"
 #' @param only_mean show only mean or include uncertainties?
 #' @param show_observed include observed factor values as dots on the plot
 #' @details to be filled
@@ -391,9 +391,9 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' model <- interpolate_factors(model, new_values = seq(0,1.1,0.1))
-#' plot_interpolation_vs_covariate(model, covariate = "time", factor = 1)
+#' plot_interpolation_vs_covariate(model, covariate = "time", factors = 1)
 
-plot_interpolation_vs_covariate <- function(object, covariate = 1, factor = 1, only_mean = TRUE, show_observed = TRUE){
+plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "all", only_mean = TRUE, show_observed = TRUE){
 
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -402,11 +402,12 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factor = 1, o
   covariate <- .check_and_get_covariates(object, covariate)
   
   # get and check factor
-  factor2keep <- .check_and_get_factors(object, factor)
+  factors <- .check_and_get_factors(object, factors)
   
   # get interpolated factor
   df <- get_interpolated_factors(object, as.data.frame = TRUE, only_mean = only_mean)
-  df <- filter(df, factor == factor2keep)
+  df <- filter(df, factor %in% factors)
+  df$factor <- factor(df$factor, levels = factors)
   # calculate ribbon borders
   if(!only_mean) {
     df <- df %>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
@@ -415,7 +416,8 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factor = 1, o
   if(show_observed) {
     # add the factor values of the observed time point  to the plot
     df_observed <- plot_factors_vs_cov(object, covariates = covariate, return_data = TRUE)
-    df_observed <- filter(df_observed, factor  == factor2keep)
+    df_observed <- filter(df_observed, factor %in% factors)
+    df_observed$factor <- factor(df_observed$factor, levels = factors)
   }
 
   gg_interpol <- ggplot(df, aes_string(x=covariate, y = "mean", col = "group")) +
