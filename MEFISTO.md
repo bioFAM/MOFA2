@@ -43,6 +43,7 @@ BiocManager::install("MOFA2")
 
 ### Python Tutorials
  * [**Application to an evodevo gene expression atlas**](https://github.com/bioFAM/MEFISTO_tutorials/blob/master/MEFISTO_evodevo.ipynb): gene expression data from 5 species and 5 organs across development
+ * [**Application to a longitudinal microbiome data set**](https://github.com/bioFAM/MEFISTO_tutorials/blob/master/MEFISTO_microbiome.ipynb): microbiome data from 43 children over the first two years of life
 
 
 ## FAQ
