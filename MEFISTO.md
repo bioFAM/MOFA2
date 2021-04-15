@@ -17,7 +17,7 @@ For more details you can read our preprint:
 
 ## Installation
 
-MEFISTO was integrated into the MOFA framework and you can follow our [installation instructions for MOFA](https://biofam.github.io/MOFA2/installation.html). 
+MEFISTO was integrated into the MOFA framework and you can follow our [installation instructions for MOFA](https://biofam.github.io/MOFA2/installation.html), which provides details on the R and Python package installation as well as a Docker image.
 
 Please make sure you have the latest version of MOFA2 (>=1.1.4) and mofapy2 (>=0.5.8) for MEFISTO to work. If you already using MOFA, you might need to update the R and python package, e.g. using
 ```r
