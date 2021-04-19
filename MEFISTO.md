@@ -44,6 +44,10 @@ BiocManager::install("MOFA2")
 ### Python Tutorials
  * [**Application to an evodevo gene expression atlas**](https://github.com/bioFAM/MEFISTO_tutorials/blob/master/MEFISTO_evodevo.ipynb): gene expression data from 5 species and 5 organs across development
  * [**Application to a longitudinal microbiome data set**](https://github.com/bioFAM/MEFISTO_tutorials/blob/master/MEFISTO_microbiome.ipynb): microbiome data from 43 children over the first two years of life
+ * [**Application to spatial transcritptomics data**](https://github.com/bioFAM/MEFISTO_tutorials/blob/master/MEFISTO_ST.ipynb): spatial transcriptome data of a mouse brain tissue generated using 10x visium
+
+For Python users, we also recommend the use of [muon](https://github.com/gtca/muon), a framework that eases the handling of multimodal omics data.
+We provide tutorials for the use of MEFISTO as part of muon [here](https://muon-tutorials.readthedocs.io/en/latest/mefisto/index.html).
 
 
 ## FAQ
