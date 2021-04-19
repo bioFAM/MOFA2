@@ -347,10 +347,9 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   # Add labels to the top features
   if (nfeatures>0 || length(unique(W$labelling_group))>0) {
     p <- p + geom_text_repel(
-      force = 10,
       data = W[W$labelling_group != "0",], aes_string(label = "feature", col = "labelling_group"),
-      size=text_size, segment.alpha=0.25, segment.color="black", segment.size=0.3, 
-      box.padding = unit(0.5,"lines"), show.legend = FALSE)
+      size = text_size, segment.alpha = 0.25, segment.color = "black", segment.size = 0.3, 
+      show.legend = FALSE, max.overlaps = Inf)
   }
   
   # Configure axis 
