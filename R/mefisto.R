@@ -319,6 +319,7 @@ plot_smoothness <- function(object, factors = "all", color = "cadetblue") {
   # Get scale parameters
   ss <- get_scales(object)[factors]
   df <- data.frame(factor = names(ss), smooth = ss, non_smooth = 1- ss)
+  df$factor <- factor(df$factor, levels=factors)
   df <- gather(df, -factor, key = "smoothness", value = "value")
   gg_bar <- ggplot(df, aes(x= 1, y = value, fill = smoothness)) +
     geom_bar(stat="identity") +
@@ -361,6 +362,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
   
   # make plot
   df <- data.frame(factor = names(gr), group = gr, non_group = 1-gr)
+  df$factor <- factor(df$factor, levels=factors)
   df <- gather(df, -factor, key = "sharedness", value = "value")
   df <- mutate(df, sharedness = factor(sharedness, levels = rev(c("group", "non_group"))))
   gg_bar <- ggplot(df, aes(x= 1, y=value, fill = sharedness)) + geom_bar(stat="identity") +
@@ -377,7 +379,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' @description make a plot of interpolated covariates versus covariate
 #' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param covariate covariate to use for plotting
-#' @param factors character vector with the factors names, or numeric vector indicating the indices of the factors to use
+#' @param factors character or numeric specifying the factor(s) to plot, default is "all"
 #' @param only_mean show only mean or include uncertainties?
 #' @param show_observed include observed factor values as dots on the plot
 #' @details to be filled
@@ -389,7 +391,7 @@ plot_sharedness <- function(object, factors = "all", color = "#B8CF87") {
 #' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
 #' model <- interpolate_factors(model, new_values = seq(0,1.1,0.1))
-#' plot_interpolation_vs_covariate(model, covariate = "time", factors = "all")
+#' plot_interpolation_vs_covariate(model, covariate = "time", factors = 1)
 
 plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "all", only_mean = TRUE, show_observed = TRUE){
 
@@ -402,9 +404,10 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
   # get and check factor
   factors <- .check_and_get_factors(object, factors)
   
-  # get interpolated factors
+  # get interpolated factor
   df <- get_interpolated_factors(object, as.data.frame = TRUE, only_mean = only_mean)
   df <- filter(df, factor %in% factors)
+  df$factor <- factor(df$factor, levels = factors)
   # calculate ribbon borders
   if(!only_mean) {
     df <- df %>% mutate(sd = sqrt(variance), ymin = mean -1.96 * sd, ymax = mean + 1.96 * sd)
@@ -414,6 +417,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
     # add the factor values of the observed time point  to the plot
     df_observed <- plot_factors_vs_cov(object, covariates = covariate, return_data = TRUE)
     df_observed <- filter(df_observed, factor %in% factors)
+    df_observed$factor <- factor(df_observed$factor, levels = factors)
   }
 
   gg_interpol <- ggplot(df, aes_string(x=covariate, y = "mean", col = "group")) +
@@ -874,7 +878,7 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
 interpolate_factors <- function(object, new_values) {
   
   # TODO check this function
-  message("We recommend doing interpolation from python where additionally uncertainties are provided for the interpolation.")
+  # message("We recommend doing interpolation from python where additionally uncertainties are provided for the interpolation.")
   
   if(length(object@interpolated_Z) != 0){
     warning("Object already contains interpolated factor values, overwriting it.")
@@ -978,4 +982,154 @@ plot_alignment <- function(object){
 
   ggplot(df, aes(y = value.warped, x = value.unaligned)) +
     geom_point() + facet_wrap(~group) + theme_bw() + ylab(yname)
+}
+
+
+#' @title Plot variance explained by the smooth components of the model
+#' @description This function plots the variance explained by the smooth components (Gaussian processes) underlying the factors in MEFISTO across different views and groups, as specified by the user.
+#' @name plot_variance_explained_by_covariates
+#' @param object a \code{\link{MOFA}} object
+#' @param x character specifying the dimension for the x-axis ("view", "factor", or "group").
+#' @param y character specifying the dimension for the y-axis ("view", "factor", or "group").
+#' @param split_by character specifying the dimension to be faceted ("view", "factor", or "group").
+#' @param factors character vector with a factor name(s), or numeric vector with the index(es) of the factor(s). Default is "all".
+#' @param min_r2 minimum variance explained for the color scheme (default is 0).
+#' @param max_r2 maximum variance explained for the color scheme.
+#' @param compare_total plot corresponding variance explained in total in addition
+#' @param legend logical indicating whether to add a legend to the plot  (default is TRUE).
+#' @import ggplot2
+#' @importFrom cowplot plot_grid
+#' @importFrom reshape2 melt
+#' @details Note that this function requires the use of MEFISTO. 
+#' To activate the functional MEFISTO framework, specify mefisto_options when preparing the training using \code{prepare_mofa} 
+#' @return A list of \code{\link{ggplot}} objects (if \code{compare_total} is TRUE) or a single \code{\link{ggplot}} object. 
+#' Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots that this function generates.
+#' @export
+#' @examples
+#' # load_model
+#' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
+#' model <- load_model(file)
+#' plot_variance_explained_by_covariates(model)
+#' 
+#' # compare to toal variance explained
+#' plist <- plot_variance_explained_by_covariates(model, compare_total = TRUE)
+#' cowplot::plot_grid(plotlist = plist)
+
+plot_variance_explained_by_covariates <- function(object, factors = "all",
+                                              x = "view", y = "factor", split_by = NA,
+                                              min_r2 = 0, max_r2 = NULL, compare_total = FALSE,
+                                              legend = TRUE){
+  
+  # Sanity checks 
+  if (length(unique(c(x, y, split_by))) != 3) { 
+    stop(paste0("Please ensure x, y, and split_by arguments are different.\n",
+                "  Possible values are `view`, `group`, and `factor`."))
+  }
+  
+  # Automatically fill split_by in
+  if (is.na(split_by)) split_by <- setdiff(c("view", "factor", "group"), c(x, y, split_by))
+  
+  views  <- .check_and_get_views(object, "all")
+  groups <- .check_and_get_groups(object, "all")
+  factors <- .check_and_get_factors(object, factors)
+  
+  # Collect relevant expectations
+  W <- get_weights(object, views=views, factors=factors)
+  Z <- get_factors(object, groups=groups, factors=factors)
+  Z_interpol <- lapply(groups, function(g) {
+    if(all(object@covariates_warped[[g]] %in% object@interpolated_Z[[g]]$new_values)){
+      idx <- match(object@covariates_warped[[g]],  object@interpolated_Z[[g]]$new_values)
+      mat <- t(get_interpolated_factors(object, only_mean = TRUE)[[g]]$mean)[idx,]
+    } else {
+      message("No interpolations found in object, recalculating them...")
+      mm_tmp <- object
+      mm_tmp@interpolated_Z <- list()
+      mm_tmp <- interpolate_factors(mm_tmp, mm_tmp@covariates_warped[[g]])
+      mat <- t(get_interpolated_factors(mm_tmp, only_mean = TRUE)[[g]]$mean)
+      rm(mm_tmp)
+    }
+    mat[is.na(mat)] <- 0
+    colnames(mat) <- factors_names(object)
+    rownames(mat) <- samples_names(object)[[g]]
+    mat[, factors]
+  })
+  names(Z_interpol) <- groups
+  Y <- lapply(get_data(object, add_intercept = FALSE)[views], function(view) view[groups])
+  Y <- lapply(Y, function(x) lapply(x,t))
+  
+  r2_GP <- lapply(groups, function(g) {
+    tmp_Z <- sapply(views, function(m) { sapply(factors, function(k) {
+      a <- sum((as.matrix(Y[[m]][[g]]) - tcrossprod(Z[[g]][,k], W[[m]][,k]))**2, na.rm = TRUE)
+      b <- sum(Y[[m]][[g]]**2, na.rm = TRUE)
+      return(1 - a/b)
+    })
+    })
+    tmp_Z <- matrix(tmp_Z, ncol = length(views), nrow = length(factors))
+    colnames(tmp_Z) <- views
+    rownames(tmp_Z) <- factors
+    
+    tmp_GP <- sapply(views, function(m) { sapply(factors, function(k) {
+      a <- sum((as.matrix(Y[[m]][[g]]) - tcrossprod(Z_interpol[[g]][,k], W[[m]][,k]))**2, na.rm = TRUE)
+      b <- sum(Y[[m]][[g]]**2, na.rm = TRUE)
+      return(1 - a/b)
+    })
+    })
+    tmp_GP <- matrix(tmp_GP, ncol = length(views), nrow = length(factors))
+    colnames(tmp_GP) <- views
+    rownames(tmp_GP) <- factors
+    
+    return(tmp_GP * 100)
+    # return(pmax(tmp_GP - tmp_Z,0))
+  })
+  names(r2_GP) <- groups
+  
+  r2_GP_df <- melt(
+    lapply(r2_GP, function(x)
+      melt(as.matrix(x), varnames = c("factor", "view"))
+    ), id.vars=c("factor", "view", "value")
+  )
+  colnames(r2_GP_df)[ncol(r2_GP_df)] <- "group"
+  r2_GP_df$factor <- factor(r2_GP_df$factor, levels = factors)
+  r2_GP_df$group <- factor(r2_GP_df$group, levels = groups)
+  r2_GP_df$view <- factor(r2_GP_df$view, levels = views)
+  
+  
+  # Set R2 limits
+  r2_Z <- calculate_variance_explained(object)
+  if (!is.null(min_r2)) r2_GP_df$value[r2_GP_df$value<min_r2] <- 0.001
+  min_r2 = 0
+  if (!is.null(max_r2)) {
+    r2_GP_df$value[r2_GP_df$value>max_r2] <- max_r2
+  } else {
+    max_r2 = max(max(Reduce(c,r2_Z$r2_per_factor)), max(r2_GP_df$value))
+  }
+  
+  p1 <- ggplot(r2_GP_df, aes_string(x=x, y=y)) + 
+    geom_tile(aes_string(fill="value"), color="black") +
+    facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
+    labs(x="", y="", title="") +
+    scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2,max_r2)) +
+    guides(fill=guide_colorbar("Var. (%)")) +
+    theme(
+      axis.text.x = element_text(size=rel(1.0), color="black"),
+      axis.text.y = element_text(size=rel(1.1), color="black"),
+      axis.line = element_blank(),
+      axis.ticks =  element_blank(),
+      panel.background = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(size=rel(1.0))
+    )
+  
+  if (!legend) p1 <- p1 + theme(legend.position = "none")
+  
+  # remove facet title
+  if (length(unique(r2_GP_df[,split_by]))==1) p1 <- p1 + theme(strip.text = element_blank())
+  
+  if(!compare_total){
+    return(p1)
+  } else{
+    list(p1  + ggtitle("smooth part"),
+         plot_variance_explained(object, min_r2 = min_r2, max_r2 = max_r2,
+                                 x= x, y=y, split_by=split_by, factors = factors) + ggtitle("total"))
+  }
 }

@@ -17,7 +17,7 @@ plot_interpolation_vs_covariate(
 
 \item{covariate}{covariate to use for plotting}
 
-\item{factors}{character vector with the factors names, or numeric vector indicating the indices of the factors to use}
+\item{factors}{character or numeric specifying the factor(s) to plot, default is "all"}
 
 \item{only_mean}{show only mean or include uncertainties?}
 
@@ -37,5 +37,5 @@ to be filled
 file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 model <- load_model(file)
 model <- interpolate_factors(model, new_values = seq(0,1.1,0.1))
-plot_interpolation_vs_covariate(model, covariate = "time", factors = "all")
+plot_interpolation_vs_covariate(model, covariate = "time", factors = 1)
 }
