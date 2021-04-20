@@ -599,7 +599,7 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
     stop("Package \"SummarizedExperiment\" is required but is not installed.", call. = FALSE)
   } else {
     
-    data <- SummarizedExperiment::assay(sce, assay = assay)
+    data <- SummarizedExperiment::assay(sce, i = assay)
     .split_data_into_groups(list(data), groups)[[1]]
   }
 }
@@ -657,11 +657,18 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   if (length(duplicated_names)>0) 
     warning("There are duplicated features names across different views. We will add the suffix *_view* only for those features 
             Example: if you have both TP53 in mRNA and mutation data it will be renamed to TP53_mRNA, TP53_mutation")
+  # Rename data matrices
   for (m in names(object@data)) {
     for (g in names(object@data[[m]])) {
       tmp <- which(rownames(object@data[[m]][[g]]) %in% duplicated_names)
-      if (length(tmp)>0) rownames(object@data[[m]][[g]])[tmp] <- paste(rownames(object@data[[m]][[g]])[tmp], m, sep="_")
+      if (length(tmp)>0) {
+        rownames(object@data[[m]][[g]])[tmp] <- paste(rownames(object@data[[m]][[g]])[tmp], m, sep="_")
+      }
     }
   }
+  
+  # Rename features metadata
+  tmp <- object@features_metadata[["feature"]] %in% duplicated_names
+  object@features_metadata[tmp,"feature"] <- paste(object@features_metadata[tmp,"feature"], object@features_metadata[tmp,"view"], sep="_")
   return(object)
 }

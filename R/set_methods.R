@@ -727,11 +727,13 @@ setMethod("groups_names<-", signature(object="MOFA", value="character"),
     for (g in seq_len(length(object@data[[m]]))) {
       deduced_ind <- if (entity == "features") m else g  # since ind corresponds to views (groups of features)
       if (axes_options[[entity]] == 1) {
-        rownames(object@imputed_data[[m]][[g]][["mean"]]) <- values[[deduced_ind]]
-        rownames(object@imputed_data[[m]][[g]][["variance"]]) <- values[[deduced_ind]]
+        rownames(object@imputed_data[[m]][[g]]) <- values[[deduced_ind]]
+        # rownames(object@imputed_data[[m]][[g]][["mean"]]) <- values[[deduced_ind]]
+        # rownames(object@imputed_data[[m]][[g]][["variance"]]) <- values[[deduced_ind]]
       } else {
-        colnames(object@imputed_data[[m]][[g]][["mean"]]) <- values[[deduced_ind]]
-        colnames(object@imputed_data[[m]][[g]][["variance"]]) <- values[[deduced_ind]]
+        colnames(object@imputed_data[[m]][[g]]) <- values[[deduced_ind]]
+        # colnames(object@imputed_data[[m]][[g]][["mean"]]) <- values[[deduced_ind]]
+        # colnames(object@imputed_data[[m]][[g]][["variance"]]) <- values[[deduced_ind]]
       }
     }
   }

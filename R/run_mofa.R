@@ -46,11 +46,11 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     stop("The model is not prepared for training, you have to run `prepare_mofa` before `run_mofa`")
   }
   
-  # If no outfile is provided, store a file in the /tmp folder with the respective timestamp
+  # If no outfile is provided, store a file in a temporary folder with the respective timestamp
   if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
     outfile <- object@training_options$outfile
     if (is.null(outfile) || is.na(outfile) || (outfile == "")) {
-      outfile <- file.path("/tmp", paste0("mofa_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
+      outfile <- file.path(tempdir(), paste0("mofa_", format(Sys.time(), format = "%Y%m%d-%H%M%S"), ".hdf5"))
       warning(paste0("No output filename provided. Using ", outfile, " to store the trained model.\n\n"))
     }
   }
