@@ -986,8 +986,8 @@ plot_alignment <- function(object){
 
 
 #' @title Plot variance explained by the smooth components of the model
-#' @description plots the variance explained by the smooth components of the MOFA factors across different views and groups, as specified by the user.
-#' @name plot_variance_explained_by_smooth
+#' @description This function plots the variance explained by the smooth components (Gaussian processes) underlying the factors in MEFISTO across different views and groups, as specified by the user.
+#' @name plot_variance_explained_by_covariates
 #' @param object a \code{\link{MOFA}} object
 #' @param x character specifying the dimension for the x-axis ("view", "factor", or "group").
 #' @param y character specifying the dimension for the y-axis ("view", "factor", or "group").
@@ -1000,6 +1000,8 @@ plot_alignment <- function(object){
 #' @import ggplot2
 #' @importFrom cowplot plot_grid
 #' @importFrom reshape2 melt
+#' @details Note that this function requires the use of MEFISTO. 
+#' To activate the functional MEFISTO framework, specify mefisto_options when preparing the training using \code{prepare_mofa} 
 #' @return A list of \code{\link{ggplot}} objects (if \code{compare_total} is TRUE) or a single \code{\link{ggplot}} object. 
 #' Consider using cowplot::plot_grid(plotlist = ...) to combine the multiple plots that this function generates.
 #' @export
@@ -1007,13 +1009,13 @@ plot_alignment <- function(object){
 #' # load_model
 #' file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 #' model <- load_model(file)
-#' plot_variance_explained_by_smooth(model)
+#' plot_variance_explained_by_covariates(model)
 #' 
 #' # compare to toal variance explained
-#' plist <- plot_variance_explained_by_smooth(model, compare_total = TRUE)
+#' plist <- plot_variance_explained_by_covariates(model, compare_total = TRUE)
 #' cowplot::plot_grid(plotlist = plist)
 
-plot_variance_explained_by_smooth <- function(object, factors = "all",
+plot_variance_explained_by_covariates <- function(object, factors = "all",
                                               x = "view", y = "factor", split_by = NA,
                                               min_r2 = 0, max_r2 = NULL, compare_total = FALSE,
                                               legend = TRUE){
