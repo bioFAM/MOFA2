@@ -41,6 +41,8 @@ BiocManager::install("MOFA2")
 * [**Application to a longitudinal microbiome data set**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/microbiome_tutorial.html): microbiome data from 43 children over the first two years of life
 * [**Application to spatial transcritptomics data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_ST.html): spatial transcriptome data of a mouse brain tissue generated using 10x visium
 
+Some notes and guidelines on data preprocessing for the use of MEFISTO can be found in [this vignette](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_preprocessing.html).
+
 ### Python Tutorials
  * [**Application to an evodevo gene expression atlas**](https://github.com/bioFAM/MEFISTO_tutorials/blob/master/MEFISTO_evodevo.ipynb): gene expression data from 5 species and 5 organs across development
  * [**Application to a longitudinal microbiome data set**](https://github.com/bioFAM/MEFISTO_tutorials/blob/master/MEFISTO_microbiome.ipynb): microbiome data from 43 children over the first two years of life
