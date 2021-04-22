@@ -39,7 +39,8 @@ BiocManager::install("MOFA2")
 * [**MEFISTO with spatial data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_spatial.html): illustration of the method with a spatial covariate
 * [**Application to an evodevo gene expression atlas**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/evodevo_tutorial.html): gene expression data from 5 species and 5 organs across development
 * [**Application to a longitudinal microbiome data set**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/microbiome_tutorial.html): microbiome data from 43 children over the first two years of life
-* [**Application to spatial transcritptomics data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_ST.html): spatial transcriptome data of a mouse brain tissue generated using 10x visium
+* [**Application to spatial transcriptomics data**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_ST.html): spatial transcriptome data of a mouse brain tissue generated using 10x visium
+* [**Application to single-cell multi-omics**](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/scnmt_mefisto_vignette.html): RNA expression, DNA methylation and chromatin accessibility profiled from the same cell using scNMT-seq
 
 Some notes and guidelines on data preprocessing for the use of MEFISTO can be found in [this vignette](https://raw.githack.com/bioFAM/MEFISTO_tutorials/master/MEFISTO_preprocessing.html).
 
