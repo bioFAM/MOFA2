@@ -6,4 +6,4 @@
 
 
 #' @importFrom basilisk BasiliskEnvironment
-mofa_env <- BasiliskEnvironment("mofa_env", pkgname="MOFA2", packages=.mofapy2_dependencies, pip = "mofapy2==0.6.1")
+mofa_env <- BasiliskEnvironment("mofa_env", pkgname="MOFA2", packages=.mofapy2_dependencies, pip = "mofapy2==0.6.3")
