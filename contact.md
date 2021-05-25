@@ -30,20 +30,20 @@ The MOFA community has a Slack group where we provide quick and personalised hel
   <div class="column">
     <figure align="center">
     <img src='images/ricard.jpg' alt='missing' width="250" height="250" />
-    <figcaption><b>Ricard Argelaguet</b> <br> Predoctoral Researcher <br>  EMBL-EBI <br> <a href="mailto:ricard@ebi.ac.uk">ricard@ebi.ac.uk</a> </figcaption>
+    <figcaption><b>Ricard Argelaguet</b> <br> Postdoctoral Scientist <br>  Babraham Institute <br> <a href="mailto:ricard@ebi.ac.uk">ricard@ebi.ac.uk</a> </figcaption>
     </figure>
   </div>
   <div class="column">
     <figure align="center">
     <img src="images/britta.jpg" alt='missing' width="250" height="250"/>
-    <figcaption> <b>Britta Velten</b> <br> Postdoctoral Researcher <br> DKFZ <br> <a href="mailto:b.velten@dkfz-heidelberg.de">b.velten@dkfz-heidelberg.de</a></figcaption>
+    <figcaption> <b>Britta Velten</b> <br> Postdoctoral Scientist <br> DKFZ <br> <a href="mailto:b.velten@dkfz-heidelberg.de">b.velten@dkfz-heidelberg.de</a></figcaption>
     </figure>
   </div>
 <div class="row">
   <div class="column">
     <figure align="center">
     <img src="images/danila.jpg" alt='missing' width="250" height="250"/>
-    <figcaption> <b>Danila Bredikhin</b> <br> Predoctoral Researcher <br> EMBL <br> <a href="mailto:danila.bredikhin@embl.de">danila.bredikhin@embl.de</a> </figcaption>
+    <figcaption> <b>Danila Bredikhin</b> <br> Predoctoral Scientist <br> EMBL <br> <a href="mailto:danila.bredikhin@embl.de">danila.bredikhin@embl.de</a> </figcaption>
     </figure>
   </div>
   <div class="column">
