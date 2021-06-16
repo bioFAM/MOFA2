@@ -30,7 +30,7 @@ citEntry(entry="article",
                               as.person("Oliver Stegle")),
          year = 2020,
          journal = "Genome Biology",
-         doi = "10.1186/s13059-020- 02015-1",
+         doi = "10.1186/s13059-020-02015-1",
          volume = 21,
          textVersion = 
          paste("Argelaguet, Arnol, Bredikhin, Deloro, Velten, Marioni,and Stegle:", 
