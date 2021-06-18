@@ -1,7 +1,8 @@
 .mofapy2_dependencies <- c(
     "h5py==3.1.0",
     "pandas==1.2.1",
-	"scikit-learn==0.24.1"
+	"scikit-learn==0.24.1",
+	"dtw-python==1.1.10"
 )
 
 
