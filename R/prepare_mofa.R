@@ -176,6 +176,14 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
           stopifnot(is.character(mefisto_options$warping_ref))
           stopifnot(mefisto_options$warping_ref %in% groups_names(object))
         }
+        
+        if (!is.null(mefisto_options$warping_groups)) {
+          # check that warping groups are a partition of groups
+          groups_ok <- sapply(unique(object@samples_metadata$group), function(g) {
+            length(unique(mefisto_options$warping_groups[object@samples_metadata$group == g])) == 1
+          })
+          if (!all(groups_ok)) stop("Warping group assignment needs to be unique within each indiviudal group.")
+        }
       }
       
       # Disable spike-slab on the factors

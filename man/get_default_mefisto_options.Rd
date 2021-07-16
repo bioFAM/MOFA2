@@ -29,6 +29,9 @@ The options are the following: \cr
  \item{\strong{warping_ref}:} A character specifying the reference group for warping (only relevant if warping is \code{TRUE})
  \item{\strong{warping_open_begin}:} logical: Warping: Allow for open beginning? (only relevant warping is \code{TRUE})
  \item{\strong{warping_open_end}:} logical: Warping: Allow for open end? (only relevant warping is \code{TRUE})
+ \item{\strong{warping_groups}:} Assignment of groups to classes used for alignment (advanced option). 
+ Needs to be a vector of length number of samples, e.g. a column of samples_metadata, which needs to have the same value within each group.
+ By default groups are used specified in `create_mofa`.
  \item{\strong{model_groups}:} logical: Model covariance structure across groups (for more than one group, otherwise FALSE)? If FALSE, we assume the same patterns in all groups. 
  \item{\strong{new_values}:} Values for which to predict the factor values (for interpolation / extrapolation). 
  This should be numeric matrix in the same format with covariate(s) in rows and new values in columns.

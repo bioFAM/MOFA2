@@ -68,15 +68,15 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     have_mofa2 <- py_module_available("mofapy2")
     if(have_mofa2) {
       mofa <- import("mofapy2")
-      if (mofa$version$`__version__` != "0.6.3") {
-        warning(sprintf("The latest mofapy2 version is 0.6.3, you are using %s. Please upgrade with 'pip install mofapy2'",mofa$version$`__version__`))
+      if (mofa$version$`__version__` != .mofapy2_version) {
+        warning(sprintf("The latest mofapy2 version is %s, you are using %s. Please upgrade with 'pip install mofapy2'",.mofapy2_version, mofa$version$`__version__`))
         have_mofa2 <- FALSE
       }
     }
     if (have_mofa2) {
       .run_mofa_reticulate(object, outfile, save_data)
     } else {
-      warning("mofapy2_0.6.3 is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...")
+      warning(sprintf("mofapy2_%s is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...", .mofapy2_version))
       use_basilisk <- TRUE
     }
   }
@@ -203,7 +203,8 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
       warping_freq        = as.integer(object@mefisto_options$warping_freq),
       warping_ref         = warping_ref-1, # 0-based python indexing
       warping_open_begin  = object@mefisto_options$warping_open_begin,
-      warping_open_end    = object@mefisto_options$warping_open_end
+      warping_open_end    = object@mefisto_options$warping_open_end,
+      warping_groups      = r_to_py(object@mefisto_options$warping_groups)
     )
   }
   

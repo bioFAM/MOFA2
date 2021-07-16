@@ -5,6 +5,7 @@
 	"dtw-python==1.1.10"
 )
 
+.mofapy2_version <- "0.6.4"
 
 #' @importFrom basilisk BasiliskEnvironment
-mofa_env <- BasiliskEnvironment("mofa_env", pkgname="MOFA2", packages=.mofapy2_dependencies, pip = "mofapy2==0.6.3")
+mofa_env <- BasiliskEnvironment("mofa_env", pkgname="MOFA2", packages=.mofapy2_dependencies, pip = paste0("mofapy2==",.mofapy2_version))
