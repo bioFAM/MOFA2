@@ -505,7 +505,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   # Add legend for color
   if (is.numeric(df$color_by)) {
     p <- p + 
-      # guides(color=FALSE) +
+      # guides(color="none") +
       scale_fill_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10))  +
       # scale_fill_gradientn(colours = c('lightgrey', 'blue'))
       labs(fill=color_name)
@@ -516,7 +516,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
         guides(fill=guide_legend(override.aes = list(shape=21))) +
         labs(fill=color_name)
     } else {
-      p <- p + guides(fill=FALSE, color=FALSE) +
+      p <- p + guides(fill="none", color="none") +
         scale_color_manual(values="black") +
         scale_fill_manual(values="gray60")
     }
@@ -532,7 +532,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
   } else { 
     p <- p + 
       scale_shape_manual(values=c(21)) +
-      guides(shape=FALSE) 
+      guides(shape="none") 
   }
   
   # Add legend theme
