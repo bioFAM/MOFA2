@@ -326,7 +326,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
       p <- p +
         stat_smooth(formula=y~x, aes_string(color="group"), method="lm", alpha=0.4) +
         ggpubr::stat_cor(aes_string(color="group", label = "..r.label.."), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
-        # guides(color = FALSE)
+        # guides(color = "none")
     } else {
       p <- p +
         stat_smooth(formula=y~x, method="lm", color="grey", fill="grey", alpha=0.4) +
@@ -449,7 +449,7 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
     geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
     # xlab(paste0("Samples (N=", n, ")")) + ylab("") +
-    guides(fill = FALSE) + 
+    guides(fill = "none") + 
     facet_wrap(~group_label, scales="free_x", nrow=length(unique(to.plot$view_label))) +
     theme(
       panel.background = element_rect(fill="white"),
