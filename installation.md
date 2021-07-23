@@ -3,7 +3,7 @@ layout: default
 title: Installation
 ---
 
-The core of MOFA is implemented in Python, but (for now) we recommend training the model and running the downstream analysis with R. If you just want to use Python, please check our FAQ section.
+The core of MOFA is implemented in the Python package `mofapy2`, but we recommend to use the R package `MOFA2` which provides an interface to train a MOFA model with R and run the downstream analysis and takes care of setting up all python dependencies. Alternatively, if you prefer to use Python the package `mofax` can be used for downstream analysis in Python, see also our FAQ section.
 
 ## Stable release (easiest)
 
@@ -36,11 +36,11 @@ In addition, it is very likely that you will have to connect R to Python manuall
 
 ## Notes on the connection of R to Python
 
-The connection between R and Python is dona via [reticulate](ttps://rstudio.github.io/reticulate). Latest version of MOFA2 use [basilisk](https://bioconductor.org/packages/release/bioc/html/basilisk.html) to automatically set up a Python environment and install all required dependencies. Alternatively, you can install the python pacakge `mofapy2` manually as described above and specify to use this installation when running mofa. Note that this sometimes this needs [configuration]((https://rstudio.github.io/reticulate/reference/use_python.html)) and it is the source of most problems in the MOFA2 R package, specially when you have multiple versions of Python installed. See our FAQ section or reach us if you have issues.
+The connection between R and Python is dona via [reticulate](ttps://rstudio.github.io/reticulate). Latest version of `MOFA2` use [basilisk](https://bioconductor.org/packages/release/bioc/html/basilisk.html) to automatically set up a Python environment and install all required dependencies. Alternatively, you can install the python pacakge `mofapy2` manually as described above and specify to use this installation when running MOFA. Note that this sometimes this needs [configuration]((https://rstudio.github.io/reticulate/reference/use_python.html)) and it is the source of most problems in the `MOFA2` R package, specially when you have multiple versions of Python installed. See our FAQ section or reach us if you have issues.
 
 ## Using MOFA2 with older R versions
 
-We recommend using R (>= 4.0) with MOFA2. If you want to use it with older R versions, you can install MOFA2 as
+We recommend using R (>= 4.0) with `MOFA2`. If you want to use it with older R versions, you can install `MOFA2` as
 
 ```r
 remotes::install_github("bioFAM/MOFA2", ref = "R36", build_opts = c("--no-resave-data --no-build-vignettes"))
@@ -65,6 +65,6 @@ docker run -ti --rm -v $DATA_DIRECTORY:/data mofa2 R
 #                    use `-v` to map a folder on your machine to a container directory
 ```
 
-The command above will launch R with MOFA2 and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
+The command above will launch R with `MOFA2` and its dependencies installed while mounting `$DATA_DIRECTORY` to the container.
 
 You can also pull [the pre-build image from dockerhub](https://hub.docker.com/r/gtca/mofa2).
