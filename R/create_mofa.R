@@ -91,7 +91,7 @@ create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, extract_me
       primary <- unique(MultiAssayExperiment::sampleMap(mae)[,"primary"])
       
       # Extract view
-      subdata <- MultiAssayExperiment::assays(mae)[[m]]
+      subdata <- as.matrix(MultiAssayExperiment::assays(mae)[[m]])
       
       # Rename view-specific sample IDs with the general sample names
       stopifnot(colnames(subdata)==MultiAssayExperiment::sampleMap(mae)[MultiAssayExperiment::sampleMap(mae)[,"assay"]==m,"colname"])
