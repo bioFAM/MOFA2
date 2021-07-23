@@ -171,7 +171,7 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   }
   
   if (length(unique(df$color_by))==1) 
-    p <- p + guides(color=FALSE) + scale_color_manual(values="black")
+    p <- p + guides(color="none") + scale_color_manual(values="black")
   
   # Add legend
   if ( (length(unique(df$color_by))>1 || length(unique(df$shape_by))>1) && legend) {
@@ -368,21 +368,21 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   }
   
   # Define dot size
-  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size = FALSE)
+  p <- p + scale_size_manual(values=c(dot_size/2,dot_size*2)) + guides(size = "none")
   
   # Define dot colours and legend for colours
   if (!is.null(color_by)) { 
     p <- p + labs(color=color_name)
   } else {
     foo <- c("grey","black",color_manual); names(foo) <- as.character(0:(length(foo)-1))
-    p <- p + guides(color=FALSE) + scale_color_manual(values=foo)
+    p <- p + guides(color="none") + scale_color_manual(values=foo)
   }
   
   # Add legend for shape
   if (!is.null(shape_by)) { 
     p <- p + labs(shape=shape_name)
   } else { 
-    p <- p + guides(shape=FALSE) 
+    p <- p + guides(shape="none") 
   }
   
   # Facet if multiple factors
