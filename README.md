@@ -1,5 +1,5 @@
 
-# Multi-Omics Factor Analysis v2 (MOFA+)
+# Multi-Omics Factor Analysis
 
 MOFA is a factor analysis model that provides a general framework for the integration of multi-omic data sets in an unsupervised fashion.  
 
