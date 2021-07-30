@@ -3,7 +3,12 @@ layout: default
 title: NEWS
 ---
 
-**`MOFA2 1.2.0` (latest)**:  
+**`MOFA2 1.3.4` (latest)**:  
+- Added a more flexible alignment option in MEFISTO to align distinct sets of groups instead of individual groups
+- `mofapy2` has been updated to version 0.6.4
+
+
+**`MOFA2 1.2.0`**:  
 <!-- - Added contribution scores -->
 - Improve interoperability with `Seurat` and `SingleCellExperiment`
 - MOFA factors can be saved to a `Seurat` object using `add_mofa_factors_to_seurat`
