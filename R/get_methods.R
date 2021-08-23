@@ -128,6 +128,8 @@ get_group_kernel <- function(object) {
 get_interpolated_factors <- function(object, as.data.frame = FALSE, only_mean = FALSE) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(is.null(object@interpolated_Z)) stop("No interpolated factors present in 'object'")
+  if(length(object@interpolated_Z) == 0) stop("No interpolated factors present in 'object'")
+  
   if(!as.data.frame){
     return(object@interpolated_Z)
   } else {
