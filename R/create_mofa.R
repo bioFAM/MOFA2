@@ -618,6 +618,8 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
 .df_to_matrix <- function(x) {
   m <- as.matrix(x[,-1])
   rownames(m) <- x[[1]]
+  if (ncol(m) == 1)
+    colnames(m) <- colnames(x)[2:ncol(x)]
   m
 }
 
