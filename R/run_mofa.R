@@ -135,6 +135,16 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     mofa_entrypoint$data_opts$features_metadata <- r_to_py(unname(lapply(object@data_options$views,
                                                                          function(m) object@features_metadata[object@features_metadata$view == m,])))
   }
+
+  # r_to_py will convert a list with a single name to a string,
+  # hence those are to be wrapped in `list()`
+  maybe_list <- function(xs) {
+	  if (length(xs) > 1) {
+		  xs
+	  } else {
+		  list(xs)
+	  }
+  }
   
   # Set the data
   mofa_entrypoint$set_data_matrix(
@@ -142,8 +152,8 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     likelihoods = unname(object@model_options$likelihoods),
     views_names = r_to_py(as.list(object@data_options$views)),
     groups_names = r_to_py(as.list(object@data_options$groups)),
-    samples_names = r_to_py(unname(lapply(object@data[[1]], colnames))),
-    features_names = r_to_py(unname(lapply(object@data, function(x) rownames(x[[1]]))))
+    samples_names = r_to_py(lapply(unname(lapply(object@data[[1]], colnames)), maybe_list)),
+    features_names = r_to_py(lapply(unname(lapply(object@data, function(x) rownames(x[[1]]))), maybe_list))
   )
   
   # Set covariates
