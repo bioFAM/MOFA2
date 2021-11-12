@@ -66,12 +66,25 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     
     # Sanity checks
     have_mofa2 <- py_module_available("mofapy2")
-    if(have_mofa2) {
+    if (have_mofa2) {
       mofa <- import("mofapy2")
-      if (mofa$version$`__version__` != .mofapy2_version) {
-        warning(sprintf("The latest mofapy2 version is %s, you are using %s. Please upgrade with 'pip install mofapy2'",.mofapy2_version, mofa$version$`__version__`))
-        have_mofa2 <- FALSE
+      
+      tmp <- strsplit(mofa$version$`__version__`,"\\.")[[1]]
+      v_major_reticulate = tmp[1]; v_minor_reticulate = tmp[2]; v_patch_reticulate = tmp[3]
+      
+      tmp <- strsplit(.mofapy2_version,"\\.")[[1]]
+      v_major_pypi = tmp[1]; v_minor_pypi = tmp[2]; v_patch_pypi = tmp[3]
+      
+      # return error if major or minor versions do not agree
+      if ((v_major_reticulate!=v_major_pypi) | (v_minor_reticulate!=v_minor_pypi)) {
+        stop(sprintf("The latest mofapy2 version is %s, you are using %s. Please upgrade with 'pip install mofapy2'",.mofapy2_version, mofa$version$`__version__`))
       }
+      
+      # return warning if patch versions do not agree
+      if (v_patch_reticulate!=v_patch_pypi) {
+        warning(sprintf("The latest mofapy2 version is %s, you are using %s. Please upgrade with 'pip install mofapy2'",.mofapy2_version, mofa$version$`__version__`))
+      }
+      
     }
     if (have_mofa2) {
       .run_mofa_reticulate(object, outfile, save_data)
