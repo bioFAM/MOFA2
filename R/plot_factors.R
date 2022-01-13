@@ -383,7 +383,8 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 # Plot multiple factors as pairwise scatterplots
 #' @importFrom stats complete.cases
 .plot_multiple_factors <- function(object, factors = "all", show_missing = TRUE, dot_size = 1,
-                                   color_by = NULL, color_name = "", shape_by = NULL, shape_name = "") {
+                                   color_by = NULL, color_name = "", shape_by = NULL, shape_name = "",
+				   legend = TRUE) {
   
   # Sanity checks
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
@@ -419,11 +420,11 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
       legend.text = element_text(size=rel(1.2)),
       legend.title = element_text(size=rel(1.2))
     )
-  if (length(unique(df$color))>1) { p <- p + labs(color=color_name) } else { p <- p + guides(color="none") + scale_color_manual(values="black") }
+  if (length(unique(df$color))>1 && isTRUE(legend)) { p <- p + labs(color=color_name) } else { p <- p + guides(color="none") + scale_color_manual(values="black") }
+  if (length(unique(df$color))>1 && isFALSE(legend)) { p <- p + guides(color="none") }
   if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
   if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = "none") }
-  if (length(unique(df$color))>1 || length(unique(df$shape))>1) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
-  
+  if ((length(unique(df$color))>1 || length(unique(df$shape))>1) && isTRUE(legend)) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
   
   # Generate plot
   p <- GGally::ggpairs(df, 
