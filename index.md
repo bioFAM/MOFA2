@@ -11,7 +11,7 @@ Intuitively, MOFA can be viewed as a versatile and statistically rigorous genera
 </p>
 
 For more details you can read our papers: 
-- general framework: [published in in Molecular Systems Biology](http://msb.embopress.org/cgi/doi/10.15252/msb.20178124)  
+- general framework: [published in Molecular Systems Biology](http://msb.embopress.org/cgi/doi/10.15252/msb.20178124)  
 - multi-group framework and single cell applications: [MOFA+, published in Genome Biology](http://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02015-1)
 - temporal or spatial data: [MEFISTO, published in Nature Methods](https://www.nature.com/articles/s41592-021-01343-9)
 
