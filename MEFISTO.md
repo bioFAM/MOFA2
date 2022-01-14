@@ -11,8 +11,8 @@ If multiple groups of samples are present, e.g. timecourses from different indiv
 <img src="images/mefisto.png" width="80%"/>​
 </p>
 
-For more details you can read our preprint: 
--  [*Identifying temporal and spatial patterns of variation from multi-modal data using MEFISTO (2020)*](https://www.biorxiv.org/content/10.1101/2020.11.03.366674v1?rss=1)
+For more details you can read our paper: 
+-  [*Identifying temporal and spatial patterns of variation from multi-modal data using MEFISTO (Nat Meth 2022)*](https://www.nature.com/articles/s41592-021-01343-9)
 
 
 ## Installation
