@@ -77,7 +77,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
       
       # return error if major or minor versions do not agree
       if ((v_major_reticulate!=v_major_pypi) | (v_minor_reticulate!=v_minor_pypi)) {
-        stop(sprintf("The latest mofapy2 version is %s, you are using %s. Please upgrade with 'pip install mofapy2'",.mofapy2_version, mofa$version$`__version__`))
+        warning(sprintf("The latest mofapy2 version is %s, you are using %s. Please upgrade with 'pip install mofapy2'",.mofapy2_version, mofa$version$`__version__`))
+        warning("Connecting to the latest mofapy2 python package using reticulate (use_basilisk = FALSE)")
+        have_mofa2 <- FALSE
       }
       
       # return warning if patch versions do not agree
