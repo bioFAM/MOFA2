@@ -1,7 +1,7 @@
 Package: MOFA2
 Type: Package
 Title: Multi-Omics Factor Analysis v2
-Version: 1.6.0
+Version: 1.7.0
 Maintainer: Britta Velten <britta.velten@gmail.com>
 Authors@R: c(person("Ricard", "Argelaguet", role = "aut",
                      email = "ricard@ebi.ac.uk",
