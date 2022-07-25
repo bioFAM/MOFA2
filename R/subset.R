@@ -204,6 +204,18 @@ subset_factors <- function(object, factors, recalculate_variance_explained = TRU
     }
   }
   
+  # Subset interpolations
+  if(length(object@interpolated_Z) > 0) {
+    object@interpolated_Z <- lapply(object@interpolated_Z, function(g) { 
+      if(!is.null(g$mean)) {
+        m <- g$mean[factors, , drop = FALSE]
+      }
+      if(!is.null(g$variance)) {
+        v <- g$variance[factors, , drop = FALSE]
+      }
+      list(mean = m, variance = v, new_values = g$new_values)
+    })
+  }
   
   # Remove total variance explained estimates  
   if (length(factors)<object@dimensions[["K"]]) {

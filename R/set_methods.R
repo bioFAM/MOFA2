@@ -36,6 +36,20 @@ setReplaceMethod("factors_names", signature(object="MOFA", value="vector"),
                    # Modify expectations
                    object <- .set_expectations_names(object, entity = 'factors', value)
                    
+                   # Modify interpolated values
+                   if(length(object@interpolated_Z) > 0) {
+                     object@interpolated_Z <- lapply(object@interpolated_Z, function(g) {
+                       if(!is.null(g$mean)) {
+                         rownames(g$mean) <- value
+                       }
+                       if(!is.null(g$variance)) {
+                         rownames(g$variance) <- value
+                       }
+                       return(g)
+                       }
+                     )
+                   }
+                   
                    # Modify cache
                    if ((methods::.hasSlot(object, "cache")) && ("variance_explained" %in% names(object@cache))) {
                      for (i in seq_len(length(object@cache$variance_explained$r2_per_factor))) {
