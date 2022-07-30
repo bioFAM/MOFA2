@@ -68,8 +68,9 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     have_mofa2 <- py_module_available("mofapy2")
     if (have_mofa2) {
       mofa <- import("mofapy2")
+
+      tryCatch(tmp <- strsplit(mofa$version$`__version__`,"\\.")[[1]], error = function(e) { stop(sprintf("mofapy2 is not detected in the specified python binary, see reticulate::py_config(). Consider setting use_basilisk = TRUE to create a python environment with basilisk (https://bioconductor.org/packages/release/bioc/html/basilisk.html)")) })
       
-      tmp <- strsplit(mofa$version$`__version__`,"\\.")[[1]]
       v_major_reticulate = tmp[1]; v_minor_reticulate = tmp[2]; v_patch_reticulate = tmp[3]
       
       tmp <- strsplit(.mofapy2_version,"\\.")[[1]]
