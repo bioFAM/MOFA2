@@ -345,7 +345,7 @@ get_default_data_options <- function(object) {
     scale_views = FALSE,     # (logical) Scale views to unit variance?
     scale_groups = FALSE,    # (logical) Scale groups to unit variance?
     center_groups = TRUE,   # (logical) Center groups?
-    use_float32 = FALSE       # (logical) Use float32 instead of float64 arrays to increase speed and memory usage
+    use_float32 = TRUE       # (logical) Use float32 instead of float64 arrays to increase speed and memory usage
   )
   
   # Activate float32 arrays for large sample sizes  
@@ -423,7 +423,7 @@ get_default_model_options <- function(object) {
     likelihoods = likelihoods,   # (character vector) likelihood per view [gaussian/bernoulli/poisson]
     num_factors = 10,            # (numeric) initial number of latent factors
     spikeslab_factors = FALSE,   # (logical) Spike and Slab sparsity on the factors
-    spikeslab_weights = TRUE,    # (logical) Spike and Slab sparsity on the weights
+    spikeslab_weights = FALSE,    # (logical) Spike and Slab sparsity on the weights
     ard_factors = FALSE,         # (logical) Group-wise ARD sparsity on the factors
     ard_weights = TRUE           # (logical) View-wise ARD sparsity on the weights
   )
