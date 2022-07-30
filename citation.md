@@ -3,7 +3,7 @@ layout: default
 title: Citation
 ---
 
-General MOFA framework:
+If you have used MOFA, please consider citing any of the two articles:
 
     @article{Argelaguet2018,
         author = {Argelaguet, R. and Velten, B. and Arnol, D. and Dietrich, S. and Zenz, T. and Marioni, J. C. and Buettner, F. and Huber, W. and Stegle, O.},
@@ -16,8 +16,6 @@ General MOFA framework:
     }
 
 
-Multi-group framework and single cell applications (MOFA+):
-
     @article{Argelaguet2020,
         author = {Argelaguet, R. and Arnol, D. and Bredikhin, D. and Deloro, Y. and Velten, B. and Marioni, J.C. and Stegle, O.},
         title = {MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data},
@@ -28,7 +26,7 @@ Multi-group framework and single cell applications (MOFA+):
         pages = {111}
     } 
     
-Integration of temporal and spatial omics data (MEFISTO):
+If you have used MEFISTO, please consider citing the following article:
 
     @article{Velten2020,
         author = {Velten, B. and Braunger, J.M. and Arnol, D. and Argelaguet, R. and Stegle, O.},

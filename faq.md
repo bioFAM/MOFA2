@@ -26,8 +26,8 @@ Yes. It simply ignores them from the likelihood, there is no hidden imputation s
 
 ## FAQ on the transition of the implementation from `MOFA` to `MOFA2`
 
-**(Q) What happened to `MOFA` and what has changes in `MOFA2`?**
-The R package `MOFA` and python package `mofapy` have been superseded by their new versions `MOFA2` and python package `mofapy2`. Please use these implementations if you want to use the MOFA framework. The new implementation inherits all the features of the old version and remains applicable for both bulk and single cell multi-omic data but provides additional functionalities (multi-group framework, MEFISTO) and is much faster. Have a look at our [News site](https://biofam.github.io/MOFA2/NEWS.html) for most recent developments and a list of changes in `MOFA2` compared to `MOFA`.
+**(Q) What happened to `MOFA` and what has changed in `MOFA2`?**  
+The R package `MOFA` and python package `mofapy` have been superseded by their new versions `MOFA2` and python package `mofapy2`. The new implementation inherits all the features of the old version and remains applicable for both bulk and single cell multi-omic data but provides additional functionalities (multi-group framework, MEFISTO) and is much faster. Have a look at our [News site](https://biofam.github.io/MOFA2/NEWS.html) for most recent developments and a list of changes in `MOFA2` compared to `MOFA`.
 
 
 ## FAQ on the downstream analysis
@@ -49,7 +49,7 @@ A procedure that can be applied to evaluate the robustness of factors is to down
 **(Q) Can I do MOFA only with Python?**  
 You can use Python to train the model, see [this notebook](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb) and [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_script.py). However, we currently do not provide downstream analysis functions in Python (it is in our to-do list). For now we strongly recommend that you use the `MOFA2` R package for the analysis.
 
-**(Q) Can I speed up the training procedure using CPU parallel processing?** 
+**(Q) Can I speed up the training procedure using CPU parallel processing?**  
 MOFA uses [numpy](https://numpy.org/) for the mathematical operations. This library can be massively optimised by linking it to OpenBLAS or the Intel MKL libraries, which take advantage of multiple cores and multithreading. 
 
 You can check which libraries you have linked to numpy using 

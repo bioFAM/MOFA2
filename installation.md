@@ -19,7 +19,7 @@ This uses [basilisk](https://bioconductor.org/packages/release/bioc/html/basilis
 
 
 ## Developmental version
-To use the latest features of MOFA (see [NEWS](https://biofam.github.io/MOFA2/news.html)) you can install the latest version from GitHub:
+To use the latest features of MOFA you can install the software from GitHub:
 <!--
 BiocManager::install(version='devel')
 BiocManager::install("MOFA2")

@@ -29,8 +29,8 @@ The MOFA community has a Slack group where we provide quick and personalised hel
 <div class="row">
   <div class="column">
     <figure align="center">
-    <img src='images/ricard.jpg' alt='missing' width="250" height="250" />
-    <figcaption><b>Ricard Argelaguet</b> <br> Postdoctoral Scientist <br>  Babraham Institute <br> <a href="mailto:ricard@ebi.ac.uk">ricard@ebi.ac.uk</a> </figcaption>
+    <img src='images/donkey.jpeg' alt='missing' width="250" height="250" />
+    <figcaption><b>Ricard Argelaguet</b> <br> Senior computational scientist <br> Altos Labs <br> <a href="mailto:rargelaguet@altoslabs.com">rargelaguet@altoslabs.com</a> </figcaption>
     </figure>
   </div>
   <div class="column">
