@@ -1,10 +1,10 @@
 Package: MOFA2
 Type: Package
 Title: Multi-Omics Factor Analysis v2
-Version: 1.8.0
+Version: 1.8.1
 Maintainer: Britta Velten <britta.velten@gmail.com>
 Authors@R: c(person("Ricard", "Argelaguet", role = "aut",
-                     email = "ricard@ebi.ac.uk",
+                     email = "ricard.argelaguet@gmail.com",
                      comment = c(ORCID = "http://orcid.org/0000-0003-3199-3722")),
               person("Damien", "Arnol", role = "aut",
                      email = "damien.arnol@gmail.com",
@@ -17,7 +17,7 @@ Authors@R: c(person("Ricard", "Argelaguet", role = "aut",
               		comment = c(ORCID = "http://orcid.org/0000-0002-8397-3515"))
               )
 Date: 2018-09-03
-License: GPL (>= 2) + file LICENSE
+License: LGPL-3.0
 Description: The MOFA2 package contains a collection of tools for training and analysing multi-omic factor analysis (MOFA). MOFA is a probabilistic factor model that aims to identify principal axes of variation from data sets that can comprise multiple omic layers and/or groups of samples. Additional time or space information on the samples can be incorporated using the MEFISTO framework, which is part of MOFA2. Downstream analysis functions to inspect molecular features underlying each factor, vizualisation, imputation etc are available.
 Encoding: UTF-8
 Depends: R (>= 4.0)

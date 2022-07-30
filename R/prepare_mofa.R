@@ -76,8 +76,8 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
       stop("data_options are incorrectly specified, please read the documentation in get_default_data_options")
     object@data_options <- data_options
   }
-  if (any(nchar(unlist(samples_names(object)))>50))
-    warning("Due to string size limitations in the HDF5 format, sample names will be trimmed to less than 50 characters")
+  # if (any(nchar(unlist(samples_names(object)))>50))
+  #   warning("Due to string size limitations in the HDF5 format, sample names will be trimmed to less than 50 characters")
   
   # Get training options
   if (is.null(training_options)) {
