@@ -9,8 +9,8 @@
     "python=3.10.5",
     "numpy=1.23.1",
     "scipy=1.8.1",
-    "h5py=3.6.0",
     "pandas=1.4.3",
+    "h5py=3.6.0",
     "scikit-learn=1.1.1",
     "dtw-python=1.2.2"
 )

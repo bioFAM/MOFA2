@@ -91,8 +91,8 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     if (have_mofa2) {
       .run_mofa_reticulate(object, outfile, save_data)
     } else {
-      warning(sprintf("mofapy2_%s is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...", .mofapy2_version))
-      use_basilisk <- TRUE
+      stop(sprintf("mofapy2_%s is not detected in the specified python binary, see reticulate::py_config(). Consider setting use_basilisk = TRUE to create a python environment with basilisk (https://bioconductor.org/packages/release/bioc/html/basilisk.html)", .mofapy2_version))
+      # use_basilisk <- TRUE
     }
   }
     
