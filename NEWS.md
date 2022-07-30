@@ -3,6 +3,14 @@ layout: default
 title: NEWS
 ---
 
+**`MOFA2 1.8.1` (latest)**:  
+- Fix string size problems with HDF5
+- Updated basilisk to use the most updated numpy, scipy, h5py libraries
+- Spike and slab on the weights is set to False by default
+- use_float32 in data options is set to True by default (speeds up training by 2x)
+- `mofapy2` has been updated to version 0.6.5
+
+
 **`MOFA2 1.3.4` (latest)**:  
 - Added a more flexible alignment option in MEFISTO to align distinct sets of groups instead of individual groups
 - `mofapy2` has been updated to version 0.6.4
@@ -22,7 +30,6 @@ title: NEWS
 - MOFA2 Package available via [Bioconductor](http://bioconductor.org/packages/release/bioc/html/MOFA2.html)
 - Improving Python interface with [basilisk](http://www.bioconductor.org/packages/release/bioc/html/basilisk.html)
 - Sample metadata can be incorporated to the `MOFAobject` before and after training using the `samples_metadata` function
-
 
 
 **The `MOFA` package was deprecated and replaced by `MOFA2 1.0.0`**:  
