@@ -30,7 +30,7 @@ dependencies:
   - dtw-python
   - pip
   - pip:
-    - mofapy2==0.6.6
+    - mofapy2==0.6.7
 ```
 and then run:
 ```
