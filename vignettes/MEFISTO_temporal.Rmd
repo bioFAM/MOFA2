@@ -94,7 +94,7 @@ sm <- prepare_mofa(sm, model_options = model_opts,
 Now, the MOFA object is ready for training. Using `run_mofa` we can fit the model, which is saved in the file specified as `outfile`. If none is specified the output is saved in a temporary location.
 ```{r, warning=FALSE, message=FALSE}
 outfile = file.path(tempdir(),"model.hdf5")
-sm <- run_mofa(sm, outfile)
+sm <- run_mofa(sm, outfile, use_basilisk = TRUE)
 ```
 
 
