@@ -3,7 +3,12 @@ layout: default
 title: NEWS
 ---
 
-**`MOFA2 1.8.1` (latest)**:  
+**`MOFA2 1.7.3` (latest)**:  
+- `mofapy2` has been updated to version 0.6.7
+- Updated basilisk to use mofapy2 0.6.7
+- Minor changes
+
+**`MOFA2 1.7.2`**:  
 - Fix string size problems with HDF5
 - Updated basilisk to use the most updated numpy, scipy, h5py libraries
 - Spike and slab on the weights is set to False by default
@@ -11,7 +16,7 @@ title: NEWS
 - `mofapy2` has been updated to version 0.6.5
 
 
-**`MOFA2 1.3.4` (latest)**:  
+**`MOFA2 1.3.4`**:  
 - Added a more flexible alignment option in MEFISTO to align distinct sets of groups instead of individual groups
 - `mofapy2` has been updated to version 0.6.4
 
