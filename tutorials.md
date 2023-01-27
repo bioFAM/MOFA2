@@ -22,9 +22,19 @@ title: Tutorials
 
 ## Getting started using Python
 
-* [**Training a model in Python**](https://github.com/bioFAM/mofapy2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a jupyter notebook demonstrating how to train a MOFA model using simple simulated data  
+MOFA is interfaced through [muon](https://github.com/scverse/muon):
 
-* **Downstream analysis in Python**: in preparation...
+* [**Training MOFA with muon**](https://muon-tutorials.readthedocs.io/en/latest/CLL.html): to integrate the multimodal CLL dataset in the [MuData](https://github.com/scverse/mudata) format.
+
+* [**Integration of multimodal single-cell data**](https://muon-tutorials.readthedocs.io/en/latest/single-cell-rna-atac/pbmc10k/3-Multimodal-Omics-Data-Integration.html): shows how [muon](https://github.com/scverse/muon) can be used to train the model and explore the model together with the [mofax](https://github.com/bioFAM/mofax) package.
+
+It is also possible to directly use the stand-alone [mofapy2](https://github.com/bioFAM/mofapy2) library to train the model and the [mofax](https://github.com/bioFAM/mofax) library for downstream analysis in Python:
+
+* [**Training a model with mofapy2**](https://github.com/bioFAM/mofapy2/blob/master/mofapy2/notebooks/getting_started_python.ipynb): a Jupyter notebook demonstrating how to train a MOFA model using simple simulated data.
+
+* [**Training a model on AnnData**](https://github.com/bioFAM/mofax/blob/master/notebooks/training_pbmc10k.ipynb): a Jupyter notebook demonstrating how to run MOFA+ training a single-cell RNA-seq dataset [in AnnData format](https://github.com/scverse/anndata).
+
+* [**Downstream analysis in Python**](https://github.com/bioFAM/mofax/blob/master/notebooks/getting_started_pbmc10k.ipynb): a Jupyter notebook showing how a MOFA+ model trained on a single-cell RNA-seq dataset can be explored in detail using the [mofax](https://github.com/bioFAM/mofax) Python package.
 
 
 ## Case examples using real data (in R)
