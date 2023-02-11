@@ -35,7 +35,6 @@ If you have used MOFA, please consider citing any of the two articles:
         pages = {e8124}
     }
 
-
     @article{Argelaguet2020,
         author = {Argelaguet, R. and Arnol, D. and Bredikhin, D. and Deloro, Y. and Velten, B. and Marioni, J.C. and Stegle, O.},
         title = {MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data},
@@ -45,7 +44,7 @@ If you have used MOFA, please consider citing any of the two articles:
         number = {1},
         pages = {111}
     } 
-    
+
 If you have used MEFISTO, please consider citing the following article:
 
     @article{Velten2020,

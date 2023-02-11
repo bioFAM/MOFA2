@@ -3,9 +3,13 @@ layout: default
 title: Contact
 ---
 
-## Slack (recommended)
+## Github
 
-The MOFA community has a Slack group where we provide quick and personalised help, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
+If you want to report a bug please open a issue in [Github](https://github.com/bioFAM/MOFA2/issues)
+
+## Slack
+
+The MOFA community has a Slack group where we provide help for you analysis, [this is the link](https://join.slack.com/t/mofahelp/shared_invite/enQtMjcxNzM3OTE3NjcxLWNhZmM1MDRlMTZjZWRmYWJjMGFmMDkzNDBmMDhjYmJmMzdlYzU4Y2EzYTI1OGExNzM2MmUwMzJkZmVjNDkxNGI).
 
 ## Software maintainers
 

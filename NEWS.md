@@ -3,6 +3,18 @@ layout: default
 title: NEWS
 ---
 
+<!-- To-add:
+**`MOFA2 1.7.3` (latest)**:  
+- interoperability with muon
+- Spike and slab on the weights is revert back to True by default 
+- mofax package for downstream analysis
+- mofapy2 updated to
+- enable gpu device selection
+- improved installation instructions on basilisk/reticulate
+- fix a few broken links 
+- improve template scripts
+-->
+
 **`MOFA2 1.7.3` (latest)**:  
 - `mofapy2` has been updated to version 0.6.7
 - Updated basilisk to use mofapy2 0.6.7
