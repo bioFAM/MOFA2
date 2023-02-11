@@ -1,7 +1,7 @@
 Package: MOFA2
 Type: Package
 Title: Multi-Omics Factor Analysis v2
-Version: 1.7.4
+Version: 1.7.5
 Maintainer: Ricard Argelaguet <ricard.argelaguet@gmail.com>
 Authors@R: c(person("Ricard", "Argelaguet", role = c("aut", "cre"),
                      email = "ricard.argelaguet@gmail.com",
