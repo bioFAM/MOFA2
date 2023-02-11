@@ -12,26 +12,8 @@ import requests # to download the online data
 ## Load data ##
 ###############
 
-# Two formats are allowed for the input data:
-
-# Option 1: a nested list of matrices, where the first index refers to the view and the second index refers to the group.
-#           samples are stored in the rows and features are stored in the columns.
-# 			Missing values must be filled with NAs, including samples missing an entire view
-
-# datadir = "/Users/ricard/data/mofaplus/test"
-# views = ["0","1"]
-# groups = ["0","1"]
-# data = [None]*len(views)
-# for m in range(len(views)):
-#     data[m] = [None]*len(groups)
-#     for g in range(len(groups)):
-#         datafile = "%s/%s_%s.txt.gz" % (datadir, views[m], groups[g])
-#         data[m][g] = pd.read_csv(datafile, header=None, sep=' ')
-
-# Option 2: a data.frame with columns ["sample","feature","view","group","value"]
-#           In this case there is no need to have missing values in the data.frame,
-#           they will be automatically filled in when creating the corresponding matrices
-
+# The input needs to be a data.frame with columns ["sample","feature","view","group","value"]
+# In this case there is no need to have missing values in the data.frame, they will be automatically filled in when creating the corresponding matrices
 file = "ftp://ftp.ebi.ac.uk/pub/databases/mofa/getting_started/data.txt.gz"
 data = pd.read_csv(file, sep="\t")
 
@@ -50,34 +32,8 @@ ent.set_data_options(
 	scale_views = False
 )
 
-# (3) Set data using the long data frame format
+# (3) Set data using the data frame format
 ent.set_data_df(data)
-
-## (3) Set data using the nested list of matrices format ##
-# views_names = ["view1","view2"]
-# groups_names = ["groupA","groupB"]
-
-# samples_names nested list with length NGROUPS. Each entry g is a list with the sample names for the g-th group
-# - if not provided, MOFA will fill it with default samples names
-# samples_names = (...)
-
-# features_names nested list with length NVIEWS. Each entry m is a list with the features names for the m-th view
-# - if not provided, MOFA will fill it with default features names
-# features_names = (...)
-
-# ent.set_data_matrix(data, 
-# 	views_names = views_names, 
-# 	groups_names = groups_names, 
-# 	samples_names = samples_names,   
-# 	features_names = features_names
-# )
-
-
-## (4) Set model options
-# - factors: number of factors. Default is 15
-# - likelihods: likelihoods per view (options are "gaussian","poisson","bernoulli"). Default and recommended is "gaussian"
-# - spikeslab_weights: use spike-slab sparsity prior in the weights? (recommended TRUE)
-# - ard_weights: use automatic relevance determination prior in the weights? (TRUE if using multiple views)
 
 # using default values
 ent.set_model_options()
