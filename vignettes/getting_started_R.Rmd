@@ -19,7 +19,7 @@ vignette: >
 ---
 
 This vignette contains a detailed tutorial on how to train a MOFA model using R.
-A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R).
+A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/87e615bf0d49481821bd03cb32baa5d2e66ad6d8/inst/scripts/template_script.R).
 Many more examples on application of MOFA to various multi-omics data sets can be found [here](https://biofam.github.io/MOFA2/tutorials.html).
 
 

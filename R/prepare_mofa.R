@@ -251,6 +251,7 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
 #'  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
 #'  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets, default is \code{FALSE}).}
 #'  \item{\strong{gpu_mode}:}{ logical indicating whether to use GPUs (see details).}
+#'  \item{\strong{gpu_device}:}{ integer indicating which GPU to use.}
 #'  \item{\strong{seed}:}{ numeric indicating the seed for reproducibility (default is 42).}
 #' }
 #' @return Returns a list with default training options
@@ -288,6 +289,7 @@ get_default_training_options <- function(object) {
     freqELBO = 5,                  # (numeric) Frequency of ELBO calculation
     stochastic = FALSE,            # (logical) Do stochastic variational inference?
     gpu_mode = FALSE,              # (logical) Use GPU?
+    gpu_device = NULL,             # (integer) Which GPU to use?
     seed = 42,                     # (numeric) random seed
     outfile = NULL,                # (string)  Output file name
     weight_views = FALSE,          # (logical) Weight the ELBO based on the number of features per view?
