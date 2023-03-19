@@ -206,7 +206,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   
   # Add theme
   p <- p +
-    geom_hline(yintercept=0, linetype="dashed", size=0.2, alpha=0.5) +
+    geom_hline(yintercept=0, linetype="dashed", linewidth=0.2, alpha=0.5) +
     theme(
         panel.border = element_rect(color="black", linewidth=0.1, fill=NA),
         strip.background = element_rect(colour = "black", linewidth=0.25),
