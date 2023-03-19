@@ -53,7 +53,7 @@
 #' @return Returns a \code{ggplot2} 
 #' @import ggplot2 grDevices
 #' @importFrom stats complete.cases
-#' @importFrom forcats fct_explicit_na
+#' @importFrom forcats fct_na_value_to_level
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom dplyr summarise group_by
 #' @export
@@ -125,9 +125,9 @@ plot_factor <- function(object, factors = 1, groups = "all",
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   if (is.factor(df$color_by))
-    df$color_by <- forcats::fct_explicit_na(df$color_by)
+    df$color_by <- forcats::fct_na_value_to_level(df$color_by)
   if (is.factor(df$shape_by))
-    df$shape_by <- forcats::fct_explicit_na(df$shape_by)
+    df$shape_by <- forcats::fct_na_value_to_level(df$shape_by)
   
   # Scale values
   if (scale) df$value <- df$value/max(abs(df$value))
@@ -208,14 +208,14 @@ plot_factor <- function(object, factors = 1, groups = "all",
   p <- p +
     geom_hline(yintercept=0, linetype="dashed", size=0.2, alpha=0.5) +
     theme(
-        panel.border = element_rect(color="black", size=0.1, fill=NA),
-        strip.background = element_rect(colour = "black", size=0.25),
+        panel.border = element_rect(color="black", linewidth=0.1, fill=NA),
+        strip.background = element_rect(colour = "black", linewidth=0.25),
         panel.spacing = unit(0,"lines"),
         # axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         axis.text = element_text(size=rel(0.75), color="black"),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(1.0), color="black"),
-        axis.line = element_line(color="black", size=0.25),
+        axis.line = element_line(color="black", linewidth=0.25),
         axis.ticks = element_line(color = "black")
     )
   
@@ -360,8 +360,8 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     theme(
       axis.text = element_text(size = rel(0.8), color = "black"), 
       axis.title = element_text(size = rel(1.1), color = "black"), 
-      axis.line = element_line(color = "black", size = 0.5), 
-      axis.ticks = element_line(color = "black", size = 0.5)
+      axis.line = element_line(color = "black", linewidth = 0.5), 
+      axis.ticks = element_line(color = "black", linewidth = 0.5)
     )
   
   p <- .add_legend(p, df, legend, color_name, shape_name)
@@ -437,7 +437,6 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     legend = legend
     )
   p <- p + theme_bw() + theme(
-    # axis.line = element_line(color="black", size=rel(1.0)),
     panel.grid.major = element_blank(),
     axis.ticks = element_blank(),
     axis.text = element_blank()

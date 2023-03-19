@@ -153,8 +153,8 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   p <- ggplot(df, aes(x=.data$x, y=.data$y)) + 
     geom_point(aes(color = .data$color_by, shape = .data$shape_by), size=dot_size) + 
     labs(x=factors[1], y=factors[2]) +
-    geom_segment(x=min(df$x,na.rm=TRUE), xend=max(df$x,na.rm=TRUE), y=0, yend=0, size=0.25, color="orange") +
-    geom_segment(y=min(df$y,na.rm=TRUE), yend=max(df$y,na.rm=TRUE), x=0, xend=0, size=0.25, color="orange") +
+    geom_segment(x=min(df$x,na.rm=TRUE), xend=max(df$x,na.rm=TRUE), y=0, yend=0, linewidth=0.25, color="orange") +
+    geom_segment(y=min(df$y,na.rm=TRUE), yend=max(df$y,na.rm=TRUE), x=0, xend=0, linewidth=0.25, color="orange") +
     theme_classic() +
     theme(
       axis.text = element_text(size=rel(1), color="black"), 
@@ -505,7 +505,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   
   p <- ggplot(W, aes(x=.data$feature_id, y=.data$value)) +
     geom_point(size=2) +
-    geom_segment(aes(xend=.data$feature_id), size=0.75, yend=0) +
+    geom_segment(aes(xend=.data$feature_id), linewidth=0.75, yend=0) +
     scale_colour_gradient(low="grey", high="black") +
     coord_flip() +
     labs(y="Weight") +

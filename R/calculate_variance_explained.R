@@ -321,13 +321,13 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
       scale_y_continuous(limits=c(min_lim_bplt, max_lim_bplt), expand=c(0.005, 0.005)) +
       theme(
         axis.ticks.x = element_blank(),
-        axis.text.x = element_text(size=rel(1.1), color="black"),
-        axis.text.y = element_text(size=rel(1.0), color="black"),
-        axis.title.y = element_text(size=rel(1.0), color="black"),
-        axis.line = element_line(size=rel(1.0), color="black"),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        axis.line = element_line(color="black"),
         panel.background = element_blank(),
         strip.background = element_blank(),
-        strip.text = element_text(size=rel(1.0))
+        strip.text = element_text()
       )
     
     # remove facet title

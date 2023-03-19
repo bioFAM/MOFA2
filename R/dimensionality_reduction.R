@@ -240,7 +240,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
     theme(
       axis.text = element_blank(), 
       axis.title = element_blank(), 
-      axis.line = element_line(color = "black", size = 0.5), 
+      axis.line = element_line(color = "black", linewidth = 0.5), 
       axis.ticks = element_blank()
     )
   

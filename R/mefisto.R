@@ -789,8 +789,8 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 
       axis.title = element_text(size = rel(1.2), color = "black"), 
-      axis.line = element_line(color = "black", size = 0.5), 
-      axis.ticks = element_line(color = "black", size = 0.5)
+      axis.line = element_line(color = "black", linewidth = 0.5), 
+      axis.ticks = element_line(color = "black", linewidth = 0.5)
     ) + xlab(covariate_name) + ylab("factor value")
   
   if (show_variance){
@@ -835,8 +835,8 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"),
       axis.title = element_text(size = rel(1.0), color = "black"),
-      axis.line = element_line(color = "black", size = 0.5),
-      axis.ticks = element_line(color = "black", size = 0.5)
+      axis.line = element_line(color = "black", linewidth = 0.5),
+      axis.ticks = element_line(color = "black", linewidth = 0.5)
     ) + guides(col = guide_colorbar(title = "Factor value"))
   
   if(rotate_x){
