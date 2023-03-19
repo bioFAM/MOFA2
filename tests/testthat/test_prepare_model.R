@@ -8,8 +8,10 @@ test_that("a MOFA model can be prepared from a list of matrices", {
 	rownames(m) <- paste("feature_", seq_len(nrow(m)), paste = "", sep = "")
 	# Set sample names
 	colnames(m) <- paste("sample_", seq_len(ncol(m)), paste = "", sep = "")
-	factor_model <- create_mofa(list("view1" = m))
-	expect_is(prepare_mofa(factor_model), "MOFA")
+	mofa_model <- create_mofa(list("view1" = m))
+	model_opts <- get_default_model_options(MOFAobject)
+	model_opts$num_factors <- 10
+	expect_is(prepare_mofa(mofa_model, model_options = model_opts), "MOFA")
 })
 
 test_that("a model can be created from a list of sparse matrices", {
@@ -26,10 +28,12 @@ test_that("a model can be created from a list of sparse matrices", {
 	# Set sample names
 	colnames(m) <- paste("sample_", seq_len(ncol(m)), paste = "", sep = "")
 	# Initialise a model
-	factor_model <- create_mofa(list("view1" = m))
-	
+	mofa_model <- create_mofa(list("view1" = m))
+	model_opts <- get_default_model_options(MOFAobject)
+	model_opts$num_factors <- 10
+
 	# Test if a sparse matrix can be used to prepare the MOFA model for training
-	expect_is(prepare_mofa(factor_model), "MOFA")
+	expect_is(prepare_mofa(mofa_model, model_options = model_opts), "MOFA")
 })
 
 test_that("a model can be created from a Seurat object", {
@@ -46,9 +50,11 @@ test_that("a model can be created from a Seurat object", {
 	srt <- Seurat::CreateSeuratObject(m)
 
 	# Prepare a model before training
-	factor_model <- create_mofa(srt, features = genes, slot = "data")
+	mofa_model <- create_mofa(srt, features = genes, slot = "data")
+	model_opts <- get_default_model_options(MOFAobject)
+	model_opts$num_factors <- 10
 
 	# Test if a Seurat object can be used to prepare the MOFA model for training
-	expect_is(prepare_mofa(factor_model), "MOFA")
+	expect_is(prepare_mofa(mofa_model, model_options = model_opts), "MOFA")
 })
 
