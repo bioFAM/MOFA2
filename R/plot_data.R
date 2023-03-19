@@ -310,8 +310,8 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
   axis.text.size <- .select_axis.text.size(N=length(unique(df$feature)))
   
   # Generate plot
-  p <- ggplot(df, aes_string(x = "x", y = "value")) + 
-    geom_point(aes_string(fill = "color_by", shape = "shape_by"), colour = "black", size = dot_size, stroke = stroke, alpha = alpha) +
+  p <- ggplot(df, aes(x = .data$x, y = .data$value)) + 
+    geom_point(aes(fill = .data$color_by, shape = .data$shape_by), colour = "black", size = dot_size, stroke = stroke, alpha = alpha) +
     labs(x="Factor values", y="") +
     facet_wrap(~feature, scales="free_y") +
     theme_classic() + 
@@ -324,8 +324,8 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
   if (add_lm) {
     if (lm_per_group && length(groups)>1) {
       p <- p +
-        stat_smooth(formula=y~x, aes_string(color="group"), method="lm", alpha=0.4) +
-        ggpubr::stat_cor(aes_string(color="group", label = "..r.label.."), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
+        stat_smooth(formula=y~x, aes(color=.data$group), method="lm", alpha=0.4) +
+        ggpubr::stat_cor(aes(color=.data$group, label = .data[["..r.label.."]]), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
         # guides(color = "none")
     } else {
       p <- p +
@@ -356,6 +356,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
 #' and it indicates which measurements are missing.
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom rlang .data
 #' @importFrom dplyr mutate left_join
 #' @return A \code{\link{ggplot}} object
 #' @export
@@ -417,7 +418,7 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   ovw$group <- object@samples_metadata$group
 
   # Melt to data.frame
-  to.plot <- melt(ovw, id.vars = c("sample", "group"), var=c("view"))
+  to.plot <- reshape2::melt(ovw, id.vars = c("sample", "group"), var=c("view"))
   if(!is.null(covariate)) {
     to.plot <- left_join(to.plot, covari, by= "sample")
     to.plot$sample <- factor(to.plot$sample, levels = unique(to.plot$sample[order(to.plot$covariate_value)]))
@@ -445,12 +446,13 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
   to.plot$group_label <- factor(to.plot$group_label, levels=unique(to.plot$group_label))
   
   # Plot
-  p <- ggplot(to.plot, aes_string(x="sample", y="view_label", fill="combi")) +
+  p <- ggplot(to.plot, aes(x=.data$sample, y=.data$view_label, fill=.data$combi)) +
     geom_tile() +
     scale_fill_manual(values = c("missing"="grey", colors)) +
     # xlab(paste0("Samples (N=", n, ")")) + ylab("") +
     guides(fill = "none") + 
-    facet_wrap(~group_label, scales="free_x", nrow=length(unique(to.plot$view_label))) +
+    # facet_wrap(~group_label, scales="free_x", nrow=length(unique(to.plot$view_label))) +
+    facet_wrap(vars(group_label), scales="free_x", nrow=length(unique(to.plot$view_label))) +
     theme(
       panel.background = element_rect(fill="white"),
       text = element_text(size=14),
@@ -464,7 +466,7 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
     )
   
   if(show_covariate){
-    p2 <- ggplot(to.plot, aes_string(x="sample", y="covariate_value")) +
+    p2 <- ggplot(to.plot, aes(x=.data$sample, y=.data$covariate_value)) +
       geom_point(size = 0.5) +  theme_bw() +theme(
         text = element_text(size=10),
         axis.ticks.x = element_blank(),

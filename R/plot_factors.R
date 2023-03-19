@@ -133,7 +133,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   if (scale) df$value <- df$value/max(abs(df$value))
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="group_by", y="value", fill="color_by", shape="shape_by")) +
+  p <- ggplot(df, aes(x=.data$group_by, y=.data$value, fill=.data$color_by, shape=.data$shape_by)) +
     theme_classic()
   
   # Defien facets as factors or groups
@@ -353,7 +353,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   }
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="x", y="y", fill="color_by", shape="shape_by")) + 
+  p <- ggplot(df, aes(x=.data$x, y=.data$y, fill=.data$color_by, shape=.data$shape_by)) + 
     geom_point(size=dot_size, alpha=alpha, stroke = stroke) +
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
@@ -413,7 +413,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   df <- tidyr::spread(df, key="factor", value="value")
   
   # Prepare the legend
-  p <- ggplot(df, aes_string(x=factors[1], y=factors[2], color="color_by", shape="shape_by")) +
+  p <- ggplot(df, aes(x=.data[[factors[1]]], y=.data[[factors[2]]], color=.data$color_by, shape=.data$shape_by)) +
     geom_point() +
     theme(
       legend.key = element_rect(fill = "white"),
@@ -432,7 +432,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     lower = list(continuous=GGally::wrap("points", size=dot_size)), 
     diag = list(continuous='densityDiag'), 
     upper = list(continuous=GGally::wrap("points", size=dot_size)), 
-    mapping = aes_string(color="color_by", shape="shape_by"), 
+    mapping = aes(color=.data$color_by, shape=.data$shape_by), 
     title = "", 
     legend = legend
     )

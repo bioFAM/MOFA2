@@ -234,7 +234,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   if (is.null(stroke)) if (length(unique(df$sample))<1000) { stroke <- 0.5 } else { stroke <- 0 }
   
   # Generate plot
-  p <- ggplot(df, aes_string(x = "x", y = "y")) + 
+  p <- ggplot(df, aes(x = .data$x, y = .data$y)) + 
     labs(x = latent_dimensions_names[1], y = latent_dimensions_names[2]) +
     theme_classic() +
     theme(
@@ -247,9 +247,9 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   # Add dots  
   if (rasterize) {
     message("for rasterizing the plot we use ggrastr::geom_point_rast()")
-    p <- p + ggrastr::geom_point_rast(aes_string(fill = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size, stroke = stroke)
+    p <- p + ggrastr::geom_point_rast(aes(fill = .data$color_by, shape = .data$shape_by, alpha = .data$observed), size = dot_size, stroke = stroke)
   } else {
-    p <- p + geom_point(aes_string(fill = "color_by", shape = "shape_by", alpha = "observed"), size = dot_size, stroke = stroke)
+    p <- p + geom_point(aes(fill = .data$color_by, shape = .data$shape_by, alpha = .data$observed), size = dot_size, stroke = stroke)
     
   }      
   
@@ -273,7 +273,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
         return(data.medians)
       }
     ) %>% do.call("rbind",.)
-    p <- p + geom_text_repel(aes_string(label="color_by"), data=labels.loc)
+    p <- p + geom_text_repel(aes(label=.data$color_by), data=labels.loc)
   }
   
   

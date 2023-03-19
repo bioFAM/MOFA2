@@ -121,7 +121,7 @@ compare_elbo <- function(models, log = FALSE, return_data = FALSE) {
   # return data
   if (return_data) return(df)
   
-  gg <- ggplot(df, aes_string(x="model", y="ELBO")) + 
+  gg <- ggplot(df, aes(x=.data$model, y=.data$ELBO)) + 
     geom_bar(stat="identity", color="black", fill="grey70") +
     labs(x="", y="Evidence Lower Bound (ELBO)") +
     theme_classic()

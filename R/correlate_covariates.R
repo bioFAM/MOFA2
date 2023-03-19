@@ -140,10 +140,10 @@ summarise_factors <- function(object, df, factors = "all", groups = "all", abs =
   # Plot
   if (length(unique(factors_df$group))>1) {
     to.plot$group <- factor(to.plot$group, levels=groups)
-    p <- ggplot(to.plot, aes_string(x="group", y="level", fill="value")) +
+    p <- ggplot(to.plot, aes(x=.data$group, y=.data$level, fill=.data$value)) +
       facet_wrap(~factor)
   } else {
-    p <- ggplot(to.plot, aes_string(x="factor", y="level", fill="value"))
+    p <- ggplot(to.plot, aes(x=.data$factor, y=.data$level, fill=.data$value))
   }
   
   p <- p +
