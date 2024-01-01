@@ -1,7 +1,7 @@
 Package: MOFA2
 Type: Package
 Title: Multi-Omics Factor Analysis v2
-Version: 1.9.2
+Version: 1.13.0
 Maintainer: Ricard Argelaguet <ricard.argelaguet@gmail.com>
 Authors@R: c(person("Ricard", "Argelaguet", role = c("aut", "cre"),
                      email = "ricard.argelaguet@gmail.com",
@@ -16,13 +16,13 @@ Authors@R: c(person("Ricard", "Argelaguet", role = c("aut", "cre"),
               		email = "britta.velten@gmail.com",
               		comment = c(ORCID = "http://orcid.org/0000-0002-8397-3515"))
               )
-Date: 2018-09-03
+Date: 2023-01-12
 License: file LICENSE
 Description: The MOFA2 package contains a collection of tools for training and analysing multi-omic factor analysis (MOFA). MOFA is a probabilistic factor model that aims to identify principal axes of variation from data sets that can comprise multiple omic layers and/or groups of samples. Additional time or space information on the samples can be incorporated using the MEFISTO framework, which is part of MOFA2. Downstream analysis functions to inspect molecular features underlying each factor, vizualisation, imputation etc are available.
 Encoding: UTF-8
 Depends: R (>= 4.0)
 Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot, DelayedArray, Rtsne, uwot, basilisk, stringi
-Suggests: knitr, testthat, Seurat, ggpubr, foreach, psych, MultiAssayExperiment, SummarizedExperiment, SingleCellExperiment, ggrastr, mvtnorm, GGally, rmarkdown, data.table, tidyverse, BiocStyle, Matrix, markdown
+Suggests: knitr, testthat, Seurat, SeuratObject, ggpubr, foreach, psych, MultiAssayExperiment, SummarizedExperiment, SingleCellExperiment, ggrastr, mvtnorm, GGally, rmarkdown, data.table, tidyverse, BiocStyle, Matrix, markdown
 biocViews: DimensionReduction, Bayesian, Visualization
 URL: https://biofam.github.io/MOFA2/index.html
 BugReports: https://github.com/bioFAM/MOFA2
@@ -30,5 +30,5 @@ VignetteBuilder: knitr
 LazyData: false
 StagedInstall: no
 NeedsCompilation: yes
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
 SystemRequirements: Python (>=3), numpy, pandas, h5py, scipy, argparse, sklearn, mofapy2

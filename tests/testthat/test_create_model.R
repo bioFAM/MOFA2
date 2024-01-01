@@ -26,6 +26,7 @@ test_that("a model can be created from a list of sparse matrices", {
 
 test_that("a model can be created from a Seurat object", {
 	skip_if_not_installed("Seurat")
+	skip_if_not_installed("SeuratObject")
 	library(Seurat)
 	library(Matrix)
 	m <- readMM('matrix.mtx')
@@ -33,9 +34,9 @@ test_that("a model can be created from a Seurat object", {
 	cells <- read.delim('barcodes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,1]
 	colnames(m) <- cells
 	rownames(m) <- genes
-	srt <- Seurat::CreateSeuratObject(m)
+	srt <- SeuratObject::CreateSeuratObject(m)
 	# only for testing purpose, should use scale.data
-	expect_is(create_mofa(srt, features = genes, slot = "data"), "MOFA")
+	expect_is(create_mofa(srt, features = genes, layer = "counts"), "MOFA")
 })
 
 test_that("a list of matrices per view is split correctly into a nested list of matrices according to samples groups", {

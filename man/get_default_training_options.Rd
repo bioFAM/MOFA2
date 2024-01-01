@@ -31,6 +31,7 @@ The training options are the following: \cr
  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets, default is \code{FALSE}).}
  \item{\strong{gpu_mode}:}{ logical indicating whether to use GPUs (see details).}
+ \item{\strong{gpu_device}:}{ integer indicating which GPU to use.}
  \item{\strong{seed}:}{ numeric indicating the seed for reproducibility (default is 42).}
 }
 }

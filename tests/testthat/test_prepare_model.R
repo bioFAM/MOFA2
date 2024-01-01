@@ -38,8 +38,7 @@ test_that("a model can be created from a list of sparse matrices", {
 
 test_that("a model can be created from a Seurat object", {
 	skip_if_not_installed("Seurat")
-
-	# Create a Seurat object from demo data
+	skip_if_not_installed("SeuratObject")
 	library(Seurat)
 	library(Matrix)
 	m <- readMM('matrix.mtx')
@@ -47,10 +46,8 @@ test_that("a model can be created from a Seurat object", {
 	cells <- read.delim('barcodes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,1]
 	colnames(m) <- cells
 	rownames(m) <- genes
-	srt <- Seurat::CreateSeuratObject(m)
-
-	# Prepare a model before training
-	mofa_model <- create_mofa(srt, features = genes, slot = "data")
+	srt <- SeuratObject::CreateSeuratObject(m)
+	mofa_model <- create_mofa(srt, features = genes, layer = "counts")
 	model_opts <- get_default_model_options(mofa_model)
 	model_opts$num_factors <- 10
 

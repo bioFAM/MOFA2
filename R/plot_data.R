@@ -356,7 +356,7 @@ plot_data_scatter <- function(object, factor = 1, view = 1, groups = "all", feat
 #' and it indicates which measurements are missing.
 #' @import ggplot2
 #' @importFrom reshape2 melt
-#' @importFrom rlang .data
+# #' @importFrom rlang .data
 #' @importFrom dplyr mutate left_join
 #' @return A \code{\link{ggplot}} object
 #' @export
