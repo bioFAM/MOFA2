@@ -601,7 +601,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
     stopifnot(all(unique(color_by$feature) %in% features_names(object)[[view]]))
     
     # Option 3: by a feature_metadata column
-  } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {
+  } else if ((length(color_by)==1) && is.character(color_by) && (color_by %in% colnames(features_metadata(object)))) {
     tmp <- features_metadata(object)
     color_by <- tmp[tmp$view==view,color_by]
     
