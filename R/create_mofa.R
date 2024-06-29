@@ -69,8 +69,8 @@ create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
 
 #' @title create a MOFA object from a MultiAssayExperiment object
 #' @name create_mofa_from_MultiAssayExperiment
-#' @description Method to create a \code{\link{MOFA}} object from a MultiAssayExperiment object
-#' @param mae a MultiAssayExperiment object
+#' @description Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
+#' @param mae a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 #' @param groups a string specifying column name of the colData to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
@@ -413,7 +413,8 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer 
       # By default select highly variable features if present in the Seurat object
       if (is.null(features)) {
         message("No features specified, using variable features from the Seurat object...")
-        features <- lapply(assays, function(i) seurat@assays[[i]]@var.features)
+        # features <- lapply(assays, function(i) seurat@assays[[i]]@var.features)
+        features <- lapply(assays, function(i) SeuratObject::VariableFeatures(seurat@assays[[i]]))
         names(features) <- assays
         if (any(sapply(features,length)==0)) stop("No list of features provided and variable features not detected in the Seurat object")
       } else if (all(is(features, "character"))) {
@@ -677,3 +678,6 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   object@features_metadata[tmp,"feature"] <- paste(object@features_metadata[tmp,"feature"], object@features_metadata[tmp,"view"], sep="_")
   return(object)
 }
+
+
+
