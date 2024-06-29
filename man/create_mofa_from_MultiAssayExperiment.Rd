@@ -6,12 +6,15 @@
 \usage{
 create_mofa_from_MultiAssayExperiment(
   mae,
+  assays,
   groups = NULL,
   extract_metadata = FALSE
 )
 }
 \arguments{
-\item{mae}{a MultiAssayExperiment object}
+\item{mae}{a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
+
+\item{assays}{assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
 
 \item{groups}{a string specifying column name of the colData to use it as a group variable. 
 Alternatively, a character vector with group assignment for every sample.
@@ -23,5 +26,5 @@ Default is \code{NULL} (no group structure).}
 Returns an untrained \code{\link{MOFA}} object
 }
 \description{
-Method to create a \code{\link{MOFA}} object from a MultiAssayExperiment object
+Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 }

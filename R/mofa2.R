@@ -1,11 +1,12 @@
-#' @title One-liner wrapper to create a MOFA2 object ready for training
-#' @name mofa2_from_mae
-#' @description \code{mofa2_from_mae} generates a MOFA2 model from a MultiAssayExperiment with default options that is ready for training.
-#' This is a one-line wrapper that combines the use of \code{\link[create_mofa_from_MultiAssayExperiment]{create_mofa_from_MultiAssayExperiment}} followed by \code{\link[prepare_mofa]{prepare_mofa}}.
-#' @param mae a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}
-#' @param assay.names List of assays to include in MOFA model (required).
-#' @param groups One of the variable names of coldata from which groups should be derived. Default is NULL, only relevant when using the multi-group framework.
-#' @param extract_metadata Boolean specifying whether sample metadata should be propagated from the MultiAssayExperiment to the MOFA2 object  (default is FALSE).
+#' @title One-liner wrapper to create a MOFA2 object from multiple input objects and ready for training
+#' @name mofa2
+#' @description
+#' This is a one-line wrapper that combines the use of \code{\link[create_mofa]{create_mofa}} followed by \code{\link[prepare_mofa]{prepare_mofa}}.
+#' Please read the documentation of the corresponding functions for more details.
+#' @param data input data. See \code{\link[create_mofa]{create_mofa}} for details on input data formats.
+#' @param assays Assays to include in MOFA model. Required for \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}, \code{\link[SingleCellExperiment:SingleCellExperiment]{SingleCellExperiment}} and \code{\link[SeuratObject:CreateSeuratObject]{Seurat}} objects.
+#' @param groups One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is NULL.
+#' @param extract_metadata Boolean specifying whether sample metadata from the input object should be propagated to the MOFA2 object  (default is TRUE).
 #' @param ... additional parameters for MOFA, named as the options of \code{\link[prepare_mofa]{prepare_mofa}}.
 #' 
 #' @return 
@@ -14,32 +15,28 @@
 #'
 #' 
 #' @examples
-#' # Load package and import dataset
+
+#' # Example with MultiAssayExperiment
 #' library(mia)
 #' data("HintikkaXOData", package = "mia")
 #' mae <- HintikkaXOData
-#' 
-#' # Prepare basic model with selected assays
-#' prep_model <- mofa2_from_mae(mae, assay.names = c("counts", "nmr", "signals"))
-#' 
-#' # Specify grouping variable and extract metadata
-#' prep_model <- mofa2_from_mae(mae, assay.names = c("counts", "nmr", "signals"),
-#'                     groups = "Diet", extract_metadata = TRUE)
-#'
-#' # Modify MOFA options with corresponding arguments
-#' prep_model <- mofa2_from_mae(mae, assay.names = c("counts", "nmr", "signals"),
-#'                     num_factors = 5)
-mofa2_from_mae <- function(mae, assay.names, groups = NULL, extract_metadata = FALSE, ...) {
+#' mofa_obj <- mofa2(mae, assays = c("counts", "nmr"))
+#' mofa_obj <- mofa2(mae, assays = c("counts", "nmr"), num_factors = 5)
+
+#' # Example with long data.frame format (two views and two groups)
+#' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
+#' load(file) 
+#' mofa_obj <- mofa2(dt)
+
+#' # Example with list of matrices
+#' mtx <- make_example_data()$data
+#' mofa_obj <- mofa2(mtx)
+mofa2 <- function(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...) {
   
   # Select assays of each experiment for MOFA
-  mae <- .select_assays(mae, assay.names)
-  
-  # Create MOFA from selected experiments
-  mofa_obj <- create_mofa_from_MultiAssayExperiment(
-    mae,
-    groups = groups,
-    extract_metadata = extract_metadata
-  )
+  # TO-DO: IF INPUT DATA IS MAE, SINGLECELLEXPERIMENT OR SEURAT, MAKE USE ASSAYS IS NOT NUL
+  # mofa_obj <- create_mofa(data, assays, groups, extract_metadata, ...)
+  mofa_obj <- create_mofa(data, assays, groups, extract_metadata)
   
   # Make a list of arguments for MOFA
   mofa_args <- list(
@@ -60,24 +57,10 @@ mofa2_from_mae <- function(mae, assay.names, groups = NULL, extract_metadata = F
   
   return(mofa_obj)
 }
-  
-########################## HELP FUNCTIONS ##########################
 
-# Select assays to be included in MOFA
-#' @importFrom MultiAssayExperiment experiments
-#' @importFrom SummarizedExperiment assay assays assayNames
-.select_assays <- function(mae, assay.names) {
-  # Give corresponding experiment names to assay.names
-  names(assay.names) <- names(experiments(mae))
-  # For every experiment in MAE
-  for ( exp in names(experiments(mae)) ){
-    # Keep only selected assay.type from a given experiment
-    assays(mae[[exp]]) <- list(assay(mae[[exp]], assay.names[[exp]]))
-    # Update assay names
-    assayNames(mae[[exp]]) <- assay.names[[exp]]
-  }
-  return(mae)
-}
+###########################
+###### HELP FUNCTIONS #####
+###########################
 
 # Combine custom options found in ... with default options
 .set_opts <- function(default, ...) {

@@ -12,6 +12,7 @@
 #'  Please read the documentation of the corresponding function for more details on your specific data format.
 #' @param data one of the formats above
 #' @param groups group information, only relevant when using the multi-group framework. 
+#' @param assays assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects.
 #' @param extract_metadata logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
 #' not relevant when the input is a list of matrices). Default is \code{TRUE}.
 #' @param ... further arguments that can be passed to the function depending on the inout data format.
@@ -25,19 +26,19 @@
 #' # Load data (in long data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa(dt)
-create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
+create_mofa <- function(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...) {
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
     
     message("Creating MOFA object from a Seurat object...")
-    object <- create_mofa_from_Seurat(data, groups, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_Seurat(data, groups, assays, extract_metadata = extract_metadata, ...)
     
     # Creating MOFA object from a SingleCellExperiment object
   } else if (is(data, "SingleCellExperiment")) {
     
     message("Creating MOFA object from a SingleCellExperiment object...")
-    object <- create_mofa_from_SingleCellExperiment(data, groups, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_SingleCellExperiment(data, groups, assays, extract_metadata = extract_metadata, ...)
     
     
     # Creating MOFA object from a data.frame object
@@ -58,7 +59,7 @@ create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
     # Creating MOFA object from MultiAssayExperiment object
   } else if(is(data, "MultiAssayExperiment")){
     
-    object <- create_mofa_from_MultiAssayExperiment(data, groups, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_MultiAssayExperiment(data, assays, groups, extract_metadata = extract_metadata, ...)
     
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
@@ -71,18 +72,22 @@ create_mofa <- function(data, groups = NULL, extract_metadata = TRUE, ...) {
 #' @name create_mofa_from_MultiAssayExperiment
 #' @description Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 #' @param mae a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
+#' @param assays assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 #' @param groups a string specifying column name of the colData to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
 #' @param extract_metadata logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_MultiAssayExperiment <- function(mae, groups = NULL, extract_metadata = FALSE) {
+create_mofa_from_MultiAssayExperiment <- function(mae, assays, groups = NULL, extract_metadata = FALSE) {
   
   # Sanity check
   if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
     stop("Package \"MultiAssayExperiment\" is required but is not installed.", call. = FALSE)
   } else {
+    
+    # Select assays of each experiment for MOFA
+    mae <- .select_assays(mae, assays)
     
     # Re-arrange data for training in MOFA to matrices, fill in NAs
     data_list <- lapply(names(mae), function(m) {
@@ -573,6 +578,28 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   object <- .quality_control(object)
 
   return(object)
+}
+
+
+
+###########################
+###### HELP FUNCTIONS #####
+###########################
+
+# Select assays from MultiAssayExperiment
+#' @importFrom MultiAssayExperiment experiments
+#' @importFrom SummarizedExperiment assay assays assayNames
+.select_assays <- function(mae, assays) {
+  # Give corresponding experiment names to assays
+  names(assays) <- names(experiments(mae))
+  # For every experiment in MAE
+  for ( exp in names(experiments(mae)) ){
+    # Keep only selected assay.type from a given experiment
+    assays(mae[[exp]]) <- list(assay(mae[[exp]], assays[[exp]]))
+    # Update assay names
+    assayNames(mae[[exp]]) <- assays[[exp]]
+  }
+  return(mae)
 }
 
 
