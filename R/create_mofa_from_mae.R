@@ -54,7 +54,6 @@
 #'     assay.types = c("counts", "nmr", "signals"),
 #'     num_factors = 5, stochastic = TRUE
 #'     )
-#' }
 #' 
 #' # Agglomerate and transform microbiome counts data
 #' mae[[1]] <- agglomerateByRanks(mae[[1]])
@@ -69,7 +68,7 @@
 #'     altexps = c("Genus", NA),
 #'     assay.types = c("clr", "nmr")
 #'     )
-#' 
+#' }
 NULL
 
 #' @rdname create_mofa_from_mae
@@ -160,20 +159,20 @@ setMethod("mofa2", signature = c(mae = "MultiAssayExperiment"),
     }
     names(altexps) <- names(experiments(mae))
     for ( exp in names(experiments(mae)) ){
-      if( !is(mae[[exp]], "SingleCellExperiment") ){
-        stop("Experiment '", exp, "' must be SingleCellExperiment object.")
-      }
-      # Check that alExp can be found
-      is_name <- is.character(altexps[[exp]]) &&
-        altexps[[exp]] %in% altExpNames(mae[[exp]])
-      is_index <- is.numeric(altexps[[exp]]) && all(altexps[[exp]]%%1==0) &&
-        altexps[[exp]]>0 && altexps[[exp]]<=length(alExps(mae[[exp]]) )
-      if( !( is.na(altexps[[exp]]) || is_name || is_index ) ){
-        stop("'", altexps[[exp]], "' does not specify altExp from experiment '",
-             exp, "'.")
-      }
       # Get altExp if it is not NA, which disables altExp for single experiment
       if( !is.na(altexps[[exp]]) ){
+        if( !is(mae[[exp]], "SingleCellExperiment") ){
+          stop("Experiment '", exp, "' must be SingleCellExperiment object.")
+        }
+        # Check that alExp can be found
+        is_name <- is.character(altexps[[exp]]) &&
+          altexps[[exp]] %in% altExpNames(mae[[exp]])
+        is_index <- is.numeric(altexps[[exp]]) && all(altexps[[exp]]%%1==0) &&
+          altexps[[exp]]>0 && altexps[[exp]]<=length(alExps(mae[[exp]]) )
+        if( !( is_name || is_index ) ){
+          stop("'", altexps[[exp]], "' does not specify altExp from ",
+               "experiment '", exp, "'.")
+        }
         mae[[exp]] <- altExp(mae[[exp]], altexps[[exp]])
       }
     }

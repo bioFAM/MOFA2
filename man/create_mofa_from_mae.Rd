@@ -71,7 +71,6 @@ prep_model <- mofa2(
     assay.types = c("counts", "nmr", "signals"),
     num_factors = 5, stochastic = TRUE
     )
-}
 
 # Agglomerate and transform microbiome counts data
 mae[[1]] <- agglomerateByRanks(mae[[1]])
@@ -86,5 +85,5 @@ prep_model <- mofa2(
     altexps = c("Genus", NA),
     assay.types = c("clr", "nmr")
     )
-
+}
 }
