@@ -3,6 +3,8 @@
 #' \code{mofa2} produces a prepared MOFA2 model from a MAE.
 #'
 #' @param mae a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}
+#'
+#' @param experiments Name or index of experiments selected from \code{mae}.
 #' 
 #' @param assay.types List of assays to include in MOFA model (default is "counts").
 #' 
@@ -11,7 +13,11 @@
 #' @param extract_metadata Boolean specifying whethet metadata should be extracted (default is FALSE).
 #' 
 #' @param ... additional parameters for MOFA, named as the options
-#'   of \code{\link[MOFA2:prepare_mofa]{prepare_mofa}}.
+#' of \code{\link[MOFA2:prepare_mofa]{prepare_mofa}}.
+#' \itemize{
+#' \item \code{altexps}: Specifies alternative experiments for each experiment.
+#' Only applicable for experiments in \code{SingleCellExperiment} format.
+#' }
 #' 
 #' @return 
 #' Returns an untrained \code{\link[MOFA2:MOFA]{MOFA}} with specified options
@@ -20,21 +26,50 @@
 #' @name create_mofa_from_mae
 #' 
 #' @examples
+#' \dontrun{
 #' # Load package and import dataset
 #' library(mia)
 #' data("HintikkaXOData", package = "mia")
 #' mae <- HintikkaXOData
 #' 
 #' # Prepare basic model with selected assays
-#' prep_model <- mofa2(mae, assay.types = c("counts", "nmr", "signals"))
+#' prep_model <- mofa2(
+#'     mae,
+#'     experiments = names(experiments(mae)),
+#'     assay.types = c("counts", "nmr", "signals")
+#'     )
 #' 
 #' # Specify grouping variable and extract metadata
-#' prep_model <- mofa2(mae, assay.types = c("counts", "nmr", "signals"),
-#'                     groups = "Diet", extract_metadata = TRUE)
+#' prep_model <- mofa2(
+#'     mae,
+#'     experiments = names(experiments(mae)),
+#'     assay.types = c("counts", "nmr", "signals"),
+#'     groups = "Diet", extract_metadata = TRUE
+#'     )
 #'
 #' # Modify MOFA options with corresponding arguments
-#' prep_model <- mofa2(mae, assay.types = c("counts", "nmr", "signals"),
-#'                     num_factors = 5, stochastic = TRUE)
+#' prep_model <- mofa2(
+#'     mae,
+#'     experiments = names(experiments(mae)),
+#'     assay.types = c("counts", "nmr", "signals"),
+#'     num_factors = 5, stochastic = TRUE
+#'     )
+#' }
+#' 
+#' # Agglomerate and transform microbiome counts data
+#' mae[[1]] <- agglomerateByRanks(mae[[1]])
+#' mae[[1]] <- transformAssay(
+#'     mae[[1]], method = "clr", pseudocount = 1,
+#'     altexp = altExpNames(mae[[1]])
+#'     )
+#' # Create MOFA model
+#' prep_model <- mofa2(
+#'     mae,
+#'     experiments = c(1, 2),
+#'     altexps = c("Genus", NA),
+#'     assay.types = c("clr", "nmr")
+#'     )
+#' 
 NULL
 
 #' @rdname create_mofa_from_mae
@@ -46,8 +81,12 @@ setGeneric("mofa2", signature = c("mae"),
 #' @rdname create_mofa_from_mae
 #' @export
 setMethod("mofa2", signature = c(mae = "MultiAssayExperiment"),
-          function(mae, assay.types = rep("counts", length(mae)),
+          function(mae, experiments, assay.types,
                    groups = NULL, extract_metadata = FALSE, ...){
+            # Select experiments from MAE
+            mae <- .select_experiments(mae, experiments)
+            # Select alternative experiments
+            mae <- .select_altexps(mae, ...)
             # Select assays of each experiment for MOFA
             mae <- .select_assays(mae, assay.types)
             # Create MOFA from selected experiments
@@ -76,31 +115,102 @@ setMethod("mofa2", signature = c(mae = "MultiAssayExperiment"),
 
 ########################## HELP FUNCTIONS ##########################
 
+# Select experiments from MAE
+#' @importFrom MultiAssayExperiment experiments
+.select_experiments <- function(mae, experiments) {
+  # Check that the value is correct
+  is_name <- is.character(experiments) && length(experiments) > 0 &&
+    length(experiments) <= length(experiments(mae)) &&
+    all(experiments %in% names(experiments(mae)))
+  is_index <- is.numeric(experiments) && all(experiments%%1==0) &&
+    length(experiments) > 0 &&
+    length(experiments) <= length(experiments(mae)) &&
+    all(experiments>0 & experiments<=length(experiments(mae)))
+  if( !(is_name || is_index) ){
+    stop("'experiments' must specify names of index of experiments of 'mae'")
+  }
+  # Subset experiments
+  mae <- mae[,, experiments]
+  # Check that all objects are SE
+  all_SE <- lapply(experiments(mae), function(x) is(x, "SummarizedExperiment")) |>
+    unlist() |> all()
+  if( !all_SE ){
+    stop("All experiments must be SummarizedExperiment objects.")
+  }
+  return(mae)
+}
+
+# Select optionally alternative experiments
+.select_altexps <- function(mae, altexps = NULL, ...) {
+  # Check that value is correct
+  is_name <- is.character(altexps) && length(altexps) > 0 &&
+    length(altexps) <= length(experiments(mae))
+  is_index <- is.numeric(altexps) && all(altexps%%1==0) &&
+    length(altexps) > 0 &&
+    length(altexps) <= length(experiments(mae))
+  if( !( is.null(altexps) || is_name || is_index) ){
+    stop("'altexps' must be NULL or specify aletnative experiments for each ",
+         "experiment.")
+  }
+  # If specified, select altExps from experiments
+  if( !is.null(altexps) ){
+    if( !require("SingleCellExperiment") ){
+      stop("To enable 'altexps' option, 'SingleCellExperiment' package must ",
+           "be installed.")
+    }
+    names(altexps) <- names(experiments(mae))
+    for ( exp in names(experiments(mae)) ){
+      if( !is(mae[[exp]], "SingleCellExperiment") ){
+        stop("Experiment '", exp, "' must be SingleCellExperiment object.")
+      }
+      # Check that alExp can be found
+      is_name <- is.character(altexps[[exp]]) &&
+        altexps[[exp]] %in% altExpNames(mae[[exp]])
+      is_index <- is.numeric(altexps[[exp]]) && all(altexps[[exp]]%%1==0) &&
+        altexps[[exp]]>0 && altexps[[exp]]<=length(alExps(mae[[exp]]) )
+      if( !( is.na(altexps[[exp]]) || is_name || is_index ) ){
+        stop("'", altexps[[exp]], "' does not specify altExp from experiment '",
+             exp, "'.")
+      }
+      # Get altExp if it is not NA, which disables altExp for single experiment
+      if( !is.na(altexps[[exp]]) ){
+        mae[[exp]] <- altExp(mae[[exp]], altexps[[exp]])
+      }
+    }
+  }
+  return(mae)
+}
+
 # Select assays to be included in MOFA
 #' @importFrom MultiAssayExperiment experiments
 #' @importFrom SummarizedExperiment assay assays assayNames
 .select_assays <- function(mae, assay.types) {
+  # Check that value is correct
+  is_name <- is.character(assay.types) && length(assay.types) > 0 &&
+    length(assay.types) <= length(experiments(mae))
+  if( !is_name ){
+    stop("'assay.type' must specify name of assays. The lenght must equal to ",
+         "'experiments'.")
+  }
   # Give corresponding experiment names to assay.types
   names(assay.types) <- names(experiments(mae))
   # For every experiment in MAE
   for ( exp in names(experiments(mae)) ){
+    # Check that assay exists
+    if( !assay.types[[exp]] %in% assayNames(mae[[exp]]) ){
+      stop("Cannot find assay '", assay.types[[exp]], "' from experiment '",
+           exp, "'.")
+    }
     # Keep only selected assay.type from a given experiment
-    assays(mae[[exp]]) <- list(assay(mae[[exp]], assay.types[[exp]]))
-    # Update assay names
-    assayNames(mae[[exp]]) <- assay.types[[exp]]
+    assays(mae[[exp]]) <- assays(mae[[exp]])[ assay.types[[exp]] ]
   }
   return(mae)
 }
 
 # Combine custom options found in ... with default options
 .set_opts <- function(default, ...) {
-  # For every option in a set (data, model, train, ...)
-  for ( opt in names(default) ){
-    # If that option is found among arguments
-    if ( opt %in% names(list(...)) ){
-      # Replace default with value specified in arguments
-      default[[opt]] <- list(...)[[opt]]
-    }
-  }
+  user_options <- list(...)
+  set_options <- intersect(names(default), names(user_options))
+  default[set_options] <- user_options[set_options]
   return(default)
 }
