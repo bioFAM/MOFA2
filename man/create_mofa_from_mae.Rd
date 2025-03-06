@@ -24,7 +24,9 @@ mofa2(mae, ...)
 of \code{\link[MOFA2:prepare_mofa]{prepare_mofa}}.
 \itemize{
 \item \code{altexps}: Specifies alternative experiments for each experiment.
-Only applicable for experiments in \code{SingleCellExperiment} format.
+Only applicable for experiments in \code{SingleCellExperiment} format. If
+\code{NULL}, the option is disabled. For disabling option for only certain
+experiments, use \code{NA} for that experiment.
 }}
 
 \item{experiments}{Name or index of experiments selected from \code{mae}.}
@@ -52,14 +54,14 @@ mae <- HintikkaXOData
 # Prepare basic model with selected assays
 prep_model <- mofa2(
     mae,
-    experiments = names(experiments(mae)),
+    experiments = names(mae),
     assay.types = c("counts", "nmr", "signals")
     )
 
 # Specify grouping variable and extract metadata
 prep_model <- mofa2(
     mae,
-    experiments = names(experiments(mae)),
+    experiments = names(mae),
     assay.types = c("counts", "nmr", "signals"),
     groups = "Diet", extract_metadata = TRUE
     )
@@ -67,7 +69,7 @@ prep_model <- mofa2(
 # Modify MOFA options with corresponding arguments
 prep_model <- mofa2(
     mae,
-    experiments = names(experiments(mae)),
+    experiments = names(mae),
     assay.types = c("counts", "nmr", "signals"),
     num_factors = 5, stochastic = TRUE
     )

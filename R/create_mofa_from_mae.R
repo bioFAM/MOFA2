@@ -16,7 +16,9 @@
 #' of \code{\link[MOFA2:prepare_mofa]{prepare_mofa}}.
 #' \itemize{
 #' \item \code{altexps}: Specifies alternative experiments for each experiment.
-#' Only applicable for experiments in \code{SingleCellExperiment} format.
+#' Only applicable for experiments in \code{SingleCellExperiment} format. If
+#' \code{NULL}, the option is disabled. For disabling option for only certain
+#' experiments, use \code{NA} for that experiment.
 #' }
 #' 
 #' @return 
@@ -35,14 +37,14 @@
 #' # Prepare basic model with selected assays
 #' prep_model <- mofa2(
 #'     mae,
-#'     experiments = names(experiments(mae)),
+#'     experiments = names(mae),
 #'     assay.types = c("counts", "nmr", "signals")
 #'     )
 #' 
 #' # Specify grouping variable and extract metadata
 #' prep_model <- mofa2(
 #'     mae,
-#'     experiments = names(experiments(mae)),
+#'     experiments = names(mae),
 #'     assay.types = c("counts", "nmr", "signals"),
 #'     groups = "Diet", extract_metadata = TRUE
 #'     )
@@ -50,7 +52,7 @@
 #' # Modify MOFA options with corresponding arguments
 #' prep_model <- mofa2(
 #'     mae,
-#'     experiments = names(experiments(mae)),
+#'     experiments = names(mae),
 #'     assay.types = c("counts", "nmr", "signals"),
 #'     num_factors = 5, stochastic = TRUE
 #'     )
@@ -120,7 +122,7 @@ setMethod("mofa2", signature = c(mae = "MultiAssayExperiment"),
   # Check that the value is correct
   is_name <- is.character(experiments) && length(experiments) > 0 &&
     length(experiments) <= length(experiments(mae)) &&
-    all(experiments %in% names(experiments(mae)))
+    all(experiments %in% names(mae))
   is_index <- is.numeric(experiments) && all(experiments%%1==0) &&
     length(experiments) > 0 &&
     length(experiments) <= length(experiments(mae)) &&
@@ -157,8 +159,8 @@ setMethod("mofa2", signature = c(mae = "MultiAssayExperiment"),
       stop("To enable 'altexps' option, 'SingleCellExperiment' package must ",
            "be installed.")
     }
-    names(altexps) <- names(experiments(mae))
-    for ( exp in names(experiments(mae)) ){
+    names(altexps) <- names(mae)
+    for ( exp in names(mae) ){
       # Get altExp if it is not NA, which disables altExp for single experiment
       if( !is.na(altexps[[exp]]) ){
         if( !is(mae[[exp]], "SingleCellExperiment") ){
@@ -192,9 +194,9 @@ setMethod("mofa2", signature = c(mae = "MultiAssayExperiment"),
          "'experiments'.")
   }
   # Give corresponding experiment names to assay.types
-  names(assay.types) <- names(experiments(mae))
+  names(assay.types) <- names(mae)
   # For every experiment in MAE
-  for ( exp in names(experiments(mae)) ){
+  for ( exp in names(mae) ){
     # Check that assay exists
     if( !assay.types[[exp]] %in% assayNames(mae[[exp]]) ){
       stop("Cannot find assay '", assay.types[[exp]], "' from experiment '",
