@@ -10,7 +10,8 @@ mofa2(mae, ...)
 
 \S4method{mofa2}{MultiAssayExperiment}(
   mae,
-  assay.types = rep("counts", length(mae)),
+  experiments,
+  assay.types,
   groups = NULL,
   extract_metadata = FALSE,
   ...
@@ -20,7 +21,15 @@ mofa2(mae, ...)
 \item{mae}{a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}}
 
 \item{...}{additional parameters for MOFA, named as the options
-of \code{\link[MOFA2:prepare_mofa]{prepare_mofa}}.}
+of \code{\link[MOFA2:prepare_mofa]{prepare_mofa}}.
+\itemize{
+\item \code{altexps}: Specifies alternative experiments for each experiment.
+Only applicable for experiments in \code{SingleCellExperiment} format. If
+\code{NULL}, the option is disabled. For disabling option for only certain
+experiments, use \code{NA} for that experiment.
+}}
+
+\item{experiments}{Name or index of experiments selected from \code{mae}.}
 
 \item{assay.types}{List of assays to include in MOFA model (default is "counts").}
 
@@ -36,19 +45,47 @@ filled in the corresponding slots
 \code{mofa2} produces a prepared MOFA2 model from a MAE.
 }
 \examples{
+\dontrun{
 # Load package and import dataset
 library(mia)
 data("HintikkaXOData", package = "mia")
 mae <- HintikkaXOData
 
 # Prepare basic model with selected assays
-prep_model <- mofa2(mae, assay.types = c("counts", "nmr", "signals"))
+prep_model <- mofa2(
+    mae,
+    experiments = names(mae),
+    assay.types = c("counts", "nmr", "signals")
+    )
 
 # Specify grouping variable and extract metadata
-prep_model <- mofa2(mae, assay.types = c("counts", "nmr", "signals"),
-                    groups = "Diet", extract_metadata = TRUE)
+prep_model <- mofa2(
+    mae,
+    experiments = names(mae),
+    assay.types = c("counts", "nmr", "signals"),
+    groups = "Diet", extract_metadata = TRUE
+    )
 
 # Modify MOFA options with corresponding arguments
-prep_model <- mofa2(mae, assay.types = c("counts", "nmr", "signals"),
-                    num_factors = 5, stochastic = TRUE)
+prep_model <- mofa2(
+    mae,
+    experiments = names(mae),
+    assay.types = c("counts", "nmr", "signals"),
+    num_factors = 5, stochastic = TRUE
+    )
+
+# Agglomerate and transform microbiome counts data
+mae[[1]] <- agglomerateByRanks(mae[[1]])
+mae[[1]] <- transformAssay(
+    mae[[1]], method = "clr", pseudocount = 1,
+    altexp = altExpNames(mae[[1]])
+    )
+# Create MOFA model
+prep_model <- mofa2(
+    mae,
+    experiments = c(1, 2),
+    altexps = c("Genus", NA),
+    assay.types = c("clr", "nmr")
+    )
+}
 }
