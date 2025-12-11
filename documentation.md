@@ -10,5 +10,5 @@ title: MOFA
 ## Python
 
 * The documentation for the [mofax](https://github.com/gtca/mofax) python library used for downstream analysis can be found in the following [link](https://mofax.readthedocs.io/en/latest/).
-* Documentation for how to use MOFA2 via the [muon](https://muon.scverse.org/) package in python can be found in the following [link](https://muon.readthedocs.io/en/latest/omics/multi.html).
+* Documentation for using MOFA2 via the [muon](https://muon.scverse.org/) package in python can be found in the following [link](https://muon.readthedocs.io/en/latest/omics/multi.html).
 
