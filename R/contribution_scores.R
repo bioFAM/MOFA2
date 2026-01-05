@@ -111,7 +111,7 @@ plot_contribution_scores <- function(object, samples = "all", group_by = NULL, r
     
     to.plot <- scores
     if (return_data) return(to.plot)
-    p <- ggplot(to.plot, aes_string(x="view", y="value")) +
+    p <- ggplot(to.plot, aes(x=.data$view, y=.data$value)) +
       geom_bar(aes(fill=view), stat="identity", color="black") +
       facet_wrap(~sample) +
       labs(x="", y="Contribution score") +
@@ -129,7 +129,7 @@ plot_contribution_scores <- function(object, samples = "all", group_by = NULL, r
     
     to.plot <- merge(scores, object@samples_metadata[,c("sample",group_by)], by="sample")
     if (return_data) return(to.plot)
-    p <- ggplot(to.plot, aes_string(x="view", y="value")) +
+    p <- ggplot(to.plot, aes(x=.data$view, y=.data$value)) +
       geom_boxplot(aes(fill=view)) +
       facet_wrap(as.formula(paste("~", group_by))) +
       labs(x="", y="Contribution score") +

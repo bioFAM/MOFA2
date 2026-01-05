@@ -19,7 +19,7 @@ vignette: >
 ---
 
 This vignette contains a detailed tutorial on how to train a MOFA model using R.
-A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/master/template_script.R).
+A concise template script can be found [here](https://github.com/bioFAM/MOFA2/blob/87e615bf0d49481821bd03cb32baa5d2e66ad6d8/inst/scripts/template_script.R).
 Many more examples on application of MOFA to various multi-omics data sets can be found [here](https://biofam.github.io/MOFA2/tutorials.html).
 
 
@@ -211,7 +211,7 @@ running MOFA. See our [FAQ section](https://biofam.github.io/MOFA2/faq.html)
 if you have issues. The output is saved in the file specified as `outfile`. If none is specified, the output is saved in a temporary location.
 ```{r}
 outfile = file.path(tempdir(),"model.hdf5")
-MOFAobject.trained <- run_mofa(MOFAobject, outfile)
+MOFAobject.trained <- run_mofa(MOFAobject, outfile, use_basilisk=TRUE)
 ```
 
 If everything is successful, you should observe an output analogous to the following:

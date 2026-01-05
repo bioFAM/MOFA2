@@ -53,7 +53,7 @@
 #' @return Returns a \code{ggplot2} 
 #' @import ggplot2 grDevices
 #' @importFrom stats complete.cases
-#' @importFrom forcats fct_explicit_na
+#' @importFrom forcats fct_na_value_to_level
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom dplyr summarise group_by
 #' @export
@@ -125,15 +125,15 @@ plot_factor <- function(object, factors = 1, groups = "all",
   # Remove samples with no sample metadata
   if (!show_missing) df <- filter(df, !is.na(color_by) & !is.na(shape_by))
   if (is.factor(df$color_by))
-    df$color_by <- forcats::fct_explicit_na(df$color_by)
+    df$color_by <- forcats::fct_na_value_to_level(df$color_by)
   if (is.factor(df$shape_by))
-    df$shape_by <- forcats::fct_explicit_na(df$shape_by)
+    df$shape_by <- forcats::fct_na_value_to_level(df$shape_by)
   
   # Scale values
   if (scale) df$value <- df$value/max(abs(df$value))
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="group_by", y="value", fill="color_by", shape="shape_by")) +
+  p <- ggplot(df, aes(x=.data$group_by, y=.data$value, fill=.data$color_by, shape=.data$shape_by)) +
     theme_classic()
   
   # Defien facets as factors or groups
@@ -206,16 +206,16 @@ plot_factor <- function(object, factors = 1, groups = "all",
   
   # Add theme
   p <- p +
-    geom_hline(yintercept=0, linetype="dashed", size=0.2, alpha=0.5) +
+    geom_hline(yintercept=0, linetype="dashed", linewidth=0.2, alpha=0.5) +
     theme(
-        panel.border = element_rect(color="black", size=0.1, fill=NA),
-        strip.background = element_rect(colour = "black", size=0.25),
+        panel.border = element_rect(color="black", linewidth=0.1, fill=NA),
+        strip.background = element_rect(colour = "black", linewidth=0.25),
         panel.spacing = unit(0,"lines"),
         # axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         axis.text = element_text(size=rel(0.75), color="black"),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size=rel(1.0), color="black"),
-        axis.line = element_line(color="black", size=0.25),
+        axis.line = element_line(color="black", linewidth=0.25),
         axis.ticks = element_line(color = "black")
     )
   
@@ -251,7 +251,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @param color_by specifies groups or values used to color the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data.
 #' (2) a character giving the name of a column present in the sample metadata.
-#' (3) a vector of the name length as the number of samples specifying discrete groups or continuous numeric values.
+#' (3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
 #' @param shape_by specifies groups or values used to shape the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data, 
 #' (2) a character giving the name of a column present in the sample metadata.
@@ -353,15 +353,15 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   }
   
   # Generate plot
-  p <- ggplot(df, aes_string(x="x", y="y", fill="color_by", shape="shape_by")) + 
+  p <- ggplot(df, aes(x=.data$x, y=.data$y, fill=.data$color_by, shape=.data$shape_by)) + 
     geom_point(size=dot_size, alpha=alpha, stroke = stroke) +
     labs(x=factors[1], y=factors[2]) +
     theme_classic() +
     theme(
       axis.text = element_text(size = rel(0.8), color = "black"), 
       axis.title = element_text(size = rel(1.1), color = "black"), 
-      axis.line = element_line(color = "black", size = 0.5), 
-      axis.ticks = element_line(color = "black", size = 0.5)
+      axis.line = element_line(color = "black", linewidth = 0.5), 
+      axis.ticks = element_line(color = "black", linewidth = 0.5)
     )
   
   p <- .add_legend(p, df, legend, color_name, shape_name)
@@ -413,7 +413,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   df <- tidyr::spread(df, key="factor", value="value")
   
   # Prepare the legend
-  p <- ggplot(df, aes_string(x=factors[1], y=factors[2], color="color_by", shape="shape_by")) +
+  p <- ggplot(df, aes(x=.data[[factors[1]]], y=.data[[factors[2]]], color=.data$color_by, shape=.data$shape_by)) +
     geom_point() +
     theme(
       legend.key = element_rect(fill = "white"),
@@ -437,15 +437,14 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   # Generate plot
   p <- GGally::ggpairs(df,
     columns = factors,
-    lower = list(continuous=GGally::wrap("points", size=dot_size)),
-    diag = list(continuous='densityDiag'),
-    upper = list(continuous=GGally::wrap("points", size=dot_size)),
-    mapping = aes_string(color="color_by", shape="shape_by"),
-    title = "",
+    lower = list(continuous=GGally::wrap("points", size=dot_size)), 
+    diag = list(continuous='densityDiag'), 
+    upper = list(continuous=GGally::wrap("points", size=dot_size)), 
+    mapping = aes(color=.data$color_by, shape=.data$shape_by), 
+    title = "", 
     legend = legend
     )
   p <- p + theme_bw() + theme(
-    # axis.line = element_line(color="black", size=rel(1.0)),
     panel.grid.major = element_blank(),
     axis.ticks = element_blank(),
     axis.text = element_blank()

@@ -424,7 +424,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
     df_observed$factor <- factor(df_observed$factor, levels = factors)
   }
 
-  gg_interpol <- ggplot(df, aes_string(x=covariate, y = "mean", col = "group")) +
+  gg_interpol <- ggplot(df, aes(x=.data[[covariate]], y = .data$mean, col = .data$group)) +
     geom_line(aes(y=mean,  col = group)) +
     facet_wrap(~ factor) + theme_classic() + ylab("factor value")
 
@@ -588,8 +588,8 @@ plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, v
   axis.text.size <- .select_axis.text.size(N=length(unique(df$feature)))
   
   # Generate plot
-  p <- ggplot(df, aes_string(x = "value.covariate", y = "value.data")) + 
-    geom_point(aes_string(fill = "color_by", shape = "shape_by"), colour = "black", size = dot_size, stroke = stroke, alpha = alpha) +
+  p <- ggplot(df, aes(x = .data[["value.covariate"]], y = .data[["value.data"]])) + 
+    geom_point(aes(fill = .data$color_by, shape = .data$shape_by), colour = "black", size = dot_size, stroke = stroke, alpha = alpha) +
     labs(x=covariate_name, y="") +
     facet_wrap(~feature, scales="free_y") +
     theme_classic() + 
@@ -602,8 +602,8 @@ plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, v
   if (add_lm) {
     if (lm_per_group && length(groups)>1) {
       p <- p +
-        stat_smooth(formula=y~x, aes_string(color="group"), method="lm", alpha=0.4) +
-        ggpubr::stat_cor(aes_string(color="group", label = "..r.label.."), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
+        stat_smooth(formula=y~x, aes(color=.data$group), method="lm", alpha=0.4) +
+        ggpubr::stat_cor(aes(color=.data$group, label = .data[["..r.label.."]]), method = "pearson", label.sep="\n", output.type = "latex", size = text_size)# +
       # guides(color = FALSE)
     } else {
       p <- p +
@@ -783,15 +783,14 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   
   # Generate plot
   p <- ggplot(df, aes(x=value.covariate, y=value.factor)) + 
-    # geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size, alpha=alpha) +
-    geom_point(aes_string(fill = "color_by", shape = "shape_by"), colour="black", stroke = stroke, size=dot_size, alpha=alpha) +
+    geom_point(aes(fill = .data$color_by, shape = .data$shape_by), colour="black", stroke = stroke, size=dot_size, alpha=alpha) +
     facet_wrap(~ factor) +
     theme_classic() +
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"), 
       axis.title = element_text(size = rel(1.2), color = "black"), 
-      axis.line = element_line(color = "black", size = 0.5), 
-      axis.ticks = element_line(color = "black", size = 0.5)
+      axis.line = element_line(color = "black", linewidth = 0.5), 
+      axis.ticks = element_line(color = "black", linewidth = 0.5)
     ) + xlab(covariate_name) + ylab("factor value")
   
   if (show_variance){
@@ -825,9 +824,9 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
   
   covariates_dt <- mutate(covariates_dt, color_by = value.factor) # for compatibility with .add_legend
 
-  p <- ggplot(covariates_dt, aes_string(x=covariates.names[1],
-                                        y=covariates.names[2],
-                                        col = "color_by")) +
+  p <- ggplot(covariates_dt, aes(x=.data[[covariates.names[1]]],
+                                        y=.data[[covariates.names[2]]],
+                                        col = .data$color_by)) +
     geom_point() +
     scale_color_gradient2() + 
     geom_point(col = "gray", alpha =0.05) +
@@ -836,21 +835,9 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
     theme(
       axis.text = element_text(size = rel(0.9), color = "black"),
       axis.title = element_text(size = rel(1.0), color = "black"),
-      axis.line = element_line(color = "black", size = 0.5),
-      axis.ticks = element_line(color = "black", size = 0.5)
+      axis.line = element_line(color = "black", linewidth = 0.5),
+      axis.ticks = element_line(color = "black", linewidth = 0.5)
     ) + guides(col = guide_colorbar(title = "Factor value"))
-  
-  # Generate plot
-  # p <- ggplot(covariates_dt, aes_string(x=covariates.names[1], y=covariates.names[2], fill = "color_by")) + 
-  #   geom_tile() + 
-  #   facet_grid( ~ factor) + 
-  #   theme_bw() +
-  #   theme(
-  #     axis.text = element_text(size = rel(0.9), color = "black"), 
-  #     axis.title = element_text(size = rel(1.2), color = "black"), 
-  #     axis.line = element_line(color = "black", size = 0.5), 
-  #     axis.ticks = element_line(color = "black", size = 0.5)
-  #   ) + coord_fixed() + xlab(covariates.names[1]) + ylab(covariates.names[2])
   
   if(rotate_x){
     p <- p + scale_x_reverse()
@@ -1108,8 +1095,8 @@ plot_variance_explained_by_covariates <- function(object, factors = "all",
     max_r2 = max(max(Reduce(c,r2_Z$r2_per_factor)), max(r2_GP_df$value))
   }
   
-  p1 <- ggplot(r2_GP_df, aes_string(x=x, y=y)) + 
-    geom_tile(aes_string(fill="value"), color="black") +
+  p1 <- ggplot(r2_GP_df, aes(x=.data[[x]], y=.data[[y]])) + 
+    geom_tile(aes(fill=.data$value), color="black") +
     facet_wrap(as.formula(sprintf('~%s',split_by)), nrow=1) +
     labs(x="", y="", title="") +
     scale_fill_gradientn(colors=c("gray97","darkblue"), guide="colorbar", limits=c(min_r2,max_r2)) +

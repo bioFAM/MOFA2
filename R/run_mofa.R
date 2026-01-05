@@ -197,6 +197,7 @@ run_mofa <- function(object, outfile = NULL, save_data = TRUE, use_basilisk = FA
     freqELBO         = object@training_options$freqELBO,
     seed             = object@training_options$seed, 
     gpu_mode         = object@training_options$gpu_mode,
+    gpu_device       = object@training_options$gpu_device,
     verbose          = object@training_options$verbose,
     outfile          = object@training_options$outfile,
     weight_views     = object@training_options$weight_views,

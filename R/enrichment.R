@@ -267,11 +267,11 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
   tmp$pathway <- factor(tmp$pathway <- rownames(tmp), levels = tmp$pathway[order(tmp$pvalue, decreasing = TRUE)])
   tmp$start <- 0
   
-  p <- ggplot(tmp, aes_string(x="pathway", y="logp")) +
+  p <- ggplot(tmp, aes(x=.data$pathway, y=.data$logp)) +
     geom_point(size=dot_size) +
     geom_hline(yintercept=-log10(alpha), linetype="longdash") +
     scale_color_manual(values=c("black","red")) +
-    geom_segment(aes_string(xend="pathway", yend="start")) +
+    geom_segment(aes(xend=.data$pathway, yend=.data$start)) +
     ylab("-log pvalue") +
     coord_flip() +
     theme(
@@ -406,10 +406,10 @@ plot_enrichment_detailed <- function(enrichment.results, factor,
   tmp$pathway_long_name <- factor(tmp$pathway_long_name, levels=order_pathways)
   tmp_filt$pathway_long_name <- factor(tmp_filt$pathway_long_name, levels=order_pathways)
   
-  p <- ggplot(tmp, aes_string(x="pathway_long_name", y="feature.statistic")) +
-    geom_text_repel(aes_string(x="pathway_long_name", y="feature.statistic", label="feature"), size=text_size, color="black", force=1, data=tmp_filt) +
+  p <- ggplot(tmp, aes(x=.data[["pathway_long_name"]], y=.data[["feature.statistic"]])) +
+    geom_text_repel(aes(x=.data[["pathway_long_name"]], y=.data[["feature.statistic"]], label=.data$feature), size=text_size, color="black", force=1, data=tmp_filt) +
     geom_point(size=0.5, color="lightgrey") +
-    geom_point(aes_string(x="pathway_long_name", y="feature.statistic"), size=1, color="black", data=tmp_filt) +
+    geom_point(aes(x=.data[["pathway_long_name"]], y=.data[["feature.statistic"]]), size=1, color="black", data=tmp_filt) +
     labs(x="", y="Weight (scaled)", title="") +
     coord_flip() +
     theme(

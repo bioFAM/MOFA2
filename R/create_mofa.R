@@ -370,21 +370,24 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
 #' @param assays assays to use, default is \code{NULL}, it fetched all assays available
-#' @param slot assay slot to be used (default is scale.data).
+#' @param layer layer to be used (default is data).
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @param extract_metadata logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot = "scale.data", features = NULL, extract_metadata = FALSE) {
+create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer = "data", features = NULL, extract_metadata = FALSE) {
   
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is required but is not installed.", call. = FALSE)
   } else {
     
+    # Check Seurat version
+    if (SeuratObject::Version(seurat)$major != 5) stop("Please install Seurat v5")
+    
     # Define assays
     if (is.null(assays)) {
-      assays <- Seurat::Assays(seurat)
+      assays <- SeuratObject::Assays(seurat)
       message(paste0("No assays specified, using all assays by default: ", paste(assays,collapse=" ")))
     } else {
       stopifnot(assays%in%Seurat::Assays(seurat))
@@ -429,7 +432,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, slot =
     
     # Extract data matrices
     data_matrices <- lapply(assays, function(i) 
-      .split_seurat_into_groups(seurat, groups = groups, assay = i, slot = slot, features = features[[i]]))
+      .split_seurat_into_groups(seurat, groups = groups, assay = i, layer = layer, features = features[[i]]))
     names(data_matrices) <- assays
     
     # Create MOFA object
@@ -583,10 +586,10 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
 }
 
 # (Hidden) function to split data in Seurat object into a list of matrices
-.split_seurat_into_groups <- function(seurat, groups, assay = "RNA", slot = "scale.data", features = NULL) {
-  data <- Seurat::GetAssayData(object = seurat, assay = assay, slot = slot)
+.split_seurat_into_groups <- function(seurat, groups, assay = "RNA", layer = "data", features = NULL) {
+  data <- SeuratObject::GetAssayData(object = seurat, assay = assay, layer = layer)
   if(is.null(data) | any(dim(data) == 0)){
-    stop(paste("No data present in the slot",slot, "of the assay",assay ,"in the Seurat object."))
+    stop(paste("No data present in the layer",layer, "of the assay",assay ,"in the Seurat object."))
   }
   if (!is.null(features)) data <- data[features, , drop=FALSE]
   .split_data_into_groups(list(data), groups)[[1]]

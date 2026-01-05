@@ -150,11 +150,11 @@ plot_weights_scatter <- function (object, factors, view = 1, color_by = NULL, sh
   }
   
   # Create plot
-  p <- ggplot(df, aes_string(x="x", y="y")) + 
-    geom_point(aes_string(color = "color_by", shape = "shape_by"), size=dot_size) + 
+  p <- ggplot(df, aes(x=.data$x, y=.data$y)) + 
+    geom_point(aes(color = .data$color_by, shape = .data$shape_by), size=dot_size) + 
     labs(x=factors[1], y=factors[2]) +
-    geom_segment(x=min(df$x,na.rm=TRUE), xend=max(df$x,na.rm=TRUE), y=0, yend=0, size=0.25, color="orange") +
-    geom_segment(y=min(df$y,na.rm=TRUE), yend=max(df$y,na.rm=TRUE), x=0, xend=0, size=0.25, color="orange") +
+    geom_segment(x=min(df$x,na.rm=TRUE), xend=max(df$x,na.rm=TRUE), y=0, yend=0, linewidth=0.25, color="orange") +
+    geom_segment(y=min(df$y,na.rm=TRUE), yend=max(df$y,na.rm=TRUE), x=0, xend=0, linewidth=0.25, color="orange") +
     theme_classic() +
     theme(
       axis.text = element_text(size=rel(1), color="black"), 
@@ -339,15 +339,15 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
   if (return_data) return(W)
   
   # Generate plot
-  p <- ggplot(W, aes_string(x = "value", y = "feature_id", col = "labelling_group")) +
+  p <- ggplot(W, aes(x = .data$value, y = .data$feature_id, col = .data$labelling_group)) +
     scale_y_discrete(expand = c(0.03,0.03)) +
-    geom_point(aes_string(shape = "shape_by", size="labelling_indicator")) + 
+    geom_point(aes(shape = .data$shape_by, size=.data$labelling_indicator)) + 
     labs(x="Weight", y="Rank", size=dot_size)
   
   # Add labels to the top features
   if (nfeatures>0 || length(unique(W$labelling_group))>0) {
     p <- p + geom_text_repel(
-      data = W[W$labelling_group != "0",], aes_string(label = "feature", col = "labelling_group"),
+      data = W[W$labelling_group != "0",], aes(label = .data$feature, col = .data$labelling_group),
       size = text_size, segment.alpha = 0.25, segment.color = "black", segment.size = 0.3, 
       show.legend = FALSE, max.overlaps = Inf)
   }
@@ -503,9 +503,9 @@ plot_top_weights <- function(object, view = 1, factors = 1,
   # make them unique for different factors
   W$feature_id <- factor(W$feature_id, levels = rev(unique(W$feature_id)))
   
-  p <- ggplot(W, aes_string(x="feature_id", y="value")) +
+  p <- ggplot(W, aes(x=.data$feature_id, y=.data$value)) +
     geom_point(size=2) +
-    geom_segment(aes_string(xend="feature_id"), size=0.75, yend=0) +
+    geom_segment(aes(xend=.data$feature_id), linewidth=0.75, yend=0) +
     scale_colour_gradient(low="grey", high="black") +
     coord_flip() +
     labs(y="Weight") +
@@ -601,7 +601,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
     stopifnot(all(unique(color_by$feature) %in% features_names(object)[[view]]))
     
     # Option 3: by a feature_metadata column
-  } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {
+  } else if ((length(color_by)==1) && is.character(color_by) && (color_by %in% colnames(features_metadata(object)))) {
     tmp <- features_metadata(object)
     color_by <- tmp[tmp$view==view,color_by]
     
