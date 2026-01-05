@@ -413,7 +413,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   df <- tidyr::spread(df, key="factor", value="value")
   
   # Prepare the legend
-  p <- ggplot(df, aes(x=.data[[factors[1]]], y=.data[[factors[2]]], color=.data$color_by, shape=.data$shape_by)) +
+  p_legend <- ggplot(df, aes(x=.data[[factors[1]]], y=.data[[factors[2]]], color=.data$color_by, shape=.data$shape_by)) +
     geom_point() +
     theme(
       legend.key = element_rect(fill = "white"),
@@ -423,18 +423,21 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
 
   colorscale <- NULL
   if (length(unique(df$color))>1 && isTRUE(legend)) {
-    p <- p + labs(color=color_name)
+    p_legend <- p_legend + labs(color=color_name)
   } else {
-    p <- p + guides(color="none")
+    p_legend <- p_legend + guides(color="none")
     colorscale <- scale_color_manual(values="black")
   }
-  if (length(unique(df$color))>1 && isFALSE(legend)) { p <- p + guides(color="none") }
+  if (length(unique(df$color))>1 && isFALSE(legend)) { p_legend <- p_legend + guides(color="none") }
+  if (length(unique(df$shape))>1) { p_legend <- p_legend + labs(shape=shape_name) } else { p_legend <- p_legend + guides(shape = "none") }
   if (is.numeric(df$color)) colorscale <- scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10))
-  if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = "none") }
-  if (!is.null(colorscale)) p <- p + colorscale
-  if ((length(unique(df$color))>1 || length(unique(df$shape))>1) && isTRUE(legend)) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
+  # Apply scale early so ggpairs builds correct legend
+  if (!is.null(colorscale)) p_legend <- p_legend + colorscale
+
+  # Grab legend if needed
+  if ((length(unique(df$color))>1 || length(unique(df$shape))>1) && isTRUE(legend)) { legend <- GGally::grab_legend(p_legend) } else { legend <- NULL }
   
-  # Generate plot
+  # Generate the final plot
   p <- GGally::ggpairs(df,
     columns = factors,
     lower = list(continuous=GGally::wrap("points", size=dot_size)), 
@@ -449,6 +452,7 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     axis.ticks = element_blank(),
     axis.text = element_blank()
   )
+  # Apply colorscale to panels for consistency
   if (!is.null(colorscale)) p <- p + colorscale
 
   return(p)
