@@ -2,6 +2,20 @@
 layout: default
 title: NEWS
 ---
+**`MOFA2 1.20.1` (latest)**:
+- `mofapy2` has been updated to version 0.7.2 for compatibility with newer versions of python-dependencies
+- Updated basilisk to use python 3.12 and `mofapy2` 0.7.2
+
+**`MOFA2 1.13.0`**:
+- Update `create_mofa_from_Seurat` to Seurat v5
+
+**`MOFA 1.9.2`**:
+- Adapt plots to `ggplot2` 3.4.0
+
+**`MOFA2 1.9.1`**:
+- Implement support for gpu usage from R
+- Updated basilisk to use `mofapy2` 0.7.0
+- Minor changes
 
 <!-- To-add:
 **`MOFA2 1.7.3` (latest)**:  
@@ -15,7 +29,7 @@ title: NEWS
 - improve template scripts
 -->
 
-**`MOFA2 1.7.3` (latest)**:  
+**`MOFA2 1.7.3`**:  
 - `mofapy2` has been updated to version 0.6.7
 - Updated basilisk to use mofapy2 0.6.7
 - Minor changes
