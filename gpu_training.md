@@ -5,9 +5,9 @@ title: MOFA
 
 ## Overview
 
-MOFA training can be massively speed up by using GPUs. We have implemented all computations usin [CuPy](https://cupy.dev/), an open-source array library for GPU-accelerated computing with Python. We only provide this when traning models from Python.
+MOFA training can be massively speed up by using GPUs. We have implemented all computations using [CuPy](https://cupy.dev/), an open-source array library for GPU-accelerated computing with Python.
 
-We currently do no suport GPU training from R.
+GPU training can be accessed from R via the training options `gpu_mode` and `gpu_device`. For this basilisk needs to be disabled, and reticulate needs to point to a python environment with CuPy.
 
 ## Installation
 
