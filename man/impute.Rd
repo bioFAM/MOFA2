@@ -39,7 +39,7 @@ MOFA generates a denoised and condensed low-dimensional representation of the da
 This representation can be used to reconstruct the data, simply using the equation \code{Y = WX}. 
 For more details read the supplementary methods of the manuscript. \cr
 Note that with \code{\link{impute}} you can only generate the point estimates (the means of the posterior distributions). 
-If you want to add uncertainity estimates (the variance) you need to set \code{impute=TRUE} in the training options.
+If you want to add uncertainty estimates (the variance) you need to set \code{impute=TRUE} in the training options.
 See \code{\link{get_default_training_options}}.
 }
 \examples{

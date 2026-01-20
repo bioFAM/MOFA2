@@ -136,7 +136,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   p <- ggplot(df, aes(x=.data$group_by, y=.data$value, fill=.data$color_by, shape=.data$shape_by)) +
     theme_classic()
   
-  # Defien facets as factors or groups
+  # Define facets as factors or groups
   if (length(factors) == 1) {
     p <- p + facet_wrap(~group_by, nrow=1, scales="free_x") +
       labs(x=group_by, y=as.character(factors))
@@ -222,7 +222,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   if (length(unique(df$factor))>1) {
     # p <- p + scale_y_continuous(breaks=NULL)
   } else {
-    # Remove strip labels for groups, they are laballed along X axis
+    # Remove strip labels for groups, they are labelled along X axis
     if (isFALSE(dodge)) {
       p <- p + theme(strip.text.x = element_blank())
     }
@@ -259,7 +259,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
 #' @param dot_size numeric indicating dot size (default is 2).
-#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).
 #' @param alpha numeric indicating dot transparency (default is 1).
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting

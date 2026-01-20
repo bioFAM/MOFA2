@@ -11,7 +11,7 @@
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
 #' @param abs logical indicating whether to take the absolute value of the correlation coefficient (default is \code{TRUE}).
-#' @param plot character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).
+#' @param plot character indicating whether to plot Pearson correlation coefficients (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).
 #' @param return_data logical indicating whether to return the correlation results instead of plotting
 #' @param transpose logical indicating whether to transpose the plot
 #' @param alpha p-value threshold
@@ -100,7 +100,7 @@ correlate_factors_with_covariates <- function(object, covariates, factors = "all
 #' @name summarise_factors
 #' @description Function to summarise factor values using a discrete grouping of samples.
 #' @param object a trained \code{\link{MOFA}} object.
-#' @param df a data.frame with the columns "sample" and "level", where level is a factor with discrete group assigments for each sample.
+#' @param df a data.frame with the columns "sample" and "level", where level is a factor with discrete group assignments for each sample.
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
 #' @param abs logical indicating whether to take the absolute value of the factors (default is \code{FALSE}).

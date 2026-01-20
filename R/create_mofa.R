@@ -14,8 +14,8 @@
 #' @param groups group information, only relevant when using the multi-group framework. 
 #' @param extract_metadata logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
 #' not relevant when the input is a list of matrices). Default is \code{TRUE}.
-#' @param ... further arguments that can be passed to the function depending on the inout data format.
-#' See the dpcumentation of above functions for details.
+#' @param ... further arguments that can be passed to the function depending on the input data format.
+#' See the documentation of above functions for details.
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples

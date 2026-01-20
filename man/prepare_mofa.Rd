@@ -41,7 +41,7 @@ It requires defining data, model and training options.
 \details{
 This function is called after creating a \code{\link{MOFA}} object (using  \code{\link{create_mofa}}) 
 and before starting the training (using \code{\link{run_mofa}}). Here, we can specify different options for
-the data (data_options), the model (model_options) and the trainig (training_options, stochastic_options). Take a look at the
+the data (data_options), the model (model_options) and the training (training_options, stochastic_options). Take a look at the
 individual default options for an overview using the get_default_XXX_options functions above.
 }
 \examples{

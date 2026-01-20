@@ -64,7 +64,7 @@ predict <- function(object, views = "all", groups = "all", factors = "all", add_
       # calculate terms based on linear model
       pred <- t(Z[[g]] %*% t(W[[m]]))
 
-      # add feature-wise intercepts (i think this does not work for non-gaussian likelihhood, needs some verification)
+      # add feature-wise intercepts (i think this does not work for non-gaussian likelihood, needs some verification)
       tryCatch( {
         if (add_intercept & length(object@intercepts[[1]])>0) {
           intercepts <- object@intercepts[[m]][[g]]

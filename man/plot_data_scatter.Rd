@@ -58,7 +58,7 @@ plot_data_scatter(
 \item a dataframe with two columns: "sample" and "shape"
 }}
 
-\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
+\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).}
 
 \item{dot_size}{numeric indicating dot size (default is 5).}
 

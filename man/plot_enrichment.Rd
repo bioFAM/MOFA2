@@ -30,7 +30,7 @@ plot_enrichment(
 a \code{ggplot2} object
 }
 \description{
-Method to plot the results of the gene set Enrichment Analyisis
+Method to plot the results of the gene set Enrichment Analysis
 }
 \details{
 it requires \code{\link{run_enrichment}} to be run beforehand.

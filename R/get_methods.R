@@ -55,7 +55,7 @@ get_elbo <- function(object) {
 get_lengthscales <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("No covariates specified in 'object'")
-  if(is.null(object@training_stats$length_scales)) stop("No lenghtscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
+  if(is.null(object@training_stats$length_scales)) stop("No lengthscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
   tmp <- object@training_stats$length_scales
   return(tmp)
 }

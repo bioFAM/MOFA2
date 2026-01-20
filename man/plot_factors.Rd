@@ -52,7 +52,7 @@ plot_factors(
 
 \item{legend}{logical indicating whether to add legend.}
 
-\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
+\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 }

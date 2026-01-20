@@ -10,7 +10,7 @@
 #' @param feature.sets data structure that holds feature set membership information. 
 #' Must be a binary membership matrix (rows are feature sets and columns are features). See details below for some pre-built gene set matrices.
 #' @param factors character vector with the factor names, or numeric vector with the index of the factors for which to perform the enrichment.
-#' @param set.statistic the set statisic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".
+#' @param set.statistic the set statistic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".
 #' @param statistical.test the statistical test used to compute the significance of the feature set statistics under a competitive null hypothesis.
 #' Must be one of the following: "parametric" (default), "cor.adj.parametric", "permutation".
 #' @param sign use only "positive" or "negative" weights. Default is "all".
@@ -183,7 +183,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
     stop("p.adj.method needs to be an element of p.adjust.methods")
   adj.p.values <- apply(results$p.values, 2,function(lfw) p.adjust(lfw, method = p.adj.method))
 
-  # If we specify a direction, we are only interested in overrepresented pathawys in the selected direction
+  # If we specify a direction, we are only interested in overrepresented pathways in the selected direction
   if (sign%in%c("positive","negative")) {
     results$p.values[results$statistics<0] <- 1.0
     adj.p.values[results$statistics<0] <- 1.0
@@ -191,7 +191,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
   }
   
   
-  # If we specify a direction, we are only interested in overrepresented pathawys in the selected direction
+  # If we specify a direction, we are only interested in overrepresented pathways in the selected direction
   if (sign%in%c("positive","negative")) {
     results$p.values[results$statistics<0] <- 1.0
     adj.p.values[results$statistics<0] <- 1.0
@@ -222,7 +222,7 @@ run_enrichment <- function(object, view, feature.sets, factors = "all",
 
 #' @title Plot output of gene set Enrichment Analysis
 #' @name plot_enrichment
-#' @description Method to plot the results of the gene set Enrichment Analyisis
+#' @description Method to plot the results of the gene set Enrichment Analysis
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param factor a string with the factor name or an integer with the factor index
 #' @param alpha p.value threshold to filter out gene sets
@@ -255,7 +255,7 @@ plot_enrichment <- function(enrichment.results, factor, alpha = 0.1, max.pathway
   
   # Filter out pathways
   tmp <- tmp[tmp$pvalue<=alpha,,drop=FALSE]
-  if (nrow(tmp)==0) stop("No siginificant pathways at the specified alpha threshold")
+  if (nrow(tmp)==0) stop("No significant pathways at the specified alpha threshold")
   
   # If there are too many pathways enriched, just keep the 'max_pathways' more significant
   if (nrow(tmp)>max.pathways) tmp <- head(tmp[order(tmp$pvalue),],n=max.pathways)
@@ -326,10 +326,10 @@ plot_enrichment_heatmap <- function(enrichment.results, alpha = 0.1, cap = 1e-50
 
 #' @title Plot detailed output of the Feature Set Enrichment Analysis
 #' @name plot_enrichment_detailed
-#' @description Method to plot a detailed output of the Feature Set Enrichment Analyisis (FSEA). \cr
+#' @description Method to plot a detailed output of the Feature Set Enrichment Analysis (FSEA). \cr
 #' Each row corresponds to a significant pathway, sorted by statistical significance, and each dot corresponds to a gene. \cr
 #' For each pathway, we display the top genes of the pathway sorted by the corresponding feature statistic (by default, the absolute value of the weight)
-#' The top genes with the highest statistic (max.genes argument) are displayed and labeled in black. The remaining genes are colored in grey.
+#' The top genes with the highest statistic (max.genes argument) are displayed and labelled in black. The remaining genes are colored in grey.
 #' @param enrichment.results output of \link{run_enrichment} function
 #' @param factor string with factor name or numeric with factor index
 #' @param alpha p.value threshold to filter out feature sets
@@ -374,7 +374,7 @@ plot_enrichment_detailed <- function(enrichment.results, factor,
   # Filter out pathways by p-values
   baz <- baz[baz$pvalue<=alpha,,drop=FALSE]
   if(nrow(baz)==0) {
-    stop("No siginificant pathways at the specified alpha threshold. \n
+    stop("No significant pathways at the specified alpha threshold. \n
          For an overview use plot_enrichment_heatmap().")
   } else {
     if (nrow(baz)>max.pathways)

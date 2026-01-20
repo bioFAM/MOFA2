@@ -63,7 +63,7 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
 #' using the factor names, or as numeric with the index of the factors
-#' @param view character vector with the voiew name, or numeric vector with the index of the view to use. Default is the first view.
+#' @param view character vector with the view name, or numeric vector with the index of the view to use. Default is the first view.
 #' @param color_by specifies groups or values used to color the features. This can be either 
 #' \itemize{
 #' \item a character giving the same of a column in the feature metadata slot
@@ -302,7 +302,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
       stopifnot(length(color_manual)==length(manual)) 
     }
     
-    # Add labelling group (0 for non-labeled, >= 1 for labeled)
+    # Add labelling group (0 for non-labelled, >= 1 for labelled)
     for (m in seq_len(length(manual)))
       W$labelling_group[W$feature %in% manual[[m]]] <- as.character(m+1)
   }
@@ -314,7 +314,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
     W$feature_id <- paste(W$view, W$feature, sep="_")
   }
   
-  # labelling_indicator is TRUE for labeled, FALSE for non-labeled
+  # labelling_indicator is TRUE for labelled, FALSE for non-labelled
   W$labelling_indicator <- as.factor(W$labelling_group != "0")
 
   # Set color and shape

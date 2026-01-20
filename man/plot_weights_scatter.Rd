@@ -25,7 +25,7 @@ plot_weights_scatter(
 \item{factors}{a vector of length two with the factors to plot. Factors can be specified either as a characters
 using the factor names, or as numeric with the index of the factors}
 
-\item{view}{character vector with the voiew name, or numeric vector with the index of the view to use. Default is the first view.}
+\item{view}{character vector with the view name, or numeric vector with the index of the view to use. Default is the first view.}
 
 \item{color_by}{specifies groups or values used to color the features. This can be either 
 \itemize{

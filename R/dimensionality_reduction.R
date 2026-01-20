@@ -61,8 +61,8 @@ run_tsne <- function(object, factors = "all", groups = "all", ...) {
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors character vector with the factor names, or numeric vector with the indices of the factors to use, or "all" to use all factors (default).
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use all groups (default).
-#' @param n_neighbors number of neighboring points used in local approximations of manifold structure. Larger values will result in more global structure being preserved at the loss of detailed local structure. In general this parameter should often be in the range 5 to 50.
-#' @param min_dist  This controls how tightly the embedding is allowed compress points together. Larger values ensure embedded points are moreevenly distributed, while smaller values allow the algorithm to optimise more accurately with regard to local structure. Sensible values are in the range 0.01 to 0.5
+#' @param n_neighbors number of neighbouring points used in local approximations of manifold structure. Larger values will result in more global structure being preserved at the loss of detailed local structure. In general this parameter should often be in the range 5 to 50.
+#' @param min_dist  This controls how tightly the embedding is allowed compress points together. Larger values ensure embedded points are more evenly distributed, while smaller values allow the algorithm to optimise more accurately with regard to local structure. Sensible values are in the range 0.01 to 0.5
 #' @param metric choice of metric used to measure distance in the input space
 #' @param ... arguments passed to \code{\link[uwot]{umap}}
 #' @details This function calls \code{\link[uwot]{umap}} to calculate a UMAP representation from the MOFA factors
@@ -131,7 +131,7 @@ run_umap <- function(object, factors = "all", groups = "all", n_neighbors = 30, 
 #' @param shape_name name for shape legend.
 #' @param label logical indicating whether to label the medians of the clusters. Only if color_by is specified
 #' @param dot_size numeric indicating dot size.
-#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).
 #' @param alpha_missing numeric indicating dot transparency of missing data.
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the long data frame to plot instead of plotting

@@ -199,7 +199,7 @@ plot_data_heatmap <- function(object, factor, view = 1, groups = "all", features
 #' @param legend logical indicating whether to add a legend
 #' @param dot_size numeric indicating dot size (default is 5).
 #' @param text_size numeric indicating text size (default is 5).
-#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).
 #' @param alpha numeric indicating dot transparency (default is 1).
 #' @param add_lm logical indicating whether to add a linear regression line for each plot
 #' @param lm_per_group logical indicating whether to add a linear regression line separately for each group
@@ -385,7 +385,7 @@ plot_data_overview <- function(object, covariate = 1, colors = NULL, show_covari
       covariate <- covariates_names(object)[covariate]
     }
     if(!is.character(covariate) | !covariate %in% covariates_names(object)) 
-      stop("Covariate mispecified. Please read the documentation")
+      stop("Covariate misspecified. Please read the documentation")
     covari <- .set_xax(object, covariate)
   }
   

@@ -34,7 +34,7 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
   if(length(lscales) == 1)
     lscales = rep(lscales, n_factors)
   if(!length(lscales) == n_factors)
-    stop("Lengthscalces lscales need to be of length n_factors")
+    stop("Lengthscales lscales need to be of length n_factors")
   if(all(lscales == 0)){
     sample_cov <- NULL
   }
@@ -79,7 +79,7 @@ make_example_data <- function(n_views=3, n_features=100, n_samples = 50, n_group
     }, numeric(n_groups))
     alpha_z <- matrix(alpha_z, nrow=n_factors, ncol=n_groups, byrow=TRUE)
     
-    # simulate facors 
+    # simulate factors 
     S_z <- lapply(seq_len(n_groups), function(vw) matrix(rbinom(n_samples * n_factors, 1, theta_z),
                                                          nrow=n_samples, ncol=n_factors))
     Z <- lapply(seq_len(n_groups), function(vw) vapply(seq_len(n_factors), function(fc) rnorm(n_samples, 0, sqrt(1/alpha_z[fc,vw])), numeric(n_samples)))

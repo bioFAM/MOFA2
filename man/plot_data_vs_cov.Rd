@@ -88,7 +88,7 @@ Function to do a scatterplot of features against sample covariate values.
 }
 \details{
 One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}
-and inspect the relationshio of the factor to the covariate(s) using  \code{\link{plot_factors_vs_cov}}.
+and inspect the relationship of the factor to the covariate(s) using  \code{\link{plot_factors_vs_cov}}.
 However, one might also be interested in visualising the direct relationship between features and covariate(s), rather than looking at "abstract" weights and
 possibly look at the interpolated and extrapolated values by setting imputed to True.
 }

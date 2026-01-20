@@ -32,7 +32,7 @@ correlate_factors_with_covariates(
 
 \item{abs}{logical indicating whether to take the absolute value of the correlation coefficient (default is \code{TRUE}).}
 
-\item{plot}{character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).}
+\item{plot}{character indicating whether to plot Pearson correlation coefficients (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).}
 
 \item{alpha}{p-value threshold}
 

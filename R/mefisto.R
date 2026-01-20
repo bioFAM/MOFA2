@@ -11,7 +11,7 @@
 #' \itemize{
 #'   \item{a character, specifying columns already present in the samples_metadata of the object}
 #'   \item{a data.frame with columns "sample", "covariate", "value". Sample names need to match those present in the data}
-#'   \item{a matrix with smaples in columns and covariate(s) in row(s)}
+#'   \item{a matrix with samples in columns and covariate(s) in row(s)}
 #'  }
 #' Note that the covariate should be numeric and continuous.
 #' @return Returns an untrained \code{\link{MOFA}} with covariates filled in the corresponding slots
@@ -251,7 +251,7 @@ get_default_mefisto_options <- function(object) {
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.
 #' @param ... additional parameters that can be passed to  \code{pheatmap} 
 #' @details The heatmap gives insight into the clustering of the patterns that factors display along the covariate in each group. 
-#' A correlation of 1 indicates that the module caputred by a factor shows identical patterns across groups, a correlation of zero that it shows distinct patterns,
+#' A correlation of 1 indicates that the module captured by a factor shows identical patterns across groups, a correlation of zero that it shows distinct patterns,
 #' a negative correlation that the patterns go in opposite directions.
 #' @return Returns a \code{ggplot,gg} object containing the heatmaps
 #' @import pheatmap 
@@ -481,7 +481,7 @@ plot_interpolation_vs_covariate <- function(object, covariate = 1, factors = "al
 #' @param imputed logical indicating whether to include imputed measurements
 #' @param return_data logical indicating whether to return a data frame instead of a plot
 #' @details One of the first steps for the annotation of factors is to visualise the weights using \code{\link{plot_weights}} or \code{\link{plot_top_weights}}
-#' and inspect the relationshio of the factor to the covariate(s) using  \code{\link{plot_factors_vs_cov}}.
+#' and inspect the relationship of the factor to the covariate(s) using  \code{\link{plot_factors_vs_cov}}.
 #' However, one might also be interested in visualising the direct relationship between features and covariate(s), rather than looking at "abstract" weights and
 #' possibly look at the interpolated and extrapolated values by setting imputed to True.
 #' @import ggplot2
@@ -619,9 +619,9 @@ plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, v
 }
 
 
-#' @title Scatterplots of a factor's values againt the sample covariates
+#' @title Scatterplots of a factor's values against the sample covariates
 #' @name plot_factors_vs_cov
-#' @description  Scatterplots of a factor's values againt the sample covariates
+#' @description  Scatterplots of a factor's values against the sample covariates
 #' @param object a trained \code{\link{MOFA}} object using MEFISTO.
 #' @param factors character or numeric specifying the factor(s) to plot, default is "all"
 #' @param covariates specifies sample covariate(s) to plot against:
@@ -653,7 +653,7 @@ plot_data_vs_cov <- function(object, covariate = 1, warped = TRUE, factor = 1, v
 #' @param show_variance  (for 1-dim covariates) logical indicating whether to show the marginal variance of inferred factor values 
 #' (only relevant for 1-dimensional covariates)
 #' @details To investigate the factors pattern along the covariates (such as time or a spatial coordinate) 
-#' this function an be used to plot a scatterplot of the factor againt the values of each covariate
+#' this function an be used to plot a scatterplot of the factor against the values of each covariate
 #' @return Returns a \code{ggplot2} object
 #' @import ggplot2 dplyr
 #' @importFrom stats complete.cases
@@ -854,11 +854,11 @@ plot_factors_vs_cov <- function(object, factors = "all", covariates = NULL, warp
 #' @description Function to interpolate factors in MEFISTO based on new covariate values.
 #' @param object a \code{\link{MOFA}} object trained with MEFISTO options and a covariate
 #' @param new_values a matrix containing the new covariate values to inter/extrapolate to. Should be
-#'  in the same format as the covariated used for training.
+#'  in the same format as the covariates used for training.
 #' @return Returns the \code{\link{MOFA}} with interpolated factor values filled in the corresponding slot (interpolatedZ)
 #' @details This function requires the functional MEFISTO framework to be used in training. 
 #' Use \code{set_covariates} and specify mefisto_options when preparing the training using \code{prepare_mofa}. 
-#' Currenlty, only the mean of the interpolation is provided from R.
+#' Currently, only the mean of the interpolation is provided from R.
 #' @export
 #' @examples
 #' # Using an existing trained model
@@ -881,7 +881,7 @@ interpolate_factors <- function(object, new_values) {
   if (is.null(object@expectations$Sigma)) stop("'object' does not have any expectations of Sigma.")
   if (!is.numeric(new_values)) stop("'new_values' should be numeric.")
   
-  # restrutcutre 1d covariate
+  # restructure 1d covariate
   if(is.null(dim(new_values))){
     new_values <- matrix(new_values, nrow = 1)
   }
@@ -944,7 +944,7 @@ interpolate_factors <- function(object, new_values) {
 }
 
 
-#' @title Plot covariate alignment acorss groups
+#' @title Plot covariate alignment across groups
 #' @name plot_alignment
 #' @description Function to plot the alignment learnt by MEFISTO for the 
 #' covariate values between different groups
@@ -1002,7 +1002,7 @@ plot_alignment <- function(object){
 #' model <- load_model(file)
 #' plot_variance_explained_by_covariates(model)
 #' 
-#' # compare to toal variance explained
+#' # compare to total variance explained
 #' plist <- plot_variance_explained_by_covariates(model, compare_total = TRUE)
 #' cowplot::plot_grid(plotlist = plist)
 

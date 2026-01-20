@@ -30,8 +30,8 @@ plot_enrichment_detailed(
 a \code{ggplot2} object
 }
 \description{
-Method to plot a detailed output of the Feature Set Enrichment Analyisis (FSEA). \cr
+Method to plot a detailed output of the Feature Set Enrichment Analysis (FSEA). \cr
 Each row corresponds to a significant pathway, sorted by statistical significance, and each dot corresponds to a gene. \cr
 For each pathway, we display the top genes of the pathway sorted by the corresponding feature statistic (by default, the absolute value of the weight)
-The top genes with the highest statistic (max.genes argument) are displayed and labeled in black. The remaining genes are colored in grey.
+The top genes with the highest statistic (max.genes argument) are displayed and labelled in black. The remaining genes are colored in grey.
 }

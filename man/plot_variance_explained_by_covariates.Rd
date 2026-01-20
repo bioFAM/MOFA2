@@ -52,7 +52,7 @@ file <- system.file("extdata", "MEFISTO_model.hdf5", package = "MOFA2")
 model <- load_model(file)
 plot_variance_explained_by_covariates(model)
 
-# compare to toal variance explained
+# compare to total variance explained
 plist <- plot_variance_explained_by_covariates(model, compare_total = TRUE)
 cowplot::plot_grid(plotlist = plist)
 }
