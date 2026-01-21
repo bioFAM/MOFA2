@@ -22,13 +22,13 @@ in the \code{\link{prepare_mofa}} step), i.e. after creating a \code{\link{MOFA}
 These options are only relevant when activating stochastic inference in training_options (see example).
 The stochastic inference options are the following: \cr
 \itemize{
- \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
+ \item{\strong{batch_size}: numeric value indicating the batch size (as a fraction)}. 
  Default is 0.5 (half of the data set).
- \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
+ \item{\strong{learning_rate}: numeric value indicating the learning rate. }
  Default is 1.0
- \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
+ \item{\strong{forgetting_rate}: numeric indicating the forgetting rate.}
  Default is 0.5
- \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
+ \item{\strong{start_stochastic}: integer indicating the first iteration to start stochastic inference}
  Default is 1
  }
 }

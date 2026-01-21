@@ -4,9 +4,9 @@
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param covariates 
 #' \itemize{
-#'   \item{\strong{data.frame}:}{a data.frame where the samples are stored in the rows and the covariates are stored in the columns. 
+#'   \item{\strong{data.frame}: a data.frame where the samples are stored in the rows and the covariates are stored in the columns. 
 #'   Use row names for sample names and column names for covariate names. Columns values must be numeric. }
-#'   \item{\strong{character vector}:}{character vector with names of columns that are present in the sample metadata (\code{samples_metadata(model)}}
+#'   \item{\strong{character vector}: character vector with names of columns that are present in the sample metadata (\code{samples_metadata(model)}}
 #' }
 #' @param factors character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.
 #' @param groups character vector with the groups names, or numeric vector with the indices of the groups of samples to use, or "all" to use samples from all groups.

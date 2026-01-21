@@ -13,10 +13,6 @@
 #' Default is "all".
 #' @param factors character vector with the factor name(s) or numeric vector with the factor index(es).
 #' Default is "all".
-# #' @param type type of prediction returned, either:
-# #' "response" gives the response vector, the mean for Gaussian and Poisson, and probabilities for Bernoulli,
-# #' "link" gives the linear predictions,
-# #' "inRange" rounds the fitted values integer-valued distributions to the next integer (default).
 #' @param add_intercept add feature intercepts to the prediction (default is TRUE).
 #' @details MOFA generates a denoised and condensed low-dimensional representation of the data that captures the main sources of heterogeneity of the data.
 #' This representation can be used to reconstruct a denoised representation of the data, simply using the equation \code{Y = WX}. 

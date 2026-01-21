@@ -21,11 +21,11 @@ in the \code{\link{prepare_mofa}} step (see example), i.e. after creating a \cod
  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
 The data options are the following: \cr
 \itemize{
- \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
+ \item{\strong{scale_views}: logical indicating whether to scale views to have the same unit variance. 
  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
- \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
+ \item{\strong{scale_groups}: logical indicating whether to scale groups to have the same unit variance. 
  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
- \item{\strong{use_float32}:}{ logical indicating whether use float32 instead of float64 arrays to increase speed and memory usage. Default is FALSE.}
+ \item{\strong{use_float32}: logical indicating whether use float32 instead of float64 arrays to increase speed and memory usage. Default is FALSE.}
  }
 }
 \examples{

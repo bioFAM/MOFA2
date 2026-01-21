@@ -2,9 +2,7 @@
 % Please edit documentation in R/calculate_variance_explained.R
 \name{plot_variance_explained_per_feature}
 \alias{plot_variance_explained_per_feature}
-\title{Plot variance explained by the model for a set of features
-
-Returns a tile plot with a group on the X axis and a feature along the Y axis}
+\title{Plot variance explained by the model for a set of features}
 \usage{
 plot_variance_explained_per_feature(
   object,
@@ -52,8 +50,6 @@ or number of top features to be fetched by their loadings across specified facto
 ggplot object
 }
 \description{
-Plot variance explained by the model for a set of features
-
 Returns a tile plot with a group on the X axis and a feature along the Y axis
 }
 \examples{

@@ -19,12 +19,7 @@ impute(
 
 \item{groups}{character vector with the group name(s), or numeric vector with group index(es).}
 
-\item{factors}{character vector with the factor names, or numeric vector with the factor index(es).
-\itemize{
-\item \strong{response}:{gives mean for gaussian and poisson and probabilities for bernoulli.}
-\item \strong{link}: {gives the linear predictions.}
-\item \strong{inRange}: {rounds the fitted values from "terms" for integer-valued distributions to the next integer (default).}
-}}
+\item{factors}{character vector with the factor names, or numeric vector with the factor index(es).}
 
 \item{add_intercept}{add feature intercepts to the imputation (default is TRUE).}
 }

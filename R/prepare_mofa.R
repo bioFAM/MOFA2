@@ -241,18 +241,18 @@ prepare_mofa <- function(object, data_options = NULL, model_options = NULL,
 #'  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
 #' The training options are the following: \cr
 #' \itemize{
-#'  \item{\strong{maxiter}:}{ numeric value indicating the maximum number of iterations. 
+#'  \item{\strong{maxiter}: numeric value indicating the maximum number of iterations. 
 #'  Default is 1000. Convergence is assessed using the ELBO statistic.}
-#'  \item{\strong{drop_factor_threshold}:}{ numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
+#'  \item{\strong{drop_factor_threshold}: numeric indicating the threshold on fraction of variance explained to consider a factor inactive and drop it from the model.
 #'  For example, a value of 0.01 implies that factors explaining less than 1\% of variance (in each view) will be dropped. Default is -1 (no dropping of factors)}
-#'  \item{\strong{convergence_mode}:}{ character indicating the convergence criteria, either "fast", "medium" or "slow", corresponding to 0.0005\%, 0.00005\% or 0.000005\% deltaELBO change. }
-#'  \item{\strong{verbose}:}{ logical indicating whether to generate a verbose output.}
-#'  \item{\strong{startELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
-#'  \item{\strong{freqELBO}:}{ integer indicating the first iteration to compute the ELBO (default is 1). }
-#'  \item{\strong{stochastic}:}{ logical indicating whether to use stochastic variational inference (only required for very big data sets, default is \code{FALSE}).}
-#'  \item{\strong{gpu_mode}:}{ logical indicating whether to use GPUs (see details).}
-#'  \item{\strong{gpu_device}:}{ integer indicating which GPU to use.}
-#'  \item{\strong{seed}:}{ numeric indicating the seed for reproducibility (default is 42).}
+#'  \item{\strong{convergence_mode}: character indicating the convergence criteria, either "fast", "medium" or "slow", corresponding to 0.0005\%, 0.00005\% or 0.000005\% deltaELBO change. }
+#'  \item{\strong{verbose}: logical indicating whether to generate a verbose output.}
+#'  \item{\strong{startELBO}: integer indicating the first iteration to compute the ELBO (default is 1). }
+#'  \item{\strong{freqELBO}: integer indicating the first iteration to compute the ELBO (default is 1). }
+#'  \item{\strong{stochastic}: logical indicating whether to use stochastic variational inference (only required for very big data sets, default is \code{FALSE}).}
+#'  \item{\strong{gpu_mode}: logical indicating whether to use GPUs (see details).}
+#'  \item{\strong{gpu_device}: integer indicating which GPU to use.}
+#'  \item{\strong{seed}: numeric indicating the seed for reproducibility (default is 42).}
 #' }
 #' @return Returns a list with default training options
 #' @importFrom utils modifyList
@@ -313,11 +313,11 @@ get_default_training_options <- function(object) {
 #'  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
 #' The data options are the following: \cr
 #' \itemize{
-#'  \item{\strong{scale_views}:}{ logical indicating whether to scale views to have the same unit variance. 
+#'  \item{\strong{scale_views}: logical indicating whether to scale views to have the same unit variance. 
 #'  As long as the scale differences between the views is not too high, this is not required. Default is FALSE.}
-#'  \item{\strong{scale_groups}:}{ logical indicating whether to scale groups to have the same unit variance. 
+#'  \item{\strong{scale_groups}: logical indicating whether to scale groups to have the same unit variance. 
 #'  As long as the scale differences between the groups is not too high, this is not required. Default is FALSE.}
-#'  \item{\strong{use_float32}:}{ logical indicating whether use float32 instead of float64 arrays to increase speed and memory usage. Default is FALSE.}
+#'  \item{\strong{use_float32}: logical indicating whether use float32 instead of float64 arrays to increase speed and memory usage. Default is FALSE.}
 #'  }
 #' @return Returns a list with the default data options.
 #' @importFrom utils modifyList
@@ -373,13 +373,13 @@ get_default_data_options <- function(object) {
 #'  (using \code{\link{create_mofa}}) and before starting the training (using \code{\link{run_mofa}})
 #' The model options are the following: \cr
 #' \itemize{
-#'  \item{\strong{likelihoods}:}{ character vector with data likelihoods per view: 
+#'  \item{\strong{likelihoods}: character vector with data likelihoods per view: 
 #'  'gaussian' for continuous data (Default for all views), 'bernoulli' for binary data and 'poisson' for count data.}
-#'  \item{\strong{num_factors}:}{ numeric value indicating the (initial) number of factors. Default is 15.}
-#'  \item{\strong{spikeslab_factors}:}{ logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
-#'  \item{\strong{spikeslab_weights}:}{ logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
-#'  \item{\strong{ard_factors}:}{ logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
-#'  \item{\strong{ard_weights}:}{ logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
+#'  \item{\strong{num_factors}: numeric value indicating the (initial) number of factors. Default is 15.}
+#'  \item{\strong{spikeslab_factors}: logical indicating whether to use spike and slab sparsity on the factors (Default is FALSE)}
+#'  \item{\strong{spikeslab_weights}: logical indicating whether to use spike and slab sparsity on the weights (Default is TRUE)}
+#'  \item{\strong{ard_factors}: logical indicating whether to use ARD sparsity on the factors (Default is TRUE only if using multiple groups)}
+#'  \item{\strong{ard_weights}: logical indicating whether to use ARD sparsity on the weights (Default is TRUE)}
 #'  }
 #' @return Returns a list with the default model options.
 #' @importFrom utils modifyList
@@ -466,13 +466,13 @@ get_default_model_options <- function(object) {
 #' These options are only relevant when activating stochastic inference in training_options (see example).
 #' The stochastic inference options are the following: \cr
 #' \itemize{
-#'  \item{\strong{batch_size}:}{ numeric value indicating the batch size (as a fraction)}. 
+#'  \item{\strong{batch_size}: numeric value indicating the batch size (as a fraction)}. 
 #'  Default is 0.5 (half of the data set).
-#'  \item{\strong{learning_rate}:}{ numeric value indicating the learning rate. }
+#'  \item{\strong{learning_rate}: numeric value indicating the learning rate. }
 #'  Default is 1.0
-#'  \item{\strong{forgetting_rate}:}{ numeric indicating the forgetting rate.}
+#'  \item{\strong{forgetting_rate}: numeric indicating the forgetting rate.}
 #'  Default is 0.5
-#'  \item{\strong{start_stochastic}:}{ integer indicating the first iteration to start stochastic inference}
+#'  \item{\strong{start_stochastic}: integer indicating the first iteration to start stochastic inference}
 #'  Default is 1
 #'  }
 #' @return Returns a list with default options

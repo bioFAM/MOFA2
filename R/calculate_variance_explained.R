@@ -346,7 +346,7 @@ plot_variance_explained <- function(object, x = "view", y = "factor", split_by =
 
 #' @title Plot variance explained by the model for a set of features
 #' 
-#' Returns a tile plot with a group on the X axis and a feature along the Y axis
+#' @description Returns a tile plot with a group on the X axis and a feature along the Y axis
 #' 
 #' @name plot_variance_explained_per_feature
 #' @param object a \code{\link{MOFA}} object.
