@@ -578,6 +578,9 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
 # (Hidden) function to split a list of matrices into a nested list of matrices
 .split_data_into_groups <- function(data, groups) {
   group_indices <- split(seq_along(groups), factor(groups, exclude = character(0))) # factor call avoids dropping NA
+  for (grp in names(group_indices)) {
+    group_indices[[grp]] = group_indices[[grp]][group_indices[[grp]] <= dim(data)[2]] # ensure cells in an underrepresented modality aren't overindexed below
+  }
   lapply(data, function(x) {
     lapply(group_indices, function(idx) {
       x[, idx, drop = FALSE]
