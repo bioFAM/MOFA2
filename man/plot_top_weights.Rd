@@ -38,7 +38,7 @@ Plot top weights for a given factor and view.
 }
 \details{
 An important step to annotate factors is to visualise the corresponding feature weights. \cr
-This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all weights for a given latent factor and view. \cr
+This function displays the top features with highest loading whereas the function \code{\link{plot_weights}} plots all weights for a given latent factor and view. \cr
 Importantly, the weights of the features within a view have relative values and they should not be interpreted in an absolute scale.
 Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 }
