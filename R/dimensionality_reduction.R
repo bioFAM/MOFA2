@@ -259,7 +259,7 @@ plot_dimred <- function(object, method = c("UMAP", "TSNE"), groups = "all", show
   } else { 
     p <- p + scale_alpha_manual(values = 1.0)
   }
-  p <- p + guides(alpha=FALSE)
+  p <- p + guides(alpha="none")
     
   # Label clusters
   if (label && length(unique(df$color_by)) > 1 && length(unique(df$color_by))<50) {
