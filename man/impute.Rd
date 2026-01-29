@@ -19,12 +19,7 @@ impute(
 
 \item{groups}{character vector with the group name(s), or numeric vector with group index(es).}
 
-\item{factors}{character vector with the factor names, or numeric vector with the factor index(es).
-\itemize{
-\item \strong{response}:{gives mean for gaussian and poisson and probabilities for bernoulli.}
-\item \strong{link}: {gives the linear predictions.}
-\item \strong{inRange}: {rounds the fitted values from "terms" for integer-valued distributions to the next integer (default).}
-}}
+\item{factors}{character vector with the factor names, or numeric vector with the factor index(es).}
 
 \item{add_intercept}{add feature intercepts to the imputation (default is TRUE).}
 }
@@ -39,7 +34,7 @@ MOFA generates a denoised and condensed low-dimensional representation of the da
 This representation can be used to reconstruct the data, simply using the equation \code{Y = WX}. 
 For more details read the supplementary methods of the manuscript. \cr
 Note that with \code{\link{impute}} you can only generate the point estimates (the means of the posterior distributions). 
-If you want to add uncertainity estimates (the variance) you need to set \code{impute=TRUE} in the training options.
+If you want to add uncertainty estimates (the variance) you need to set \code{impute=TRUE} in the training options.
 See \code{\link{get_default_training_options}}.
 }
 \examples{

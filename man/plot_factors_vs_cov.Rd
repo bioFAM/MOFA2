@@ -2,7 +2,7 @@
 % Please edit documentation in R/mefisto.R
 \name{plot_factors_vs_cov}
 \alias{plot_factors_vs_cov}
-\title{Scatterplots of a factor's values againt the sample covariates}
+\title{Scatterplots of a factor's values against the sample covariates}
 \usage{
 plot_factors_vs_cov(
   object,
@@ -78,11 +78,11 @@ only relevant if warping has been used to align multiple sample groups}
 Returns a \code{ggplot2} object
 }
 \description{
-Scatterplots of a factor's values againt the sample covariates
+Scatterplots of a factor's values against the sample covariates
 }
 \details{
 To investigate the factors pattern along the covariates (such as time or a spatial coordinate) 
-this function an be used to plot a scatterplot of the factor againt the values of each covariate
+this function an be used to plot a scatterplot of the factor against the values of each covariate
 }
 \examples{
 # Using an existing trained model

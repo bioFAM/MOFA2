@@ -29,7 +29,7 @@ Must be a binary membership matrix (rows are feature sets and columns are featur
 
 \item{factors}{character vector with the factor names, or numeric vector with the index of the factors for which to perform the enrichment.}
 
-\item{set.statistic}{the set statisic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".}
+\item{set.statistic}{the set statistic computed from the feature statistics. Must be one of the following: "mean.diff" (default) or "rank.sum".}
 
 \item{statistical.test}{the statistical test used to compute the significance of the feature set statistics under a competitive null hypothesis.
 Must be one of the following: "parametric" (default), "cor.adj.parametric", "permutation".}

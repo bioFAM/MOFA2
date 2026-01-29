@@ -219,9 +219,9 @@ setReplaceMethod("samples_names", signature(object="MOFA", value="list"),
                    object
                  })
 
-#######################################
-## Set and retriveve sample metadata ##
-#######################################
+######################################
+## Set and retrieve sample metadata ##
+######################################
 
 #' @rdname samples_metadata
 #' @param object a \code{\link{MOFA}} object.

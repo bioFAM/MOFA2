@@ -23,7 +23,7 @@ Heatmap plot showing the group-group correlations inferred by the model per fact
 }
 \details{
 The heatmap gives insight into the clustering of the patterns that factors display along the covariate in each group. 
-A correlation of 1 indicates that the module caputred by a factor shows identical patterns across groups, a correlation of zero that it shows distinct patterns,
+A correlation of 1 indicates that the module captured by a factor shows identical patterns across groups, a correlation of zero that it shows distinct patterns,
 a negative correlation that the patterns go in opposite directions.
 }
 \examples{

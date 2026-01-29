@@ -35,7 +35,7 @@ plot_factors(
 \item{color_by}{specifies groups or values used to color the samples. This can be either:
 (1) a character giving the name of a feature present in the training data.
 (2) a character giving the name of a column present in the sample metadata.
-(3) a vector of the name length as the number of samples specifying discrete groups or continuous numeric values.}
+(3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.}
 
 \item{shape_by}{specifies groups or values used to shape the samples. This can be either:
 (1) a character giving the name of a feature present in the training data, 
@@ -52,7 +52,7 @@ plot_factors(
 
 \item{legend}{logical indicating whether to add legend.}
 
-\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
+\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).}
 
 \item{return_data}{logical indicating whether to return the data frame to plot instead of plotting}
 }

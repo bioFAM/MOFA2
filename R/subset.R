@@ -226,7 +226,7 @@ subset_factors <- function(object, factors, recalculate_variance_explained = TRU
     }
   }
   
-  # # Relalculate total variance explained estimates (not valid for non-orthogonal factors)
+  # # Recalculate total variance explained estimates (not valid for non-orthogonal factors)
   # if (length(factors) < object@dimensions[["K"]]) {
   #   object@cache[["variance_explained"]]$r2_total <- lapply(object@cache[["variance_explained"]]$r2_per_factor, colSums)
   

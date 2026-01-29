@@ -16,7 +16,7 @@ summarise_factors(
 \arguments{
 \item{object}{a trained \code{\link{MOFA}} object.}
 
-\item{df}{a data.frame with the columns "sample" and "level", where level is a factor with discrete group assigments for each sample.}
+\item{df}{a data.frame with the columns "sample" and "level", where level is a factor with discrete group assignments for each sample.}
 
 \item{factors}{character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.}
 

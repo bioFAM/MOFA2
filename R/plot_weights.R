@@ -63,7 +63,7 @@ plot_weights_heatmap <- function(object, view = 1, features = "all", factors = "
 #' @param object a trained \code{\link{MOFA}} object.
 #' @param factors a vector of length two with the factors to plot. Factors can be specified either as a characters
 #' using the factor names, or as numeric with the index of the factors
-#' @param view character vector with the voiew name, or numeric vector with the index of the view to use. Default is the first view.
+#' @param view character vector with the view name, or numeric vector with the index of the view to use. Default is the first view.
 #' @param color_by specifies groups or values used to color the features. This can be either 
 #' \itemize{
 #' \item a character giving the same of a column in the feature metadata slot
@@ -302,7 +302,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
       stopifnot(length(color_manual)==length(manual)) 
     }
     
-    # Add labelling group (0 for non-labeled, >= 1 for labeled)
+    # Add labelling group (0 for non-labelled, >= 1 for labelled)
     for (m in seq_len(length(manual)))
       W$labelling_group[W$feature %in% manual[[m]]] <- as.character(m+1)
   }
@@ -314,7 +314,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
     W$feature_id <- paste(W$view, W$feature, sep="_")
   }
   
-  # labelling_indicator is TRUE for labeled, FALSE for non-labeled
+  # labelling_indicator is TRUE for labelled, FALSE for non-labelled
   W$labelling_indicator <- as.factor(W$labelling_group != "0")
 
   # Set color and shape
@@ -435,7 +435,7 @@ plot_weights <- function(object, view = 1, factors = 1, nfeatures = 10,
 #' @param sign can be 'positive', 'negative' or 'all' to show only positive, negative or all weights, respectively. Default is 'all'.
 #' @param scale logical indicating whether to scale all weights from -1 to 1 (or from 0 to 1 if abs=TRUE). Default is TRUE.
 #' @details An important step to annotate factors is to visualise the corresponding feature weights. \cr
-#' This function displays the top features with highest loading whereas the function \code{\link{plot_top_weights}} plots all weights for a given latent factor and view. \cr
+#' This function displays the top features with highest loading whereas the function \code{\link{plot_weights}} plots all weights for a given latent factor and view. \cr
 #' Importantly, the weights of the features within a view have relative values and they should not be interpreted in an absolute scale.
 #' Therefore, for interpretability purposes we always recommend to scale the weights with \code{scale=TRUE}.
 #' @import ggplot2
@@ -601,7 +601,7 @@ plot_top_weights <- function(object, view = 1, factors = 1,
     stopifnot(all(unique(color_by$feature) %in% features_names(object)[[view]]))
     
     # Option 3: by a feature_metadata column
-  } else if ((length(color_by)==1) && is.character(color_by) & (color_by %in% colnames(features_metadata(object)))) {
+  } else if ((length(color_by)==1) && is.character(color_by) && (color_by %in% colnames(features_metadata(object)))) {
     tmp <- features_metadata(object)
     color_by <- tmp[tmp$view==view,color_by]
     

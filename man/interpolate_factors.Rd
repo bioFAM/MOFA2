@@ -10,7 +10,7 @@ interpolate_factors(object, new_values)
 \item{object}{a \code{\link{MOFA}} object trained with MEFISTO options and a covariate}
 
 \item{new_values}{a matrix containing the new covariate values to inter/extrapolate to. Should be
-in the same format as the covariated used for training.}
+in the same format as the covariates used for training.}
 }
 \value{
 Returns the \code{\link{MOFA}} with interpolated factor values filled in the corresponding slot (interpolatedZ)
@@ -21,7 +21,7 @@ Function to interpolate factors in MEFISTO based on new covariate values.
 \details{
 This function requires the functional MEFISTO framework to be used in training. 
 Use \code{set_covariates} and specify mefisto_options when preparing the training using \code{prepare_mofa}. 
-Currenlty, only the mean of the interpolation is provided from R.
+Currently, only the mean of the interpolation is provided from R.
 }
 \examples{
 # Using an existing trained model

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mefisto.R
 \name{plot_alignment}
 \alias{plot_alignment}
-\title{Plot covariate alignment acorss groups}
+\title{Plot covariate alignment across groups}
 \usage{
 plot_alignment(object)
 }

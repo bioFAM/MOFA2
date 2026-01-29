@@ -390,7 +390,7 @@ setReplaceMethod("colnames", signature(x = "matrix_placeholder"),
     color_by <- samples_metadata(object)$group
     
     # Option 2: by a metadata column in object@samples$metadata
-  } else if ((length(color_by) == 1) && (is.character(color_by)|is.factor(color_by)) & (color_by[1] %in% colnames(samples_metadata(object)))) {
+  } else if ((length(color_by) == 1) && (is.character(color_by)|is.factor(color_by)) && (color_by[1] %in% colnames(samples_metadata(object)))) {
     color_by <- samples_metadata(object)[,color_by]
     # if (is.character(color_by)) color_by <- as.factor( color_by )
     

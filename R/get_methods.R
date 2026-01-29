@@ -55,7 +55,7 @@ get_elbo <- function(object) {
 get_lengthscales <- function(object) {
   if (!is(object, "MOFA")) stop("'object' has to be an instance of MOFA")
   if(!.hasSlot(object, "covariates") || is.null(object@covariates)) stop("No covariates specified in 'object'")
-  if(is.null(object@training_stats$length_scales)) stop("No lenghtscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
+  if(is.null(object@training_stats$length_scales)) stop("No lengthscales saved in 'object' \n Make sure you specify the covariates and train setting the option 'GP_factors' to TRUE.")
   tmp <- object@training_stats$length_scales
   return(tmp)
 }
@@ -480,8 +480,8 @@ get_imputed_data <- function(object, views = "all", groups = "all", features = "
 #' The priors and variational distributions of each variable are extensively described in the supplementary methods of the original paper.
 #' @return the output varies depending on the variable of interest: \cr
 #' \itemize{
-#'  \item{"Z"}{a matrix with dimensions (samples,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)}
-#'  \item{"W"}{a list of length (views) where each element is a matrix with dimensions (features,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (view,feature,factor,value)}
+#'  \item{\strong{"Z"}: a matrix with dimensions (samples,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (sample,factor,value)}
+#'  \item{\strong{"W"}: a list of length (views) where each element is a matrix with dimensions (features,factors). If \code{as.data.frame} is \code{TRUE}, a long-formatted data frame with columns (view,feature,factor,value)}
 #' }
 #' @export
 #' @examples

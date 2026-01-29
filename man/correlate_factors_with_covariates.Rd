@@ -21,9 +21,9 @@ correlate_factors_with_covariates(
 \item{object}{a trained \code{\link{MOFA}} object.}
 
 \item{covariates}{\itemize{
-  \item{\strong{data.frame}:}{a data.frame where the samples are stored in the rows and the covariates are stored in the columns. 
+  \item{\strong{data.frame}: a data.frame where the samples are stored in the rows and the covariates are stored in the columns. 
   Use row names for sample names and column names for covariate names. Columns values must be numeric. }
-  \item{\strong{character vector}:}{character vector with names of columns that are present in the sample metadata (\code{samples_metadata(model)}}
+  \item{\strong{character vector}: character vector with names of columns that are present in the sample metadata (\code{samples_metadata(model)}}
 }}
 
 \item{factors}{character vector with the factor name(s), or numeric vector with the index of the factor(s) to use. Default is 'all'.}
@@ -32,7 +32,7 @@ correlate_factors_with_covariates(
 
 \item{abs}{logical indicating whether to take the absolute value of the correlation coefficient (default is \code{TRUE}).}
 
-\item{plot}{character indicating whether to plot Pearson correlation coefficiens (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).}
+\item{plot}{character indicating whether to plot Pearson correlation coefficients (\code{plot="r"}) or log10 adjusted p-values (\code{plot="log_pval"}).}
 
 \item{alpha}{p-value threshold}
 

@@ -136,7 +136,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   p <- ggplot(df, aes(x=.data$group_by, y=.data$value, fill=.data$color_by, shape=.data$shape_by)) +
     theme_classic()
   
-  # Defien facets as factors or groups
+  # Define facets as factors or groups
   if (length(factors) == 1) {
     p <- p + facet_wrap(~group_by, nrow=1, scales="free_x") +
       labs(x=group_by, y=as.character(factors))
@@ -222,7 +222,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
   if (length(unique(df$factor))>1) {
     # p <- p + scale_y_continuous(breaks=NULL)
   } else {
-    # Remove strip labels for groups, they are laballed along X axis
+    # Remove strip labels for groups, they are labelled along X axis
     if (isFALSE(dodge)) {
       p <- p + theme(strip.text.x = element_blank())
     }
@@ -251,7 +251,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @param color_by specifies groups or values used to color the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data.
 #' (2) a character giving the name of a column present in the sample metadata.
-#' (3) a vector of the name length as the number of samples specifying discrete groups or continuous numeric values.
+#' (3) a vector of the same length as the number of samples specifying discrete groups or continuous numeric values.
 #' @param shape_by specifies groups or values used to shape the samples. This can be either:
 #' (1) a character giving the name of a feature present in the training data, 
 #' (2) a character giving the name of a column present in the sample metadata.
@@ -259,7 +259,7 @@ plot_factor <- function(object, factors = 1, groups = "all",
 #' @param color_name name for color legend.
 #' @param shape_name name for shape legend.
 #' @param dot_size numeric indicating dot size (default is 2).
-#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).
+#' @param stroke numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).
 #' @param alpha numeric indicating dot transparency (default is 1).
 #' @param legend logical indicating whether to add legend.
 #' @param return_data logical indicating whether to return the data frame to plot instead of plotting
@@ -413,21 +413,32 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
   df <- tidyr::spread(df, key="factor", value="value")
   
   # Prepare the legend
-  p <- ggplot(df, aes(x=.data[[factors[1]]], y=.data[[factors[2]]], color=.data$color_by, shape=.data$shape_by)) +
+  p_legend <- ggplot(df, aes(x=.data[[factors[1]]], y=.data[[factors[2]]], color=.data$color_by, shape=.data$shape_by)) +
     geom_point() +
     theme(
       legend.key = element_rect(fill = "white"),
       legend.text = element_text(size=rel(1.2)),
       legend.title = element_text(size=rel(1.2))
     )
-  if (length(unique(df$color))>1 && isTRUE(legend)) { p <- p + labs(color=color_name) } else { p <- p + guides(color="none") + scale_color_manual(values="black") }
-  if (length(unique(df$color))>1 && isFALSE(legend)) { p <- p + guides(color="none") }
-  if (is.numeric(df$color)) p <- p + scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10)) 
-  if (length(unique(df$shape))>1) { p <- p + labs(shape=shape_name) } else { p <- p + guides(shape = "none") }
-  if ((length(unique(df$color))>1 || length(unique(df$shape))>1) && isTRUE(legend)) { legend <- GGally::grab_legend(p) } else { legend <- NULL }
+
+  colorscale <- NULL
+  if (length(unique(df$color))>1 && isTRUE(legend)) {
+    p_legend <- p_legend + labs(color=color_name)
+  } else {
+    p_legend <- p_legend + guides(color="none")
+    colorscale <- scale_color_manual(values="black")
+  }
+  if (length(unique(df$color))>1 && isFALSE(legend)) { p_legend <- p_legend + guides(color="none") }
+  if (length(unique(df$shape))>1) { p_legend <- p_legend + labs(shape=shape_name) } else { p_legend <- p_legend + guides(shape = "none") }
+  if (is.numeric(df$color)) colorscale <- scale_color_gradientn(colors=colorRampPalette(rev(brewer.pal(n=5, name="RdYlBu")))(10))
+  # Apply scale early so ggpairs builds correct legend
+  if (!is.null(colorscale)) p_legend <- p_legend + colorscale
+
+  # Grab legend if needed
+  if ((length(unique(df$color))>1 || length(unique(df$shape))>1) && isTRUE(legend)) { legend <- GGally::grab_legend(p_legend) } else { legend <- NULL }
   
-  # Generate plot
-  p <- GGally::ggpairs(df, 
+  # Generate the final plot
+  p <- GGally::ggpairs(df,
     columns = factors,
     lower = list(continuous=GGally::wrap("points", size=dot_size)), 
     diag = list(continuous='densityDiag'), 
@@ -441,7 +452,9 @@ plot_factors <- function(object, factors = c(1, 2), groups = "all",
     axis.ticks = element_blank(),
     axis.text = element_blank()
   )
-  
+  # Apply colorscale to panels for consistency
+  if (!is.null(colorscale)) p <- p + colorscale
+
   return(p)
 }
   

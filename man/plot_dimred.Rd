@@ -50,7 +50,7 @@ plot_dimred(
 
 \item{dot_size}{numeric indicating dot size.}
 
-\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, infered automatically).}
+\item{stroke}{numeric indicating the stroke size (the black border around the dots, default is NULL, inferred automatically).}
 
 \item{alpha_missing}{numeric indicating dot transparency of missing data.}
 

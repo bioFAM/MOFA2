@@ -3,11 +3,11 @@
 #' @name create_mofa
 #' @description Method to create a \code{\link{MOFA}} object. Depending on the input data format, this method calls one of the following functions:
 #' \itemize{
-#'   \item{\strong{long data.frame}: }{\code{\link{create_mofa_from_df}}}
-#'   \item{\strong{List of matrices}: }{\code{\link{create_mofa_from_matrix}}}
-#'   \item{\strong{MultiAssayExperiment}: }{\code{\link{create_mofa_from_MultiAssayExperiment}}}
-#'   \item{\strong{Seurat}: }{\code{\link{create_mofa_from_Seurat}}}
-#'   \item{\strong{SingleCellExperiment}: }{\code{\link{create_mofa_from_SingleCellExperiment}}}
+#'   \item{\strong{long data.frame}: \code{\link{create_mofa_from_df}}}
+#'   \item{\strong{List of matrices}: \code{\link{create_mofa_from_matrix}}}
+#'   \item{\strong{MultiAssayExperiment}: \code{\link{create_mofa_from_MultiAssayExperiment}}}
+#'   \item{\strong{Seurat}: \code{\link{create_mofa_from_Seurat}}}
+#'   \item{\strong{SingleCellExperiment}: \code{\link{create_mofa_from_SingleCellExperiment}}}
 #'   }
 #'  Please read the documentation of the corresponding function for more details on your specific data format.
 #' @param data one of the formats above
@@ -15,8 +15,8 @@
 #' @param assays assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects.
 #' @param extract_metadata logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
 #' not relevant when the input is a list of matrices). Default is \code{TRUE}.
-#' @param ... further arguments that can be passed to the function depending on the inout data format.
-#' See the dpcumentation of above functions for details.
+#' @param ... further arguments that can be passed to the function depending on the input data format.
+#' See the documentation of above functions for details.
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples
