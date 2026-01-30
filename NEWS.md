@@ -2,9 +2,15 @@
 layout: default
 title: NEWS
 ---
-**`MOFA2 1.20.1` (latest)**:
+ 
+**`MOFA2 1.20.2 (latest)`**:
+- `mofapy2` has been updated to version 0.7.3 for compatibility with newer versions of python-dependencies
+- Updated basilisk to use python 3.12 and `mofapy2` 0.7.3
+
+<!--**`MOFA2 1.20.1`**:
 - `mofapy2` has been updated to version 0.7.2 for compatibility with newer versions of python-dependencies
 - Updated basilisk to use python 3.12 and `mofapy2` 0.7.2
+-->
 
 **`MOFA2 1.13.0`**:
 - Update `create_mofa_from_Seurat` to Seurat v5
