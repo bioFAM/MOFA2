@@ -4,12 +4,18 @@
 \alias{create_mofa}
 \title{create a MOFA object}
 \usage{
-create_mofa(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
+create_mofa(
+  data,
+  assay_names = NULL,
+  groups = NULL,
+  extract_metadata = TRUE,
+  ...
+)
 }
 \arguments{
 \item{data}{one of the formats above}
 
-\item{assays}{assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects.}
+\item{assay_names}{assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects. For MAE and Seurat objects a vector or list of strings, for SCE objects a single string.}
 
 \item{groups}{group information, only relevant when using the multi-group framework.}
 

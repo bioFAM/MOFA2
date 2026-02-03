@@ -81,7 +81,17 @@ create_mofa <- function(data, assay_names = NULL, groups = NULL, extract_metadat
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
 #' @examples
-#' --------Add-Example---------
+#' # Using the miniACC data transform RNASeq assays and select three experiments for MOFA
+#' data(miniACC)
+#' # apply log1p to the RNASeq and miRNAseq counts
+#' for (nm in c("RNASeq2GeneNorm", "miRNASeqGene")) {
+#'   assay(miniACC[[nm]], "log1p") <-
+#'     log1p(assay(miniACC[[nm]], "exprs"))
+#' }
+#' # create model with the transformed assay, omitting the 2nd and 4th experiments
+#' model <- create_mofa_from_MultiAssayExperiment(miniACC,
+#'                     assay_names = list("log1p", NULL, "exprs", NULL,'log1p'),
+#'                     extract_metadata = TRUE)
 create_mofa_from_MultiAssayExperiment <- function(mae, assay_names = NULL, groups = NULL, extract_metadata = FALSE) {
   
   # Sanity check
@@ -612,14 +622,14 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
     names(assay_names) <- names(experiments(mae))
     # For every experiment in MAE
     for (exp in names(experiments(mae)) ){
-      # Select given assay if object is SE, otherwise skip
-      if (is(mae[[exp]], "SummarizedExperiment")) {
-        # If assay.name is `NA` drop the experiment from MAE
-        if ( length(assay_names[[exp]]) == 0 ) {
-          # Remove experiment from ExperimentList
-          message(paste0("removing experiment: ",exp))
-          experiments(mae)[[exp]] <- NULL
-        } else {
+      # If assay.name is `NULL` drop the experiment from MAE
+      if ( length(assay_names[[exp]]) == 0 ) {
+        # Remove experiment from ExperimentList
+        message(paste0("removing experiment: ",exp))
+        experiments(mae)[[exp]] <- NULL
+      } else {
+        # Select given assay if object is SE, otherwise skip
+        if (is(mae[[exp]], "SummarizedExperiment")) {
           # check that assay.name is in experiment
           if (! assay_names[[exp]] %in%  assayNames(mae[[exp]])) {
             stop("Cannot find assay '", assay_names[[exp]], "' in experiment '",
@@ -635,8 +645,6 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   }
   return(mae)
 }
-
-
 
 # (Hidden) function to split a list of matrices into a nested list of matrices
 .split_data_into_groups <- function(data, groups) {
@@ -740,6 +748,3 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
   object@features_metadata[tmp,"feature"] <- paste(object@features_metadata[tmp,"feature"], object@features_metadata[tmp,"view"], sep="_")
   return(object)
 }
-
-
-

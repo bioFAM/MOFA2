@@ -6,7 +6,7 @@
 \usage{
 create_mofa_from_MultiAssayExperiment(
   mae,
-  assays,
+  assay_names = NULL,
   groups = NULL,
   extract_metadata = FALSE
 )
@@ -14,7 +14,7 @@ create_mofa_from_MultiAssayExperiment(
 \arguments{
 \item{mae}{a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
 
-\item{assays}{assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
+\item{assay_names}{assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
 
 \item{groups}{a string specifying column name of the colData to use it as a group variable. 
 Alternatively, a character vector with group assignment for every sample.
@@ -27,4 +27,17 @@ Returns an untrained \code{\link{MOFA}} object
 }
 \description{
 Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
+}
+\examples{
+# Using the miniACC data transform RNASeq assays and select three experiments for MOFA
+data(miniACC)
+# apply log1p to the RNASeq and miRNAseq counts
+for (nm in c("RNASeq2GeneNorm", "miRNASeqGene")) {
+  assay(miniACC[[nm]], "log1p") <-
+    log1p(assay(miniACC[[nm]], "exprs"))
+}
+# create model with the transformed assay, omitting the 2nd and 4th experiments
+model <- create_mofa_from_MultiAssayExperiment(miniACC,
+                    assay_names = list("log1p", NULL, "exprs", NULL,'log1p'),
+                    extract_metadata = TRUE)
 }
