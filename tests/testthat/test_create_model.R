@@ -61,3 +61,42 @@ test_that("a list of matrices per view is split correctly into a nested list of 
 })
 
 
+test_that("a model can be created from a MultiAssayExperiment Object", {
+	skip_if_not_installed("MultiAssayExperiment")
+	library(MultiAssayExperiment)
+	library(SummarizedExperiment)
+
+	# Import and preprocessing of miniACC Data
+	data(miniACC)
+	miniACC <- intersectColumns(miniACC)
+	mae_sub <- miniACC
+	experiments(mae_sub) <- experiments(miniACC)[
+		c("RNASeq2GeneNorm","RPPAArray","Mutations","miRNASeqGene")
+	]
+	#mae_sub <- miniACC[,,c("RNASeq2GeneNorm","RPPAArray","Mutations","miRNASeqGene")]
+	
+	
+	# apply log1p to the RNASeq
+	se <- mae_sub[["RNASeq2GeneNorm"]]
+	assay(se, "log1p") <- log1p(assay(se, "exprs"))
+	mae_sub[["RNASeq2GeneNorm"]] <- se
+
+	# apply log1p to the miRNASeq
+	se <- mae_sub[["miRNASeqGene"]]
+	assay(se, "log1p") <- log1p(assay(se, "exprs"))
+	mae_sub[["miRNASeqGene"]] <- se
+
+	# create MOFA model
+	model <- create_mofa(mae_sub,
+                              assay_names = c("log1p", "exprs", "",'log1p'),
+                              extract_metadata = TRUE)
+	
+
+	# do checks (??)
+
+	expect_is(model, "MOFA")
+})
+
+test_that("a model can be created from a SingleCellExperiment Object", {
+	
+})

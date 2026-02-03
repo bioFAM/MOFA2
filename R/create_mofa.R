@@ -12,7 +12,7 @@
 #'  Please read the documentation of the corresponding function for more details on your specific data format.
 #' @param data one of the formats above
 #' @param groups group information, only relevant when using the multi-group framework. 
-#' @param assays assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects.
+#' @param assay_names assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects. For MAE and Seurat objects a vector or list of strings, for SCE objects a single string.
 #' @param extract_metadata logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
 #' not relevant when the input is a list of matrices). Default is \code{TRUE}.
 #' @param ... further arguments that can be passed to the function depending on the input data format.
@@ -26,19 +26,19 @@
 #' # Load data (in long data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa(dt)
-create_mofa <- function(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...) {
+create_mofa <- function(data, assay_names = NULL, groups = NULL, extract_metadata = TRUE, ...) {
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
     
     message("Creating MOFA object from a Seurat object...")
-    object <- create_mofa_from_Seurat(data, groups, assays, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_Seurat(data, groups, assay_names, extract_metadata = extract_metadata, ...)
     
     # Creating MOFA object from a SingleCellExperiment object
   } else if (is(data, "SingleCellExperiment")) {
     
     message("Creating MOFA object from a SingleCellExperiment object...")
-    object <- create_mofa_from_SingleCellExperiment(data, groups, assays, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_SingleCellExperiment(data, groups, assay_names, experiments, extract_metadata = extract_metadata, ...)
     
     
     # Creating MOFA object from a data.frame object
@@ -59,7 +59,8 @@ create_mofa <- function(data, assays = NULL, groups = NULL, extract_metadata = T
     # Creating MOFA object from MultiAssayExperiment object
   } else if(is(data, "MultiAssayExperiment")){
     
-    object <- create_mofa_from_MultiAssayExperiment(data, assays, groups, extract_metadata = extract_metadata, ...)
+    message("Creating MOFA object from a MultiAssayExperiment...")
+    object <- create_mofa_from_MultiAssayExperiment(data, assay_names, groups, extract_metadata = extract_metadata, ...)
     
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
@@ -72,22 +73,23 @@ create_mofa <- function(data, assays = NULL, groups = NULL, extract_metadata = T
 #' @name create_mofa_from_MultiAssayExperiment
 #' @description Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 #' @param mae a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
-#' @param assays assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
+#' @param assay_names assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 #' @param groups a string specifying column name of the colData to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
 #' @param extract_metadata logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_MultiAssayExperiment <- function(mae, assays, groups = NULL, extract_metadata = FALSE) {
+#' @examples
+#' --------Add-Example---------
+create_mofa_from_MultiAssayExperiment <- function(mae, assay_names = NULL, groups = NULL, extract_metadata = FALSE) {
   
   # Sanity check
   if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
     stop("Package \"MultiAssayExperiment\" is required but is not installed.", call. = FALSE)
   } else {
-    
-    # Select assays of each experiment for MOFA
-    mae <- .select_assays(mae, assays)
+    # Select assay_names of each experiment for MOFA
+    mae <- .select_assays(mae, assay_names)
     
     # Re-arrange data for training in MOFA to matrices, fill in NAs
     data_list <- lapply(names(mae), function(m) {
@@ -308,6 +310,11 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
   } else {
     stopifnot(assay%in%names(SummarizedExperiment::assays(sce)))
     
+    # Check that assay is a string, and not  a list/vector?
+    # if (....) {
+    # stop(...)
+    #}
+
     # Define groups of cells
     if (is.null(groups)) {
       # message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
@@ -374,13 +381,13 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
-#' @param assays assays to use, default is \code{NULL}, it fetched all assays available
+#' @param assay_names assays to use, default is \code{NULL}, it fetched all assays available
 #' @param layer layer to be used (default is data).
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @param extract_metadata logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer = "data", features = NULL, extract_metadata = FALSE) {
+create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, layer = "data", features = NULL, extract_metadata = FALSE) {
   
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
@@ -391,11 +398,11 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer 
     if (SeuratObject::Version(seurat)$major != 5) stop("Please install Seurat v5")
     
     # Define assays
-    if (is.null(assays)) {
-      assays <- SeuratObject::Assays(seurat)
-      message(paste0("No assays specified, using all assays by default: ", paste(assays,collapse=" ")))
+    if (is.null(assay_names)) {
+      assay_names <- SeuratObject::Assays(seurat)
+      message(paste0("No assays specified, using all assays by default: ", paste(assay_names,collapse=" ")))
     } else {
-      stopifnot(assays%in%Seurat::Assays(seurat))
+      stopifnot(assay_names%in%Seurat::Assays(seurat))
     }
     
     # Define groups of cells
@@ -411,7 +418,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer 
     # make sure they are a list with respective views (assays) names.
     # A vector is accepted if there's one assay to be used
     if (is(features, "list")) {
-      if (!is.null(features) && !all(names(features) %in% assays)) {
+      if (!is.null(features) && !all(names(features) %in% assay_names)) {
         stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
       }
     } else {
@@ -419,12 +426,12 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer 
       if (is.null(features)) {
         message("No features specified, using variable features from the Seurat object...")
         # features <- lapply(assays, function(i) seurat@assays[[i]]@var.features)
-        features <- lapply(assays, function(i) SeuratObject::VariableFeatures(seurat@assays[[i]]))
-        names(features) <- assays
+        features <- lapply(assay_names, function(i) SeuratObject::VariableFeatures(seurat@assays[[i]]))
+        names(features) <- assay_names
         if (any(sapply(features,length)==0)) stop("No list of features provided and variable features not detected in the Seurat object")
       } else if (all(is(features, "character"))) {
         features <- list(features)
-        names(features) <- assays
+        names(features) <- assay_names
       } else {
         stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
       }
@@ -437,9 +444,9 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer 
     }
     
     # Extract data matrices
-    data_matrices <- lapply(assays, function(i) 
+    data_matrices <- lapply(assay_names, function(i) 
       .split_seurat_into_groups(seurat, groups = groups, assay = i, layer = layer, features = features[[i]]))
-    names(data_matrices) <- assays
+    names(data_matrices) <- assay_names
     
     # Create MOFA object
     object <- new("MOFA")
@@ -447,7 +454,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer 
     object@data <- data_matrices
     
     # Define dimensions
-    object@dimensions[["M"]] <- length(assays)
+    object@dimensions[["M"]] <- length(assay_names)
     object@dimensions[["D"]] <- vapply(data_matrices, function(m) nrow(m[[1]]), 1L)
     object@dimensions[["G"]] <- length(data_matrices[[1]])
     object@dimensions[["N"]] <- vapply(data_matrices[[1]], function(g) ncol(g), 1L)
@@ -455,7 +462,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer 
     
     # Set views & groups names
     groups_names(object) <- as.character(names(data_matrices[[1]]))
-    views_names(object)  <- assays
+    views_names(object)  <- assay_names
     
     # Set metadata
     if (extract_metadata) {
@@ -589,18 +596,46 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
 # Select assays from MultiAssayExperiment
 #' @importFrom MultiAssayExperiment experiments
 #' @importFrom SummarizedExperiment assay assays assayNames
-.select_assays <- function(mae, assays) {
-  # Give corresponding experiment names to assays
-  names(assays) <- names(experiments(mae))
-  # For every experiment in MAE
-  for ( exp in names(experiments(mae)) ){
-    # Keep only selected assay.type from a given experiment
-    assays(mae[[exp]]) <- list(assay(mae[[exp]], assays[[exp]]))
-    # Update assay names
-    assayNames(mae[[exp]]) <- assays[[exp]]
+.select_assays <- function(mae, assay_names) {
+  # skip if assay_names is NULL
+  if(!is.null(assay_names)) {
+    # replace `NULL` entries with character(0)
+    assay_names = as.list(assay_names)
+    assay_names <- lapply(assay_names, function(el) {
+      if (is.null(el) || length(el) == 0 || el == "") character(0) else el
+    })
+    # check that assay_names has right length
+    if (length(assay_names) != length(experiments(mae))){
+      stop(paste0("Length of assay_names list must match number of experiments (num=",length(experiments(mae)),")"))
+    }
+    # Give corresponding experiment names to assays
+    names(assay_names) <- names(experiments(mae))
+    # For every experiment in MAE
+    for (exp in names(experiments(mae)) ){
+      # Select given assay if object is SE, otherwise skip
+      if (is(mae[[exp]], "SummarizedExperiment")) {
+        # If assay.name is `NA` drop the experiment from MAE
+        if ( length(assay_names[[exp]]) == 0 ) {
+          # Remove experiment from ExperimentList
+          message(paste0("removing experiment: ",exp))
+          experiments(mae)[[exp]] <- NULL
+        } else {
+          # check that assay.name is in experiment
+          if (! assay_names[[exp]] %in%  assayNames(mae[[exp]])) {
+            stop("Cannot find assay '", assay_names[[exp]], "' in experiment '",
+            exp, "'.")
+          }
+          # Keep only specified assay.name from the given experiment
+          assays(mae[[exp]]) <- list(assay(mae[[exp]], assay_names[[exp]]))
+          # Update assay names (needed?)
+          assayNames(mae[[exp]]) <- assay_names[[exp]]
+        }
+      }
+    }
   }
   return(mae)
 }
+
 
 
 # (Hidden) function to split a list of matrices into a nested list of matrices
