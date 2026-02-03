@@ -64,13 +64,11 @@ mofa2 <- function(data, assay_names = NULL, groups = NULL, extract_metadata = TR
 
 # Combine custom options found in ... with default options
 .set_opts <- function(default, ...) {
-  # For every option in a set (data, model, train, ...)
-  for ( opt in names(default) ){
-    # If that option is found among arguments
-    if ( opt %in% names(list(...)) ){
-      # Replace default with value specified in arguments
-      default[[opt]] <- list(...)[[opt]]
-    }
-  }
+  # extract list of specified options
+  user_options <- list(...)
+  # Intersection of user_options that belong to (current) default parameters (e.g. data, model, train, ...)
+  set_options <- intersect(names(default), names(user_options))
+  # Overwrite defaults with values specified in arguments
+  default[set_options] <- user_options[set_options]
   return(default)
 }
