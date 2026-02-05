@@ -98,5 +98,33 @@ test_that("a model can be created from a MultiAssayExperiment Object", {
 })
 
 test_that("a model can be created from a SingleCellExperiment Object", {
+	skip_if_not_installed("SingleCellExperiment")
+	skip_if_not_installed("MOFAdata")
+	library(SingleCellExperiment)
 	
+	# Import CLL data
+	utils::data("CLL_data", package = "MOFAdata")
+	CLL_metadata <- data.table::fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/cll_vignette/sample_metadata.txt")
+	IGHV <- CLL_metadata$IGHV 
+	IGHV_filled <- ifelse(is.na(IGHV), 'NA', IGHV)
+	CLL_metadata$IGHV_filled <- IGHV_filled
+
+	# Create SCE Object
+	sce <- SingleCellExperiment(assays = list(mRNA = CLL_data$mRNA), colData = CLL_metadata)
+	altExps(sce) <- list(
+	Drugs = SummarizedExperiment(list(expr = CLL_data$Drugs)),
+	Methylation = SummarizedExperiment(list(expr = CLL_data$Methylation)),
+	Mutations = SummarizedExperiment(list(expr = CLL_data$Mutations))
+	)
+
+	# create MOFA model
+	MOFAobject <- create_mofa_from_SingleCellExperiment(
+	sce, assay = "mRNA",
+	alt_experiments = c("Drugs", "Methylation", "Mutations"), 
+	alt_assays = c("expr","expr","expr"),
+	groups = "IGHV_filled"
+	)
+
+	# do checks (??)
+	expect_is(MOFAobject, "MOFA")
 })

@@ -21,7 +21,7 @@ Description: The MOFA2 package contains a collection of tools for training and a
 Encoding: UTF-8
 Depends: R (>= 4.0)
 Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array, grDevices, stats, magrittr, forcats, utils, corrplot, DelayedArray, Rtsne, uwot, basilisk, stringi, MultiAssayExperiment, SummarizedExperiment,
-Suggests: knitr, testthat, Seurat, SeuratObject, ggpubr, foreach, psych, SingleCellExperiment, ggrastr, mvtnorm, GGally, rmarkdown, data.table, tidyverse, BiocStyle, Matrix, markdown, mia
+Suggests: knitr, testthat, Seurat, SeuratObject, ggpubr, foreach, psych, SingleCellExperiment, ggrastr, mvtnorm, GGally, rmarkdown, data.table, tidyverse, BiocStyle, Matrix, markdown, mia, MOFAdata
 biocViews: DimensionReduction, Bayesian, Visualization
 URL: https://biofam.github.io/MOFA2/index.html
 BugReports: https://github.com/bioFAM/MOFA2

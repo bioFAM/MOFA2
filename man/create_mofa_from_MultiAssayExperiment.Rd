@@ -30,6 +30,7 @@ Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperi
 }
 \examples{
 # Using the miniACC data transform RNASeq assays and select three experiments for MOFA
+library(MultiAssayExperiment)
 data(miniACC)
 # apply log1p to the RNASeq and miRNAseq counts
 for (nm in c("RNASeq2GeneNorm", "miRNASeqGene")) {

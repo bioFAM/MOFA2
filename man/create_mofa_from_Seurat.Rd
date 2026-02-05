@@ -7,7 +7,7 @@
 create_mofa_from_Seurat(
   seurat,
   groups = NULL,
-  assays = NULL,
+  assay_names = NULL,
   layer = "data",
   features = NULL,
   extract_metadata = FALSE
@@ -20,7 +20,7 @@ create_mofa_from_Seurat(
 Alternatively, a character vector with group assignment for every sample.
 Default is \code{NULL} (no group structure).}
 
-\item{assays}{assays to use, default is \code{NULL}, it fetched all assays available}
+\item{assay_names}{assays to use, default is \code{NULL}, it fetched all assays available}
 
 \item{layer}{layer to be used (default is data).}
 

@@ -8,6 +8,8 @@ create_mofa_from_SingleCellExperiment(
   sce,
   groups = NULL,
   assay = "logcounts",
+  alt_experiments = NULL,
+  alt_assays = NULL,
   extract_metadata = FALSE
 )
 }
@@ -18,7 +20,11 @@ create_mofa_from_SingleCellExperiment(
 Alternatively, a character vector with group assignment for every sample.
 Default is \code{NULL} (no group structure).}
 
-\item{assay}{assay to use, default is \code{logcounts}.}
+\item{assay}{assay of the sce object to use, default is \code{logcounts}.}
+
+\item{alt_experiments}{list, indicating option altExp's of the SingleCellExperiment object to load. Default is \code{NULL} (not loading altExp's).}
+
+\item{alt_assays}{list, giving the assay names of each of the altExp's to load. Default is \code{NULL}.}
 
 \item{extract_metadata}{logical indicating whether to incorporate the metadata from the SingleCellExperiment object into the MOFA object}
 }
@@ -27,4 +33,29 @@ Returns an untrained \code{\link{MOFA}} object
 }
 \description{
 Method to create a \code{\link{MOFA}} object from a SingleCellExperiment object
+}
+\examples{
+# Minimal Example
+library(SingleCellExperiment)
+# Create SingleCellExperiment with sample data
+data1 = matrix(rnorm(50 * 20), 
+             nrow = 50, ncol = 20,
+             dimnames = list(paste0("gene_", 1:50),
+             paste0("sample_", 1:20)))
+
+data2 = matrix(rnorm(50 * 20), 
+             nrow = 50, ncol = 20,
+             dimnames = list(paste0("gene_", 1:50),
+             paste0("sample_", 1:20)))
+alt_data = SummarizedExperiment(list(assay=data2))
+
+sce <- SingleCellExperiment(
+  assays = list(counts = data1),
+  altExps = list(alt_data=alt_data)
+)
+# Create MOFA object
+MOFAobject <- create_mofa_from_SingleCellExperiment(
+  sce, assay = "counts", alt_experiments = c("alt_data"),
+  alt_assays = c("assay")
+)
 }

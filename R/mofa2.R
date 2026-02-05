@@ -21,7 +21,7 @@
 #' data("HintikkaXOData", package = "mia")
 #' mae <- HintikkaXOData
 #' mofa_obj <- mofa2(mae, assay_names = list("counts", "nmr", "signals"))
-#' mofa_obj <- mofa2(mae, assay_names = list("counts", "nmr", NONE), num_factors = 5)
+#' mofa_obj <- mofa2(mae, assay_names = list("counts", "nmr", NULL), num_factors = 5)
 
 #' # Example with long data.frame format (two views and two groups)
 #' file <- system.file("extdata", "test_data.RData", package = "MOFA2")
