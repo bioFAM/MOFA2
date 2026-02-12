@@ -12,7 +12,7 @@
 #'  Please read the documentation of the corresponding function for more details on your specific data format.
 #' @param data one of the formats above
 #' @param groups group information, only relevant when using the multi-group framework. 
-#' @param assay_names assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects. For MAE and Seurat objects a vector or list of strings, for SCE objects a single string.
+#' @param assays assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects. For MAE and Seurat objects a vector or list of strings, for SCE objects a single string.
 #' @param extract_metadata logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
 #' not relevant when the input is a list of matrices). Default is \code{TRUE}.
 #' @param ... further arguments that can be passed to the function depending on the input data format.
@@ -26,19 +26,19 @@
 #' # Load data (in long data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa(dt)
-create_mofa <- function(data, assay_names = NULL, groups = NULL, extract_metadata = TRUE, ...) {
+create_mofa <- function(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...) {
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
     
     message("Creating MOFA object from a Seurat object...")
-    object <- create_mofa_from_Seurat(data, groups, assay_names, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_Seurat(data, groups, assays, extract_metadata = extract_metadata, ...)
     
     # Creating MOFA object from a SingleCellExperiment object
   } else if (is(data, "SingleCellExperiment")) {
     
     message("Creating MOFA object from a SingleCellExperiment object...")
-    object <- create_mofa_from_SingleCellExperiment(data, groups, assay_names, experiments, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_SingleCellExperiment(data, groups, assays, experiments, extract_metadata = extract_metadata, ...)
     
     
     # Creating MOFA object from a data.frame object
@@ -60,7 +60,7 @@ create_mofa <- function(data, assay_names = NULL, groups = NULL, extract_metadat
   } else if(is(data, "MultiAssayExperiment")){
     
     message("Creating MOFA object from a MultiAssayExperiment...")
-    object <- create_mofa_from_MultiAssayExperiment(data, assay_names, groups, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_MultiAssayExperiment(data, assays, groups, extract_metadata = extract_metadata, ...)
     
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
@@ -73,7 +73,7 @@ create_mofa <- function(data, assay_names = NULL, groups = NULL, extract_metadat
 #' @name create_mofa_from_MultiAssayExperiment
 #' @description Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 #' @param mae a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
-#' @param assay_names assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
+#' @param assays assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
 #' @param groups a string specifying column name of the colData to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
@@ -91,16 +91,16 @@ create_mofa <- function(data, assay_names = NULL, groups = NULL, extract_metadat
 #' }
 #' # create model with the transformed assay, omitting the 2nd and 4th experiments
 #' model <- create_mofa_from_MultiAssayExperiment(miniACC,
-#'                     assay_names = list("log1p", NULL, "exprs", NULL,'log1p'),
+#'                     assays = list("log1p", NULL, "exprs", NULL,'log1p'),
 #'                     extract_metadata = TRUE)
-create_mofa_from_MultiAssayExperiment <- function(mae, assay_names = NULL, groups = NULL, extract_metadata = FALSE) {
+create_mofa_from_MultiAssayExperiment <- function(mae, assays = NULL, groups = NULL, extract_metadata = FALSE) {
   
   # Sanity check
   if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
     stop("Package \"MultiAssayExperiment\" is required but is not installed.", call. = FALSE)
   } else {
-    # Select assay_names of each experiment for MOFA
-    mae <- .select_assays(mae, assay_names)
+    # Select assays of each experiment for MOFA
+    mae <- .select_assays(mae, assays)
     
     # Re-arrange data for training in MOFA to matrices, fill in NAs
     data_list <- lapply(names(mae), function(m) {
@@ -429,13 +429,13 @@ create_mofa_from_SingleCellExperiment <- function(sce, groups = NULL, assay = "l
 #' @param groups a string specifying column name of the samples metadata to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
-#' @param assay_names assays to use, default is \code{NULL}, it fetched all assays available
+#' @param assays assays to use, default is \code{NULL}, it fetched all assays available
 #' @param layer layer to be used (default is data).
 #' @param features a list with vectors, which are used to subset features, with names corresponding to assays; a vector can be provided when only one assay is used
 #' @param extract_metadata logical indicating whether to incorporate the metadata from the Seurat object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
-create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, layer = "data", features = NULL, extract_metadata = FALSE) {
+create_mofa_from_Seurat <- function(seurat, groups = NULL, assays = NULL, layer = "data", features = NULL, extract_metadata = FALSE) {
   
   # Check is Seurat is installed
   if (!requireNamespace("Seurat", quietly = TRUE)) {
@@ -446,11 +446,11 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, l
     if (SeuratObject::Version(seurat)$major != 5) stop("Please install Seurat v5")
     
     # Define assays
-    if (is.null(assay_names)) {
-      assay_names <- SeuratObject::Assays(seurat)
-      message(paste0("No assays specified, using all assays by default: ", paste(assay_names,collapse=" ")))
+    if (is.null(assays)) {
+      assays <- SeuratObject::Assays(seurat)
+      message(paste0("No assays specified, using all assays by default: ", paste(assays,collapse=" ")))
     } else {
-      stopifnot(assay_names%in%Seurat::Assays(seurat))
+      stopifnot(assays%in%Seurat::Assays(seurat))
     }
     
     # Define groups of cells
@@ -466,7 +466,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, l
     # make sure they are a list with respective views (assays) names.
     # A vector is accepted if there's one assay to be used
     if (is(features, "list")) {
-      if (!is.null(features) && !all(names(features) %in% assay_names)) {
+      if (!is.null(features) && !all(names(features) %in% assays)) {
         stop("Please make sure all the names of the features list correspond to views (assays) names being used for the model")
       }
     } else {
@@ -474,12 +474,12 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, l
       if (is.null(features)) {
         message("No features specified, using variable features from the Seurat object...")
         # features <- lapply(assays, function(i) seurat@assays[[i]]@var.features)
-        features <- lapply(assay_names, function(i) SeuratObject::VariableFeatures(seurat@assays[[i]]))
-        names(features) <- assay_names
+        features <- lapply(assays, function(i) SeuratObject::VariableFeatures(seurat@assays[[i]]))
+        names(features) <- assays
         if (any(sapply(features,length)==0)) stop("No list of features provided and variable features not detected in the Seurat object")
       } else if (all(is(features, "character"))) {
         features <- list(features)
-        names(features) <- assay_names
+        names(features) <- assays
       } else {
         stop("Features not recognised. Please either provide a list of features (per assay) or calculate variable features in the Seurat object")
       }
@@ -492,9 +492,9 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, l
     }
     
     # Extract data matrices
-    data_matrices <- lapply(assay_names, function(i) 
+    data_matrices <- lapply(assays, function(i) 
       .split_seurat_into_groups(seurat, groups = groups, assay = i, layer = layer, features = features[[i]]))
-    names(data_matrices) <- assay_names
+    names(data_matrices) <- assays
     
     # Create MOFA object
     object <- new("MOFA")
@@ -502,7 +502,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, l
     object@data <- data_matrices
     
     # Define dimensions
-    object@dimensions[["M"]] <- length(assay_names)
+    object@dimensions[["M"]] <- length(assays)
     object@dimensions[["D"]] <- vapply(data_matrices, function(m) nrow(m[[1]]), 1L)
     object@dimensions[["G"]] <- length(data_matrices[[1]])
     object@dimensions[["N"]] <- vapply(data_matrices[[1]], function(g) ncol(g), 1L)
@@ -510,7 +510,7 @@ create_mofa_from_Seurat <- function(seurat, groups = NULL, assay_names = NULL, l
     
     # Set views & groups names
     groups_names(object) <- as.character(names(data_matrices[[1]]))
-    views_names(object)  <- assay_names
+    views_names(object)  <- assays
     
     # Set metadata
     if (extract_metadata) {

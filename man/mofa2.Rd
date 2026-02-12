@@ -4,12 +4,12 @@
 \alias{mofa2}
 \title{One-liner wrapper to create a MOFA2 object from multiple input objects and ready for training}
 \usage{
-mofa2(data, assay_names = NULL, groups = NULL, extract_metadata = TRUE, ...)
+mofa2(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
 }
 \arguments{
 \item{data}{input data. See \code{\link[create_mofa]{create_mofa}} for details on input data formats.}
 
-\item{assay_names}{Assays to include in MOFA model. Required for \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}, \code{\link[SingleCellExperiment:SingleCellExperiment]{SingleCellExperiment}} and \code{\link[SeuratObject:CreateSeuratObject]{Seurat}} objects.}
+\item{assays}{Assays to include in MOFA model. Required for \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}, \code{\link[SingleCellExperiment:SingleCellExperiment]{SingleCellExperiment}} and \code{\link[SeuratObject:CreateSeuratObject]{Seurat}} objects.}
 
 \item{groups}{One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is NULL.}
 
@@ -30,8 +30,8 @@ Please read the documentation of the corresponding functions for more details.
 library(mia)
 data("HintikkaXOData", package = "mia")
 mae <- HintikkaXOData
-mofa_obj <- mofa2(mae, assay_names = list("counts", "nmr", "signals"))
-mofa_obj <- mofa2(mae, assay_names = list("counts", "nmr", NULL), num_factors = 5)
+mofa_obj <- mofa2(mae, assays = list("counts", "nmr", "signals"))
+mofa_obj <- mofa2(mae, assays = list("counts", "nmr", NULL), num_factors = 5)
 # Example with long data.frame format (two views and two groups)
 file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 load(file) 

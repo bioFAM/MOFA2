@@ -6,7 +6,7 @@
 \usage{
 create_mofa_from_MultiAssayExperiment(
   mae,
-  assay_names = NULL,
+  assays = NULL,
   groups = NULL,
   extract_metadata = FALSE
 )
@@ -14,7 +14,7 @@ create_mofa_from_MultiAssayExperiment(
 \arguments{
 \item{mae}{a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
 
-\item{assay_names}{assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
+\item{assays}{assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
 
 \item{groups}{a string specifying column name of the colData to use it as a group variable. 
 Alternatively, a character vector with group assignment for every sample.
@@ -39,6 +39,6 @@ for (nm in c("RNASeq2GeneNorm", "miRNASeqGene")) {
 }
 # create model with the transformed assay, omitting the 2nd and 4th experiments
 model <- create_mofa_from_MultiAssayExperiment(miniACC,
-                    assay_names = list("log1p", NULL, "exprs", NULL,'log1p'),
+                    assays = list("log1p", NULL, "exprs", NULL,'log1p'),
                     extract_metadata = TRUE)
 }

@@ -88,7 +88,7 @@ test_that("a model can be created from a MultiAssayExperiment Object", {
 
 	# create MOFA model
 	model <- create_mofa(mae_sub,
-                              assay_names = c("log1p", "exprs", "",'log1p'),
+                              assays = c("log1p", "exprs", "",'log1p'),
                               extract_metadata = TRUE)
 	
 
