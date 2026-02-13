@@ -4,16 +4,25 @@
 \alias{mofa2}
 \title{One-liner wrapper to create a MOFA2 object from multiple input objects and ready for training}
 \usage{
-mofa2(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
+mofa2(
+  data,
+  assays = NULL,
+  groups = NULL,
+  alt_experiments = NULL,
+  extract_metadata = TRUE,
+  ...
+)
 }
 \arguments{
 \item{data}{input data. See \code{\link[create_mofa]{create_mofa}} for details on input data formats.}
 
 \item{assays}{Assays to include in MOFA model. Required for \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}, \code{\link[SingleCellExperiment:SingleCellExperiment]{SingleCellExperiment}} and \code{\link[SeuratObject:CreateSeuratObject]{Seurat}} objects.}
 
-\item{groups}{One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is NULL.}
+\item{groups}{One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is \code{NULL}.}
 
-\item{extract_metadata}{Boolean specifying whether sample metadata from the input object should be propagated to the MOFA2 object  (default is TRUE).}
+\item{alt_experiments}{altExp slots to load, only relevant for SingleCellExperiment objects. Default is \code{NULL}.}
+
+\item{extract_metadata}{Boolean specifying whether sample metadata from the input object should be propagated to the MOFA2 object  (default is \code{TRUE}).}
 
 \item{...}{additional parameters for MOFA, named as the options of \code{\link[prepare_mofa]{prepare_mofa}}.}
 }

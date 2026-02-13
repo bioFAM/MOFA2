@@ -29,7 +29,7 @@ test_that("a model can be created from a Seurat object", {
 	skip_if_not_installed("SeuratObject")
 	library(Seurat)
 	library(Matrix)
-	m <- readMM('matrix.mtx')
+	m <- as(readMM('matrix.mtx'),'dgCMatrix')
 	genes <- read.delim('genes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,2]
 	cells <- read.delim('barcodes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,1]
 	colnames(m) <- cells
@@ -74,6 +74,11 @@ test_that("a model can be created from a MultiAssayExperiment Object", {
 		c("RNASeq2GeneNorm","RPPAArray","Mutations","miRNASeqGene")
 	]
 	#mae_sub <- miniACC[,,c("RNASeq2GeneNorm","RPPAArray","Mutations","miRNASeqGene")]
+	rownames(mae_sub[["RNASeq2GeneNorm"]]) <- paste0(rownames(mae_sub[["RNASeq2GeneNorm"]]), "_1")
+	rownames(mae_sub[["RPPAArray"]]) <- paste0(rownames(mae_sub[["RPPAArray"]]), "_2")
+	rownames(mae_sub[["Mutations"]]) <- paste0(rownames(mae_sub[["Mutations"]]), "_3")
+	rownames(mae_sub[["miRNASeqGene"]]) <- paste0(rownames(mae_sub[["miRNASeqGene"]]), "_4")
+
 	
 	
 	# apply log1p to the RNASeq
@@ -87,20 +92,34 @@ test_that("a model can be created from a MultiAssayExperiment Object", {
 	mae_sub[["miRNASeqGene"]] <- se
 
 	# create MOFA model
-	model <- create_mofa(mae_sub,
-                              assays = c("log1p", "exprs", "",'log1p'),
-                              extract_metadata = TRUE)
+	model <- create_mofa(
+		mae_sub,
+		assays = c("log1p", "exprs", "",'log1p'),
+		extract_metadata = TRUE
+	)
+	# Warning: duplicated feature names
 	
 
-	# do checks (??)
-
+	# do checks
+	# class check
 	expect_is(model, "MOFA")
+
+	#check dimensions
+	expect_equal(get_dimensions(model)$M,3) # right number of views
+
+	# right data matrix
+	expect_equivalent(
+		get_data(model, views = c("RPPAArray"))$RPPAArray$group1,
+		assay(mae_sub[["RPPAArray"]])
+	) 
 })
 
 test_that("a model can be created from a SingleCellExperiment Object", {
 	skip_if_not_installed("SingleCellExperiment")
 	skip_if_not_installed("MOFAdata")
+	skip_if_not_installed("data.table")
 	library(SingleCellExperiment)
+	library(data.table)
 	
 	# Import CLL data
 	utils::data("CLL_data", package = "MOFAdata")
@@ -112,19 +131,128 @@ test_that("a model can be created from a SingleCellExperiment Object", {
 	# Create SCE Object
 	sce <- SingleCellExperiment(assays = list(mRNA = CLL_data$mRNA), colData = CLL_metadata)
 	altExps(sce) <- list(
-	Drugs = SummarizedExperiment(list(expr = CLL_data$Drugs)),
-	Methylation = SummarizedExperiment(list(expr = CLL_data$Methylation)),
-	Mutations = SummarizedExperiment(list(expr = CLL_data$Mutations))
+		Drugs = SummarizedExperiment(list(expr = CLL_data$Drugs)),
+		Methylation = SummarizedExperiment(list(expr = CLL_data$Methylation)),
+		Mutations = SummarizedExperiment(list(expr = CLL_data$Mutations))
 	)
 
 	# create MOFA model
 	MOFAobject <- create_mofa_from_SingleCellExperiment(
-	sce, assay = "mRNA",
-	alt_experiments = c("Drugs", "Methylation", "Mutations"), 
-	alt_assays = c("expr","expr","expr"),
-	groups = "IGHV_filled"
+		sce,
+		assays = c("mRNA","expr","expr","expr"),
+		alt_experiments = c("Drugs", "Methylation", "Mutations"), 
+		groups = "IGHV_filled"
 	)
 
-	# do checks (??)
+	# do checks
+	# class check
 	expect_is(MOFAobject, "MOFA")
+	# right feature metadata (sample metadata not implemented)
+	expect_identical(colData(sce)$sample, CLL_metadata$sample)
+	expect_identical(colData(sce)$treatedAfter, CLL_metadata$treatedAfter)
+	expect_identical(colData(sce)$age, CLL_metadata$age)
+	expect_identical(colData(sce)$IGHV_filled, CLL_metadata$IGHV_filled)
+
+	# right data matrix - with groups
+	expect_equivalent(
+		get_data(MOFAobject, views = c("Main"),groups = c("0"))$Main$`0`,
+		CLL_data$mRNA[,CLL_metadata$IGHV==0 & !is.na(CLL_metadata$IGHV)]
+	) 
+	expect_equivalent(
+		get_data(MOFAobject, views = c("Main"),groups = c("1"))$Main$`1`,
+		CLL_data$mRNA[,CLL_metadata$IGHV==1 & !is.na(CLL_metadata$IGHV)]
+	)
+
+	#check dimensions
+	expect_equal(get_dimensions(MOFAobject)$G,3) # right number of groups
+
+	# right data matrix - without groups
+	# create MOFA model
+	MOFAobject <- create_mofa_from_SingleCellExperiment(
+		sce,
+		assays = c("mRNA","expr","expr","expr"),
+		alt_experiments = c("Drugs", "Methylation", "Mutations")
+	)
+    expect_equivalent(
+		get_data(MOFAobject, views = c("Main"))$Main$group1,
+		CLL_data$mRNA
+	)
+})
+
+test_that("mofa2 wrapper correctly initializes MOFAobject", {
+	#check that manually setting the parameters creates the same model as the mofa2() wrapper
+
+	# 1. get sample data
+	skip_if_not_installed("MultiAssayExperiment")
+	library(MultiAssayExperiment)
+	library(SummarizedExperiment)
+
+	# Import and preprocessing of miniACC Data
+	data(miniACC)
+	miniACC <- intersectColumns(miniACC)
+	mae_sub <- miniACC
+	experiments(mae_sub) <- experiments(miniACC)[
+		c("RNASeq2GeneNorm","RPPAArray","Mutations","miRNASeqGene")
+	]
+	rownames(mae_sub[["RNASeq2GeneNorm"]]) <- paste0(rownames(mae_sub[["RNASeq2GeneNorm"]]), "_1")
+	rownames(mae_sub[["RPPAArray"]]) <- paste0(rownames(mae_sub[["RPPAArray"]]), "_2")
+	rownames(mae_sub[["Mutations"]]) <- paste0(rownames(mae_sub[["Mutations"]]), "_3")
+	rownames(mae_sub[["miRNASeqGene"]]) <- paste0(rownames(mae_sub[["miRNASeqGene"]]), "_4")
+
+	# apply log1p to the RNASeq
+	se <- mae_sub[["RNASeq2GeneNorm"]]
+	assay(se, "log1p") <- log1p(assay(se, "exprs"))
+	mae_sub[["RNASeq2GeneNorm"]] <- se
+
+	# apply log1p to the miRNASeq
+	se <- mae_sub[["miRNASeqGene"]]
+	assay(se, "log1p") <- log1p(assay(se, "exprs"))
+	mae_sub[["miRNASeqGene"]] <- se
+
+	# 2. create MOFA instances
+	MOFA_init <- create_mofa(
+		mae_sub,
+		assays = c("log1p", "exprs", "",'log1p'),
+		extract_metadata = TRUE
+	)
+
+	data_opts <- get_default_data_options(MOFA_init)
+	model_opts <- get_default_model_options(MOFA_init)
+	model_opts$num_factors <- 4
+	train_opts <- get_default_training_options(MOFA_init)
+	train_opts$seed <- 42
+	train_opts$convergence_mode <- "fast"
+
+	MOFA_prep1 <- prepare_mofa(MOFA_init,
+		data_options = data_opts,
+		model_options = model_opts,
+		training_options = train_opts
+	)
+
+	MOFA_prep2 <- mofa2(
+		mae_sub,
+		assays = c("log1p", "exprs", "",'log1p'),
+		num_factors = 4,
+		seed = 42,
+		convergence_mode = "fast"
+	)
+	
+	expect_equivalent(MOFA_prep1,MOFA_prep2)
+	expect_identical(MOFA_prep1,MOFA_prep2)
+
+	# check manual parameter values
+	MOFA_prep2 <- mofa2(
+		mae_sub,
+		assays = c("log1p", "exprs", "",'log1p'),
+		num_factors = 4,
+		seed = 1337,
+		convergence_mode = "fast"
+	)
+	expect_equal(MOFA_prep2@training_options$seed,1337)
+	expect_equal(MOFA_prep2@training_options$convergence_mode,"fast")
+	expect_equal(MOFA_prep2@training_options$maxiter,1000)
+	expect_equal(MOFA_prep2@model_options$spikeslab_factors,FALSE)
+	
+	# add: stochastic or mefisto options?
+	# add: SCE with altexperiments?
 })

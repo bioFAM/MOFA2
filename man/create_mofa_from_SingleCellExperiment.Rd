@@ -6,25 +6,22 @@
 \usage{
 create_mofa_from_SingleCellExperiment(
   sce,
+  assays = c("logcounts"),
   groups = NULL,
-  assay = "logcounts",
   alt_experiments = NULL,
-  alt_assays = NULL,
   extract_metadata = FALSE
 )
 }
 \arguments{
 \item{sce}{SingleCellExperiment object}
 
+\item{assays}{assays of the sce object to use, default is \code{c('logcounts')}. The first entry specifies the assay of the main experiment, subsequent entries are used for the \code{alt_experiments}. Should match length of \code{alt_experiments} plus one.}
+
 \item{groups}{a string specifying column name of the colData to use it as a group variable. 
 Alternatively, a character vector with group assignment for every sample.
 Default is \code{NULL} (no group structure).}
 
-\item{assay}{assay of the sce object to use, default is \code{logcounts}.}
-
-\item{alt_experiments}{list, indicating option altExp's of the SingleCellExperiment object to load. Default is \code{NULL} (not loading altExp's).}
-
-\item{alt_assays}{list, giving the assay names of each of the altExp's to load. Default is \code{NULL}.}
+\item{alt_experiments}{list, that indicates altExp's of the SingleCellExperiment object to load. Default is \code{NULL} (no altExp's loaded).}
 
 \item{extract_metadata}{logical indicating whether to incorporate the metadata from the SingleCellExperiment object into the MOFA object}
 }
@@ -40,14 +37,14 @@ library(SingleCellExperiment)
 # Create SingleCellExperiment with sample data
 data1 = matrix(rnorm(50 * 20), 
              nrow = 50, ncol = 20,
-             dimnames = list(paste0("gene_", 1:50),
+             dimnames = list(paste0("gene1_", 1:50),
              paste0("sample_", 1:20)))
 
 data2 = matrix(rnorm(50 * 20), 
              nrow = 50, ncol = 20,
-             dimnames = list(paste0("gene_", 1:50),
+             dimnames = list(paste0("gene2_", 1:50),
              paste0("sample_", 1:20)))
-alt_data = SummarizedExperiment(list(assay=data2))
+alt_data = SummarizedExperiment(list(counts=data2))
 
 sce <- SingleCellExperiment(
   assays = list(counts = data1),
@@ -55,7 +52,6 @@ sce <- SingleCellExperiment(
 )
 # Create MOFA object
 MOFAobject <- create_mofa_from_SingleCellExperiment(
-  sce, assay = "counts", alt_experiments = c("alt_data"),
-  alt_assays = c("assay")
+  sce, assays = c("counts","counts"), alt_experiments = c("alt_data")
 )
 }

@@ -5,8 +5,9 @@
 #' Please read the documentation of the corresponding functions for more details.
 #' @param data input data. See \code{\link[create_mofa]{create_mofa}} for details on input data formats.
 #' @param assays Assays to include in MOFA model. Required for \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}}, \code{\link[SingleCellExperiment:SingleCellExperiment]{SingleCellExperiment}} and \code{\link[SeuratObject:CreateSeuratObject]{Seurat}} objects.
-#' @param groups One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is NULL.
-#' @param extract_metadata Boolean specifying whether sample metadata from the input object should be propagated to the MOFA2 object  (default is TRUE).
+#' @param groups One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is \code{NULL}.
+#' @param extract_metadata Boolean specifying whether sample metadata from the input object should be propagated to the MOFA2 object  (default is \code{TRUE}).
+#' @param alt_experiments altExp slots to load, only relevant for SingleCellExperiment objects. Default is \code{NULL}.
 #' @param ... additional parameters for MOFA, named as the options of \code{\link[prepare_mofa]{prepare_mofa}}.
 #' 
 #' @return 
@@ -31,12 +32,12 @@
 #' # Example with list of matrices
 #' mtx <- make_example_data()$data
 #' mofa_obj <- mofa2(mtx)
-mofa2 <- function(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...) {
+mofa2 <- function(data, assays = NULL, groups = NULL, alt_experiments = NULL,  extract_metadata = TRUE, ...) {
   
   # Select assays of each experiment for MOFA
   # TO-DO: IF INPUT DATA IS MAE, SINGLECELLEXPERIMENT OR SEURAT, MAKE USE ASSAYS IS NOT NUL
-  # mofa_obj <- create_mofa(data, assays, groups, extract_metadata, ...)
-  mofa_obj <- create_mofa(data, assays, groups, extract_metadata)
+  # need to pass other possible arg when relevant: alt_experiments
+  mofa_obj <- create_mofa(data, assays = assays, groups = groups, alt_experiments =  alt_experiments, extract_metadata = extract_metadata)
   
   # Make a list of arguments for MOFA
   mofa_args <- list(

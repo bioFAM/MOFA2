@@ -4,7 +4,14 @@
 \alias{create_mofa}
 \title{create a MOFA object}
 \usage{
-create_mofa(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
+create_mofa(
+  data,
+  assays = NULL,
+  groups = NULL,
+  alt_experiments = NULL,
+  extract_metadata = TRUE,
+  ...
+)
 }
 \arguments{
 \item{data}{one of the formats above}
@@ -12,6 +19,8 @@ create_mofa(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
 \item{assays}{assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects. For MAE and Seurat objects a vector or list of strings, for SCE objects a single string.}
 
 \item{groups}{group information, only relevant when using the multi-group framework.}
+
+\item{alt_experiments}{altExp slots to load, only relevant for SingleCellExperiment objects. Default is \code{NULL}.}
 
 \item{extract_metadata}{logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
 not relevant when the input is a list of matrices). Default is \code{TRUE}.}

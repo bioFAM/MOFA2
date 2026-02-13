@@ -41,7 +41,7 @@ test_that("a model can be created from a Seurat object", {
 	skip_if_not_installed("SeuratObject")
 	library(Seurat)
 	library(Matrix)
-	m <- readMM('matrix.mtx')
+	m <- as(readMM('matrix.mtx'),'dgCMatrix')
 	genes <- read.delim('genes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,2]
 	cells <- read.delim('barcodes.tsv', sep='\t', header=FALSE, stringsAsFactors=FALSE)[,1]
 	colnames(m) <- cells
