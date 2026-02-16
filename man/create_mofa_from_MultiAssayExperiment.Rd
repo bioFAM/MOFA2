@@ -8,17 +8,22 @@ create_mofa_from_MultiAssayExperiment(
   mae,
   assays = NULL,
   groups = NULL,
+  alt_experiments = NULL,
   extract_metadata = FALSE
 )
 }
 \arguments{
 \item{mae}{a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
 
-\item{assays}{assays to use from the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
+\item{assays}{list indicating internal assays to use for each experiment of the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object.
+Default is \code{NULL} (using first slots). \code{NULL} or \code{""} can be passed to skip an experiment.}
 
 \item{groups}{a string specifying column name of the colData to use it as a group variable. 
 Alternatively, a character vector with group assignment for every sample.
 Default is \code{NULL} (no group structure).}
+
+\item{alt_experiments}{optional list, when using altExp slots (e.g. with \code{TreeSummarisedExperiment}). For each experiment (view) the altExp to use can be specified. 
+Default is \code{NULL} (no altExp's).}
 
 \item{extract_metadata}{logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object}
 }
@@ -26,7 +31,7 @@ Default is \code{NULL} (no group structure).}
 Returns an untrained \code{\link{MOFA}} object
 }
 \description{
-Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
+Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object. Loads the listed experiments as different views.
 }
 \examples{
 # Using the miniACC data transform RNASeq assays and select three experiments for MOFA

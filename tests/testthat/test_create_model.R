@@ -112,6 +112,36 @@ test_that("a model can be created from a MultiAssayExperiment Object", {
 		get_data(model, views = c("RPPAArray"))$RPPAArray$group1,
 		assay(mae_sub[["RPPAArray"]])
 	) 
+
+	#check also with HintikkaXOData
+
+})
+
+test_that("a model can be created from a MultiAssayExperiment Object - HintikkaXOData data", {
+	skip_if_not_installed("MultiAssayExperiment")
+	library(MultiAssayExperiment)
+	library(SummarizedExperiment)
+	library(mia)
+
+	#check also with HintikkaXOData
+	data("HintikkaXOData")
+
+	# Prepare data 
+	mae <- HintikkaXOData
+	altExp(mae[[1]], "asd") <- mae[[1]]
+
+	MOFAobject <- create_mofa(
+		mae,
+		alt_experiments = list("asd", "main", "main"),
+		assays = list("counts",NULL,"signals"),
+	)
+
+	# do checks
+	# class check
+	expect_is(MOFAobject, "MOFA")
+
+	#check dimensions
+	expect_equal(get_dimensions(MOFAobject)$M,2) # right number of views
 })
 
 test_that("a model can be created from a SingleCellExperiment Object", {
