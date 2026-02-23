@@ -12,8 +12,7 @@
 #'  Please read the documentation of the corresponding function for more details on your specific data format.
 #' @param data one of the formats above
 #' @param groups group information, only relevant when using the multi-group framework. 
-#' @param assays assay name(s). Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects. For MAE and Seurat objects a vector or list of strings, for SCE objects a single string.
-#' @param alt_experiments altExp slots to load, only relevant for SingleCellExperiment objects. Default is \code{NULL}.
+#' @param assays assay name(s) to load. Relevant for MultiAssayExperiment, SingleCellExperiment and Seurat objects. A vector or list of characters, see the corresponding functions for details.
 #' @param extract_metadata logical indicating whether to incorporate the sample metadata from the input object into the MOFA object (
 #' not relevant when the input is a list of matrices). Default is \code{TRUE}.
 #' @param ... further arguments that can be passed to the function depending on the input data format.
@@ -27,19 +26,24 @@
 #' # Load data (in long data.frame format)
 #' load(file) 
 #' MOFAmodel <- create_mofa(dt)
-create_mofa <- function(data, assays = NULL, groups = NULL, alt_experiments = NULL, extract_metadata = TRUE, ...) {
+create_mofa <- function(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...) {
+  dots <- list(...)
   
   # Creating MOFA object from a Seurat object
   if (is(data, "Seurat")) {
     
     message("Creating MOFA object from a Seurat object...")
-    object <- create_mofa_from_Seurat(data, groups, assays, extract_metadata = extract_metadata, ...)
+    object <- create_mofa_from_Seurat(data, groups, assays, layer = dots[["layer"]], features = dots[["features"]], extract_metadata = extract_metadata)
     
     # Creating MOFA object from a SingleCellExperiment object
   } else if (is(data, "SingleCellExperiment")) {
-    
     message("Creating MOFA object from a SingleCellExperiment object...")
-    object <- create_mofa_from_SingleCellExperiment(data, assays = assays, groups=groups, alt_experiments = alt_experiments, extract_metadata = extract_metadata, ...)
+    if("alt_experiments" %in% names(dots)) {
+      alt_experiments <- dots[["alt_experiments"]]
+    } else {
+      alt_experiments <- c("main")
+    }
+    object <- create_mofa_from_SingleCellExperiment(data, assays = assays, groups=groups, alt_experiments = alt_experiments, extract_metadata = extract_metadata)
     
     
     # Creating MOFA object from a data.frame object
@@ -61,8 +65,7 @@ create_mofa <- function(data, assays = NULL, groups = NULL, alt_experiments = NU
   } else if(is(data, "MultiAssayExperiment")){
     
     message("Creating MOFA object from a MultiAssayExperiment...")
-    object <- create_mofa_from_MultiAssayExperiment(data, assays, groups, alt_experiments = alt_experiments, extract_metadata = extract_metadata, ...)
-    
+    object <- create_mofa_from_MultiAssayExperiment(data, experiments = dots[["experiments"]],  assays = assays, groups = groups, alt_experiments = dots[["alt_experiments"]], extract_metadata = extract_metadata)
   } else {
     stop("Error: input data has to be provided as a list of matrices, a data frame or a Seurat object. Please read the documentation for more details.")
   }
@@ -74,13 +77,15 @@ create_mofa <- function(data, assays = NULL, groups = NULL, alt_experiments = NU
 #' @name create_mofa_from_MultiAssayExperiment
 #' @description Method to create a \code{\link{MOFA}} object from a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object. Loads the listed experiments as different views.
 #' @param mae a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object
+#' @param experiments optional list, indicating which experiments of the MAE object to load, by indices or names.
+#' Default is \code{NULL} (use all Experiments).
+#' @param alt_experiments optional list, when using altExp slots (e.g. with \code{SingleCellExperiment}), altExp to use for each experiment (view). See also \code{\link{create_mofa_from_SingleCellExperiment}}.
+#' Default is \code{NULL} (no altExp's).
 #' @param assays list indicating internal assays to use for each experiment of the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object.
-#' Default is \code{NULL} (using first slots). \code{NULL} or \code{""} can be passed to skip an experiment.
+#' Default is \code{NULL} (using first slots).
 #' @param groups a string specifying column name of the colData to use it as a group variable. 
 #' Alternatively, a character vector with group assignment for every sample.
 #' Default is \code{NULL} (no group structure).
-#' @param alt_experiments optional list, when using altExp slots (e.g. with \code{TreeSummarisedExperiment}). For each experiment (view) the altExp to use can be specified. 
-#' Default is \code{NULL} (no altExp's).
 #' @param extract_metadata logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object
 #' @return Returns an untrained \code{\link{MOFA}} object
 #' @export
@@ -94,20 +99,25 @@ create_mofa <- function(data, assays = NULL, groups = NULL, alt_experiments = NU
 #'     log1p(assay(miniACC[[nm]], "exprs"))
 #' }
 #' # create model with the transformed assay, omitting the 2nd and 4th experiments
-#' model <- create_mofa_from_MultiAssayExperiment(miniACC,
-#'                     assays = list("log1p", NULL, "exprs", NULL,'log1p'),
+#' model <- create_mofa_from_MultiAssayExperiment(
+#'                     miniACC,
+#'                     experiments = c("RNASeq2GeneNorm","RPPAArray","miRNASeqGene"),
+#'                     assays = c("log1p", "exprs", 'log1p'),
 #'                     extract_metadata = TRUE)
-create_mofa_from_MultiAssayExperiment <- function(mae, assays = NULL, groups = NULL, alt_experiments = NULL, extract_metadata = FALSE) {
+create_mofa_from_MultiAssayExperiment <- function(mae, experiments = NULL, alt_experiments = NULL, assays = NULL, groups = NULL, extract_metadata = FALSE) {
   
   # Sanity check
   if(!requireNamespace("MultiAssayExperiment", quietly = TRUE)){
     stop("Package \"MultiAssayExperiment\" is required but is not installed.", call. = FALSE)
   } else {
     # Select altExps for each experiment of MAE-ExperimentList
+    mae <- .select_experiments_MAE(mae, experiments)
+
+    # Select altExps for each experiment of MAE-ExperimentList
     mae <- .select_altExps_MAE(mae, alt_experiments)
 
     # Select assays of each experiment for MOFA
-    mae <- .select_assays(mae, assays)
+    mae <- .select_assays_MAE(mae, assays)
 
     
     # Re-arrange data for training in MOFA to matrices, fill in NAs
@@ -342,9 +352,9 @@ create_mofa_from_df <- function(df, extract_metadata = TRUE) {
 #' )
 #' # Create MOFA object
 #' MOFAobject <- create_mofa_from_SingleCellExperiment(
-#'   sce, assays = c("counts","counts"), alt_experiments = c("alt_data")
+#'   sce, assays = c("counts","counts"), alt_experiments = c("Main","alt_data")
 #' )
-create_mofa_from_SingleCellExperiment <- function(sce, assays = c("logcounts"), groups = NULL, alt_experiments = NULL, extract_metadata = FALSE) {
+create_mofa_from_SingleCellExperiment <- function(sce, alt_experiments = c("main"), assays = c("logcounts"), groups = NULL, extract_metadata = FALSE) {
   
   # Check is SingleCellExperiment is installed
   if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
@@ -353,29 +363,11 @@ create_mofa_from_SingleCellExperiment <- function(sce, assays = c("logcounts"), 
   else if(!requireNamespace("SummarizedExperiment", quietly = TRUE)){
     stop("Package \"SummarizedExperiment\" is required but is not installed.", call. = FALSE)
   } else {
-    # Check that and alt_experiments lists/vectors match in length
-    if ((length(assays)-length(alt_experiments))!=1) {
-      stop("length of passed `assays` must match `alt_experiments` plus one.")
+    # Check that assays and alt_experiments lists/vectors match in length
+    if (length(assays)!=length(alt_experiments)) {
+      stop("length of passed `assays` must match `alt_experiments` (1 if not using alExp's).")
     }
-    # Split assays into main Experiment and altExp assays
-    assay <- assays[1]
-    if (length(assays)<=1) {
-      alt_assays <- NULL
-    } else {
-      alt_assays <- assays[-1]
-    }
-
-    stopifnot(assay%in%names(SummarizedExperiment::assays(sce)))
     
-    # check passed alt_experiments
-    if (!is.null(alt_experiments)) {
-      if (!(length(alt_experiments) == length(alt_assays))) {
-        stop("length of passed `assays` must match `alt_experiments` plus one.")
-      }
-      stopifnot(all(alt_experiments %in% names(altExps(sce))))
-      stopifnot(all(sapply(alt_experiments, function(x) is(altExps(sce)[[x]], "SummarizedExperiment"))))
-    }
-
     # Define groups of cells
     if (is.null(groups)) {
       # message("No groups provided as argument... we assume that all samples are coming from the same group.\n")
@@ -394,15 +386,15 @@ create_mofa_from_SingleCellExperiment <- function(sce, assays = c("logcounts"), 
     }
     
     # Extract data matrices
-    data_matrices <- .split_sce_into_groups_alt(sce, groups, assay, alt_experiments, alt_assays)
-    
+    data_matrices <- .split_sce_into_groups_alt(sce, groups, alt_experiments, assays)
+
     # Create MOFA object
     object <- new("MOFA")
     object@status <- "untrained"
     object@data <- data_matrices
     
     # Define dimensions
-    object@dimensions[["M"]] <- 1 + length(alt_experiments)
+    object@dimensions[["M"]] <- length(alt_experiments)
     object@dimensions[["D"]] <- vapply(data_matrices, function(m) nrow(m[[1]]), 1L)
     object@dimensions[["G"]] <- length(data_matrices[[1]])
     object@dimensions[["N"]] <- vapply(data_matrices[[1]], function(g) ncol(g), 1L)
@@ -411,7 +403,7 @@ create_mofa_from_SingleCellExperiment <- function(sce, assays = c("logcounts"), 
         
     # Set views & groups names
     groups_names(object) <- as.character(names(data_matrices[[1]]))
-    views_names(object)  <- c("Main", alt_experiments)
+    views_names(object)  <- c(alt_experiments)
     
     # Set metadata
     if (extract_metadata) {
@@ -657,7 +649,7 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
 # Select assays from MultiAssayExperiment
 #' @importFrom MultiAssayExperiment experiments
 #' @importFrom SummarizedExperiment assay assays assayNames
-.select_assays <- function(mae, assay_names) {
+.select_assays_MAE <- function(mae, assay_names) {
   # skip if assay_names is NULL
   if(!is.null(assay_names)) {
     # replace `NULL` entries with character(0)
@@ -667,7 +659,7 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
     })
     # check that assay_names has right length
     if (length(assay_names) != length(experiments(mae))){
-      stop(paste0("Length of assay_names list must match number of experiments (num=",length(experiments(mae)),")"))
+      stop(paste0("Length of assays list must match number of experiments (num=",length(experiments(mae)),")"))
     }
     # Give corresponding experiment names to assays
     names(assay_names) <- names(experiments(mae))
@@ -686,7 +678,7 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
             stop("Cannot find assay '", assay_names[[exp]], "' in experiment '", exp, "'.")
           }
           # Keep only specified assay_name from the given experiment
-          message(paste0("Selecting assay `",assay_names[[exp]],"` for experiment `",exp,"`"))
+          message(paste0("Selecting assay `",assay_names[[exp]],"` for experiment `",exp,"`."))
           assays(mae[[exp]]) <- list(assay(mae[[exp]], assay_names[[exp]]))
           # Update assay names (needed?)
           assayNames(mae[[exp]]) <- assay_names[[exp]]
@@ -714,13 +706,13 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
       alt_exp <- alt_experiments[[i]]
       # a. select main exp if specified
       if (alt_exp == "main" || is.null(alt_exp) || length(alt_exp) == 0) {
-        message(paste0("Selecting main Experiment of Experiment `",names(mae)[i],"`."))
+        message(paste0("Selecting main Experiment of experiment `",names(mae)[i],"`."))
         altExps(mae[[i]]) <- list()
       } else {
         # 2. stop if exp i doesn't have altExps or name is wrong
         stopifnot("Error: Experiment does not contain altExps." = length(altExpNames(mae[[i]]))>0)
         if(alt_exp %in% altExpNames(mae[[i]])){
-          message(paste0("Selecting altExp `",alt_exp,"` of Experiment `",names(mae)[i],"`."))
+          message(paste0("Selecting altExp `",alt_exp,"` of experiment `",names(mae)[i],"`."))
           # b. overwrite main exp by specified altExp
           mae[[i]] <- altExp(mae[[i]], alt_exp)
         } else {
@@ -728,6 +720,32 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
         }
       }
     }
+  }
+  return(mae)
+}
+
+.select_experiments_MAE <- function(mae, experiments) {
+  # skip if experiments is NULL
+  if(!is.null(experiments)) {
+    # just works with names for now ToDo: convert indices to names?
+    # check input experiments
+    stopifnot("Too many `experiments` passed"=length(experiments) <= length(experiments(mae)))
+    if (!is.numeric(experiments)){
+      stopifnot("Not all passed `experiments` are found in the MAE"=all(experiments %in% names(mae)))
+      # Loop through passed experiments and save position in mae
+      new_experiments <- c()
+      for (i in seq_along(experiments)) {
+        exp <- experiments[i]
+        new_experiments[i] <- which(names(mae)==exp)
+      }
+    } else {
+      stopifnot("Experiments must be passed as names or indices of the mae object"=all(experiments%%1==0))
+      new_experiments <- experiments
+    }
+    # subset mae by indices
+    experiments(mae) <- experiments(mae)[new_experiments]
+    message(paste0("Remaining experiments: ",paste(names(mae), collapse = ", ")))
+    stopifnot("Mismatch of subset MAE and passed `experiments`"=length(names(mae))==length(experiments))
   }
   return(mae)
 }
@@ -753,25 +771,36 @@ create_mofa_from_matrix <- function(data, groups = NULL) {
 }
 
 # (Hidden) function to select altExps from SingleCellExperiment object and split data into groups
-.split_sce_into_groups_alt <-function(sce, groups, assay, alt_experiments, alt_assays) {
-    # 1. get main matrix and put it into 1st entry of data_list
-    main_data <- SummarizedExperiment::assay(sce, i = assay)
-    data_list <- list(main_data)
-
+.split_sce_into_groups_alt <-function(sce, groups, alt_experiments, assays) {
+    # 1. select assay from each altExp and put it into data list
+    data_list <- list()
     if (!is.null(alt_experiments)) {
-      # 2. get subsequent altExps and put them into following entries
       for (i in seq_along(alt_experiments)) {
-        alt_se <- altExp(sce, alt_experiments[i])
-        if(!(alt_assays[i] %in% assayNames(alt_se))){
-          stop(paste0("Error: assay `",alt_assays[i],"` not found in altExp `",alt_experiments[i],"`."))
+        # a. get Exp label and check whether it is the main or an altExp
+        alt_exp <- alt_experiments[i]
+        assay   <- assays[i]
+        if (alt_exp == "main" || alt_exp == "Main" || is.null(alt_exp) || length(alt_exp) == 0){
+          # return main experiment
+          se_object <- sce
+        } else {
+          # return altExp
+          if(!(alt_exp %in% names(altExps(sce)))){stop(paste0("altExp `",alt_exp,"` not in SCE object"))}
+          stopifnot("altExp is not a SummarizedExperiment"=is(altExps(sce)[[alt_exp]], "SummarizedExperiment"))
+          se_object <- altExp(sce, alt_exp)
         }
-        data <- assays(alt_se)[[alt_assays[i]]]
-        data_list[[i+1]] <- data
+        # b. extract specified assay and append it to data list
+        if(!(assay %in% assayNames(se_object))){
+          stop(paste0("Error: assay `",assay,"` not found in altExp `",alt_exp,"`."))
+        }
+        message(paste0("Selecting assay `",assay,"` of altExp `",alt_exp,"`."))
+        data_list[[i]] <- assays(se_object)[[assay]]
       }
+    } else {
+      stop("No experiment layers of the SCE specified.")
     }
-    # 3. set matrices names
-    names(data_list) <- c("main", alt_experiments)
-    # 2. spit matrix list into groups with .split_data_into_groups
+    # 2. set matrices names
+    names(data_list) <- c(alt_experiments)
+    # 3. split matrix list into groups with .split_data_into_groups
     data_matrices <- .split_data_into_groups(data_list, groups)
     return(data_matrices)
 }

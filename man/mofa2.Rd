@@ -4,14 +4,7 @@
 \alias{mofa2}
 \title{One-liner wrapper to create a MOFA2 object from multiple input objects and ready for training}
 \usage{
-mofa2(
-  data,
-  assays = NULL,
-  groups = NULL,
-  alt_experiments = NULL,
-  extract_metadata = TRUE,
-  ...
-)
+mofa2(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
 }
 \arguments{
 \item{data}{input data. See \code{\link[create_mofa]{create_mofa}} for details on input data formats.}
@@ -20,11 +13,9 @@ mofa2(
 
 \item{groups}{One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is \code{NULL}.}
 
-\item{alt_experiments}{altExp slots to load, only relevant for SingleCellExperiment objects. Default is \code{NULL}.}
-
 \item{extract_metadata}{Boolean specifying whether sample metadata from the input object should be propagated to the MOFA2 object  (default is \code{TRUE}).}
 
-\item{...}{additional parameters for MOFA, named as the options of \code{\link[prepare_mofa]{prepare_mofa}}.}
+\item{...}{additional arguments; either data parameters used for \code{\link[create_mofa]{create_mofa}}, or MOFA model parameters, named as the options of \code{\link[prepare_mofa]{prepare_mofa}}.}
 }
 \value{
 Returns an untrained \code{\link[MOFA2:MOFA]{MOFA}} with specified options

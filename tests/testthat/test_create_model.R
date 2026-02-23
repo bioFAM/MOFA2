@@ -142,6 +142,20 @@ test_that("a model can be created from a MultiAssayExperiment Object - HintikkaX
 
 	#check dimensions
 	expect_equal(get_dimensions(MOFAobject)$M,2) # right number of views
+
+	MOFAobject <- create_mofa(
+		mae,
+		experiments = c("microbiota","biomarkers"),
+		alt_experiments = list("asd", "main"),
+		assays = list("counts","signals"),
+	)
+
+	# do checks
+	# class check
+	expect_is(MOFAobject, "MOFA")
+
+	#check dimensions
+	expect_equal(get_dimensions(MOFAobject)$M,2) # right number of views
 })
 
 test_that("a model can be created from a SingleCellExperiment Object", {
@@ -169,8 +183,8 @@ test_that("a model can be created from a SingleCellExperiment Object", {
 	# create MOFA model
 	MOFAobject <- create_mofa_from_SingleCellExperiment(
 		sce,
+		alt_experiments = c("Main","Drugs", "Methylation", "Mutations"), 
 		assays = c("mRNA","expr","expr","expr"),
-		alt_experiments = c("Drugs", "Methylation", "Mutations"), 
 		groups = "IGHV_filled"
 	)
 
@@ -200,8 +214,8 @@ test_that("a model can be created from a SingleCellExperiment Object", {
 	# create MOFA model
 	MOFAobject <- create_mofa_from_SingleCellExperiment(
 		sce,
-		assays = c("mRNA","expr","expr","expr"),
-		alt_experiments = c("Drugs", "Methylation", "Mutations")
+		alt_experiments = c("Main","Drugs", "Methylation", "Mutations"),
+		assays = c("mRNA","expr","expr","expr")
 	)
     expect_equivalent(
 		get_data(MOFAobject, views = c("Main"))$Main$group1,
@@ -283,6 +297,7 @@ test_that("mofa2 wrapper correctly initializes MOFAobject", {
 	expect_equal(MOFA_prep2@training_options$maxiter,1000)
 	expect_equal(MOFA_prep2@model_options$spikeslab_factors,FALSE)
 	
-	# add: stochastic or mefisto options?
+	# add: stochastic options 
+	# add: mefisto options
 	# add: SCE with altexperiments?
 })

@@ -6,14 +6,17 @@
 \usage{
 create_mofa_from_SingleCellExperiment(
   sce,
+  alt_experiments = c("main"),
   assays = c("logcounts"),
   groups = NULL,
-  alt_experiments = NULL,
   extract_metadata = FALSE
 )
 }
 \arguments{
 \item{sce}{SingleCellExperiment object}
+
+\item{alt_experiments}{list, that indicates alternative experiments of the SCE object to load as additional views. 
+Default is \code{NULL} (no altExp's loaded).}
 
 \item{assays}{assay(s) of the SCE object to use, default is \code{c('logcounts')}. 
 The first entry specifies the assay of the main experiment, optional further entries are used for the \code{alt_experiments}.}
@@ -21,9 +24,6 @@ The first entry specifies the assay of the main experiment, optional further ent
 \item{groups}{a string specifying column name of the colData to use it as a group variable. 
 Alternatively, a character vector with group assignment for every sample.
 Default is \code{NULL} (no group structure).}
-
-\item{alt_experiments}{list, that indicates alternative experiments of the SCE object to load as additional views. 
-Default is \code{NULL} (no altExp's loaded).}
 
 \item{extract_metadata}{logical indicating whether to incorporate the metadata from the SingleCellExperiment object into the MOFA object}
 }
@@ -54,6 +54,6 @@ sce <- SingleCellExperiment(
 )
 # Create MOFA object
 MOFAobject <- create_mofa_from_SingleCellExperiment(
-  sce, assays = c("counts","counts"), alt_experiments = c("alt_data")
+  sce, assays = c("counts","counts"), alt_experiments = c("Main","alt_data")
 )
 }

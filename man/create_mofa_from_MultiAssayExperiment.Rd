@@ -6,24 +6,28 @@
 \usage{
 create_mofa_from_MultiAssayExperiment(
   mae,
+  experiments = NULL,
+  alt_experiments = NULL,
   assays = NULL,
   groups = NULL,
-  alt_experiments = NULL,
   extract_metadata = FALSE
 )
 }
 \arguments{
 \item{mae}{a \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object}
 
+\item{experiments}{optional list, indicating which experiments of the MAE object to load, by indices or names.
+Default is \code{NULL} (use all Experiments).}
+
+\item{alt_experiments}{optional list, when using altExp slots (e.g. with \code{SingleCellExperiment}), altExp to use for each experiment (view). See also \code{\link{create_mofa_from_SingleCellExperiment}}.
+Default is \code{NULL} (no altExp's).}
+
 \item{assays}{list indicating internal assays to use for each experiment of the \code{\link[MultiAssayExperiment:MultiAssayExperiment]{MultiAssayExperiment}} object.
-Default is \code{NULL} (using first slots). \code{NULL} or \code{""} can be passed to skip an experiment.}
+Default is \code{NULL} (using first slots).}
 
 \item{groups}{a string specifying column name of the colData to use it as a group variable. 
 Alternatively, a character vector with group assignment for every sample.
 Default is \code{NULL} (no group structure).}
-
-\item{alt_experiments}{optional list, when using altExp slots (e.g. with \code{TreeSummarisedExperiment}). For each experiment (view) the altExp to use can be specified. 
-Default is \code{NULL} (no altExp's).}
 
 \item{extract_metadata}{logical indicating whether to incorporate the metadata from the MultiAssayExperiment object into the MOFA object}
 }
@@ -43,7 +47,9 @@ for (nm in c("RNASeq2GeneNorm", "miRNASeqGene")) {
     log1p(assay(miniACC[[nm]], "exprs"))
 }
 # create model with the transformed assay, omitting the 2nd and 4th experiments
-model <- create_mofa_from_MultiAssayExperiment(miniACC,
-                    assays = list("log1p", NULL, "exprs", NULL,'log1p'),
+model <- create_mofa_from_MultiAssayExperiment(
+                    miniACC,
+                    experiments = c("RNASeq2GeneNorm","RPPAArray","miRNASeqGene"),
+                    assays = c("log1p", "exprs", 'log1p'),
                     extract_metadata = TRUE)
 }
