@@ -4,7 +4,14 @@
 \alias{mofa2}
 \title{One-liner wrapper to create a MOFA2 object from multiple input objects and ready for training}
 \usage{
-mofa2(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
+mofa2(
+  data,
+  assays = NULL,
+  groups = NULL,
+  covariates = NULL,
+  extract_metadata = TRUE,
+  ...
+)
 }
 \arguments{
 \item{data}{input data. See \code{\link[create_mofa]{create_mofa}} for details on input data formats.}
@@ -13,9 +20,11 @@ mofa2(data, assays = NULL, groups = NULL, extract_metadata = TRUE, ...)
 
 \item{groups}{One of the variable names of sample metadata from which groups should be derived. Only relevant when using the multi-group framework with one of the three formats above. Default is \code{NULL}.}
 
+\item{covariates}{Continuous covariates to use for training with MEFISTO, see also \code{\link{set_covariates}}. Default is \code{NULL} (no covariates).}
+
 \item{extract_metadata}{Boolean specifying whether sample metadata from the input object should be propagated to the MOFA2 object  (default is \code{TRUE}).}
 
-\item{...}{additional arguments; either data parameters used for \code{\link[create_mofa]{create_mofa}}, or MOFA model parameters, named as the options of \code{\link[prepare_mofa]{prepare_mofa}}.}
+\item{...}{additional arguments; either data parameters as in \code{\link[create_mofa]{create_mofa}}, or MOFA model parameters, named as the options of \code{\link[prepare_mofa]{prepare_mofa}}.}
 }
 \value{
 Returns an untrained \code{\link[MOFA2:MOFA]{MOFA}} with specified options
@@ -30,8 +39,12 @@ Please read the documentation of the corresponding functions for more details.
 library(mia)
 data("HintikkaXOData", package = "mia")
 mae <- HintikkaXOData
-mofa_obj <- mofa2(mae, assays = list("counts", "nmr", "signals"))
-mofa_obj <- mofa2(mae, assays = list("counts", "nmr", NULL), num_factors = 5)
+mofa_obj <- mofa2(
+ mae, 
+ experiments = c(1,3),
+ assays = list("counts", "signals"), 
+ num_factors = 5,
+)
 # Example with long data.frame format (two views and two groups)
 file <- system.file("extdata", "test_data.RData", package = "MOFA2")
 load(file) 
