@@ -28,7 +28,7 @@ The training options are the following: \cr
  \item{\strong{convergence_mode}: character indicating the convergence criteria, either "fast", "medium" or "slow", corresponding to 0.0005\%, 0.00005\% or 0.000005\% deltaELBO change. }
  \item{\strong{verbose}: logical indicating whether to generate a verbose output.}
  \item{\strong{startELBO}: integer indicating the first iteration to compute the ELBO (default is 1). }
- \item{\strong{freqELBO}: integer indicating the first iteration to compute the ELBO (default is 1). }
+ \item{\strong{freqELBO}: integer indicating the frequency of ELBO computation (default is 5). }
  \item{\strong{stochastic}: logical indicating whether to use stochastic variational inference (only required for very big data sets, default is \code{FALSE}).}
  \item{\strong{gpu_mode}: logical indicating whether to use GPUs (see details).}
  \item{\strong{gpu_device}: integer indicating which GPU to use.}
