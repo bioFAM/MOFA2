@@ -47,7 +47,7 @@ A procedure that can be applied to evaluate the robustness of factors is to down
 ## FAQ on the software
 
 **(Q) Can I do MOFA only with Python?**  
-You can use Python to train the model, see [this notebook](https://github.com/bioFAM/mofapy2/blob/master/mofapy2/notebooks/getting_started_python.ipynb) and [this template script](https://github.com/bioFAM/MOFA2/blob/master/inst/scripts/template_script.py). However, we currently do not provide downstream analysis functions in Python (it is in our to-do list). For now we strongly recommend that you use the `MOFA2` R package for the analysis.
+You can use Python to train the model, this is possible either through [muon](https://github.com/scverse/muon), or stand-alone using [mofapy2](https://github.com/bioFAM/mofapy2) directly. Downstream analysis in python can be done using the [mofax](https://github.com/bioFAM/mofax) package. (see [Getting started using Python](tutorials#getting-started-using-python) for more info and examples)
 
 **(Q) Can I speed up the training procedure using CPU parallel processing?**  
 MOFA uses [numpy](https://numpy.org/) for the mathematical operations. This library can be massively optimised by linking it to OpenBLAS or the Intel MKL libraries, which take advantage of multiple cores and multithreading. 
