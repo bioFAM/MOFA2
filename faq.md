@@ -39,7 +39,7 @@ The MOFA factors capture the global sources of variability in the data. Mathemat
 The weights provide a score for how strong each feature relates to each factor, hence allowing a biological interpretation of the latent factors. Features with no as- sociation with the factor have values close to zero, while genes with strong association with the factor have large absolute values. The sign of the weight indicates the direction of the effect: a positive weight indicates that the feature has higher levels in the cells with positive factor values, and vice versa.
 
 <!-- **How can I do Gene Set Enrichment Analysis?**  
-This is explained in the [GSEA vignette](https://raw.githack.com/bioFAM/MOFA2/master/MOFA2/vignettes/GSEA.html) -->
+This is explained in the [GSEA vignette](https://htmlpreview.github.io/?https://github.com/bioFAM/MOFA2/blob/master/MOFA2/vignettes/GSEA.html) -->
 
 <!-- **How can I assess the robustness of factors?** 
 A procedure that can be applied to evaluate the robustness of factors is to downsample the number of samples and/or the number of features and inspect if the factors are consistently found. However, keep in mind that there could be cases where the full data set is required to detect small yet important sources of variation. Hence, lack of robustness under downsampling does not necessarily imply that a factor is not biologically meaningful. -->
@@ -47,7 +47,7 @@ A procedure that can be applied to evaluate the robustness of factors is to down
 ## FAQ on the software
 
 **(Q) Can I do MOFA only with Python?**  
-You can use Python to train the model, see [this notebook](https://github.com/bioFAM/MOFA2/blob/master/mofapy2/notebooks/getting_started_python.ipynb) and [this template script](https://github.com/bioFAM/MOFA2/blob/master/template_script.py). However, we currently do not provide downstream analysis functions in Python (it is in our to-do list). For now we strongly recommend that you use the `MOFA2` R package for the analysis.
+You can use Python to train the model, see [this notebook](https://github.com/bioFAM/mofapy2/blob/master/mofapy2/notebooks/getting_started_python.ipynb) and [this template script](https://github.com/bioFAM/MOFA2/blob/master/inst/scripts/template_script.py). However, we currently do not provide downstream analysis functions in Python (it is in our to-do list). For now we strongly recommend that you use the `MOFA2` R package for the analysis.
 
 **(Q) Can I speed up the training procedure using CPU parallel processing?**  
 MOFA uses [numpy](https://numpy.org/) for the mathematical operations. This library can be massively optimised by linking it to OpenBLAS or the Intel MKL libraries, which take advantage of multiple cores and multithreading. 
