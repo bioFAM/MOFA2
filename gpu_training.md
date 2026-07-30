@@ -7,7 +7,11 @@ title: MOFA
 
 MOFA training can be massively speed up by using GPUs. We have implemented all computations using [CuPy](https://cupy.dev/), an open-source array library for GPU-accelerated computing with Python.
 
-GPU training can be accessed from R via the training options `gpu_mode` and `gpu_device`. For this basilisk needs to be disabled, and reticulate needs to point to a python environment with CuPy.
+GPU training can be accessed from R via the training options `gpu_mode` and `gpu_device`. This needs a Python environment with CuPy, which the basilisk environment does not provide — so run with `use_basilisk = FALSE`. The simplest setup is to let reticulate provision it, choosing the CuPy build matching your CUDA version:
+
+```r
+reticulate::py_require(c("mofapy2", "cupy-cuda12x"))  # or cupy-cuda13x
+```
 
 ## Installation
 

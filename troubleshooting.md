@@ -14,7 +14,7 @@ and edit the `Depends` option in the `DESCRIPTION` file to your R version. Then 
 R CMD INSTALL MOFA2
 ```
 
-### I get the following error when running `run_mofa` 
+### I get the following error when running `run_mofa`
 
 ```
 AttributeError: 'module' object has no attribute 'core.entry_point
@@ -22,12 +22,15 @@ AttributeError: 'module' object has no attribute 'core.entry_point
 Error in py_module_import(module, convert = convert) :
  ModuleNotFoundError: No module named 'mofapy2'
 ```
-First thing: restart R and try again. If the error still holds, this means that either you did not install the `mofapy2` Python package (see instructions above), or you have multiple Python installations and R is not detecting the correct one where `mofapy2` is installed. You need to find out the right Python interpreter (which usually will be the one you get when running `which python` in the terminal) and specify the following at the beginning of your R script:
+
+This only happens on the default `reticulate` path: `mofapy2` is missing from the Python installation reticulate picked. Restart R (an R session binds to one interpreter, on first use), then either let reticulate provide it,
+
+```r
+reticulate::py_require("mofapy2")
 ```
-library(reticulate)
-use_python("YOUR_PYTHON_PATH", required=TRUE)
-```
-You can also use `use_conda` instead of `use_python` if you work with conda environments. For details read more about the [reticulate](https://rstudio.github.io/reticulate/) package.
+
+point it at your own installation with `use_python("YOUR_PYTHON_PATH", required = TRUE)` (check with `py_config()`), or skip the setup with `run_mofa(MOFAobject, use_basilisk = TRUE)`. See the [installation notes](installation.html#notes-on-the-connection-of-r-to-python).
+
 
 
 ### I get the following error when installing the R package
