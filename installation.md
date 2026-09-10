@@ -38,7 +38,7 @@ The connection between R and Python is done via [reticulate](https://rstudio.git
 
 - **Let reticulate provision it** (simplest, requires reticulate >= 1.41). Declare the dependency before training, and reticulate sets up an isolated Python environment — downloading a suitable Python interpreter if none is available:
   ```r
-  reticulate::py_require("mofapy2")
+  reticulate::py_require("mofapy2", python='3.12')
   MOFAobject <- run_mofa(MOFAobject)
   ```
 - **Let [basilisk](https://bioconductor.org/packages/release/bioc/html/basilisk.html) handle it.** `run_mofa(MOFAobject, use_basilisk = TRUE)` uses a dedicated, version-pinned Python environment, created the first time you call it this way. It is also the option to choose if you use `MOFA2` alongside other R packages with conflicting Python dependencies, since basilisk runs Python in a separate process.

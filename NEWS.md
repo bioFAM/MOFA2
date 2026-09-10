@@ -2,8 +2,12 @@
 layout: default
 title: NEWS
 ---
- 
-**`MOFA2 1.20.2 (latest)`**:
+
+ **`MOFA2 1.22.1 (latest)`**:
+- Resolved a number of outdated warnings and errors in documentations
+- Updated `mofapy2` to 0.7.5: further compatibility with newer versions of python-dependencies 
+
+**`MOFA2 1.20.2`**:
 - `mofapy2` has been updated to version 0.7.3 for compatibility with newer versions of python-dependencies
 - Updated basilisk to use python 3.12 and `mofapy2` 0.7.3
 
